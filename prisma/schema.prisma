@@ -1,0 +1,280 @@
+// Prisma Schema for Polirrubro San Juan E-commerce
+// Database: SQLite for local dev, PostgreSQL for production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ==================== USER & AUTH ====================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  role          String    @default("USER") // USER, ADMIN, DRIVER
+  emailVerified DateTime?
+  image         String?
+  
+  addresses     Address[]
+  orders        Order[]
+  cart          CartItem[]
+  driver        Driver?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  label        String   // "Casa", "Trabajo", etc.
+  street       String
+  number       String
+  apartment    String?
+  neighborhood String?
+  city         String   @default("San Juan")
+  province     String   @default("San Juan")
+  zipCode      String?
+  
+  // Geolocation for delivery calculation
+  latitude     Float?
+  longitude    Float?
+  
+  isDefault    Boolean  @default(false)
+  orders       Order[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ==================== PRODUCTS ====================
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  image       String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  
+  products    ProductCategory[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  
+  // Pricing
+  price       Float
+  costPrice   Float     // Admin only - for margin calculation
+  
+  // Stock
+  stock       Int       @default(0)
+  minStock    Int       @default(5) // Alert threshold
+  
+  // Images
+  images      ProductImage[]
+  
+  // Categories (many-to-many)
+  categories  ProductCategory[]
+  
+  // Variants
+  variants    ProductVariant[]
+  
+  // Status
+  isActive    Boolean   @default(true)
+  isFeatured  Boolean   @default(false)
+  
+  // Relations
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  productId  String
+  categoryId String
+  
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@unique([productId, categoryId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  order     Int     @default(0)
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  name      String  // e.g., "500ml", "1L", "Grande"
+  price     Float?  // Override price if different
+  stock     Int     @default(0)
+  isActive  Boolean @default(true)
+}
+
+// ==================== SHOPPING CART ====================
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity  Int      @default(1)
+  variantId String?  // If variant selected
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, productId, variantId])
+}
+
+// ==================== ORDERS ====================
+
+model Order {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique // PSJ-YYYYMMDD-XXXX format
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  addressId       String
+  address         Address  @relation(fields: [addressId], references: [id])
+  
+  items           OrderItem[]
+  
+  // Status
+  status          String   @default("PENDING") // PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED
+  
+  // Payment
+  paymentId       String?  // Mercado Pago ID
+  paymentStatus   String   @default("PENDING") // PENDING, APPROVED, REJECTED, REFUNDED
+  paymentMethod   String?
+  
+  // Amounts
+  subtotal        Float
+  deliveryFee     Float    @default(0)
+  discount        Float    @default(0)
+  total           Float
+  
+  // Delivery details
+  distanceKm      Float?
+  deliveryNotes   String?
+  estimatedTime   Int?     // Minutes
+  
+  // Driver assignment
+  driverId        String?
+  driver          Driver?  @relation(fields: [driverId], references: [id])
+  deliveryStatus  String?  // ASSIGNED, PICKED_UP, IN_TRANSIT, DELIVERED
+  deliveredAt     DateTime?
+  deliveryPhoto   String?
+  
+  // Notes
+  customerNotes   String?
+  adminNotes      String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  
+  name       String  // Snapshot of product name
+  price      Float   // Snapshot of price at purchase time
+  quantity   Int
+  variantName String?
+  
+  subtotal   Float
+}
+
+// ==================== DRIVERS ====================
+
+model Driver {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Driver info
+  vehicleType String? // MOTO, AUTO, BICI
+  licensePlate String?
+  
+  isActive  Boolean  @default(true)
+  isOnline  Boolean  @default(false)
+  
+  // Stats
+  totalDeliveries Int @default(0)
+  rating    Float?
+  
+  orders    Order[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== STORE SETTINGS ====================
+
+model StoreSettings {
+  id                   String   @id @default("settings")
+  
+  // Store status
+  isOpen               Boolean  @default(true)
+  closedMessage        String   @default("Estamos cerrados. ¡Volvemos pronto!")
+  
+  // Delivery pricing config
+  fuelPricePerLiter    Float    @default(1200)   // Current fuel price
+  fuelConsumptionPerKm Float    @default(0.06)   // Liters per km (moto default)
+  baseDeliveryFee      Float    @default(500)    // Minimum fee per trip
+  maintenanceFactor    Float    @default(1.35)   // 35% for maintenance/profit
+  freeDeliveryMinimum  Float?                    // Null = no free delivery
+  maxDeliveryDistance  Float    @default(15)     // Max km for delivery
+  
+  // Store location (origin for distance calculation)
+  storeName            String   @default("Polirrubro San Juan")
+  storeAddress         String   @default("San Juan, Argentina")
+  originLat            Float    @default(-31.5375)
+  originLng            Float    @default(-68.5364)
+  
+  // Contact
+  whatsappNumber       String?
+  phone                String?
+  email                String?
+  
+  // Schedule
+  schedule             String?  // JSON with hours per day
+  
+  updatedAt            DateTime @updatedAt
+}

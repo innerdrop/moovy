@@ -1,0 +1,105 @@
+// API Route: Products CRUD
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+// GET - Fetch all products (public)
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const categoria = searchParams.get("categoria");
+        const buscar = searchParams.get("buscar");
+        const featured = searchParams.get("featured");
+
+        const where: any = { isActive: true };
+
+        if (categoria) {
+            where.categories = {
+                some: { category: { slug: categoria } }
+            };
+        }
+
+        if (buscar) {
+            where.OR = [
+                { name: { contains: buscar } },
+                { description: { contains: buscar } },
+            ];
+        }
+
+        if (featured === "true") {
+            where.isFeatured = true;
+        }
+
+        const products = await prisma.product.findMany({
+            where,
+            include: {
+                images: true,
+                categories: { include: { category: true } },
+                variants: true,
+            },
+            orderBy: { name: "asc" },
+        });
+
+        return NextResponse.json(products);
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        return NextResponse.json(
+            { error: "Error al obtener productos" },
+            { status: 500 }
+        );
+    }
+}
+
+// POST - Create product (Admin only)
+export async function POST(request: Request) {
+    try {
+        const session = await auth();
+
+        if (!session || (session.user as any)?.role !== "ADMIN") {
+            return NextResponse.json(
+                { error: "No autorizado" },
+                { status: 401 }
+            );
+        }
+
+        const data = await request.json();
+
+        // Generate slug from name
+        const slug = data.name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/[^a-z0-9-]/g, "");
+
+        const product = await prisma.product.create({
+            data: {
+                name: data.name,
+                slug,
+                description: data.description,
+                price: parseFloat(data.price),
+                costPrice: parseFloat(data.costPrice || 0),
+                stock: parseInt(data.stock || 0),
+                minStock: parseInt(data.minStock || 5),
+                isFeatured: data.isFeatured || false,
+                isActive: data.isActive !== false,
+                categories: data.categoryIds?.length ? {
+                    create: data.categoryIds.map((catId: string) => ({
+                        category: { connect: { id: catId } }
+                    }))
+                } : undefined,
+            },
+            include: {
+                categories: { include: { category: true } },
+            },
+        });
+
+        return NextResponse.json(product, { status: 201 });
+    } catch (error) {
+        console.error("Error creating product:", error);
+        return NextResponse.json(
+            { error: "Error al crear producto" },
+            { status: 500 }
+        );
+    }
+}
