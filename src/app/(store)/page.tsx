@@ -58,15 +58,13 @@ export default async function HomePage() {
 
     return (
         <div className="animate-fadeIn">
-            {/* <PromotionalPopup /> (HIDDEN PHASE 1) */}
-            {/* Ocultado temporalmente para fase Institucional, ya que ofrece descuento en compra */}
-            {/* <PromotionalPopup /> */}
+            <PromotionalPopup />
 
             {/* Hero Promo Slider (includes feature pills) */}
             <HeroSlider />
 
-            {/* Categories - Animated Cards (HIDDEN PHASE 1) */}
-            {/* <section className="pt-4 pb-8 lg:pt-6 lg:pb-12 bg-white">
+            {/* Categories - Animated Cards */}
+            <section className="pt-4 pb-8 lg:pt-6 lg:pb-12 bg-white">
                 <div className="container mx-auto px-4">
                     <h2 className="text-2xl lg:text-3xl font-bold text-navy mb-6 text-center">
                         Explorá por <span className="text-turquoise">Categoría</span>
@@ -112,10 +110,10 @@ export default async function HomePage() {
                         )}
                     </div>
                 </div>
-            </section> */}
+            </section>
 
-            {/* Featured Products (HIDDEN PHASE 1) */}
-            {/* <section className="py-12 lg:py-16 bg-gray-50">
+            {/* Featured Products */}
+            <section className="py-12 lg:py-16 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-2xl lg:text-3xl font-bold text-navy">
@@ -177,7 +175,7 @@ export default async function HomePage() {
                         )}
                     </div>
                 </div>
-            </section> */}
+            </section>
 
             {/* CTA Banner - Contacto */}
             <section className="py-16 bg-gray-50 border-t border-gray-100">

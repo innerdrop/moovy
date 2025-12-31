@@ -110,8 +110,8 @@ export default function Header() {
                         </div>
                     </Link>
 
-                    {/* Search Bar - Desktop (HIDDEN PHASE 1) */}
-                    {/* <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-md mx-8">
+                    {/* Search Bar - Desktop */}
+                    <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-md mx-8">
                         <div className="relative w-full">
                             <input
                                 type="text"
@@ -124,8 +124,7 @@ export default function Header() {
                                 <Search className="w-5 h-5" />
                             </button>
                         </div>
-                    </form> */}
-                    <div className="hidden lg:flex flex-1"></div>
+                    </form>
 
                     {/* Right Actions */}
                     <div className="flex items-center gap-1 sm:gap-3">
@@ -149,8 +148,8 @@ export default function Header() {
                             </button>
                         )}
 
-                        {/* Cart Button (HIDDEN PHASE 1) */}
-                        {/* <button
+                        {/* Cart Button */}
+                        <button
                             onClick={openCart}
                             className="relative p-2 text-navy hover:text-turquoise transition"
                             aria-label="Carrito"
@@ -161,7 +160,7 @@ export default function Header() {
                                     {cartItems > 99 ? "99+" : cartItems}
                                 </span>
                             )}
-                        </button> */}
+                        </button>
 
                         {/* Desktop: User Menu or Login/Register */}
                         {session ? (
@@ -236,8 +235,8 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Mobile Search (HIDDEN PHASE 1) */}
-                {/* <form onSubmit={handleSearch} className="lg:hidden pb-3">
+                {/* Mobile Search */}
+                <form onSubmit={handleSearch} className="lg:hidden pb-3">
                     <div className="relative">
                         <input
                             type="text"
@@ -250,10 +249,10 @@ export default function Header() {
                             <Search className="w-5 h-5" />
                         </button>
                     </div>
-                </form> */}
+                </form>
             </div>
 
-            {/* Category Nav - Desktop (HIDDEN PHASE 1) */}
+            {/* Category Nav - Desktop */}
             <nav className="hidden lg:block bg-gray-50 border-t">
                 <div className="container mx-auto px-4">
                     <ul className="flex items-center justify-center gap-6 py-2 text-sm">
@@ -262,12 +261,6 @@ export default function Header() {
                                 Inicio
                             </Link>
                         </li>
-                        <li>
-                            <Link href="/contacto" className="text-gray-700 hover:text-turquoise transition font-medium">
-                                Contacto
-                            </Link>
-                        </li>
-                        {/* Categories Hidden
                         {["Lácteos", "Bebidas", "Sandwichería", "Golosinas", "Almacén", "Limpieza"].map((cat) => (
                             <li key={cat}>
                                 <Link
@@ -282,7 +275,12 @@ export default function Header() {
                             <Link href="/productos" className="text-turquoise font-semibold hover:underline">
                                 Ver todo →
                             </Link>
-                        </li> */}
+                        </li>
+                        <li>
+                            <Link href="/contacto" className="text-gray-700 hover:text-turquoise transition font-medium">
+                                Contacto
+                            </Link>
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -360,15 +358,6 @@ export default function Header() {
                             <span className="font-medium">Inicio</span>
                         </Link>
                         <Link
-                            href="/contacto"
-                            className="flex items-center gap-4 px-4 py-3 text-navy hover:bg-turquoise-light transition"
-                            onClick={closeMobileMenu}
-                        >
-                            <Phone className="w-5 h-5 text-turquoise" />
-                            <span className="font-medium">Contacto</span>
-                        </Link>
-                        {/* Hidden Phase 1
-                        <Link
                             href="/productos"
                             className="flex items-center gap-4 px-4 py-3 text-navy hover:bg-turquoise-light transition"
                             onClick={closeMobileMenu}
@@ -383,16 +372,24 @@ export default function Header() {
                         >
                             <Tag className="w-5 h-5 text-turquoise" />
                             <span className="font-medium">Ofertas y Destacados</span>
-                        </Link> */}
+                        </Link>
+                        <Link
+                            href="/contacto"
+                            className="flex items-center gap-4 px-4 py-3 text-navy hover:bg-turquoise-light transition"
+                            onClick={closeMobileMenu}
+                        >
+                            <Phone className="w-5 h-5 text-turquoise" />
+                            <span className="font-medium">Contacto</span>
+                        </Link>
                     </div>
 
-                    {/* Categories Separator (HIDDEN PHASE 1) */}
-                    {/* <div className="px-4 py-2">
+                    {/* Categories Separator */}
+                    <div className="px-4 py-2">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Categorías</p>
-                    </div> */}
+                    </div>
 
-                    {/* Categories List (HIDDEN PHASE 1) */}
-                    {/* <div className="pb-4">
+                    {/* Categories List */}
+                    <div className="pb-4">
                         {["Lácteos", "Bebidas", "Sandwichería", "Golosinas", "Almacén", "Limpieza"].map((cat) => {
                             const IconComponent = CATEGORY_ICONS[cat] || Package;
                             return (
@@ -407,7 +404,7 @@ export default function Header() {
                                 </Link>
                             );
                         })}
-                    </div> */}
+                    </div>
 
                     {/* User Actions (if logged in) */}
                     {session && (
