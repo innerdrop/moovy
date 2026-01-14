@@ -3,6 +3,7 @@ import { getAllProducts, getAllCategories, type Product, type Category } from "@
 import Link from "next/link";
 import { Package, Filter } from "lucide-react";
 import ProductCard from "@/components/products/ProductCard";
+import ProductSearchBar from "@/components/products/ProductSearchBar";
 
 interface ProductsPageProps {
     searchParams: Promise<{ categoria?: string; buscar?: string }>;
@@ -47,6 +48,11 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
 
     return (
         <div className="container mx-auto px-4 py-4 sm:py-8">
+            {/* Search Bar - Prominent at top */}
+            <div className="mb-6">
+                <ProductSearchBar />
+            </div>
+
             {/* Mobile Category Chips - Horizontal Scroll */}
             <div className="lg:hidden mb-4 -mx-4 px-4">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
