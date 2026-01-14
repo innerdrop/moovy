@@ -152,7 +152,7 @@ export default function PuntosPage() {
                     </div>
 
                     <h1 className="text-3xl font-bold mb-3">
-                        ¿Todavía no sos un <span className="text-yellow-300">MOOVER</span>?
+                        ¿Todavía no sos un <span className="text-yellow-300" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVER</span>?
                     </h1>
                     <p className="text-white/80 text-lg mb-2">
                         Sumate y empezá a ganar puntos con cada pedido
@@ -165,7 +165,7 @@ export default function PuntosPage() {
                 {/* Benefits */}
                 <div className="bg-white rounded-t-3xl px-6 py-8 text-gray-900">
                     <h2 className="font-bold text-xl mb-6 text-center">
-                        Beneficios de ser <span className="text-[#e60012]">MOOVER</span>
+                        Beneficios de ser <span className="text-[#e60012]" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVER</span>
                     </h2>
 
                     <div className="space-y-4">
@@ -253,7 +253,7 @@ export default function PuntosPage() {
                     {/* Title */}
                     <div className="flex items-center gap-2 mb-4">
                         <Crown className="w-6 h-6 text-yellow-300" />
-                        <span className="font-bold text-lg">MOOVER</span>
+                        <span className="font-bold text-lg" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVER</span>
                         <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold ml-1">
                             #SoyMoover
                         </span>
@@ -432,7 +432,7 @@ export default function PuntosPage() {
                     <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
                         <div className="mb-4">
                             <Crown className="w-10 h-10 text-[#e60012] mx-auto mb-2" />
-                            <h3 className="font-bold text-xl text-gray-900">Tu Código MOOVER</h3>
+                            <h3 className="font-bold text-xl text-gray-900">Tu Código <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVER</span></h3>
                             <p className="text-gray-500 text-sm">Escaneá para registrarte con mi código</p>
                         </div>
 
