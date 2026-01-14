@@ -88,8 +88,8 @@ export async function POST(request: Request) {
                     number: addressData.number,
                     apartment: addressData.floor || null,
                     neighborhood: null,
-                    city: addressData.city || "San Juan",
-                    province: "San Juan",
+                    city: addressData.city || "Ushuaia",
+                    province: "Tierra del Fuego",
                     isDefault: false,
                 },
             });

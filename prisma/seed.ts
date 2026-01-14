@@ -1,4 +1,4 @@
-// Seed script for Polirrubro San Juan
+// Seed script for Moovy - Ushuaia Delivery
 // Run with: npx tsx prisma/seed.ts
 
 import "dotenv/config";
