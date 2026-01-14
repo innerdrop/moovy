@@ -18,7 +18,7 @@ export interface Product {
     categories: Array<{ category: { id: string; name: string; slug: string } }>;
     images: Array<{ id: string; url: string; alt: string | null }>;
     image?: string | null; // Helper property for frontend compatibility
-    merchantId?: string | null;
+    merchantId?: string; // Changed to match frontend expectation (undefined instead of null)
 }
 
 export interface Category {
@@ -48,6 +48,7 @@ export async function getAllProducts(): Promise<Product[]> {
         // Map to ensure compatibility
         return products.map(p => ({
             ...p,
+            merchantId: p.merchantId || undefined, // Convert null to undefined
             image: p.images[0]?.url || null
         }));
     } catch (error) {
@@ -86,6 +87,7 @@ export async function getProductById(id: string): Promise<Product | null> {
 
         return {
             ...product,
+            merchantId: product.merchantId || undefined, // Convert null to undefined
             image: product.images[0]?.url || null
         };
     } catch (error) {
