@@ -287,7 +287,7 @@ export default function ProductDetailPage() {
 
                     {/* Extra Info */}
                     <div className="mt-8 pt-6 border-t space-y-3 text-sm text-gray-600">
-                        <p>🚚 Envío a todo San Juan</p>
+                        <p>🚚 Envío a todo Ushuaia</p>
                         <p>💳 Efectivo o Mercado Pago</p>
                         <p>📞 Consultas por WhatsApp</p>
                     </div>
