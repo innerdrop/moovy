@@ -12,7 +12,7 @@ export default async function EditProductPage({
     const [product, categories] = await Promise.all([
         prisma.product.findUnique({
             where: { id },
-            include: { categories: true }
+            include: { categories: true, images: true }
         }),
         prisma.category.findMany({ orderBy: { name: "asc" } })
     ]);
@@ -27,7 +27,7 @@ export default async function EditProductPage({
         categoryIds: product.categories.map(c => c.categoryId),
         // Ensure description is string (handle null)
         description: product.description || "",
-        image: product.image || null,
+        image: product.images[0]?.url || null,
         // Ensure stock is number
         stock: product.stock || 0
     };
