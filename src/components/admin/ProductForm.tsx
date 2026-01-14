@@ -87,8 +87,8 @@ export default function ProductForm({
 
         try {
             const url = isEditing
-                ? `/api/products/${initialData.id}`
-                : "/api/products";
+                ? `/api/admin/products/${initialData.id}`
+                : "/api/admin/products";
 
             const method = isEditing ? "PUT" : "POST";
 
@@ -118,7 +118,7 @@ export default function ProductForm({
 
         setLoading(true);
         try {
-            const res = await fetch(`/api/products/${initialData?.id}`, {
+            const res = await fetch(`/api/admin/products/${initialData?.id}`, {
                 method: "DELETE",
             });
 
@@ -299,8 +299,8 @@ export default function ProductForm({
                             {categories.map((cat) => (
                                 <label key={cat.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition">
                                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${formData.categoryIds.includes(cat.id)
-                                            ? "bg-blue-600 border-blue-600 text-white"
-                                            : "border-gray-300 bg-white"
+                                        ? "bg-blue-600 border-blue-600 text-white"
+                                        : "border-gray-300 bg-white"
                                         }`}>
                                         {formData.categoryIds.includes(cat.id) && <Check className="w-3.5 h-3.5" />}
                                     </div>

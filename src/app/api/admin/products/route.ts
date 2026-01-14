@@ -1,51 +1,57 @@
-// API Route: Products CRUD
-import { NextRequest, NextResponse } from "next/server";
-import { getAllProducts, createProduct } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+// POST - Create product (Admin only)
+export async function POST(request: Request) {
     try {
-        const products = getAllProducts();
-        return NextResponse.json(products);
-    } catch (error) {
-        console.error("[API] Error fetching products:", error);
-        return NextResponse.json({ error: "Error fetching products" }, { status: 500 });
-    }
-}
+        const session = await auth();
 
-export async function POST(request: NextRequest) {
-    try {
-        const data = await request.json();
-
-        // Validate required fields
-        if (!data.name || !data.price || !data.costPrice) {
+        if (!session || (session.user as any)?.role !== "ADMIN") {
             return NextResponse.json(
-                { error: "Nombre, precio y costo son requeridos" },
-                { status: 400 }
+                { error: "No autorizado" },
+                { status: 401 }
             );
         }
 
-        // Create product
-        const productId = createProduct({
-            name: data.name,
-            slug: data.slug,
-            description: data.description,
-            price: Number(data.price),
-            costPrice: Number(data.costPrice),
-            stock: Number(data.stock) || 0,
-            minStock: Number(data.minStock) || 5,
-            isActive: data.isActive !== false,
-            isFeatured: data.isFeatured === true,
-            categoryId: data.categoryId || undefined,
+        const data = await request.json();
+
+        // Generate slug from name
+        const slug = data.name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/[^a-z0-9-]/g, "");
+
+        const product = await prisma.product.create({
+            data: {
+                name: data.name,
+                slug,
+                description: data.description,
+                price: parseFloat(data.price),
+                costPrice: parseFloat(data.costPrice || 0),
+                stock: parseInt(data.stock || 0),
+                minStock: parseInt(data.minStock || 5),
+                isFeatured: data.isFeatured || false,
+                isActive: data.isActive !== false,
+                categories: data.categoryIds?.length ? {
+                    create: data.categoryIds.map((catId: string) => ({
+                        category: { connect: { id: catId } }
+                    }))
+                } : undefined,
+            },
+            include: {
+                categories: { include: { category: true } },
+            },
         });
 
-        if (productId) {
-            return NextResponse.json({ success: true, id: productId });
-        } else {
-            return NextResponse.json({ error: "Error creating product" }, { status: 500 });
-        }
+        return NextResponse.json(product, { status: 201 });
     } catch (error) {
-        console.error("[API] Error creating product:", error);
-        return NextResponse.json({ error: "Error creating product" }, { status: 500 });
+        console.error("Error creating product:", error);
+        return NextResponse.json(
+            { error: "Error al crear producto" },
+            { status: 500 }
+        );
     }
 }
-
