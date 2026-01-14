@@ -49,7 +49,7 @@ async function main() {
         { name: "Limpieza", slug: "limpieza", icon: "SprayCan" },
     ];
 
-    const categories = {};
+    const categories: Record<string, { id: string }> = {};
     for (const cat of categoriesData) {
         const category = await prisma.category.upsert({
             where: { slug: cat.slug },
