@@ -11,7 +11,7 @@ export interface CartItem {
     image?: string;
     variantId?: string;
     variantName?: string;
-    merchantId: string; // Added merchantId
+    merchantId?: string; // Optional for single-merchant stores
 }
 
 interface CartStore {
