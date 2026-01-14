@@ -3,7 +3,7 @@
 // App Header Component - Header unificado tipo app para todos los usuarios
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Star } from "lucide-react";
+import { ShoppingBag, MapPin, Star, ChevronLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useUserPoints } from "@/hooks/useUserPoints";
 
@@ -11,12 +11,20 @@ interface AppHeaderProps {
     isLoggedIn?: boolean;
     cartCount?: number;
     userName?: string;
+    title?: string;
+    showBack?: boolean;
+    backHref?: string;
+    rightAction?: React.ReactNode;
 }
 
 export default function AppHeader({
     isLoggedIn = false,
     cartCount = 0,
     userName,
+    title,
+    showBack = false,
+    backHref = "/",
+    rightAction,
 }: AppHeaderProps) {
     const openCart = useCartStore((state) => state.openCart);
     const { points } = useUserPoints();
@@ -27,8 +35,13 @@ export default function AppHeader({
     return (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto border-b border-gray-100">
-                {/* Logo or Greeting */}
-                {isLoggedIn && firstName ? (
+                {/* Left: Back button or Logo/Greeting */}
+                {showBack ? (
+                    <Link href={backHref} className="flex items-center gap-1 text-gray-600 min-w-[60px]">
+                        <ChevronLeft className="w-5 h-5" />
+                        <span className="text-sm">Volver</span>
+                    </Link>
+                ) : isLoggedIn && firstName ? (
                     <Link href="/" className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                             {firstName.charAt(0).toUpperCase()}
@@ -51,8 +64,12 @@ export default function AppHeader({
                     </Link>
                 )}
 
-                {/* Center: Location or Logo for logged users */}
-                {isLoggedIn && firstName ? (
+                {/* Center: Title if provided, else logo for logged users */}
+                {title ? (
+                    <h1 className="font-bold text-gray-900 text-lg truncate max-w-[150px]">
+                        {title}
+                    </h1>
+                ) : isLoggedIn && firstName ? (
                     <Link href="/" className="flex items-center">
                         <Image
                             src="/logo-moovy.png"
@@ -69,32 +86,36 @@ export default function AppHeader({
                     </button>
                 )}
 
-                {/* Right Actions */}
-                <div className="flex items-center gap-1">
-                    {/* Points Badge - Only for logged in users */}
-                    {isLoggedIn && (
-                        <Link
-                            href="/puntos"
-                            className="flex items-center gap-1 bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold"
-                        >
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            {points > 999 ? `${(points / 1000).toFixed(1)}K` : points}
-                        </Link>
-                    )}
-
-                    {/* Cart Button */}
-                    <button
-                        onClick={() => openCart()}
-                        className="relative p-2 -mr-2 text-gray-600 hover:text-[#e60012] transition"
-                    >
-                        <ShoppingBag className="w-6 h-6" />
-                        {cartCount > 0 && (
-                            <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-[#e60012] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                                {cartCount > 99 ? "99+" : cartCount}
-                            </span>
+                {/* Right: Custom action or default cart/points */}
+                {rightAction ? (
+                    <div className="min-w-[60px] flex justify-end">{rightAction}</div>
+                ) : (
+                    <div className="flex items-center gap-1">
+                        {/* Points Badge - Only for logged in users */}
+                        {isLoggedIn && (
+                            <Link
+                                href="/puntos"
+                                className="flex items-center gap-1 bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold"
+                            >
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                {points > 999 ? `${(points / 1000).toFixed(1)}K` : points}
+                            </Link>
                         )}
-                    </button>
-                </div>
+
+                        {/* Cart Button */}
+                        <button
+                            onClick={() => openCart()}
+                            className="relative p-2 -mr-2 text-gray-600 hover:text-[#e60012] transition"
+                        >
+                            <ShoppingBag className="w-6 h-6" />
+                            {cartCount > 0 && (
+                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-[#e60012] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                                    {cartCount > 99 ? "99+" : cartCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
         </header>
     );
