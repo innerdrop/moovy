@@ -9,8 +9,8 @@ interface ProductsPageProps {
     searchParams: Promise<{ categoria?: string; buscar?: string }>;
 }
 
-function getProducts(categoria?: string, buscar?: string): Product[] {
-    let products = getAllProducts();
+async function getProducts(categoria?: string, buscar?: string): Promise<Product[]> {
+    let products = await getAllProducts();
 
     // Filter by category
     if (categoria) {
@@ -35,8 +35,8 @@ function getProducts(categoria?: string, buscar?: string): Product[] {
     return products;
 }
 
-function getCategories(): Category[] {
-    return getAllCategories();
+async function getCategories(): Promise<Category[]> {
+    return await getAllCategories();
 }
 
 export default async function ProductosPage({ searchParams }: ProductsPageProps) {

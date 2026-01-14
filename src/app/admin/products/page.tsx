@@ -14,7 +14,8 @@ import Image from "next/image";
 export default async function AdminProductsPage() {
     const products = await prisma.product.findMany({
         include: {
-            categories: { include: { category: true } }
+            categories: { include: { category: true } },
+            images: true
         },
         orderBy: { name: "asc" }
     });
@@ -52,10 +53,10 @@ export default async function AdminProductsPage() {
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative border border-slate-200">
-                                            {product.image ? (
+                                            {product.images?.[0]?.url ? (
                                                 <Image
-                                                    src={product.image}
-                                                    alt={product.name}
+                                                    src={product.images[0].url}
+                                                    alt={product.images[0].alt || product.name}
                                                     fill
                                                     className="object-cover"
                                                 />
@@ -89,8 +90,8 @@ export default async function AdminProductsPage() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${product.isActive
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-gray-100 text-gray-500"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-gray-100 text-gray-500"
                                         }`}>
                                         {product.isActive ? "Activo" : "Inactivo"}
                                     </span>

@@ -1,15 +1,7 @@
-// Direct database access for product operations
-// Uses better-sqlite3 directly to bypass Prisma adapter issues
+// Direct database access via Prisma (PostgreSQL compatible)
+import { prisma } from "@/lib/prisma";
 
-import Database from "better-sqlite3";
-import path from "path";
-
-const dbPath = path.join(process.cwd(), "prisma", "dev.db");
-
-function getDb() {
-    return new Database(dbPath);
-}
-
+// Re-export types compliant with frontend expectations
 export interface Product {
     id: string;
     name: string;
@@ -21,10 +13,12 @@ export interface Product {
     minStock: number;
     isActive: boolean;
     isFeatured: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date; // Changed from string to Date for Prisma compatibility
+    updatedAt: Date;
     categories: Array<{ category: { id: string; name: string; slug: string } }>;
     images: Array<{ id: string; url: string; alt: string | null }>;
+    image?: string | null; // Helper property for frontend compatibility
+    merchantId?: string | null;
 }
 
 export interface Category {
@@ -34,98 +28,77 @@ export interface Category {
     description: string | null;
     isActive: boolean;
     order: number;
+    image?: string | null;
 }
 
-export function getAllProducts(): Product[] {
-    const db = getDb();
+export async function getAllProducts(): Promise<Product[]> {
     try {
-        const products = db.prepare(`
-            SELECT * FROM Product ORDER BY createdAt DESC
-        `).all() as any[];
+        const products = await prisma.product.findMany({
+            include: {
+                categories: {
+                    include: {
+                        category: true
+                    }
+                },
+                images: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
 
-        // Get categories for each product
-        const categoryStmt = db.prepare(`
-            SELECT c.id, c.name, c.slug FROM Category c
-            JOIN ProductCategory pc ON pc.categoryId = c.id
-            WHERE pc.productId = ?
-        `);
-
-        // Get images for each product
-        const imageStmt = db.prepare(`
-            SELECT id, url, alt FROM ProductImage WHERE productId = ? LIMIT 1
-        `);
-
-        const result = products.map(p => ({
+        // Map to ensure compatibility
+        return products.map(p => ({
             ...p,
-            isActive: Boolean(p.isActive),
-            isFeatured: Boolean(p.isFeatured),
-            categories: (categoryStmt.all(p.id) as any[]).map(c => ({ category: c })),
-            images: imageStmt.all(p.id) as any[],
+            image: p.images[0]?.url || null
         }));
-
-        db.close();
-        return result;
     } catch (error) {
         console.error("[DB] Error fetching products:", error);
-        db.close();
         return [];
     }
 }
 
-export function getAllCategories(): Category[] {
-    const db = getDb();
+export async function getAllCategories(): Promise<Category[]> {
     try {
-        const categories = db.prepare(`
-            SELECT * FROM Category ORDER BY "order" ASC
-        `).all() as any[];
-
-        db.close();
-        return categories.map(c => ({
-            ...c,
-            isActive: Boolean(c.isActive),
-        }));
+        const categories = await prisma.category.findMany({
+            orderBy: { order: 'asc' }
+        });
+        return categories;
     } catch (error) {
         console.error("[DB] Error fetching categories:", error);
-        db.close();
         return [];
     }
 }
 
-export function getProductById(id: string): Product | null {
-    const db = getDb();
+export async function getProductById(id: string): Promise<Product | null> {
     try {
-        const product = db.prepare("SELECT * FROM Product WHERE id = ?").get(id) as any;
-        if (!product) {
-            db.close();
-            return null;
-        }
+        const product = await prisma.product.findUnique({
+            where: { id },
+            include: {
+                categories: {
+                    include: {
+                        category: true
+                    }
+                },
+                images: true
+            }
+        });
 
-        const categories = db.prepare(`
-            SELECT c.id, c.name, c.slug FROM Category c
-            JOIN ProductCategory pc ON pc.categoryId = c.id
-            WHERE pc.productId = ?
-        `).all(id) as any[];
+        if (!product) return null;
 
-        const images = db.prepare(`
-            SELECT id, url, alt FROM ProductImage WHERE productId = ?
-        `).all(id) as any[];
-
-        db.close();
         return {
             ...product,
-            isActive: Boolean(product.isActive),
-            isFeatured: Boolean(product.isFeatured),
-            categories: categories.map(c => ({ category: c })),
-            images,
+            image: product.images[0]?.url || null
         };
     } catch (error) {
         console.error("[DB] Error fetching product:", error);
-        db.close();
         return null;
     }
 }
 
-export function createProduct(data: {
+// Admin operations - using standard Prisma patterns
+// These functions might be redundant if admin pages use Prisma directly, 
+// but kept for compatibility with existing calls.
+
+export async function createProduct(data: {
     name: string;
     slug: string;
     description?: string;
@@ -136,49 +109,41 @@ export function createProduct(data: {
     isActive?: boolean;
     isFeatured?: boolean;
     categoryId?: string;
-}): string | null {
-    const db = getDb();
+    image?: string; // Optional single image for simple creation
+}): Promise<string | null> {
     try {
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-
-        db.prepare(`
-            INSERT INTO Product (id, name, slug, description, price, costPrice, stock, minStock, isActive, isFeatured, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            id,
-            data.name,
-            data.slug,
-            data.description || null,
-            data.price,
-            data.costPrice,
-            data.stock || 0,
-            data.minStock || 5,
-            data.isActive !== false ? 1 : 0,
-            data.isFeatured ? 1 : 0,
-            now,
-            now
-        );
-
-        // Link to category if provided
-        if (data.categoryId) {
-            db.prepare(`
-                INSERT INTO ProductCategory (id, productId, categoryId)
-                VALUES (?, ?, ?)
-            `).run(crypto.randomUUID(), id, data.categoryId);
-        }
-
-        db.close();
-        console.log("[DB] Product created:", data.name);
-        return id;
+        const product = await prisma.product.create({
+            data: {
+                name: data.name,
+                slug: data.slug,
+                description: data.description,
+                price: data.price,
+                costPrice: data.costPrice,
+                stock: data.stock || 0,
+                minStock: data.minStock || 5,
+                isActive: data.isActive ?? true,
+                isFeatured: data.isFeatured ?? false,
+                categories: data.categoryId ? {
+                    create: {
+                        categoryId: data.categoryId
+                    }
+                } : undefined,
+                images: data.image ? {
+                    create: {
+                        url: data.image,
+                        order: 0
+                    }
+                } : undefined
+            }
+        });
+        return product.id;
     } catch (error) {
         console.error("[DB] Error creating product:", error);
-        db.close();
         return null;
     }
 }
 
-export function updateProduct(id: string, data: Partial<{
+export async function updateProduct(id: string, data: Partial<{
     name: string;
     description: string;
     price: number;
@@ -187,47 +152,27 @@ export function updateProduct(id: string, data: Partial<{
     minStock: number;
     isActive: boolean;
     isFeatured: boolean;
-}>): boolean {
-    const db = getDb();
+}>): Promise<boolean> {
     try {
-        const updates: string[] = [];
-        const values: any[] = [];
-
-        if (data.name !== undefined) { updates.push("name = ?"); values.push(data.name); }
-        if (data.description !== undefined) { updates.push("description = ?"); values.push(data.description); }
-        if (data.price !== undefined) { updates.push("price = ?"); values.push(data.price); }
-        if (data.costPrice !== undefined) { updates.push("costPrice = ?"); values.push(data.costPrice); }
-        if (data.stock !== undefined) { updates.push("stock = ?"); values.push(data.stock); }
-        if (data.minStock !== undefined) { updates.push("minStock = ?"); values.push(data.minStock); }
-        if (data.isActive !== undefined) { updates.push("isActive = ?"); values.push(data.isActive ? 1 : 0); }
-        if (data.isFeatured !== undefined) { updates.push("isFeatured = ?"); values.push(data.isFeatured ? 1 : 0); }
-
-        updates.push("updatedAt = ?");
-        values.push(new Date().toISOString());
-        values.push(id);
-
-        db.prepare(`UPDATE Product SET ${updates.join(", ")} WHERE id = ?`).run(...values);
-        db.close();
+        await prisma.product.update({
+            where: { id },
+            data
+        });
         return true;
     } catch (error) {
         console.error("[DB] Error updating product:", error);
-        db.close();
         return false;
     }
 }
 
-export function deleteProduct(id: string): boolean {
-    const db = getDb();
+export async function deleteProduct(id: string): Promise<boolean> {
     try {
-        db.prepare("DELETE FROM ProductCategory WHERE productId = ?").run(id);
-        db.prepare("DELETE FROM ProductImage WHERE productId = ?").run(id);
-        db.prepare("DELETE FROM Product WHERE id = ?").run(id);
-        db.close();
+        await prisma.product.delete({
+            where: { id }
+        });
         return true;
     } catch (error) {
         console.error("[DB] Error deleting product:", error);
-        db.close();
         return false;
     }
 }
-

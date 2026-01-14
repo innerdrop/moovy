@@ -18,7 +18,8 @@ async function getMerchant(slug: string) {
                         include: {
                             category: true
                         }
-                    }
+                    },
+                    images: true
                 }
             }
         }
@@ -36,7 +37,7 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
     }
 
     // Group products by category
-    const productsByCategory: Record<string, typeof merchant.products> = {};
+    const productsByCategory: Record<string, any[]> = {};
 
     merchant.products.forEach(product => {
         // Use first category or "Otros"
@@ -44,7 +45,14 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         if (!productsByCategory[catName]) {
             productsByCategory[catName] = [];
         }
-        productsByCategory[catName].push(product);
+
+        // Map product to include 'image' property for ProductCard
+        const productWithImage = {
+            ...product,
+            image: product.images[0]?.url || null
+        };
+
+        productsByCategory[catName].push(productWithImage);
     });
 
     const categories = Object.keys(productsByCategory);
@@ -129,7 +137,7 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                         </h2>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {productsByCategory[category].map(product => (
+                            {productsByCategory[category].map((product: any) => (
                                 <ProductCard key={product.id} product={product} showAddButton />
                             ))}
                         </div>
