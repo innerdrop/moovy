@@ -230,3 +230,4 @@ export function deleteProduct(id: string): boolean {
         return false;
     }
 }
+

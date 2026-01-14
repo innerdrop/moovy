@@ -1,14 +1,8 @@
 // Products Listing Page - Página de Productos
 import { getAllProducts, getAllCategories, type Product, type Category } from "@/lib/db";
-import { formatPrice } from "@/lib/delivery";
 import Link from "next/link";
-import {
-    Package,
-    Filter,
-    Grid,
-    List,
-    ShoppingCart
-} from "lucide-react";
+import { Package, Filter } from "lucide-react";
+import ProductCard from "@/components/products/ProductCard";
 
 interface ProductsPageProps {
     searchParams: Promise<{ categoria?: string; buscar?: string }>;
@@ -59,7 +53,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                     <Link
                         href="/productos"
                         className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${!params.categoria
-                            ? "bg-turquoise text-white"
+                            ? "bg-[#e60012] text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                     >
@@ -70,7 +64,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                             key={cat.id}
                             href={`/productos?categoria=${cat.slug}`}
                             className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${params.categoria === cat.slug
-                                ? "bg-turquoise text-white"
+                                ? "bg-[#e60012] text-white"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                 }`}
                         >
@@ -84,8 +78,8 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                 {/* Sidebar - Categories (Desktop Only) */}
                 <aside className="hidden lg:block lg:w-64 flex-shrink-0">
                     <div className="bg-white rounded-xl p-6 shadow-sm sticky top-24">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
-                            <Filter className="w-5 h-5 text-turquoise" />
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <Filter className="w-5 h-5 text-[#e60012]" />
                             Categorías
                         </h2>
 
@@ -94,7 +88,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                                 <Link
                                     href="/productos"
                                     className={`block py-2 px-3 rounded-lg transition ${!params.categoria
-                                        ? "bg-turquoise text-white"
+                                        ? "bg-[#e60012] text-white"
                                         : "hover:bg-gray-100 text-gray-700"
                                         }`}
                                 >
@@ -106,7 +100,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                                     <Link
                                         href={`/productos?categoria=${cat.slug}`}
                                         className={`block py-2 px-3 rounded-lg transition ${params.categoria === cat.slug
-                                            ? "bg-turquoise text-white"
+                                            ? "bg-[#e60012] text-white"
                                             : "hover:bg-gray-100 text-gray-700"
                                             }`}
                                     >
@@ -122,7 +116,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                 <main className="flex-1">
                     {/* Header */}
                     <div className="mb-6">
-                        <h1 className="text-2xl lg:text-3xl font-bold text-navy">
+                        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
                             {currentCategory ? currentCategory.name : "Todos los Productos"}
                         </h1>
                         <p className="text-gray-600">
@@ -132,11 +126,11 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
 
                     {/* Search Notice */}
                     {params.buscar && (
-                        <div className="bg-turquoise-light p-4 rounded-lg mb-6">
-                            <p className="text-navy">
+                        <div className="bg-red-50 p-4 rounded-lg mb-6">
+                            <p className="text-gray-900">
                                 Resultados para: <strong>{params.buscar}</strong>
                                 {" "}
-                                <Link href="/productos" className="text-turquoise hover:underline">
+                                <Link href="/productos" className="text-[#e60012] hover:underline">
                                     (Limpiar)
                                 </Link>
                             </p>
@@ -147,59 +141,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                     {products.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                             {products.map((product) => (
-                                <Link
-                                    key={product.id}
-                                    href={`/productos/${product.slug}`}
-                                    className="card overflow-hidden group flex flex-col h-full"
-                                >
-                                    {/* Product Image */}
-                                    <div className="aspect-square bg-gray-100 relative overflow-hidden flex-shrink-0">
-                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                            <Package className="w-12 h-12" />
-                                        </div>
-                                        {product.isFeatured && (
-                                            <span className="absolute top-2 left-2 bg-turquoise text-white text-xs px-2 py-1 rounded-full">
-                                                ⭐ Destacado
-                                            </span>
-                                        )}
-                                        {product.stock <= 0 && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                                                    Sin Stock
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Product Info - Using flex to push button to bottom */}
-                                    <div className="p-4 flex flex-col flex-grow">
-                                        {/* Category */}
-                                        {product.categories[0] && (
-                                            <span className="text-xs text-turquoise">
-                                                {product.categories[0].category.name}
-                                            </span>
-                                        )}
-
-                                        {/* Name - Fixed height with line clamp */}
-                                        <h3 className="font-semibold text-navy group-hover:text-turquoise transition line-clamp-2 mt-1 min-h-[2.5rem]">
-                                            {product.name}
-                                        </h3>
-
-                                        {/* Price */}
-                                        <p className="text-xl font-bold text-turquoise mt-2">
-                                            {formatPrice(product.price)}
-                                        </p>
-
-                                        {/* Spacer to push button down */}
-                                        <div className="flex-grow min-h-2"></div>
-
-                                        {/* Add to Cart Button - Always at bottom */}
-                                        <button className="w-full btn-primary mt-3 flex items-center justify-center gap-2 py-2 text-sm">
-                                            <ShoppingCart className="w-4 h-4" />
-                                            Agregar
-                                        </button>
-                                    </div>
-                                </Link>
+                                <ProductCard key={product.id} product={product} />
                             ))}
                         </div>
                     ) : (

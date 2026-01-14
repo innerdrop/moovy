@@ -2,7 +2,7 @@
 import React from 'react';
 
 export const metadata = {
-    title: 'Política de Privacidad | Polirrubro San Juan',
+    title: 'Política de Privacidad | Moovy',
     description: 'Información sobre cómo recopilamos y protegemos tus datos personales.',
 };
 
@@ -13,15 +13,15 @@ export default function PrivacidadPage() {
 
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-10 space-y-6 text-gray-700">
                 <section>
-                    <h2 className="text-xl font-bold text-turquoise-dark mb-3">1. Recopilación de Información</h2>
+                    <h2 className="text-xl font-bold text-moovy-dark mb-3">1. Recopilación de Información</h2>
                     <p>
-                        En Polirrubro San Juan, recopilamos información personal que nos proporcionas directamente al registrarte, realizar un pedido o contactarnos.
+                        En Moovy, recopilamos información personal que nos proporcionas directamente al registrarte, realizar un pedido o contactarnos.
                         Esto puede incluir tu nombre, dirección de correo electrónico, número de teléfono y dirección de entrega.
                     </p>
                 </section>
 
                 <section>
-                    <h2 className="text-xl font-bold text-turquoise-dark mb-3">2. Uso de la Información</h2>
+                    <h2 className="text-xl font-bold text-moovy-dark mb-3">2. Uso de la Información</h2>
                     <p>
                         Utilizamos tu información para:
                     </p>
@@ -34,7 +34,7 @@ export default function PrivacidadPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-xl font-bold text-turquoise-dark mb-3">3. Protección de Datos</h2>
+                    <h2 className="text-xl font-bold text-moovy-dark mb-3">3. Protección de Datos</h2>
                     <p>
                         Nos tomamos muy en serio la seguridad de tus datos. Implementamos medidas técnicas y organizativas para proteger tu información personal contra el acceso no autorizado,
                         la alteración, la divulgación o la destrucción.
@@ -42,7 +42,7 @@ export default function PrivacidadPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-xl font-bold text-turquoise-dark mb-3">4. Cookies</h2>
+                    <h2 className="text-xl font-bold text-moovy-dark mb-3">4. Cookies</h2>
                     <p>
                         Utilizamos cookies y tecnologías similares para mejorar la funcionalidad de nuestro sitio web y recordar tus preferencias.
                         Podés configurar tu navegador para rechazar todas las cookies o para que te avise cuando se envía una cookie.
@@ -50,7 +50,7 @@ export default function PrivacidadPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-xl font-bold text-turquoise-dark mb-3">5. Compartir Información</h2>
+                    <h2 className="text-xl font-bold text-moovy-dark mb-3">5. Compartir Información</h2>
                     <p>
                         No vendemos ni alquilamos tu información personal a terceros. Solo compartimos tu información con proveedores de servicios de confianza
                         (como repartidores o procesadores de pago) que necesitan acceder a ella para cumplir con nuestros servicios, bajo estrictas obligaciones de confidencialidad.
@@ -58,7 +58,7 @@ export default function PrivacidadPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-xl font-bold text-turquoise-dark mb-3">6. Tus Derechos</h2>
+                    <h2 className="text-xl font-bold text-moovy-dark mb-3">6. Tus Derechos</h2>
                     <p>
                         Tenés derecho a acceder, corregir o eliminar tu información personal en cualquier momento. Podés hacerlo desde tu perfil de usuario o contactándonos directamente.
                     </p>
@@ -71,3 +71,4 @@ export default function PrivacidadPage() {
         </div>
     );
 }
+

@@ -48,3 +48,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Error creating product" }, { status: 500 });
     }
 }
+

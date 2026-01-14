@@ -1,0 +1,54 @@
+{
+    "name": "Moovy",
+    "short_name": "Moovy",
+    "description": "Tu Antojo Manda! - Delivery rápido en Ushuaia",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#e60012",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "food",
+        "shopping",
+        "lifestyle"
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Explorar",
+            "short_name": "Explorar",
+            "url": "/productos",
+            "icons": [
+                {
+                    "src": "/icons/icon-192x192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Mis Pedidos",
+            "short_name": "Pedidos",
+            "url": "/mis-pedidos",
+            "icons": [
+                {
+                    "src": "/icons/icon-192x192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

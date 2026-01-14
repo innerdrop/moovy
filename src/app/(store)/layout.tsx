@@ -1,61 +1,97 @@
-// Store Layout - Layout de la Tienda
-import Header from "@/components/layout/Header";
+"use client";
+
+// Store Layout - Experiencia tipo App para TODOS los usuarios
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import CartSidebar from "@/components/layout/CartSidebar";
-import WhatsAppButton from "@/components/layout/WhatsAppButton";
+import FloatingCartButton from "@/components/layout/FloatingCartButton";
 import WelcomeSplash from "@/components/home/WelcomeSplash";
+import BottomNav from "@/components/layout/BottomNav";
+import AppHeader from "@/components/layout/AppHeader";
+import { useCartStore } from "@/store/cart";
+
+const SPLASH_SHOWN_KEY = "moovy_splash_v4";
 
 export default function StoreLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const { data: session, status } = useSession();
+    const cartCount = useCartStore((state) => state.getTotalItems());
+
+    // Control if splash should be shown (blocks content until done)
+    const [splashDone, setSplashDone] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+
+        // Check if splash was already shown
+        try {
+            if (localStorage.getItem(SPLASH_SHOWN_KEY)) {
+                setSplashDone(true);
+            }
+        } catch {
+            setSplashDone(true);
+        }
+    }, []);
+
+    // Callback when splash finishes
+    const handleSplashDone = () => {
+        setSplashDone(true);
+    };
+
+    const isLoggedIn = status === "authenticated" && session;
+    const isLoading = status === "loading";
+
+    // Show nothing while not mounted (prevents hydration issues)
+    if (!mounted) {
+        return (
+            <div className="min-h-screen bg-[#e60012]" />
+        );
+    }
+
+    // Show splash if not done yet
+    if (!splashDone) {
+        return <WelcomeSplash onDone={handleSplashDone} />;
+    }
+
+    // Loading skeleton
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <div className="h-14 bg-white border-b animate-pulse" />
+                <main className="flex-1 pt-14 pb-20">{children}</main>
+                <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t animate-pulse" />
+            </div>
+        );
+    }
+
+    // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <footer className="bg-[#001F3F] text-white py-12 border-t-4 border-turquoise">
-                <div className="container mx-auto px-4">
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* Logo & Info */}
-                        <div>
-                            <h3 className="text-2xl font-script text-turquoise mb-2">
-                                Polirrubro San Juan
-                            </h3>
-                            <p className="text-gray-300 text-sm">
-                                Tu polirrubro de confianza. Delivery las 24 horas, todos los días.
-                            </p>
-                        </div>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* Header compacto tipo app */}
+            <AppHeader
+                isLoggedIn={!!isLoggedIn}
+                cartCount={cartCount}
+                userName={session?.user?.name || undefined}
+                userPoints={0} // TODO: Replace with actual points from DB
+            />
 
-                        {/* Quick Links */}
-                        <div>
-                            <h4 className="font-semibold mb-3">Enlaces Rápidos</h4>
-                            <ul className="space-y-2 text-sm text-gray-300">
-                                <li><a href="/productos" className="hover:text-turquoise transition">Productos</a></li>
-                                <li><a href="/login" className="hover:text-turquoise transition">Mi Cuenta</a></li>
-                                <li><a href="/contacto" className="hover:text-turquoise transition">Contacto</a></li>
-                            </ul>
-                        </div>
+            {/* Contenido con padding para header y bottom nav */}
+            <main className="flex-1 pt-14 pb-20">
+                {children}
+            </main>
 
-                        {/* Contact */}
-                        <div>
-                            <h4 className="font-semibold mb-3">Ubicación y Horario</h4>
-                            <p className="text-sm text-gray-300">
-                                🕐 Abierto las 24 horas<br />
-                                📍 Gdor. Paz 714, Ushuaia<br />
-                                🗺️ Tierra del Fuego, Argentina<br />
-                                📞 <a href="https://wa.me/5492901614080" className="hover:text-turquoise transition">Pedidos por WhatsApp</a>
-                            </p>
-                        </div>
-                    </div>
+            {/* Bottom Navigation siempre visible */}
+            <BottomNav cartCount={cartCount} isLoggedIn={!!isLoggedIn} />
 
-                    <div className="mt-8 pt-4 border-t border-white/10 text-center text-sm text-gray-400">
-                        © {new Date().getFullYear()} Polirrubro San Juan. Todos los derechos reservados.
-                    </div>
-                </div>
-            </footer>
+            {/* Floating Cart Button (when cart has items) */}
+            <FloatingCartButton />
+
+            {/* Sidebars y Modales */}
             <CartSidebar />
-            <WhatsAppButton />
-            <WelcomeSplash />
         </div>
     );
 }

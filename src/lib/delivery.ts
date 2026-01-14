@@ -116,3 +116,4 @@ export function formatPrice(price: number): string {
         maximumFractionDigits: 0,
     }).format(price);
 }
+

@@ -1,12 +1,13 @@
-// Prisma Schema for Polirrubro San Juan E-commerce
-// Database: SQLite for local dev, PostgreSQL for production
+// Prisma Schema for Moovy Marketplace
+// Database: PostgreSQL (Docker for dev, production server for prod)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==================== USER & AUTH ====================
@@ -17,14 +18,29 @@ model User {
   password      String
   name          String
   phone         String?
-  role          String    @default("USER") // USER, ADMIN, DRIVER
+  role          String    @default("USER") // USER, ADMIN, DRIVER, MERCHANT
   emailVerified DateTime?
   image         String?
+  
+  // Points system
+  pointsBalance Int       @default(0)
+  
+  // Referral system
+  referralCode  String    @unique @default(cuid()) // User's own referral code
+  referredById  String?   // ID of user who referred this user
+  referredBy    User?     @relation("UserReferrals", fields: [referredById], references: [id])
+  referredUsers User[]    @relation("UserReferrals")
+  
+  // Referral records
+  referralsReceived Referral[] @relation("ReferralReferee")
+  referralsMade     Referral[] @relation("ReferralReferrer")
   
   addresses     Address[]
   orders        Order[]
   cart          CartItem[]
   driver        Driver?
+  ownedMerchants Merchant[]
+  pointsTransactions PointsTransaction[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -40,8 +56,8 @@ model Address {
   number       String
   apartment    String?
   neighborhood String?
-  city         String   @default("San Juan")
-  province     String   @default("San Juan")
+  city         String   @default("Ushuaia")
+  province     String   @default("Tierra del Fuego")
   zipCode      String?
   
   // Geolocation for delivery calculation
@@ -77,6 +93,9 @@ model Product {
   name        String
   slug        String    @unique
   description String?
+  
+  merchantId  String?   // Optional for migration
+  merchant    Merchant? @relation(fields: [merchantId], references: [id])
   
   // Pricing
   price       Float
@@ -169,6 +188,9 @@ model Order {
   addressId       String
   address         Address  @relation(fields: [addressId], references: [id])
   
+  merchantId      String?  // Optional for now to support migration, but should be required
+  merchant        Merchant? @relation(fields: [merchantId], references: [id])
+  
   items           OrderItem[]
   
   // Status
@@ -221,6 +243,45 @@ model OrderItem {
   subtotal   Float
 }
 
+// ==================== MERCHANTS ====================
+
+model Merchant {
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique // for url: moovy.com/store/burgers-joe
+  description    String?
+  image          String?
+  banner         String?
+  
+  // Status
+  isActive       Boolean   @default(true)
+  isOpen         Boolean   @default(true)
+  isVerified     Boolean   @default(false)
+  
+  // Contact & Location
+  email          String?
+  phone          String?
+  address        String?
+  latitude       Float?
+  longitude      Float?
+  
+  // Delivery Settings
+  deliveryRadiusKm Float     @default(5)
+  deliveryTimeMin  Int       @default(30)
+  deliveryTimeMax  Int       @default(45)
+  deliveryFee      Float     @default(0)
+  minOrderAmount   Float     @default(0)
+  
+  // Relations
+  ownerId        String
+  owner          User      @relation(fields: [ownerId], references: [id])
+  products       Product[]
+  orders         Order[]
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
 // ==================== DRIVERS ====================
 
 model Driver {
@@ -245,6 +306,7 @@ model Driver {
   updatedAt DateTime @updatedAt
 }
 
+
 // ==================== STORE SETTINGS ====================
 
 model StoreSettings {
@@ -263,10 +325,10 @@ model StoreSettings {
   maxDeliveryDistance  Float    @default(15)     // Max km for delivery
   
   // Store location (origin for distance calculation)
-  storeName            String   @default("Polirrubro San Juan")
-  storeAddress         String   @default("San Juan, Argentina")
-  originLat            Float    @default(-31.5375)
-  originLng            Float    @default(-68.5364)
+  storeName            String   @default("Moovy Ushuaia")
+  storeAddress         String   @default("Ushuaia, Tierra del Fuego")
+  originLat            Float    @default(-54.8019)
+  originLng            Float    @default(-68.3030)
   
   // Contact
   whatsappNumber       String?
@@ -277,4 +339,77 @@ model StoreSettings {
   schedule             String?  // JSON with hours per day
   
   updatedAt            DateTime @updatedAt
+}
+
+// ==================== POINTS / LOYALTY SYSTEM ====================
+
+model PointsConfig {
+  id                   String   @id @default("points_config")
+  
+  // Earning points
+  pointsPerDollar      Float    @default(1)     // Points earned per $1 spent
+  minPurchaseForPoints Float    @default(0)     // Minimum purchase to earn points
+  
+  // Redeeming points
+  pointsValue          Float    @default(0.01)  // Value in $ of each point
+  minPointsToRedeem    Int      @default(100)   // Minimum points to redeem
+  maxDiscountPercent   Float    @default(50)    // Max % discount with points
+  
+  // Bonuses
+  signupBonus          Int      @default(100)   // Points for new users
+  referralBonus        Int      @default(200)   // Points for referring
+  reviewBonus          Int      @default(10)    // Points for reviews
+  
+  // Expiration
+  pointsExpireDays     Int?                     // Null = never expire
+  
+  updatedAt            DateTime @updatedAt
+}
+
+model PointsTransaction {
+  id            String   @id @default(cuid())
+  
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  orderId       String?  // Related order if applicable
+  
+  // Transaction type: EARN, REDEEM, BONUS, EXPIRE, ADJUSTMENT
+  type          String
+  
+  // Amount: positive = earned, negative = spent/expired
+  amount        Int
+  balanceAfter  Int      // Balance after this transaction
+  
+  description   String?  // Human readable description
+  
+  createdAt     DateTime @default(now())
+}
+
+// ==================== REFERRAL SYSTEM ====================
+
+model Referral {
+  id            String   @id @default(cuid())
+  
+  // The user who made the referral (referrer)
+  referrerId    String
+  referrer      User     @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  
+  // The user who was referred (referee/new user)
+  refereeId     String
+  referee       User     @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
+  
+  // Referral code used
+  codeUsed      String
+  
+  // Points awarded
+  referrerPoints Int     @default(50)  // Points given to referrer
+  refereePoints  Int     @default(100) // Bonus points to referee (signup)
+  
+  // Status
+  status        String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
+  
+  createdAt     DateTime @default(now())
+  
+  @@unique([refereeId]) // A user can only be referred once
 }

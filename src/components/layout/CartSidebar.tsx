@@ -21,18 +21,18 @@ export default function CartSidebar() {
 
     return (
         <>
-            {/* Overlay */}
+            {/* Overlay - covers everything EXCEPT bottom nav */}
             <div
-                className="fixed inset-0 bg-black/50 z-50"
+                className="fixed inset-0 bottom-16 bg-black/50 z-[55]"
                 onClick={closeCart}
             />
 
-            {/* Sidebar */}
-            <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-50 shadow-xl flex flex-col animate-fadeIn">
+            {/* Sidebar - stops above bottom nav */}
+            <div className="fixed right-0 top-0 bottom-16 w-full max-w-md bg-white z-[55] shadow-xl flex flex-col animate-fadeIn">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="text-xl font-bold text-navy flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-turquoise" />
+                        <ShoppingBag className="w-5 h-5 text-moovy" />
                         Mi Carrito
                     </h2>
                     <button
@@ -75,20 +75,20 @@ export default function CartSidebar() {
                                         {item.variantName && (
                                             <p className="text-xs text-gray-500">{item.variantName}</p>
                                         )}
-                                        <p className="text-turquoise font-semibold">{formatPrice(item.price)}</p>
+                                        <p className="text-moovy font-semibold">{formatPrice(item.price)}</p>
 
                                         {/* Quantity Controls */}
                                         <div className="flex items-center gap-2 mt-2">
                                             <button
                                                 onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
-                                                className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-turquoise transition"
+                                                className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-moovy transition"
                                             >
                                                 <Minus className="w-3 h-3" />
                                             </button>
                                             <span className="font-medium w-8 text-center">{item.quantity}</span>
                                             <button
                                                 onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
-                                                className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-turquoise transition"
+                                                className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-moovy transition"
                                             >
                                                 <Plus className="w-3 h-3" />
                                             </button>
@@ -122,7 +122,7 @@ export default function CartSidebar() {
                         {/* Total */}
                         <div className="flex justify-between items-center text-xl font-bold">
                             <span className="text-navy">Total:</span>
-                            <span className="text-turquoise">{formatPrice(total)}</span>
+                            <span className="text-moovy">{formatPrice(total)}</span>
                         </div>
 
                         {/* Checkout Button */}
@@ -139,3 +139,4 @@ export default function CartSidebar() {
         </>
     );
 }
+

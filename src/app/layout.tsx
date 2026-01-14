@@ -1,19 +1,35 @@
 // Root Layout - Layout Principal
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
-const inter = Inter({ subsets: ["latin"] });
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#e60012",
+};
 
 export const metadata: Metadata = {
-  title: "Polirrubro San Juan | Delivery 24hs",
-  description: "Tu polirrubro de confianza en San Juan. Lácteos, bebidas, sandwichería, golosinas y más. Delivery las 24 horas.",
-  keywords: "polirrubro, san juan, delivery, kiosco, almacén, bebidas, lacteos, sandwiches",
+  title: "Moovy | Tu Antojo Manda!",
+  description: "Delivery rápido en Ushuaia. Pedí lo que quieras, te lo llevamos.",
+  keywords: "moovy, delivery, comida, ushuaia, rapido, pedidos",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Moovy",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
-    title: "Polirrubro San Juan | Delivery 24hs",
-    description: "Tu polirrubro de confianza en San Juan. Delivery las 24 horas.",
+    title: "Moovy | Tu Antojo Manda!",
+    description: "Delivery rápido en Ushuaia.",
     type: "website",
+    siteName: "Moovy",
   },
 };
 
@@ -25,12 +41,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-          rel="stylesheet"
-        />
+        {/* PWA Icons */}
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
-      <body className={inter.className}>
+      <body className="antialiased">
         <Providers>
           {children}
         </Providers>

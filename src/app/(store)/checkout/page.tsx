@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
+import PointsWidget from "@/components/checkout/PointsWidget";
+import PointsAnimation from "@/components/shared/PointsAnimation";
 import {
     MapPin,
     Truck,
@@ -38,7 +40,7 @@ export default function CheckoutPage() {
         street: "",
         number: "",
         floor: "",
-        city: "San Juan",
+        city: "",
         notes: "",
     });
     const [deliveryResult, setDeliveryResult] = useState<DeliveryResult | null>(null);
@@ -47,7 +49,14 @@ export default function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
 
+    // Points state
+    const [pointsUsed, setPointsUsed] = useState(0);
+    const [discountAmount, setDiscountAmount] = useState(0);
+    const [earnedPoints, setEarnedPoints] = useState(0);
+
     const subtotal = getTotalPrice();
+    const deliveryCost = deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery ? deliveryResult.totalCost : 0;
+    const finalTotal = Math.max(0, subtotal + deliveryCost - discountAmount);
 
     // Redirect if cart is empty
     useEffect(() => {
@@ -73,11 +82,11 @@ export default function CheckoutPage() {
 
         try {
             // Use Nominatim for geocoding
-            const fullAddress = `${address.street} ${address.number}, ${address.city}, San Juan, Argentina`;
+            const fullAddress = `${address.street} ${address.number}, ${address.city}, , Argentina`;
             const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
 
             const geoResponse = await fetch(geocodeUrl, {
-                headers: { "User-Agent": "PolirrubroSanJuan/1.0" }
+                headers: { "User-Agent": "MoovySanJuan/1.0" }
             });
             const geoData = await geoResponse.json();
 
@@ -127,14 +136,50 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
 
         try {
-            // Simulate order creation
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            // Create order via API
+            const response = await fetch("/api/orders", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    items: items.map(item => ({
+                        productId: item.productId,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        variantId: item.variantId,
+                        variantName: item.variantName,
+                    })),
+                    addressData: {
+                        street: address.street,
+                        number: address.number,
+                        floor: address.floor,
+                        city: address.city,
+                    },
+                    paymentMethod,
+                    deliveryFee: deliveryResult.isFreeDelivery ? 0 : deliveryResult.totalCost,
+                    distanceKm: deliveryResult.distanceKm,
+                    deliveryNotes: address.notes || null,
+                    // Points data
+                    pointsUsed,
+                    discountAmount,
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || "Error al crear el pedido");
+            }
 
             // Clear cart and show success
             clearCart();
+            const result = await response.json();
+            if (result.points?.earned) {
+                setEarnedPoints(result.points.earned);
+            }
             setOrderSuccess(true);
         } catch (error) {
             console.error("Error submitting order:", error);
+            alert(error instanceof Error ? error.message : "Error al procesar el pedido");
         } finally {
             setIsSubmitting(false);
         }
@@ -143,7 +188,7 @@ export default function CheckoutPage() {
     if (status === "loading") {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-turquoise" />
+                <Loader2 className="w-8 h-8 animate-spin text-moovy" />
             </div>
         );
     }
@@ -151,7 +196,12 @@ export default function CheckoutPage() {
     if (orderSuccess) {
         return (
             <div className="container mx-auto px-4 py-16 text-center">
-                <div className="max-w-md mx-auto">
+                <div className="max-w-md mx-auto relative">
+                    <PointsAnimation
+                        pointsEarned={earnedPoints}
+                        isVisible={true}
+                    />
+
                     <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="w-10 h-10 text-green-600" />
                     </div>
@@ -160,6 +210,11 @@ export default function CheckoutPage() {
                     </h1>
                     <p className="text-gray-600 mb-8">
                         Tu pedido fue recibido. Te avisaremos cuando el repartidor esté en camino.
+                        {earnedPoints > 0 && (
+                            <span className="block mt-4 font-semibold text-[#e60012]">
+                                ¡Sumaste {earnedPoints} puntos con esta compra! 🎉
+                            </span>
+                        )}
                     </p>
                     <Link href="/productos" className="btn-primary">
                         Seguir Comprando
@@ -170,12 +225,12 @@ export default function CheckoutPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 pb-32">
             <div className="max-w-4xl mx-auto">
                 {/* Back Link */}
                 <Link
                     href="/productos"
-                    className="inline-flex items-center text-gray-600 hover:text-turquoise mb-6"
+                    className="inline-flex items-center text-gray-600 hover:text-moovy mb-6"
                 >
                     <ChevronLeft className="w-5 h-5 mr-1" />
                     Seguir comprando
@@ -188,7 +243,7 @@ export default function CheckoutPage() {
                     {[1, 2, 3].map((s) => (
                         <div
                             key={s}
-                            className={`flex-1 text-center pb-4 border-b-2 ${step >= s ? "border-turquoise text-turquoise" : "border-gray-200 text-gray-400"
+                            className={`flex-1 text-center pb-4 border-b-2 ${step >= s ? "border-moovy text-moovy" : "border-gray-200 text-gray-400"
                                 }`}
                         >
                             <span className="font-semibold">
@@ -205,7 +260,7 @@ export default function CheckoutPage() {
                         {step === 1 && (
                             <div className="bg-white rounded-xl p-6 shadow-sm">
                                 <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-turquoise" />
+                                    <MapPin className="w-5 h-5 text-moovy" />
                                     Dirección de Entrega
                                 </h2>
 
@@ -296,7 +351,7 @@ export default function CheckoutPage() {
                         {step === 2 && (
                             <div className="bg-white rounded-xl p-6 shadow-sm">
                                 <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                    <Truck className="w-5 h-5 text-turquoise" />
+                                    <Truck className="w-5 h-5 text-moovy" />
                                     Costo de Envío
                                 </h2>
 
@@ -308,7 +363,7 @@ export default function CheckoutPage() {
                                     </p>
                                     <button
                                         onClick={() => setStep(1)}
-                                        className="text-turquoise text-sm hover:underline mt-1"
+                                        className="text-moovy text-sm hover:underline mt-1"
                                     >
                                         Cambiar dirección
                                     </button>
@@ -316,13 +371,13 @@ export default function CheckoutPage() {
 
                                 {isCalculating ? (
                                     <div className="text-center py-8">
-                                        <Loader2 className="w-8 h-8 animate-spin text-turquoise mx-auto mb-2" />
+                                        <Loader2 className="w-8 h-8 animate-spin text-moovy mx-auto mb-2" />
                                         <p className="text-gray-600">Calculando envío...</p>
                                     </div>
                                 ) : deliveryResult ? (
                                     <div className={`p-4 rounded-lg ${deliveryResult.isWithinRange
-                                            ? "bg-green-50 border border-green-200"
-                                            : "bg-red-50 border border-red-200"
+                                        ? "bg-green-50 border border-green-200"
+                                        : "bg-red-50 border border-red-200"
                                         }`}>
                                         {deliveryResult.isWithinRange ? (
                                             <>
@@ -336,7 +391,7 @@ export default function CheckoutPage() {
                                                     Distancia: {deliveryResult.distanceKm.toFixed(1)} km
                                                 </p>
                                                 {!deliveryResult.isFreeDelivery && (
-                                                    <p className="text-xl font-bold text-turquoise mt-2">
+                                                    <p className="text-xl font-bold text-moovy mt-2">
                                                         Costo: {formatPrice(deliveryResult.totalCost)}
                                                     </p>
                                                 )}
@@ -370,68 +425,82 @@ export default function CheckoutPage() {
 
                         {/* Step 3: Payment */}
                         {step === 3 && (
-                            <div className="bg-white rounded-xl p-6 shadow-sm">
-                                <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                    <CreditCard className="w-5 h-5 text-turquoise" />
-                                    Método de Pago
-                                </h2>
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl p-6 shadow-sm">
+                                    <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
+                                        <CreditCard className="w-5 h-5 text-moovy" />
+                                        Método de Pago
+                                    </h2>
 
-                                <div className="space-y-3">
-                                    <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === "cash" ? "border-turquoise bg-turquoise-light" : "border-gray-200"
-                                        }`}>
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="cash"
-                                            checked={paymentMethod === "cash"}
-                                            onChange={() => setPaymentMethod("cash")}
-                                            className="sr-only"
+                                    {/* POINTS WIDGET */}
+                                    <div className="mb-6">
+                                        <PointsWidget
+                                            orderTotal={subtotal}
+                                            pointsApplied={pointsUsed}
+                                            onApplyPoints={(points, discount) => {
+                                                setPointsUsed(points);
+                                                setDiscountAmount(discount);
+                                            }}
                                         />
-                                        <div className="flex-1">
-                                            <span className="font-semibold">💵 Efectivo</span>
-                                            <p className="text-sm text-gray-600">Pagás al recibir el pedido</p>
-                                        </div>
-                                    </label>
+                                    </div>
 
-                                    <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition opacity-50 ${paymentMethod === "mercadopago" ? "border-turquoise bg-turquoise-light" : "border-gray-200"
-                                        }`}>
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="mercadopago"
-                                            checked={paymentMethod === "mercadopago"}
-                                            onChange={() => setPaymentMethod("mercadopago")}
-                                            className="sr-only"
-                                            disabled
-                                        />
-                                        <div className="flex-1">
-                                            <span className="font-semibold">💳 Mercado Pago</span>
-                                            <p className="text-sm text-gray-600">Próximamente...</p>
-                                        </div>
-                                    </label>
-                                </div>
+                                    <div className="space-y-3">
+                                        <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
+                                            }`}>
+                                            <input
+                                                type="radio"
+                                                name="payment"
+                                                value="cash"
+                                                checked={paymentMethod === "cash"}
+                                                onChange={() => setPaymentMethod("cash")}
+                                                className="sr-only"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="font-semibold">💵 Efectivo</span>
+                                                <p className="text-sm text-gray-600">Pagás al recibir el pedido</p>
+                                            </div>
+                                        </label>
 
-                                <div className="flex gap-4 mt-6">
-                                    <button
-                                        onClick={() => setStep(2)}
-                                        className="btn-outline flex-1"
-                                    >
-                                        Atrás
-                                    </button>
-                                    <button
-                                        onClick={handleSubmitOrder}
-                                        disabled={isSubmitting}
-                                        className="btn-primary flex-1 flex items-center justify-center gap-2"
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                Procesando...
-                                            </>
-                                        ) : (
-                                            "Confirmar Pedido"
-                                        )}
-                                    </button>
+                                        <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition opacity-50 ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
+                                            }`}>
+                                            <input
+                                                type="radio"
+                                                name="payment"
+                                                value="mercadopago"
+                                                checked={paymentMethod === "mercadopago"}
+                                                onChange={() => setPaymentMethod("mercadopago")}
+                                                className="sr-only"
+                                                disabled
+                                            />
+                                            <div className="flex-1">
+                                                <span className="font-semibold">💳 Mercado Pago</span>
+                                                <p className="text-sm text-gray-600">Próximamente...</p>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex gap-4 mt-6">
+                                        <button
+                                            onClick={() => setStep(2)}
+                                            className="btn-outline flex-1"
+                                        >
+                                            Atrás
+                                        </button>
+                                        <button
+                                            onClick={handleSubmitOrder}
+                                            disabled={isSubmitting}
+                                            className="btn-primary flex-1 flex items-center justify-center gap-2"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    Procesando...
+                                                </>
+                                            ) : (
+                                                "Confirmar Pedido"
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -441,7 +510,7 @@ export default function CheckoutPage() {
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-xl p-6 shadow-sm sticky top-24">
                             <h3 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                                <ShoppingBag className="w-5 h-5 text-turquoise" />
+                                <ShoppingBag className="w-5 h-5 text-moovy" />
                                 Tu Pedido
                             </h3>
 
@@ -472,15 +541,16 @@ export default function CheckoutPage() {
                                         </span>
                                     </div>
                                 )}
+                                {discountAmount > 0 && (
+                                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                                        <span>Descuento (Puntos)</span>
+                                        <span>-{formatPrice(discountAmount)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-xl font-bold border-t pt-3">
                                     <span>Total</span>
-                                    <span className="text-turquoise">
-                                        {formatPrice(
-                                            subtotal +
-                                            (deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery
-                                                ? deliveryResult.totalCost
-                                                : 0)
-                                        )}
+                                    <span className="text-moovy">
+                                        {formatPrice(finalTotal)}
                                     </span>
                                 </div>
                             </div>
@@ -491,3 +561,4 @@ export default function CheckoutPage() {
         </div>
     );
 }
+

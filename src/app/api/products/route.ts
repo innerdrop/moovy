@@ -11,7 +11,15 @@ export async function GET(request: Request) {
         const buscar = searchParams.get("buscar");
         const featured = searchParams.get("featured");
 
-        const where: any = { isActive: true };
+        const session = await auth();
+        const isAdmin = (session?.user as any)?.role === "ADMIN";
+
+        const where: any = {};
+
+        // Show only active products to non-admins
+        if (!isAdmin) {
+            where.isActive = true;
+        }
 
         if (categoria) {
             where.categories = {
@@ -103,3 +111,4 @@ export async function POST(request: Request) {
         );
     }
 }
+

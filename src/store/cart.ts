@@ -11,14 +11,19 @@ export interface CartItem {
     image?: string;
     variantId?: string;
     variantName?: string;
+    merchantId: string; // Added merchantId
 }
 
 interface CartStore {
     items: CartItem[];
+    merchantId: string | null; // Current merchant in cart
     isOpen: boolean;
 
     // Actions
-    addItem: (item: Omit<CartItem, "id">) => void;
+    // addItem returns true if added, false if merchant mismatch
+    addItem: (item: Omit<CartItem, "id">) => boolean;
+    // forceAddItem clears cart and adds item (used after confirmation)
+    forceAddItem: (item: Omit<CartItem, "id">) => void;
     removeItem: (productId: string, variantId?: string) => void;
     updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
     clearCart: () => void;
@@ -35,10 +40,17 @@ export const useCartStore = create<CartStore>()(
     persist(
         (set, get) => ({
             items: [],
+            merchantId: null,
             isOpen: false,
 
             addItem: (item) => {
-                const { items } = get();
+                const { items, merchantId } = get();
+
+                // Check for merchant mismatch
+                if (items.length > 0 && merchantId && merchantId !== item.merchantId) {
+                    return false; // Conflict detected
+                }
+
                 const existingIndex = items.findIndex(
                     (i) => i.productId === item.productId && i.variantId === item.variantId
                 );
@@ -54,17 +66,36 @@ export const useCartStore = create<CartStore>()(
                         ...item,
                         id: `${item.productId}-${item.variantId || "default"}-${Date.now()}`,
                     };
-                    set({ items: [...items, newItem] });
+                    set({ items: [...items, newItem], merchantId: item.merchantId });
                 }
+
+                // Ensure cart is open when adding? Maybe let UI decide
+                set({ isOpen: true });
+                return true;
+            },
+
+            forceAddItem: (item) => {
+                set({ items: [], merchantId: null }); // Clear first
+
+                const newItem: CartItem = {
+                    ...item,
+                    id: `${item.productId}-${item.variantId || "default"}-${Date.now()}`,
+                };
+                set({ items: [newItem], merchantId: item.merchantId, isOpen: true });
             },
 
             removeItem: (productId, variantId) => {
                 const { items } = get();
-                set({
-                    items: items.filter(
-                        (i) => !(i.productId === productId && i.variantId === variantId)
-                    ),
-                });
+                const newItems = items.filter(
+                    (i) => !(i.productId === productId && i.variantId === variantId)
+                );
+
+                // If cart becomes empty, reset merchantId
+                if (newItems.length === 0) {
+                    set({ items: [], merchantId: null });
+                } else {
+                    set({ items: newItems });
+                }
             },
 
             updateQuantity: (productId, quantity, variantId) => {
@@ -82,7 +113,7 @@ export const useCartStore = create<CartStore>()(
                 });
             },
 
-            clearCart: () => set({ items: [] }),
+            clearCart: () => set({ items: [], merchantId: null }),
             toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
             openCart: () => set({ isOpen: true }),
             closeCart: () => set({ isOpen: false }),
@@ -99,8 +130,9 @@ export const useCartStore = create<CartStore>()(
             },
         }),
         {
-            name: "polirrubro-cart",
-            partialize: (state) => ({ items: state.items }),
+            name: "Moovy-cart",
+            partialize: (state) => ({ items: state.items, merchantId: state.merchantId }),
         }
     )
 );
+
