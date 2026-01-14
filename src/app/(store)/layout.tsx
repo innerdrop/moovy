@@ -76,7 +76,6 @@ export default function StoreLayout({
                 isLoggedIn={!!isLoggedIn}
                 cartCount={cartCount}
                 userName={session?.user?.name || undefined}
-                userPoints={0} // TODO: Replace with actual points from DB
             />
 
             {/* Contenido con padding para header y bottom nav */}
