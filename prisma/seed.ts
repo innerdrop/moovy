@@ -15,7 +15,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log("🌱 Seeding database for Polirrubro San Juan...\n");
+    console.log("🌱 Seeding database for Moovy...\n");
 
     // ==================== STORE SETTINGS ====================
     console.log("⚙️  Creating store settings...");
