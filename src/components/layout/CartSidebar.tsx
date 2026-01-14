@@ -49,12 +49,13 @@ export default function CartSidebar() {
                         <div className="text-center py-12">
                             <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                             <p className="text-gray-500 mb-4">Tu carrito está vacío</p>
-                            <button
+                            <Link
+                                href="/productos"
                                 onClick={closeCart}
-                                className="btn-outline"
+                                className="btn-outline inline-block"
                             >
                                 Seguir comprando
-                            </button>
+                            </Link>
                         </div>
                     ) : (
                         <ul className="space-y-4">
