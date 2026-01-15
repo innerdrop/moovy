@@ -86,7 +86,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Protect /ops/* routes (except login)
-    if (pathname.startsWith('/ops') && pathname !== '/ops/login') {
+    if (pathname.startsWith('/ops') && !pathname.startsWith('/ops/login')) {
         if (!token) {
             return NextResponse.redirect(new URL('/ops/login', request.url));
         }
