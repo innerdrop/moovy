@@ -1,6 +1,16 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+    const session = await auth();
+
+    // Check if user is logged in and has admin or merchant role
+    const role = (session?.user as any)?.role;
+    if (!session || !["ADMIN", "MERCHANT"].includes(role)) {
+        redirect("/login?callbackUrl=/admin");
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
             <AdminSidebar />

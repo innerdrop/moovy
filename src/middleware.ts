@@ -1,98 +1,138 @@
-// Next.js Middleware - Security and Route Protection
-// NOTE: This runs in Edge Runtime, cannot use Node modules like better-sqlite3
+// Next.js Middleware - Subdomain-Based Portal Routing
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-// Routes that require authentication
-const protectedRoutes = [
-    "/mi-perfil",
-    "/checkout",
-    // NOTE: /puntos and /mis-pedidos allow anonymous users to see CTAs
-];
+// Portal detection based on subdomain
+type PortalType = 'client' | 'comercio' | 'conductor' | 'ops';
 
-// Routes that require admin role
-const adminRoutes = ["/ops"];
+function getPortalFromHost(host: string | null): PortalType {
+    if (!host) return 'client';
+    const cleanHost = host.toLowerCase().split(':')[0];
 
-// Routes that require merchant role  
-const merchantRoutes = ["/admin", "/comex"];
+    if (cleanHost.startsWith('comercios.')) return 'comercio';
+    if (cleanHost.startsWith('conductores.')) return 'conductor';
+    if (cleanHost.startsWith('ops.')) return 'ops';
 
-// Simple in-memory rate limiting for Edge Runtime
-const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
-
-function getRateLimitKey(request: NextRequest): string {
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
-    return `${ip}:${request.nextUrl.pathname}`;
+    return 'client';
 }
 
-function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
-    const now = Date.now();
-    const record = rateLimitMap.get(key);
+// Portal configuration
+const portalConfig = {
+    client: {
+        allowedRoles: ['USER', 'ADMIN'],
+        protectedPaths: ['/mi-perfil', '/checkout', '/mis-pedidos'],
+        loginPath: '/login',
+    },
+    comercio: {
+        allowedRoles: ['MERCHANT', 'ADMIN'],
+        protectedPaths: ['/dashboard', '/productos', '/pedidos', '/configuracion'],
+        loginPath: '/login',
+    },
+    conductor: {
+        allowedRoles: ['DRIVER', 'ADMIN'],
+        protectedPaths: ['/dashboard', '/entregas', '/historial'],
+        loginPath: '/login',
+    },
+    ops: {
+        allowedRoles: ['ADMIN'],
+        protectedPaths: ['/'], // Everything is protected in ops portal
+        loginPath: '/login',
+    },
+};
 
-    // Clean old entries
-    if (rateLimitMap.size > 1000) {
-        for (const [k, v] of rateLimitMap.entries()) {
-            if (now - v.timestamp > windowMs) {
-                rateLimitMap.delete(k);
-            }
-        }
-    }
-
-    if (!record || now - record.timestamp > windowMs) {
-        rateLimitMap.set(key, { count: 1, timestamp: now });
-        return true;
-    }
-
-    if (record.count >= limit) {
-        return false;
-    }
-
-    record.count++;
-    return true;
-}
-
-// Get the secret - MUST be available in Edge Runtime
 function getAuthSecret(): string {
-    // Try to get from environment
     const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-
-    if (secret) {
-        return secret;
-    }
-
-    // Fallback for development - THIS SHOULD NEVER BE USED IN PRODUCTION
+    if (secret) return secret;
     if (process.env.NODE_ENV === "development") {
         return "Moovy-san-juan-dev-secret-2024-minimum-32-chars";
     }
-
     throw new Error("AUTH_SECRET must be set in production");
 }
 
 export async function middleware(request: NextRequest) {
-    // DEBUG MODE: Bypassing middleware logic to fix 500 error
-    // console.log("[DEBUG Middleware] Bypassing logic for:", request.nextUrl.pathname);
-    return NextResponse.next();
-
-    /* ORIGINAL LOGIC COMMENTED OUT FOR DEBUGGING
     const { pathname } = request.nextUrl;
+    const host = request.headers.get('host');
+    const portal = getPortalFromHost(host);
 
-    // ... (rest of the logic)
-    
-    return NextResponse.next();
-    */
+    // Skip static files and API routes
+    if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.includes('.')) {
+        return NextResponse.next();
+    }
+
+    // Get user token
+    const token = await getToken({
+        req: request,
+        secret: getAuthSecret()
+    });
+
+    const userRole = (token as any)?.role as string | undefined;
+    const config = portalConfig[portal];
+
+    // For ops portal, everything except login requires ADMIN
+    if (portal === 'ops' && pathname !== '/login') {
+        if (!token || userRole !== 'ADMIN') {
+            const loginUrl = new URL('/login', request.url);
+            loginUrl.searchParams.set('callbackUrl', pathname);
+            return NextResponse.redirect(loginUrl);
+        }
+    }
+
+    // For comercio and conductor portals, check role on protected paths
+    if (portal === 'comercio' || portal === 'conductor') {
+        const isProtected = pathname !== '/login' && pathname !== '/register';
+        if (isProtected && token) {
+            // User is logged in, check if role matches portal
+            if (!config.allowedRoles.includes(userRole || '')) {
+                // Redirect to main site if wrong role
+                return NextResponse.redirect(new URL('https://somosmoovy.com'));
+            }
+        } else if (isProtected && !token) {
+            // Not logged in, redirect to login
+            const loginUrl = new URL('/login', request.url);
+            loginUrl.searchParams.set('callbackUrl', pathname);
+            return NextResponse.redirect(loginUrl);
+        }
+    }
+
+    // For client portal, only protect specific paths
+    if (portal === 'client') {
+        const isProtected = config.protectedPaths.some(path => pathname.startsWith(path));
+        if (isProtected && !token) {
+            const loginUrl = new URL('/login', request.url);
+            loginUrl.searchParams.set('callbackUrl', pathname);
+            return NextResponse.redirect(loginUrl);
+        }
+    }
+
+    // Rewrite URL for portal-specific routes
+    // e.g., comercios.somosmoovy.com/login -> /comercios/login internally
+    if (portal !== 'client') {
+        const portalPaths: Record<string, string> = {
+            comercio: '/comercios',
+            conductor: '/conductores',
+            ops: '/ops',
+        };
+
+        const basePath = portalPaths[portal];
+
+        // Don't rewrite if already on the correct path
+        if (!pathname.startsWith(basePath) && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+            const newUrl = new URL(`${basePath}${pathname}`, request.url);
+            newUrl.search = request.nextUrl.search;
+            return NextResponse.rewrite(newUrl);
+        }
+    }
+
+    // Add portal info to headers for use in components
+    const response = NextResponse.next();
+    response.headers.set('x-portal', portal);
+
+    return response;
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder
-         */
         "/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)",
     ],
 };
-
