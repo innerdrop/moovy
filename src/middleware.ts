@@ -91,7 +91,8 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/ops/login', request.url));
         }
         if (userRole !== 'ADMIN') {
-            return NextResponse.redirect(new URL('/', request.url));
+            // Redirect to ops login with error instead of home
+            return NextResponse.redirect(new URL('/ops/login?error=Unauthorized', request.url));
         }
     }
 

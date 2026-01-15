@@ -2,17 +2,25 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function OpsLoginPage() {
+function OpsLoginContent() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const errorParam = searchParams.get("error");
+        if (errorParam === "Unauthorized") {
+            setError("No tienes permisos de administrador para acceder a este panel.");
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,6 +37,8 @@ export default function OpsLoginPage() {
             setError("Credenciales inválidas");
             setLoading(false);
         } else {
+            // Check if user is actually redirected by middleware or just proceed
+            // We push to /ops. If unauthorized, middleware will bounce back with error.
             router.push("/ops");
         }
     };
@@ -52,7 +62,8 @@ export default function OpsLoginPage() {
                     </h2>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm text-center">
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm text-center flex items-center justify-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
                             {error}
                         </div>
                     )}
@@ -111,5 +122,13 @@ export default function OpsLoginPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function OpsLoginPage() {
+    return (
+        <Suspense fallback={<div>Cargando...</div>}>
+            <OpsLoginContent />
+        </Suspense>
     );
 }
