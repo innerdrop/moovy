@@ -20,24 +20,24 @@ function getPortalFromHost(host: string | null): PortalType {
 // Portal configuration
 const portalConfig = {
     client: {
+        basePath: '',
         allowedRoles: ['USER', 'ADMIN'],
         protectedPaths: ['/mi-perfil', '/checkout', '/mis-pedidos'],
-        loginPath: '/login',
     },
     comercio: {
+        basePath: '/comercios',
         allowedRoles: ['MERCHANT', 'ADMIN'],
-        protectedPaths: ['/dashboard', '/productos', '/pedidos', '/configuracion'],
-        loginPath: '/login',
+        protectedPaths: ['/dashboard', '/productos', '/pedidos', '/configuracion', '/'],
     },
     conductor: {
+        basePath: '/conductores',
         allowedRoles: ['DRIVER', 'ADMIN'],
-        protectedPaths: ['/dashboard', '/entregas', '/historial'],
-        loginPath: '/login',
+        protectedPaths: ['/dashboard', '/entregas', '/historial', '/'],
     },
     ops: {
+        basePath: '/ops',
         allowedRoles: ['ADMIN'],
-        protectedPaths: ['/'], // Everything is protected in ops portal
-        loginPath: '/login',
+        protectedPaths: ['/'], // Everything except login is protected
     },
 };
 
@@ -54,73 +54,64 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const host = request.headers.get('host');
     const portal = getPortalFromHost(host);
+    const config = portalConfig[portal];
 
     // Skip static files and API routes
     if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.includes('.')) {
         return NextResponse.next();
     }
 
-    // Get user token
-    const token = await getToken({
-        req: request,
-        secret: getAuthSecret()
-    });
+    // FIRST: Rewrite URL for portal-specific routes (comercios, conductores, ops)
+    // e.g., comercios.somosmoovy.com/ -> internally serve /comercios/
+    // e.g., comercios.somosmoovy.com/login -> internally serve /comercios/login
+    if (portal !== 'client') {
+        const basePath = config.basePath;
 
-    const userRole = (token as any)?.role as string | undefined;
-    const config = portalConfig[portal];
+        // Don't rewrite if already on the correct path (prevents infinite loop)
+        if (!pathname.startsWith(basePath)) {
+            // Construct the rewritten URL
+            const rewritePath = pathname === '/' ? `${basePath}/dashboard` : `${basePath}${pathname}`;
+            const newUrl = new URL(rewritePath, request.url);
+            newUrl.search = request.nextUrl.search;
 
-    // For ops portal, everything except login requires ADMIN
-    if (portal === 'ops' && pathname !== '/login') {
-        if (!token || userRole !== 'ADMIN') {
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('callbackUrl', pathname);
-            return NextResponse.redirect(loginUrl);
-        }
-    }
+            // Get token to check auth for protected paths
+            const token = await getToken({ req: request, secret: getAuthSecret() });
+            const userRole = (token as any)?.role as string | undefined;
 
-    // For comercio and conductor portals, check role on protected paths
-    if (portal === 'comercio' || portal === 'conductor') {
-        const isProtected = pathname !== '/login' && pathname !== '/register';
-        if (isProtected && token) {
-            // User is logged in, check if role matches portal
-            if (!config.allowedRoles.includes(userRole || '')) {
-                // Redirect to main site if wrong role
-                return NextResponse.redirect(new URL('https://somosmoovy.com'));
+            // Check if this is a login page (don't protect login pages)
+            const isLoginPage = pathname === '/login' || pathname === '/register';
+
+            if (!isLoginPage) {
+                // Check authentication for protected portal routes
+                if (!token) {
+                    // Not logged in - redirect to portal's login page
+                    const loginUrl = new URL(`${basePath}/login`, request.url);
+                    loginUrl.searchParams.set('callbackUrl', pathname);
+                    return NextResponse.redirect(loginUrl);
+                }
+
+                // Check role authorization
+                if (!config.allowedRoles.includes(userRole || '')) {
+                    // Wrong role - redirect to main site
+                    return NextResponse.redirect(new URL('https://somosmoovy.com'));
+                }
             }
-        } else if (isProtected && !token) {
-            // Not logged in, redirect to login
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('callbackUrl', pathname);
-            return NextResponse.redirect(loginUrl);
+
+            // Rewrite to the portal-specific path
+            return NextResponse.rewrite(newUrl);
         }
     }
 
-    // For client portal, only protect specific paths
+    // For client portal (somosmoovy.com), only protect specific paths
     if (portal === 'client') {
         const isProtected = config.protectedPaths.some(path => pathname.startsWith(path));
-        if (isProtected && !token) {
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('callbackUrl', pathname);
-            return NextResponse.redirect(loginUrl);
-        }
-    }
-
-    // Rewrite URL for portal-specific routes
-    // e.g., comercios.somosmoovy.com/login -> /comercios/login internally
-    if (portal !== 'client') {
-        const portalPaths: Record<string, string> = {
-            comercio: '/comercios',
-            conductor: '/conductores',
-            ops: '/ops',
-        };
-
-        const basePath = portalPaths[portal];
-
-        // Don't rewrite if already on the correct path
-        if (!pathname.startsWith(basePath) && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
-            const newUrl = new URL(`${basePath}${pathname}`, request.url);
-            newUrl.search = request.nextUrl.search;
-            return NextResponse.rewrite(newUrl);
+        if (isProtected) {
+            const token = await getToken({ req: request, secret: getAuthSecret() });
+            if (!token) {
+                const loginUrl = new URL('/login', request.url);
+                loginUrl.searchParams.set('callbackUrl', pathname);
+                return NextResponse.redirect(loginUrl);
+            }
         }
     }
 
