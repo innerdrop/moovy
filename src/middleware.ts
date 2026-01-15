@@ -1,9 +1,8 @@
-// Next.js Middleware - Subdomain-Based Portal Routing
+// Next.js Middleware - Subdomain-Based Portal Routing (Simplified)
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-// Portal detection based on subdomain
 type PortalType = 'client' | 'comercio' | 'conductor' | 'ops';
 
 function getPortalFromHost(host: string | null): PortalType {
@@ -17,30 +16,6 @@ function getPortalFromHost(host: string | null): PortalType {
     return 'client';
 }
 
-// Portal configuration
-const portalConfig = {
-    client: {
-        basePath: '',
-        allowedRoles: ['USER', 'ADMIN'],
-        protectedPaths: ['/mi-perfil', '/checkout', '/mis-pedidos'],
-    },
-    comercio: {
-        basePath: '/comercios',
-        allowedRoles: ['MERCHANT', 'ADMIN'],
-        protectedPaths: ['/dashboard', '/productos', '/pedidos', '/configuracion', '/'],
-    },
-    conductor: {
-        basePath: '/conductores',
-        allowedRoles: ['DRIVER', 'ADMIN'],
-        protectedPaths: ['/dashboard', '/entregas', '/historial', '/'],
-    },
-    ops: {
-        basePath: '/ops',
-        allowedRoles: ['ADMIN'],
-        protectedPaths: ['/'], // Everything except login is protected
-    },
-};
-
 function getAuthSecret(): string {
     const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
     if (secret) return secret;
@@ -52,74 +27,81 @@ function getAuthSecret(): string {
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const host = request.headers.get('host');
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
     const portal = getPortalFromHost(host);
-    const config = portalConfig[portal];
 
     // Skip static files and API routes
     if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.includes('.')) {
         return NextResponse.next();
     }
 
-    // FIRST: Rewrite URL for portal-specific routes (comercios, conductores, ops)
-    // e.g., comercios.somosmoovy.com/ -> internally serve /comercios/
-    // e.g., comercios.somosmoovy.com/login -> internally serve /comercios/login
-    if (portal !== 'client') {
-        const basePath = config.basePath;
-
-        // Don't rewrite if already on the correct path (prevents infinite loop)
-        if (!pathname.startsWith(basePath)) {
-            // Construct the rewritten URL
-            const rewritePath = pathname === '/' ? `${basePath}/dashboard` : `${basePath}${pathname}`;
-            const newUrl = new URL(rewritePath, request.url);
-            newUrl.search = request.nextUrl.search;
-
-            // Get token to check auth for protected paths
-            const token = await getToken({ req: request, secret: getAuthSecret() });
-            const userRole = (token as any)?.role as string | undefined;
-
-            // Check if this is a login page (don't protect login pages)
-            const isLoginPage = pathname === '/login' || pathname === '/register';
-
-            if (!isLoginPage) {
-                // Check authentication for protected portal routes
-                if (!token) {
-                    // Not logged in - redirect to portal's login page
-                    const loginUrl = new URL(`${basePath}/login`, request.url);
-                    loginUrl.searchParams.set('callbackUrl', pathname);
-                    return NextResponse.redirect(loginUrl);
-                }
-
-                // Check role authorization
-                if (!config.allowedRoles.includes(userRole || '')) {
-                    // Wrong role - redirect to main site
-                    return NextResponse.redirect(new URL('https://somosmoovy.com'));
-                }
-            }
-
-            // Rewrite to the portal-specific path
-            return NextResponse.rewrite(newUrl);
+    // For subdomains: redirect to the correct portal path on main domain
+    // This is the simplest and most reliable approach
+    if (portal === 'comercio') {
+        // comercios.somosmoovy.com/* -> somosmoovy.com/comercios/*
+        if (!pathname.startsWith('/comercios')) {
+            const targetPath = pathname === '/' ? '/comercios/login' : `/comercios${pathname}`;
+            return NextResponse.redirect(new URL(targetPath, 'https://somosmoovy.com'));
         }
     }
 
-    // For client portal (somosmoovy.com), only protect specific paths
-    if (portal === 'client') {
-        const isProtected = config.protectedPaths.some(path => pathname.startsWith(path));
-        if (isProtected) {
-            const token = await getToken({ req: request, secret: getAuthSecret() });
-            if (!token) {
-                const loginUrl = new URL('/login', request.url);
-                loginUrl.searchParams.set('callbackUrl', pathname);
-                return NextResponse.redirect(loginUrl);
-            }
+    if (portal === 'conductor') {
+        // conductores.somosmoovy.com/* -> somosmoovy.com/conductores/*
+        if (!pathname.startsWith('/conductores')) {
+            const targetPath = pathname === '/' ? '/conductores/login' : `/conductores${pathname}`;
+            return NextResponse.redirect(new URL(targetPath, 'https://somosmoovy.com'));
         }
     }
 
-    // Add portal info to headers for use in components
-    const response = NextResponse.next();
-    response.headers.set('x-portal', portal);
+    if (portal === 'ops') {
+        // ops.somosmoovy.com/* -> somosmoovy.com/ops/*
+        if (!pathname.startsWith('/ops')) {
+            const targetPath = pathname === '/' ? '/ops/login' : `/ops${pathname}`;
+            return NextResponse.redirect(new URL(targetPath, 'https://somosmoovy.com'));
+        }
+    }
 
-    return response;
+    // Protection for portal routes on main domain
+    const token = await getToken({ req: request, secret: getAuthSecret() });
+    const userRole = (token as any)?.role as string | undefined;
+
+    // Protect /comercios/* routes (except login)
+    if (pathname.startsWith('/comercios') && pathname !== '/comercios/login') {
+        if (!token) {
+            return NextResponse.redirect(new URL('/comercios/login', request.url));
+        }
+        if (!['MERCHANT', 'ADMIN'].includes(userRole || '')) {
+            return NextResponse.redirect(new URL('/', request.url));
+        }
+    }
+
+    // Protect /conductores/* routes (except login)
+    if (pathname.startsWith('/conductores') && pathname !== '/conductores/login') {
+        if (!token) {
+            return NextResponse.redirect(new URL('/conductores/login', request.url));
+        }
+        if (!['DRIVER', 'ADMIN'].includes(userRole || '')) {
+            return NextResponse.redirect(new URL('/', request.url));
+        }
+    }
+
+    // Protect /ops/* routes (except login)
+    if (pathname.startsWith('/ops') && pathname !== '/ops/login') {
+        if (!token) {
+            return NextResponse.redirect(new URL('/ops/login', request.url));
+        }
+        if (userRole !== 'ADMIN') {
+            return NextResponse.redirect(new URL('/', request.url));
+        }
+    }
+
+    // Protect client paths
+    const clientProtectedPaths = ['/mi-perfil', '/checkout', '/mis-pedidos'];
+    if (clientProtectedPaths.some(path => pathname.startsWith(path)) && !token) {
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    return NextResponse.next();
 }
 
 export const config = {
