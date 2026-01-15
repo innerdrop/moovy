@@ -1,18 +1,46 @@
 // Home Page - Página de Inicio
 import Link from "next/link";
+import { Store } from "lucide-react";
+
+export default function HomePage() {
+    return (
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+            <div className="w-24 h-24 bg-[#e60012] rounded-full flex items-center justify-center mb-8 shadow-xl animate-pulse">
+                <Store className="w-12 h-12 text-white" />
+            </div>
+
+            <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-4 tracking-tight">
+                VOLVEMOS <span className="text-[#e60012]">PRONTO</span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-gray-500 max-w-lg mx-auto mb-10">
+                Estamos actualizando nuestra plataforma para brindarte una mejor experiencia de compra.
+            </p>
+
+            <div className="w-16 h-1 bg-[#e60012] rounded-full opacity-50" />
+
+            <p className="mt-8 text-sm text-gray-400 font-medium">
+                Moovy &copy; {new Date().getFullYear()}
+            </p>
+        </div>
+    );
+}
+
+
+/* 
+// ORIGINAL HOME PAGE CODE - RESTORE WHEN READY
+// -------------------------------------------
 import {
     ArrowRight,
     Milk,
     Wine,
     Sandwich,
     Candy,
-    Store,
     SprayCan
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroSlider from "@/components/home/HeroSlider";
 import PersonalizedWelcome from "@/components/home/PersonalizedWelcome";
-// PromotionalPopup disabled - will be configured from admin panel later
 import MerchantCard from "@/components/store/MerchantCard";
 
 // Category icons mapping
@@ -66,20 +94,15 @@ async function getFeaturedProducts() {
     }
 }
 
-export default async function HomePage() {
+export async function OldHomePage() {
     const categories = await getCategories();
     const merchants = await getFeaturedMerchants();
     const featuredProducts = await getFeaturedProducts();
 
     return (
         <div className="animate-fadeIn">
-            {/* Personalized Welcome for logged-in users */}
             <PersonalizedWelcome />
-
-            {/* Hero Promo Slider */}
             <HeroSlider />
-
-            {/* Categories */}
             <section className="pt-4 pb-8 lg:pt-6 lg:pb-12 bg-white">
                 <div className="container mx-auto px-4">
                     <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 text-center">
@@ -93,7 +116,6 @@ export default async function HomePage() {
                                 return (
                                     <Link
                                         key={cat.id}
-                                        // TODO: Update to filter merchants by category logic later
                                         href={`/explorar?categoria=${cat.slug}`}
                                         className="category-card p-4 sm:p-6 text-center group animate-fadeIn"
                                     >
@@ -113,7 +135,6 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* Featured Merchants (Comercios) */}
             <section className="py-12 lg:py-16 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-8">
@@ -140,7 +161,6 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* Featured Products */}
             <section className="py-12 lg:py-16 bg-white border-t border-gray-100">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-8">
@@ -188,7 +208,6 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* CTA Banner */}
             <section className="py-16 bg-gray-50 border-t border-gray-100">
                 <div className="container mx-auto px-4 text-center">
                     <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -205,4 +224,5 @@ export default async function HomePage() {
         </div>
     );
 }
+*/
 

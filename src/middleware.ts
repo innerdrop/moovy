@@ -66,7 +66,7 @@ export async function middleware(request: NextRequest) {
     const userRole = (token as any)?.role as string | undefined;
 
     // Protect /comercios/* routes (except login)
-    if (pathname.startsWith('/comercios') && pathname !== '/comercios/login') {
+    if (pathname.startsWith('/comercios') && !pathname.startsWith('/comercios/login')) {
         if (!token) {
             return NextResponse.redirect(new URL('/comercios/login', request.url));
         }
@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Protect /conductores/* routes (except login)
-    if (pathname.startsWith('/conductores') && pathname !== '/conductores/login') {
+    if (pathname.startsWith('/conductores') && !pathname.startsWith('/conductores/login')) {
         if (!token) {
             return NextResponse.redirect(new URL('/conductores/login', request.url));
         }
