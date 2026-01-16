@@ -1,14 +1,9 @@
-// API Route: User Profile - Using Direct SQLite
+// API Route: User Profile
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-// Direct database access to avoid Prisma adapter issues
-async function getDatabase() {
-    const Database = (await import("better-sqlite3")).default;
-    const path = await import("path");
-    const dbPath = path.join(process.cwd(), "prisma", "dev.db");
-    return new Database(dbPath);
-}
+export const dynamic = "force-dynamic";
 
 // GET - Get current user profile
 export async function GET() {
@@ -18,46 +13,36 @@ export async function GET() {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const db = await getDatabase();
-
-        try {
-            // Get user
-            const user = db.prepare(`
-                SELECT id, name, email, phone, image, role 
-                FROM User 
-                WHERE id = ?
-            `).get(session.user.id) as any;
-
-            if (!user) {
-                db.close();
-                return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            include: {
+                addresses: {
+                    orderBy: [
+                        { isDefault: 'desc' },
+                        { createdAt: 'desc' }
+                    ]
+                }
             }
+        });
 
-            // Get addresses
-            const addresses = db.prepare(`
-                SELECT id, label, street, number, apartment, neighborhood, city, province, zipCode, isDefault
-                FROM Address 
-                WHERE userId = ?
-                ORDER BY isDefault DESC, createdAt DESC
-            `).all(session.user.id) as any[];
-
-            db.close();
-
-            return NextResponse.json({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                image: user.image,
-                addresses: addresses.map(addr => ({
-                    ...addr,
-                    isDefault: Boolean(addr.isDefault)
-                }))
-            });
-        } catch (err) {
-            db.close();
-            throw err;
+        if (!user) {
+            return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
         }
+
+        return NextResponse.json({
+            id: user.id,
+            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            image: user.image,
+            addresses: user.addresses.map(addr => ({
+                ...addr,
+                isDefault: addr.isDefault // Boolean natively in Prisma
+            }))
+        });
+
     } catch (error) {
         console.error("Error fetching profile:", error);
         return NextResponse.json({ error: "Error al obtener perfil" }, { status: 500 });
@@ -73,47 +58,77 @@ export async function PATCH(request: Request) {
         }
 
         const data = await request.json();
-        const db = await getDatabase();
 
-        try {
-            const updates: string[] = [];
-            const values: any[] = [];
+        // Prepare update data
+        const updateData: any = {};
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.firstName !== undefined) updateData.firstName = data.firstName;
+        if (data.lastName !== undefined) updateData.lastName = data.lastName;
+        if (data.phone !== undefined) updateData.phone = data.phone;
 
-            if (data.name !== undefined) {
-                updates.push("name = ?");
-                values.push(data.name);
+        // Handle name split if full name provided but not parts
+        if (data.name && !data.firstName && !data.lastName) {
+            const parts = data.name.trim().split(" ");
+            if (parts.length > 0) {
+                updateData.firstName = parts[0];
+                updateData.lastName = parts.slice(1).join(" ") || "";
             }
-            if (data.phone !== undefined) {
-                updates.push("phone = ?");
-                values.push(data.phone);
-            }
-
-            if (updates.length > 0) {
-                values.push(session.user.id);
-                db.prepare(`
-                    UPDATE User 
-                    SET ${updates.join(", ")}, updatedAt = datetime('now')
-                    WHERE id = ?
-                `).run(...values);
-            }
-
-            // Get updated user
-            const user = db.prepare(`
-                SELECT id, name, email, phone
-                FROM User 
-                WHERE id = ?
-            `).get(session.user.id) as any;
-
-            db.close();
-
-            return NextResponse.json(user);
-        } catch (err) {
-            db.close();
-            throw err;
         }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: session.user.id },
+            data: updateData,
+            select: {
+                id: true,
+                name: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true
+            }
+        });
+
+        return NextResponse.json(updatedUser);
+
     } catch (error) {
         console.error("Error updating profile:", error);
         return NextResponse.json({ error: "Error al actualizar perfil" }, { status: 500 });
     }
 }
 
+// DELETE - Soft Delete User Account (Data Retention)
+export async function DELETE(request: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        }
+
+        const data = await request.json();
+        const { confirmationEmail } = data;
+
+        if (!confirmationEmail || confirmationEmail !== session.user.email) {
+            return NextResponse.json(
+                { error: "El email de confirmación no coincide" },
+                { status: 400 }
+            );
+        }
+
+        // SOFT DELETE ONLY - Keep all data for analytics
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: {
+                deletedAt: new Date(),
+            }
+        });
+
+        return NextResponse.json({ message: "Cuenta desactivada correctamente" });
+
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        return NextResponse.json(
+            { error: "Error al eliminar la cuenta. Intenta más tarde." },
+            { status: 500 }
+        );
+    }
+}

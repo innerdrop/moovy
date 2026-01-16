@@ -35,7 +35,8 @@ export async function POST(request: Request) {
             deliveryNotes,
             customerNotes,
             pointsUsed,
-            discountAmount
+            discountAmount,
+            merchantId
         } = data;
 
         if (!items || items.length === 0) {
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
                     orderNumber: generateOrderNumber(),
                     userId: session.user.id,
                     addressId: finalAddressId,
+                    merchantId: merchantId || null,
                     status: "PENDING",
                     paymentStatus: "PENDING",
                     paymentMethod: paymentMethod || "cash",

@@ -96,7 +96,7 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-6">
+        <div className="min-h-[calc(100vh-5rem)] flex flex-col items-center pt-8 lg:pt-12 bg-gray-50 px-4 pb-8">
             <div className="w-full max-w-sm sm:max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-6 sm:mb-8">

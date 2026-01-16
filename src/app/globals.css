@@ -287,6 +287,49 @@ h6 {
   animation: slideUp 0.4s ease forwards;
 }
 
+/* Marquee-style scroll animations for mobile categories */
+@keyframes scroll-right {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-33.33%);
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(-33.33%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-scroll-right {
+  animation: scroll-right 25s linear infinite;
+}
+
+.animate-scroll-left {
+  animation: scroll-left 25s linear infinite;
+}
+
+/* Pause animation on hover/touch for better UX */
+.animate-scroll-right:hover,
+.animate-scroll-left:hover,
+.animate-scroll-right:active,
+.animate-scroll-left:active {
+  animation-play-state: paused;
+}
+
+/* Touch-friendly scrolling - allow both horizontal and vertical */
+.touch-pan-x {
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Category Card */
 .category-card {
   background: var(--white);

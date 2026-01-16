@@ -7,7 +7,8 @@ import {
     MapPin,
     History,
     User,
-    Truck
+    Truck,
+    LogOut
 } from "lucide-react";
 
 export default async function ConductoresLayout({ children }: { children: React.ReactNode }) {
@@ -59,15 +60,25 @@ export default async function ConductoresLayout({ children }: { children: React.
                 </nav>
 
                 <div className="p-4 border-t border-gray-100">
+                    {/* User Info */}
                     <div className="flex items-center gap-3 mb-4 px-2">
                         <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">
                             {session.user?.name?.charAt(0) || "D"}
                         </div>
-                        <div className="overflow-hidden">
+                        <div className="overflow-hidden flex-1">
                             <p className="font-medium text-sm truncate">{session.user?.name}</p>
                             <p className="text-xs text-gray-400">En servicio</p>
                         </div>
                     </div>
+
+                    {/* Logout Button */}
+                    <Link
+                        href="/api/auth/signout"
+                        className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 transition text-sm font-medium w-full"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Cerrar Sesión
+                    </Link>
                 </div>
             </aside>
 
@@ -79,9 +90,9 @@ export default async function ConductoresLayout({ children }: { children: React.
                     </div>
                     <span className="font-bold text-gray-900">Conductor</span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">
-                    {session.user?.name?.charAt(0) || "D"}
-                </div>
+                <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
+                    <LogOut className="w-5 h-5" />
+                </Link>
             </header>
 
             {/* Main Content */}

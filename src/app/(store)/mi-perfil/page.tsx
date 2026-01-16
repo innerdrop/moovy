@@ -25,7 +25,8 @@ import {
     Gift,
     QrCode,
     Share2,
-    Crown
+    Crown,
+    AlertCircle
 } from "lucide-react";
 
 interface Address {
@@ -52,7 +53,7 @@ export default function MiPerfilPage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [activeSection, setActiveSection] = useState<"main" | "edit" | "addresses" | "newAddress">("main");
+    const [activeSection, setActiveSection] = useState<"main" | "edit" | "addresses" | "newAddress" | "deleteAccount">("main");
 
     // Profile edit state
     const [profileName, setProfileName] = useState("");
@@ -67,6 +68,34 @@ export default function MiPerfilPage() {
     const [addressCity, setAddressCity] = useState("");
     const [addressIsDefault, setAddressIsDefault] = useState(false);
     const [error, setError] = useState("");
+    const [deleteEmail, setDeleteEmail] = useState("");
+
+    const handleDeleteAccount = async () => {
+        if (deleteEmail !== profile?.email) return;
+
+        setSaving(true);
+        setError("");
+
+        try {
+            const res = await fetch("/api/profile", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ confirmationEmail: deleteEmail }),
+            });
+
+            if (res.ok) {
+                // Sign out and redirect
+                await signOut({ callbackUrl: "/" });
+            } else {
+                const data = await res.json();
+                setError(data.error || "Error al eliminar cuenta");
+                setSaving(false);
+            }
+        } catch (err) {
+            setError("Error de conexión");
+            setSaving(false);
+        }
+    };
 
     useEffect(() => {
         if (authStatus === "unauthenticated") {
@@ -347,6 +376,70 @@ export default function MiPerfilPage() {
         );
     }
 
+    // ========== DELETE ACCOUNT VIEW ==========
+    if (activeSection === "deleteAccount") {
+        return (
+            <>
+                <AppHeader title="Eliminar Cuenta" showBack />
+                <div className="p-6">
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-8 text-center">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="w-8 h-8 text-red-600" />
+                        </div>
+                        <h2 className="text-xl font-bold text-red-700 mb-2">¿Estás seguro?</h2>
+                        <p className="text-red-600 text-sm mb-4">
+                            Al eliminar tu cuenta, <strong>perderás todos tus puntos MOOVER</strong>, tu nivel actual, historiales de pedidos y direcciones guardadas.
+                        </p>
+                        <p className="text-red-800 font-bold text-sm">
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Para confirmar, escribí tu email:
+                            </label>
+                            <div className="p-3 bg-gray-100 rounded-lg text-gray-500 text-sm text-center mb-2 font-mono">
+                                {profile.email}
+                            </div>
+                            <input
+                                type="email"
+                                value={deleteEmail}
+                                onChange={(e) => setDeleteEmail(e.target.value)}
+                                placeholder="Tu email aquí"
+                                className="input border-red-200 focus:border-red-500 focus:ring-red-200"
+                            />
+                        </div>
+
+                        {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+
+                        <button
+                            onClick={handleDeleteAccount}
+                            disabled={deleteEmail !== profile.email || saving}
+                            className="btn-primary bg-red-600 hover:bg-red-700 w-full py-4 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saving ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="w-5 h-5 animate-spin" /> Procesando...
+                                </span>
+                            ) : (
+                                "Sí, eliminar mi cuenta permanentemente"
+                            )}
+                        </button>
+
+                        <button
+                            onClick={() => setActiveSection("main")}
+                            className="w-full py-3 text-gray-500 font-medium"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     // ========== MAIN PROFILE VIEW ==========
     return (
         <>
@@ -366,46 +459,8 @@ export default function MiPerfilPage() {
                 </div>
             </div>
 
-            <div className="p-4 space-y-4 -mt-4">
-                {/* ========== MOOVER HERO CARD ========== */}
-                <Link href="/puntos" className="block bg-gradient-to-r from-[#e60012] to-red-600 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden">
-                    {/* Background decoration */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-
-                    <div className="relative flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                                <Crown className="w-7 h-7 text-yellow-300" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-lg">MOOVER</span>
-                                    <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold">#SoyMoover</span>
-                                </div>
-                                <div className="flex items-baseline gap-1 mt-1">
-                                    <span className="text-2xl font-bold">0</span>
-                                    <span className="text-white/70 text-sm">puntos</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-1">
-                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                                <QrCode className="w-6 h-6 text-[#e60012]" />
-                            </div>
-                            <span className="text-[10px] text-white/70">Mi QR</span>
-                        </div>
-                    </div>
-
-                    {/* Share referral */}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                        <span className="text-sm text-white/80">Invitá amigos y ganá puntos</span>
-                        <button className="flex items-center gap-1 bg-white/20 px-3 py-1.5 rounded-full text-sm font-medium">
-                            <Share2 className="w-4 h-4" />
-                            Compartir
-                        </button>
-                    </div>
-                </Link>
+            <div className="p-4 space-y-4 mt-2">
+                {/* Quick Stats */}
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 gap-3">
@@ -492,10 +547,20 @@ export default function MiPerfilPage() {
                 </div>
 
                 {/* Logout */}
-                <button onClick={handleSignOut} className="w-full bg-white rounded-xl px-4 py-4 flex items-center gap-3 text-red-500 shadow-sm">
+                <button onClick={handleSignOut} className="w-full bg-white rounded-xl px-4 py-4 flex items-center gap-3 text-red-500 shadow-sm mb-4">
                     <LogOut className="w-5 h-5" />
                     <span>Cerrar Sesión</span>
                 </button>
+
+                {/* Delete Account Entry */}
+                <div className="px-4 pb-8">
+                    <button
+                        onClick={() => setActiveSection("deleteAccount")}
+                        className="text-xs text-gray-400 underline hover:text-red-500 w-full text-center"
+                    >
+                        Eliminar mi cuenta
+                    </button>
+                </div>
             </div>
         </>
     );

@@ -15,6 +15,7 @@ import {
     Loader2,
     ShoppingBag,
     ChevronRight,
+    ChevronDown,
     Sparkles,
     UserPlus,
     Zap,
@@ -24,7 +25,8 @@ import {
     Copy,
     Check,
     Users,
-    Crown
+    Crown,
+    X
 } from "lucide-react";
 
 interface PointsTransaction {
@@ -44,22 +46,33 @@ export default function PuntosPage() {
     const [loading, setLoading] = useState(true);
     const [showQR, setShowQR] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
     // Referral stats from API
     const [referralCode, setReferralCode] = useState("MOOV-XXXXXX");
     const [friendsInvited, setFriendsInvited] = useState(0);
     const [pointsFromReferrals, setPointsFromReferrals] = useState(0);
+    const [referralLink, setReferralLink] = useState("");
 
-    const referralLink = `https://moovy.app/registro?ref=${referralCode}`;
+    useEffect(() => {
+        // Set dynamic link based on current browser URL
+        if (typeof window !== "undefined") {
+            setReferralLink(`${window.location.origin}/registro?ref=${referralCode}`);
+        }
+    }, [referralCode]);
 
     useEffect(() => {
         if (authStatus === "authenticated") {
+            // Instant load from session if available
+            if ((session?.user as any)?.referralCode) {
+                setReferralCode((session.user as any).referralCode);
+            }
             loadPoints();
             loadReferralStats();
         } else if (authStatus === "unauthenticated") {
             setLoading(false);
         }
-    }, [authStatus]);
+    }, [authStatus, session]);
 
     async function loadReferralStats() {
         try {
@@ -104,11 +117,28 @@ export default function PuntosPage() {
 
     const handleCopyCode = async () => {
         try {
-            await navigator.clipboard.writeText(referralCode);
+            // Try modern clipboard API first
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(referralCode);
+            } else {
+                // Fallback for mobile and older browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = referralCode;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand("copy");
+                textArea.remove();
+            }
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error("Failed to copy:", err);
+            // Last resort: show alert with code
+            alert(`Tu código: ${referralCode}`);
         }
     };
 
@@ -336,34 +366,77 @@ export default function PuntosPage() {
                     <Star className="w-5 h-5 text-yellow-500" />
                     Cómo ganar puntos
                 </h2>
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                            <ShoppingBag className="w-5 h-5 text-[#e60012]" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="font-medium text-gray-900">Comprando</p>
-                            <p className="text-gray-500 text-xs">1 punto por cada $1 de compra</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-300" />
+                <div className="space-y-2">
+                    {/* Comprando - Expandable */}
+                    <div>
+                        <button
+                            onClick={() => setExpandedItem(expandedItem === 'compras' ? null : 'compras')}
+                            className="w-full flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-gray-50 transition"
+                        >
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <ShoppingBag className="w-5 h-5 text-[#e60012]" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="font-medium text-gray-900">Comprando</p>
+                                <p className="text-gray-500 text-xs">1 punto por cada $1 de compra</p>
+                            </div>
+                            {expandedItem === 'compras' ? (
+                                <ChevronDown className="w-5 h-5 text-[#e60012]" />
+                            ) : (
+                                <ChevronRight className="w-5 h-5 text-gray-300" />
+                            )}
+                        </button>
+                        {expandedItem === 'compras' && (
+                            <div className="ml-14 mr-2 mt-2 p-3 bg-red-50 rounded-lg text-sm text-gray-600">
+                                <p className="mb-2">📦 Por cada compra que realices, acumulás puntos automáticamente:</p>
+                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                    <li>Si gastás $1.000, sumás 1.000 puntos</li>
+                                    <li>Los puntos se acreditan al recibir tu pedido</li>
+                                    <li>Aplica para productos, no para envío</li>
+                                </ul>
+                            </div>
+                        )}
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <Users className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="font-medium text-gray-900">Refiriendo amigos</p>
-                            <p className="text-gray-500 text-xs">50 puntos por cada amigo</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-300" />
+
+                    {/* Refiriendo amigos - Expandable */}
+                    <div>
+                        <button
+                            onClick={() => setExpandedItem(expandedItem === 'referidos' ? null : 'referidos')}
+                            className="w-full flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-gray-50 transition"
+                        >
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                <Users className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="font-medium text-gray-900">Refiriendo amigos</p>
+                                <p className="text-gray-500 text-xs">50 puntos por cada amigo</p>
+                            </div>
+                            {expandedItem === 'referidos' ? (
+                                <ChevronDown className="w-5 h-5 text-purple-600" />
+                            ) : (
+                                <ChevronRight className="w-5 h-5 text-gray-300" />
+                            )}
+                        </button>
+                        {expandedItem === 'referidos' && (
+                            <div className="ml-14 mr-2 mt-2 p-3 bg-purple-50 rounded-lg text-sm text-gray-600">
+                                <p className="mb-2">👥 Compartí tu código y ganá puntos por cada amigo:</p>
+                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                    <li>Vos ganás 50 puntos cuando tu amigo se registra</li>
+                                    <li>Tu amigo gana 100 puntos de bienvenida</li>
+                                    <li>¡No hay límite! Invitá a todos los que quieras</li>
+                                </ul>
+                            </div>
+                        )}
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
+
+                    {/* Bono de bienvenida - Info only */}
+                    <div className="flex items-center gap-3 text-sm p-2">
                         <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                             <Award className="w-5 h-5 text-amber-600" />
                         </div>
                         <div className="flex-1">
                             <p className="font-medium text-gray-900">Bono de bienvenida</p>
-                            <p className="text-gray-500 text-xs">100 puntos al registrarte</p>
+                            <p className="text-gray-500 text-xs">100 puntos al registrarte ✓</p>
                         </div>
                     </div>
                 </div>
@@ -429,7 +502,15 @@ export default function PuntosPage() {
             {/* QR Code Modal */}
             {showQR && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowQR(false)}>
-                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center relative" onClick={e => e.stopPropagation()}>
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowQR(false)}
+                            className="absolute top-3 right-3 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
                         <div className="mb-4">
                             <Crown className="w-10 h-10 text-[#e60012] mx-auto mb-2" />
                             <h3 className="font-bold text-xl text-gray-900">Tu Código <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVER</span></h3>

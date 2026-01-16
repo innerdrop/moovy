@@ -14,7 +14,8 @@ import {
     Menu,
     Store,
     Tag,
-    Gift
+    Gift,
+    Activity
 } from "lucide-react";
 
 async function OpsLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
 
     const navItems = [
         { href: "/ops", icon: LayoutDashboard, label: "Dashboard" },
+        { href: "/ops/live", icon: Activity, label: "🔴 En Vivo" },
         { href: "/ops/productos", icon: Package, label: "Productos" },
         { href: "/ops/categorias", icon: Tag, label: "Categorías" },
         { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
@@ -83,13 +85,22 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
                             <p className="text-xs text-gray-400">Administrador</p>
                         </div>
                     </div>
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        Ir a la Tienda
-                    </Link>
+                    <div className="space-y-2">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
+                        >
+                            <Store className="w-4 h-4" />
+                            Ir a la Tienda
+                        </Link>
+                        <Link
+                            href="/api/auth/signout"
+                            className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Cerrar Sesión
+                        </Link>
+                    </div>
                 </div>
             </aside>
 

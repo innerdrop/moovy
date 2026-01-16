@@ -1,14 +1,9 @@
 // API Route: User Registration with Referral System
 import { NextRequest, NextResponse } from "next/server";
-import Database from "better-sqlite3";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import path from "path";
 
-// Force Node.js runtime (not Edge) for better-sqlite3 compatibility
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const dbPath = path.join(process.cwd(), "prisma", "dev.db");
 
 // Generate a user-friendly referral code
 function generateReferralCode(): string {
@@ -21,24 +16,25 @@ function generateReferralCode(): string {
 }
 
 export async function POST(request: NextRequest) {
-    let db: Database.Database | null = null;
-
     try {
         const data = await request.json();
         console.log("[Register] Received data:", {
-            name: data.name,
+            firstName: data.firstName,
+            lastName: data.lastName,
             email: data.email,
             phone: data.phone,
             referralCode: data.referralCode || "none"
         });
 
         // Validate required fields
-        if (!data.name || !data.email || !data.password || !data.phone) {
+        if (!data.firstName || !data.lastName || !data.email || !data.password || !data.phone) {
             return NextResponse.json(
-                { error: "Nombre, email, teléfono y contraseña son requeridos" },
+                { error: "Todos los campos obligatorios deben ser completados." },
                 { status: 400 }
             );
         }
+
+        const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,14 +53,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Open database
-        db = new Database(dbPath);
-        console.log("[Register] Database opened:", dbPath);
-
         // Check if email already exists
-        const existingUser = db.prepare("SELECT id FROM User WHERE email = ?").get(data.email) as { id: string } | undefined;
+        const existingUser = await prisma.user.findUnique({
+            where: { email: data.email },
+            select: { id: true }
+        });
+
         if (existingUser) {
-            db.close();
             return NextResponse.json(
                 { error: "Ya existe una cuenta con ese email" },
                 { status: 409 }
@@ -73,13 +68,14 @@ export async function POST(request: NextRequest) {
 
         // Check if referral code is valid and find referrer
         let referrerId: string | null = null;
-        let referrerInfo: { id: string; name: string; pointsBalance: number } | null = null;
+        let referrerInfo: { id: string; name: string | null; pointsBalance: number } | null = null;
 
         if (data.referralCode && data.referralCode.trim()) {
             const referralCodeClean = data.referralCode.trim().toUpperCase();
-            referrerInfo = db.prepare(
-                "SELECT id, name, pointsBalance FROM User WHERE referralCode = ?"
-            ).get(referralCodeClean) as { id: string; name: string; pointsBalance: number } | undefined || null;
+            referrerInfo = await prisma.user.findUnique({
+                where: { referralCode: referralCodeClean },
+                select: { id: true, name: true, pointsBalance: true }
+            });
 
             if (referrerInfo) {
                 referrerId = referrerInfo.id;
@@ -91,69 +87,81 @@ export async function POST(request: NextRequest) {
 
         // Hash password
         const hashedPassword = await bcrypt.hash(data.password, 10);
-
-        // Create user with referral info
-        const userId = crypto.randomUUID();
         const newUserReferralCode = generateReferralCode();
-        const now = new Date().toISOString();
 
         // Base signup bonus (5000 points = $500)
         const signupBonus = 5000;
-        // Extra bonus if referred (already included in base, but tracked)
+        // Referral bonus
         const referralBonus = 2500; // Points given to referrer ($250)
 
-        db.prepare(`
-            INSERT INTO User (id, email, password, name, phone, role, pointsBalance, referralCode, referredById, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, 'USER', ?, ?, ?, ?, ?)
-        `).run(userId, data.email, hashedPassword, data.name, data.phone, signupBonus, newUserReferralCode, referrerId, now, now);
+        // Use a transaction to ensure everything is created or nothing is
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Create the new user
+            const newUser = await tx.user.create({
+                data: {
+                    email: data.email,
+                    password: hashedPassword,
+                    name: fullName,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    phone: data.phone,
+                    role: 'USER',
+                    pointsBalance: signupBonus, // Start with bonus
+                    referralCode: newUserReferralCode,
+                    referredById: referrerId
+                }
+            });
 
-        console.log("[Register] User created:", userId, "with code:", newUserReferralCode);
+            // 2. Award signup bonus transaction record
+            await tx.pointsTransaction.create({
+                data: {
+                    userId: newUser.id,
+                    type: 'BONUS',
+                    amount: signupBonus,
+                    balanceAfter: signupBonus,
+                    description: '¡Bienvenido a MOOVER! Bono de registro'
+                }
+            });
 
-        // Award signup bonus points transaction
-        const transactionId1 = crypto.randomUUID();
-        db.prepare(`
-            INSERT INTO PointsTransaction (id, userId, type, amount, balanceAfter, description, createdAt)
-            VALUES (?, ?, 'BONUS', ?, ?, '¡Bienvenido a MOOVER! Bono de registro', ?)
-        `).run(transactionId1, userId, signupBonus, signupBonus, now);
+            // 3. If referred, handle referrer rewards
+            if (referrerId && referrerInfo) {
+                const newReferrerBalance = referrerInfo.pointsBalance + referralBonus;
 
-        console.log("[Register] Signup bonus awarded:", signupBonus, "points");
+                // Update referrer balance
+                await tx.user.update({
+                    where: { id: referrerId },
+                    data: { pointsBalance: newReferrerBalance }
+                });
 
-        // If user was referred, award points to referrer and create Referral record
-        if (referrerId && referrerInfo) {
-            // Update referrer's points balance
-            const newReferrerBalance = referrerInfo.pointsBalance + referralBonus;
-            db.prepare(
-                "UPDATE User SET pointsBalance = ?, updatedAt = ? WHERE id = ?"
-            ).run(newReferrerBalance, now, referrerId);
+                // Create transaction for referrer
+                await tx.pointsTransaction.create({
+                    data: {
+                        userId: referrerId,
+                        type: 'REFERRAL',
+                        amount: referralBonus,
+                        balanceAfter: newReferrerBalance,
+                        description: `¡${data.firstName} se registró con tu código!`
+                    }
+                });
 
-            // Create points transaction for referrer
-            const transactionId2 = crypto.randomUUID();
-            db.prepare(`
-                INSERT INTO PointsTransaction (id, userId, type, amount, balanceAfter, description, createdAt)
-                VALUES (?, ?, 'REFERRAL', ?, ?, ?, ?)
-            `).run(transactionId2, referrerId, referralBonus, newReferrerBalance, `¡${data.name} se registró con tu código!`, now);
+                // Create Referral record linkage
+                await tx.referral.create({
+                    data: {
+                        referrerId: referrerId,
+                        refereeId: newUser.id,
+                        codeUsed: data.referralCode.trim().toUpperCase(),
+                        referrerPoints: referralBonus,
+                        refereePoints: signupBonus,
+                        status: 'COMPLETED'
+                    }
+                });
+            }
 
-            // Create Referral record
-            const referralId = crypto.randomUUID();
-            db.prepare(`
-                INSERT INTO Referral (id, referrerId, refereeId, codeUsed, referrerPoints, refereePoints, status, createdAt)
-                VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', ?)
-            `).run(referralId, referrerId, userId, data.referralCode.trim().toUpperCase(), referralBonus, signupBonus, now);
+            // 4. Create default address if provided (Not in form currently, but logic kept optional)
+            // Skipping to simplify as the new form doesn't send address in this step usually.
 
-            console.log("[Register] Referral bonus awarded:", referralBonus, "points to", referrerInfo.name);
-        }
-
-        // Create address if provided
-        if (data.address && data.address.trim()) {
-            const addressId = crypto.randomUUID();
-            db.prepare(`
-                INSERT INTO Address (id, userId, label, street, "number", city, province, isDefault, createdAt, updatedAt)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-            `).run(addressId, userId, "Casa", data.address, "S/N", "Ushuaia", "Tierra del Fuego", now, now);
-            console.log("[Register] Address created:", addressId);
-        }
-
-        db.close();
+            return newUser;
+        });
 
         console.log("[Register] New user created successfully:", data.email);
 
@@ -162,15 +170,11 @@ export async function POST(request: NextRequest) {
             message: referrerId
                 ? "¡Registro exitoso! Vos y tu amigo ganaron puntos 🎉"
                 : "Usuario registrado exitosamente",
-            referralCode: newUserReferralCode, // Return user's new referral code
+            referralCode: newUserReferralCode,
         });
+
     } catch (error: any) {
         console.error("[Register] Error:", error?.message || error);
-
-        if (db) {
-            try { db.close(); } catch (e) { /* ignore */ }
-        }
-
         return NextResponse.json(
             { error: `Error al registrar usuario: ${error?.message || "Error desconocido"}` },
             { status: 500 }

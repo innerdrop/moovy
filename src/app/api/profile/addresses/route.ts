@@ -1,15 +1,9 @@
-// API Route: User Addresses - Using Direct SQLite
+// API Route: User Addresses
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { v4 as uuidv4 } from "uuid";
+import { prisma } from "@/lib/prisma";
 
-// Direct database access
-async function getDatabase() {
-    const Database = (await import("better-sqlite3")).default;
-    const path = await import("path");
-    const dbPath = path.join(process.cwd(), "prisma", "dev.db");
-    return new Database(dbPath);
-}
+export const dynamic = "force-dynamic";
 
 // GET - Get all user addresses
 export async function GET() {
@@ -19,26 +13,16 @@ export async function GET() {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const db = await getDatabase();
+        const addresses = await prisma.address.findMany({
+            where: { userId: session.user.id },
+            orderBy: [
+                { isDefault: 'desc' },
+                { createdAt: 'desc' }
+            ]
+        });
 
-        try {
-            const addresses = db.prepare(`
-                SELECT id, label, street, number, apartment, neighborhood, city, province, zipCode, isDefault
-                FROM Address 
-                WHERE userId = ?
-                ORDER BY isDefault DESC, createdAt DESC
-            `).all(session.user.id) as any[];
+        return NextResponse.json(addresses);
 
-            db.close();
-
-            return NextResponse.json(addresses.map(addr => ({
-                ...addr,
-                isDefault: Boolean(addr.isDefault)
-            })));
-        } catch (err) {
-            db.close();
-            throw err;
-        }
     } catch (error) {
         console.error("Error fetching addresses:", error);
         return NextResponse.json({ error: "Error al obtener direcciones" }, { status: 500 });
@@ -54,49 +38,35 @@ export async function POST(request: Request) {
         }
 
         const data = await request.json();
-        const db = await getDatabase();
 
-        try {
-            // If this is set as default, unset other defaults first
+        // Use transaction if setting default
+        const result = await prisma.$transaction(async (tx) => {
             if (data.isDefault) {
-                db.prepare(`
-                    UPDATE Address SET isDefault = 0 WHERE userId = ?
-                `).run(session.user.id);
+                // Unset other defaults
+                await tx.address.updateMany({
+                    where: { userId: session.user.id, isDefault: true },
+                    data: { isDefault: false }
+                });
             }
 
-            const id = uuidv4();
-            const now = new Date().toISOString();
+            return await tx.address.create({
+                data: {
+                    userId: session.user.id,
+                    label: data.label || "Casa",
+                    street: data.street,
+                    number: data.number,
+                    apartment: data.apartment || null,
+                    neighborhood: data.neighborhood || null,
+                    city: data.city || "Ushuaia",
+                    province: data.province || "Tierra del Fuego",
+                    zipCode: data.zipCode || null,
+                    isDefault: data.isDefault || false
+                }
+            });
+        });
 
-            db.prepare(`
-                INSERT INTO Address (id, userId, label, street, number, apartment, neighborhood, city, province, zipCode, isDefault, createdAt, updatedAt)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
-                id,
-                session.user.id,
-                data.label || "Casa",
-                data.street,
-                data.number,
-                data.apartment || null,
-                data.neighborhood || null,
-                data.city || "Ushuaia",
-                data.province || "Tierra del Fuego",
-                data.zipCode || null,
-                data.isDefault ? 1 : 0,
-                now,
-                now
-            );
+        return NextResponse.json(result, { status: 201 });
 
-            const address = db.prepare(`SELECT * FROM Address WHERE id = ?`).get(id) as any;
-            db.close();
-
-            return NextResponse.json({
-                ...address,
-                isDefault: Boolean(address.isDefault)
-            }, { status: 201 });
-        } catch (err) {
-            db.close();
-            throw err;
-        }
     } catch (error) {
         console.error("Error creating address:", error);
         return NextResponse.json({ error: "Error al crear dirección" }, { status: 500 });

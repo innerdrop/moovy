@@ -102,6 +102,25 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
+    // STRICT PORTAL SEPARATION
+    // Prevent specialized roles from wandering into the Client Store
+    if (token) {
+        // Merchants: Must stay in /comercios
+        if (userRole === 'MERCHANT' && !pathname.startsWith('/comercios') && pathname !== '/logout') {
+            return NextResponse.redirect(new URL('/comercios', request.url));
+        }
+
+        // Drivers: Must stay in /conductores
+        if (userRole === 'DRIVER' && !pathname.startsWith('/conductores') && pathname !== '/logout') {
+            return NextResponse.redirect(new URL('/conductores', request.url));
+        }
+
+        // Admins: Must stay in /ops (unless they explicitly need to debug, but user requested strictness)
+        if (userRole === 'ADMIN' && !pathname.startsWith('/ops') && pathname !== '/logout') {
+            return NextResponse.redirect(new URL('/ops', request.url));
+        }
+    }
+
     return NextResponse.next();
 }
 

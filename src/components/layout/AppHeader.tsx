@@ -1,9 +1,9 @@
 "use client";
 
-// App Header Component - Header unificado tipo app para todos los usuarios
+// App Header Component - Professional delivery app style header
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Star, ChevronLeft } from "lucide-react";
+import { ShoppingBag, MapPin, Star, User } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useUserPoints } from "@/hooks/useUserPoints";
 
@@ -11,111 +11,164 @@ interface AppHeaderProps {
     isLoggedIn?: boolean;
     cartCount?: number;
     userName?: string;
-    title?: string;
-    showBack?: boolean;
-    backHref?: string;
-    rightAction?: React.ReactNode;
 }
 
 export default function AppHeader({
     isLoggedIn = false,
     cartCount = 0,
     userName,
-    title,
-    showBack = false,
-    backHref = "/",
-    rightAction,
 }: AppHeaderProps) {
     const openCart = useCartStore((state) => state.openCart);
     const { points } = useUserPoints();
+    const items = useCartStore((state) => state.items);
+    const actualCartCount = cartCount || items.length;
 
-    // Get first name for greeting
     const firstName = userName?.split(" ")[0] || "";
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-            <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto border-b border-gray-100">
-                {/* Left: Back button or Logo/Greeting */}
-                {showBack ? (
-                    <Link href={backHref} className="flex items-center gap-1 text-gray-600 min-w-[60px]">
-                        <ChevronLeft className="w-5 h-5" />
-                        <span className="text-sm">Volver</span>
-                    </Link>
-                ) : isLoggedIn && firstName ? (
-                    <Link href="/" className="flex items-center gap-2">
+            {/* Red accent line */}
+            <div className="h-1 bg-gradient-to-r from-[#e60012] via-[#ff3344] to-[#e60012]" />
+
+            {/* Mobile Header - Single clean row */}
+            <div className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-gray-100">
+                {/* Left: Greeting (logged in) or Location (not logged in) */}
+                {isLoggedIn && firstName ? (
+                    <Link href="/mi-perfil" className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                             {firstName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-gray-500 leading-none">Hola,</span>
-                            <span className="font-semibold text-gray-900 text-sm leading-tight">{firstName}</span>
+                            <span className="text-[10px] text-gray-400 leading-none">Hola,</span>
+                            <span className="text-sm font-semibold text-gray-900">{firstName}</span>
                         </div>
                     </Link>
                 ) : (
-                    <Link href="/" className="flex items-center">
-                        <Image
-                            src="/logo-moovy.png"
-                            alt="Moovy"
-                            width={90}
-                            height={28}
-                            style={{ width: 'auto', height: 'auto' }}
-                            priority
-                        />
-                    </Link>
-                )}
-
-                {/* Center: Title if provided, else logo for logged users */}
-                {title ? (
-                    <h1 className="font-bold text-gray-900 text-lg truncate max-w-[150px]">
-                        {title}
-                    </h1>
-                ) : isLoggedIn && firstName ? (
-                    <Link href="/" className="flex items-center">
-                        <Image
-                            src="/logo-moovy.png"
-                            alt="Moovy"
-                            width={70}
-                            height={22}
-                            style={{ width: 'auto', height: 'auto' }}
-                        />
-                    </Link>
-                ) : (
-                    <button className="flex items-center gap-1 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">
-                        <MapPin className="w-4 h-4 text-[#e60012]" />
-                        <span className="font-medium truncate max-w-[120px]">Ushuaia</span>
-                    </button>
-                )}
-
-                {/* Right: Custom action or default cart/points */}
-                {rightAction ? (
-                    <div className="min-w-[60px] flex justify-end">{rightAction}</div>
-                ) : (
-                    <div className="flex items-center gap-1">
-                        {/* Points Badge - Only for logged in users */}
-                        {isLoggedIn && (
-                            <Link
-                                href="/puntos"
-                                className="flex items-center gap-1 bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold"
-                            >
-                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                                {points > 999 ? `${(points / 1000).toFixed(1)}K` : points}
-                            </Link>
-                        )}
-
-                        {/* Cart Button */}
-                        <button
-                            onClick={() => openCart()}
-                            className="relative p-2 -mr-2 text-gray-600 hover:text-[#e60012] transition"
-                        >
-                            <ShoppingBag className="w-6 h-6" />
-                            {cartCount > 0 && (
-                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-[#e60012] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                                    {cartCount > 99 ? "99+" : cartCount}
-                                </span>
-                            )}
-                        </button>
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-[#e60012]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">Ushuaia, TDF</span>
                     </div>
                 )}
+
+                {/* Center: Logo */}
+                <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
+                    <Image
+                        src="/logo-moovy.png"
+                        alt="Moovy"
+                        width={70}
+                        height={22}
+                        style={{ width: 'auto', height: 'auto' }}
+                        priority
+                    />
+                </Link>
+
+                {/* Right: Points + Cart */}
+                <div className="flex items-center gap-0.5">
+                    {isLoggedIn && points > 0 && (
+                        <Link
+                            href="/puntos"
+                            className="flex items-center gap-1 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-amber-700 px-2 py-1 rounded-full text-xs font-bold"
+                        >
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            {points > 999 ? `${(points / 1000).toFixed(1)}K` : points}
+                        </Link>
+                    )}
+                    <button
+                        onClick={() => openCart()}
+                        className="relative p-2 text-gray-600 hover:text-[#e60012] transition"
+                    >
+                        <ShoppingBag className="w-6 h-6" />
+                        {actualCartCount > 0 && (
+                            <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-[#e60012] text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-sm">
+                                {actualCartCount > 99 ? "99+" : actualCartCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Desktop Header */}
+            <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto border-b border-gray-100">
+                {/* Left: Logo */}
+                <Link href="/" className="flex items-center gap-3 flex-shrink-0">
+                    <Image
+                        src="/logo-moovy.png"
+                        alt="Moovy"
+                        width={100}
+                        height={32}
+                        style={{ width: 'auto', height: 'auto' }}
+                        priority
+                    />
+                </Link>
+
+                {/* Center: Greeting (logged in) or Location (not logged in) */}
+                <div className="flex items-center gap-4 flex-1 justify-center">
+                    {isLoggedIn && firstName ? (
+                        <Link href="/mi-perfil" className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-200 hover:border-[#e60012]/30 transition">
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {firstName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col items-start">
+                                <span className="text-[10px] text-gray-400 leading-none">Hola,</span>
+                                <span className="text-sm font-semibold text-gray-900">{firstName}</span>
+                            </div>
+                        </Link>
+                    ) : (
+                        <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-200">
+                            <MapPin className="w-4 h-4 text-[#e60012]" />
+                            <span className="text-sm font-semibold text-gray-900">Ushuaia, TDF</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-3">
+                    {/* Points Badge */}
+                    {isLoggedIn && points > 0 && (
+                        <Link
+                            href="/puntos"
+                            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-amber-700 px-3 py-2 rounded-full text-sm font-bold hover:shadow-md transition"
+                        >
+                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            {points.toLocaleString()} pts
+                        </Link>
+                    )}
+
+                    {/* Profile/Login */}
+                    {isLoggedIn ? (
+                        <Link
+                            href="/mi-perfil"
+                            className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-50 transition text-sm font-medium text-gray-700"
+                        >
+                            <User className="w-4 h-4" />
+                            Mi Perfil
+                        </Link>
+                    ) : (
+                        <Link
+                            href="/login"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 hover:border-[#e60012] hover:text-[#e60012] transition text-sm font-medium"
+                        >
+                            <User className="w-4 h-4" />
+                            Ingresar
+                        </Link>
+                    )}
+
+                    {/* Cart Button */}
+                    <button
+                        onClick={() => openCart()}
+                        className="relative flex items-center gap-2 bg-[#e60012] hover:bg-[#c4000f] text-white px-4 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg"
+                    >
+                        <ShoppingBag className="w-5 h-5" />
+                        <span className="text-sm">Carrito</span>
+                        {actualCartCount > 0 && (
+                            <span className="bg-white text-[#e60012] text-xs font-bold px-2 py-0.5 rounded-full">
+                                {actualCartCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
         </header>
     );

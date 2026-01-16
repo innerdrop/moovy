@@ -1,18 +1,23 @@
 "use client";
 
 // Floating Cart Button - Shows above bottom nav when cart has items
+import { usePathname } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
 
 export default function FloatingCartButton() {
-    const { items, openCart, getTotalPrice, getTotalItems } = useCartStore();
+    const { openCart, getTotalPrice, getTotalItems } = useCartStore();
+    const pathname = usePathname();
 
     const totalItems = getTotalItems();
     const total = getTotalPrice();
 
-    // Don't show if cart is empty
-    if (totalItems === 0) return null;
+    // Auth pages where we shouldn't show the cart
+    const isAuthPage = pathname === "/login" || pathname === "/registro";
+
+    // Don't show if cart is empty or on auth pages
+    if (totalItems === 0 || isAuthPage) return null;
 
     return (
         <button

@@ -43,6 +43,12 @@ export default function CheckoutPage() {
         city: "",
         notes: "",
     });
+    // Validated Address ID (from saved addresses)
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+    const [isNewAddress, setIsNewAddress] = useState(false);
+    const [loadingAddresses, setLoadingAddresses] = useState(true);
+
     const [deliveryResult, setDeliveryResult] = useState<DeliveryResult | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
@@ -71,6 +77,59 @@ export default function CheckoutPage() {
             router.push("/login?redirect=/checkout");
         }
     }, [status, router]);
+
+    // Fetch saved addresses
+    useEffect(() => {
+        if (status === "authenticated") {
+            fetch("/api/profile/addresses")
+                .then((res) => res.json())
+                .then((data) => {
+                    if (Array.isArray(data)) {
+                        setSavedAddresses(data);
+                        // Auto-select default address if exists
+                        const defaultAddr = data.find((a: any) => a.isDefault);
+                        if (defaultAddr) {
+                            selectAddress(defaultAddr);
+                        } else if (data.length > 0) {
+                            // Or select the first one
+                            selectAddress(data[0]);
+                        } else {
+                            // No addresses, show form
+                            setIsNewAddress(true);
+                        }
+                    }
+                })
+                .catch((err) => console.error("Error loading addresses", err))
+                .finally(() => setLoadingAddresses(false));
+        }
+    }, [status]);
+
+    const selectAddress = (addr: any) => {
+        setSelectedAddressId(addr.id);
+        setIsNewAddress(false);
+        setAddress({
+            street: addr.street,
+            number: addr.number,
+            floor: addr.apartment || "",
+            city: addr.city,
+            notes: "", // Clear notes for fresh delivery instructions
+        });
+        // Reset delivery calculation when address changes
+        setDeliveryResult(null);
+    };
+
+    const handleNewAddress = () => {
+        setSelectedAddressId(null);
+        setIsNewAddress(true);
+        setAddress({
+            street: "",
+            number: "",
+            floor: "",
+            city: "Ushuaia",
+            notes: "",
+        });
+        setDeliveryResult(null);
+    };
 
     // Calculate delivery cost using geocoding
     const calculateDelivery = async () => {
@@ -149,12 +208,15 @@ export default function CheckoutPage() {
                         variantId: item.variantId,
                         variantName: item.variantName,
                     })),
-                    addressData: {
+                    merchantId: useCartStore.getState().merchantId, // Get current merchant
+                    // Send addressId if selected, otherwise addressData
+                    addressId: selectedAddressId || undefined,
+                    addressData: !selectedAddressId ? {
                         street: address.street,
                         number: address.number,
                         floor: address.floor,
                         city: address.city,
-                    },
+                    } : undefined,
                     paymentMethod,
                     deliveryFee: deliveryResult.isFreeDelivery ? 0 : deliveryResult.totalCost,
                     distanceKm: deliveryResult.distanceKm,
@@ -264,86 +326,143 @@ export default function CheckoutPage() {
                                     Dirección de Entrega
                                 </h2>
 
-                                <div className="space-y-4">
-                                    <div className="grid md:grid-cols-3 gap-4">
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Calle *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={address.street}
-                                                onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                                                placeholder="Av. Libertador"
-                                                className="input"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Número *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={address.number}
-                                                onChange={(e) => setAddress({ ...address, number: e.target.value })}
-                                                placeholder="123"
-                                                className="input"
-                                                required
-                                            />
+                                {/* Saved Addresses List */}
+                                {!loadingAddresses && savedAddresses.length > 0 && (
+                                    <div className="mb-6 space-y-3">
+                                        <p className="text-sm font-medium text-gray-700">Mis direcciones guardadas:</p>
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            {savedAddresses.map((addr: any) => (
+                                                <button
+                                                    key={addr.id}
+                                                    onClick={() => selectAddress(addr)}
+                                                    className={`text-left p-3 rounded-xl border-2 transition relative ${selectedAddressId === addr.id
+                                                        ? "border-moovy bg-moovy-light"
+                                                        : "border-gray-100 hover:border-gray-200"
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-navy text-sm">{addr.label}</span>
+                                                        {selectedAddressId === addr.id && (
+                                                            <CheckCircle className="w-4 h-4 text-moovy absolute top-3 right-3" />
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 line-clamp-1">
+                                                        {addr.street} {addr.number}
+                                                    </p>
+                                                </button>
+                                            ))}
+
+                                            {/* New Address Button in Grid */}
+                                            <button
+                                                onClick={handleNewAddress}
+                                                className={`text-left p-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition ${isNewAddress
+                                                    ? "border-moovy bg-gray-50 text-moovy"
+                                                    : "border-gray-300 text-gray-500 hover:border-gray-400"
+                                                    }`}
+                                            >
+                                                <span className="font-semibold text-sm">+ Nueva Dirección</span>
+                                            </button>
                                         </div>
                                     </div>
+                                )}
 
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Piso/Depto (opcional)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={address.floor}
-                                                onChange={(e) => setAddress({ ...address, floor: e.target.value })}
-                                                placeholder="1°A"
-                                                className="input"
-                                            />
+                                {/* Address Form */}
+                                {(isNewAddress || savedAddresses.length === 0) ? (
+                                    <div className="space-y-4 animate-fadeIn">
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Calle *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={address.street}
+                                                    onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                                                    placeholder="Av. Libertador"
+                                                    className="input"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Número *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={address.number}
+                                                    onChange={(e) => setAddress({ ...address, number: e.target.value })}
+                                                    placeholder="123"
+                                                    className="input"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Ciudad
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={address.city}
-                                                className="input bg-gray-50"
-                                                disabled
-                                            />
+
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Piso/Depto (opcional)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={address.floor}
+                                                    onChange={(e) => setAddress({ ...address, floor: e.target.value })}
+                                                    placeholder="1°A"
+                                                    className="input"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Ciudad
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={address.city}
+                                                    className="input bg-gray-50"
+                                                    disabled
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Notas para el repartidor
-                                        </label>
-                                        <textarea
-                                            value={address.notes}
-                                            onChange={(e) => setAddress({ ...address, notes: e.target.value })}
-                                            placeholder="Ej: Tocar timbre, dejar en portería..."
-                                            className="input resize-none"
-                                            rows={2}
-                                        />
+                                ) : (
+                                    // Read-only view of selected address
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
+                                        <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                                        <div>
+                                            <p className="font-medium text-navy">Vas a recibir en:</p>
+                                            <p className="text-gray-600">
+                                                {address.street} {address.number}
+                                                {address.floor ? ` (${address.floor})` : ""}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">{address.city}</p>
+                                        </div>
                                     </div>
+                                )}
 
-                                    <button
-                                        onClick={() => {
-                                            calculateDelivery();
-                                            setStep(2);
-                                        }}
-                                        disabled={!address.street || !address.number}
-                                        className="btn-primary w-full py-3"
-                                    >
-                                        Continuar
-                                    </button>
+                                {/* Common Note Field */}
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Notas para el repartidor
+                                    </label>
+                                    <textarea
+                                        value={address.notes}
+                                        onChange={(e) => setAddress({ ...address, notes: e.target.value })}
+                                        placeholder="Ej: Tocar timbre, dejar en portería..."
+                                        className="input resize-none"
+                                        rows={2}
+                                    />
                                 </div>
+
+                                <button
+                                    onClick={() => {
+                                        calculateDelivery();
+                                        setStep(2);
+                                    }}
+                                    disabled={!address.street || !address.number}
+                                    className="btn-primary w-full py-3 mt-4"
+                                >
+                                    Continuar
+                                </button>
                             </div>
                         )}
 

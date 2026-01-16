@@ -48,18 +48,30 @@ export default function MisPedidosPage() {
     const isAuthenticated = authStatus === "authenticated";
 
     useEffect(() => {
-        if (isAuthenticated) loadOrders();
-        else setLoading(false);
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
+
+        // Initial load
+        loadOrders();
+
+        // Polling every 10 seconds to keep statuses updated
+        const intervalId = setInterval(() => {
+            loadOrders(true); // silent refresh
+        }, 10000);
+
+        return () => clearInterval(intervalId);
     }, [isAuthenticated]);
 
-    async function loadOrders() {
+    async function loadOrders(silent = false) {
         try {
             const res = await fetch("/api/orders");
             if (res.ok) setOrders(await res.json());
         } catch (error) {
             console.error("Error loading orders:", error);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }
 

@@ -61,15 +61,25 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                 </nav>
 
                 <div className="p-4 border-t border-gray-100">
+                    {/* User Info */}
                     <div className="flex items-center gap-3 mb-4 px-2">
                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
                             {session.user?.name?.charAt(0) || "C"}
                         </div>
-                        <div className="overflow-hidden">
+                        <div className="overflow-hidden flex-1">
                             <p className="font-medium text-sm truncate">{session.user?.name}</p>
                             <p className="text-xs text-gray-400">Vendedor</p>
                         </div>
                     </div>
+
+                    {/* Logout Button */}
+                    <Link
+                        href="/api/auth/signout"
+                        className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 transition text-sm font-medium w-full"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Cerrar Sesión
+                    </Link>
                 </div>
             </aside>
 
@@ -81,9 +91,9 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                     </div>
                     <span className="font-bold text-gray-900">Comercio</span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
-                    {session.user?.name?.charAt(0) || "C"}
-                </div>
+                <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
+                    <LogOut className="w-5 h-5" />
+                </Link>
             </header>
 
             {/* Main Content */}

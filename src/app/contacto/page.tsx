@@ -11,13 +11,13 @@ export default function ContactoPage() {
     return (
         <div className="min-h-screen bg-gray-50 py-12">
             <div className="container mx-auto px-4 max-w-4xl">
-                {/* Back to home link */}
+                {/* Back link */}
                 <Link
-                    href="/"
+                    href="/mi-perfil"
                     className="inline-flex items-center gap-2 text-gray-600 hover:text-[#e60012] transition mb-6"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Volver al inicio
+                    Volver a Mi Perfil
                 </Link>
 
                 <h1 className="text-4xl font-bold text-center text-gray-900 mb-4">Contacto</h1>

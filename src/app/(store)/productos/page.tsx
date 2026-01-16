@@ -1,5 +1,6 @@
 // Products Listing Page - Página de Productos
-import { getAllProducts, getAllCategories, type Product, type Category } from "@/lib/db";
+import { getAllCategories, type Product, type Category } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Package, Filter } from "lucide-react";
 import ProductCard from "@/components/products/ProductCard";
@@ -10,29 +11,38 @@ interface ProductsPageProps {
 }
 
 async function getProducts(categoria?: string, buscar?: string): Promise<Product[]> {
-    let products = await getAllProducts();
+    const where: any = { isActive: true };
 
-    // Filter by category
     if (categoria) {
-        products = products.filter(p =>
-            p.categories.some(c => c.category.slug === categoria)
-        );
+        where.categories = {
+            some: { category: { slug: categoria } }
+        };
     }
 
-    // Filter by search term
     if (buscar) {
-        const searchLower = buscar.toLowerCase();
-        products = products.filter(p =>
-            p.name.toLowerCase().includes(searchLower) ||
-            (p.description || "").toLowerCase().includes(searchLower)
-        );
+        where.OR = [
+            { name: { contains: buscar, mode: 'insensitive' } },
+            { description: { contains: buscar, mode: 'insensitive' } },
+            { merchant: { name: { contains: buscar, mode: 'insensitive' } } },
+        ];
     }
 
-    // Sort by name
-    products.sort((a, b) => a.name.localeCompare(b.name));
+    const products = await prisma.product.findMany({
+        where,
+        include: {
+            categories: { include: { category: true } },
+            images: true,
+            merchant: true,
+        },
+        orderBy: { name: "asc" },
+    });
 
-    console.log(`[ProductosPage] Found ${products.length} products`);
-    return products;
+    // Map to ensure interface compatibility (especially null vs undefined)
+    return products.map(p => ({
+        ...p,
+        merchantId: p.merchantId || undefined,
+        image: p.images[0]?.url || null
+    }));
 }
 
 async function getCategories(): Promise<Category[]> {

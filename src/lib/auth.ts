@@ -37,6 +37,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         return null;
                     }
 
+                    // Check for soft delete
+                    if (user.deletedAt) {
+                        throw new Error("Esta cuenta ha sido eliminada. Contactá a soporte.");
+                    }
+
                     // Verify password
                     const isValid = await bcrypt.compare(password, user.password);
 
@@ -59,6 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         name: user.name,
                         role: user.role as "ADMIN" | "USER" | "DRIVER",
                         image: user.image,
+                        referralCode: user.referralCode,
                     };
                 } catch (error) {
                     console.error("[Auth] Authorize error:", error);
@@ -72,6 +78,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (user) {
                 token.id = user.id || "";
                 token.role = (user as any).role;
+                token.referralCode = (user as any).referralCode;
                 token.loginAt = Date.now();
             }
 
@@ -92,6 +99,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (token && session.user) {
                 session.user.id = token.id as string;
                 (session.user as any).role = token.role;
+                (session.user as any).referralCode = token.referralCode;
             }
             return session;
         },
