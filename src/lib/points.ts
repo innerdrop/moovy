@@ -13,16 +13,16 @@ interface PointsConfig {
     reviewBonus: number;
 }
 
-// Default config
+// Default config - 2% return rate
 const defaultConfig: PointsConfig = {
-    pointsPerDollar: 1,           // 1 point per $1
+    pointsPerDollar: 1,           // 1 point per $1 spent
     minPurchaseForPoints: 0,      // No minimum
-    pointsValue: 0.1,             // Each point = $0.10 (10% cashback equivalent)
+    pointsValue: 0.02,            // Each point = $0.02 (2% cashback equivalent)
     minPointsToRedeem: 100,       // Min 100 points to use
     maxDiscountPercent: 50,       // Max 50% discount with points
-    signupBonus: 5000,            // 5000 points ($500) for signing up
-    referralBonus: 10000,         // 10000 points ($1000) for referring
-    reviewBonus: 500,             // 500 points ($50) per review
+    signupBonus: 500,             // 500 points ($10) for signing up
+    referralBonus: 1000,          // 1000 points ($20) for referring
+    reviewBonus: 50,              // 50 points ($1) per review
 };
 
 /**

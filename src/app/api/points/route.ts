@@ -1,6 +1,7 @@
 // API Route: Points Balance and History
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getUserPointsBalance, getPointsHistory, getPointsConfig, calculateMaxPointsDiscount } from "@/lib/points";
 
 export async function GET(request: Request) {
@@ -16,8 +17,21 @@ export async function GET(request: Request) {
 
         const balance = await getUserPointsBalance(session.user.id);
 
+        // Calculate lifetime points (total earned, never decreases)
+        const lifetimeResult = await prisma.pointsTransaction.aggregate({
+            where: {
+                userId: session.user.id,
+                type: "EARN",
+            },
+            _sum: {
+                amount: true,
+            },
+        });
+        const pointsLifetime = lifetimeResult._sum.amount || 0;
+
         const response: any = {
             balance,
+            pointsLifetime,
             formattedBalance: balance.toLocaleString("es-AR"),
         };
 

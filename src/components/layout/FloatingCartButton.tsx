@@ -13,11 +13,12 @@ export default function FloatingCartButton() {
     const totalItems = getTotalItems();
     const total = getTotalPrice();
 
-    // Auth pages where we shouldn't show the cart
+    // Pages where we shouldn't show the floating cart
     const isAuthPage = pathname === "/login" || pathname === "/registro";
+    const isCheckoutPage = pathname === "/checkout";
 
-    // Don't show if cart is empty or on auth pages
-    if (totalItems === 0 || isAuthPage) return null;
+    // Don't show if cart is empty, on auth pages, or on checkout
+    if (totalItems === 0 || isAuthPage || isCheckoutPage) return null;
 
     return (
         <button

@@ -89,42 +89,53 @@ export default function AppHeader({
                 </div>
             </div>
 
-            {/* Desktop Header */}
-            <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto border-b border-gray-100">
-                {/* Left: Logo */}
-                <Link href="/" className="flex items-center gap-3 flex-shrink-0">
+            {/* Desktop Header - Same order as mobile: Name Left, Logo Center, Points+Cart Right */}
+            <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto border-b border-gray-100 relative">
+                {/* Left: Greeting (logged in) or Location + Login (not logged in) */}
+                <div className="flex items-center gap-3 flex-shrink-0 min-w-[200px]">
+                    {isLoggedIn && firstName ? (
+                        <Link href="/mi-perfil" className="flex items-center gap-3 hover:opacity-80 transition">
+                            <div className="w-10 h-10 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold">
+                                {firstName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-gray-400 leading-none">Hola,</span>
+                                <span className="text-base font-semibold text-gray-900">{firstName}</span>
+                            </div>
+                        </Link>
+                    ) : (
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-[#e60012]/10 rounded-full flex items-center justify-center">
+                                    <MapPin className="w-4 h-4 text-[#e60012]" />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-900">Ushuaia, TDF</span>
+                            </div>
+                            <Link
+                                href="/login"
+                                className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 hover:border-[#e60012] hover:text-[#e60012] transition text-sm font-medium"
+                            >
+                                <User className="w-4 h-4" />
+                                Ingresar
+                            </Link>
+                        </div>
+                    )}
+                </div>
+
+                {/* Center: Logo */}
+                <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
                     <Image
                         src="/logo-moovy.png"
                         alt="Moovy"
-                        width={100}
-                        height={32}
+                        width={110}
+                        height={35}
                         style={{ width: 'auto', height: 'auto' }}
                         priority
                     />
                 </Link>
 
-                {/* Center: Greeting (logged in) or Location (not logged in) */}
-                <div className="flex items-center gap-4 flex-1 justify-center">
-                    {isLoggedIn && firstName ? (
-                        <Link href="/mi-perfil" className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-200 hover:border-[#e60012]/30 transition">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                {firstName.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex flex-col items-start">
-                                <span className="text-[10px] text-gray-400 leading-none">Hola,</span>
-                                <span className="text-sm font-semibold text-gray-900">{firstName}</span>
-                            </div>
-                        </Link>
-                    ) : (
-                        <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-200">
-                            <MapPin className="w-4 h-4 text-[#e60012]" />
-                            <span className="text-sm font-semibold text-gray-900">Ushuaia, TDF</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Right: Actions */}
-                <div className="flex items-center gap-3">
+                {/* Right: Points + Cart */}
+                <div className="flex items-center gap-3 flex-shrink-0 min-w-[200px] justify-end">
                     {/* Points Badge */}
                     {isLoggedIn && points > 0 && (
                         <Link
@@ -133,25 +144,6 @@ export default function AppHeader({
                         >
                             <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                             {points.toLocaleString()} pts
-                        </Link>
-                    )}
-
-                    {/* Profile/Login */}
-                    {isLoggedIn ? (
-                        <Link
-                            href="/mi-perfil"
-                            className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-50 transition text-sm font-medium text-gray-700"
-                        >
-                            <User className="w-4 h-4" />
-                            Mi Perfil
-                        </Link>
-                    ) : (
-                        <Link
-                            href="/login"
-                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 hover:border-[#e60012] hover:text-[#e60012] transition text-sm font-medium"
-                        >
-                            <User className="w-4 h-4" />
-                            Ingresar
                         </Link>
                     )}
 

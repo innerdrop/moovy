@@ -26,7 +26,8 @@ import {
     QrCode,
     Share2,
     Crown,
-    AlertCircle
+    AlertCircle,
+    ArrowLeft
 } from "lucide-react";
 
 interface Address {
@@ -56,8 +57,11 @@ export default function MiPerfilPage() {
     const [activeSection, setActiveSection] = useState<"main" | "edit" | "addresses" | "newAddress" | "deleteAccount">("main");
 
     // Profile edit state
-    const [profileName, setProfileName] = useState("");
+    const [profileFirstName, setProfileFirstName] = useState("");
+    const [profileLastName, setProfileLastName] = useState("");
     const [profilePhone, setProfilePhone] = useState("");
+    const [originalProfile, setOriginalProfile] = useState({ firstName: "", lastName: "", phone: "" });
+    const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
     // Address form state
     const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
@@ -115,8 +119,17 @@ export default function MiPerfilPage() {
             if (res.ok) {
                 const data = await res.json();
                 setProfile(data);
-                setProfileName(data.name);
-                setProfilePhone(data.phone || "");
+
+                // Parse name into firstName and lastName
+                const nameParts = (data.name || "").split(" ");
+                const firstName = nameParts[0] || "";
+                const lastName = nameParts.slice(1).join(" ") || "";
+                const phone = data.phone || "";
+
+                setProfileFirstName(firstName);
+                setProfileLastName(lastName);
+                setProfilePhone(phone);
+                setOriginalProfile({ firstName, lastName, phone });
             }
         } catch (error) {
             console.error("Error loading profile:", error);
@@ -125,15 +138,24 @@ export default function MiPerfilPage() {
         }
     }
 
+    // Check if profile has changes
+    const hasProfileChanges =
+        profileFirstName !== originalProfile.firstName ||
+        profileLastName !== originalProfile.lastName ||
+        profilePhone !== originalProfile.phone;
+
     async function handleSaveProfile(e: React.FormEvent) {
         e.preventDefault();
+        setShowSaveConfirm(false);
         setSaving(true);
         setError("");
         try {
+            const fullName = `${profileFirstName} ${profileLastName}`.trim();
+
             const res = await fetch("/api/profile", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: profileName, phone: profilePhone || null }),
+                body: JSON.stringify({ name: fullName, phone: profilePhone || null }),
             });
             if (res.ok) {
                 await loadProfile();
@@ -256,9 +278,19 @@ export default function MiPerfilPage() {
     if (activeSection === "addresses") {
         return (
             <>
-                <AppHeader title="Mis Direcciones" showBack rightAction={
-                    <button onClick={startNewAddress} className="text-moovy"><Plus className="w-6 h-6" /></button>
-                } />
+                {/* Custom header with back arrow */}
+                <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
+                    <button
+                        onClick={() => setActiveSection("main")}
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                    >
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </button>
+                    <h1 className="text-lg font-bold text-gray-900">Mis Direcciones</h1>
+                    <button onClick={startNewAddress} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#e60012]">
+                        <Plus className="w-6 h-6" />
+                    </button>
+                </div>
                 <div className="p-4 space-y-3">
                     {profile.addresses.length === 0 ? (
                         <div className="text-center py-12">
@@ -298,7 +330,17 @@ export default function MiPerfilPage() {
     if (activeSection === "newAddress") {
         return (
             <>
-                <AppHeader title={editingAddressId ? "Editar Dirección" : "Nueva Dirección"} showBack />
+                {/* Custom header with back arrow */}
+                <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
+                    <button
+                        onClick={() => setActiveSection("addresses")}
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                    >
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </button>
+                    <h1 className="text-lg font-bold text-gray-900">{editingAddressId ? "Editar Dirección" : "Nueva Dirección"}</h1>
+                    <div className="w-10"></div>
+                </div>
                 <form onSubmit={handleSaveAddress} className="p-4 space-y-4">
                     {error && <div className="bg-red-50 text-red-700 p-3 rounded-xl text-sm">{error}</div>}
                     <div className="bg-white rounded-xl p-4 space-y-4">
@@ -347,31 +389,120 @@ export default function MiPerfilPage() {
 
     // ========== EDIT PROFILE VIEW ==========
     if (activeSection === "edit") {
+        const countryCodes = [
+            { code: "+54", country: "Argentina" },
+            { code: "+1", country: "USA/Canada" },
+            { code: "+55", country: "Brasil" },
+            { code: "+56", country: "Chile" },
+            { code: "+57", country: "Colombia" },
+            { code: "+52", country: "México" },
+            { code: "+598", country: "Uruguay" },
+            { code: "+34", country: "España" },
+        ];
+
         return (
             <>
-                <AppHeader title="Editar Perfil" showBack />
-                <form onSubmit={handleSaveProfile} className="p-4 space-y-4">
+                {/* Header with X button */}
+                <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
+                    <h1 className="text-lg font-bold text-gray-900">Editar Perfil</h1>
+                    <button
+                        onClick={() => setActiveSection("main")}
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                    >
+                        <X className="w-6 h-6 text-gray-500" />
+                    </button>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); setShowSaveConfirm(true); }} className="p-4 space-y-4">
                     {error && <div className="bg-red-50 text-red-700 p-3 rounded-xl text-sm">{error}</div>}
+
                     <div className="bg-white rounded-xl p-4 space-y-4">
+                        {/* First Name */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                            <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="input" required />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                            <input
+                                type="text"
+                                value={profileFirstName}
+                                onChange={(e) => setProfileFirstName(e.target.value)}
+                                className="input"
+                                placeholder="Tu nombre"
+                                required
+                            />
                         </div>
+
+                        {/* Last Name */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                            <input
+                                type="text"
+                                value={profileLastName}
+                                onChange={(e) => setProfileLastName(e.target.value)}
+                                className="input"
+                                placeholder="Tu apellido"
+                            />
+                        </div>
+
+                        {/* Phone */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                            <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="+54 9 264..." className="input" />
+                            <input
+                                type="tel"
+                                value={profilePhone}
+                                onChange={(e) => setProfilePhone(e.target.value)}
+                                placeholder="+54 9 2901 12-3456"
+                                className="input"
+                            />
                         </div>
+
+                        {/* Email (disabled) */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                             <input type="email" value={profile.email} disabled className="input bg-gray-50 text-gray-500" />
                             <p className="text-xs text-gray-400 mt-1">El email no puede modificarse</p>
                         </div>
                     </div>
-                    <button type="submit" disabled={saving} className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-2">
+
+                    {/* Save button - disabled if no changes */}
+                    <button
+                        type="submit"
+                        disabled={saving || !hasProfileChanges}
+                        className={`w-full py-4 text-lg flex items-center justify-center gap-2 rounded-xl font-medium transition
+                            ${hasProfileChanges
+                                ? 'bg-[#e60012] text-white hover:bg-[#c4000f]'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                    >
                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                         Guardar Cambios
                     </button>
                 </form>
+
+                {/* Confirmation Modal */}
+                {showSaveConfirm && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">¿Guardar cambios?</h3>
+                            <p className="text-gray-600 text-sm mb-6">
+                                ¿Estás seguro que querés actualizar tu información de perfil?
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowSaveConfirm(false)}
+                                    className="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSaveProfile}
+                                    disabled={saving}
+                                    className="flex-1 py-3 rounded-xl bg-[#e60012] text-white font-medium flex items-center justify-center gap-2"
+                                >
+                                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                    Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </>
         );
     }
@@ -380,7 +511,17 @@ export default function MiPerfilPage() {
     if (activeSection === "deleteAccount") {
         return (
             <>
-                <AppHeader title="Eliminar Cuenta" showBack />
+                {/* Custom header with back arrow */}
+                <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
+                    <button
+                        onClick={() => setActiveSection("main")}
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                    >
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </button>
+                    <h1 className="text-lg font-bold text-gray-900">Eliminar Cuenta</h1>
+                    <div className="w-10"></div>
+                </div>
                 <div className="p-6">
                     <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-8 text-center">
                         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -459,30 +600,24 @@ export default function MiPerfilPage() {
                 </div>
             </div>
 
-            <div className="p-4 space-y-4 mt-2">
-                {/* Quick Stats */}
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Link href="/mis-pedidos" className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                        <div className="w-12 h-12 bg-moovy-light rounded-xl flex items-center justify-center">
-                            <ShoppingBag className="w-6 h-6 text-moovy" />
+            <div className="p-4 space-y-4">
+                {/* Quick Action - Direcciones */}
+                <button
+                    onClick={() => setActiveSection("addresses")}
+                    className="group relative w-full overflow-hidden bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01] text-left"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Mis Pedidos</p>
-                            <p className="font-bold text-navy">Ver todos →</p>
+                        <div className="flex-1">
+                            <p className="text-white font-bold text-lg">Mis Direcciones</p>
+                            <p className="text-white/70 text-sm">{profile.addresses.length} guardadas</p>
                         </div>
-                    </Link>
-                    <button onClick={() => setActiveSection("addresses")} className="bg-white rounded-xl p-4 flex items-center gap-3 text-left shadow-sm">
-                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                            <MapPin className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Direcciones</p>
-                            <p className="font-bold text-navy">{profile.addresses.length} guardadas</p>
-                        </div>
-                    </button>
-                </div>
+                        <ChevronRight className="w-6 h-6 text-white/60" />
+                    </div>
+                </button>
 
                 {/* Profile Info Card */}
                 <div className="bg-white rounded-xl overflow-hidden shadow-sm">
@@ -561,7 +696,7 @@ export default function MiPerfilPage() {
                         Eliminar mi cuenta
                     </button>
                 </div>
-            </div>
+            </div >
         </>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Gift, X, Sparkles } from "lucide-react";
+import { Loader2, Gift, X, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 
 interface PointsWidgetProps {
@@ -10,38 +10,43 @@ interface PointsWidgetProps {
     onApplyPoints: (points: number, discount: number) => void;
 }
 
+// Conversion rate: 100 points = $2 discount (2% return)
+const POINTS_TO_DISCOUNT_RATE = 0.02;
+
 export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints }: PointsWidgetProps) {
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<{
-        currentBalance: number;
-        pointsUsable: number;
-        discountAmount: number;
-        minPointsToRedeem: number;
-        canUsePoints: boolean;
-    } | null>(null);
+    const [balance, setBalance] = useState(0);
+    const [selectedPoints, setSelectedPoints] = useState(0);
+    const [wantsToUsePoints, setWantsToUsePoints] = useState(false);
 
     useEffect(() => {
-        calculatePoints();
-    }, [orderTotal]);
+        loadBalance();
+    }, []);
 
-    const calculatePoints = async () => {
+    const loadBalance = async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/points/calculate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderTotal }),
-            });
+            const res = await fetch("/api/points");
             if (res.ok) {
-                const result = await res.json();
-                setData(result);
+                const data = await res.json();
+                setBalance(data.balance || 0);
             }
         } catch (error) {
-            console.error("Error calculating points:", error);
+            console.error("Error loading points:", error);
         } finally {
             setLoading(false);
         }
     };
+
+    const calculateDiscount = (points: number) => {
+        return Math.round(points * POINTS_TO_DISCOUNT_RATE);
+    };
+
+    // Max discount cannot exceed order total
+    const maxUsablePoints = Math.min(
+        balance,
+        Math.floor(orderTotal / POINTS_TO_DISCOUNT_RATE)
+    );
 
     if (loading) {
         return (
@@ -51,16 +56,14 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
         );
     }
 
-    if (!data) return null;
-
-    // Case 1: Can't use points (not enough points)
-    if (!data.canUsePoints) {
+    // Case 1: No points available
+    if (balance < 100) {
         return (
             <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-500 flex items-center gap-3">
                 <Gift className="w-5 h-5 text-gray-400" />
                 <div>
-                    <p className="font-medium text-gray-700">Tenés {data.currentBalance} puntos Moovy</p>
-                    <p className="text-xs">Necesitás al menos {data.minPointsToRedeem} para canjear en esta compra.</p>
+                    <p className="font-medium text-gray-700">Tenés {balance.toLocaleString("es-AR")} puntos</p>
+                    <p className="text-xs">Seguí comprando para acumular más puntos.</p>
                 </div>
             </div>
         );
@@ -68,23 +71,27 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
 
     // Case 2: Points Applied
     if (pointsApplied > 0) {
+        const appliedDiscount = calculateDiscount(pointsApplied);
         return (
-            <div className="bg-[#e60012]/5 border border-[#e60012]/20 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#e60012] rounded-full flex items-center justify-center text-white shadow-sm">
-                        <Sparkles className="w-4 h-4" />
+                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+                        <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="font-bold text-[#e60012]">¡Descuento aplicado!</p>
+                        <p className="font-bold text-green-700">¡Descuento aplicado!</p>
                         <p className="text-sm text-gray-700">
-                            Usaste <span className="font-bold">{pointsApplied}</span> puntos para descontar <span className="font-bold text-[#e60012]">{formatPrice(data.discountAmount)}</span>
+                            Usaste {pointsApplied.toLocaleString("es-AR")} puntos = <strong className="text-green-600">{formatPrice(appliedDiscount)}</strong> de descuento
                         </p>
                     </div>
                 </div>
                 <button
-                    onClick={() => onApplyPoints(0, 0)}
-                    className="p-2 hover:bg-[#e60012]/10 rounded-full transition text-gray-400 hover:text-[#e60012]"
-                    title="Quitar descuento"
+                    onClick={() => {
+                        setSelectedPoints(0);
+                        setWantsToUsePoints(false);
+                        onApplyPoints(0, 0);
+                    }}
+                    className="p-2 hover:bg-green-100 rounded-full transition text-gray-400 hover:text-red-500"
                 >
                     <X className="w-5 h-5" />
                 </button>
@@ -92,35 +99,85 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
         );
     }
 
-    // Case 3: Available to use
+    // Case 3: Ask user if they want to use points
+    if (!wantsToUsePoints) {
+        return (
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                <button
+                    onClick={() => setWantsToUsePoints(true)}
+                    className="w-full flex items-center justify-between"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <Gift className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div className="text-left">
+                            <p className="font-bold text-gray-900">¿Querés usar tus puntos?</p>
+                            <p className="text-sm text-gray-500">Tenés {balance.toLocaleString("es-AR")} puntos disponibles</p>
+                        </div>
+                    </div>
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                </button>
+            </div>
+        );
+    }
+
+    // Case 4: Slider to select points
     return (
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 text-white shadow-lg relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[#e60012] rounded-full blur-2xl opacity-20"></div>
-
-            <div className="relative z-10 flex items-start gap-4">
-                <div className="w-10 h-10 bg-[#e60012] rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-900/20">
-                    <Gift className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                    <h4 className="font-bold text-lg mb-1">¡Tenés puntos disponibles!</h4>
-                    <p className="text-gray-300 text-sm leading-relaxed mb-3">
-                        Usá tus <strong className="text-white">{data.pointsUsable} puntos</strong> y ahorrá <strong className="text-[#e60012] bg-white/10 px-1.5 py-0.5 rounded ml-1">{formatPrice(data.discountAmount)}</strong> en esta compra.
-                    </p>
-
-                    <div className="flex items-center justify-between mt-4">
-                        <p className="text-xs text-gray-400">
-                            Saldo: {data.currentBalance} puntos
-                        </p>
-                        <button
-                            onClick={() => onApplyPoints(data.pointsUsable, data.discountAmount)}
-                            className="text-sm bg-[#e60012] hover:bg-[#c4000f] text-white px-5 py-2 rounded-lg font-bold transition shadow-lg shadow-red-600/20 active:transform active:scale-95"
-                        >
-                            Aplicar Descuento
-                        </button>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <button
+                onClick={() => setWantsToUsePoints(false)}
+                className="w-full flex items-center justify-between mb-4"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <Gift className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div className="text-left">
+                        <h4 className="font-bold text-gray-900">Usá tus puntos</h4>
+                        <p className="text-sm text-gray-500">Tenés {balance.toLocaleString("es-AR")} puntos disponibles</p>
                     </div>
                 </div>
+                <ChevronUp className="w-5 h-5 text-gray-400" />
+            </button>
+
+            {/* Slider */}
+            <div className="mb-4">
+                <input
+                    type="range"
+                    min="0"
+                    max={maxUsablePoints}
+                    step="100"
+                    value={selectedPoints}
+                    onChange={(e) => setSelectedPoints(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-500"
+                />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>{maxUsablePoints.toLocaleString("es-AR")} pts</span>
+                </div>
             </div>
+
+            {/* Selected amount display */}
+            <div className="bg-gray-50 rounded-xl p-4 text-center mb-4">
+                <p className="text-3xl font-bold text-gray-900">{selectedPoints.toLocaleString("es-AR")}</p>
+                <p className="text-sm text-gray-500">puntos</p>
+                {selectedPoints > 0 && (
+                    <p className="text-green-600 font-semibold mt-2">
+                        = {formatPrice(calculateDiscount(selectedPoints))} de descuento
+                    </p>
+                )}
+            </div>
+
+            {/* Apply button */}
+            <button
+                onClick={() => onApplyPoints(selectedPoints, calculateDiscount(selectedPoints))}
+                disabled={selectedPoints === 0}
+                className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
+            >
+                <Sparkles className="w-4 h-4" />
+                {selectedPoints > 0 ? "Aplicar puntos" : "Seleccioná cuántos puntos usar"}
+            </button>
         </div>
     );
 }

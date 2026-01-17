@@ -4,12 +4,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig } from "@/lib/points";
 
-// Helper to generate order number
+// Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-    return `PSJ-${dateStr}-${random}`;
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Avoid confusing chars like 0/O, 1/I
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `MOV-${code}`;
 }
 
 // POST - Create a new order
@@ -161,8 +163,8 @@ export async function POST(request: Request) {
             pointsResult = await processOrderPoints(
                 session.user.id,
                 order.id,
-                // Points are earned on the PAID total, not subtotal
-                finalTotal,
+                // Points are earned on SUBTOTAL (products only), not including delivery
+                subtotal,
                 validPointsUsed
             );
         } catch (pointsError) {

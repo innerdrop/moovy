@@ -5,11 +5,11 @@ import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
 
-// Generate a user-friendly referral code
+// Generate a user-friendly referral code (MOV-XXXX format)
 function generateReferralCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = 'MOOV-';
-    for (let i = 0; i < 6; i++) {
+    let code = 'MOV-';
+    for (let i = 0; i < 4; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
@@ -89,10 +89,10 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(data.password, 10);
         const newUserReferralCode = generateReferralCode();
 
-        // Base signup bonus (5000 points = $500)
-        const signupBonus = 5000;
-        // Referral bonus
-        const referralBonus = 2500; // Points given to referrer ($250)
+        // Base signup bonus (500 points = $10)
+        const signupBonus = 500;
+        // Referral bonus (1000 points for referrer, 500 for new user)
+        const referralBonus = 1000; // Points given to referrer ($20)
 
         // Use a transaction to ensure everything is created or nothing is
         const result = await prisma.$transaction(async (tx) => {

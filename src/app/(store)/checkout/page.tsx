@@ -6,9 +6,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCartStore } from "@/store/cart";
+import { usePointsCelebration } from "@/store/pointsCelebration";
 import { formatPrice } from "@/lib/delivery";
 import PointsWidget from "@/components/checkout/PointsWidget";
-import PointsAnimation from "@/components/shared/PointsAnimation";
 import {
     MapPin,
     Truck,
@@ -31,6 +31,7 @@ interface DeliveryResult {
 export default function CheckoutPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const showCelebration = usePointsCelebration((state) => state.showCelebration);
     const items = useCartStore((state) => state.items);
     const getTotalPrice = useCartStore((state) => state.getTotalPrice);
     const clearCart = useCartStore((state) => state.clearCart);
@@ -131,7 +132,7 @@ export default function CheckoutPage() {
         setDeliveryResult(null);
     };
 
-    // Calculate delivery cost using geocoding
+    // Calculate delivery cost using server-side geocoding
     const calculateDelivery = async () => {
         if (!address.street || !address.number) {
             return;
@@ -140,35 +141,16 @@ export default function CheckoutPage() {
         setIsCalculating(true);
 
         try {
-            // Use Nominatim for geocoding
-            const fullAddress = `${address.street} ${address.number}, ${address.city}, , Argentina`;
-            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
-
-            const geoResponse = await fetch(geocodeUrl, {
-                headers: { "User-Agent": "MoovySanJuan/1.0" }
-            });
-            const geoData = await geoResponse.json();
-
-            if (geoData.length === 0) {
-                setDeliveryResult({
-                    distanceKm: 0,
-                    totalCost: 0,
-                    isWithinRange: false,
-                    isFreeDelivery: false,
-                    message: "No pudimos encontrar la dirección. Por favor, verificá los datos.",
-                });
-                return;
-            }
-
-            const { lat, lon } = geoData[0];
-
-            // Calculate delivery cost
+            // Send address to server - server handles geocoding
             const calcResponse = await fetch("/api/delivery/calculate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    destinationLat: lat,
-                    destinationLng: lon,
+                    address: {
+                        street: address.street,
+                        number: address.number,
+                        city: address.city || "Ushuaia",
+                    },
                     orderTotal: subtotal,
                 }),
             });
@@ -237,6 +219,7 @@ export default function CheckoutPage() {
             const result = await response.json();
             if (result.points?.earned) {
                 setEarnedPoints(result.points.earned);
+                showCelebration(result.points.earned);
             }
             setOrderSuccess(true);
         } catch (error) {
@@ -259,10 +242,7 @@ export default function CheckoutPage() {
         return (
             <div className="container mx-auto px-4 py-16 text-center">
                 <div className="max-w-md mx-auto relative">
-                    <PointsAnimation
-                        pointsEarned={earnedPoints}
-                        isVisible={true}
-                    />
+                    {/* Points celebration is now handled globally via Providers */}
 
                     <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="w-10 h-10 text-green-600" />

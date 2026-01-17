@@ -416,3 +416,15 @@ model Referral {
   
   @@unique([refereeId]) // A user can only be referred once
 }
+
+// ==================== SAVED CART ====================
+
+model SavedCart {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  items      Json     // Cart items stored as JSON array
+  merchantId String?  // Current merchant in cart (if applicable)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

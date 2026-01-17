@@ -1,31 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { Sparkles, Star, X } from "lucide-react";
 import Link from "next/link";
+import { usePointsCelebration } from "@/store/pointsCelebration";
 
-interface PointsAnimationProps {
-    pointsEarned: number;
-    isVisible: boolean;
-    onComplete?: () => void;
-}
+export default function PointsCelebration() {
+    const { isVisible, pointsEarned, hideCelebration } = usePointsCelebration();
 
-export default function PointsAnimation({ pointsEarned, isVisible, onComplete }: PointsAnimationProps) {
-    const [dismissed, setDismissed] = useState(false);
-
-    if (!isVisible || dismissed) return null;
-
-    const handleClose = () => {
-        setDismissed(true);
-        if (onComplete) onComplete();
-    };
+    if (!isVisible || pointsEarned <= 0) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
             <div className="relative animate-bounce-in">
                 {/* Close button */}
                 <button
-                    onClick={handleClose}
+                    onClick={hideCelebration}
                     className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center z-10 hover:bg-gray-100 transition"
                 >
                     <X className="w-5 h-5 text-gray-600" />
@@ -55,13 +44,11 @@ export default function PointsAnimation({ pointsEarned, isVisible, onComplete }:
                 <div className="absolute -bottom-2 -left-4 animate-float text-yellow-400">
                     <Star className="w-6 h-6 fill-current" />
                 </div>
-                <div className="absolute top-1/2 -right-12 animate-ping-slow text-[#e60012]">
-                    <div className="w-4 h-4 bg-current rounded-full"></div>
-                </div>
 
                 {/* Go to MOOVER button */}
                 <Link
                     href="/puntos"
+                    onClick={hideCelebration}
                     className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 bg-white text-[#e60012] px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-50 transition whitespace-nowrap"
                 >
                     Ver mis puntos →

@@ -60,10 +60,10 @@ export default function ContactoPage() {
                                     <h3 className="font-semibold text-gray-900 text-lg">Email</h3>
                                     <p className="text-gray-500 mb-1">Para consultas generales:</p>
                                     <a
-                                        href="mailto:hola@somosmoovy.com"
+                                        href="mailto:somosmoovy@gmail.com"
                                         className="text-gray-900 font-medium hover:text-[#e60012] transition"
                                     >
-                                        hola@somosmoovy.com
+                                        somosmoovy@gmail.com
                                     </a>
                                 </div>
                             </div>

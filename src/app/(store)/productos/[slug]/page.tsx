@@ -3,7 +3,8 @@
 // Product Detail Page - Página de Detalle de Producto
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
 import {
@@ -14,7 +15,9 @@ import {
     Minus,
     Check,
     AlertCircle,
-    Loader2
+    Loader2,
+    X,
+    UserPlus
 } from "lucide-react";
 
 interface Product {
@@ -32,12 +35,15 @@ interface Product {
 
 export default function ProductDetailPage() {
     const params = useParams();
+    const router = useRouter();
+    const { status } = useSession();
     const slug = params.slug as string;
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [addedToCart, setAddedToCart] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     const addItem = useCartStore((state) => state.addItem);
     const openCart = useCartStore((state) => state.openCart);
@@ -65,6 +71,12 @@ export default function ProductDetailPage() {
     const handleAddToCart = () => {
         if (!product || product.stock <= 0) return;
 
+        // Check if user is logged in
+        if (status !== "authenticated") {
+            setShowLoginModal(true);
+            return;
+        }
+
         addItem({
             productId: product.id,
             name: product.name,
@@ -78,6 +90,10 @@ export default function ProductDetailPage() {
     };
 
     const handleAddAndGoToCart = () => {
+        if (status !== "authenticated") {
+            setShowLoginModal(true);
+            return;
+        }
         handleAddToCart();
         setTimeout(() => openCart(), 300);
     };
@@ -293,6 +309,42 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Login Required Modal */}
+            {showLoginModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowLoginModal(false)}>
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 bg-[#e60012]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <UserPlus className="w-8 h-8 text-[#e60012]" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                ¡Registrate para comprar!
+                            </h3>
+                            <p className="text-gray-600 mb-6">
+                                Para agregar productos al carrito y realizar tu primera compra, necesitás crear una cuenta o iniciar sesión.
+                            </p>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => router.push("/registro")}
+                                    className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#c5000f] transition"
+                                >
+                                    Crear cuenta gratis
+                                </button>
+                                <button
+                                    onClick={() => router.push("/login")}
+                                    className="w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition"
+                                >
+                                    Ya tengo cuenta
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-4">
+                                ¡Ganá 500 puntos MOOVER al registrarte! 🎉
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

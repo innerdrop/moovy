@@ -11,6 +11,7 @@ import {
     User,
     LogIn
 } from "lucide-react";
+import { useCartStore } from "@/store/cart";
 
 interface BottomNavProps {
     cartCount?: number;
@@ -19,6 +20,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
     const pathname = usePathname();
+    const closeCart = useCartStore((state) => state.closeCart);
 
     // Navegación: Inicio, Explorar, Pedidos, MOOVER, Perfil/Ingresar
     const navItems = [
@@ -32,6 +34,11 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
             : { href: "/login", icon: LogIn, label: "Ingresar" }
     ];
 
+    const handleNavClick = () => {
+        // Close cart when navigating
+        closeCart();
+    };
+
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
             <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
@@ -44,6 +51,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={handleNavClick}
                             className={`flex flex-col items-center justify-center flex-1 h-full relative transition-colors ${isActive ? "text-[#e60012]" : "text-gray-400 active:text-gray-600"
                                 }`}
                         >
