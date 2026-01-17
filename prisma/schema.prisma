@@ -25,7 +25,9 @@ model User {
   image         String?
   
   // Points system
-  pointsBalance Int       @default(0)
+  pointsBalance        Int       @default(0)
+  pendingBonusPoints   Int       @default(0)  // Bonus points waiting for activation
+  bonusActivated       Boolean   @default(false) // Whether signup/referral bonuses were activated
   
   // Referral system
   referralCode  String    @unique @default(cuid()) // User's own referral code
@@ -273,7 +275,12 @@ model Merchant {
   deliveryTimeMin  Int       @default(30)
   deliveryTimeMax  Int       @default(45)
   deliveryFee      Float     @default(0)
+
   minOrderAmount   Float     @default(0)
+  
+  // Business Info
+  cuit             String?
+  category         String?   @default("Otro") // Rubro
   
   // Relations
   ownerId        String
@@ -293,7 +300,11 @@ model Driver {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Driver info
-  vehicleType String? // MOTO, AUTO, BICI
+  vehicleType  String? // MOTO, AUTO, BICI
+  vehicleBrand String?
+  vehicleModel String?
+  vehicleYear  Int?
+  vehicleColor String?
   licensePlate String?
   
   isActive  Boolean  @default(true)

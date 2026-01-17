@@ -1,4 +1,4 @@
-// Points System - Core Logic
+// Points System - Core Logic (Optimized Strategy)
 // This module handles all points calculations and transactions
 import { prisma } from "@/lib/prisma";
 
@@ -10,19 +10,25 @@ interface PointsConfig {
     maxDiscountPercent: number;
     signupBonus: number;
     referralBonus: number;
+    refereeBonus: number;
     reviewBonus: number;
+    minPurchaseForBonus: number;      // Min 1st purchase to activate bonuses
+    minReferralPurchase: number;      // Min purchase for referral to count
 }
 
-// Default config - 2% return rate
+// Optimized config - 1.5% return rate with activation requirements
 const defaultConfig: PointsConfig = {
-    pointsPerDollar: 1,           // 1 point per $1 spent
-    minPurchaseForPoints: 0,      // No minimum
-    pointsValue: 0.02,            // Each point = $0.02 (2% cashback equivalent)
-    minPointsToRedeem: 100,       // Min 100 points to use
-    maxDiscountPercent: 50,       // Max 50% discount with points
-    signupBonus: 500,             // 500 points ($10) for signing up
-    referralBonus: 1000,          // 1000 points ($20) for referring
-    reviewBonus: 50,              // 50 points ($1) per review
+    pointsPerDollar: 1,               // 1 point per $1 spent
+    minPurchaseForPoints: 0,          // No minimum for earning
+    pointsValue: 0.015,               // Each point = $0.015 (1.5% cashback)
+    minPointsToRedeem: 500,           // Min 500 points to use ($7.50)
+    maxDiscountPercent: 15,           // Max 15% discount with points
+    signupBonus: 250,                 // 250 points for signing up (after activation)
+    referralBonus: 500,               // 500 points for referring (after referral buys)
+    refereeBonus: 250,                // 250 points bonus for being referred
+    reviewBonus: 25,                  // 25 points per review
+    minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
+    minReferralPurchase: 8000,        // $8,000 min for referral to count
 };
 
 /**
@@ -90,7 +96,10 @@ export async function getPointsConfig(): Promise<PointsConfig> {
             maxDiscountPercent: config.maxDiscountPercent,
             signupBonus: config.signupBonus,
             referralBonus: config.referralBonus,
+            refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
             reviewBonus: config.reviewBonus,
+            minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
+            minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
         };
     } catch (error) {
         console.error("[Points] Error loading config:", error);
@@ -112,8 +121,6 @@ export async function recordPointsTransaction(
     try {
         // Use a transaction to update balance and create record atomically
         await prisma.$transaction(async (tx) => {
-            // Get user with lock (faked here since Prisma doesn't have easy row lock for all providers, 
-            // but transaction ensures consistency)
             const user = await tx.user.findUnique({
                 where: { id: userId },
                 select: { pointsBalance: true }
@@ -130,7 +137,6 @@ export async function recordPointsTransaction(
                 where: { id: userId },
                 data: { pointsBalance: newBalance, updatedAt: new Date() }
             });
-
 
             // Create transaction record
             await tx.pointsTransaction.create({
@@ -185,18 +191,107 @@ export async function getPointsHistory(userId: string, limit: number = 20): Prom
 }
 
 /**
- * Award signup bonus to new user
+ * Set pending signup bonus (NOT immediately awarded)
+ * Bonus will be activated after first qualifying purchase
  */
-export async function awardSignupBonus(userId: string): Promise<boolean> {
+export async function setPendingSignupBonus(userId: string): Promise<boolean> {
     const config = await getPointsConfig();
     if (config.signupBonus <= 0) return true;
 
-    return recordPointsTransaction(
-        userId,
-        "BONUS",
-        config.signupBonus,
-        "Bono de bienvenida por registrarte"
-    );
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                pendingBonusPoints: config.signupBonus,
+                bonusActivated: false
+            }
+        });
+        return true;
+    } catch (error) {
+        console.error("[Points] Error setting pending bonus:", error);
+        return false;
+    }
+}
+
+/**
+ * Activate pending bonuses after qualifying purchase
+ */
+export async function activatePendingBonuses(
+    userId: string,
+    orderTotal: number,
+    orderId: string
+): Promise<{ activated: boolean; bonusAwarded: number }> {
+    const config = await getPointsConfig();
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                bonusActivated: true,
+                pendingBonusPoints: true,
+                referredById: true
+            }
+        });
+
+        if (!user || user.bonusActivated) {
+            return { activated: false, bonusAwarded: 0 };
+        }
+
+        // Check if order meets minimum
+        if (orderTotal < config.minPurchaseForBonus) {
+            return { activated: false, bonusAwarded: 0 };
+        }
+
+        let totalBonus = 0;
+
+        // Activate pending signup bonus
+        if (user.pendingBonusPoints > 0) {
+            await recordPointsTransaction(
+                userId,
+                "BONUS",
+                user.pendingBonusPoints,
+                "🎉 ¡Bono de bienvenida activado!",
+                orderId
+            );
+            totalBonus += user.pendingBonusPoints;
+        }
+
+        // If user was referred, award bonus to referrer
+        if (user.referredById && orderTotal >= config.minReferralPurchase) {
+            // Award to referrer
+            await recordPointsTransaction(
+                user.referredById,
+                "BONUS",
+                config.referralBonus,
+                "🤝 Tu amigo hizo su primera compra",
+                orderId
+            );
+
+            // Award extra bonus to referee
+            await recordPointsTransaction(
+                userId,
+                "BONUS",
+                config.refereeBonus,
+                "🎁 Bono por usar código de referido",
+                orderId
+            );
+            totalBonus += config.refereeBonus;
+        }
+
+        // Mark bonuses as activated
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                bonusActivated: true,
+                pendingBonusPoints: 0
+            }
+        });
+
+        return { activated: true, bonusAwarded: totalBonus };
+    } catch (error) {
+        console.error("[Points] Error activating bonuses:", error);
+        return { activated: false, bonusAwarded: 0 };
+    }
 }
 
 /**
@@ -207,7 +302,7 @@ export async function processOrderPoints(
     orderId: string,
     orderTotal: number,
     pointsUsed: number = 0
-): Promise<{ earned: number; spent: number }> {
+): Promise<{ earned: number; spent: number; bonusActivated: number }> {
     const config = await getPointsConfig();
 
     // Deduct points used (if any)
@@ -233,7 +328,10 @@ export async function processOrderPoints(
         );
     }
 
-    return { earned, spent: pointsUsed };
+    // Try to activate pending bonuses
+    const { bonusAwarded } = await activatePendingBonuses(userId, orderTotal, orderId);
+
+    return { earned, spent: pointsUsed, bonusActivated: bonusAwarded };
 }
 
 /**
@@ -241,15 +339,14 @@ export async function processOrderPoints(
  */
 export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Promise<PointsConfig> {
     try {
-        // Upsert the config
         const config = await prisma.pointsConfig.upsert({
             where: { id: "points_config" },
-            update: newConfig,
+            update: newConfig as any,
             create: {
                 id: "points_config",
                 ...defaultConfig,
                 ...newConfig
-            }
+            } as any
         });
 
         return {
@@ -260,7 +357,10 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
             maxDiscountPercent: config.maxDiscountPercent,
             signupBonus: config.signupBonus,
             referralBonus: config.referralBonus,
+            refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
             reviewBonus: config.reviewBonus,
+            minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
+            minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
         };
     } catch (error) {
         console.error("[Points] Error updating config:", error);
@@ -270,4 +370,3 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
 
 export { defaultConfig };
 export type { PointsConfig };
-

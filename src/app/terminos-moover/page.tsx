@@ -40,15 +40,15 @@ export default function TerminosMooverPage() {
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div className="bg-white rounded-lg p-3 text-center">
                             <p className="text-2xl font-bold text-green-600">100 pts</p>
-                            <p className="text-sm text-gray-500">= $2 de descuento</p>
+                            <p className="text-sm text-gray-500">= $1.50 de descuento</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 text-center">
                             <p className="text-2xl font-bold text-green-600">1,000 pts</p>
-                            <p className="text-sm text-gray-500">= $20 de descuento</p>
+                            <p className="text-sm text-gray-500">= $15 de descuento</p>
                         </div>
                     </div>
                     <p className="text-sm text-gray-600">
-                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 50% de tu compra.
+                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 15% de tu compra. Mínimo 500 puntos para canjear.
                     </p>
                 </section>
 
@@ -63,17 +63,23 @@ export default function TerminosMooverPage() {
                             <span className="text-sm text-gray-700">Por cada $1 de compra</span>
                             <span className="font-bold text-[#e60012]">+1 punto</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm text-gray-700">Bono de bienvenida (registro)</span>
-                            <span className="font-bold text-[#e60012]">+500 puntos</span>
+                        <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
+                            <div>
+                                <span className="text-sm text-gray-700">Bono de bienvenida</span>
+                                <p className="text-xs text-amber-600">Se activa con tu 1ra compra de $5,000+</p>
+                            </div>
+                            <span className="font-bold text-[#e60012]">+250 puntos</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm text-gray-700">Por referir un amigo</span>
-                            <span className="font-bold text-[#e60012]">+1,000 puntos</span>
+                        <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                            <div>
+                                <span className="text-sm text-gray-700">Por referir un amigo</span>
+                                <p className="text-xs text-purple-600">Cuando tu amigo compra $8,000+</p>
+                            </div>
+                            <span className="font-bold text-[#e60012]">+500 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-700">Tu amigo referido recibe</span>
-                            <span className="font-bold text-[#e60012]">+500 puntos</span>
+                            <span className="font-bold text-[#e60012]">+250 puntos</span>
                         </div>
                     </div>
                 </section>

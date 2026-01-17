@@ -339,7 +339,7 @@ export default function ProductDetailPage() {
                                 </button>
                             </div>
                             <p className="text-xs text-gray-400 mt-4">
-                                ¡Ganá 500 puntos MOOVER al registrarte! 🎉
+                                ¡Ganá 250 puntos MOOVER con tu primera compra! 🎉
                             </p>
                         </div>
                     </div>

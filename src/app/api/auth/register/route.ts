@@ -89,14 +89,12 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(data.password, 10);
         const newUserReferralCode = generateReferralCode();
 
-        // Base signup bonus (500 points = $10)
-        const signupBonus = 500;
-        // Referral bonus (1000 points for referrer, 500 for new user)
-        const referralBonus = 1000; // Points given to referrer ($20)
+        // Pending signup bonus (activates after first qualifying purchase)
+        const pendingBonus = 250;
 
         // Use a transaction to ensure everything is created or nothing is
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Create the new user
+            // 1. Create the new user with PENDING bonus (not credited yet)
             const newUser = await tx.user.create({
                 data: {
                     email: data.email,
@@ -106,59 +104,28 @@ export async function POST(request: NextRequest) {
                     lastName: data.lastName,
                     phone: data.phone,
                     role: 'USER',
-                    pointsBalance: signupBonus, // Start with bonus
+                    pointsBalance: 0,  // Start with 0, bonus is pending
+                    pendingBonusPoints: pendingBonus,  // Pending until first purchase
+                    bonusActivated: false,  // Not yet activated
                     referralCode: newUserReferralCode,
                     referredById: referrerId
                 }
             });
 
-            // 2. Award signup bonus transaction record
-            await tx.pointsTransaction.create({
-                data: {
-                    userId: newUser.id,
-                    type: 'BONUS',
-                    amount: signupBonus,
-                    balanceAfter: signupBonus,
-                    description: '¡Bienvenido a MOOVER! Bono de registro'
-                }
-            });
-
-            // 3. If referred, handle referrer rewards
+            // 2. If referred, create Referral record (but NO points yet)
+            // Points will be awarded when new user makes their first qualifying purchase
             if (referrerId && referrerInfo) {
-                const newReferrerBalance = referrerInfo.pointsBalance + referralBonus;
-
-                // Update referrer balance
-                await tx.user.update({
-                    where: { id: referrerId },
-                    data: { pointsBalance: newReferrerBalance }
-                });
-
-                // Create transaction for referrer
-                await tx.pointsTransaction.create({
-                    data: {
-                        userId: referrerId,
-                        type: 'REFERRAL',
-                        amount: referralBonus,
-                        balanceAfter: newReferrerBalance,
-                        description: `¡${data.firstName} se registró con tu código!`
-                    }
-                });
-
-                // Create Referral record linkage
                 await tx.referral.create({
                     data: {
                         referrerId: referrerId,
                         refereeId: newUser.id,
                         codeUsed: data.referralCode.trim().toUpperCase(),
-                        referrerPoints: referralBonus,
-                        refereePoints: signupBonus,
-                        status: 'COMPLETED'
+                        referrerPoints: 500,  // Will be awarded when user makes purchase
+                        refereePoints: 250,   // Will be awarded when user makes purchase
+                        status: 'PENDING'     // Changed to PENDING until activated
                     }
                 });
             }
-
-            // 4. Create default address if provided (Not in form currently, but logic kept optional)
-            // Skipping to simplify as the new form doesn't send address in this step usually.
 
             return newUser;
         });
@@ -168,9 +135,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: referrerId
-                ? "¡Registro exitoso! Vos y tu amigo ganaron puntos 🎉"
-                : "Usuario registrado exitosamente",
+                ? "¡Registro exitoso! Tus puntos se activarán con tu primera compra 🎉"
+                : "¡Bienvenido! Tus puntos de bienvenida se activarán con tu primera compra",
             referralCode: newUserReferralCode,
+            pendingPoints: pendingBonus
         });
 
     } catch (error: any) {

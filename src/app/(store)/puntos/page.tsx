@@ -662,7 +662,7 @@ export default function PuntosPage() {
                             </div>
                             <div className="flex-1 text-left">
                                 <p className="font-medium text-gray-900">Refiriendo amigos</p>
-                                <p className="text-gray-500 text-xs">1,000 puntos por cada amigo</p>
+                                <p className="text-gray-500 text-xs">500 puntos por cada amigo</p>
                             </div>
                             {expandedItem === 'referidos' ? (
                                 <ChevronDown className="w-5 h-5 text-purple-600" />
@@ -672,10 +672,10 @@ export default function PuntosPage() {
                         </button>
                         {expandedItem === 'referidos' && (
                             <div className="ml-14 mr-2 mt-2 p-3 bg-purple-50 rounded-lg text-sm text-gray-600">
-                                <p className="mb-2">👥 Compartí tu código y ganá puntos por cada amigo:</p>
+                                <p className="mb-2">👥 Compartí tu código y ganá puntos cuando tu amigo haga su primera compra:</p>
                                 <ul className="list-disc list-inside space-y-1 text-xs">
-                                    <li>Vos ganás 1,000 puntos cuando tu amigo se registra</li>
-                                    <li>Tu amigo gana 500 puntos de bienvenida</li>
+                                    <li>Vos ganás 500 puntos cuando tu amigo compra $8,000+</li>
+                                    <li>Tu amigo gana 250 puntos extras de bienvenida</li>
                                     <li>¡No hay límite! Invitá a todos los que quieras</li>
                                 </ul>
                             </div>
@@ -689,7 +689,7 @@ export default function PuntosPage() {
                         </div>
                         <div className="flex-1">
                             <p className="font-medium text-gray-900">Bono de bienvenida</p>
-                            <p className="text-gray-500 text-xs">500 puntos al registrarte ✓</p>
+                            <p className="text-gray-500 text-xs">250 puntos con tu primera compra ✓</p>
                         </div>
                     </div>
                 </div>
@@ -1115,7 +1115,7 @@ export default function PuntosPage() {
                             </div>
 
                             <p className="text-xs text-gray-400 text-center">
-                                Ganás 1,000 puntos por cada amigo que se registre con tu código
+                                Ganás 500 puntos cuando tu amigo hace su primera compra de $8,000+
                             </p>
                         </div>
                     </div>

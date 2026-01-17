@@ -10,8 +10,10 @@ interface PointsWidgetProps {
     onApplyPoints: (points: number, discount: number) => void;
 }
 
-// Conversion rate: 100 points = $2 discount (2% return)
-const POINTS_TO_DISCOUNT_RATE = 0.02;
+// Conversion rate: 100 points = $1.50 discount (1.5% return)
+const POINTS_TO_DISCOUNT_RATE = 0.015;
+const MAX_DISCOUNT_PERCENT = 15; // Max 15% of order total
+const MIN_POINTS_TO_REDEEM = 500; // Minimum 500 points to use
 
 export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints }: PointsWidgetProps) {
     const [loading, setLoading] = useState(true);
@@ -42,11 +44,14 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
         return Math.round(points * POINTS_TO_DISCOUNT_RATE);
     };
 
-    // Max discount cannot exceed order total
-    const maxUsablePoints = Math.min(
-        balance,
-        Math.floor(orderTotal / POINTS_TO_DISCOUNT_RATE)
-    );
+    // Max discount cannot exceed 15% of order total OR user balance value
+    const maxDiscountByPercent = Math.floor(orderTotal * (MAX_DISCOUNT_PERCENT / 100));
+    const maxDiscountByBalance = Math.floor(balance * POINTS_TO_DISCOUNT_RATE);
+    const maxDiscount = Math.min(maxDiscountByPercent, maxDiscountByBalance);
+    const maxUsablePoints = Math.ceil(maxDiscount / POINTS_TO_DISCOUNT_RATE);
+
+    // Check if user has enough points to redeem
+    const canRedeem = balance >= MIN_POINTS_TO_REDEEM;
 
     if (loading) {
         return (
