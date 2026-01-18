@@ -3,7 +3,7 @@
 // Hero Cards Slider - Carrusel de tarjetas promocionales
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Truck, Clock, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Truck, Clock, ShoppingBag, Mountain } from "lucide-react";
 
 // Tarjetas institucionales - TODO: Cargar desde admin
 const PROMO_CARDS = [
@@ -30,6 +30,14 @@ const PROMO_CARDS = [
         subtitle: "Todo lo que buscás en un solo lugar",
         buttonText: "Ver productos",
         buttonLink: "/productos",
+    },
+    {
+        id: 4,
+        icon: Mountain,
+        title: "Orgullo Fueguino",
+        subtitle: "Tienda online desde el fin del mundo",
+        buttonText: "Conocenos",
+        buttonLink: "/nosotros",
     },
 ];
 
@@ -192,7 +200,7 @@ export default function HeroSlider() {
 
                                             <Link
                                                 href={card.buttonLink}
-                                                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all mt-3 w-fit"
+                                                className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-all mt-3 w-fit"
                                             >
                                                 {card.buttonText}
                                                 <ChevronRight className="w-4 h-4" />
@@ -211,8 +219,8 @@ export default function HeroSlider() {
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
                                 className={`transition-all duration-300 rounded-full ${index === (currentIndex % PROMO_CARDS.length)
-                                        ? 'w-6 h-2 bg-[#e60012]'
-                                        : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                                    ? 'w-6 h-2 bg-[#e60012]'
+                                    : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
                                     }`}
                                 aria-label={`Ir a tarjeta ${index + 1}`}
                             />
