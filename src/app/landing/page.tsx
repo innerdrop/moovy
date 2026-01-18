@@ -102,7 +102,7 @@ function MobileMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
     return (
         <div className="fixed inset-0 z-50 bg-white flex flex-col animate-fade-in">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                <span className="text-2xl font-bold text-[#e60012]"><span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup className="text-xs font-normal" style={{ fontFamily: "'Poppins', sans-serif" }}>™</sup></span>
+                <span className="text-2xl font-bold text-[#e60012]" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span>
                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                     <X className="w-6 h-6 text-gray-600" />
                 </button>
@@ -226,7 +226,7 @@ export default function LandingPage() {
                     </div>
 
                     <Link href="/" className="text-2xl sm:text-3xl font-bold text-[#e60012] tracking-tighter text-center" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                        <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup className="text-xs font-normal" style={{ fontFamily: "'Poppins', sans-serif" }}>™</sup>
+                        MOOVY
                     </Link>
 
                     <div className="flex justify-end">
@@ -302,11 +302,11 @@ export default function LandingPage() {
                                     Explorá cientos de comercios locales, restaurantes y farmacias. Cada compra suma puntos que podés canjear por descuentos exclusivos.
                                 </p>
 
-                                {/* MOOVER Badge */}
-                                <div className="flex items-center gap-2 bg-amber-50 px-4 py-2 rounded-full border border-amber-100 w-fit mb-4">
-                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                {/* MOOVER Stylized */}
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
                                     <span
-                                        className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500"
+                                        className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
                                         style={{ fontFamily: "'Junegull', sans-serif" }}
                                     >
                                         MOOVER
@@ -468,7 +468,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12 max-w-5xl mx-auto">
                         <div className="col-span-2 md:col-span-1">
-                            <span className="text-2xl sm:text-3xl font-bold block mb-4"><span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup className="text-xs font-normal" style={{ fontFamily: "'Poppins', sans-serif" }}>™</sup></span>
+                            <span className="text-2xl sm:text-3xl font-bold block mb-4" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span>
                             <div className="flex gap-3">
                                 <a href="#" className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-white hover:text-[#e60012] transition-all">
                                     <Instagram className="w-4 h-4" />

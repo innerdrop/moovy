@@ -52,7 +52,7 @@ export default function MooverPage() {
                     <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-[#e60012] transition-colors font-medium">
                         <ArrowLeft className="w-5 h-5" /> Volver
                     </Link>
-                    <Link href="/" className="text-2xl font-bold text-[#e60012]"><span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup className="text-xs font-normal" style={{ fontFamily: "'Poppins', sans-serif" }}>™</sup></Link>
+                    <Link href="/" className="text-2xl font-bold text-[#e60012]" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</Link>
                     <div className="w-20" />
                 </div>
             </header>
@@ -276,7 +276,7 @@ export default function MooverPage() {
             {/* Footer */}
             <footer className="py-8 bg-gray-950 text-center relative z-10">
                 <div className="container mx-auto px-4">
-                    <Link href="/" className="text-xl font-bold text-white mb-4 inline-block"><span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup className="text-xs font-normal" style={{ fontFamily: "'Poppins', sans-serif" }}>™</sup></Link>
+                    <Link href="/" className="text-xl font-bold text-white mb-4 inline-block" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</Link>
                     <p className="text-xs text-gray-500 mb-2">
                         Programa MOOVER sujeto a <Link href="/terminos-moover" className="underline hover:text-gray-400">términos y condiciones</Link>.
                     </p>
