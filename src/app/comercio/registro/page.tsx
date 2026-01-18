@@ -2,7 +2,7 @@
 
 // Comercio Registration Page - Formulario de registro para comercios
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -25,6 +25,8 @@ import {
 
 export default function ComercioRegistroPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const fromProfile = searchParams.get("from") === "profile";
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -146,11 +148,11 @@ export default function ComercioRegistroPage() {
                             </div>
                         </div>
                         <Link
-                            href="/"
+                            href={fromProfile ? "/mi-perfil" : "/"}
                             className="inline-flex items-center gap-2 text-blue-600 font-medium hover:underline"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Volver al inicio
+                            {fromProfile ? "Volver al perfil" : "Volver al inicio"}
                         </Link>
                     </div>
                 )}
@@ -384,7 +386,7 @@ export default function ComercioRegistroPage() {
                                     <li>✓ Llegá a miles de clientes en tu ciudad</li>
                                     <li>✓ Panel de gestión fácil de usar</li>
                                     <li>✓ Sin costo de alta</li>
-                                    <li>✓ Entregas con conductores verificados</li>
+                                    <li>✓ Entregas con repartidores verificados</li>
                                 </ul>
                             </div>
 
@@ -412,11 +414,11 @@ export default function ComercioRegistroPage() {
                 {/* Back Link */}
                 {step < 3 && (
                     <Link
-                        href="/"
+                        href={fromProfile ? "/mi-perfil" : "/"}
                         className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Volver al inicio
+                        {fromProfile ? "Volver al perfil" : "Volver al inicio"}
                     </Link>
                 )}
             </div>

@@ -44,6 +44,37 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // Redirects for legacy routes (fix for old AireCM index)
+  async redirects() {
+    return [
+      {
+        source: "/contacto.html",
+        destination: "/contacto",
+        permanent: true,
+      },
+      {
+        source: "/index.html",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/servicios.html",
+        destination: "/tienda",
+        permanent: true,
+      },
+      {
+        source: "/equipo.html",
+        destination: "/nosotros",
+        permanent: true,
+      },
+      {
+        source: "/espacio.html",
+        destination: "/nosotros",
+        permanent: true,
+      },
+    ];
+  },
+
   // Image optimization domains
   images: {
     remotePatterns: [

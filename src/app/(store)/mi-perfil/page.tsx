@@ -108,7 +108,7 @@ export default function ProfilePage() {
                 <section>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Oportunidades MOOVY</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <Link href="/comercio/registro" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                        <Link href="/comercio/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
                                     <Store className="w-4 h-4" />
@@ -120,13 +120,13 @@ export default function ProfilePage() {
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-300" />
                         </Link>
-                        <Link href="/conductor/registro" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
+                        <Link href="/repartidor/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
                                     <Car className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <span className="text-sm font-medium text-gray-900 block">Quiero ser Conductor</span>
+                                    <span className="text-sm font-medium text-gray-900 block">Quiero ser Repartidor</span>
                                     <span className="text-[10px] text-gray-400">Generá ingresos con tu vehículo</span>
                                 </div>
                             </div>

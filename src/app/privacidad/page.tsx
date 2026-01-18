@@ -95,7 +95,7 @@ export default function PrivacidadPage() {
                         <p className="text-gray-600 mb-4">Solo compartimos información en los siguientes casos:</p>
                         <ul className="list-disc list-inside space-y-2 text-gray-600">
                             <li><strong>Comercios:</strong> Compartimos los datos necesarios para preparar su pedido (nombre, dirección, teléfono)</li>
-                            <li><strong>Conductores:</strong> Datos de entrega para completar el delivery</li>
+                            <li><strong>Repartidores:</strong> Datos de entrega para completar el delivery</li>
                             <li><strong>Procesadores de pago:</strong> Información necesaria para procesar transacciones</li>
                             <li><strong>Proveedores de servicios:</strong> Empresas que nos ayudan a operar la plataforma (hosting, analytics)</li>
                             <li><strong>Autoridades:</strong> Cuando sea requerido por ley o proceso legal</li>

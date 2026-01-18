@@ -1,8 +1,8 @@
 "use client";
 
-// Conductor Registration Page - Formulario de registro para conductores
+// Repartidor Registration Page - Formulario de registro para repartidores
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -28,8 +28,10 @@ import {
     Zap
 } from "lucide-react";
 
-export default function ConductorRegistroPage() {
+export default function RepartidorRegistroPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const fromProfile = searchParams.get("from") === "profile";
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -179,7 +181,7 @@ export default function ConductorRegistroPage() {
                         </div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Solicitud Enviada!</h2>
                         <p className="text-gray-500 mb-6">
-                            Tu solicitud para ser conductor MOOVY está en revisión. Te contactaremos pronto para coordinar la verificación de documentos.
+                            Tu solicitud para ser repartidor MOOVY está en revisión. Te contactaremos pronto para coordinar la verificación de documentos.
                         </p>
 
                         <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
@@ -208,11 +210,11 @@ export default function ConductorRegistroPage() {
                         </div>
 
                         <Link
-                            href="/"
+                            href={fromProfile ? "/mi-perfil" : "/"}
                             className="inline-flex items-center gap-2 text-green-600 font-medium hover:underline"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Volver al inicio
+                            {fromProfile ? "Volver al perfil" : "Volver al inicio"}
                         </Link>
                     </div>
                 )}
@@ -225,7 +227,7 @@ export default function ConductorRegistroPage() {
                                 <Car className="w-6 h-6 text-white" />
                             </div>
                         </div>
-                        <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Quiero ser Conductor</h2>
+                        <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Quiero ser Repartidor</h2>
                         <p className="text-sm text-gray-500 text-center mb-6">Paso 1: Tus datos personales</p>
 
                         {error && (
@@ -346,7 +348,7 @@ export default function ConductorRegistroPage() {
                         </form>
 
                         <p className="mt-4 text-center text-sm text-gray-500">
-                            ¿Ya tenés cuenta? <Link href="/conductores/login" className="text-green-600 font-medium hover:underline">Iniciá sesión</Link>
+                            ¿Ya tenés cuenta? <Link href="/repartidores/login" className="text-green-600 font-medium hover:underline">Iniciá sesión</Link>
                         </p>
                     </div>
                 )}
@@ -492,7 +494,7 @@ export default function ConductorRegistroPage() {
                                         className="mt-1 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
                                     />
                                     <span className="text-sm text-gray-600">
-                                        Acepto los <Link href="/terminos" className="text-green-600 underline">términos y condiciones</Link> para conductores
+                                        Acepto los <Link href="/terminos" className="text-green-600 underline">términos y condiciones</Link> para repartidores
                                     </span>
                                 </label>
                             </div>
@@ -547,11 +549,11 @@ export default function ConductorRegistroPage() {
                 {/* Back Link */}
                 {step < 3 && (
                     <Link
-                        href="/"
+                        href={fromProfile ? "/mi-perfil" : "/"}
                         className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Volver al inicio
+                        {fromProfile ? "Volver al perfil" : "Volver al inicio"}
                     </Link>
                 )}
             </div>

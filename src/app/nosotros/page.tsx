@@ -77,7 +77,7 @@ export default function AboutPage() {
                                 Nacimos en Ushuaia con una misión simple: <span className="text-white font-bold">conectar a nuestra comunidad.</span> Entendemos que vivir en el extremo sur requiere soluciones logísticas ágiles, confiables y cercanas.
                             </p>
                             <p>
-                                MOOVY no es solo una app de delivery. Somos una plataforma que empodera a los comercios locales, brinda oportunidades a conductores independientes y hace la vida más fácil a cada vecino.
+                                MOOVY no es solo una app de delivery. Somos una plataforma que empodera a los comercios locales, brinda oportunidades a repartidores independientes y hace la vida más fácil a cada vecino.
                             </p>
                         </div>
 

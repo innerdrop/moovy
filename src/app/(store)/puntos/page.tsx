@@ -93,6 +93,8 @@ export default function PuntosPage() {
             }
             loadPoints();
             loadReferralStats();
+            // Also load friends/monthly stats on initial load
+            loadFriendsList();
         } else if (authStatus === "unauthenticated") {
             setLoading(false);
         }
