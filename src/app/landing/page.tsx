@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ShoppingBag, Bike, Store, ChevronRight, Instagram, Menu, X, MapPin, Home, Info, Star, Gift, Users, Award, ChevronDown, Compass, Hotel, Send, Map } from "lucide-react";
+import { ArrowRight, ShoppingBag, Bike, Store, ChevronRight, Instagram, Menu, X, MapPin, Home, Info, Star, Gift, Users, Award, ChevronDown, Compass, Hotel, Send, Map, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // --- Components ---
@@ -150,10 +150,21 @@ function PreRegistrationForm() {
     const [email, setEmail] = useState("");
     const [businessName, setBusinessName] = useState("");
     const [submitted, setSubmitted] = useState(false);
+    const [showTooltip, setShowTooltip] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Pre-registration:", { email, businessName });
+
+        // Send email via mailto
+        const subject = encodeURIComponent("Pre-registro MOOVY X - " + businessName);
+        const body = encodeURIComponent(
+            `Nuevo pre-registro para MOOVY X:\n\n` +
+            `Establecimiento: ${businessName}\n` +
+            `Email de contacto: ${email}\n\n` +
+            `Fecha: ${new Date().toLocaleDateString('es-AR')}`
+        );
+        window.location.href = `mailto:somosmoovy@gmail.com?subject=${subject}&body=${body}`;
+
         setSubmitted(true);
     };
 
@@ -171,18 +182,34 @@ function PreRegistrationForm() {
 
     return (
         <div className="bg-gray-50 rounded-2xl p-5 sm:p-6 border border-gray-100 h-full">
-            <h4 className="font-bold text-gray-900 text-lg mb-1">¿Tenés un hotel o alojamiento?</h4>
-            <p className="text-gray-500 text-sm mb-4">Pre-registrate para recibir información del lanzamiento.</p>
+            <h4 className="font-bold text-gray-900 text-lg mb-1">¿Tenés un hotel, alojamiento o empresa de turismo?</h4>
+            <p className="text-gray-500 text-sm mb-4">Pre-registrate para recibir información del lanzamiento de MOOVY X.</p>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-                <input
-                    type="text"
-                    placeholder="Nombre del establecimiento"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-sm bg-white"
-                />
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Nombre del establecimiento"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        required
+                        className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-sm bg-white"
+                    />
+                    <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors"
+                        onMouseEnter={() => setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                        onClick={() => setShowTooltip(!showTooltip)}
+                    >
+                        <HelpCircle className="w-4 h-4" />
+                    </button>
+                    {showTooltip && (
+                        <div className="absolute right-0 top-full mt-1 bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg z-10 w-56">
+                            Ingresá el nombre de tu hotel, hostería, cabaña, agencia de turismo o empresa de excursiones.
+                        </div>
+                    )}
+                </div>
                 <input
                     type="email"
                     placeholder="Email de contacto"
@@ -279,11 +306,11 @@ export default function LandingPage() {
                     <div className="max-w-5xl mx-auto">
                         {/* Single Unified Card */}
                         <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-                            {/* Floating stars decoration */}
-                            <FloatingStar left="90%" top="10%" delay={0} duration={4} />
-                            <FloatingStar left="5%" top="70%" delay={2} duration={3.5} />
-                            <FloatingStar left="85%" top="60%" delay={1} duration={5} />
-                            <FloatingStar left="10%" top="20%" delay={3} duration={4} />
+                            {/* Floating stars decoration - positioned away from MOOVER star */}
+                            <FloatingStar left="92%" top="5%" delay={0} duration={4} />
+                            <FloatingStar left="3%" top="85%" delay={2} duration={3.5} />
+                            <FloatingStar left="88%" top="75%" delay={1} duration={5} />
+                            <FloatingStar left="8%" top="10%" delay={3} duration={4} />
 
                             <div className="relative z-10">
                                 {/* Header */}
