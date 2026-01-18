@@ -110,25 +110,24 @@ function MobileMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
 
             <div className="flex-1 flex flex-col p-6 overflow-y-auto">
                 <nav className="space-y-1">
-                    <Link href="/" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-semibold text-gray-900 border-b border-gray-50">
+                    <Link href="/" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <Home className="w-5 h-5 text-[#e60012]" /> Inicio
                     </Link>
-                    <Link href="/tienda" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-semibold text-gray-900 border-b border-gray-50">
+                    <Link href="/tienda" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <ShoppingBag className="w-5 h-5 text-[#e60012]" /> Tienda
                     </Link>
-                    <Link href="/moover" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-semibold text-gray-900 border-b border-gray-50">
+                    <Link href="/moover" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <Star className="w-5 h-5 text-amber-500" /> Programa MOOVER
                     </Link>
-                    <div className="py-4 border-b border-gray-50">
-                        <span className="flex items-center gap-4 text-lg font-semibold text-gray-900 mb-2">
-                            <Compass className="w-5 h-5 text-teal-600" /> MOOVY X
-                        </span>
-                        <div className="pl-9 space-y-2">
-                            <span className="block text-gray-400 text-sm">Próximamente</span>
-                        </div>
-                    </div>
-                    <Link href="/nosotros" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-semibold text-gray-900 border-b border-gray-50">
+                    <Link href="/moovyx" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
+                        <Compass className="w-5 h-5 text-teal-600" /> MOOVY X
+                        <span className="ml-auto text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">Próximamente</span>
+                    </Link>
+                    <Link href="/nosotros" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <Info className="w-5 h-5 text-[#e60012]" /> Quiénes Somos
+                    </Link>
+                    <Link href="/contacto" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
+                        <MapPin className="w-5 h-5 text-[#e60012]" /> Contacto
                     </Link>
                 </nav>
 
@@ -321,11 +320,11 @@ export default function LandingPage() {
                                     Explorá cientos de comercios locales, restaurantes y farmacias. Cada compra suma puntos que podés canjear por descuentos exclusivos.
                                 </p>
 
-                                {/* MOOVER Stylized */}
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                                {/* MOOVER Stylized - Centered and larger */}
+                                <div className="flex items-center justify-center gap-3 mb-4">
+                                    <Star className="w-6 h-6 text-amber-500 fill-amber-400" />
                                     <span
-                                        className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
+                                        className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
                                         style={{ fontFamily: "'Junegull', sans-serif" }}
                                     >
                                         MOOVER

@@ -98,19 +98,6 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
     return (
         <div className="min-h-[calc(100vh-5rem)] flex flex-col items-center pt-8 lg:pt-12 bg-gray-50 px-4 pb-8">
             <div className="w-full max-w-sm sm:max-w-md">
-                {/* Logo */}
-                <div className="text-center mb-6 sm:mb-8">
-                    <Link href={config.backLink?.href || '/'} className="inline-block">
-                        <Image
-                            src={config.logo}
-                            alt="Moovy"
-                            width={150}
-                            height={48}
-                            className="mx-auto"
-                            priority
-                        />
-                    </Link>
-                </div>
 
                 {/* Login Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
