@@ -320,11 +320,11 @@ export default function LandingPage() {
                                     Explorá cientos de comercios locales, restaurantes y farmacias. Cada compra suma puntos que podés canjear por descuentos exclusivos.
                                 </p>
 
-                                {/* MOOVER Stylized - Centered and larger */}
-                                <div className="flex items-center justify-center gap-3 mb-4">
-                                    <Star className="w-6 h-6 text-amber-500 fill-amber-400" />
+                                {/* MOOVER Stylized - Left aligned and larger */}
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Star className="w-7 h-7 text-amber-500 fill-amber-400" />
                                     <span
-                                        className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
+                                        className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
                                         style={{ fontFamily: "'Junegull', sans-serif" }}
                                     >
                                         MOOVER

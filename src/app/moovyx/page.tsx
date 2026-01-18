@@ -40,50 +40,58 @@ export default function MoovyXPage() {
                         </p>
                     </div>
 
-                    {/* What's coming */}
+                    {/* What's coming - With Images */}
                     <div className="grid md:grid-cols-2 gap-6 mb-16">
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center mb-4">
-                                <Map className="w-6 h-6 text-teal-600" />
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                            <div className="h-48 overflow-hidden">
+                                <img src="/moovyx-excursiones.png" alt="Excursiones en Ushuaia" className="w-full h-full object-cover" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Excursiones</h3>
-                            <p className="text-gray-600">
-                                Navegación por el Canal Beagle, trekking en glaciares,
-                                avistaje de fauna y mucho más. Todo en un solo lugar.
-                            </p>
+                            <div className="p-6">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Excursiones</h3>
+                                <p className="text-gray-600">
+                                    Navegación por el Canal Beagle, trekking en glaciares,
+                                    avistaje de fauna y mucho más. Todo en un solo lugar.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-4">
-                                <Hotel className="w-6 h-6 text-sky-600" />
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                            <div className="h-48 overflow-hidden">
+                                <img src="/moovyx-alojamiento.png" alt="Alojamiento en Patagonia" className="w-full h-full object-cover" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Alojamiento</h3>
-                            <p className="text-gray-600">
-                                Hoteles, cabañas y hospedajes verificados.
-                                Reservá directamente con los mejores precios.
-                            </p>
+                            <div className="p-6">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Alojamiento</h3>
+                                <p className="text-gray-600">
+                                    Hoteles, cabañas y hospedajes verificados.
+                                    Reservá directamente con los mejores precios.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
-                                <Mountain className="w-6 h-6 text-emerald-600" />
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                            <div className="h-48 overflow-hidden">
+                                <img src="/moovyx-experiencias.png" alt="Experiencias únicas" className="w-full h-full object-cover" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Experiencias Únicas</h3>
-                            <p className="text-gray-600">
-                                Actividades exclusivas del Fin del Mundo:
-                                trineo con huskies, buceo en aguas antárticas, auroras australes.
-                            </p>
+                            <div className="p-6">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Experiencias Únicas</h3>
+                                <p className="text-gray-600">
+                                    Actividades exclusivas del Fin del Mundo:
+                                    trineo con huskies, buceo en aguas antárticas, auroras australes.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
-                                <Star className="w-6 h-6 text-amber-600" />
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                            <div className="h-48 overflow-hidden">
+                                <img src="/moovyx-puntos.png" alt="Puntos MOOVER" className="w-full h-full object-cover" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Puntos MOOVER</h3>
-                            <p className="text-gray-600">
-                                Tus puntos MOOVER también servirán para experiencias turísticas.
-                                Canjeá por descuentos en excursiones.
-                            </p>
+                            <div className="p-6">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Puntos MOOVER</h3>
+                                <p className="text-gray-600">
+                                    Tus puntos MOOVER también servirán para experiencias turísticas.
+                                    Canjeá por descuentos en excursiones.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -123,7 +131,7 @@ export default function MoovyXPage() {
                             <p className="text-gray-500 text-sm">Próximamente</p>
                         </div>
                         <div className="text-center p-4">
-                            <p className="text-3xl font-bold text-teal-600">2025</p>
+                            <p className="text-3xl font-bold text-teal-600">2026</p>
                             <p className="text-gray-500 text-sm">Lanzamiento</p>
                         </div>
                     </div>
