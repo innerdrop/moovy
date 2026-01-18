@@ -48,6 +48,10 @@ model User {
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  
+  // Password reset
+  resetToken        String?
+  resetTokenExpiry  DateTime?
   deletedAt     DateTime? // Soft delete for data retention
 }
 

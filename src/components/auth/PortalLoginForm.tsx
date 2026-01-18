@@ -195,6 +195,16 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                             </div>
                         </div>
 
+                        {/* Forgot Password */}
+                        <div className="text-right">
+                            <Link
+                                href="/recuperar-contrasena"
+                                className="text-sm text-gray-500 hover:text-gray-700 hover:underline transition-colors"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </div>
+
                         {/* Submit */}
                         <button
                             type="submit"

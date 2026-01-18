@@ -98,7 +98,7 @@ export default function AppHeader({
                             <div className="w-7 h-7 bg-[#e60012]/10 rounded-full flex items-center justify-center flex-shrink-0">
                                 <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
                             </div>
-                            <span className="text-sm font-semibold text-gray-900">Ushuaia, TDF</span>
+                            <span className="text-sm font-semibold text-gray-900">Ushuaia</span>
                         </div>
                     )}
 
@@ -162,7 +162,7 @@ export default function AppHeader({
                                     <div className="w-8 h-8 bg-[#e60012]/10 rounded-full flex items-center justify-center">
                                         <MapPin className="w-4 h-4 text-[#e60012]" />
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-900">Ushuaia, TDF</span>
+                                    <span className="text-sm font-semibold text-gray-900">Ushuaia</span>
                                 </div>
                                 <Link
                                     href="/login"
