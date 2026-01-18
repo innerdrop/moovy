@@ -377,8 +377,8 @@ export default function LandingPage() {
                         <div className="grid md:grid-cols-2 gap-4">
                             <ExpandableCard
                                 delay={100}
-                                href="/repartidor/registro"
-                                loginHref="/repartidor/login"
+                                href="/riders/registro"
+                                loginHref="/riders/login"
                                 icon={Bike}
                                 title="Repartidores"
                                 description="Generá ingresos con libertad"
@@ -387,8 +387,8 @@ export default function LandingPage() {
                             />
                             <ExpandableCard
                                 delay={200}
-                                href="/comercio/registro"
-                                loginHref="/comercio/login"
+                                href="/socios/registro"
+                                loginHref="/socios/login"
                                 icon={Store}
                                 title="Comercios"
                                 description="Potenciá tus ventas hoy"
@@ -487,8 +487,8 @@ export default function LandingPage() {
                         <div>
                             <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Comunidad</h4>
                             <ul className="space-y-2 text-sm">
-                                <li><Link href="/repartidor/registro" className="text-white/80 hover:text-white transition-all">Repartidores</Link></li>
-                                <li><Link href="/comercio/registro" className="text-white/80 hover:text-white transition-all">Comercios</Link></li>
+                                <li><Link href="/riders/registro" className="text-white/80 hover:text-white transition-all">Repartidores</Link></li>
+                                <li><Link href="/socios/registro" className="text-white/80 hover:text-white transition-all">Comercios</Link></li>
                             </ul>
                         </div>
 
