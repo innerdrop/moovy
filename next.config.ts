@@ -75,7 +75,7 @@ const nextConfig: NextConfig = {
       // New subdomain URL structure redirects
       {
         source: "/riders/registro",
-        destination: "/conductores/registro",
+        destination: "/repartidor/registro",
         permanent: false,
       },
       {
@@ -85,7 +85,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/socios/registro",
-        destination: "/comercios/registro",
+        destination: "/comercio/registro",
         permanent: false,
       },
       {
