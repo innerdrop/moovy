@@ -1,51 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ShoppingBag, Car, Store, Instagram, Facebook, Twitter, Menu, X } from "lucide-react";
+import { ArrowRight, ShoppingBag, Car, Store, Instagram, Menu, X, Home, Info, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
 // --- Components ---
 
-function CompactCard({ href, icon: Icon, title, description, badge, featured = false }: any) {
+function SmartCard({ href, icon: Icon, title, description }: any) {
     return (
         <Link
             href={href}
-            className={`
-                group rounded-3xl p-8 transition-all duration-300 flex flex-col h-full relative overflow-hidden
-                ${featured
-                    ? 'bg-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] scale-105 md:scale-110 z-10 border-4 border-amber-400'
-                    : 'bg-white/95 shadow-xl shadow-black/10 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1'
-                }
-            `}
+            className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-xl shadow-black/10 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col items-start text-left h-full border border-white/20"
         >
-            <div className="flex justify-between items-start mb-6">
-                <div className={`
-                    w-14 h-14 rounded-2xl flex items-center justify-center transition-colors
-                    ${featured ? 'bg-[#e60012] text-white' : 'bg-red-50 text-[#e60012] group-hover:bg-[#e60012] group-hover:text-white'}
-                `}>
-                    <Icon className="w-7 h-7" strokeWidth={2.5} />
+            <div className="flex items-center gap-4 mb-4">
+                <div className="text-[#e60012] bg-red-50 p-3 rounded-xl group-hover:bg-[#e60012] group-hover:text-white transition-colors duration-300">
+                    <Icon className="w-8 h-8" strokeWidth={2} />
                 </div>
-                {badge && (
-                    <span className="px-3 py-1 bg-amber-400 text-black text-xs font-black rounded-full uppercase tracking-wider shadow-sm">
-                        {badge}
-                    </span>
-                )}
+                <h3 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
+                    {title}
+                </h3>
             </div>
 
-            <h3 className={`text-2xl font-black mb-3 transition-colors ${featured ? 'text-[#e60012]' : 'text-gray-900 group-hover:text-[#e60012]'}`}>
-                {title}
-            </h3>
-
-            <p className="text-gray-500 leading-relaxed mb-8 flex-grow font-medium">
+            <p className="text-gray-500 font-medium text-sm leading-relaxed mb-6 group-hover:text-gray-700 transition-colors">
                 {description}
             </p>
 
-            <div className={`
-                flex items-center text-sm font-bold mt-auto transition-colors
-                ${featured ? 'text-[#e60012]' : 'text-gray-400 group-hover:text-[#e60012]'}
-            `}>
-                {featured ? 'Ir a la Tienda' : 'Ver más'}
-                <ArrowRight className={`w-5 h-5 ml-2 transition-transform ${featured ? 'translate-x-1' : 'group-hover:translate-x-1'}`} />
+            <div className="mt-auto flex items-center text-xs font-bold uppercase tracking-wider text-[#e60012]">
+                <span className="group-hover:mr-2 transition-all">Ingresar</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
             </div>
         </Link>
     );
@@ -53,26 +35,33 @@ function CompactCard({ href, icon: Icon, title, description, badge, featured = f
 
 function MinimalFooter() {
     return (
-        <footer className="w-full max-w-7xl mx-auto px-6 py-8 border-t border-white/20 mt-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-
-                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-                    <p className="text-white/60 text-xs text-center md:text-left">
-                        © {new Date().getFullYear()} Moovy App.
-                    </p>
-                    <div className="flex gap-6 text-xs font-medium text-white/80">
-                        <Link href="/terminos" className="hover:text-white hover:underline">Términos y Condiciones</Link>
-                        <Link href="/privacidad" className="hover:text-white hover:underline">Política de Privacidad</Link>
-                    </div>
+        <footer className="w-full max-w-7xl mx-auto px-6 py-8 mt-auto">
+            <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-1 bg-white/20 rounded-full mb-4" />
+                <div className="flex gap-8 text-[11px] uppercase font-bold tracking-[0.2em] text-white/60">
+                    <Link href="/terminos" className="hover:text-white transition-colors">Términos</Link>
+                    <Link href="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
                 </div>
-
-                <div className="flex items-center gap-6">
-                    <a href="#" className="text-white/60 hover:text-white transition-colors"><Instagram className="w-5 h-5" /></a>
-                    <a href="#" className="text-white/60 hover:text-white transition-colors"><Facebook className="w-5 h-5" /></a>
-                    <a href="#" className="text-white/60 hover:text-white transition-colors"><Twitter className="w-5 h-5" /></a>
-                </div>
+                <p className="text-white/40 text-[10px] tracking-wider font-medium">
+                    © {new Date().getFullYear()} MOOVY™
+                </p>
             </div>
         </footer>
+    );
+}
+
+function MenuItem({ href, label, icon: Icon, onClick }: any) {
+    return (
+        <Link
+            href={href}
+            onClick={onClick}
+            className="flex items-center gap-5 py-4 group"
+        >
+            <span className="text-gray-400 group-hover:text-white transition-colors">
+                <Icon className="w-6 h-6" />
+            </span>
+            <span className="text-2xl font-bold text-white group-hover:pl-2 transition-all">{label}</span>
+        </Link>
     );
 }
 
@@ -80,93 +69,90 @@ export default function LandingPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-[#e60012] font-sans text-white flex flex-col selection:bg-white selection:text-[#e60012] overflow-x-hidden">
+        <div className="min-h-screen bg-[#e60012] font-sans text-white flex flex-col selection:bg-white selection:text-[#e60012] overflow-x-hidden relative">
+
+            {/* --- Background Gradient Mesh (Subtle) --- */}
+            <div className="fixed inset-0 pointer-events-none opacity-30">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-500 rounded-full blur-[120px] mix-blend-screen animate-pulse" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-red-600 rounded-full blur-[120px] mix-blend-multiply" />
+            </div>
 
             {/* --- Header --- */}
             <header className="px-6 py-6 md:py-8 flex justify-between items-center max-w-7xl mx-auto w-full relative z-20">
-                <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold text-white tracking-tighter" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                        MOOVY
-                    </span>
-                </div>
+                <span className="text-3xl font-black text-white tracking-tighter cursor-default select-none" style={{ fontFamily: "'Junegull', sans-serif" }}>
+                    MOOVY
+                </span>
 
-                <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-white/90">
-                    <Link href="/nosotros" className="hover:text-white transition-colors">Nosotros</Link>
-                    <Link href="/ayuda" className="hover:text-white transition-colors">Ayuda</Link>
-                    <Link href="/login" className="hover:text-white transition-colors font-bold">Ingresar</Link>
-                    <Link href="/registro" className="bg-white text-[#e60012] px-6 py-2.5 rounded-full font-bold shadow-lg hover:bg-gray-50 transition-all hover:-translate-y-0.5">
-                        Crear Cuenta
-                    </Link>
-                </nav>
-
-                <button onClick={() => setIsMenuOpen(true)} className="md:hidden text-white">
-                    <Menu className="w-8 h-8" />
+                <button
+                    onClick={() => setIsMenuOpen(true)}
+                    className="text-white hover:scale-110 transition-transform p-2 bg-white/10 rounded-full backdrop-blur-md border border-white/10"
+                >
+                    <Menu className="w-6 h-6" />
                 </button>
             </header>
 
-            {/* --- Mobile Menu --- */}
-            {isMenuOpen && (
-                <div className="fixed inset-0 z-50 bg-[#e60012] flex flex-col p-6 animate-fade-in">
-                    <div className="flex justify-between items-center mb-12">
-                        <span className="text-3xl font-bold text-white" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span>
-                        <button onClick={() => setIsMenuOpen(false)}><X className="w-8 h-8 text-white" /></button>
-                    </div>
-                    <div className="flex flex-col gap-6 text-2xl font-bold text-white">
-                        <Link href="/tienda" onClick={() => setIsMenuOpen(false)}>Tienda</Link>
-                        <Link href="/nosotros" onClick={() => setIsMenuOpen(false)}>Nosotros</Link>
-                        <Link href="/login" onClick={() => setIsMenuOpen(false)}>Ingresar</Link>
-                    </div>
+            {/* --- Full Screen Menu Overlay --- */}
+            <div className={`fixed inset-0 z-50 bg-[#e60012] flex flex-col transition-all duration-500 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                <div className="flex justify-between items-center px-6 py-6 md:py-8">
+                    <span className="text-3xl font-black text-white tracking-tighter" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span>
+                    <button onClick={() => setIsMenuOpen(false)} className="text-white hover:rotate-90 transition-transform duration-300 p-2 bg-white/10 rounded-full">
+                        <X className="w-6 h-6" />
+                    </button>
                 </div>
-            )}
+
+                <div className="flex-1 flex flex-col justify-center items-center p-6 space-y-2">
+                    <MenuItem href="/" label="Inicio" icon={Home} onClick={() => setIsMenuOpen(false)} />
+                    <MenuItem href="/tienda" label="Tienda" icon={ShoppingBag} onClick={() => setIsMenuOpen(false)} />
+                    <MenuItem href="/nosotros" label="Nosotros" icon={Info} onClick={() => setIsMenuOpen(false)} />
+                    <MenuItem href="/ayuda" label="Ayuda" icon={HelpCircle} onClick={() => setIsMenuOpen(false)} />
+
+                    <div className="h-8" />
+
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-sm uppercase tracking-widest font-bold text-white/60 hover:text-white transition-colors border border-white/20 px-8 py-3 rounded-full hover:bg-white/10">
+                        Iniciar Sesión
+                    </Link>
+                </div>
+            </div>
 
             {/* --- Main Content --- */}
-            <main className="flex-grow flex flex-col items-center justify-center px-4 md:px-6 w-full max-w-7xl mx-auto py-12 md:py-16">
+            <main className="flex-grow flex flex-col items-center justify-center relative z-10 w-full max-w-7xl mx-auto px-4 py-8">
 
-                <div className="text-center mb-16 md:mb-24 max-w-3xl animate-fade-up px-4">
-                    <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-[0.9]">
-                        Tu ciudad, <br className="md:hidden" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400 drop-shadow-sm">
-                            en tus manos.
+                {/* Hero Text */}
+                <div className="text-center mb-12 md:mb-16 animate-fade-up">
+                    <h1 className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.8] drop-shadow-sm mb-4">
+                        TU ANTOJO<br />
+                        <span className="text-white/90">
+                            MANDA!
                         </span>
                     </h1>
-                    <p className="text-white/90 text-lg md:text-2xl font-medium leading-relaxed">
-                        Delivery, logística y crecimiento. <br className="hidden md:block" /> Todo en una sola plataforma.
+                    <p className="text-lg md:text-xl font-medium text-white/80 max-w-xl mx-auto">
+                        La forma más rápida de pedir lo que quieras en Ushuaia.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full items-stretch px-2 md:px-8">
+                {/* Smart Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-5xl mx-auto animate-fade-up delay-150">
 
-                    {/* --- CLIENT (Featured) --- */}
-                    <div className="md:-mt-8 md:mb-8 animate-fade-up delay-100 order-1 md:order-2">
-                        <CompactCard
-                            href="/tienda"
-                            icon={ShoppingBag}
-                            title="Clientes"
-                            description="Entrá a la tienda y pedí lo que quieras. Supermercados, restaurantes y kioscos con envío inmediato."
-                            badge="RECOMENDADO"
-                            featured={true}
-                        />
-                    </div>
+                    <SmartCard
+                        href="/tienda"
+                        icon={ShoppingBag}
+                        title="TIENDA"
+                        description="Explorá cientos de marcas y recibí tu pedido en minutos."
+                    />
 
-                    {/* --- DRIVER --- */}
-                    <div className="animate-fade-up delay-200 order-2 md:order-1">
-                        <CompactCard
-                            href="/conductor/registro"
-                            icon={Car}
-                            title="Conductores"
-                            description="Conectá envíos con tu vehículo y generá ganancias extra manejando tus propios horarios."
-                        />
-                    </div>
+                    <SmartCard
+                        href="/conductor/registro"
+                        icon={Car}
+                        title="CONDUCIR"
+                        description="Manejá tus horarios y generá ganancias extra con tu vehículo."
+                    />
 
-                    {/* --- MERCHANT --- */}
-                    <div className="animate-fade-up delay-300 order-3 md:order-3">
-                        <CompactCard
-                            href="/comercio/registro"
-                            icon={Store}
-                            title="Comercios"
-                            description="Sumá tu negocio a nuestra red y vendé online sin complicaciones técnicas."
-                        />
-                    </div>
+                    <SmartCard
+                        href="/comercio/registro"
+                        icon={Store}
+                        title="NEGOCIO"
+                        description="Potenciá tus ventas sumando tu comercio a nuestra red."
+                    />
 
                 </div>
 
