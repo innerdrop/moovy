@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
             html: `
                 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="color: #e60012; font-size: 32px; margin: 0;">MOOVY</h1>
+                        <img src="https://somosmoovy.com/logo-moovy.png" alt="MOOVY" style="height: 50px; width: auto;" />
                     </div>
                     <div style="background-color: #f9fafb; border-radius: 12px; padding: 30px;">
                         <h2 style="color: #111827; margin-top: 0;">Restablecer contraseña</h2>
