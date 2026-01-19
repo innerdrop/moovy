@@ -1,9 +1,9 @@
 
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import AppHeader from "@/components/layout/AppHeader";
 import ProductCard from "@/components/store/ProductCard";
-import { MapPin, Clock, Star, Info } from "lucide-react";
+import { MapPin, Clock, Star, Info, ChevronLeft } from "lucide-react";
 
 async function getMerchant(slug: string) {
     const merchant = await prisma.merchant.findUnique({
@@ -59,7 +59,13 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
 
     return (
         <div className="bg-gray-50 min-h-screen pb-20">
-            <AppHeader title={merchant.name} showBack backHref="/" />
+            {/* Simple Header */}
+            <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 flex items-center gap-3">
+                <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </Link>
+                <h1 className="font-semibold text-navy truncate">{merchant.name}</h1>
+            </header>
 
             {/* Merchant Header / Cover */}
             <div className="bg-white border-b border-gray-100">

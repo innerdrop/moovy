@@ -84,7 +84,7 @@ export default function StoreLayout({
             </main>
 
             {/* Bottom Navigation siempre visible */}
-            <BottomNav cartCount={cartCount} isLoggedIn={!!isLoggedIn} />
+            <BottomNav isLoggedIn={!!isLoggedIn} />
 
             {/* Floating Cart Button (when cart has items) */}
             <FloatingCartButton />

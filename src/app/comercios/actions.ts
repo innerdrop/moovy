@@ -34,7 +34,7 @@ export async function createProduct(formData: FormData) {
     const validation = productSchema.safeParse(rawData);
 
     if (!validation.success) {
-        return { error: validation.error.errors[0].message };
+        return { error: validation.error.issues[0].message };
     }
 
     const data = validation.data;

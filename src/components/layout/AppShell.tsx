@@ -20,7 +20,7 @@ export default function AppShell({ children, hideBottomNav = false }: AppShellPr
             </main>
 
             {/* Bottom Navigation */}
-            {!hideBottomNav && <BottomNav cartCount={cartCount} />}
+            {!hideBottomNav && <BottomNav />}
         </div>
     );
 }

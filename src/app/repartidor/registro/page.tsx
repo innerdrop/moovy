@@ -1,7 +1,7 @@
 "use client";
 
 // Repartidor Registration Page - Formulario de registro para repartidores
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -28,7 +28,7 @@ import {
     Zap
 } from "lucide-react";
 
-export default function RepartidorRegistroPage() {
+function RepartidorRegistroContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const fromProfile = searchParams.get("from") === "profile";
@@ -558,5 +558,17 @@ export default function RepartidorRegistroPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function RepartidorRegistroPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#e60012]"></div>
+            </div>
+        }>
+            <RepartidorRegistroContent />
+        </Suspense>
     );
 }
