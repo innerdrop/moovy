@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export async function GET() {
         }
 
         // Get user's redemptions (point transactions with negative amounts for redemptions)
-        const redemptions = await prisma.pointTransaction.findMany({
+        const redemptions = await prisma.pointsTransaction.findMany({
             where: {
                 userId: session.user.id,
                 type: "REDEMPTION",
@@ -25,12 +25,12 @@ export async function GET() {
         });
 
         // Transform data for frontend
-        const transformedRedemptions = redemptions.map((r) => ({
+        const transformedRedemptions = redemptions.map((r: typeof redemptions[0]) => ({
             id: r.id,
             pointsUsed: Math.abs(r.amount),
-            rewardName: r.description,
+            rewardName: r.description || 'Canje de puntos',
             createdAt: r.createdAt,
-            code: r.referenceId || null,
+            code: null,
         }));
 
         return NextResponse.json({ redemptions: transformedRedemptions });
