@@ -742,7 +742,7 @@ export default function PuntosPage() {
                     </div>
                 ) : (
                     <div className="bg-white rounded-xl overflow-hidden">
-                        <div className="max-h-[320px] overflow-y-auto">
+                        <div className="max-h-[320px] overflow-y-auto overscroll-contain touch-pan-y">
                             {history.map((tx, index) => (
                                 <div
                                     key={tx.id}

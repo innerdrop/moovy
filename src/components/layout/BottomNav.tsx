@@ -94,16 +94,8 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                                 : "bg-gradient-to-br from-[#e60012] to-[#ff3333] shadow-red-500/40"
                                             }
                                         `}>
-                                            {/* White star with red M inside */}
-                                            <div className="relative">
-                                                <Icon className={`w-7 h-7 ${isLoggedIn ? 'text-white' : 'text-white'} fill-current`} />
-                                                <span
-                                                    className={`absolute inset-0 flex items-center justify-center font-black text-[10px] ${isLoggedIn ? 'text-amber-600' : 'text-[#e60012]'}`}
-                                                    style={{ fontFamily: "'Junegull', sans-serif" }}
-                                                >
-                                                    M
-                                                </span>
-                                            </div>
+                                            {/* White star - bigger */}
+                                            <Icon className="w-8 h-8 text-white fill-current" />
                                         </div>
                                         <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-amber-500" : "text-[#e60012]"}`}>
                                             {item.label}
