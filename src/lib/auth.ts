@@ -113,6 +113,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for security)
         updateAge: 24 * 60 * 60, // Update session every 24 hours
     },
+
+    // Cookie configuration for production
+    cookies: {
+        sessionToken: {
+            name: `__Secure-next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: true,
+                domain: process.env.NODE_ENV === 'production' ? '.somosmoovy.com' : undefined,
+            },
+        },
+    },
+
     // Don't log in production
     debug: process.env.NODE_ENV === "development",
 
