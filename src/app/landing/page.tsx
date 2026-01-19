@@ -1,551 +1,705 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ShoppingBag, Bike, Store, ChevronRight, Instagram, Menu, X, MapPin, Home, Info, Star, Gift, Users, Award, ChevronDown, Compass, Hotel, Send, Map, HelpCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+import {
+    ArrowRight,
+    Menu,
+    X,
+    Zap,
+    Mountain,
+    Star,
+    Smartphone,
+    Globe,
+    ChevronRight,
+    Instagram,
+    MessageCircle,
+} from "lucide-react";
 
-// --- Components ---
-
-function FloatingStar({ delay, duration, left, top }: { delay: number, duration: number, left: string, top: string }) {
+// ============================================
+// AURORA CANVAS - Animated Background for Hero
+// ============================================
+function AuroraCanvas() {
     return (
-        <div
-            className="absolute animate-float text-amber-400/60 pointer-events-none"
-            style={{
-                left,
-                top,
-                animationDelay: `${delay}s`,
-                animationDuration: `${duration}s`
-            }}
-        >
-            <Star className="w-4 h-4 fill-amber-400" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#0A0A0B_0%,#050506_100%)]" />
+
+            {/* Animated aurora lines */}
+            <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                    <linearGradient id="auroraGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#e60012" stopOpacity="0" />
+                        <stop offset="50%" stopColor="#e60012" stopOpacity="0.6" />
+                        <stop offset="100%" stopColor="#00D4AA" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="auroraGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#00D4AA" stopOpacity="0" />
+                        <stop offset="50%" stopColor="#00D4AA" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#e60012" stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+
+                {/* Flowing lines */}
+                <path
+                    d="M-100,400 Q300,300 600,400 T1300,350"
+                    fill="none"
+                    stroke="url(#auroraGradient1)"
+                    strokeWidth="2"
+                    className="animate-aurora-flow-1"
+                />
+                <path
+                    d="M-100,450 Q400,350 700,450 T1400,400"
+                    fill="none"
+                    stroke="url(#auroraGradient2)"
+                    strokeWidth="1.5"
+                    className="animate-aurora-flow-2"
+                />
+                <path
+                    d="M-100,500 Q250,420 550,500 T1300,480"
+                    fill="none"
+                    stroke="url(#auroraGradient1)"
+                    strokeWidth="1"
+                    className="animate-aurora-flow-3"
+                />
+            </svg>
+
+            {/* Floating particles */}
+            {[...Array(20)].map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-white/30 animate-particle-float"
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 8}s`,
+                        animationDuration: `${6 + Math.random() * 4}s`,
+                    }}
+                />
+            ))}
+
+            {/* Noise texture overlay */}
+            <div className="absolute inset-0 opacity-[0.02] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMSIvPjwvc3ZnPg==')]" />
         </div>
     );
 }
 
-// Expandable Card with subtle arrow indicator and dual actions
-function ExpandableCard({ href, loginHref, icon: Icon, title, description, details, delay, accentColor = "#e60012", registerText = "Registrarme", loginText = "Ya tengo cuenta" }: any) {
+// ============================================
+// ECOSYSTEM CARD
+// ============================================
+interface EcosystemCardProps {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    accent: string;
+    href: string;
+    badge?: string;
+    delay: number;
+}
+
+function EcosystemCard({ title, description, icon, accent, href, badge, delay }: EcosystemCardProps) {
     const [isVisible, setIsVisible] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsVisible(true), delay);
-        return () => clearTimeout(timer);
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => setIsVisible(true), delay);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
     }, [delay]);
 
-    const handleToggle = (e: React.MouseEvent) => {
-        if (window.innerWidth < 768) {
-            e.preventDefault();
-            setIsExpanded(!isExpanded);
-        }
-    };
-
     return (
-        <div className={`transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <Link href={href}>
             <div
-                onClick={handleToggle}
-                className={`bg-gray-50 border border-gray-100 rounded-2xl p-5 transition-all duration-500 overflow-hidden relative cursor-pointer hover:shadow-md
-                    ${isExpanded ? 'shadow-md' : ''}`}
+                ref={ref}
+                className={`group relative bg-[#111113] border border-white/[0.06] rounded-3xl p-8 transition-all duration-500 cursor-pointer
+                    hover:bg-[#18181B] hover:border-white/[0.12] hover:-translate-y-1
+                    ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
             >
-                <div className="flex items-start gap-4">
-                    <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `${accentColor}10` }}
-                    >
-                        <Icon className="w-6 h-6" style={{ color: accentColor }} />
-                    </div>
+                {badge && (
+                    <span className="absolute top-4 right-4 bg-white/10 text-white/70 text-xs font-medium px-3 py-1 rounded-full">
+                        {badge}
+                    </span>
+                )}
 
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
-                            <ChevronDown
-                                className={`w-5 h-5 text-gray-400 transition-transform duration-300 md:hidden ${isExpanded ? 'rotate-180' : ''}`}
-                            />
-                        </div>
-                        <p className={`text-gray-500 text-sm transition-all duration-300 ${isExpanded ? 'opacity-0 h-0' : 'mt-1'}`}>
-                            {description}
-                        </p>
-                    </div>
-                </div>
-
-                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-48 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
-                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                        {details}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        <Link
-                            href={href}
-                            className="inline-flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full bg-gray-900 text-white"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {registerText} <ChevronRight className="w-4 h-4" />
-                        </Link>
-                        {loginHref && (
-                            <Link
-                                href={loginHref}
-                                className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                {loginText}
-                            </Link>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-
-function MobileMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col animate-fade-in">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                <span className="text-2xl font-bold text-[#e60012]" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span>
-                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <X className="w-6 h-6 text-gray-600" />
-                </button>
-            </div>
-
-            <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-                <nav className="space-y-1">
-                    <Link href="/" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Home className="w-5 h-5 text-[#e60012]" /> Inicio
-                    </Link>
-                    <Link href="/tienda" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <ShoppingBag className="w-5 h-5 text-[#e60012]" /> Tienda
-                    </Link>
-                    <Link href="/moover" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Star className="w-5 h-5 text-amber-500" /> Programa MOOVER
-                    </Link>
-                    <Link href="/moovyx" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Compass className="w-5 h-5 text-teal-600" /> MOOVY X
-                        <span className="ml-auto text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">Próximamente</span>
-                    </Link>
-                    <Link href="/nosotros" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Info className="w-5 h-5 text-[#e60012]" /> Quiénes Somos
-                    </Link>
-                    <Link href="/contacto" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <MapPin className="w-5 h-5 text-[#e60012]" /> Contacto
-                    </Link>
-                </nav>
-
-                <div className="mt-auto pt-8 space-y-3">
-                    <Link href="/login" onClick={onClose} className="block w-full py-3 text-center border-2 border-gray-200 rounded-xl font-bold text-gray-700">
-                        Iniciar Sesión
-                    </Link>
-                    <Link href="/registro" onClick={onClose} className="block w-full py-3 text-center bg-[#e60012] rounded-xl font-bold text-white">
-                        Crear Cuenta
-                    </Link>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// Pre-registration form component
-function PreRegistrationForm() {
-    const [email, setEmail] = useState("");
-    const [businessName, setBusinessName] = useState("");
-    const [submitted, setSubmitted] = useState(false);
-    const [showInfoTooltip, setShowInfoTooltip] = useState(false);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Open mailto link
-        const subject = encodeURIComponent(`Pre-registro MOOVY X: ${businessName}`);
-        const body = encodeURIComponent(`Hola,\n\nQuiero recibir información sobre MOOVY X.\n\nEstablecimiento: ${businessName}\nEmail: ${email}\n\nSaludos`);
-        window.location.href = `mailto:somosmoovy@gmail.com?subject=${subject}&body=${body}`;
-        setSubmitted(true);
-    };
-
-    if (submitted) {
-        return (
-            <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100 h-full flex flex-col justify-center">
-                <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-6 h-6 text-teal-600" />
-                </div>
-                <h4 className="font-bold text-gray-900 text-lg mb-2">¡Gracias por tu interés!</h4>
-                <p className="text-gray-600 text-sm">Te contactaremos cuando MOOVY X esté disponible.</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="bg-gray-50 rounded-2xl p-5 sm:p-6 border border-gray-100 h-full">
-            <h4 className="font-bold text-gray-900 text-lg mb-1">¿Tenés un hotel, alojamiento o empresa de turismo?</h4>
-            <p className="text-gray-500 text-sm mb-4">Pre-registrate para recibir información del lanzamiento.</p>
-
-            <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Nombre del establecimiento"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        required
-                        className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-sm bg-white"
-                    />
-                    <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        onClick={() => setShowInfoTooltip(!showInfoTooltip)}
-                        onBlur={() => setTimeout(() => setShowInfoTooltip(false), 200)}
-                    >
-                        <HelpCircle className="w-4 h-4" />
-                    </button>
-                    {showInfoTooltip && (
-                        <div className="absolute right-0 top-full mt-1 bg-gray-900 text-white text-xs p-2 rounded-lg shadow-lg z-10 w-48">
-                            Ej: Hotel Las Hayas, Tolkeyen Patagonia, Excursiones Fin del Mundo, etc.
-                        </div>
-                    )}
-                </div>
-                <input
-                    type="email"
-                    placeholder="Email de contacto"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-sm bg-white"
-                />
-                <button
-                    type="submit"
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+                <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: `${accent}15` }}
                 >
-                    <Send className="w-4 h-4" /> Quiero información
-                </button>
-            </form>
-        </div>
+                    <div style={{ color: accent }}>{icon}</div>
+                </div>
+
+                <h3 className="text-white text-xl font-semibold mb-2 font-moovy tracking-wide">{title}</h3>
+                <p className="text-[#A1A1AA] text-sm leading-relaxed">{description}</p>
+
+                <div className="mt-6 flex items-center gap-2 text-white/50 group-hover:text-white/80 transition-colors">
+                    <span className="text-sm font-medium">Explorar</span>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+            </div>
+        </Link>
     );
 }
 
-export default function LandingPage() {
-    const [heroLoaded, setHeroLoaded] = useState(false);
-    const [showContent, setShowContent] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showMooverInfo, setShowMooverInfo] = useState(false);
+// ============================================
+// LANDING HEADER
+// ============================================
+function LandingHeader() {
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        setTimeout(() => setHeroLoaded(true), 100);
-        setTimeout(() => setShowContent(true), 400);
+        const handleScroll = () => setIsScrolled(window.scrollY > 50);
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    const navLinks = [
+        { label: "Ecosistema", href: "#ecosistema" },
+        { label: "Comercios", href: "#comercios" },
+        { label: "Nosotros", href: "#manifiesto" },
+    ];
+
     return (
-        <div className="min-h-screen bg-white font-sans text-gray-900 flex flex-col overflow-x-hidden">
+        <>
+            <header
+                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+                        ? "bg-[#0A0A0B]/85 backdrop-blur-xl border-b border-white/[0.06]"
+                        : "bg-transparent"
+                    }`}
+            >
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="flex items-center justify-between h-[72px]">
+                        {/* Logo */}
+                        <Link href="/" className="flex items-center gap-2">
+                            <Image
+                                src="/logo-moovy-white.png"
+                                alt="MOOVY"
+                                width={120}
+                                height={40}
+                                className="h-8 w-auto"
+                            />
+                        </Link>
 
-            {/* --- Header --- */}
-            <header className={`bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 transition-all duration-500 ${heroLoaded ? 'opacity-100' : 'opacity-0'}`}>
-                <div className="container mx-auto px-4 py-3 grid grid-cols-3 items-center">
-                    <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium">
-                        <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
-                        <span className="hidden sm:inline">Ushuaia, TDF</span>
-                        <span className="sm:hidden">Ushuaia</span>
-                    </div>
+                        {/* Desktop Nav */}
+                        <nav className="hidden md:flex items-center gap-8">
+                            {navLinks.map((link) => (
+                                <a
+                                    key={link.href}
+                                    href={link.href}
+                                    className="text-[#A1A1AA] hover:text-white text-[15px] font-medium transition-colors relative group"
+                                >
+                                    {link.label}
+                                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#e60012] transition-all group-hover:w-full" />
+                                </a>
+                            ))}
+                        </nav>
 
-                    <Link href="/" className="text-2xl sm:text-3xl font-bold text-[#e60012] tracking-tighter text-center" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                        MOOVY
-                    </Link>
+                        {/* CTA */}
+                        <div className="flex items-center gap-4">
+                            <Link
+                                href="/login"
+                                className="hidden md:inline-flex items-center gap-2 bg-[#e60012] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-[#c4000f] transition-colors"
+                            >
+                                Acceder
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
 
-                    <div className="flex justify-end">
-                        <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-                            <Menu className="w-6 h-6 text-gray-900" />
-                        </button>
+                            {/* Mobile menu button */}
+                            <button
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="md:hidden p-2 text-white"
+                            >
+                                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
+                <div className="fixed inset-0 z-40 bg-[#0A0A0B] pt-[72px]">
+                    <nav className="flex flex-col p-6 gap-4">
+                        {navLinks.map((link) => (
+                            <a
+                                key={link.href}
+                                href={link.href}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="text-white text-xl font-medium py-3 border-b border-white/10"
+                            >
+                                {link.label}
+                            </a>
+                        ))}
+                        <Link
+                            href="/login"
+                            className="mt-4 flex items-center justify-center gap-2 bg-[#e60012] text-white font-semibold py-4 rounded-xl"
+                        >
+                            Acceder
+                            <ArrowRight className="w-5 h-5" />
+                        </Link>
+                    </nav>
+                </div>
+            )}
+        </>
+    );
+}
 
-            {/* --- Hero Section --- */}
-            <section className="relative py-14 sm:py-16 bg-[#e60012] overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.05]" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`
-                }} />
+// ============================================
+// HERO SECTION
+// ============================================
+function HeroSection() {
+    const [isLoaded, setIsLoaded] = useState(false);
 
-                <div className={`relative z-10 text-center max-w-4xl mx-auto px-4 transition-all duration-1000 ease-out ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                    <h1
-                        className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.95] mb-5 tracking-tight"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
+    useEffect(() => {
+        setIsLoaded(true);
+    }, []);
+
+    return (
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <AuroraCanvas />
+
+            <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+                {/* H1 with letter animation */}
+                <h1 className="mb-6">
+                    {"TODO".split("").map((letter, i) => (
+                        <span
+                            key={`todo-${i}`}
+                            className={`inline-block font-moovy text-white text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
+                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                            style={{ transitionDelay: `${i * 50}ms` }}
+                        >
+                            {letter}
+                        </span>
+                    ))}
+                    <br />
+                    {"SE MUEVE".split("").map((letter, i) => (
+                        <span
+                            key={`se-mueve-${i}`}
+                            className={`inline-block font-moovy text-white text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
+                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                            style={{ transitionDelay: `${(i + 5) * 50}ms` }}
+                        >
+                            {letter === " " ? "\u00A0" : letter}
+                        </span>
+                    ))}
+                </h1>
+
+                {/* Subtitle */}
+                <p
+                    className={`text-[#A1A1AA] text-lg md:text-xl max-w-xl mx-auto mb-10 transition-all duration-700
+                        ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                    style={{ transitionDelay: "600ms" }}
+                >
+                    El ecosistema que mueve al Fin del Mundo.
+                </p>
+
+                {/* CTAs */}
+                <div
+                    className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700
+                        ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                    style={{ transitionDelay: "800ms" }}
+                >
+                    <a
+                        href="#ecosistema"
+                        className="inline-flex items-center gap-2 bg-[#e60012] text-white font-semibold px-8 py-4 rounded-xl hover:bg-[#c4000f] transition-all hover:shadow-[0_0_30px_rgba(230,0,18,0.3)]"
                     >
-                        Tu antojo<br />
-                        <span className="font-black">manda.</span>
-                    </h1>
-
-                    <p className="text-white/90 text-base sm:text-lg font-medium max-w-md mx-auto mb-6 px-4">
-                        Todo lo que Ushuaia tiene para ofrecer, en una sola app.
-                    </p>
-
+                        Descubrí el ecosistema
+                    </a>
                     <Link
                         href="/tienda"
-                        className="group inline-flex items-center gap-2 bg-white text-[#e60012] px-6 py-3 rounded-full font-bold text-base shadow-xl hover:scale-105 transition-all duration-300"
+                        className="inline-flex items-center gap-2 text-white/80 hover:text-white font-medium px-8 py-4 rounded-xl border border-white/20 hover:border-white/40 transition-all"
                     >
-                        <span>Explorar Tienda</span>
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        Ir a la tienda
+                        <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
-
-                <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 transition-opacity duration-1000 delay-700 ${showContent ? 'opacity-70' : 'opacity-0'}`}>
-                    <ChevronDown className="w-6 h-6 text-white animate-bounce" />
-                </div>
-            </section>
-
-            {/* --- TIENDA + MOOVER Unified Card Section --- */}
-            <section className="py-10 sm:py-14 bg-white -mt-4 rounded-t-[2rem] relative z-20">
-                <div className="container mx-auto px-4">
-                    {/* Use max-w-5xl for wider desktop layout */}
-                    <div className="max-w-5xl mx-auto">
-                        {/* Single Unified Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-                            {/* Floating stars decoration - positioned on right side to avoid MOOVER star */}
-                            <FloatingStar left="85%" top="5%" delay={0} duration={4} />
-                            <FloatingStar left="92%" top="50%" delay={2} duration={3.5} />
-                            <FloatingStar left="78%" top="75%" delay={1} duration={5} />
-                            <FloatingStar left="70%" top="15%" delay={3} duration={4} />
-
-                            <div className="relative z-10">
-                                {/* Header */}
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-[#e60012] to-[#ff4444] rounded-xl flex items-center justify-center shadow-lg">
-                                        <ShoppingBag className="w-7 h-7 text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Tienda Online</h2>
-                                        <p className="text-sm text-gray-500">Pedí y recibí en minutos</p>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <p className="text-gray-600 mb-4 max-w-2xl">
-                                    Explorá cientos de comercios locales, restaurantes y farmacias. Cada compra suma puntos que podés canjear por descuentos exclusivos.
-                                </p>
-
-                                {/* MOOVER Stylized - Left aligned and larger */}
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Star className="w-7 h-7 text-amber-500 fill-amber-400" />
-                                    <span
-                                        className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
-                                        style={{ fontFamily: "'Junegull', sans-serif" }}
-                                    >
-                                        MOOVER
-                                    </span>
-                                </div>
-
-                                {/* MOOVER Benefits - Always visible on desktop, collapsible on mobile */}
-                                <div className="mb-6">
-                                    <button
-                                        onClick={() => setShowMooverInfo(!showMooverInfo)}
-                                        className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3 lg:hidden"
-                                    >
-                                        <span>Ver beneficios MOOVER</span>
-                                        <ChevronDown className={`w-4 h-4 transition-transform ${showMooverInfo ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    <div className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-3 transition-all duration-500 ${showMooverInfo ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0 overflow-hidden lg:max-h-none lg:opacity-100'}`}>
-                                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                            <Gift className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                                            <span className="text-sm text-gray-700">Puntos por cada compra</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                            <Award className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                                            <span className="text-sm text-gray-700">Niveles VIP con más beneficios</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                            <Users className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                                            <span className="text-sm text-gray-700">Referidos: ganan los dos</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <Link
-                                        href="/tienda"
-                                        className="inline-flex items-center justify-center gap-2 bg-[#e60012] text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-[#cc000f] transition-colors"
-                                    >
-                                        Ir a la Tienda <ArrowRight className="w-4 h-4" />
-                                    </Link>
-                                    <Link
-                                        href="/moover"
-                                        className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors"
-                                    >
-                                        Más sobre MOOVER <ChevronRight className="w-4 h-4" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* --- Divider --- */}
-            <div className="container mx-auto px-4">
-                <div className="border-t border-gray-100 max-w-5xl mx-auto" />
             </div>
 
-            {/* --- Join the Community (Repartidores + Comercios) --- */}
-            <section className="py-10 sm:py-14 bg-white">
-                <div className="container mx-auto px-4">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="text-center mb-6">
-                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Sumate a la comunidad</h2>
-                            <p className="text-gray-500 text-sm">Crecemos juntos en el fin del mundo.</p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <ExpandableCard
-                                delay={100}
-                                href="/riders/registro"
-                                loginHref="/riders/login"
-                                icon={Bike}
-                                title="Repartidores"
-                                description="Generá ingresos con libertad"
-                                details="Manejá tus propios horarios, conocé la ciudad y ganá dinero por cada entrega. Tu moto o bici es tu herramienta de trabajo."
-                                accentColor="#e60012"
-                            />
-                            <ExpandableCard
-                                delay={200}
-                                href="/socios/registro"
-                                loginHref="/socios/login"
-                                icon={Store}
-                                title="Comercios"
-                                description="Potenciá tus ventas hoy"
-                                details="Sumate a la plataforma digital líder del fin del mundo. Llegá a nuevos clientes sin costos fijos de alta."
-                                accentColor="#e60012"
-                            />
-                        </div>
-                    </div>
+            {/* Scroll indicator */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+                <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
+                    <div className="w-1 h-2 bg-white/50 rounded-full animate-pulse" />
                 </div>
-            </section>
-
-            {/* --- Divider --- */}
-            <div className="container mx-auto px-4">
-                <div className="border-t border-gray-100 max-w-5xl mx-auto" />
             </div>
+        </section>
+    );
+}
 
-            {/* --- MOOVY X Section --- */}
-            <section className="py-10 sm:py-14 bg-white">
-                <div className="container mx-auto px-4">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="grid md:grid-cols-2 gap-6 items-stretch">
-                            {/* Left: Info Card */}
-                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 relative h-full">
-                                {/* Floating "Próximamente" cloud */}
-                                <div className="absolute -top-3 -right-2 sm:-right-3 animate-float-slow">
-                                    <div className="bg-white px-3 py-1.5 rounded-full shadow-md border border-gray-100 relative">
-                                        <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-white rounded-full shadow-sm" />
-                                        <div className="absolute -top-1.5 left-2 w-2 h-2 bg-white rounded-full shadow-sm" />
-                                        <div className="absolute -bottom-0.5 right-3 w-2 h-2 bg-white rounded-full shadow-sm" />
-                                        <span className="relative z-10 text-teal-700 font-semibold text-xs">✨ Próximamente</span>
-                                    </div>
-                                </div>
+// ============================================
+// ECOSYSTEM SECTION
+// ============================================
+function EcosystemSection() {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLElement>(null);
 
-                                <div className="mb-4">
-                                    <span
-                                        className="text-2xl sm:text-3xl font-black tracking-tight"
-                                        style={{ fontFamily: "'Junegull', sans-serif" }}
-                                    >
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-sky-500 to-emerald-500">MOOVY</span>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 ml-1">X</span>
-                                    </span>
-                                </div>
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) setIsVisible(true);
+            },
+            { threshold: 0.1 }
+        );
 
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">Experiencias turísticas</h3>
-                                <p className="text-gray-600 text-sm mb-5">Explorá el Fin del Mundo. Excursiones, hoteles y servicios para turistas.</p>
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
 
-                                <div className="flex gap-2">
-                                    <div className="flex-1 text-center p-3 bg-white rounded-xl border border-gray-100">
-                                        <Map className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-700">Tours</span>
-                                    </div>
-                                    <div className="flex-1 text-center p-3 bg-white rounded-xl border border-gray-100">
-                                        <Hotel className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-700">Hoteles</span>
-                                    </div>
-                                    <div className="flex-1 text-center p-3 bg-white rounded-xl border border-gray-100">
-                                        <Compass className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-700">Guías</span>
-                                    </div>
-                                </div>
+    const ecosystemData = [
+        {
+            title: "STORE",
+            description: "Delivery de todo lo que necesitás. Comida, farmacia, comercios locales.",
+            icon: <Star className="w-7 h-7" fill="currentColor" />,
+            accent: "#e60012",
+            href: "/tienda",
+        },
+        {
+            title: "X",
+            description: "Turismo y experiencias. Explorá el Fin del Mundo como nunca.",
+            icon: <Globe className="w-7 h-7" />,
+            accent: "#00D4AA",
+            href: "/moovyx",
+            badge: "Próximamente",
+        },
+        {
+            title: "JOBS",
+            description: "Oportunidades de trabajo. Repartidores, comercios, staff.",
+            icon: <Zap className="w-7 h-7" />,
+            accent: "#F59E0B",
+            href: "#",
+            badge: "Próximamente",
+        },
+        {
+            title: "MOVER",
+            description: "Puntos y beneficios. Cada compra suma, cada punto vale.",
+            icon: <Star className="w-7 h-7" fill="currentColor" />,
+            accent: "#e60012",
+            href: "/puntos",
+        },
+    ];
+
+    return (
+        <section
+            id="ecosistema"
+            ref={ref}
+            className="relative py-24 md:py-32 bg-[#0A0A0B]"
+        >
+            <div className="max-w-7xl mx-auto px-6">
+                {/* Section header */}
+                <div
+                    className={`text-center mb-16 transition-all duration-700
+                        ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                >
+                    <h2 className="text-white text-3xl md:text-5xl font-bold mb-4">
+                        Un ecosistema completo
+                    </h2>
+                    <p className="text-[#A1A1AA] text-lg max-w-xl mx-auto">
+                        Cuatro pilares que mueven al Fin del Mundo.
+                    </p>
+                </div>
+
+                {/* Cards grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {ecosystemData.map((item, index) => (
+                        <EcosystemCard
+                            key={item.title}
+                            {...item}
+                            delay={index * 100}
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+// ============================================
+// WHY MOOVY SECTION
+// ============================================
+function WhySection() {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) setIsVisible(true);
+            },
+            { threshold: 0.1 }
+        );
+
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    const benefits = [
+        { icon: <Zap className="w-5 h-5" />, title: "Entrega ultra rápida", desc: "Porque tu tiempo importa." },
+        { icon: <Mountain className="w-5 h-5" />, title: "100% local", desc: "Apoyá comercios de Ushuaia." },
+        { icon: <Star className="w-5 h-5" />, title: "Puntos en cada compra", desc: "Programa MOVER integrado." },
+        { icon: <Smartphone className="w-5 h-5" />, title: "Todo en una app", desc: "Pedí, seguí, recibí." },
+        { icon: <Globe className="w-5 h-5" />, title: "Más que delivery", desc: "Un ecosistema completo." },
+    ];
+
+    return (
+        <section ref={ref} className="py-24 md:py-32 bg-[#111113]">
+            <div className="max-w-6xl mx-auto px-6">
+                <h2
+                    className={`text-white text-3xl md:text-4xl font-bold text-center mb-16 transition-all duration-700
+                        ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                >
+                    Por qué elegir MOOVY
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {benefits.map((benefit, index) => (
+                        <div
+                            key={benefit.title}
+                            className={`flex items-start gap-4 transition-all duration-500
+                                ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                            style={{ transitionDelay: `${index * 100}ms` }}
+                        >
+                            <div className="w-12 h-12 rounded-xl bg-[#e60012]/10 flex items-center justify-center flex-shrink-0 text-[#e60012]">
+                                {benefit.icon}
                             </div>
-
-                            {/* Right: Pre-registration Form */}
-                            <PreRegistrationForm />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* --- Branded Footer --- */}
-            <footer className="relative bg-[#e60012] text-white pt-12 sm:pt-16 pb-6 sm:pb-8 overflow-hidden mt-auto">
-                {/* Giant M Watermark */}
-                <div className="absolute top-0 right-0 -mr-8 sm:-mr-16 -mt-8 sm:-mt-16 opacity-10 pointer-events-none">
-                    <span className="text-[150px] sm:text-[250px] font-black leading-none select-none" style={{ fontFamily: "'Junegull', sans-serif" }}>M</span>
-                </div>
-
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12 max-w-5xl mx-auto">
-                        <div className="col-span-2 md:col-span-1">
-                            <span className="text-2xl sm:text-3xl font-bold block mb-4" style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span>
-                            <div className="flex gap-3">
-                                <a href="#" className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-white hover:text-[#e60012] transition-all">
-                                    <Instagram className="w-4 h-4" />
-                                </a>
+                            <div>
+                                <h3 className="text-white font-semibold text-lg mb-1">{benefit.title}</h3>
+                                <p className="text-[#71717A] text-sm">{benefit.desc}</p>
                             </div>
                         </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
 
-                        <div>
-                            <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Explorar</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><Link href="/tienda" className="text-white/80 hover:text-white transition-all">Tienda</Link></li>
-                                <li><Link href="/moover" className="text-white/80 hover:text-white transition-all">MOOVER</Link></li>
-                            </ul>
-                        </div>
+// ============================================
+// BUSINESS SECTION
+// ============================================
+function BusinessSection() {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLElement>(null);
 
-                        <div>
-                            <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Comunidad</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><Link href="/riders/registro" className="text-white/80 hover:text-white transition-all">Repartidores</Link></li>
-                                <li><Link href="/socios/registro" className="text-white/80 hover:text-white transition-all">Comercios</Link></li>
-                            </ul>
-                        </div>
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) setIsVisible(true);
+            },
+            { threshold: 0.1 }
+        );
 
-                        <div>
-                            <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Legal</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><Link href="/terminos" className="text-white/80 hover:text-white transition-all">Términos</Link></li>
-                                <li><Link href="/privacidad" className="text-white/80 hover:text-white transition-all">Privacidad</Link></li>
-                            </ul>
-                        </div>
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    const bullets = [
+        "Sin comisiones ocultas — Transparencia total.",
+        "Panel de control propio — Gestioná pedidos en tiempo real.",
+        "Visibilidad garantizada — Miles de usuarios activos.",
+        "Soporte local — Estamos acá, en Ushuaia.",
+    ];
+
+    return (
+        <section id="comercios" ref={ref} className="py-24 md:py-32 bg-[#0A0A0B]">
+            <div className="max-w-6xl mx-auto px-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    {/* Text content */}
+                    <div
+                        className={`transition-all duration-700
+                            ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                    >
+                        <h2 className="text-white text-3xl md:text-4xl font-bold mb-4">
+                            Hacé crecer tu negocio
+                        </h2>
+                        <p className="text-[#A1A1AA] text-lg mb-8">
+                            Sumá tu comercio al ecosistema más grande de Ushuaia.
+                        </p>
+
+                        <ul className="space-y-4 mb-8">
+                            {bullets.map((bullet, index) => (
+                                <li
+                                    key={index}
+                                    className={`flex items-center gap-3 text-[#A1A1AA] transition-all duration-500
+                                        ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
+                                    style={{ transitionDelay: `${(index + 1) * 100}ms` }}
+                                >
+                                    <ChevronRight className="w-5 h-5 text-[#e60012]" />
+                                    {bullet}
+                                </li>
+                            ))}
+                        </ul>
+
+                        <Link
+                            href="/comercio/registro"
+                            className="inline-flex items-center gap-2 bg-[#e60012] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#c4000f] transition-all hover:shadow-[0_0_30px_rgba(230,0,18,0.3)]"
+                        >
+                            Sumate como comercio
+                            <ArrowRight className="w-5 h-5" />
+                        </Link>
                     </div>
 
-                    <div className="border-t border-white/20 pt-4 sm:pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/60 max-w-5xl mx-auto">
-                        <p>© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Poppins', sans-serif", fontSize: '8px' }}>™</sup>. Hecho en el Fin del Mundo.</p>
-                        <p>Ushuaia, Tierra del Fuego</p>
+                    {/* Visual placeholder */}
+                    <div
+                        className={`hidden lg:flex items-center justify-center transition-all duration-700 delay-300
+                            ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                    >
+                        <div className="w-full h-80 rounded-3xl bg-gradient-to-br from-[#18181B] to-[#111113] border border-white/[0.06] flex items-center justify-center">
+                            <div className="text-[#A1A1AA]/30 text-center">
+                                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-[#e60012]/10 flex items-center justify-center">
+                                    <Star className="w-10 h-10 text-[#e60012]/50" />
+                                </div>
+                                <p className="text-sm">Panel de comercio</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </footer>
+            </div>
+        </section>
+    );
+}
 
-            <style jsx global>{`
-                @keyframes float {
-                    0% { transform: translateY(0px) rotate(0deg); opacity: 0; }
-                    20% { opacity: 1; }
-                    80% { opacity: 1; }
-                    100% { transform: translateY(-100px) rotate(45deg); opacity: 0; }
-                }
-                .animate-float {
-                    animation-name: float;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                }
-                @keyframes float-slow {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-6px); }
-                }
-                .animate-float-slow {
-                    animation: float-slow 3s ease-in-out infinite;
-                }
-            `}</style>
+// ============================================
+// MANIFESTO SECTION
+// ============================================
+function ManifestoSection() {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) setIsVisible(true);
+            },
+            { threshold: 0.3 }
+        );
+
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    const lines = [
+        "Nacimos en el Fin del Mundo.",
+        "Movemos personas, productos y posibilidades.",
+    ];
+
+    return (
+        <section id="manifiesto" ref={ref} className="py-24 md:py-32 bg-[#111113]">
+            <div className="max-w-3xl mx-auto px-6 text-center">
+                {lines.map((line, index) => (
+                    <p
+                        key={index}
+                        className={`text-[#A1A1AA] text-xl md:text-2xl font-medium mb-4 transition-all duration-700
+                            ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                        style={{ transitionDelay: `${index * 200}ms` }}
+                    >
+                        {line}
+                    </p>
+                ))}
+                <p
+                    className={`text-white text-xl md:text-2xl font-medium transition-all duration-700
+                        ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                    style={{ transitionDelay: "400ms" }}
+                >
+                    <span className="text-[#e60012]">Todo se mueve.</span> Y vos también.
+                </p>
+            </div>
+        </section>
+    );
+}
+
+// ============================================
+// FOOTER
+// ============================================
+function LandingFooter() {
+    return (
+        <footer className="py-16 bg-[#050506] border-t border-white/[0.06]">
+            <div className="max-w-6xl mx-auto px-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                    {/* Logo */}
+                    <div>
+                        <Image
+                            src="/logo-moovy-white.png"
+                            alt="MOOVY"
+                            width={100}
+                            height={32}
+                            className="h-8 w-auto mb-4"
+                        />
+                        <p className="text-[#71717A] text-sm">
+                            El ecosistema que mueve al Fin del Mundo.
+                        </p>
+                    </div>
+
+                    {/* Ecosistema */}
+                    <div>
+                        <h4 className="text-white font-semibold mb-4">Ecosistema</h4>
+                        <ul className="space-y-2">
+                            <li><Link href="/tienda" className="text-[#71717A] hover:text-white transition-colors text-sm">Store</Link></li>
+                            <li><Link href="/moovyx" className="text-[#71717A] hover:text-white transition-colors text-sm">X</Link></li>
+                            <li><span className="text-[#71717A]/50 text-sm">Jobs</span></li>
+                            <li><Link href="/puntos" className="text-[#71717A] hover:text-white transition-colors text-sm">MOVER</Link></li>
+                        </ul>
+                    </div>
+
+                    {/* Legal */}
+                    <div>
+                        <h4 className="text-white font-semibold mb-4">Legal</h4>
+                        <ul className="space-y-2">
+                            <li><Link href="/terminos" className="text-[#71717A] hover:text-white transition-colors text-sm">Términos</Link></li>
+                            <li><Link href="/privacidad" className="text-[#71717A] hover:text-white transition-colors text-sm">Privacidad</Link></li>
+                        </ul>
+                    </div>
+
+                    {/* Contacto */}
+                    <div>
+                        <h4 className="text-white font-semibold mb-4">Contacto</h4>
+                        <ul className="space-y-2">
+                            <li className="text-[#71717A] text-sm">Ushuaia, TDF</li>
+                            <li><a href="mailto:somosmoovy@gmail.com" className="text-[#71717A] hover:text-white transition-colors text-sm">somosmoovy@gmail.com</a></li>
+                        </ul>
+                        <div className="flex gap-4 mt-4">
+                            <a href="https://instagram.com/somosmoovy" target="_blank" rel="noopener noreferrer" className="text-[#71717A] hover:text-white transition-colors">
+                                <Instagram className="w-5 h-5" />
+                            </a>
+                            <a href="https://wa.me/5492901234567" target="_blank" rel="noopener noreferrer" className="text-[#71717A] hover:text-white transition-colors">
+                                <MessageCircle className="w-5 h-5" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pt-8 border-t border-white/[0.06] text-center">
+                    <p className="text-[#71717A] text-sm">
+                        © {new Date().getFullYear()} MOOVY™ · Ushuaia, Tierra del Fuego · Hecho con ❤️ en el Fin del Mundo
+                    </p>
+                </div>
+            </div>
+        </footer>
+    );
+}
+
+// ============================================
+// MAIN PAGE
+// ============================================
+export default function PremiumLandingPage() {
+    return (
+        <div className="bg-[#0A0A0B] min-h-screen">
+            <LandingHeader />
+            <main>
+                <HeroSection />
+                <EcosystemSection />
+                <WhySection />
+                <BusinessSection />
+                <ManifestoSection />
+            </main>
+            <LandingFooter />
         </div>
     );
 }
