@@ -93,47 +93,25 @@ function AustralCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             particlesRef.current.forEach((p) => {
-                // Wind effect from cursor
-                const dx = p.x - mouseRef.current.x;
-                const dy = p.y - mouseRef.current.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < 120 && dist > 0) {
-                    const force = (120 - dist) / 120;
-                    p.x += (dx / dist) * force * 2;
-                    p.y += (dy / dist) * force * 2;
-                }
-
-                // Constellation formation on scroll
-                if (scrollProgress > 0.2 && p.isConstellationStar) {
-                    const t = Math.min((scrollProgress - 0.2) / 0.5, 1);
-                    p.x = lerp(p.x, p.targetX, t * 0.03);
-                    p.y = lerp(p.y, p.targetY, t * 0.03);
-                }
-
-                // Gentle floating movement (subtle drift)
+                // Gentle floating movement
                 p.y += p.speed * 0.5;
                 p.x += Math.sin(Date.now() * 0.001 + p.baseX) * 0.1;
 
                 // Wrap around when particle exits
                 if (p.y > canvas.height + 10) {
                     p.y = -10;
-                    p.x = p.baseX;
+                    p.x = Math.random() * canvas.width;
                 }
-                if (p.y < -20) {
-                    p.y = canvas.height + 10;
-                }
+                if (p.x > canvas.width + 10) p.x = -10;
+                if (p.x < -10) p.x = canvas.width + 10;
 
-                // Gentle return to base X
-                p.x = lerp(p.x, p.baseX, 0.003);
-
-                // Fade out particles based on scroll progress
-                const fadeAlpha = p.alpha * Math.max(0, 1 - scrollProgress * 1.5);
+                // Simple fade based on life cycle or static
+                // ctx.globalAlpha = p.alpha; // Optional if we want blinking
 
                 // Draw particle
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255,255,255,${fadeAlpha})`;
+                ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
                 ctx.fill();
             });
 
@@ -369,6 +347,81 @@ function LandingHeader() {
 }
 
 // ============================================
+// ============================================
+// FLYING JITTER COMPONENT
+// ============================================
+function FlyingJitter({ children, speed = 0.5 }: { children: React.ReactNode, speed?: number }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [offsetY, setOffsetY] = useState(0);
+    const [opacity, setOpacity] = useState(1);
+    const [jitter, setJitter] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        let frameId: number;
+
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            // Parallax fly up effect
+            // Move up faster than scroll (1.0 = stick, >1.0 = fly up)
+            const newOffset = -scrollY * speed;
+            setOffsetY(newOffset);
+
+            // Fade out as it flies up
+            const fadeStart = 50;
+            const fadeEnd = 400;
+            if (scrollY > fadeStart) {
+                const newOpacity = Math.max(0, 1 - (scrollY - fadeStart) / (fadeEnd - fadeStart));
+                setOpacity(newOpacity);
+            } else {
+                setOpacity(1);
+            }
+        };
+
+        const updateJitter = () => {
+            const scrollY = window.scrollY;
+            // "Tremble" increases as we scroll
+            if (scrollY > 10) {
+                // Intense trembling when scrolling (fly up phase)
+                const intensity = Math.min(3, 0.5 + scrollY * 0.01);
+                setJitter({
+                    x: (Math.random() - 0.5) * intensity,
+                    y: (Math.random() - 0.5) * intensity
+                });
+            } else {
+                // Gentle breathing when top
+                setJitter({
+                    x: Math.sin(Date.now() * 0.002) * 2,
+                    y: Math.cos(Date.now() * 0.002) * 2
+                });
+            }
+            frameId = requestAnimationFrame(updateJitter);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        updateJitter();
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            cancelAnimationFrame(frameId);
+        };
+    }, [speed]);
+
+    return (
+        <div
+            ref={ref}
+            style={{
+                transform: `translate3d(${jitter.x}px, ${offsetY + jitter.y}px, 0)`,
+                opacity,
+                transition: 'opacity 0.1s linear',
+                willChange: 'transform, opacity'
+            }}
+        >
+            {children}
+        </div>
+    );
+}
+
+// ============================================
 // HERO SECTION
 // ============================================
 function HeroSection() {
@@ -383,62 +436,63 @@ function HeroSection() {
             <AustralCanvas />
 
             <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-                {/* H1 with letter animation */}
-                <h1 className="mb-6">
-                    {"TODO".split("").map((letter, i) => (
-                        <span
-                            key={`todo-${i}`}
-                            className={`inline-block font-moovy text-white text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
-                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                            style={{ transitionDelay: `${i * 50}ms` }}
-                        >
-                            {letter}
-                        </span>
-                    ))}
-                    <br />
-                    {"SE MUEVE".split("").map((letter, i) => (
-                        <span
-                            key={`se-mueve-${i}`}
-                            className={`inline-block font-moovy text-white text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
-                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                            style={{ transitionDelay: `${(i + 5) * 50}ms` }}
-                        >
-                            {letter === " " ? "\u00A0" : letter}
-                        </span>
-                    ))}
-                </h1>
+                <FlyingJitter speed={0.8}>
+                    {/* H1 with letter animation */}
+                    <h1 className="mb-6">
+                        {"TODO".split("").map((letter, i) => (
+                            <span
+                                key={`todo-${i}`}
+                                className={`inline-block font-moovy text-white text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
+                                    ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                                style={{ transitionDelay: `${i * 50}ms` }}
+                            >
+                                {letter}
+                            </span>
+                        ))}
+                        <br />
+                        {"SE MUEVE".split("").map((letter, i) => (
+                            <span
+                                key={`se-mueve-${i}`}
+                                className={`inline-block font-moovy text-white text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
+                                    ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                                style={{ transitionDelay: `${(i + 5) * 50}ms` }}
+                            >
+                                {letter === " " ? "\u00A0" : letter}
+                            </span>
+                        ))}
+                    </h1>
 
-                {/* Subtitle */}
-                <p
-                    className={`text-[#A1A1AA] text-lg md:text-xl max-w-xl mx-auto mb-10 transition-all duration-700
-                        ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                    style={{ transitionDelay: "600ms" }}
-                >
-                    El ecosistema que mueve al Fin del Mundo.
-                </p>
+                    {/* Subtitle */}
+                    <p
+                        className={`text-[#A1A1AA] text-lg md:text-xl max-w-xl mx-auto mb-10 transition-all duration-700
+                            ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                        style={{ transitionDelay: "600ms" }}
+                    >
+                        El ecosistema que mueve al Fin del Mundo.
+                    </p>
 
-                {/* CTAs */}
-                <div
-                    className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700
-                        ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                    style={{ transitionDelay: "800ms" }}
-                >
-                    <a
-                        href="#ecosistema"
-                        className="inline-flex items-center gap-2 bg-[#e60012] text-white font-semibold px-8 py-4 rounded-xl hover:bg-[#c4000f] transition-all hover:shadow-[0_0_30px_rgba(230,0,18,0.3)]"
+                    {/* CTAs */}
+                    <div
+                        className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700
+                            ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                        style={{ transitionDelay: "800ms" }}
                     >
-                        Descubrí el ecosistema
-                    </a>
-                    <Link
-                        href="/tienda"
-                        className="inline-flex items-center gap-2 text-white/80 hover:text-white font-medium px-8 py-4 rounded-xl border border-white/20 hover:border-white/40 transition-all"
-                    >
-                        Ir a la tienda
-                        <ArrowRight className="w-4 h-4" />
-                    </Link>
-                </div>
+                        <a
+                            href="#ecosistema"
+                            className="inline-flex items-center gap-2 bg-[#e60012] text-white font-semibold px-8 py-4 rounded-xl hover:bg-[#c4000f] transition-all hover:shadow-[0_0_30px_rgba(230,0,18,0.3)]"
+                        >
+                            Descubrí el ecosistema
+                        </a>
+                        <Link
+                            href="/tienda"
+                            className="inline-flex items-center gap-2 text-white/80 hover:text-white font-medium px-8 py-4 rounded-xl border border-white/20 hover:border-white/40 transition-all"
+                        >
+                            Ir a la tienda
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                </FlyingJitter>
             </div>
-
         </section>
     );
 }
@@ -798,36 +852,13 @@ function LandingFooter() {
 // MAIN PAGE
 // ============================================
 export default function PremiumLandingPage() {
-    const [shake, setShake] = useState(false);
-    const observerRef = useRef<IntersectionObserver | null>(null);
-
     // Scroll to top on mount/refresh
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
-    // Section shake effect
-    useEffect(() => {
-        const sections = document.querySelectorAll('section');
-
-        observerRef.current = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    // Trigger vibration when entering a new section
-                    if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback for mobile
-                    setShake(true);
-                    setTimeout(() => setShake(false), 500);
-                }
-            });
-        }, { threshold: 0.5 }); // Trigger when 50% of section is visible
-
-        sections.forEach(section => observerRef.current?.observe(section));
-
-        return () => observerRef.current?.disconnect();
-    }, []);
-
     return (
-        <div className={`bg-[#0A0A0B] min-h-screen transition-transform duration-300 ${shake ? 'animate-shake' : ''}`}>
+        <div className="bg-[#0A0A0B] min-h-screen">
             <LandingHeader />
             <main>
                 <HeroSection />
