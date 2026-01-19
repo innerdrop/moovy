@@ -18,91 +18,189 @@ import {
 } from "lucide-react";
 
 // ============================================
-// AURORA CANVAS - Animated Background for Hero
+// AUSTRAL CANVAS - Viento Austral + Cruz del Sur
 // ============================================
-function AuroraCanvas() {
+interface Particle {
+    x: number;
+    y: number;
+    baseX: number;
+    baseY: number;
+    targetX: number;
+    targetY: number;
+    size: number;
+    alpha: number;
+    speed: number;
+    isConstellationStar: boolean;
+}
+
+// Southern Cross constellation (normalized 0-1)
+const SOUTHERN_CROSS = [
+    { x: 0.5, y: 0.18 },   // Alpha Crucis (top)
+    { x: 0.47, y: 0.28 },  // Beta
+    { x: 0.53, y: 0.28 },  // Gamma
+    { x: 0.5, y: 0.38 },   // Delta (bottom)
+    { x: 0.56, y: 0.28 },  // Epsilon (side)
+];
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+function AustralCanvas() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [scrollProgress, setScrollProgress] = useState(0);
+    const mouseRef = useRef({ x: -1000, y: -1000 });
+    const particlesRef = useRef<Particle[]>([]);
+    const animationRef = useRef<number>(0);
+
+    // Initialize particles
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Reinitialize particles with new dimensions
+            particlesRef.current = Array.from({ length: 60 }, (_, i) => {
+                const baseX = Math.random() * canvas.width;
+                const baseY = Math.random() * canvas.height;
+                const crossStar = SOUTHERN_CROSS[i % 5];
+                return {
+                    x: baseX,
+                    y: baseY,
+                    baseX,
+                    baseY,
+                    targetX: crossStar.x * canvas.width,
+                    targetY: crossStar.y * canvas.height,
+                    size: 1 + Math.random() * 1.5,
+                    alpha: 0.15 + Math.random() * 0.4,
+                    speed: 0.05 + Math.random() * 0.15,
+                    isConstellationStar: i < 5,
+                };
+            });
+        };
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Animation loop
+        const animate = () => {
+            if (!canvas || !ctx) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particlesRef.current.forEach((p) => {
+                // Wind effect from cursor
+                const dx = p.x - mouseRef.current.x;
+                const dy = p.y - mouseRef.current.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 120 && dist > 0) {
+                    const force = (120 - dist) / 120;
+                    p.x += (dx / dist) * force * 2;
+                    p.y += (dy / dist) * force * 2;
+                }
+
+                // Constellation formation on scroll
+                if (scrollProgress > 0.2 && p.isConstellationStar) {
+                    const t = Math.min((scrollProgress - 0.2) / 0.5, 1);
+                    p.x = lerp(p.x, p.targetX, t * 0.03);
+                    p.y = lerp(p.y, p.targetY, t * 0.03);
+                }
+
+                // Parallax descent near bottom (scroll indicator)
+                const bottomProximity = p.y / canvas.height;
+                if (bottomProximity > 0.85) {
+                    p.y += p.speed * 4; // Accelerate near bottom
+                } else {
+                    p.y += p.speed;
+                }
+
+                // Wrap around when particle exits bottom
+                if (p.y > canvas.height + 10) {
+                    p.y = -10;
+                    p.x = p.baseX + (Math.random() - 0.5) * 50;
+                }
+
+                // Gentle return to base X
+                p.x = lerp(p.x, p.baseX, 0.005);
+
+                // Draw particle
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+                ctx.fill();
+
+                // Draw constellation lines when formed
+                if (scrollProgress > 0.5 && p.isConstellationStar) {
+                    ctx.strokeStyle = `rgba(255,255,255,${(scrollProgress - 0.5) * 0.15})`;
+                    ctx.lineWidth = 0.5;
+                }
+            });
+
+            animationRef.current = requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        return () => {
+            cancelAnimationFrame(animationRef.current);
+            window.removeEventListener('resize', resize);
+        };
+    }, [scrollProgress]);
+
+    // Scroll listener
+    useEffect(() => {
+        const handleScroll = () => {
+            const heroHeight = window.innerHeight;
+            setScrollProgress(Math.min(window.scrollY / heroHeight, 1));
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Mouse/touch listener
+    useEffect(() => {
+        const handleMove = (x: number, y: number) => {
+            mouseRef.current = { x, y };
+        };
+        const handleMouse = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+        const handleTouch = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                handleMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        };
+
+        window.addEventListener('mousemove', handleMouse, { passive: true });
+        window.addEventListener('touchmove', handleTouch, { passive: true });
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouse);
+            window.removeEventListener('touchmove', handleTouch);
+        };
+    }, []);
+
     return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <>
             {/* Gradient background */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#0A0A0B_0%,#050506_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#0A0A0B_0%,#000000_100%)]" />
 
-            {/* Animated aurora lines */}
-            <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                    <linearGradient id="auroraGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#e60012" stopOpacity="0" />
-                        <stop offset="50%" stopColor="#e60012" stopOpacity="0.6" />
-                        <stop offset="100%" stopColor="#00D4AA" stopOpacity="0" />
-                    </linearGradient>
-                    <linearGradient id="auroraGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#00D4AA" stopOpacity="0" />
-                        <stop offset="50%" stopColor="#00D4AA" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#e60012" stopOpacity="0" />
-                    </linearGradient>
-                </defs>
-
-                {/* Flowing lines */}
-                <path
-                    d="M-100,400 Q300,300 600,400 T1300,350"
-                    fill="none"
-                    stroke="url(#auroraGradient1)"
-                    strokeWidth="2"
-                    className="animate-aurora-flow-1"
-                />
-                <path
-                    d="M-100,450 Q400,350 700,450 T1400,400"
-                    fill="none"
-                    stroke="url(#auroraGradient2)"
-                    strokeWidth="1.5"
-                    className="animate-aurora-flow-2"
-                />
-                <path
-                    d="M-100,500 Q250,420 550,500 T1300,480"
-                    fill="none"
-                    stroke="url(#auroraGradient1)"
-                    strokeWidth="1"
-                    className="animate-aurora-flow-3"
-                />
-            </svg>
-
-            {/* Floating particles - fixed positions to avoid hydration mismatch */}
-            {[
-                { left: 5, top: 10, delay: 0, duration: 7 },
-                { left: 15, top: 80, delay: 2, duration: 8 },
-                { left: 25, top: 30, delay: 1, duration: 6 },
-                { left: 35, top: 60, delay: 3, duration: 9 },
-                { left: 45, top: 20, delay: 0.5, duration: 7 },
-                { left: 55, top: 70, delay: 2.5, duration: 8 },
-                { left: 65, top: 40, delay: 1.5, duration: 6 },
-                { left: 75, top: 90, delay: 4, duration: 9 },
-                { left: 85, top: 15, delay: 0.8, duration: 7 },
-                { left: 95, top: 55, delay: 3.5, duration: 8 },
-                { left: 10, top: 45, delay: 1.2, duration: 6 },
-                { left: 20, top: 85, delay: 2.8, duration: 9 },
-                { left: 30, top: 25, delay: 0.3, duration: 7 },
-                { left: 40, top: 75, delay: 4.5, duration: 8 },
-                { left: 50, top: 35, delay: 1.8, duration: 6 },
-                { left: 60, top: 95, delay: 3.2, duration: 9 },
-                { left: 70, top: 5, delay: 0.6, duration: 7 },
-                { left: 80, top: 65, delay: 2.2, duration: 8 },
-                { left: 90, top: 50, delay: 1.6, duration: 6 },
-                { left: 98, top: 88, delay: 4.2, duration: 9 },
-            ].map((particle, i) => (
-                <div
-                    key={i}
-                    className="absolute w-1 h-1 rounded-full bg-white/30 animate-particle-float"
-                    style={{
-                        left: `${particle.left}%`,
-                        top: `${particle.top}%`,
-                        animationDelay: `${particle.delay}s`,
-                        animationDuration: `${particle.duration}s`,
-                    }}
-                />
-            ))}
+            {/* Canvas particles */}
+            <canvas
+                ref={canvasRef}
+                className="absolute inset-0 pointer-events-none"
+                style={{ opacity: Math.max(0.2, 1 - scrollProgress * 0.8) }}
+            />
 
             {/* Noise texture overlay */}
-            <div className="absolute inset-0 opacity-[0.02] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMSIvPjwvc3ZnPg==')]" />
-        </div>
+            <div className="absolute inset-0 opacity-[0.015] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMSIvPjwvc3ZnPg==')]" />
+
+            {/* Bottom fade gradient (scroll hint) */}
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/50 to-transparent pointer-events-none" />
+        </>
     );
 }
 
@@ -286,7 +384,7 @@ function HeroSection() {
 
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-            <AuroraCanvas />
+            <AustralCanvas />
 
             <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
                 {/* H1 with letter animation */}
@@ -345,12 +443,6 @@ function HeroSection() {
                 </div>
             </div>
 
-            {/* Scroll indicator */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-                <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-                    <div className="w-1 h-2 bg-white/50 rounded-full animate-pulse" />
-                </div>
-            </div>
         </section>
     );
 }
@@ -411,7 +503,7 @@ function EcosystemSection() {
         <section
             id="ecosistema"
             ref={ref}
-            className="relative py-24 md:py-32 bg-[#0A0A0B]"
+            className="relative py-24 md:py-32 bg-gradient-to-b from-[#0A0A0B] to-[#0F0F14]"
         >
             <div className="max-w-7xl mx-auto px-6">
                 {/* Section header */}
