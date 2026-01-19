@@ -710,6 +710,11 @@ function LandingFooter() {
 // MAIN PAGE
 // ============================================
 export default function PremiumLandingPage() {
+    // Scroll to top on mount/refresh
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <div className="bg-[#0A0A0B] min-h-screen">
             <LandingHeader />
