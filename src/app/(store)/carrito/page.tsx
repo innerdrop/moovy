@@ -3,10 +3,9 @@
 // Cart Page - Carrito (Simplified - BottomNav from layout)
 import Link from "next/link";
 import Image from "next/image";
-import AppHeader from "@/components/layout/AppHeader";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
-import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, Package } from "lucide-react";
+import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, Package, ChevronLeft } from "lucide-react";
 
 export default function CarritoPage() {
     const { items, getTotalItems, getTotalPrice, updateQuantity, removeItem, clearCart } = useCartStore();
@@ -16,7 +15,13 @@ export default function CarritoPage() {
     if (items.length === 0) {
         return (
             <>
-                <AppHeader title="Mi Carrito" showBack backHref="/" />
+                {/* Simple Header */}
+                <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 flex items-center gap-3">
+                    <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                    </Link>
+                    <h1 className="font-semibold text-navy">Mi Carrito</h1>
+                </header>
                 <div className="flex-1 flex items-center justify-center py-20">
                     <div className="text-center px-8">
                         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -33,11 +38,18 @@ export default function CarritoPage() {
 
     return (
         <>
-            <AppHeader title={`Mi Carrito (${cartCount})`} showBack backHref="/"
-                rightAction={
-                    <button onClick={() => { if (confirm("¿Vaciar el carrito?")) clearCart(); }} className="text-red-500 text-sm">Vaciar</button>
-                }
-            />
+            {/* Simple Header with clear button */}
+            <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                    </Link>
+                    <h1 className="font-semibold text-navy">Mi Carrito ({cartCount})</h1>
+                </div>
+                <button onClick={() => { if (confirm("¿Vaciar el carrito?")) clearCart(); }} className="text-red-500 text-sm">
+                    Vaciar
+                </button>
+            </header>
 
             {/* Items with extra padding for checkout bar */}
             <div className="p-4 pb-40 space-y-3">
@@ -91,4 +103,3 @@ export default function CarritoPage() {
         </>
     );
 }
-
