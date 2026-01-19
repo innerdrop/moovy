@@ -65,16 +65,37 @@ function AuroraCanvas() {
                 />
             </svg>
 
-            {/* Floating particles */}
-            {[...Array(20)].map((_, i) => (
+            {/* Floating particles - fixed positions to avoid hydration mismatch */}
+            {[
+                { left: 5, top: 10, delay: 0, duration: 7 },
+                { left: 15, top: 80, delay: 2, duration: 8 },
+                { left: 25, top: 30, delay: 1, duration: 6 },
+                { left: 35, top: 60, delay: 3, duration: 9 },
+                { left: 45, top: 20, delay: 0.5, duration: 7 },
+                { left: 55, top: 70, delay: 2.5, duration: 8 },
+                { left: 65, top: 40, delay: 1.5, duration: 6 },
+                { left: 75, top: 90, delay: 4, duration: 9 },
+                { left: 85, top: 15, delay: 0.8, duration: 7 },
+                { left: 95, top: 55, delay: 3.5, duration: 8 },
+                { left: 10, top: 45, delay: 1.2, duration: 6 },
+                { left: 20, top: 85, delay: 2.8, duration: 9 },
+                { left: 30, top: 25, delay: 0.3, duration: 7 },
+                { left: 40, top: 75, delay: 4.5, duration: 8 },
+                { left: 50, top: 35, delay: 1.8, duration: 6 },
+                { left: 60, top: 95, delay: 3.2, duration: 9 },
+                { left: 70, top: 5, delay: 0.6, duration: 7 },
+                { left: 80, top: 65, delay: 2.2, duration: 8 },
+                { left: 90, top: 50, delay: 1.6, duration: 6 },
+                { left: 98, top: 88, delay: 4.2, duration: 9 },
+            ].map((particle, i) => (
                 <div
                     key={i}
                     className="absolute w-1 h-1 rounded-full bg-white/30 animate-particle-float"
                     style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 8}s`,
-                        animationDuration: `${6 + Math.random() * 4}s`,
+                        left: `${particle.left}%`,
+                        top: `${particle.top}%`,
+                        animationDelay: `${particle.delay}s`,
+                        animationDuration: `${particle.duration}s`,
                     }}
                 />
             ))}
@@ -172,8 +193,8 @@ function LandingHeader() {
         <>
             <header
                 className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                        ? "bg-[#0A0A0B]/85 backdrop-blur-xl border-b border-white/[0.06]"
-                        : "bg-transparent"
+                    ? "bg-[#0A0A0B]/85 backdrop-blur-xl border-b border-white/[0.06]"
+                    : "bg-transparent"
                     }`}
             >
                 <div className="max-w-7xl mx-auto px-6">
