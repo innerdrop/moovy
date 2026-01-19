@@ -8,8 +8,8 @@ import {
     DollarSign,
     MapPin,
     Phone,
-    Save
 } from "lucide-react";
+import ConfigForm from "./ConfigForm";
 
 async function getSettings() {
     try {
@@ -33,7 +33,7 @@ export default async function ConfigurationPage() {
     const settings = await getSettings();
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <ConfigForm initialSettings={settings}>
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-navy flex items-center gap-2">
@@ -86,7 +86,47 @@ export default async function ConfigurationPage() {
                 </div>
             </div>
 
-            {/* Delivery Configuration */}
+            {/* Maintenance Mode Card */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-orange-200">
+                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+                    🚧 Modo Mantenimiento (Landing)
+                </h2>
+
+                <div className="space-y-4">
+                    {/* Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
+                        <div>
+                            <h3 className="font-semibold text-navy">Página en Mantenimiento</h3>
+                            <p className="text-sm text-gray-600">
+                                Cuando está activo, la landing mostrará "Volvemos Pronto"
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                defaultChecked={settings?.isMaintenanceMode}
+                                className="sr-only peer"
+                                name="isMaintenanceMode"
+                            />
+                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-500"></div>
+                        </label>
+                    </div>
+
+                    {/* Maintenance Message */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mensaje de mantenimiento
+                        </label>
+                        <textarea
+                            defaultValue={settings?.maintenanceMessage || ""}
+                            className="input resize-none"
+                            rows={2}
+                            placeholder="¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia."
+                            name="maintenanceMessage"
+                        />
+                    </div>
+                </div>
+            </div>
             <div className="bg-white rounded-xl p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5 text-moovy" />
@@ -324,15 +364,7 @@ export default async function ConfigurationPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Save Button */}
-            <div className="flex justify-end">
-                <button className="btn-primary flex items-center gap-2 px-8">
-                    <Save className="w-5 h-5" />
-                    Guardar Cambios
-                </button>
-            </div>
-        </div>
+        </ConfigForm>
     );
 }
 

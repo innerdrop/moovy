@@ -334,6 +334,10 @@ model StoreSettings {
   isOpen               Boolean  @default(true)
   closedMessage        String   @default("Estamos cerrados. ¡Volvemos pronto!")
   
+  // Maintenance mode (shows "Volvemos Pronto" landing page)
+  isMaintenanceMode    Boolean  @default(false)
+  maintenanceMessage   String   @default("¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia.")
+  
   // Delivery pricing config
   fuelPricePerLiter    Float    @default(1200)   // Current fuel price
   fuelConsumptionPerKm Float    @default(0.06)   // Liters per km (moto default)

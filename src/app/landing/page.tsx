@@ -16,6 +16,7 @@ import {
     Instagram,
     MessageCircle,
 } from "lucide-react";
+import MaintenancePage from "@/components/MaintenancePage";
 
 // ============================================
 // AURORA CANVAS - Light Theme
@@ -193,8 +194,8 @@ function LandingHeader() {
         <>
             <header
                 className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                        ? "bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm"
-                        : "bg-transparent"
+                    ? "bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm"
+                    : "bg-transparent"
                     }`}
             >
                 <div className="max-w-7xl mx-auto px-6">
@@ -710,10 +711,42 @@ function LandingFooter() {
 // MAIN PAGE
 // ============================================
 export default function PremiumLandingPage() {
+    const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean | null>(null);
+    const [maintenanceMessage, setMaintenanceMessage] = useState("");
+
+    // Check maintenance mode on mount
+    useEffect(() => {
+        const checkMaintenance = async () => {
+            try {
+                const res = await fetch("/api/maintenance");
+                const data = await res.json();
+                setIsMaintenanceMode(data.isMaintenanceMode);
+                setMaintenanceMessage(data.maintenanceMessage);
+            } catch {
+                setIsMaintenanceMode(false);
+            }
+        };
+        checkMaintenance();
+    }, []);
+
     // Scroll to top on mount/refresh
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    // Loading state
+    if (isMaintenanceMode === null) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#e60012]"></div>
+            </div>
+        );
+    }
+
+    // Maintenance mode
+    if (isMaintenanceMode) {
+        return <MaintenancePage message={maintenanceMessage} />;
+    }
 
     return (
         <div className="bg-white min-h-screen">
