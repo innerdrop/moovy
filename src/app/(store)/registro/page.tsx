@@ -98,18 +98,8 @@ function RegistrationForm() {
     return (
         <div className="flex flex-col items-center justify-start bg-gray-50 px-4 py-8 min-h-screen">
             <div className="w-full max-w-lg animate-fadeIn">
-                {/* Logo & Header */}
+                {/* Header */}
                 <div className="text-center mb-8">
-                    <Link href="/" className="inline-block hover:opacity-90 transition">
-                        <Image
-                            src="/logo-moovy.png"
-                            alt="Moovy"
-                            width={160}
-                            height={52}
-                            className="mx-auto mb-5"
-                            priority
-                        />
-                    </Link>
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Crear Cuenta</h1>
                     <p className="text-gray-600 mt-2 text-lg">Unite a la comunidad de delivery más patagónica</p>
                 </div>

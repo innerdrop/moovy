@@ -72,20 +72,21 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                     <Link
                                         href={item.href}
                                         onClick={(e) => handleNavClick(e, item)}
-                                        className="relative -top-5 flex flex-col items-center group"
+                                        className="relative -top-3 flex flex-col items-center group"
                                     >
+                                        {/* Pulse ring animation - outside the button */}
+                                        {isActive && (
+                                            <span className="absolute w-16 h-16 rounded-full border-2 border-amber-400 animate-ping opacity-40" />
+                                        )}
                                         <div className={`
-                                            w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95
+                                            w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 relative
                                             ${isActive
                                                 ? "bg-gradient-to-br from-amber-400 to-amber-500 shadow-amber-500/40"
                                                 : "bg-gradient-to-br from-[#e60012] to-[#ff3333] shadow-red-500/40"
                                             }
                                         `}>
-                                            <Icon className="w-7 h-7 text-white fill-current" />
-                                            {/* Pulse ring if active */}
-                                            {isActive && (
-                                                <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-20" />
-                                            )}
+                                            <Icon className="w-5 h-5 text-white fill-current" />
+                                            <span className="text-[#e60012] font-black text-xs absolute -bottom-0.5 -right-0.5 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm" style={{ fontFamily: "'Junegull', sans-serif" }}>M</span>
                                         </div>
                                         <span className={`text-[10px] mt-1 font-bold ${isActive ? "text-amber-500" : "text-[#e60012]"}`}>
                                             {item.label}
