@@ -223,12 +223,13 @@ export default function ProfilePage() {
                                     <Gift className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                                     <p className="text-gray-500 font-medium">Aún no tenés canjes</p>
                                     <p className="text-gray-400 text-sm mt-1">Usá tus puntos MOOVER para obtener descuentos</p>
-                                    <button
+                                    <Link
+                                        href="/tienda"
                                         onClick={() => setShowRedemptions(false)}
-                                        className="mt-4 text-amber-600 font-semibold text-sm"
+                                        className="mt-4 text-amber-600 font-semibold text-sm inline-block"
                                     >
-                                        Ir a canjear puntos
-                                    </button>
+                                        Ir a la tienda
+                                    </Link>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
