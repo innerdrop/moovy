@@ -17,7 +17,7 @@ const portalConfig = {
         color: '#e60012',
         bgGradient: 'from-red-500 to-red-600',
         icon: LogIn,
-        redirectAfterLogin: '/',
+        redirectAfterLogin: '/tienda',
         registerLink: '/registro',
         backLink: { href: '/', label: 'Volver a la tienda' },
     },

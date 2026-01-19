@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   description: "Delivery rápido en Ushuaia. Pedí lo que quieras, te lo llevamos.",
   keywords: "moovy, delivery, comida, ushuaia, rapido, pedidos",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
