@@ -111,34 +111,30 @@ function AustralCanvas() {
                     p.y = lerp(p.y, p.targetY, t * 0.03);
                 }
 
-                // Parallax descent near bottom (scroll indicator)
-                const bottomProximity = p.y / canvas.height;
-                if (bottomProximity > 0.85) {
-                    p.y += p.speed * 4; // Accelerate near bottom
-                } else {
-                    p.y += p.speed;
-                }
+                // Gentle floating movement (subtle drift)
+                p.y += p.speed * 0.5;
+                p.x += Math.sin(Date.now() * 0.001 + p.baseX) * 0.1;
 
-                // Wrap around when particle exits bottom
+                // Wrap around when particle exits
                 if (p.y > canvas.height + 10) {
                     p.y = -10;
-                    p.x = p.baseX + (Math.random() - 0.5) * 50;
+                    p.x = p.baseX;
+                }
+                if (p.y < -20) {
+                    p.y = canvas.height + 10;
                 }
 
                 // Gentle return to base X
-                p.x = lerp(p.x, p.baseX, 0.005);
+                p.x = lerp(p.x, p.baseX, 0.003);
+
+                // Fade out particles based on scroll progress
+                const fadeAlpha = p.alpha * Math.max(0, 1 - scrollProgress * 1.5);
 
                 // Draw particle
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+                ctx.fillStyle = `rgba(255,255,255,${fadeAlpha})`;
                 ctx.fill();
-
-                // Draw constellation lines when formed
-                if (scrollProgress > 0.5 && p.isConstellationStar) {
-                    ctx.strokeStyle = `rgba(255,255,255,${(scrollProgress - 0.5) * 0.15})`;
-                    ctx.lineWidth = 0.5;
-                }
             });
 
             animationRef.current = requestAnimationFrame(animate);
@@ -802,13 +798,36 @@ function LandingFooter() {
 // MAIN PAGE
 // ============================================
 export default function PremiumLandingPage() {
+    const [shake, setShake] = useState(false);
+    const observerRef = useRef<IntersectionObserver | null>(null);
+
     // Scroll to top on mount/refresh
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
+    // Section shake effect
+    useEffect(() => {
+        const sections = document.querySelectorAll('section');
+
+        observerRef.current = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    // Trigger vibration when entering a new section
+                    if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback for mobile
+                    setShake(true);
+                    setTimeout(() => setShake(false), 500);
+                }
+            });
+        }, { threshold: 0.5 }); // Trigger when 50% of section is visible
+
+        sections.forEach(section => observerRef.current?.observe(section));
+
+        return () => observerRef.current?.disconnect();
+    }, []);
+
     return (
-        <div className="bg-[#0A0A0B] min-h-screen">
+        <div className={`bg-[#0A0A0B] min-h-screen transition-transform duration-300 ${shake ? 'animate-shake' : ''}`}>
             <LandingHeader />
             <main>
                 <HeroSection />
