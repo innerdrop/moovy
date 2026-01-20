@@ -2,7 +2,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { Shield, ArrowLeft, AlertCircle } from "lucide-react";
+import { Shield, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -18,6 +18,8 @@ function OpsLoginContent() {
         const errorParam = searchParams.get("error");
         if (errorParam === "Unauthorized") {
             setError("No tienes permisos de administrador para acceder a este panel.");
+        } else if (errorParam === "CredentialsSignin") {
+            setError("Credenciales inválidas. Verifica tu email y contraseña.");
         }
     }, [searchParams]);
 
@@ -26,21 +28,42 @@ function OpsLoginContent() {
         setLoading(true);
         setError("");
 
-        // Use NextAuth's built-in redirect with callbackUrl
-        // Using absolute URL to ensure redirect stays on ops subdomain in production
-        const callbackUrl = typeof window !== 'undefined' && window.location.hostname.includes('ops.')
-            ? `${window.location.origin}/ops`
-            : "/ops";
+        try {
+            // Use redirect: false to handle the response manually
+            const result = await signIn("credentials", {
+                email: email.toLowerCase().trim(),
+                password,
+                redirect: false,
+            });
 
-        await signIn("credentials", {
-            email,
-            password,
-            callbackUrl,
-        });
+            console.log("[OPS Login] SignIn result:", result);
 
-        // If we reach here, signIn failed (otherwise it redirects automatically)
-        setError("Credenciales inválidas");
-        setLoading(false);
+            if (result?.error) {
+                console.log("[OPS Login] Error:", result.error);
+                setError("Credenciales inválidas. Verifica tu email y contraseña.");
+                setLoading(false);
+                return;
+            }
+
+            if (result?.ok) {
+                console.log("[OPS Login] Success, redirecting...");
+                // Use window.location for a full page reload to ensure cookies are sent
+                // Small delay to ensure cookie is properly set
+                setTimeout(() => {
+                    window.location.href = window.location.origin + "/ops";
+                }, 100);
+                return;
+            }
+
+            // Unexpected result
+            console.log("[OPS Login] Unexpected result:", result);
+            setError("Error inesperado. Intenta de nuevo.");
+            setLoading(false);
+        } catch (err) {
+            console.error("[OPS Login] Exception:", err);
+            setError("Error de conexión. Intenta de nuevo.");
+            setLoading(false);
+        }
     };
 
     return (
@@ -63,8 +86,8 @@ function OpsLoginContent() {
 
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm text-center flex items-center justify-center gap-2">
-                            <AlertCircle className="w-4 h-4" />
-                            {error}
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            <span>{error}</span>
                         </div>
                     )}
 
@@ -80,6 +103,7 @@ function OpsLoginContent() {
                                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                                 placeholder="admin@somosmoovy.com"
                                 required
+                                disabled={loading}
                             />
                         </div>
 
@@ -94,15 +118,23 @@ function OpsLoginContent() {
                                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                                 placeholder="••••••••"
                                 required
+                                disabled={loading}
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50"
+                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {loading ? "Verificando..." : "Acceder"}
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Verificando...
+                                </>
+                            ) : (
+                                "Acceder"
+                            )}
                         </button>
                     </form>
 
@@ -127,7 +159,7 @@ function OpsLoginContent() {
 
 export default function OpsLoginPage() {
     return (
-        <Suspense fallback={<div>Cargando...</div>}>
+        <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Cargando...</div>}>
             <OpsLoginContent />
         </Suspense>
     );
