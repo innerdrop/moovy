@@ -36,10 +36,12 @@ function OpsLoginContent() {
         if (result?.error) {
             setError("Credenciales inválidas");
             setLoading(false);
+        } else if (result?.ok) {
+            // Force hard navigation to ensure session is loaded
+            window.location.href = "/ops";
         } else {
-            // Check if user is actually redirected by middleware or just proceed
-            // We push to /ops. If unauthorized, middleware will bounce back with error.
-            router.push("/ops");
+            setError("Error inesperado al iniciar sesión");
+            setLoading(false);
         }
     };
 
