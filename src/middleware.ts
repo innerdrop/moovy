@@ -87,13 +87,17 @@ export async function middleware(request: NextRequest) {
 
     // Protect /ops/* routes (except login)
     if (pathname.startsWith('/ops') && !pathname.startsWith('/ops/login')) {
+        console.log('[Middleware] /ops route check:', { pathname, hasToken: !!token, userRole });
         if (!token) {
+            console.log('[Middleware] No token found, redirecting to /ops/login');
             return NextResponse.redirect(new URL('/ops/login', request.url));
         }
         if (userRole !== 'ADMIN') {
+            console.log('[Middleware] User role is not ADMIN:', userRole);
             // Redirect to ops login with error instead of home
             return NextResponse.redirect(new URL('/ops/login?error=Unauthorized', request.url));
         }
+        console.log('[Middleware] Access granted to /ops for ADMIN');
     }
 
     // Protect client paths

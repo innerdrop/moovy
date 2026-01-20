@@ -27,20 +27,33 @@ function OpsLoginContent() {
         setLoading(true);
         setError("");
 
-        const result = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-        });
+        try {
+            const result = await signIn("credentials", {
+                email,
+                password,
+                redirect: false,
+            });
 
-        if (result?.error) {
-            setError("Credenciales inválidas");
-            setLoading(false);
-        } else if (result?.ok) {
-            // Force hard navigation to ensure session is loaded
-            window.location.href = "/ops";
-        } else {
-            setError("Error inesperado al iniciar sesión");
+            console.log("[LOGIN DEBUG] signIn result:", result);
+
+            if (result?.error) {
+                console.log("[LOGIN DEBUG] Error:", result.error);
+                setError("Credenciales inválidas");
+                setLoading(false);
+            } else if (result?.ok) {
+                console.log("[LOGIN DEBUG] Success, redirecting to /ops");
+                // Force hard navigation to ensure session is loaded
+                window.location.href = "/ops";
+            } else {
+                console.log("[LOGIN DEBUG] Unexpected result:", result);
+                // Try redirecting anyway after a short delay
+                setTimeout(() => {
+                    window.location.href = "/ops";
+                }, 500);
+            }
+        } catch (error) {
+            console.error("[LOGIN DEBUG] Exception:", error);
+            setError("Error al procesar inicio de sesión");
             setLoading(false);
         }
     };
