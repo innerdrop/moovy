@@ -117,17 +117,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Cookie configuration for production
     cookies: {
         sessionToken: {
-            name: `__Secure-next-auth.session-token`,
+            name: process.env.NODE_ENV === 'production'
+                ? 'next-auth.session-token'
+                : 'next-auth.session-token',
             options: {
                 httpOnly: true,
                 sameSite: 'lax',
                 path: '/',
-                secure: true,
-                domain: process.env.NODE_ENV === 'production' ? '.somosmoovy.com' : undefined,
+                secure: process.env.NODE_ENV === 'production',
             },
         },
     },
-
     // Don't log in production
     debug: process.env.NODE_ENV === "development",
 
