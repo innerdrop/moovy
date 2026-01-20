@@ -27,11 +27,15 @@ function OpsLoginContent() {
         setError("");
 
         // Use NextAuth's built-in redirect with callbackUrl
-        // This ensures the cookie is set before redirecting
+        // Using absolute URL to ensure redirect stays on ops subdomain in production
+        const callbackUrl = typeof window !== 'undefined' && window.location.hostname.includes('ops.')
+            ? `${window.location.origin}/ops`
+            : "/ops";
+
         await signIn("credentials", {
             email,
             password,
-            callbackUrl: "/ops",
+            callbackUrl,
         });
 
         // If we reach here, signIn failed (otherwise it redirects automatically)

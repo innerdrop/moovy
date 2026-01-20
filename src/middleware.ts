@@ -38,26 +38,33 @@ export async function middleware(request: NextRequest) {
     // For subdomains: redirect to the correct portal path on main domain
     // This is the simplest and most reliable approach
     if (portal === 'comercio') {
-        // comercios.somosmoovy.com/* -> somosmoovy.com/comercios/*
+        // comercios.somosmoovy.com - use rewrite to keep user on subdomain
+        if (pathname === '/') {
+            return NextResponse.rewrite(new URL('/comercios', request.url));
+        }
         if (!pathname.startsWith('/comercios')) {
-            const targetPath = pathname === '/' ? '/comercios/login' : `/comercios${pathname}`;
-            return NextResponse.redirect(new URL(targetPath, 'https://somosmoovy.com'));
+            return NextResponse.rewrite(new URL(`/comercios${pathname}`, request.url));
         }
     }
 
     if (portal === 'conductor') {
-        // conductores.somosmoovy.com/* -> somosmoovy.com/conductores/*
+        // conductores.somosmoovy.com - use rewrite to keep user on subdomain
+        if (pathname === '/') {
+            return NextResponse.rewrite(new URL('/conductores', request.url));
+        }
         if (!pathname.startsWith('/conductores')) {
-            const targetPath = pathname === '/' ? '/conductores/login' : `/conductores${pathname}`;
-            return NextResponse.redirect(new URL(targetPath, 'https://somosmoovy.com'));
+            return NextResponse.rewrite(new URL(`/conductores${pathname}`, request.url));
         }
     }
 
     if (portal === 'ops') {
-        // ops.somosmoovy.com/* -> somosmoovy.com/ops/*
+        // ops.somosmoovy.com - use rewrite to keep user on subdomain
+        // This ensures cookies are set and read on the same domain
+        if (pathname === '/') {
+            return NextResponse.rewrite(new URL('/ops', request.url));
+        }
         if (!pathname.startsWith('/ops')) {
-            const targetPath = pathname === '/' ? '/ops/login' : `/ops${pathname}`;
-            return NextResponse.redirect(new URL(targetPath, 'https://somosmoovy.com'));
+            return NextResponse.rewrite(new URL(`/ops${pathname}`, request.url));
         }
     }
 
