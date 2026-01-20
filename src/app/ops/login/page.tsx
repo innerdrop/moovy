@@ -5,14 +5,13 @@ import { signIn } from "next-auth/react";
 import { Shield, ArrowLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function OpsLoginContent() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const router = useRouter();
     const searchParams = useSearchParams();
 
     useEffect(() => {
@@ -27,35 +26,17 @@ function OpsLoginContent() {
         setLoading(true);
         setError("");
 
-        try {
-            const result = await signIn("credentials", {
-                email,
-                password,
-                redirect: false,
-            });
+        // Use NextAuth's built-in redirect with callbackUrl
+        // This ensures the cookie is set before redirecting
+        await signIn("credentials", {
+            email,
+            password,
+            callbackUrl: "/ops",
+        });
 
-            console.log("[LOGIN DEBUG] signIn result:", result);
-
-            if (result?.error) {
-                console.log("[LOGIN DEBUG] Error:", result.error);
-                setError("Credenciales inválidas");
-                setLoading(false);
-            } else if (result?.ok) {
-                console.log("[LOGIN DEBUG] Success, redirecting to /ops");
-                // Force hard navigation to ensure session is loaded
-                window.location.href = "/ops";
-            } else {
-                console.log("[LOGIN DEBUG] Unexpected result:", result);
-                // Try redirecting anyway after a short delay
-                setTimeout(() => {
-                    window.location.href = "/ops";
-                }, 500);
-            }
-        } catch (error) {
-            console.error("[LOGIN DEBUG] Exception:", error);
-            setError("Error al procesar inicio de sesión");
-            setLoading(false);
-        }
+        // If we reach here, signIn failed (otherwise it redirects automatically)
+        setError("Credenciales inválidas");
+        setLoading(false);
     };
 
     return (
@@ -93,7 +74,7 @@ function OpsLoginContent() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                                placeholder="admin@moovy.com"
+                                placeholder="admin@somosmoovy.com"
                                 required
                             />
                         </div>
