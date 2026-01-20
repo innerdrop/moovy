@@ -117,6 +117,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Don't log in production
     debug: process.env.NODE_ENV === "development",
 
+    // Cookie configuration for subdomain support
+    cookies: {
+        sessionToken: {
+            name: 'next-auth.session-token',
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: process.env.NODE_ENV === 'production',
+                // Domain with leading dot for subdomain support
+                domain: process.env.NODE_ENV === 'production' ? '.somosmoovy.com' : undefined,
+            },
+        },
+    },
+
     // Trust the host header (critical for VPS/Nginx)
     trustHost: true,
 
