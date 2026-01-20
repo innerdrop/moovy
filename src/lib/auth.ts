@@ -114,20 +114,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         updateAge: 24 * 60 * 60, // Update session every 24 hours
     },
 
-    // Cookie configuration for production
-    cookies: {
-        sessionToken: {
-            name: process.env.NODE_ENV === 'production'
-                ? 'next-auth.session-token'
-                : 'next-auth.session-token',
-            options: {
-                httpOnly: true,
-                sameSite: 'lax',
-                path: '/',
-                secure: process.env.NODE_ENV === 'production',
-            },
-        },
-    },
     // Don't log in production
     debug: process.env.NODE_ENV === "development",
 
