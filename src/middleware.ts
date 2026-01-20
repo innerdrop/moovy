@@ -69,7 +69,15 @@ export async function middleware(request: NextRequest) {
     }
 
     // Protection for portal routes on main domain
-    const token = await getToken({ req: request, secret: getAuthSecret() });
+    // In production HTTPS, NextAuth uses __Secure-next-auth.session-token
+    const cookieName = process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token';
+    const token = await getToken({
+        req: request,
+        secret: getAuthSecret(),
+        cookieName
+    });
     const userRole = (token as any)?.role as string | undefined;
 
     // Protect /comercios/* routes (except login)
