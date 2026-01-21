@@ -1,11 +1,12 @@
-// Página de Mantenimiento - Moovy
+// Página de Mantenimiento - Usa el componente MaintenancePage
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wrench, Clock } from "lucide-react";
+import Image from "next/image";
+import { Instagram } from "lucide-react";
 
 export default function MantenimientoPage() {
-    const [message, setMessage] = useState("¡Estamos mejorando para vos!");
+    const [message, setMessage] = useState("Estamos trabajando para mejorar tu experiencia. ¡Gracias por tu paciencia!");
 
     useEffect(() => {
         fetch("/api/maintenance")
@@ -19,33 +20,63 @@ export default function MantenimientoPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-            <div className="text-center max-w-lg">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-6">
+            <div className="max-w-md w-full text-center">
                 {/* Logo */}
                 <div className="mb-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-moovy/20 rounded-full mb-4">
-                        <Wrench className="w-10 h-10 text-moovy animate-pulse" />
-                    </div>
-                    <h1 className="font-script text-4xl text-moovy mb-2">Moovy</h1>
+                    <Image
+                        src="/logo-moovy.png"
+                        alt="MOOVY"
+                        width={180}
+                        height={60}
+                        className="mx-auto"
+                    />
                 </div>
 
-                {/* Message */}
-                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8 mb-6">
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                        Sitio en Mantenimiento
-                    </h2>
-                    <p className="text-slate-300 text-lg mb-6">
-                        {message}
-                    </p>
-                    <div className="flex items-center justify-center gap-2 text-slate-400">
-                        <Clock className="w-5 h-5" />
-                        <span>Volvemos pronto</span>
-                    </div>
+                {/* Construction Icon */}
+                <div className="text-6xl mb-6 animate-bounce">
+                    🚧
                 </div>
+
+                {/* Title */}
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                    ¡Volvemos Pronto!
+                </h1>
+
+                {/* Custom Message */}
+                <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                    {message}
+                </p>
+
+                {/* Progress Animation */}
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
+                    <div
+                        className="h-2 rounded-full bg-gradient-to-r from-[#e60012] to-[#00D4AA] animate-pulse"
+                        style={{ width: "60%" }}
+                    />
+                </div>
+
+                {/* Social Links */}
+                <div className="flex justify-center gap-4">
+                    <a
+                        href="https://instagram.com/somosmoovy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-gray-700 hover:bg-gray-200 transition-colors"
+                    >
+                        <Instagram className="w-5 h-5" />
+                        <span className="text-sm font-medium">@somosmoovy</span>
+                    </a>
+                </div>
+
+                {/* Contact Email */}
+                <p className="mt-6 text-sm text-gray-500">
+                    Consultas: <a href="mailto:somosmoovy@gmail.com" className="text-[#e60012] hover:underline">somosmoovy@gmail.com</a>
+                </p>
 
                 {/* Footer */}
-                <p className="text-slate-500 text-sm">
-                    Para consultas: <a href="mailto:info@somosmoovy.com" className="text-moovy hover:underline">info@somosmoovy.com</a>
+                <p className="mt-8 text-sm text-gray-400">
+                    © {new Date().getFullYear()} MOOVY™ — Ushuaia, Tierra del Fuego
                 </p>
             </div>
         </div>
