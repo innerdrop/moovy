@@ -234,3 +234,114 @@ export async function toggleProductActive(productId: string, isActive: boolean) 
     }
 }
 
+// ============================================
+// MERCHANT SETTINGS ACTIONS
+// ============================================
+
+const merchantSchema = z.object({
+    name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+    description: z.string().optional(),
+    image: z.string().optional(),
+    email: z.string().email("Email inválido").optional().or(z.literal("")),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    category: z.string().optional(),
+    deliveryTimeMin: z.coerce.number().int().min(5).optional(),
+    deliveryTimeMax: z.coerce.number().int().min(10).optional(),
+    deliveryFee: z.coerce.number().min(0).optional(),
+    minOrderAmount: z.coerce.number().min(0).optional(),
+});
+
+export async function updateMerchant(formData: FormData) {
+    const session = await auth();
+    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+        return { error: "No autorizado" };
+    }
+
+    const rawData = {
+        name: formData.get("name"),
+        description: formData.get("description"),
+        image: formData.get("image"),
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        address: formData.get("address"),
+        category: formData.get("category"),
+        deliveryTimeMin: formData.get("deliveryTimeMin"),
+        deliveryTimeMax: formData.get("deliveryTimeMax"),
+        deliveryFee: formData.get("deliveryFee"),
+        minOrderAmount: formData.get("minOrderAmount"),
+    };
+
+    const validation = merchantSchema.safeParse(rawData);
+
+    if (!validation.success) {
+        return { error: validation.error.issues[0].message };
+    }
+
+    const data = validation.data;
+
+    try {
+        const merchant = await prisma.merchant.findFirst({
+            where: { ownerId: session.user.id },
+        });
+
+        if (!merchant) {
+            return { error: "No se encontró un comercio asociado a tu cuenta." };
+        }
+
+        await prisma.merchant.update({
+            where: { id: merchant.id },
+            data: {
+                name: data.name,
+                description: data.description || null,
+                image: data.image || null,
+                email: data.email || null,
+                phone: data.phone || null,
+                address: data.address || null,
+                category: data.category || "Otro",
+                deliveryTimeMin: data.deliveryTimeMin || 30,
+                deliveryTimeMax: data.deliveryTimeMax || 45,
+                deliveryFee: data.deliveryFee || 0,
+                minOrderAmount: data.minOrderAmount || 0,
+            },
+        });
+
+        revalidatePath("/comercios/configuracion");
+        revalidatePath("/comercios");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating merchant:", error);
+        return { error: "Error al actualizar el comercio." };
+    }
+}
+
+export async function toggleMerchantOpen(isOpen: boolean) {
+    const session = await auth();
+    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+        return { error: "No autorizado" };
+    }
+
+    try {
+        const merchant = await prisma.merchant.findFirst({
+            where: { ownerId: session.user.id },
+        });
+
+        if (!merchant) {
+            return { error: "No se encontró un comercio asociado a tu cuenta." };
+        }
+
+        await prisma.merchant.update({
+            where: { id: merchant.id },
+            data: { isOpen },
+        });
+
+        revalidatePath("/comercios/configuracion");
+        revalidatePath("/comercios");
+        return { success: true, isOpen };
+    } catch (error) {
+        console.error("Error toggling merchant:", error);
+        return { error: "Error al modificar el estado del comercio." };
+    }
+}
+
+
