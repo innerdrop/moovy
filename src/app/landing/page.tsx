@@ -44,7 +44,7 @@ const slidesConfig: SlideConfig[] = [
         href: "https://jobs.somosmoovy.com",
         icon: <Briefcase className="w-8 h-8" />,
         badge: "Nuevo",
-        logo: "/logo-moovy-jobs.png",
+        logo: "/logo-jobs-v2.png",
     },
     {
         id: "x",
