@@ -15,13 +15,27 @@ const productSchema = z.object({
     categoryId: z.string().optional(),
 });
 
+// Helper to verify merchant ownership
+async function verifyMerchantOwnership(productId: string, userId: string) {
+    const merchant = await prisma.merchant.findFirst({
+        where: { ownerId: userId },
+    });
+
+    if (!merchant) return null;
+
+    const product = await prisma.product.findFirst({
+        where: { id: productId, merchantId: merchant.id },
+    });
+
+    return product ? merchant : null;
+}
+
 export async function createProduct(formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "MERCHANT") {
+    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
         return { error: "No autorizado" };
     }
 
-    // validate data
     const rawData = {
         name: formData.get("name"),
         description: formData.get("description"),
@@ -40,7 +54,6 @@ export async function createProduct(formData: FormData) {
     const data = validation.data;
 
     try {
-        // Find the merchant owned by this user
         const merchant = await prisma.merchant.findFirst({
             where: { ownerId: session.user.id },
         });
@@ -49,17 +62,15 @@ export async function createProduct(formData: FormData) {
             return { error: "No se encontró un comercio asociado a tu cuenta." };
         }
 
-        // Create slug
         const slug = `${data.name.toLowerCase().replace(/ /g, "-")}-${Date.now()}`;
 
-        // Create Product
         await prisma.product.create({
             data: {
                 name: data.name,
                 slug: slug,
                 description: data.description,
                 price: data.price,
-                costPrice: data.price * 0.7, // Estimate default margin
+                costPrice: data.price * 0.7,
                 stock: data.stock,
                 merchantId: merchant.id,
                 images: {
@@ -69,7 +80,6 @@ export async function createProduct(formData: FormData) {
                         order: 0,
                     },
                 },
-                // Link category if provided
                 categories: data.categoryId ? {
                     create: {
                         categoryId: data.categoryId,
@@ -86,3 +96,141 @@ export async function createProduct(formData: FormData) {
 
     redirect("/comercios/productos");
 }
+
+export async function updateProduct(productId: string, formData: FormData) {
+    const session = await auth();
+    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+        return { error: "No autorizado" };
+    }
+
+    const rawData = {
+        name: formData.get("name"),
+        description: formData.get("description"),
+        price: formData.get("price"),
+        stock: formData.get("stock"),
+        imageUrl: formData.get("imageUrl"),
+        categoryId: formData.get("categoryId"),
+    };
+
+    const validation = productSchema.safeParse(rawData);
+
+    if (!validation.success) {
+        return { error: validation.error.issues[0].message };
+    }
+
+    const data = validation.data;
+
+    try {
+        const merchant = await verifyMerchantOwnership(productId, session.user.id);
+
+        if (!merchant) {
+            return { error: "No tienes permiso para editar este producto." };
+        }
+
+        // Update the product
+        await prisma.product.update({
+            where: { id: productId },
+            data: {
+                name: data.name,
+                description: data.description,
+                price: data.price,
+                stock: data.stock,
+            },
+        });
+
+        // Update image if changed
+        const existingImage = await prisma.productImage.findFirst({
+            where: { productId: productId },
+        });
+
+        if (existingImage) {
+            await prisma.productImage.update({
+                where: { id: existingImage.id },
+                data: { url: data.imageUrl, alt: data.name },
+            });
+        } else {
+            await prisma.productImage.create({
+                data: {
+                    productId: productId,
+                    url: data.imageUrl,
+                    alt: data.name,
+                    order: 0,
+                },
+            });
+        }
+
+        // Update category if changed
+        if (data.categoryId) {
+            await prisma.productCategory.deleteMany({
+                where: { productId: productId },
+            });
+            await prisma.productCategory.create({
+                data: {
+                    productId: productId,
+                    categoryId: data.categoryId,
+                },
+            });
+        }
+
+        revalidatePath("/comercios/productos");
+    } catch (error) {
+        console.error("Error updating product:", error);
+        return { error: "Error al actualizar el producto. Inténtalo de nuevo." };
+    }
+
+    redirect("/comercios/productos");
+}
+
+export async function deleteProduct(productId: string) {
+    const session = await auth();
+    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+        return { error: "No autorizado" };
+    }
+
+    try {
+        const merchant = await verifyMerchantOwnership(productId, session.user.id);
+
+        if (!merchant) {
+            return { error: "No tienes permiso para eliminar este producto." };
+        }
+
+        // Soft delete - just deactivate
+        await prisma.product.update({
+            where: { id: productId },
+            data: { isActive: false },
+        });
+
+        revalidatePath("/comercios/productos");
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting product:", error);
+        return { error: "Error al eliminar el producto." };
+    }
+}
+
+export async function toggleProductActive(productId: string, isActive: boolean) {
+    const session = await auth();
+    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+        return { error: "No autorizado" };
+    }
+
+    try {
+        const merchant = await verifyMerchantOwnership(productId, session.user.id);
+
+        if (!merchant) {
+            return { error: "No tienes permiso para modificar este producto." };
+        }
+
+        await prisma.product.update({
+            where: { id: productId },
+            data: { isActive },
+        });
+
+        revalidatePath("/comercios/productos");
+        return { success: true };
+    } catch (error) {
+        console.error("Error toggling product:", error);
+        return { error: "Error al modificar el producto." };
+    }
+}
+

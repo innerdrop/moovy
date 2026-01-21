@@ -102,15 +102,25 @@ export default async function ProductosPage() {
                                             ${product.price.toLocaleString("es-AR")}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${product.stock > 10 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                                                }`}>
-                                                {product.stock} un.
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${product.stock > 10 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                                    }`}>
+                                                    {product.stock} un.
+                                                </span>
+                                                {!product.isActive && (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                                        Inactivo
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-blue-600 hover:text-blue-800 p-2">
+                                            <Link
+                                                href={`/comercios/productos/${product.id}`}
+                                                className="text-blue-600 hover:text-blue-800 p-2 inline-block"
+                                            >
                                                 <Edit className="w-4 h-4" />
-                                            </button>
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))}
