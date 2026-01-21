@@ -289,60 +289,63 @@ function HeroSection() {
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
             <AuroraCanvas />
 
-            <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-                {/* H1 with letter animation */}
-                <h1 className="mb-6">
-                    {"TODO".split("").map((letter, i) => (
-                        <span
-                            key={`todo-${i}`}
-                            className={`inline-block font-moovy text-gray-900 text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
-                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                            style={{ transitionDelay: `${i * 50}ms` }}
-                        >
-                            {letter}
-                        </span>
-                    ))}
-                    <br />
-                    {"SE MUEVE".split("").map((letter, i) => (
-                        <span
-                            key={`se-mueve-${i}`}
-                            className={`inline-block font-moovy text-gray-900 text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
-                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                            style={{ transitionDelay: `${(i + 5) * 50}ms` }}
-                        >
-                            {letter === " " ? "\u00A0" : letter}
-                        </span>
-                    ))}
+            <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-20">
+                {/* Main Title */}
+                <h1 className="mb-8">
+                    <span
+                        className={`block font-moovy text-gray-900 text-3xl md:text-5xl lg:text-6xl tracking-wider transition-all duration-700
+                            ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                        style={{ transitionDelay: "0ms" }}
+                    >
+                        Nacimos en el Fin del Mundo.
+                    </span>
                 </h1>
 
-                {/* Subtitle */}
-                <p
-                    className={`text-gray-500 text-lg md:text-xl max-w-xl mx-auto mb-10 transition-all duration-700
-                        ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                    style={{ transitionDelay: "600ms" }}
-                >
-                    El ecosistema que mueve al Fin del Mundo.
-                </p>
+                {/* Secondary text */}
+                <div className="space-y-2 mb-8">
+                    <p
+                        className={`text-gray-600 text-lg md:text-2xl transition-all duration-700
+                            ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                        style={{ transitionDelay: "200ms" }}
+                    >
+                        Movemos personas, productos y posibilidades.
+                    </p>
+                </div>
 
-                {/* CTAs */}
+                {/* MUEVE Statement with Apple-style shimmer */}
+                <div
+                    className={`my-12 transition-all duration-700
+                        ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                    style={{ transitionDelay: "400ms" }}
+                >
+                    <p className="text-gray-500 text-lg md:text-xl mb-2">Todo se mueve.</p>
+                    <div className="flex items-center justify-center gap-2">
+                        <span className="text-gray-500 text-lg md:text-xl">Y vos también</span>
+                        {/* Apple-style animated word */}
+                        <span className="relative inline-block">
+                            <span className="font-moovy text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#e60012] via-[#ff4d5a] to-[#e60012] animate-shimmer bg-[length:200%_100%]">
+                                MUEVE
+                            </span>
+                            {/* Subtle glow */}
+                            <span className="absolute inset-0 font-moovy text-4xl md:text-6xl font-bold text-[#e60012] blur-lg opacity-30 animate-pulse">
+                                MUEVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                {/* CTA */}
                 <div
                     className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700
                         ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                    style={{ transitionDelay: "800ms" }}
+                    style={{ transitionDelay: "600ms" }}
                 >
                     <a
                         href="#ecosistema"
-                        className="inline-flex items-center gap-2 bg-[#e60012] text-white font-semibold px-8 py-4 rounded-xl hover:bg-[#c4000f] transition-all hover:shadow-[0_0_30px_rgba(230,0,18,0.2)] shadow-lg"
+                        className="inline-flex items-center gap-2 bg-[#e60012] text-white font-semibold px-8 py-4 rounded-xl hover:bg-[#c4000f] transition-all hover:shadow-[0_0_30px_rgba(230,0,18,0.3)] shadow-lg"
                     >
                         Descubrí el ecosistema
                     </a>
-                    <Link
-                        href="/tienda"
-                        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium px-8 py-4 rounded-xl border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all"
-                    >
-                        Ir a la tienda
-                        <ArrowRight className="w-4 h-4" />
-                    </Link>
                 </div>
             </div>
 
@@ -357,7 +360,7 @@ function HeroSection() {
 }
 
 // ============================================
-// ECOSYSTEM SECTION
+// ECOSYSTEM SECTION - Three Main Services
 // ============================================
 function EcosystemSection() {
     const [isVisible, setIsVisible] = useState(false);
@@ -375,36 +378,35 @@ function EcosystemSection() {
         return () => observer.disconnect();
     }, []);
 
-    const ecosystemData = [
+    const services = [
         {
-            title: "STORE",
-            description: "Delivery de todo lo que necesitás. Comida, farmacia, comercios locales.",
-            icon: <Star className="w-7 h-7" fill="currentColor" />,
-            accent: "#e60012",
+            title: "MOOVY Tienda",
+            subtitle: "Delivery Express",
+            description: "Todo lo que necesitás, en minutos. Comida, farmacia, supermercado y comercios locales.",
+            color: "#e60012",
             href: "/tienda",
+            icon: "🛒",
+            cta: "Pedir ahora",
         },
         {
-            title: "X",
-            description: "Turismo y experiencias. Explorá el Fin del Mundo como nunca.",
-            icon: <Globe className="w-7 h-7" />,
-            accent: "#00D4AA",
+            title: "MOOVY Jobs",
+            subtitle: "Oportunidades",
+            description: "Sumate al equipo. Repartidores, comercios y más oportunidades de trabajo.",
+            color: "#2563eb",
+            href: "https://jobs.somosmoovy.com",
+            icon: "💼",
+            cta: "Ver ofertas",
+            badge: "Nuevo",
+        },
+        {
+            title: "MOOVY X",
+            subtitle: "Experiencias",
+            description: "Turismo y aventuras en el Fin del Mundo. Próximamente.",
+            color: "#00D4AA",
             href: "/moovyx",
-            badge: "Próximamente",
-        },
-        {
-            title: "JOBS",
-            description: "Oportunidades de trabajo. Repartidores, comercios, staff.",
-            icon: <Zap className="w-7 h-7" />,
-            accent: "#F59E0B",
-            href: "#",
-            badge: "Próximamente",
-        },
-        {
-            title: "MOVER",
-            description: "Puntos y beneficios. Cada compra suma, cada punto vale.",
-            icon: <Star className="w-7 h-7" fill="currentColor" />,
-            accent: "#e60012",
-            href: "/puntos",
+            icon: "🌎",
+            cta: "Próximamente",
+            disabled: true,
         },
     ];
 
@@ -421,21 +423,76 @@ function EcosystemSection() {
                         ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
                 >
                     <h2 className="text-gray-900 text-3xl md:text-5xl font-bold mb-4">
-                        Un ecosistema completo
+                        Tres mundos, una sola app
                     </h2>
                     <p className="text-gray-500 text-lg max-w-xl mx-auto">
-                        Cuatro pilares que mueven al Fin del Mundo.
+                        El ecosistema que mueve al Fin del Mundo.
                     </p>
                 </div>
 
                 {/* Cards grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {ecosystemData.map((item, index) => (
-                        <EcosystemCard
-                            key={item.title}
-                            {...item}
-                            delay={index * 100}
-                        />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {services.map((service, index) => (
+                        <div
+                            key={service.title}
+                            className={`group relative bg-white rounded-3xl overflow-hidden border border-gray-100 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2
+                                ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                            style={{ transitionDelay: `${index * 100}ms` }}
+                        >
+                            {/* Badge */}
+                            {service.badge && (
+                                <span
+                                    className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1 rounded-full z-10"
+                                    style={{ backgroundColor: service.color }}
+                                >
+                                    {service.badge}
+                                </span>
+                            )}
+
+                            {/* Color bar */}
+                            <div
+                                className="h-2 w-full"
+                                style={{ backgroundColor: service.color }}
+                            />
+
+                            {/* Content */}
+                            <div className="p-8">
+                                {/* Icon */}
+                                <div className="text-5xl mb-6">{service.icon}</div>
+
+                                {/* Title */}
+                                <h3
+                                    className="text-2xl font-bold mb-1"
+                                    style={{ color: service.color }}
+                                >
+                                    {service.title}
+                                </h3>
+                                <p className="text-gray-400 text-sm font-medium mb-4">
+                                    {service.subtitle}
+                                </p>
+
+                                {/* Description */}
+                                <p className="text-gray-600 mb-6 leading-relaxed">
+                                    {service.description}
+                                </p>
+
+                                {/* CTA Button */}
+                                {service.disabled ? (
+                                    <span className="inline-flex items-center gap-2 text-gray-400 font-medium cursor-not-allowed">
+                                        {service.cta}
+                                    </span>
+                                ) : (
+                                    <Link
+                                        href={service.href}
+                                        className="inline-flex items-center gap-2 font-semibold transition-all group-hover:gap-3"
+                                        style={{ color: service.color }}
+                                    >
+                                        {service.cta}
+                                        <ArrowRight className="w-4 h-4" />
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
                     ))}
                 </div>
             </div>

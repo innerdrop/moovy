@@ -668,3 +668,17 @@ h6 {
 .animate-particle-float {
   animation: particle-float 8s ease-in-out infinite;
 }
+
+/* Apple-style shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -200% 50%;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
