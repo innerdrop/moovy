@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ArrowLeft, ShoppingBag, Briefcase, Compass, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Gift, Users, Award, ChevronRight, Bike, Store, Hotel, Map, Send, HelpCircle } from "lucide-react";
 import { useEffect, useState, useRef, useCallback } from "react";
 
@@ -10,6 +11,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 interface SlideConfig {
     id: string;
     color: string;
+    secondaryColor?: string;
     title: string;
     subtitle: string;
     description: string;
@@ -17,6 +19,7 @@ interface SlideConfig {
     href: string;
     icon: React.ReactNode;
     badge?: string;
+    logo?: string;
 }
 
 const slidesConfig: SlideConfig[] = [
@@ -32,7 +35,8 @@ const slidesConfig: SlideConfig[] = [
     },
     {
         id: "jobs",
-        color: "#2563eb",
+        color: "#003a9b",
+        secondaryColor: "#f26101",
         title: "Tu trabajo",
         subtitle: "te espera.",
         description: "Oportunidades laborales en el fin del mundo.",
@@ -40,6 +44,7 @@ const slidesConfig: SlideConfig[] = [
         href: "https://jobs.somosmoovy.com",
         icon: <Briefcase className="w-8 h-8" />,
         badge: "Nuevo",
+        logo: "/logo-moovy-jobs.png",
     },
     {
         id: "x",
@@ -368,8 +373,20 @@ export default function LandingPage() {
                         <span className="sm:hidden">Ushuaia</span>
                     </div>
 
-                    <Link href="/" className="text-2xl sm:text-3xl font-bold text-white tracking-tighter text-center" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                        MOOVY
+                    <Link href="/" className="flex justify-center">
+                        {slidesConfig[currentSlide].logo ? (
+                            <Image
+                                src={slidesConfig[currentSlide].logo!}
+                                alt="MOOVY Jobs"
+                                width={120}
+                                height={40}
+                                className="h-8 w-auto object-contain"
+                            />
+                        ) : (
+                            <span className="text-2xl sm:text-3xl font-bold text-white tracking-tighter" style={{ fontFamily: "'Junegull', sans-serif" }}>
+                                MOOVY
+                            </span>
+                        )}
                     </Link>
 
                     <div className="flex justify-end">
@@ -485,17 +502,24 @@ export default function LandingPage() {
                             <p className="text-gray-500 text-sm">Crecemos juntos en el fin del mundo.</p>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-4 mb-8">
-                            <ExpandableCard
-                                delay={100}
-                                href="/riders/registro"
-                                loginHref="/riders/login"
-                                icon={Bike}
-                                title="Repartidores"
-                                description="Generá ingresos con libertad"
-                                details="Manejá tus propios horarios, conocé la ciudad y ganá dinero por cada entrega."
-                                accentColor="#e60012"
-                            />
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {/* Repartidores - Próximamente */}
+                            <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 relative opacity-70">
+                                <div className="absolute -top-2 -right-2">
+                                    <span className="bg-gray-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                        Próximamente
+                                    </span>
+                                </div>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-200">
+                                        <Bike className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-gray-500 text-lg">Repartidores</h3>
+                                        <p className="text-gray-400 text-sm mt-1">Generá ingresos con libertad</p>
+                                    </div>
+                                </div>
+                            </div>
                             <ExpandableCard
                                 delay={200}
                                 href="/socios/registro"
@@ -506,54 +530,6 @@ export default function LandingPage() {
                                 details="Sumate a la plataforma digital líder del fin del mundo. Llegá a nuevos clientes."
                                 accentColor="#e60012"
                             />
-                        </div>
-
-                        {/* MOOVY X Section */}
-                        <div className="grid md:grid-cols-2 gap-6 items-stretch">
-                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 relative h-full">
-                                <div className="absolute -top-3 -right-2 sm:-right-3 animate-float-slow">
-                                    <div className="bg-white px-3 py-1.5 rounded-full shadow-md border border-gray-100">
-                                        <span className="text-teal-700 font-semibold text-xs">✨ Próximamente</span>
-                                    </div>
-                                </div>
-
-                                <div className="mb-4">
-                                    <span className="text-2xl sm:text-3xl font-black tracking-tight" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-sky-500 to-emerald-500">MOOVY</span>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 ml-1">X</span>
-                                    </span>
-                                </div>
-
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">Experiencias turísticas</h3>
-                                <p className="text-gray-600 text-sm mb-5">Explorá el Fin del Mundo. Excursiones, hoteles y servicios.</p>
-
-                                <div className="flex gap-2">
-                                    <div className="flex-1 text-center p-3 bg-white rounded-xl border border-gray-100">
-                                        <Map className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-700">Tours</span>
-                                    </div>
-                                    <div className="flex-1 text-center p-3 bg-white rounded-xl border border-gray-100">
-                                        <Hotel className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-700">Hoteles</span>
-                                    </div>
-                                    <div className="flex-1 text-center p-3 bg-white rounded-xl border border-gray-100">
-                                        <Compass className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-700">Guías</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-gray-50 rounded-2xl p-5 sm:p-6 border border-gray-100 h-full">
-                                <h4 className="font-bold text-gray-900 text-lg mb-1">¿Tenés un hotel o empresa de turismo?</h4>
-                                <p className="text-gray-500 text-sm mb-4">Pre-registrate para recibir información del lanzamiento.</p>
-                                <div className="space-y-3">
-                                    <input type="text" placeholder="Nombre del establecimiento" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-sm bg-white" />
-                                    <input type="email" placeholder="Email de contacto" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-sm bg-white" />
-                                    <button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
-                                        <Send className="w-4 h-4" /> Quiero información
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
