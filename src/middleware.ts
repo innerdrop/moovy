@@ -16,7 +16,31 @@ function getPortalFromHost(host: string | null): PortalType {
     return 'client';
 }
 
-export default auth((request) => {
+// Check maintenance mode via internal API
+async function isMaintenanceMode(request: NextRequest): Promise<boolean> {
+    try {
+        const protocol = request.headers.get('x-forwarded-proto') || 'http';
+        const host = request.headers.get('host') || 'localhost:3000';
+        const baseUrl = `${protocol}://${host}`;
+
+        const res = await fetch(`${baseUrl}/api/maintenance`, {
+            cache: 'no-store',
+            headers: {
+                'x-middleware-check': 'true',
+            },
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data.isMaintenanceMode === true;
+        }
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+export default auth(async (request) => {
     const { pathname } = request.nextUrl;
     const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
     const portal = getPortalFromHost(host);
@@ -29,6 +53,25 @@ export default auth((request) => {
     // Get session from Auth.js v5
     const session = request.auth;
     const userRole = session?.user?.role as string | undefined;
+
+    // === MAINTENANCE MODE CHECK ===
+    // Allow these paths even in maintenance mode:
+    const maintenanceAllowedPaths = [
+        '/ops',           // Admin panel
+        '/mantenimiento', // Maintenance page
+        '/api/maintenance', // Maintenance API
+        '/api/auth',      // Auth APIs
+    ];
+
+    const isAllowedPath = maintenanceAllowedPaths.some(p => pathname.startsWith(p)) || portal === 'ops';
+
+    if (!isAllowedPath) {
+        const inMaintenance = await isMaintenanceMode(request);
+        if (inMaintenance) {
+            return NextResponse.redirect(new URL('/mantenimiento', request.url));
+        }
+    }
+    // === END MAINTENANCE MODE CHECK ===
 
     // For subdomains: rewrite to correct portal path
     if (portal === 'comercio') {
