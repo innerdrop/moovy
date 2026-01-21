@@ -289,43 +289,42 @@ function HeroSection() {
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
             <AuroraCanvas />
 
-            <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-20">
+            <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
                 {/* Main Title: TODO SE MUEVE */}
-                <h1 className="mb-8 flex flex-col md:block items-center justify-center gap-2 md:gap-4">
+                <h1 className="mb-8">
                     <span
-                        className={`inline-block font-moovy text-gray-900 text-6xl md:text-8xl tracking-wider transition-all duration-700
+                        className={`inline-block font-moovy text-gray-900 text-5xl md:text-7xl lg:text-8xl tracking-wider transition-all duration-500
                             ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                         style={{ transitionDelay: "0ms" }}
                     >
-                        TODO SE
+                        TODO SE{" "}
                     </span>
-
-                    {/* Apple-style animated word MUEVE */}
-                    <span className={`relative inline-block ml-0 md:ml-4 transition-all duration-700
-                            ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                        style={{ transitionDelay: "200ms" }}>
-                        <span className="font-moovy text-6xl md:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-[#e60012] via-[#ff4d5a] to-[#e60012] animate-shimmer bg-[length:200%_100%]">
+                    {/* MUEVE with Apple-style shimmer */}
+                    <span className="relative inline-block">
+                        <span
+                            className={`font-moovy text-5xl md:text-7xl lg:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#e60012] via-[#ff4d5a] to-[#e60012] animate-shimmer bg-[length:200%_100%] transition-all duration-500
+                                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                            style={{ transitionDelay: "200ms" }}
+                        >
                             MUEVE
                         </span>
                         {/* Subtle glow */}
-                        <span className="absolute inset-0 font-moovy text-6xl md:text-8xl text-[#e60012] blur-lg opacity-30 animate-pulse">
+                        <span className="absolute inset-0 font-moovy text-5xl md:text-7xl lg:text-8xl font-bold text-[#e60012] blur-xl opacity-20 animate-pulse">
                             MUEVE
                         </span>
                     </span>
                 </h1>
 
-                {/* Subtitle with the Phrase */}
-                <div className={`space-y-4 mb-12 max-w-3xl mx-auto transition-all duration-700
+                {/* Subtitle */}
+                <div
+                    className={`max-w-2xl mx-auto mb-10 transition-all duration-700
                         ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                     style={{ transitionDelay: "400ms" }}
                 >
-                    <p className="text-gray-600 text-lg md:text-2xl font-light leading-relaxed">
-                        Nacimos en el Fin del Mundo.
-                        <br className="hidden md:block" />
-                        Movemos personas, productos y posibilidades.
-                    </p>
-                    <p className="text-gray-500 text-lg md:text-xl font-medium">
-                        Todo se mueve. Y vos también.
+                    <p className="text-gray-600 text-lg md:text-xl leading-relaxed">
+                        Nacimos en el Fin del Mundo.<br />
+                        Movemos personas, productos y posibilidades.<br />
+                        <span className="text-gray-900 font-medium">Todo se mueve. Vos también.</span>
                     </p>
                 </div>
 
@@ -341,6 +340,13 @@ function HeroSection() {
                     >
                         Descubrí el ecosistema
                     </a>
+                    <Link
+                        href="/tienda"
+                        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium px-8 py-4 rounded-xl border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all"
+                    >
+                        Ir a la tienda
+                        <ArrowRight className="w-4 h-4" />
+                    </Link>
                 </div>
             </div>
 
@@ -495,7 +501,65 @@ function EcosystemSection() {
     );
 }
 
-// WhySection removed as requested
+// ============================================
+// WHY MOOVY SECTION
+// ============================================
+function WhySection() {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) setIsVisible(true);
+            },
+            { threshold: 0.1 }
+        );
+
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    const benefits = [
+        { icon: <Zap className="w-5 h-5" />, title: "Entrega ultra rápida", desc: "Porque tu tiempo importa." },
+        { icon: <Mountain className="w-5 h-5" />, title: "100% local", desc: "Apoyá comercios de Ushuaia." },
+        { icon: <Star className="w-5 h-5" />, title: "Puntos en cada compra", desc: "Programa MOVER integrado." },
+        { icon: <Smartphone className="w-5 h-5" />, title: "Todo en una app", desc: "Pedí, seguí, recibí." },
+        { icon: <Globe className="w-5 h-5" />, title: "Más que delivery", desc: "Un ecosistema completo." },
+    ];
+
+    return (
+        <section ref={ref} className="py-24 md:py-32 bg-white">
+            <div className="max-w-6xl mx-auto px-6">
+                <h2
+                    className={`text-gray-900 text-3xl md:text-4xl font-bold text-center mb-16 transition-all duration-700
+                        ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                >
+                    Por qué elegir MOOVY
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {benefits.map((benefit, index) => (
+                        <div
+                            key={benefit.title}
+                            className={`flex items-start gap-4 transition-all duration-500
+                                ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                            style={{ transitionDelay: `${index * 100}ms` }}
+                        >
+                            <div className="w-12 h-12 rounded-xl bg-[#e60012]/10 flex items-center justify-center flex-shrink-0 text-[#e60012]">
+                                {benefit.icon}
+                            </div>
+                            <div>
+                                <h3 className="text-gray-900 font-semibold text-lg mb-1">{benefit.title}</h3>
+                                <p className="text-gray-500 text-sm">{benefit.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
 
 // ============================================
 // BUSINESS SECTION
@@ -748,7 +812,6 @@ export default function PremiumLandingPage() {
             <main>
                 <HeroSection />
                 <EcosystemSection />
-                <WhySection />
                 <BusinessSection />
                 <ManifestoSection />
             </main>
