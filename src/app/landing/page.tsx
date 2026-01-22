@@ -310,22 +310,21 @@ export default function LandingPage() {
 
     const currentColor = slidesConfig[currentSlide].color;
 
-    // Handle wheel for horizontal scroll
+    // Handle wheel for horizontal scroll ONLY (trackpad horizontal swipe)
     const handleWheel = useCallback((e: WheelEvent) => {
         // Only handle in hero section
         if (window.scrollY > window.innerHeight * 0.5) return;
 
         if (isScrolling) return;
 
-        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-
-        if (Math.abs(delta) < 30) return;
+        // Only respond to horizontal scroll (trackpad swipe), ignore vertical scroll
+        if (Math.abs(e.deltaX) < 30 || Math.abs(e.deltaY) > Math.abs(e.deltaX)) return;
 
         setIsScrolling(true);
 
-        if (delta > 0 && currentSlide < slidesConfig.length - 1) {
+        if (e.deltaX > 0 && currentSlide < slidesConfig.length - 1) {
             setCurrentSlide(prev => prev + 1);
-        } else if (delta < 0 && currentSlide > 0) {
+        } else if (e.deltaX < 0 && currentSlide > 0) {
             setCurrentSlide(prev => prev - 1);
         }
 
@@ -500,23 +499,18 @@ export default function LandingPage() {
                                 </div>
 
                                 <div className="grid md:grid-cols-2 gap-4">
-                                    {/* Repartidores - Próximamente */}
-                                    <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 relative opacity-70">
-                                        <div className="absolute -top-2 -right-2">
-                                            <span className="bg-gray-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                                Próximamente
-                                            </span>
-                                        </div>
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-200">
-                                                <Bike className="w-6 h-6 text-gray-400" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-bold text-gray-500 text-lg">Repartidores</h3>
-                                                <p className="text-gray-400 text-sm mt-1">Generá ingresos con libertad</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {/* Repartidores */}
+                                    <ExpandableCard
+                                        delay={0}
+                                        href="/conductores/registro"
+                                        loginHref="/conductores/login"
+                                        icon={Bike}
+                                        title="Repartidores"
+                                        description="Generá ingresos con libertad"
+                                        details="Trabajá cuando quieras y donde quieras. Sumate al equipo de delivery de Ushuaia."
+                                        accentColor="#e60012"
+                                    />
+                                    {/* Comercios */}
                                     <ExpandableCard
                                         delay={200}
                                         href="/socios/registro"
