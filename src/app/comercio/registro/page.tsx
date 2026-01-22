@@ -32,6 +32,7 @@ function ComercioRegistroContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Form data
     const [formData, setFormData] = useState({
@@ -41,6 +42,7 @@ function ComercioRegistroContent() {
         email: "",
         phone: "",
         password: "",
+        confirmPassword: "",
         // Paso 2: Datos del comercio
         businessName: "",
         businessType: "",
@@ -69,6 +71,19 @@ function ComercioRegistroContent() {
 
     const handleStep1Submit = (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
+
+        // Validate password confirmation
+        if (formData.password !== formData.confirmPassword) {
+            setError("Las contraseñas no coinciden");
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setError("La contraseña debe tener al menos 6 caracteres");
+            return;
+        }
+
         setStep(2);
     };
 
@@ -258,6 +273,30 @@ function ComercioRegistroContent() {
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="Repetí tu contraseña"
+                                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        minLength={6}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
                                 </div>
                             </div>

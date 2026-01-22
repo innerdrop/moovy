@@ -36,6 +36,7 @@ function RepartidorRegistroContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Current year for vehicle validation (max 10 years old)
     const currentYear = new Date().getFullYear();
@@ -50,6 +51,7 @@ function RepartidorRegistroContent() {
         phone: "",
         dni: "",
         password: "",
+        confirmPassword: "",
         // Paso 2: Datos del vehículo
         vehicleType: "auto",
         vehicleBrand: "",
@@ -95,6 +97,19 @@ function RepartidorRegistroContent() {
 
     const handleStep1Submit = (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
+
+        // Validate password confirmation
+        if (formData.password !== formData.confirmPassword) {
+            setError("Las contraseñas no coinciden");
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setError("La contraseña debe tener al menos 6 caracteres");
+            return;
+        }
+
         setStep(2);
     };
 
@@ -339,6 +354,30 @@ function RepartidorRegistroContent() {
                                 </div>
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="Repetí tu contraseña"
+                                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        minLength={6}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+
                             <button
                                 type="submit"
                                 className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition"
@@ -348,7 +387,7 @@ function RepartidorRegistroContent() {
                         </form>
 
                         <p className="mt-4 text-center text-sm text-gray-500">
-                            ¿Ya tenés cuenta? <Link href="/repartidores/login" className="text-green-600 font-medium hover:underline">Iniciá sesión</Link>
+                            ¿Ya tenés cuenta? <Link href="/repartidor/login" className="text-green-600 font-medium hover:underline">Iniciá sesión</Link>
                         </p>
                     </div>
                 )}
