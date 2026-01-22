@@ -361,6 +361,10 @@ model StoreSettings {
   // Schedule
   schedule             String?  // JSON with hours per day
   
+  // Landing page cards visibility
+  showRepartidoresCard Boolean  @default(true)
+  showComerciosCard    Boolean  @default(true)
+  
   updatedAt            DateTime @updatedAt
 }
 

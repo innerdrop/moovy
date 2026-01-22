@@ -304,11 +304,23 @@ export default function LandingPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showMooverInfo, setShowMooverInfo] = useState(false);
     const [isScrolling, setIsScrolling] = useState(false);
+    const [siteSettings, setSiteSettings] = useState<{ showRepartidoresCard: boolean; showComerciosCard: boolean } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const touchStartX = useRef(0);
     const touchEndX = useRef(0);
 
     const currentColor = slidesConfig[currentSlide].color;
+
+    // Fetch site settings for card visibility
+    useEffect(() => {
+        fetch("/api/settings")
+            .then(res => res.json())
+            .then(data => setSiteSettings({
+                showRepartidoresCard: data.showRepartidoresCard ?? true,
+                showComerciosCard: data.showComerciosCard ?? true,
+            }))
+            .catch(() => setSiteSettings({ showRepartidoresCard: true, showComerciosCard: true }));
+    }, []);
 
     // Handle wheel for horizontal scroll ONLY (trackpad horizontal swipe)
     const handleWheel = useCallback((e: WheelEvent) => {
@@ -500,27 +512,31 @@ export default function LandingPage() {
 
                                 <div className="grid md:grid-cols-2 gap-4">
                                     {/* Repartidores */}
-                                    <ExpandableCard
-                                        delay={0}
-                                        href="/conductores/registro"
-                                        loginHref="/conductores/login"
-                                        icon={Bike}
-                                        title="Repartidores"
-                                        description="Generá ingresos con libertad"
-                                        details="Trabajá cuando quieras y donde quieras. Sumate al equipo de delivery de Ushuaia."
-                                        accentColor="#e60012"
-                                    />
+                                    {siteSettings?.showRepartidoresCard !== false && (
+                                        <ExpandableCard
+                                            delay={0}
+                                            href="/repartidor/registro"
+                                            loginHref="/repartidor/login"
+                                            icon={Bike}
+                                            title="Repartidores"
+                                            description="Generá ingresos con libertad"
+                                            details="Trabajá cuando quieras y donde quieras. Sumate al equipo de delivery de Ushuaia."
+                                            accentColor="#e60012"
+                                        />
+                                    )}
                                     {/* Comercios */}
-                                    <ExpandableCard
-                                        delay={200}
-                                        href="/socios/registro"
-                                        loginHref="/socios/login"
-                                        icon={Store}
-                                        title="Comercios"
-                                        description="Potenciá tus ventas hoy"
-                                        details="Sumate a la plataforma digital líder del fin del mundo. Llegá a nuevos clientes."
-                                        accentColor="#e60012"
-                                    />
+                                    {siteSettings?.showComerciosCard !== false && (
+                                        <ExpandableCard
+                                            delay={200}
+                                            href="/socios/registro"
+                                            loginHref="/socios/login"
+                                            icon={Store}
+                                            title="Comercios"
+                                            description="Potenciá tus ventas hoy"
+                                            details="Sumate a la plataforma digital líder del fin del mundo. Llegá a nuevos clientes."
+                                            accentColor="#e60012"
+                                        />
+                                    )}
                                 </div>
                             </>
                         )}

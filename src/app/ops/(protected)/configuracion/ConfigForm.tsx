@@ -48,6 +48,10 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             whatsappNumber: formData.get("whatsappNumber"),
             phone: formData.get("phone"),
             email: formData.get("email"),
+
+            // Landing cards
+            showRepartidoresCard: formData.get("showRepartidoresCard") === "on",
+            showComerciosCard: formData.get("showComerciosCard") === "on",
         };
 
         try {
@@ -79,8 +83,8 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             {/* Message */}
             {message && (
                 <div className={`p-4 rounded-lg ${message.type === "success"
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : "bg-red-50 text-red-700 border border-red-200"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
                     }`}>
                     {message.text}
                 </div>

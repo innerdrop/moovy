@@ -50,6 +50,8 @@ export async function PUT(request: Request) {
         // Booleans
         if (typeof data.isOpen === "boolean") updateData.isOpen = data.isOpen;
         if (typeof data.isMaintenanceMode === "boolean") updateData.isMaintenanceMode = data.isMaintenanceMode;
+        if (typeof data.showRepartidoresCard === "boolean") updateData.showRepartidoresCard = data.showRepartidoresCard;
+        if (typeof data.showComerciosCard === "boolean") updateData.showComerciosCard = data.showComerciosCard;
 
         // Strings
         if (data.closedMessage !== undefined) updateData.closedMessage = data.closedMessage || "";
