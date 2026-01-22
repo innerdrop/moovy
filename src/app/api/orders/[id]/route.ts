@@ -55,10 +55,32 @@ export async function PATCH(
         }
 
         const { id } = await context.params;
-        const isAdmin = (session.user as any).role === "ADMIN";
+        const role = (session.user as any).role;
+        const isAdmin = role === "ADMIN";
+        const isMerchant = role === "MERCHANT";
 
-        if (!isAdmin) {
-            return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
+        // Check authorization
+        if (!isAdmin && !isMerchant) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
+
+        // If merchant, verify the order belongs to their store
+        if (isMerchant) {
+            const merchant = await prisma.merchant.findFirst({
+                where: { ownerId: session.user.id },
+            });
+
+            if (!merchant) {
+                return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
+            }
+
+            const order = await prisma.order.findFirst({
+                where: { id, merchantId: merchant.id },
+            });
+
+            if (!order) {
+                return NextResponse.json({ error: "Pedido no encontrado o no pertenece a tu comercio" }, { status: 403 });
+            }
         }
 
         const data = await request.json();
