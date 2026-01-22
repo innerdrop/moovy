@@ -231,6 +231,7 @@ model Order {
   // Notes
   customerNotes   String?
   adminNotes      String?
+  cancelReason    String?  // Reason for cancellation if order is cancelled
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

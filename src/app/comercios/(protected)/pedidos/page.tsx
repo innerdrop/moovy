@@ -14,7 +14,8 @@ import {
     XCircle,
     Loader2,
     RefreshCw,
-    Bell
+    Bell,
+    AlertTriangle
 } from "lucide-react";
 
 interface Order {
@@ -39,12 +40,35 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
 };
 
+const CANCELLATION_REASONS = [
+    "Producto no disponible",
+    "Falta de stock",
+    "Comercio cerrado temporalmente",
+    "Pedido duplicado",
+    "Problema con el pago",
+    "Dirección de entrega incorrecta",
+    "Cliente no responde",
+    "Tiempo de espera excedido",
+    "Error en el pedido",
+    "Solicitud del cliente",
+];
+
 export default function ComercioPedidosPage() {
     const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
+
+    // Cancellation modal state
+    const [cancelModal, setCancelModal] = useState<{ open: boolean; orderId: string | null; orderNumber: string }>({
+        open: false,
+        orderId: null,
+        orderNumber: "",
+    });
+    const [selectedReason, setSelectedReason] = useState("");
+    const [customReason, setCustomReason] = useState("");
+    const [isCancelling, setIsCancelling] = useState(false);
 
     const loadOrders = useCallback(async (silent = false) => {
         try {
@@ -68,13 +92,18 @@ export default function ComercioPedidosPage() {
         return () => clearInterval(intervalId);
     }, [loadOrders]);
 
-    const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const updateOrderStatus = async (orderId: string, newStatus: string, cancelReason?: string) => {
         setUpdating(orderId);
         try {
+            const body: any = { status: newStatus };
+            if (cancelReason) {
+                body.cancelReason = cancelReason;
+            }
+
             const res = await fetch(`/api/orders/${orderId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify(body),
             });
             if (res.ok) {
                 // Reload orders to reflect change
@@ -88,6 +117,33 @@ export default function ComercioPedidosPage() {
         } finally {
             setUpdating(null);
         }
+    };
+
+    const openCancelModal = (orderId: string, orderNumber: string) => {
+        setCancelModal({ open: true, orderId, orderNumber });
+        setSelectedReason("");
+        setCustomReason("");
+    };
+
+    const closeCancelModal = () => {
+        setCancelModal({ open: false, orderId: null, orderNumber: "" });
+        setSelectedReason("");
+        setCustomReason("");
+    };
+
+    const confirmCancellation = async () => {
+        if (!cancelModal.orderId) return;
+
+        const reason = selectedReason === "Otro motivo" ? customReason : selectedReason;
+        if (!reason.trim()) {
+            alert("Debes seleccionar o escribir un motivo de cancelación");
+            return;
+        }
+
+        setIsCancelling(true);
+        await updateOrderStatus(cancelModal.orderId, "CANCELLED", reason);
+        setIsCancelling(false);
+        closeCancelModal();
     };
 
     const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY"];
@@ -146,8 +202,8 @@ export default function ComercioPedidosPage() {
                         key={tab.key}
                         onClick={() => setFilter(tab.key as typeof filter)}
                         className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${filter === tab.key
-                                ? "bg-white shadow-sm text-blue-600"
-                                : "text-gray-500 hover:text-gray-700"
+                            ? "bg-white shadow-sm text-blue-600"
+                            : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         {tab.label} ({tab.count})
@@ -266,11 +322,7 @@ export default function ComercioPedidosPage() {
                                         {/* Cancel Button for active orders */}
                                         {activeStatuses.includes(order.status) && (
                                             <button
-                                                onClick={() => {
-                                                    if (confirm("¿Estás seguro de cancelar este pedido?")) {
-                                                        updateOrderStatus(order.id, "CANCELLED");
-                                                    }
-                                                }}
+                                                onClick={() => openCancelModal(order.id, order.orderNumber)}
                                                 disabled={isUpdating}
                                                 className="p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
                                                 title="Cancelar Pedido"
@@ -285,6 +337,98 @@ export default function ComercioPedidosPage() {
                     })}
                 </div>
             )}
+
+            {/* Cancellation Modal */}
+            {cancelModal.open && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <AlertTriangle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">Cancelar Pedido</h3>
+                                <p className="text-sm text-gray-500">{cancelModal.orderNumber}</p>
+                            </div>
+                        </div>
+
+                        <p className="text-gray-600 mb-4">
+                            Seleccioná el motivo de la cancelación:
+                        </p>
+
+                        <div className="space-y-2 mb-4">
+                            {CANCELLATION_REASONS.map((reason) => (
+                                <label
+                                    key={reason}
+                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedReason === reason
+                                            ? "border-red-500 bg-red-50"
+                                            : "border-gray-200 hover:border-gray-300"
+                                        }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="cancelReason"
+                                        value={reason}
+                                        checked={selectedReason === reason}
+                                        onChange={(e) => setSelectedReason(e.target.value)}
+                                        className="text-red-600"
+                                    />
+                                    <span className="text-sm text-gray-700">{reason}</span>
+                                </label>
+                            ))}
+                            <label
+                                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedReason === "Otro motivo"
+                                        ? "border-red-500 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                    }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="cancelReason"
+                                    value="Otro motivo"
+                                    checked={selectedReason === "Otro motivo"}
+                                    onChange={(e) => setSelectedReason(e.target.value)}
+                                    className="text-red-600"
+                                />
+                                <span className="text-sm text-gray-700">Otro motivo</span>
+                            </label>
+                        </div>
+
+                        {selectedReason === "Otro motivo" && (
+                            <textarea
+                                value={customReason}
+                                onChange={(e) => setCustomReason(e.target.value)}
+                                placeholder="Escribí el motivo de la cancelación..."
+                                rows={3}
+                                className="w-full p-3 border border-gray-200 rounded-lg text-sm mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                            />
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeCancelModal}
+                                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium"
+                                disabled={isCancelling}
+                            >
+                                Volver
+                            </button>
+                            <button
+                                onClick={confirmCancellation}
+                                disabled={isCancelling || !selectedReason || (selectedReason === "Otro motivo" && !customReason.trim())}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isCancelling ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <XCircle className="w-4 h-4" />
+                                )}
+                                Confirmar Cancelación
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+

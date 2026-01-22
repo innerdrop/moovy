@@ -93,6 +93,9 @@ export async function PATCH(
         if (data.adminNotes !== undefined) updateData.adminNotes = data.adminNotes;
         if (data.estimatedTime !== undefined) updateData.estimatedTime = data.estimatedTime;
 
+        // Handle cancellation reason
+        if (data.cancelReason) updateData.cancelReason = data.cancelReason;
+
         // Handle delivered status
         if (data.status === "DELIVERED" || data.deliveryStatus === "DELIVERED") {
             updateData.deliveredAt = new Date();

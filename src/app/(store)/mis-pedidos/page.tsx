@@ -208,14 +208,16 @@ export default function MisPedidosPage() {
                                         {isActive && (
                                             <div className="mt-4 pt-3 border-t border-gray-100">
                                                 <div className="flex items-center gap-1">
-                                                    {["PENDING", "CONFIRMED", "PREPARING", "IN_DELIVERY", "DELIVERED"].map((step) => {
-                                                        const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "IN_DELIVERY", "DELIVERED"];
-                                                        const isCompleted = stepOrder.indexOf(step) <= stepOrder.indexOf(order.status);
+                                                    {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step) => {
+                                                        const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"];
+                                                        const currentIdx = stepOrder.indexOf(order.status);
+                                                        const stepIdx = stepOrder.indexOf(step);
+                                                        const isCompleted = stepIdx <= currentIdx;
                                                         return <div key={step} className={`flex-1 h-1.5 rounded-full ${isCompleted ? "bg-[#e60012]" : "bg-gray-200"}`} />;
                                                     })}
                                                 </div>
                                                 <div className="flex justify-between mt-2 text-[10px] text-gray-400">
-                                                    <span>Pedido</span><span>En camino</span><span>Entregado</span>
+                                                    <span>Pedido</span><span>Listo</span><span>Entregado</span>
                                                 </div>
                                             </div>
                                         )}
