@@ -34,7 +34,7 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
     PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-5 h-5" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
-    IN_DELIVERY: { label: "En camino", color: "text-[#e60012]", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
+    IN_DELIVERY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
 };
