@@ -85,10 +85,10 @@ export default auth(async (request) => {
 
     if (portal === 'conductor') {
         if (pathname === '/') {
-            return NextResponse.rewrite(new URL('/conductores', request.url));
+            return NextResponse.rewrite(new URL('/repartidor', request.url));
         }
-        if (!pathname.startsWith('/conductores')) {
-            return NextResponse.rewrite(new URL(`/conductores${pathname}`, request.url));
+        if (!pathname.startsWith('/repartidor')) {
+            return NextResponse.rewrite(new URL(`/repartidor${pathname}`, request.url));
         }
     }
 
@@ -111,10 +111,10 @@ export default auth(async (request) => {
         }
     }
 
-    // Protect /conductores/* routes (except login)
-    if (pathname.startsWith('/conductores') && !pathname.startsWith('/conductores/login')) {
+    // Protect /repartidor/* routes (except login)
+    if (pathname.startsWith('/repartidor') && !pathname.startsWith('/repartidor/login')) {
         if (!session) {
-            return NextResponse.redirect(new URL('/conductores/login', request.url));
+            return NextResponse.redirect(new URL('/repartidor/login', request.url));
         }
         if (!['DRIVER', 'ADMIN'].includes(userRole || '')) {
             return NextResponse.redirect(new URL('/', request.url));
@@ -142,8 +142,8 @@ export default auth(async (request) => {
         if (userRole === 'MERCHANT' && !pathname.startsWith('/comercios') && pathname !== '/logout') {
             return NextResponse.redirect(new URL('/comercios', request.url));
         }
-        if (userRole === 'DRIVER' && !pathname.startsWith('/conductores') && pathname !== '/logout') {
-            return NextResponse.redirect(new URL('/conductores', request.url));
+        if (userRole === 'DRIVER' && !pathname.startsWith('/repartidor') && pathname !== '/logout') {
+            return NextResponse.redirect(new URL('/repartidor', request.url));
         }
         if (userRole === 'ADMIN' && !pathname.startsWith('/ops') && pathname !== '/logout') {
             return NextResponse.redirect(new URL('/ops', request.url));

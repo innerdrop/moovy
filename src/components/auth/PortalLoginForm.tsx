@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { LogIn, Mail, Lock, Eye, EyeOff, Loader2, Check, ArrowLeft, Store, Truck, Shield } from "lucide-react";
 
-type PortalType = 'client' | 'comercio' | 'conductor' | 'ops';
+type PortalType = 'client' | 'comercio' | 'conductor' | 'repartidor' | 'ops';
 
 const portalConfig = {
     client: {
@@ -33,14 +33,25 @@ const portalConfig = {
         backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
     },
     conductor: {
-        title: 'Portal Conductores',
+        title: 'Portal Repartidores',
         subtitle: 'Gestiona tus entregas',
         logo: '/logo-moovy.png',
         color: '#16a34a',
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
-        redirectAfterLogin: '/conductores',
-        registerLink: null,
+        redirectAfterLogin: '/repartidor',
+        registerLink: '/repartidor/registro',
+        backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
+    },
+    repartidor: {
+        title: 'Portal Repartidores',
+        subtitle: 'Gestiona tus entregas',
+        logo: '/logo-moovy.png',
+        color: '#16a34a',
+        bgGradient: 'from-green-500 to-green-600',
+        icon: Truck,
+        redirectAfterLogin: '/repartidor',
+        registerLink: '/repartidor/registro',
         backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
     },
     ops: {
