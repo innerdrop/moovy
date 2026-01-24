@@ -111,8 +111,8 @@ export default auth(async (request) => {
         }
     }
 
-    // Protect /repartidor/* routes (except login)
-    if (pathname.startsWith('/repartidor') && !pathname.startsWith('/repartidor/login')) {
+    // Protect /repartidor/* routes (except login and registro)
+    if (pathname.startsWith('/repartidor') && !pathname.startsWith('/repartidor/login') && !pathname.startsWith('/repartidor/registro')) {
         if (!session) {
             return NextResponse.redirect(new URL('/repartidor/login', request.url));
         }

@@ -22,11 +22,9 @@ function FloatingStar({ delay, duration, left, top, size = 4 }: { delay: number,
 
 // Level data
 const LEVELS = [
-    { name: "Bronce", min: 0, max: 499, color: "#CD7F32", benefits: ["1 punto por cada $1 gastado", "Acceso al catálogo completo"] },
-    { name: "Plata", min: 500, max: 1499, color: "#C0C0C0", benefits: ["Todo lo de Bronce", "Envío gratis en pedidos +$5000", "Acceso anticipado a ofertas"] },
-    { name: "Oro", min: 1500, max: 4999, color: "#FFD700", benefits: ["Todo lo de Plata", "2x puntos en días especiales", "Soporte prioritario"] },
-    { name: "Platino", min: 5000, max: 9999, color: "#E5E4E2", benefits: ["Todo lo de Oro", "Descuentos exclusivos", "Regalos de cumpleaños"] },
-    { name: "Diamante", min: 10000, max: Infinity, color: "#B9F2FF", benefits: ["Todos los beneficios", "Acceso VIP a eventos", "Gestor de cuenta personal"] },
+    { name: "Moover", min: 0, max: 299999, color: "#60A5FA", benefits: ["1 punto por cada $1 gastado", "Acceso a descuentos base"] },
+    { name: "Pro", min: 300000, max: 999999, color: "#818CF8", benefits: ["Todo lo de Moover", "5% OFF en envíos", "Sorteos exclusivos"] },
+    { name: "Leyenda", min: 1000000, max: Infinity, color: "#F472B6", benefits: ["Todo lo de Pro", "Envíos gratis > $20k", "Atención prioritaria 24/7"] },
 ];
 
 export default function MooverPage() {

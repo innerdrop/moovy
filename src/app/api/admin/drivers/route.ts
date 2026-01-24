@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 // GET - Get all drivers
 export async function GET() {
@@ -35,7 +36,7 @@ export async function GET() {
     }
 }
 
-// POST - Create new driver (promote existing user to driver)
+// POST - Create new driver with new user account
 export async function POST(request: Request) {
     try {
         const session = await auth();
@@ -44,39 +45,45 @@ export async function POST(request: Request) {
         }
 
         const data = await request.json();
+        const { name, email, phone, password, vehicleType, licensePlate } = data;
 
-        // Check if user exists
-        const user = await prisma.user.findUnique({
-            where: { id: data.userId },
-        });
-
-        if (!user) {
-            return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+        // Validation
+        if (!name || !email || !password) {
+            return NextResponse.json({ error: "Nombre, email y contraseña son obligatorios" }, { status: 400 });
         }
 
-        // Check if already a driver
-        const existingDriver = await prisma.driver.findUnique({
-            where: { userId: data.userId },
-        });
-
-        if (existingDriver) {
-            return NextResponse.json({ error: "El usuario ya es repartidor" }, { status: 400 });
+        if (password.length < 6) {
+            return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
         }
 
-        // Create driver and update user role
+        // Check if email already exists
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return NextResponse.json({ error: "Ya existe un usuario con ese email" }, { status: 400 });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user and driver in transaction
         const driver = await prisma.$transaction(async (tx) => {
-            // Update user role
-            await tx.user.update({
-                where: { id: data.userId },
-                data: { role: "DRIVER" },
+            // Create user with DRIVER role
+            const user = await tx.user.create({
+                data: {
+                    name,
+                    email,
+                    phone: phone || null,
+                    password: hashedPassword,
+                    role: "DRIVER",
+                },
             });
 
             // Create driver record
             return tx.driver.create({
                 data: {
-                    userId: data.userId,
-                    vehicleType: data.vehicleType || "MOTO",
-                    licensePlate: data.licensePlate || null,
+                    userId: user.id,
+                    vehicleType: vehicleType || "MOTO",
+                    licensePlate: licensePlate || null,
                     isActive: true,
                     isOnline: false,
                 },
@@ -94,4 +101,5 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Error al crear repartidor" }, { status: 500 });
     }
 }
+
 

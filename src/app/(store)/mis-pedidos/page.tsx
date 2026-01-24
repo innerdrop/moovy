@@ -208,12 +208,20 @@ export default function MisPedidosPage() {
                                         {isActive && (
                                             <div className="mt-4 pt-3 border-t border-gray-100">
                                                 <div className="flex items-center gap-1">
-                                                    {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step) => {
+                                                    {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step, idx) => {
                                                         const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"];
                                                         const currentIdx = stepOrder.indexOf(order.status);
                                                         const stepIdx = stepOrder.indexOf(step);
                                                         const isCompleted = stepIdx <= currentIdx;
-                                                        return <div key={step} className={`flex-1 h-1.5 rounded-full ${isCompleted ? "bg-[#e60012]" : "bg-gray-200"}`} />;
+
+                                                        // Color logic: Yellow -> Orange -> Green
+                                                        // 0-1: Yellow, 2-3: Orange, 4-5: Green
+                                                        let barColor = "bg-[#e60012]"; // Default red
+                                                        if (stepIdx <= 1) barColor = "bg-yellow-400";
+                                                        else if (stepIdx <= 3) barColor = "bg-orange-500";
+                                                        else barColor = "bg-green-500";
+
+                                                        return <div key={step} className={`flex-1 h-1.5 rounded-full transition-colors duration-500 ${isCompleted ? barColor : "bg-gray-200"}`} />;
                                                     })}
                                                 </div>
                                                 <div className="flex justify-between mt-2 text-[10px] text-gray-400">

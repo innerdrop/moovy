@@ -253,6 +253,7 @@ function ExpandableCard({ href, loginHref, icon: Icon, title, description, detai
     }, [delay]);
 
     const handleToggle = (e: React.MouseEvent) => {
+        // Only toggle on mobile - desktop always shows buttons
         if (window.innerWidth < 768) {
             e.preventDefault();
             setIsExpanded(!isExpanded);
@@ -263,7 +264,7 @@ function ExpandableCard({ href, loginHref, icon: Icon, title, description, detai
         <div className={`transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div
                 onClick={handleToggle}
-                className={`bg-gray-50 border border-gray-100 rounded-2xl p-5 transition-all duration-500 overflow-hidden relative cursor-pointer hover:shadow-md ${isExpanded ? 'shadow-md' : ''}`}
+                className={`bg-gray-50 border border-gray-100 rounded-2xl p-5 transition-all duration-500 overflow-hidden relative md:cursor-default cursor-pointer hover:shadow-md ${isExpanded ? 'shadow-md' : ''}`}
             >
                 <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${accentColor}10` }}>
@@ -274,11 +275,12 @@ function ExpandableCard({ href, loginHref, icon: Icon, title, description, detai
                             <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
                             <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 md:hidden ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
-                        <p className={`text-gray-500 text-sm transition-all duration-300 ${isExpanded ? 'opacity-0 h-0' : 'mt-1'}`}>{description}</p>
+                        <p className={`text-gray-500 text-sm mt-1 md:block ${isExpanded ? 'hidden' : 'block'}`}>{description}</p>
                     </div>
                 </div>
 
-                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-48 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                {/* Mobile: collapsible content */}
+                <div className={`md:hidden transition-all duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-48 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                     <p className="text-sm text-gray-600 mb-4 leading-relaxed">{details}</p>
                     <div className="flex flex-wrap gap-2">
                         <Link href={href} className="inline-flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full bg-gray-900 text-white" onClick={(e) => e.stopPropagation()}>
@@ -286,6 +288,21 @@ function ExpandableCard({ href, loginHref, icon: Icon, title, description, detai
                         </Link>
                         {loginHref && (
                             <Link href={loginHref} className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
+                                {loginText}
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                {/* Desktop: always visible buttons */}
+                <div className="hidden md:block mt-4">
+                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">{details}</p>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href={href} className="inline-flex items-center gap-1 text-sm font-semibold px-4 py-2 rounded-full bg-gray-900 text-white hover:bg-gray-800 transition-colors">
+                            {registerText} <ChevronRight className="w-4 h-4" />
+                        </Link>
+                        {loginHref && (
+                            <Link href={loginHref} className="inline-flex items-center gap-1 text-sm font-medium px-4 py-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors">
                                 {loginText}
                             </Link>
                         )}
@@ -528,8 +545,8 @@ export default function LandingPage() {
                                     {siteSettings?.showComerciosCard !== false && (
                                         <ExpandableCard
                                             delay={200}
-                                            href="/socios/registro"
-                                            loginHref="/socios/login"
+                                            href="/comercio/registro"
+                                            loginHref="/comercios/login"
                                             icon={Store}
                                             title="Comercios"
                                             description="Potenciá tus ventas hoy"
@@ -677,8 +694,8 @@ export default function LandingPage() {
                         <div>
                             <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Comunidad</h4>
                             <ul className="space-y-2 text-sm">
-                                <li><Link href="/riders/registro" className="text-white/60 hover:text-white transition-all">Repartidores</Link></li>
-                                <li><Link href="/socios/registro" className="text-white/60 hover:text-white transition-all">Comercios</Link></li>
+                                <li><Link href="/repartidor/registro" className="text-white/60 hover:text-white transition-all">Repartidores</Link></li>
+                                <li><Link href="/comercio/registro" className="text-white/60 hover:text-white transition-all">Comercios</Link></li>
                             </ul>
                         </div>
 

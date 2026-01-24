@@ -106,6 +106,23 @@ export async function POST(request: Request) {
             );
         }
 
+        // Calculate commission
+        let moovyCommission = 0;
+        let merchantPayout = 0;
+
+        if (merchantId) {
+            const merchant = await prisma.merchant.findUnique({
+                where: { id: merchantId },
+                select: { commissionRate: true }
+            });
+
+            if (merchant) {
+                const rate = merchant.commissionRate || 8.0;
+                moovyCommission = subtotal * (rate / 100);
+                merchantPayout = subtotal - moovyCommission;
+            }
+        }
+
         // Create order with items in a transaction
         const order = await prisma.$transaction(async (tx) => {
             // Create the order
@@ -125,6 +142,9 @@ export async function POST(request: Request) {
                     distanceKm: distanceKm || null,
                     deliveryNotes: deliveryNotes || null,
                     customerNotes: customerNotes || null,
+                    moovyCommission,
+                    merchantPayout,
+                    commissionPaid: false,
                 },
             });
 

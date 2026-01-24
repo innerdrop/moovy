@@ -39,6 +39,7 @@ export async function GET() {
                 items: true,
                 address: { select: { street: true, number: true, city: true } },
                 user: { select: { name: true, phone: true } },
+                driver: { select: { user: { select: { name: true, phone: true } } } },
             },
             orderBy: { createdAt: "desc" },
             take: 50, // Limit to recent orders

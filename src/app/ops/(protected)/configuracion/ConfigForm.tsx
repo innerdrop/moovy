@@ -49,6 +49,15 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             phone: formData.get("phone"),
             email: formData.get("email"),
 
+            // Promo Popup
+            promoPopupEnabled: formData.get("promoPopupEnabled") === "on",
+            promoPopupTitle: formData.get("promoPopupTitle") || "",
+            promoPopupMessage: formData.get("promoPopupMessage") || "",
+            promoPopupImage: formData.get("promoPopupImage") || "",
+            promoPopupLink: formData.get("promoPopupLink") || "",
+            promoPopupButtonText: formData.get("promoPopupButtonText") || "",
+            promoPopupDismissable: formData.get("promoPopupDismissable") === "on",
+
             // Landing cards
             showRepartidoresCard: formData.get("showRepartidoresCard") === "on",
             showComerciosCard: formData.get("showComerciosCard") === "on",

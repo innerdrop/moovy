@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/store/ProductCard";
-import { MapPin, Clock, Star, Info, ChevronLeft } from "lucide-react";
+import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck } from "lucide-react";
 
 async function getMerchant(slug: string) {
     const merchant = await prisma.merchant.findUnique({
@@ -64,7 +64,12 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                 <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
                     <ChevronLeft className="w-5 h-5 text-gray-600" />
                 </Link>
-                <h1 className="font-semibold text-navy truncate">{merchant.name}</h1>
+                <div className="flex items-center gap-2">
+                    <h1 className="font-semibold text-navy truncate">{merchant.name}</h1>
+                    {merchant.isVerified && (
+                        <BadgeCheck className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                    )}
+                </div>
             </header>
 
             {/* Merchant Header / Cover */}
@@ -74,6 +79,13 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                     <div className="absolute inset-0 flex items-center justify-center opacity-10">
                         <span className="text-4xl font-bold text-white tracking-widest uppercase">{merchant.name}</span>
                     </div>
+                    {/* Verified Badge on Banner */}
+                    {merchant.isVerified && (
+                        <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                            <BadgeCheck className="w-4 h-4" />
+                            Verificado
+                        </div>
+                    )}
                 </div>
 
                 <div className="container mx-auto px-4 -mt-10 relative">
@@ -85,7 +97,12 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                         </div>
 
                         <div className="flex-1 pb-1">
-                            <h1 className="text-2xl font-bold text-gray-900">{merchant.name}</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-gray-900">{merchant.name}</h1>
+                                {merchant.isVerified && (
+                                    <BadgeCheck className="w-6 h-6 text-blue-500" />
+                                )}
+                            </div>
                             <p className="text-gray-500 text-sm">{merchant.description}</p>
                         </div>
                     </div>

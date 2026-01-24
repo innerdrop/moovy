@@ -39,7 +39,7 @@ const portalConfig = {
         color: '#16a34a',
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
-        redirectAfterLogin: '/repartidor',
+        redirectAfterLogin: '/repartidor/dashboard',
         registerLink: '/repartidor/registro',
         backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
     },
@@ -50,7 +50,7 @@ const portalConfig = {
         color: '#16a34a',
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
-        redirectAfterLogin: '/repartidor',
+        redirectAfterLogin: '/repartidor/dashboard',
         registerLink: '/repartidor/registro',
         backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
     },
@@ -109,6 +109,22 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
     return (
         <div className="min-h-[calc(100vh-5rem)] flex flex-col items-center pt-8 lg:pt-12 bg-gray-50 px-4 pb-8">
             <div className="w-full max-w-sm sm:max-w-md">
+
+                {/* Logo - Only show for portals without visible header (ops, comercios, repartidor) */}
+                {portal !== "client" && (
+                    <div className="text-center mb-6">
+                        <Link href="/" className="inline-block">
+                            <Image
+                                src={config.logo}
+                                alt="Moovy"
+                                width={140}
+                                height={45}
+                                className="mx-auto"
+                                priority
+                            />
+                        </Link>
+                    </div>
+                )}
 
                 {/* Login Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">

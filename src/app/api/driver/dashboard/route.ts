@@ -1,0 +1,190 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { calculateDistance, estimateTravelTime, formatDistance } from "@/lib/geo";
+
+export async function GET(request: Request) {
+    // Get driver location from query params (sent from frontend)
+    const { searchParams } = new URL(request.url);
+    const driverLat = parseFloat(searchParams.get("lat") || "0");
+    const driverLng = parseFloat(searchParams.get("lng") || "0");
+    const hasDriverLocation = driverLat !== 0 && driverLng !== 0;
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const userId = (session.user as any).id;
+        const driver = await prisma.driver.findUnique({
+            where: { userId }
+        });
+
+        if (!driver) {
+            return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+        }
+
+        // --- Stats ---
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Pedidos Completados Hoy
+        const completedToday = await prisma.order.count({
+            where: {
+                driverId: driver.id,
+                status: "DELIVERED",
+                createdAt: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            }
+        });
+
+        // Pedidos En Camino (Asignados al driver y no entregados)
+        const enCamino = await prisma.order.count({
+            where: {
+                driverId: driver.id,
+                status: {
+                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "ON_THE_WAY"]
+                }
+            }
+        });
+
+        // Ganancias Hoy (Mock simple calculation)
+        // In real app, sum up earnings from Order table or Transaction table
+        const earnings = completedToday * 850; // Mock: $850 per delivery
+
+        // --- Pedidos Activos (Lista) ---
+        // Fetch active orders for this driver
+        const activeOrders = await prisma.order.findMany({
+            where: {
+                driverId: driver.id,
+                status: {
+                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "ON_THE_WAY"]
+                }
+            },
+            include: {
+                merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
+                address: { select: { street: true, number: true, city: true, latitude: true, longitude: true } }
+            },
+            orderBy: { updatedAt: "desc" }
+        });
+
+        const formattedActiveOrders = activeOrders.map(order => {
+            // Determine relevant address based on status
+            // If picked up, we need to go to customer. Before that, we are going to merchant.
+            const isPickedUp = ["PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"].includes(order.status);
+
+            let displayAddress = order.merchant?.address || "Comercio";
+            let displayLabel = "Retirar en";
+            let navLat = order.merchant?.latitude;
+            let navLng = order.merchant?.longitude;
+
+            if (isPickedUp && order.address) {
+                displayAddress = `${order.address.street} ${order.address.number}, ${order.address.city}`;
+                displayLabel = "Entregar en";
+                navLat = order.address.latitude;
+                navLng = order.address.longitude;
+            }
+
+            return {
+                id: order.id, // Actual Prisma ID for API calls
+                orderId: order.orderNumber || order.id.slice(-6), // Display ID for UI
+                comercio: order.merchant?.name || "Comercio",
+                direccion: displayAddress,
+                labelDireccion: displayLabel,
+                estado: order.status.toLowerCase(),
+                hora: order.updatedAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+                // Navigation coordinates
+                navLat,
+                navLng
+            };
+        });
+
+        // --- Pedidos Disponibles (READY, Sin driver) ---
+        let availableOrders: any[] = [];
+
+        // Only show available orders if driver is online
+        if (driver.isOnline) {
+            availableOrders = await prisma.order.findMany({
+                where: {
+                    status: "READY",
+                    driverId: null
+                },
+                include: {
+                    merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
+                    address: { select: { street: true, number: true, city: true, latitude: true, longitude: true } }
+                },
+                orderBy: { createdAt: "asc" },
+                take: 10
+            });
+        }
+
+        const formattedAvailableOrders = availableOrders.map(order => {
+            const merchantLat = order.merchant?.latitude;
+            const merchantLng = order.merchant?.longitude;
+            const customerLat = order.address?.latitude;
+            const customerLng = order.address?.longitude;
+
+            // Calculate distances if we have coordinates
+            let distToMerchant = 0;
+            let distToCustomer = 0;
+            let timeToMerchant = 0;
+            let timeToCustomer = 0;
+
+            if (hasDriverLocation && merchantLat && merchantLng) {
+                distToMerchant = calculateDistance(driverLat, driverLng, merchantLat, merchantLng);
+                timeToMerchant = estimateTravelTime(distToMerchant, driver.vehicleType || "MOTO");
+            }
+
+            if (merchantLat && merchantLng && customerLat && customerLng) {
+                distToCustomer = calculateDistance(merchantLat, merchantLng, customerLat, customerLng);
+                timeToCustomer = estimateTravelTime(distToCustomer, driver.vehicleType || "MOTO");
+            }
+
+            // Calculate earnings based on total distance
+            const totalDist = distToMerchant + distToCustomer;
+            const gananciaBase = 500; // Base fee
+            const gananciaKm = 300; // Per km
+            const gananciaEstimada = Math.round(gananciaBase + (totalDist * gananciaKm));
+
+            return {
+                id: order.id,
+                orderNumber: order.orderNumber,
+                comercio: order.merchant?.name || "Comercio",
+                direccion: order.merchant?.address || "Dirección",
+                direccionCliente: order.address ? `${order.address.street} ${order.address.number}` : null,
+                createdAt: order.createdAt,
+                // Location data
+                merchantLat,
+                merchantLng,
+                customerLat,
+                customerLng,
+                // Time estimates
+                tiempoAlComercio: timeToMerchant,
+                tiempoAlCliente: timeToCustomer,
+                tiempoTotal: timeToMerchant + timeToCustomer,
+                distanciaTotal: formatDistance(totalDist),
+                gananciaEstimada
+            };
+        });
+
+        return NextResponse.json({
+            stats: {
+                pedidosHoy: completedToday + enCamino,
+                enCamino: enCamino,
+                completados: completedToday,
+                gananciasHoy: earnings
+            },
+            pedidosActivos: formattedActiveOrders,
+            pedidosDisponibles: formattedAvailableOrders
+        });
+
+    } catch (error) {
+        console.error("Error fetching driver dashboard:", error);
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    }
+}

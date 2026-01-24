@@ -46,7 +46,11 @@ async function getFeaturedMerchants() {
         const merchants = await prisma.merchant.findMany({
             where: { isActive: true },
             take: 8,
-            orderBy: { name: 'asc' }
+            orderBy: [
+                { displayOrder: 'desc' },
+                { isPremium: 'desc' },
+                { name: 'asc' }
+            ]
         });
         return merchants;
     } catch (error) {

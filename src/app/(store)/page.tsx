@@ -46,7 +46,11 @@ async function getFeaturedMerchants() {
         const merchants = await prisma.merchant.findMany({
             where: { isActive: true },
             take: 8,
-            orderBy: { name: 'asc' }
+            orderBy: [
+                { displayOrder: 'desc' },
+                { isPremium: 'desc' },
+                { name: 'asc' }
+            ]
         });
         return merchants;
     } catch (error) {
@@ -60,7 +64,8 @@ async function getFeaturedProducts() {
             where: { isActive: true, isFeatured: true },
             include: {
                 categories: { include: { category: true } },
-                images: true // Make sure to verify product has images if model supports it, otherwise default logic
+                images: true,
+                merchant: { select: { id: true, name: true } }
             },
             take: 8,
         });

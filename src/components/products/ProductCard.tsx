@@ -38,8 +38,13 @@ export default function ProductCard({ product }: ProductCardProps) {
             price: product.price,
             quantity: 1,
             image: product.image || undefined,
-            merchantId: product.merchantId || "default",
+            merchantId: product.merchantId,
         };
+
+        if (!product.merchantId) {
+            alert("Error: Este producto no tiene comercio asociado.");
+            return;
+        }
 
         const success = addItem(item);
 
@@ -120,10 +125,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                         onClick={handleAddToCart}
                         disabled={product.stock <= 0}
                         className={`w-full mt-3 flex items-center justify-center gap-2 py-2 text-sm rounded-lg font-semibold transition-all ${product.stock <= 0
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : added
-                                    ? "bg-green-500 text-white"
-                                    : "bg-[#e60012] text-white hover:bg-red-700 active:scale-[0.98]"
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : added
+                                ? "bg-green-500 text-white"
+                                : "bg-[#e60012] text-white hover:bg-red-700 active:scale-[0.98]"
                             }`}
                     >
                         <ShoppingCart className="w-4 h-4" />

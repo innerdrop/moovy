@@ -8,6 +8,7 @@ import FloatingCartButton from "@/components/layout/FloatingCartButton";
 import WelcomeSplash from "@/components/home/WelcomeSplash";
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
+import PromoPopup from "@/components/store/PromoPopup";
 import { useCartStore } from "@/store/cart";
 
 const SPLASH_SHOWN_KEY = "moovy_splash_v4";
@@ -23,6 +24,7 @@ export default function StoreLayout({
     // Control if splash should be shown (blocks content until done)
     const [splashDone, setSplashDone] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [promoSettings, setPromoSettings] = useState<any>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -35,6 +37,24 @@ export default function StoreLayout({
         } catch {
             setSplashDone(true);
         }
+
+        // Fetch promo settings
+        fetch("/api/settings")
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.promoPopupEnabled) {
+                    setPromoSettings({
+                        enabled: data.promoPopupEnabled,
+                        title: data.promoPopupTitle,
+                        message: data.promoPopupMessage,
+                        image: data.promoPopupImage,
+                        link: data.promoPopupLink,
+                        buttonText: data.promoPopupButtonText,
+                        dismissable: data.promoPopupDismissable ?? true
+                    });
+                }
+            })
+            .catch(err => console.error("Error fetching settings:", err));
     }, []);
 
     // Callback when splash finishes
@@ -91,6 +111,9 @@ export default function StoreLayout({
 
             {/* Sidebars y Modales */}
             <CartSidebar />
+
+            {/* Promo Popup */}
+            {promoSettings && <PromoPopup {...promoSettings} />}
         </div>
     );
 }

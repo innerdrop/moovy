@@ -17,7 +17,8 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
-    MessageSquare
+    MessageSquare,
+    AlertTriangle
 } from "lucide-react";
 
 interface Order {
@@ -74,6 +75,10 @@ export default function AdminOrderDetailPage() {
     const [updating, setUpdating] = useState(false);
     const [adminNotes, setAdminNotes] = useState("");
 
+    // Confirmation modal state
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+
     useEffect(() => {
         async function fetchOrder() {
             try {
@@ -93,15 +98,23 @@ export default function AdminOrderDetailPage() {
         fetchOrder();
     }, [orderId]);
 
-    const updateOrderStatus = async (newStatus: string) => {
-        if (!order) return;
+    // Request status change (shows confirmation modal)
+    const requestStatusChange = (newStatus: string) => {
+        setPendingStatus(newStatus);
+        setShowConfirm(true);
+    };
+
+    // Confirm and execute status change
+    const confirmStatusChange = async () => {
+        if (!order || !pendingStatus) return;
         setUpdating(true);
+        setShowConfirm(false);
 
         try {
             const response = await fetch(`/api/orders/${orderId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({ status: pendingStatus }),
             });
 
             if (response.ok) {
@@ -112,7 +125,13 @@ export default function AdminOrderDetailPage() {
             console.error("Error updating order:", error);
         } finally {
             setUpdating(false);
+            setPendingStatus(null);
         }
+    };
+
+    const cancelStatusChange = () => {
+        setShowConfirm(false);
+        setPendingStatus(null);
     };
 
     const saveAdminNotes = async () => {
@@ -150,7 +169,7 @@ export default function AdminOrderDetailPage() {
             <div className="text-center py-20">
                 <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">Pedido no encontrado</p>
-                <Link href="/admin/pedidos" className="btn-primary mt-4 inline-block">
+                <Link href="/ops/pedidos" className="btn-primary mt-4 inline-block">
                     Volver a pedidos
                 </Link>
             </div>
@@ -166,7 +185,7 @@ export default function AdminOrderDetailPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Link
-                        href="/admin/pedidos"
+                        href="/ops/pedidos"
                         className="p-2 hover:bg-gray-100 rounded-lg transition"
                     >
                         <ChevronLeft className="w-5 h-5" />
@@ -186,6 +205,48 @@ export default function AdminOrderDetailPage() {
                 </div>
             </div>
 
+            {/* Confirmation Modal */}
+            {showConfirm && pendingStatus && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <div className="flex items-center gap-3 text-amber-600 mb-4">
+                            <AlertTriangle className="w-6 h-6" />
+                            <h3 className="font-bold text-lg">Confirmar cambio de estado</h3>
+                        </div>
+
+                        <p className="text-gray-600 mb-4">
+                            ¿Estás seguro de cambiar el estado del pedido <strong>#{order.orderNumber}</strong>?
+                        </p>
+
+                        <div className="flex items-center justify-center gap-3 mb-6">
+                            <span className={`px-3 py-1.5 rounded-full text-sm font-medium text-white ${currentStatus?.color}`}>
+                                {currentStatus?.label}
+                            </span>
+                            <span className="text-gray-400">→</span>
+                            <span className={`px-3 py-1.5 rounded-full text-sm font-medium text-white ${statusOptions.find(s => s.value === pendingStatus)?.color}`}>
+                                {statusOptions.find(s => s.value === pendingStatus)?.label}
+                            </span>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={cancelStatusChange}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmStatusChange}
+                                disabled={updating}
+                                className="flex-1 px-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition disabled:opacity-50"
+                            >
+                                {updating ? "Actualizando..." : "Confirmar"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="grid lg:grid-cols-3 gap-6">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
@@ -196,11 +257,11 @@ export default function AdminOrderDetailPage() {
                             {statusOptions.map((status) => (
                                 <button
                                     key={status.value}
-                                    onClick={() => updateOrderStatus(status.value)}
+                                    onClick={() => requestStatusChange(status.value)}
                                     disabled={updating || order.status === status.value}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition ${order.status === status.value
-                                            ? `${status.color} text-white`
-                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        ? `${status.color} text-white`
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                         } disabled:opacity-50`}
                                 >
                                     {status.label}

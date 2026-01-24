@@ -519,17 +519,23 @@ export default function PuntosPage() {
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-white/80">Tu nivel</span>
                             <span className="font-bold text-lg flex items-center gap-1">
-                                {pointsLifetime >= 10000 ? "⭐ VIP" : pointsLifetime >= 5000 ? "🥇 Gold" : pointsLifetime >= 1000 ? "🥈 Silver" : "🥉 Starter"}
+                                {pointsLifetime >= 1000000 ? "👑 Leyenda" : pointsLifetime >= 300000 ? "⚡ Pro" : "🚀 Moover"}
                             </span>
                         </div>
                         <div className="mt-2 bg-white/10 rounded-full h-2 overflow-hidden">
                             <div
                                 className="h-full bg-yellow-400 rounded-full transition-all"
-                                style={{ width: `${Math.min(100, (pointsLifetime / 10000) * 100)}%` }}
+                                style={{
+                                    width: `${Math.min(100, pointsLifetime >= 1000000 ? 100 : pointsLifetime >= 300000 ? (pointsLifetime / 1000000) * 100 : (pointsLifetime / 300000) * 100)}%`
+                                }}
                             />
                         </div>
                         <p className="text-[10px] text-white/60 mt-1 text-left">
-                            {pointsLifetime < 10000 ? `${(10000 - pointsLifetime).toLocaleString("es-AR")} puntos para VIP • Tocá para ver beneficios` : "¡Nivel máximo! • Tocá para ver beneficios"}
+                            {pointsLifetime >= 1000000
+                                ? "¡Nivel máximo! • Tocá para ver beneficios"
+                                : pointsLifetime >= 300000
+                                    ? `${(1000000 - pointsLifetime).toLocaleString("es-AR")} para Leyenda`
+                                    : `${(300000 - pointsLifetime).toLocaleString("es-AR")} para Pro`}
                         </p>
                     </button>
 
@@ -1006,71 +1012,53 @@ export default function PuntosPage() {
                             </button>
                         </div>
                         <div className="p-4 space-y-4">
-                            {/* Starter */}
-                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime < 1000 ? "border-amber-400 bg-amber-50" : "border-gray-200 bg-gray-50"}`}>
+                            {/* Moover */}
+                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime < 300000 ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-3xl">🥉</span>
+                                    <span className="text-3xl">🚀</span>
                                     <div>
-                                        <p className="font-bold text-gray-900">Starter</p>
-                                        <p className="text-xs text-gray-500">0 - 999 puntos</p>
+                                        <p className="font-bold text-gray-900">Moover</p>
+                                        <p className="text-xs text-gray-500">0 - 299,999 puntos</p>
                                     </div>
-                                    {pointsLifetime < 1000 && <span className="ml-auto text-xs bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
+                                    {pointsLifetime < 300000 && <span className="ml-auto text-xs bg-blue-400 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
                                 </div>
                                 <ul className="text-sm text-gray-600 space-y-1">
                                     <li>✓ Acumulás 1 punto por cada $1</li>
-                                    <li>✓ Acceso al programa de referidos</li>
+                                    <li>✓ Acceso a descuentos base</li>
                                 </ul>
                             </div>
 
-                            {/* Silver */}
-                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 1000 && pointsLifetime < 5000 ? "border-gray-400 bg-gray-100" : "border-gray-200 bg-gray-50"}`}>
+                            {/* Pro */}
+                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 300000 && pointsLifetime < 1000000 ? "border-purple-500 bg-purple-50" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-3xl">🥈</span>
+                                    <span className="text-3xl">⚡</span>
                                     <div>
-                                        <p className="font-bold text-gray-900">Silver</p>
-                                        <p className="text-xs text-gray-500">1,000 - 4,999 puntos</p>
+                                        <p className="font-bold text-gray-900">Pro</p>
+                                        <p className="text-xs text-gray-500">300,000 - 999,999 puntos</p>
                                     </div>
-                                    {pointsLifetime >= 1000 && pointsLifetime < 5000 && <span className="ml-auto text-xs bg-gray-400 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
+                                    {pointsLifetime >= 300000 && pointsLifetime < 1000000 && <span className="ml-auto text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
                                 </div>
                                 <ul className="text-sm text-gray-600 space-y-1">
-                                    <li>✓ Todo lo de Starter</li>
-                                    <li>✓ Acceso anticipado a promociones</li>
-                                    <li>✓ Badge Silver en tu perfil</li>
+                                    <li>✓ Todo lo de Moover</li>
+                                    <li>✓ 5% OFF en envíos</li>
+                                    <li>✓ Sorteos exclusivos</li>
                                 </ul>
                             </div>
 
-                            {/* Gold */}
-                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 5000 && pointsLifetime < 10000 ? "border-yellow-500 bg-yellow-50" : "border-gray-200 bg-gray-50"}`}>
+                            {/* Leyenda */}
+                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 1000000 ? "border-pink-500 bg-pink-50" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-3xl">🥇</span>
+                                    <span className="text-3xl">👑</span>
                                     <div>
-                                        <p className="font-bold text-gray-900">Gold</p>
-                                        <p className="text-xs text-gray-500">5,000 - 9,999 puntos</p>
+                                        <p className="font-bold text-gray-900">Leyenda</p>
+                                        <p className="text-xs text-gray-500">1,000,000+ puntos</p>
                                     </div>
-                                    {pointsLifetime >= 5000 && pointsLifetime < 10000 && <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
+                                    {pointsLifetime >= 1000000 && <span className="ml-auto text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
                                 </div>
                                 <ul className="text-sm text-gray-600 space-y-1">
-                                    <li>✓ Todo lo de Silver</li>
-                                    <li>✓ Envío gratis 1 vez al mes</li>
-                                    <li>✓ Atención prioritaria</li>
-                                </ul>
-                            </div>
-
-                            {/* VIP */}
-                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 10000 ? "border-purple-500 bg-purple-50" : "border-gray-200 bg-gray-50"}`}>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-3xl">⭐</span>
-                                    <div>
-                                        <p className="font-bold text-gray-900">VIP</p>
-                                        <p className="text-xs text-gray-500">10,000+ puntos</p>
-                                    </div>
-                                    {pointsLifetime >= 10000 && <span className="ml-auto text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
-                                </div>
-                                <ul className="text-sm text-gray-600 space-y-1">
-                                    <li>✓ Todo lo de Gold</li>
-                                    <li>✓ Envío gratis ilimitado</li>
-                                    <li>✓ Descuentos exclusivos VIP</li>
-                                    <li>✓ Acceso a productos especiales</li>
+                                    <li>✓ Todo lo de Pro</li>
+                                    <li>✓ Envíos gratis en pedidos +$20k</li>
+                                    <li>✓ Atención prioritaria 24/7</li>
                                 </ul>
                             </div>
 

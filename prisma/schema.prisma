@@ -46,6 +46,10 @@ model User {
   ownedMerchants Merchant[]
   pointsTransactions PointsTransaction[]
   
+  // Support chat relations
+  supportChats     SupportChat[]    @relation("UserSupportChats")
+  sentSupportMsgs  SupportMessage[] @relation("SupportMessageSender")
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -215,6 +219,11 @@ model Order {
   deliveryFee     Float    @default(0)
   discount        Float    @default(0)
   total           Float
+
+  // Commission & Payout
+  moovyCommission Float?   @default(0)
+  merchantPayout  Float?   @default(0)
+  commissionPaid  Boolean  @default(false)
   
   // Delivery details
   distanceKm      Float?
@@ -227,6 +236,11 @@ model Order {
   deliveryStatus  String?  // ASSIGNED, PICKED_UP, IN_TRANSIT, DELIVERED
   deliveredAt     DateTime?
   deliveryPhoto   String?
+  
+  // Customer rating for driver
+  driverRating    Int?     // 1-5 stars
+  ratingComment   String?  // Optional feedback
+  ratedAt         DateTime?
   
   // Notes
   customerNotes   String?
@@ -268,6 +282,15 @@ model Merchant {
   isOpen         Boolean   @default(true)
   isVerified     Boolean   @default(false)
   
+  // Premium/Advertising (Commercio paga para destacar)
+  isPremium      Boolean   @default(false)
+  premiumTier    String?   @default("basic") // basic, gold, platinum
+  premiumUntil   DateTime? // Fecha fin de suscripción premium
+  displayOrder   Int       @default(0) // Mayor = aparece primero
+  
+  // Commission (Porcentaje que cobra Moovy por ventas)
+  commissionRate Float     @default(8) // 8% por defecto
+  
   // Contact & Location
   email          String?
   phone          String?
@@ -283,9 +306,29 @@ model Merchant {
 
   minOrderAmount   Float     @default(0)
   
-  // Business Info
+  // Business Info (from registration)
   cuit             String?
   category         String?   @default("Otro") // Rubro
+  
+  // Extended Business Info (admin only)
+  cuil             String?   // CUIL del titular
+  businessName     String?   // Razón social
+  bankAccount      String?   // CBU/Alias para pagos
+  
+  // Owner Extended Info
+  ownerDni         String?   // DNI del dueño
+  ownerBirthDate   DateTime? // Fecha de nacimiento
+  
+  // Activity Info
+  startedAt        DateTime? // Fecha inicio actividad comercial
+  
+  // Social Media
+  instagramUrl     String?
+  facebookUrl      String?
+  whatsappNumber   String?
+  
+  // Internal Admin Notes
+  adminNotes       String?
   
   // Relations
   ownerId        String
@@ -338,6 +381,15 @@ model StoreSettings {
   // Maintenance mode (shows "Volvemos Pronto" landing page)
   isMaintenanceMode    Boolean  @default(false)
   maintenanceMessage   String   @default("¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia.")
+  
+  // Promo Popup (configurable desde admin)
+  promoPopupEnabled    Boolean  @default(false)
+  promoPopupTitle      String?
+  promoPopupMessage    String?
+  promoPopupImage      String?
+  promoPopupLink       String?
+  promoPopupButtonText String?  @default("Ver más")
+  promoPopupDismissable Boolean @default(true)
   
   // Delivery pricing config
   fuelPricePerLiter    Float    @default(1200)   // Current fuel price
@@ -451,4 +503,74 @@ model SavedCart {
   
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// ==================== SUPPORT CHAT ====================
+
+model SupportChat {
+  id          String    @id @default(cuid())
+  
+  // User who initiated the chat (merchant owner or driver)
+  userId      String
+  user        User      @relation("UserSupportChats", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Optional: link to merchant if chat is from a merchant
+  merchantId  String?
+  
+  // Chat metadata
+  subject     String?   // Optional subject/topic
+  status      String    @default("open") // open, closed, pending
+  
+  // Messages
+  messages    SupportMessage[]
+  
+  // Last message timestamp for sorting
+  lastMessageAt DateTime @default(now())
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SupportMessage {
+  id          String      @id @default(cuid())
+  
+  chatId      String
+  chat        SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  // Sender
+  senderId    String
+  sender      User        @relation("SupportMessageSender", fields: [senderId], references: [id])
+  
+  // Message content
+  content     String
+  
+  // Flag to identify if from admin
+  isFromAdmin Boolean     @default(false)
+  
+  // Read status
+  isRead      Boolean     @default(false)
+  
+  createdAt   DateTime    @default(now())
+}
+
+// ==================== ORDER BACKUP ====================
+
+model OrderBackup {
+  id          String   @id @default(cuid())
+  
+  // Identifier for the backup
+  backupName  String   // e.g., "backup-2024-01-23-12:30"
+  
+  // Original order data stored as JSON
+  orderData   String   // JSON string with all order info
+  
+  // Metadata
+  orderId     String?  // Original order ID (nullable since order is deleted)
+  orderNumber String?  // Order number for reference
+  total       Float?   // Order total for quick reference
+  
+  deletedBy   String?  // ID of admin who deleted
+  deletedAt   DateTime @default(now())
+  
+  createdAt   DateTime @default(now())
 }

@@ -62,6 +62,15 @@ export async function PUT(request: Request) {
         if (data.phone !== undefined) updateData.phone = data.phone || null;
         if (data.email !== undefined) updateData.email = data.email || null;
 
+        // Promo Popup
+        if (typeof data.promoPopupEnabled === "boolean") updateData.promoPopupEnabled = data.promoPopupEnabled;
+        if (typeof data.promoPopupDismissable === "boolean") updateData.promoPopupDismissable = data.promoPopupDismissable;
+        if (data.promoPopupTitle !== undefined) updateData.promoPopupTitle = data.promoPopupTitle || "";
+        if (data.promoPopupMessage !== undefined) updateData.promoPopupMessage = data.promoPopupMessage || "";
+        if (data.promoPopupImage !== undefined) updateData.promoPopupImage = data.promoPopupImage || "";
+        if (data.promoPopupLink !== undefined) updateData.promoPopupLink = data.promoPopupLink || "";
+        if (data.promoPopupButtonText !== undefined) updateData.promoPopupButtonText = data.promoPopupButtonText || "Ver más";
+
         // Floats
         if (data.fuelPricePerLiter) updateData.fuelPricePerLiter = parseFloat(data.fuelPricePerLiter);
         if (data.fuelConsumptionPerKm) updateData.fuelConsumptionPerKm = parseFloat(data.fuelConsumptionPerKm);

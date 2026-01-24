@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import { Star, MapPin, Clock } from "lucide-react";
+import { Star, MapPin, Clock, BadgeCheck, Sparkles } from "lucide-react";
 
 interface MerchantCardProps {
     merchant: {
@@ -13,12 +13,34 @@ interface MerchantCardProps {
         deliveryTimeMax: number;
         deliveryFee: number;
         address: string | null;
+        isVerified?: boolean;
+        isPremium?: boolean;
+        premiumTier?: string | null;
     };
 }
 
 export default function MerchantCard({ merchant }: MerchantCardProps) {
+    // Premium badge styles based on tier
+    const getPremiumBadge = () => {
+        if (!merchant.isPremium) return null;
+
+        const tier = merchant.premiumTier || "basic";
+        const styles: Record<string, { bg: string; text: string; label: string }> = {
+            platinum: { bg: "bg-gradient-to-r from-purple-500 to-pink-500", text: "text-white", label: "⭐ Platino" },
+            gold: { bg: "bg-gradient-to-r from-yellow-400 to-orange-500", text: "text-white", label: "🔥 Destacado" },
+            basic: { bg: "bg-gradient-to-r from-blue-500 to-cyan-500", text: "text-white", label: "✨ Premium" }
+        };
+        const style = styles[tier] || styles.basic;
+
+        return (
+            <div className={`absolute top-3 left-3 ${style.bg} ${style.text} text-xs font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse`}>
+                {style.label}
+            </div>
+        );
+    };
+
     return (
-        <Link href={`/store/${merchant.slug}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition border border-gray-100">
+        <Link href={`/store/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'}`}>
             <div className="relative aspect-video bg-gray-100">
                 {/* Image placeholder or real image */}
                 {merchant.image ? (
@@ -29,17 +51,34 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                     </div>
                 )}
 
-                {/* Status Badge (Open/Closed) - For now hardcoded or passed prop */}
+                {/* Status Badge (Open/Closed) */}
                 <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                     ABIERTO
                 </div>
+
+                {/* Premium Badge - Priority over Verified */}
+                {merchant.isPremium ? (
+                    getPremiumBadge()
+                ) : merchant.isVerified && (
+                    <div className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
+                        <BadgeCheck className="w-3 h-3" />
+                        Verificado
+                    </div>
+                )}
             </div>
 
             <div className="p-4">
                 <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-[#e60012] transition line-clamp-1">
-                        {merchant.name}
-                    </h3>
+                    <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-[#e60012] transition line-clamp-1">
+                            {merchant.name}
+                        </h3>
+                        {merchant.isPremium ? (
+                            <Sparkles className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                        ) : merchant.isVerified && (
+                            <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        )}
+                    </div>
                     <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-xs font-semibold">
                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                         <span>4.8</span>

@@ -128,6 +128,115 @@ export default async function ConfigurationPage() {
                 </div>
             </div>
 
+            {/* Promo Popup Card */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-purple-200">
+                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+                    <span className="text-2xl">🎉</span>
+                    Popup Promocional
+                </h2>
+
+                <div className="space-y-4">
+                    {/* Enable Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                        <div>
+                            <h3 className="font-semibold text-navy">Activar Popup</h3>
+                            <p className="text-sm text-gray-600">
+                                Se mostrará al ingresar a la tienda (una vez por sesión)
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                defaultChecked={settings?.promoPopupEnabled}
+                                className="sr-only peer"
+                                name="promoPopupEnabled"
+                            />
+                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-500"></div>
+                        </label>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Título
+                            </label>
+                            <input
+                                type="text"
+                                defaultValue={settings?.promoPopupTitle || ""}
+                                className="input"
+                                placeholder="¡Super Oferta!"
+                                name="promoPopupTitle"
+                            />
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Mensaje
+                            </label>
+                            <textarea
+                                defaultValue={settings?.promoPopupMessage || ""}
+                                className="input resize-none"
+                                rows={2}
+                                placeholder="Aprovecha 20% OFF en tu primera compra con el cupón BIENVENIDA"
+                                name="promoPopupMessage"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                URL Imagen (Opcional)
+                            </label>
+                            <input
+                                type="text"
+                                defaultValue={settings?.promoPopupImage || ""}
+                                className="input"
+                                placeholder="https://..."
+                                name="promoPopupImage"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Link de Destino (Opcional)
+                            </label>
+                            <input
+                                type="text"
+                                defaultValue={settings?.promoPopupLink || ""}
+                                className="input"
+                                placeholder="/comercios/ejemplo"
+                                name="promoPopupLink"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Texto del Botón
+                            </label>
+                            <input
+                                type="text"
+                                defaultValue={settings?.promoPopupButtonText || "Ver más"}
+                                className="input"
+                                placeholder="Ir a la oferta"
+                                name="promoPopupButtonText"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-4">
+                            <input
+                                type="checkbox"
+                                defaultChecked={settings?.promoPopupDismissable ?? true}
+                                className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                name="promoPopupDismissable"
+                                id="promoPopupDismissable"
+                            />
+                            <label htmlFor="promoPopupDismissable" className="text-sm text-gray-700 select-none">
+                                Permitir cerrar (Cruz visible)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Landing Cards Visibility */}
             <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-blue-200">
                 <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">

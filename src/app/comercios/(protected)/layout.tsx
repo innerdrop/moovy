@@ -9,7 +9,8 @@ import {
     Settings,
     Store,
     LogOut,
-    Menu
+    Menu,
+    MessageCircle
 } from "lucide-react";
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/productos", icon: Package, label: "Productos" },
+        { href: "/comercios/soporte", icon: MessageCircle, label: "Soporte" },
         { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
     ];
 

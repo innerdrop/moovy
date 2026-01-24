@@ -6,11 +6,9 @@ import { useSession } from "next-auth/react";
 
 // Level definitions
 const LEVELS = [
-    { name: "Bronce", min: 0, max: 499, color: "#CD7F32" },
-    { name: "Plata", min: 500, max: 1499, color: "#C0C0C0" },
-    { name: "Oro", min: 1500, max: 4999, color: "#FFD700" },
-    { name: "Platino", min: 5000, max: 9999, color: "#E5E4E2" },
-    { name: "Diamante", min: 10000, max: Infinity, color: "#B9F2FF" },
+    { name: "Moover", min: 0, max: 299999, color: "#60A5FA" },
+    { name: "Pro", min: 300000, max: 999999, color: "#818CF8" },
+    { name: "Leyenda", min: 1000000, max: Infinity, color: "#F472B6" },
 ];
 
 interface Level {

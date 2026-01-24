@@ -177,6 +177,13 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
 
         try {
+            const merchantId = useCartStore.getState().merchantId;
+            if (!merchantId) {
+                alert("Error: No se identificó el comercio. Por favor vaciá el carrito e intentá de nuevo.");
+                setIsSubmitting(false);
+                return;
+            }
+
             // Create order via API
             const response = await fetch("/api/orders", {
                 method: "POST",

@@ -59,8 +59,10 @@ export async function PATCH(
         const isAdmin = role === "ADMIN";
         const isMerchant = role === "MERCHANT";
 
+        const isDriver = role === "DRIVER";
+
         // Check authorization
-        if (!isAdmin && !isMerchant) {
+        if (!isAdmin && !isMerchant && !isDriver) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
@@ -80,6 +82,30 @@ export async function PATCH(
 
             if (!order) {
                 return NextResponse.json({ error: "Pedido no encontrado o no pertenece a tu comercio" }, { status: 403 });
+            }
+        }
+
+        // If driver, verify they are assigned to this order
+        if (isDriver) {
+            const driver = await prisma.driver.findUnique({
+                where: { userId: session.user.id }
+            });
+
+            if (!driver) {
+                return NextResponse.json({ error: "Perfil de conductor no encontrado" }, { status: 404 });
+            }
+
+            const order = await prisma.order.findUnique({ where: { id } });
+
+            if (!order) {
+                return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+            }
+
+            // Only allow update if driver IS assigned to this order OR if they are assigning themselves (via specific accept logic, but normally accept uses separate API)
+            // Ideally, the PATCH here is for status updates (Picked up, Delivered)
+            // So we strictly enforce: Must be assigned driver.
+            if (order.driverId !== driver.id) {
+                return NextResponse.json({ error: "No estás asignado a este pedido" }, { status: 403 });
             }
         }
 
