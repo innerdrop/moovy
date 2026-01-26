@@ -112,6 +112,25 @@ export default async function ConfigurationPage() {
                         </label>
                     </div>
 
+                    {/* Tienda Maintenance Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                        <div>
+                            <h3 className="font-semibold text-navy text-red-700">Mantenimiento Catálogo (/tienda)</h3>
+                            <p className="text-sm text-gray-600">
+                                Cuando está activo, la ruta /tienda mostrará su mensaje de mantenimiento
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                defaultChecked={settings?.tiendaMaintenance}
+                                className="sr-only peer"
+                                name="tiendaMaintenance"
+                            />
+                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500"></div>
+                        </label>
+                    </div>
+
                     {/* Maintenance Message */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">

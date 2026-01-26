@@ -398,6 +398,9 @@ model StoreSettings {
   isMaintenanceMode    Boolean  @default(false)
   maintenanceMessage   String   @default("¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia.")
   
+  // Tienda (Storefront) maintenance mode
+  tiendaMaintenance    Boolean  @default(false)
+  
   // Promo Popup (configurable desde admin)
   promoPopupEnabled    Boolean  @default(false)
   promoPopupTitle      String?

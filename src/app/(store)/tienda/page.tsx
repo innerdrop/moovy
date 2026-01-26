@@ -14,9 +14,7 @@ import HeroSlider from "@/components/home/HeroSlider";
 import MerchantCard from "@/components/store/MerchantCard";
 
 // Configuration
-// In Production: true (Shows "Volvemos Pronto")
-// In Development: false (Shows the App to work)
-const IS_MAINTENANCE_MODE = process.env.NODE_ENV === "production";
+
 
 // Category icons mapping
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -71,6 +69,17 @@ async function getFeaturedProducts() {
         return products;
     } catch (error) {
         return [];
+    }
+}
+
+async function getStoreSettings() {
+    try {
+        const settings = await prisma.storeSettings.findUnique({
+            where: { id: "settings" },
+        });
+        return settings;
+    } catch (error) {
+        return null;
     }
 }
 
@@ -352,8 +361,11 @@ async function LiveStoreView() {
     );
 }
 
-export default function HomePage() {
-    if (IS_MAINTENANCE_MODE) {
+export default async function HomePage() {
+    const settings = await getStoreSettings();
+    const isMaintenance = settings?.tiendaMaintenance ?? false;
+
+    if (isMaintenance) {
         return <MaintenanceView />;
     }
     return <LiveStoreView />;

@@ -28,6 +28,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
 
             // Maintenance mode
             isMaintenanceMode: formData.get("isMaintenanceMode") === "on",
+            tiendaMaintenance: formData.get("tiendaMaintenance") === "on",
             maintenanceMessage: formData.get("maintenanceMessage") || "",
 
             // Delivery
