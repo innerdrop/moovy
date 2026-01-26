@@ -74,30 +74,38 @@ export default auth(async (request) => {
     // === END MAINTENANCE MODE CHECK ===
 
     // For subdomains: rewrite to correct portal path
-    if (portal === 'comercio') {
-        if (pathname === '/') {
-            return NextResponse.rewrite(new URL('/comercios', request.url));
-        }
-        if (!pathname.startsWith('/comercios')) {
-            return NextResponse.rewrite(new URL(`/comercios${pathname}`, request.url));
-        }
-    }
+    // CRITICAL: Exempt system paths from portal rewrites
+    const isSystemPath = pathname.startsWith('/api') ||
+        pathname.startsWith('/_next') ||
+        pathname.includes('.') ||
+        pathname === '/mantenimiento';
 
-    if (portal === 'conductor') {
-        if (pathname === '/') {
-            return NextResponse.rewrite(new URL('/repartidor', request.url));
+    if (!isSystemPath) {
+        if (portal === 'comercio') {
+            if (pathname === '/') {
+                return NextResponse.rewrite(new URL('/comercios', request.url));
+            }
+            if (!pathname.startsWith('/comercios')) {
+                return NextResponse.rewrite(new URL(`/comercios${pathname}`, request.url));
+            }
         }
-        if (!pathname.startsWith('/repartidor')) {
-            return NextResponse.rewrite(new URL(`/repartidor${pathname}`, request.url));
-        }
-    }
 
-    if (portal === 'ops') {
-        if (pathname === '/') {
-            return NextResponse.rewrite(new URL('/ops', request.url));
+        if (portal === 'conductor') {
+            if (pathname === '/') {
+                return NextResponse.rewrite(new URL('/repartidor', request.url));
+            }
+            if (!pathname.startsWith('/repartidor')) {
+                return NextResponse.rewrite(new URL(`/repartidor${pathname}`, request.url));
+            }
         }
-        if (!pathname.startsWith('/ops')) {
-            return NextResponse.rewrite(new URL(`/ops${pathname}`, request.url));
+
+        if (portal === 'ops') {
+            if (pathname === '/') {
+                return NextResponse.rewrite(new URL('/ops', request.url));
+            }
+            if (!pathname.startsWith('/ops')) {
+                return NextResponse.rewrite(new URL(`/ops${pathname}`, request.url));
+            }
         }
     }
 
@@ -139,6 +147,11 @@ export default auth(async (request) => {
 
     // STRICT PORTAL SEPARATION
     if (session) {
+        // Exempt /api routes from portal redirection to allow Auth.js to function
+        if (pathname.startsWith('/api')) {
+            return NextResponse.next();
+        }
+
         if (userRole === 'MERCHANT' && !pathname.startsWith('/comercios') && pathname !== '/logout') {
             return NextResponse.redirect(new URL('/comercios', request.url));
         }

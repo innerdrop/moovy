@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
@@ -18,18 +18,17 @@ import {
     Loader2,
     MapPin,
     Timer,
-    ExternalLink
+    ExternalLink,
+    Map,
+    LogOut
 } from "lucide-react";
+import { useDriverLocation } from "@/hooks/useDriverLocation";
 
 export default function RepartidorDashboard() {
     const { data: session } = useSession();
     const [isOnline, setIsOnline] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isToggling, setIsToggling] = useState(false);
-
-    // Geolocation state
-    const [driverLocation, setDriverLocation] = useState<{ lat: number, lng: number } | null>(null);
-    const [locationError, setLocationError] = useState<string | null>(null);
 
     // Fetch initial status
     useEffect(() => {
@@ -49,14 +48,42 @@ export default function RepartidorDashboard() {
         fetchStatus();
     }, []);
 
-    // Toggle online status
+    const [dashboardData, setDashboardData] = useState({
+        stats: {
+            pedidosHoy: 0,
+            enCamino: 0,
+            completados: 0,
+            gananciasHoy: 0
+        },
+        pedidosActivos: [] as any[],
+        pedidosDisponibles: [] as any[],
+        pedidosPendientes: [] as any[]
+    });
+
+    // Use our new robust driver location hook
+    const {
+        latitude: lat,
+        longitude: lng,
+        connected: socketConnected,
+        isTracking,
+        error: locationHookError
+    } = useDriverLocation({
+        driverId: session?.user?.id || "",
+        enabled: isOnline,
+        currentOrderId: dashboardData.pedidosActivos?.[0]?.id // Track first active order
+    });
+
+    const driverLocation = lat && lng ? { lat, lng } : null;
+
+    // Toggle online status using the new standard API
     const toggleOnline = useCallback(async () => {
         setIsToggling(true);
         try {
+            const newStatus = isOnline ? "FUERA_DE_SERVICIO" : "DISPONIBLE";
             const res = await fetch("/api/driver/status", {
-                method: "PATCH",
+                method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isOnline: !isOnline })
+                body: JSON.stringify({ status: newStatus })
             });
             if (res.ok) {
                 const data = await res.json();
@@ -68,42 +95,6 @@ export default function RepartidorDashboard() {
             setIsToggling(false);
         }
     }, [isOnline]);
-
-    const [dashboardData, setDashboardData] = useState({
-        stats: {
-            pedidosHoy: 0,
-            enCamino: 0,
-            completados: 0,
-            gananciasHoy: 0
-        },
-        pedidosActivos: [] as any[],
-        pedidosDisponibles: [] as any[]
-    });
-
-    // Get driver's geolocation
-    useEffect(() => {
-        if (!navigator.geolocation) {
-            setLocationError("Geolocalización no disponible");
-            return;
-        }
-
-        const watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                setDriverLocation({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-                setLocationError(null);
-            },
-            (error) => {
-                console.error("Geolocation error:", error);
-                setLocationError("No se pudo obtener ubicación");
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
-        );
-
-        return () => navigator.geolocation.clearWatch(watchId);
-    }, []);
 
     // Fetch dashboard data with driver location
     useEffect(() => {
@@ -124,12 +115,11 @@ export default function RepartidorDashboard() {
         };
 
         fetchData();
-        // Poll every 30 seconds
-        const interval = setInterval(fetchData, 30000);
+        const interval = setInterval(fetchData, 15000); // Poll more frequently for offers
         return () => clearInterval(interval);
     }, [driverLocation]);
 
-    const { stats, pedidosActivos, pedidosDisponibles } = dashboardData;
+    const { stats, pedidosActivos, pedidosDisponibles, pedidosPendientes } = dashboardData;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -137,11 +127,22 @@ export default function RepartidorDashboard() {
             <div className={`${isOnline ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-gray-500 to-gray-600'} text-white px-4 py-6 pb-20 transition-colors duration-500`}>
                 <div className="max-w-4xl mx-auto">
                     <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <p className={`${isOnline ? 'text-green-100' : 'text-gray-300'} text-sm`}>Bienvenido</p>
-                            <h1 className="text-2xl font-bold">
-                                {session?.user?.name || "Repartidor"}
-                            </h1>
+                        <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className={`${isOnline ? 'text-green-100' : 'text-gray-300'} text-sm`}>Bienvenido</p>
+                                    <h1 className="text-2xl font-bold">
+                                        {session?.user?.name || "Repartidor"}
+                                    </h1>
+                                </div>
+                                <button
+                                    onClick={() => signOut({ callbackUrl: "/repartidor/login" })}
+                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-2 text-xs border border-white/10 mr-4"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Cerrar Sesión</span>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Online Toggle Button */}
@@ -222,6 +223,102 @@ export default function RepartidorDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Pedidos Pendientes (OFERTAS EXCLUSIVAS) */}
+            {pedidosPendientes && pedidosPendientes.length > 0 && (
+                <div className="px-4 mb-6">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex items-center gap-2 mb-3">
+                            <h2 className="text-xl font-bold text-orange-600 border-l-4 border-orange-500 pl-2">
+                                ¡Ofertas de Pedido!
+                            </h2>
+                            <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full animate-bounce">
+                                ¡Acepta ya!
+                            </span>
+                        </div>
+
+                        <div className="space-y-4">
+                            {pedidosPendientes.map((pedido) => (
+                                <div key={pedido.id} className="bg-white rounded-xl p-5 shadow-xl border-2 border-orange-400 relative overflow-hidden ring-4 ring-orange-500/10">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h3 className="font-bold text-xl text-gray-900">{pedido.comercio}</h3>
+                                            <p className="text-sm text-gray-600 mb-1 font-medium">{pedido.direccion}</p>
+                                            {pedido.direccionCliente && (
+                                                <p className="text-xs text-orange-600 font-bold italic">Entrega a: {pedido.direccionCliente}</p>
+                                            )}
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="block font-black text-2xl text-orange-600">
+                                                ${pedido.gananciaEstimada}
+                                            </span>
+                                            <span className="text-xs text-gray-400 font-bold uppercase">Tu Ganancia</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Countdown Timer */}
+                                    {pedido.expiresAt && (
+                                        <div className="my-3 py-2 bg-orange-50 rounded-lg border border-orange-200 flex items-center justify-center gap-2">
+                                            <Clock className="w-5 h-5 text-orange-600 animate-pulse" />
+                                            <span className="text-orange-700 font-black">
+                                                Expira en: {Math.max(0, Math.floor((new Date(pedido.expiresAt).getTime() - Date.now()) / 1000))}s
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-2 flex-wrap mt-2 mb-4">
+                                        <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-bold">
+                                            <Timer className="w-3.5 h-3.5" />
+                                            {pedido.tiempoAlComercio} min al comercio
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-bold">
+                                            <Map className="w-3.5 h-3.5" />
+                                            {pedido.distanciaTotal} total
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3">
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm("¿Rechazar este pedido? Se ofrecerá a otro repartidor.")) return;
+                                                try {
+                                                    const res = await fetch(`/api/driver/orders/${pedido.id}/reject`, { method: "POST" });
+                                                    if (res.ok) {
+                                                        const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
+                                                        setDashboardData(fresh);
+                                                    }
+                                                } catch (e) { alert("Error"); }
+                                            }}
+                                            className="flex-1 bg-gray-100 text-gray-500 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition"
+                                        >
+                                            Rechazar
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
+                                                    if (res.ok) {
+                                                        alert("¡Pedido aceptado! Ve al comercio.");
+                                                        const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
+                                                        setDashboardData(fresh);
+                                                    } else {
+                                                        const err = await res.json();
+                                                        alert(err.error || "Error");
+                                                    }
+                                                } catch (e) { alert("Error"); }
+                                            }}
+                                            className="flex-[2] bg-orange-500 text-white font-black py-4 px-6 rounded-xl shadow-lg shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition flex items-center justify-center gap-2 text-lg"
+                                        >
+                                            <Bike className="w-6 h-6" />
+                                            ¡ACEPTAR!
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Pedidos Disponibles (New!) */}
             {pedidosDisponibles && pedidosDisponibles.length > 0 && (

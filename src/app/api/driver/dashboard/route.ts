@@ -106,13 +106,30 @@ export async function GET(request: Request) {
 
         // --- Pedidos Disponibles (READY, Sin driver) ---
         let availableOrders: any[] = [];
+        let pendingOffers: any[] = [];
 
-        // Only show available orders if driver is online
+        // Only show orders if driver is online
         if (driver.isOnline) {
-            availableOrders = await prisma.order.findMany({
+            // 1. First, find orders PENDING for this specific driver (Offers)
+            const pendingOrders = await prisma.order.findMany({
                 where: {
                     status: "READY",
+                    pendingDriverId: driver.id,
                     driverId: null
+                },
+                include: {
+                    merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
+                    address: { select: { street: true, number: true, city: true, latitude: true, longitude: true } }
+                },
+                orderBy: { createdAt: "desc" }
+            });
+
+            // 2. Then, find general available orders (if they haven't seen them yet)
+            const readyOrders = await prisma.order.findMany({
+                where: {
+                    status: "READY",
+                    driverId: null,
+                    pendingDriverId: null // Not yet offered to anyone (or expired)
                 },
                 include: {
                     merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
@@ -121,22 +138,30 @@ export async function GET(request: Request) {
                 orderBy: { createdAt: "asc" },
                 take: 10
             });
+
+            availableOrders = readyOrders;
+            pendingOffers = pendingOrders;
         }
 
-        const formattedAvailableOrders = availableOrders.map(order => {
+        // Helper to format orders with distance calculation
+        const formatOrderWithLocation = (order: any) => {
             const merchantLat = order.merchant?.latitude;
             const merchantLng = order.merchant?.longitude;
             const customerLat = order.address?.latitude;
             const customerLng = order.address?.longitude;
 
-            // Calculate distances if we have coordinates
+            // Use driver's location from DB if not provided in query params
+            const activeLat = hasDriverLocation ? driverLat : (driver.latitude || 0);
+            const activeLng = hasDriverLocation ? driverLng : (driver.longitude || 0);
+            const canCalc = activeLat !== 0 && activeLng !== 0;
+
             let distToMerchant = 0;
             let distToCustomer = 0;
             let timeToMerchant = 0;
             let timeToCustomer = 0;
 
-            if (hasDriverLocation && merchantLat && merchantLng) {
-                distToMerchant = calculateDistance(driverLat, driverLng, merchantLat, merchantLng);
+            if (canCalc && merchantLat && merchantLng) {
+                distToMerchant = calculateDistance(activeLat, activeLng, merchantLat, merchantLng);
                 timeToMerchant = estimateTravelTime(distToMerchant, driver.vehicleType || "MOTO");
             }
 
@@ -145,10 +170,9 @@ export async function GET(request: Request) {
                 timeToCustomer = estimateTravelTime(distToCustomer, driver.vehicleType || "MOTO");
             }
 
-            // Calculate earnings based on total distance
             const totalDist = distToMerchant + distToCustomer;
-            const gananciaBase = 500; // Base fee
-            const gananciaKm = 300; // Per km
+            const gananciaBase = 500;
+            const gananciaKm = 300;
             const gananciaEstimada = Math.round(gananciaBase + (totalDist * gananciaKm));
 
             return {
@@ -158,19 +182,17 @@ export async function GET(request: Request) {
                 direccion: order.merchant?.address || "Dirección",
                 direccionCliente: order.address ? `${order.address.street} ${order.address.number}` : null,
                 createdAt: order.createdAt,
-                // Location data
+                expiresAt: order.assignmentExpiresAt,
                 merchantLat,
                 merchantLng,
                 customerLat,
                 customerLng,
-                // Time estimates
                 tiempoAlComercio: timeToMerchant,
                 tiempoAlCliente: timeToCustomer,
-                tiempoTotal: timeToMerchant + timeToCustomer,
                 distanciaTotal: formatDistance(totalDist),
                 gananciaEstimada
             };
-        });
+        };
 
         return NextResponse.json({
             stats: {
@@ -180,7 +202,8 @@ export async function GET(request: Request) {
                 gananciasHoy: earnings
             },
             pedidosActivos: formattedActiveOrders,
-            pedidosDisponibles: formattedAvailableOrders
+            pedidosDisponibles: availableOrders.map(formatOrderWithLocation),
+            pedidosPendientes: pendingOffers.map(formatOrderWithLocation)
         });
 
     } catch (error) {

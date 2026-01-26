@@ -237,6 +237,13 @@ model Order {
   deliveredAt     DateTime?
   deliveryPhoto   String?
   
+  // Auto-assignment tracking (for 60-second timeout cascade)
+  assignmentAttempts    Int       @default(0)
+  lastAssignmentAt      DateTime?
+  pendingDriverId       String?   // Driver who received offer but hasn't accepted yet
+  assignmentExpiresAt   DateTime? // When current offer expires (60s timeout)
+  attemptedDriverIds    String?   // JSON array of driver IDs already tried
+  
   // Customer rating for driver
   driverRating    Int?     // 1-5 stars
   ratingComment   String?  // Optional feedback
@@ -347,7 +354,7 @@ model Driver {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Driver info
+  // Vehicle info
   vehicleType  String? // MOTO, AUTO, BICI
   vehicleBrand String?
   vehicleModel String?
@@ -355,8 +362,17 @@ model Driver {
   vehicleColor String?
   licensePlate String?
   
+  // Status
   isActive  Boolean  @default(true)
   isOnline  Boolean  @default(false)
+  
+  // Real-time location for proximity-based assignment
+  latitude         Float?
+  longitude        Float?
+  lastLocationAt   DateTime?
+  
+  // Availability: DISPONIBLE, OCUPADO, FUERA_DE_SERVICIO
+  availabilityStatus String @default("FUERA_DE_SERVICIO")
   
   // Stats
   totalDeliveries Int @default(0)

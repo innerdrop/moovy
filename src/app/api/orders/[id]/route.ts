@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assignOrderToNearestDriver } from "@/lib/logistics";
 
 // GET - Get single order details
 export async function GET(
@@ -127,6 +128,12 @@ export async function PATCH(
             updateData.deliveredAt = new Date();
         }
 
+        // Get current order to check status change
+        const existingOrder = await prisma.order.findUnique({
+            where: { id },
+            select: { status: true },
+        });
+
         const order = await prisma.order.update({
             where: { id },
             data: updateData,
@@ -136,6 +143,18 @@ export async function PATCH(
                 user: { select: { name: true, email: true, phone: true } },
             },
         });
+
+        // Trigger auto-assignment when status changes to READY
+        if (data.status === "READY" && existingOrder?.status !== "READY") {
+            // Fire and forget - don't block the response
+            assignOrderToNearestDriver(id).then((result) => {
+                if (result.success) {
+                    console.log(`[Auto-assign] Order ${order.orderNumber} offered to driver ${result.driverId}`);
+                } else {
+                    console.log(`[Auto-assign] Order ${order.orderNumber}: ${result.error}`);
+                }
+            });
+        }
 
         return NextResponse.json(order);
     } catch (error) {

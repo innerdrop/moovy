@@ -22,7 +22,7 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
                 <div className="lg:hidden h-16" />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 md:p-6 overflow-auto">
+                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-auto">
                     {children}
                 </main>
             </div>
