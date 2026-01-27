@@ -27,7 +27,7 @@ export function useDriverLocation({
     driverId,
     currentOrderId,
     enabled = true,
-    updateThresholdMeters = 10,
+    updateThresholdMeters = 50,
 }: UseDriverLocationOptions) {
     const [location, setLocation] = useState<LocationState>({
         latitude: null,
@@ -109,6 +109,15 @@ export function useDriverLocation({
             setLocation((prev) => ({
                 ...prev,
                 error: "Geolocalización no soportada en este navegador",
+            }));
+            return;
+        }
+
+        // Check for secure context (HTTPS)
+        if (!window.isSecureContext && window.location.hostname !== "localhost") {
+            setLocation((prev) => ({
+                ...prev,
+                error: "GPS Bloqueado: Se requiere una conexión segura (HTTPS) para compartir la ubicación.",
             }));
             return;
         }

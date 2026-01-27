@@ -394,10 +394,10 @@ function ComercioRegistroContent() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Dirección del Comercio</label>
                                 <AddressAutocomplete
                                     value={formData.address}
-                                    onChange={(address, lat, lng) => {
+                                    onChange={(address, lat, lng, street, num) => {
                                         setFormData(prev => ({
                                             ...prev,
-                                            address,
+                                            address: num ? `${street} ${num}` : address,
                                             latitude: lat ?? prev.latitude,
                                             longitude: lng ?? prev.longitude
                                         }));

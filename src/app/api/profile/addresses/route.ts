@@ -60,6 +60,8 @@ export async function POST(request: Request) {
                     city: data.city || "Ushuaia",
                     province: data.province || "Tierra del Fuego",
                     zipCode: data.zipCode || null,
+                    latitude: data.latitude || null,
+                    longitude: data.longitude || null,
                     isDefault: data.isDefault || false
                 }
             });

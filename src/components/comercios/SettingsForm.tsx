@@ -243,8 +243,8 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                             </label>
                             <AddressAutocomplete
                                 value={address}
-                                onChange={(val, newLat, newLng) => {
-                                    setAddress(val);
+                                onChange={(val, newLat, newLng, street, num) => {
+                                    setAddress(num ? `${street} ${num}` : val);
                                     if (newLat) setLat(newLat);
                                     if (newLng) setLng(newLng);
                                 }}

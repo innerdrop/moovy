@@ -142,7 +142,7 @@ export async function assignOrderToNearestDriver(
         }
 
         const nearestDriver = nearbyDrivers[0];
-        const expiresAt = new Date(Date.now() + 60 * 1000); // 60 seconds timeout
+        const expiresAt = new Date(Date.now() + 300 * 1000); // 5 minutes timeout
 
         // Update order with pending assignment
         await prisma.order.update({
@@ -248,7 +248,7 @@ export async function driverAcceptOrder(
             return { success: false, error: "Este pedido no está asignado a ti" };
         }
 
-        if (order.assignmentExpiresAt && new Date() > order.assignmentExpiresAt) {
+        if (order.assignmentExpiresAt && new Date(Date.now() - 10000) > order.assignmentExpiresAt) {
             return { success: false, error: "La oferta ha expirado" };
         }
 

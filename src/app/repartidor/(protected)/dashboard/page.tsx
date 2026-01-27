@@ -172,20 +172,56 @@ export default function RepartidorDashboard() {
                         </button>
                     </div>
 
-                    {/* Status Indicator */}
-                    <div className="flex items-center gap-2 text-sm">
-                        {isLoading ? (
-                            <span className="text-gray-300">Cargando estado...</span>
-                        ) : isOnline ? (
-                            <>
-                                <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />
-                                <span className="text-green-100 font-medium">En línea y disponible</span>
-                            </>
-                        ) : (
-                            <>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                                <span className="text-gray-300">Fuera de línea - Toca el botón para conectarte</span>
-                            </>
+                    {/* Status Indicator & GPS Status */}
+                    <div className="flex flex-col gap-2 text-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                {isLoading ? (
+                                    <span className="text-gray-300 italic">Cargando estado...</span>
+                                ) : isOnline ? (
+                                    <>
+                                        <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />
+                                        <span className="text-green-100 font-medium">En línea y disponible</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                                        <span className="text-gray-300">Fuera de línea</span>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* GPS Pulse Indicator */}
+                            {isOnline && (
+                                <div className="flex items-center gap-2 border-l border-white/20 pl-4">
+                                    {locationHookError ? (
+                                        <div className="flex items-center gap-1.5 text-red-200 bg-red-500/20 px-2 py-0.5 rounded-full border border-red-400/30">
+                                            <MapPin className="w-3 h-3" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">GPS Error</span>
+                                        </div>
+                                    ) : lat && lng ? (
+                                        <div className="flex items-center gap-1.5 text-green-200 bg-green-500/20 px-2 py-0.5 rounded-full border border-green-400/30">
+                                            <Navigation className="w-3 h-3 animate-pulse" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-green-300">GPS OK</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 text-amber-200 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-400/30">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider italic">Buscando GPS...</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Location Error Warning */}
+                        {isOnline && locationHookError && (
+                            <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-3 mt-2 animate-pulse">
+                                <p className="text-xs text-red-100 font-medium flex items-center gap-2">
+                                    <MapPin className="w-4 h-4" />
+                                    {locationHookError}. Es necesario compartir tu ubicación para recibir pedidos.
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>

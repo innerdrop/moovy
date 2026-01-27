@@ -8,45 +8,34 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { destinationLat, destinationLng, address, merchantId, orderTotal = 0 } = body;
 
-        let lat = destinationLat;
-        let lng = destinationLng;
+        // Extract lat/lng from root or nested address object
+        let lat = destinationLat || address?.latitude;
+        let lng = destinationLng || address?.longitude;
 
-        // If address is provided instead of coordinates, do geocoding
+        // If address text is provided but coordinates are missing, do geocoding
         if (address && (!lat || !lng)) {
-            const fullAddress = `${address.street} ${address.number}, ${address.city}, Argentina`;
-            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
+            const cityName = address.city || "Ushuaia";
+            const fullAddress = address.number
+                ? `${address.street} ${address.number}, ${cityName}, Argentina`
+                : `${address.street}, ${cityName}, Argentina`;
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
 
-            const geoResponse = await fetch(geocodeUrl, {
-                headers: {
-                    "User-Agent": "Moovy/1.0 (contact@moovy.com.ar)",
-                    "Accept-Language": "es"
-                }
-            });
-
-            if (!geoResponse.ok) {
-                return NextResponse.json({
-                    distanceKm: 0,
-                    totalCost: 0,
-                    isWithinRange: false,
-                    isFreeDelivery: false,
-                    message: "Error al buscar la dirección. Intenta de nuevo.",
-                });
-            }
-
+            const geoResponse = await fetch(geocodeUrl);
             const geoData = await geoResponse.json();
 
-            if (!geoData || geoData.length === 0) {
+            if (geoData.status === "OK" && geoData.results.length > 0) {
+                lat = geoData.results[0].geometry.location.lat;
+                lng = geoData.results[0].geometry.location.lng;
+            } else {
                 return NextResponse.json({
                     distanceKm: 0,
                     totalCost: 0,
                     isWithinRange: false,
                     isFreeDelivery: false,
-                    message: "No pudimos encontrar la dirección. Por favor, verificá los datos.",
+                    message: "No pudimos encontrar la ubicación exacta. Por favor, verificá la dirección.",
                 });
             }
-
-            lat = geoData[0].lat;
-            lng = geoData[0].lon;
         }
 
         if (!lat || !lng) {
@@ -61,14 +50,9 @@ export async function POST(request: Request) {
             where: { id: "settings" },
         });
 
-        if (!settings) {
-            return NextResponse.json(
-                { error: "Configuración de tienda no encontrada" },
-                { status: 500 }
-            );
-        }
+        if (!settings) throw new Error("Configuración no encontrada");
 
-        // Determine origin (Merchant or Global Store)
+        // Determine origin
         let originLat = settings.originLat;
         let originLng = settings.originLng;
         let originAddress = settings.storeAddress;
@@ -83,19 +67,29 @@ export async function POST(request: Request) {
                 originLat = merchant.latitude;
                 originLng = merchant.longitude;
                 originAddress = merchant.address || merchant.name;
-                console.log(`[Delivery] Using merchant origin for ${merchant.name}: ${originLat}, ${originLng}`);
             }
         }
 
-        // Calculate distance from origin to destination
-        const distanceKm = calculateDistance(
-            originLat,
-            originLng,
-            parseFloat(lat),
-            parseFloat(lng)
-        );
+        // --- NEW: Calculate real road distance using Google Distance Matrix ---
+        let distanceKm = 0;
+        try {
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+            const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLng}&destinations=${lat},${lng}&key=${apiKey}`;
+            const distRes = await fetch(distUrl);
+            const distData = await distRes.json();
 
-        // Build delivery settings object
+            if (distData.status === "OK" && distData.rows[0].elements[0].status === "OK") {
+                // Distance is in meters
+                distanceKm = distData.rows[0].elements[0].distance.value / 1000;
+            } else {
+                // Fallback to Haversine if API fails
+                distanceKm = calculateDistance(originLat, originLng, parseFloat(lat), parseFloat(lng));
+            }
+        } catch (e) {
+            console.error("Distance Matrix error, using fallback:", e);
+            distanceKm = calculateDistance(originLat, originLng, parseFloat(lat), parseFloat(lng));
+        }
+
         const deliverySettings: DeliverySettings = {
             fuelPricePerLiter: settings.fuelPricePerLiter,
             fuelConsumptionPerKm: settings.fuelConsumptionPerKm,
@@ -103,16 +97,11 @@ export async function POST(request: Request) {
             maintenanceFactor: settings.maintenanceFactor,
             freeDeliveryMinimum: settings.freeDeliveryMinimum,
             maxDeliveryDistance: settings.maxDeliveryDistance,
-            originLat: originLat,
-            originLng: originLng,
+            originLat,
+            originLng,
         };
 
-        // Calculate delivery cost
-        const result = calculateDeliveryCost(
-            distanceKm,
-            deliverySettings,
-            parseFloat(orderTotal)
-        );
+        const result = calculateDeliveryCost(distanceKm, deliverySettings, parseFloat(orderTotal));
 
         return NextResponse.json({
             ...result,

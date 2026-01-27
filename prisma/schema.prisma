@@ -1,6 +1,3 @@
-// Prisma Schema for Moovy Marketplace
-// Database: PostgreSQL (Docker for dev, production server for prod)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,61 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== USER & AUTH ====================
-
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String?   // Deprecated in favor of first/last, but kept for NextAuth
-  firstName     String?
-  lastName      String?
-  phone         String?
-  role          String    @default("USER") // USER, ADMIN, DRIVER, MERCHANT
-  emailVerified DateTime?
-  image         String?
-  
-  // Points system
-  pointsBalance        Int       @default(0)
-  pendingBonusPoints   Int       @default(0)  // Bonus points waiting for activation
-  bonusActivated       Boolean   @default(false) // Whether signup/referral bonuses were activated
-  
-  // Referral system
-  referralCode  String    @unique @default(cuid()) // User's own referral code
-  referredById  String?   // ID of user who referred this user
-  referredBy    User?     @relation("UserReferrals", fields: [referredById], references: [id])
-  referredUsers User[]    @relation("UserReferrals")
-  
-  // Referral records
-  referralsReceived Referral[] @relation("ReferralReferee")
-  referralsMade     Referral[] @relation("ReferralReferrer")
-  
-  addresses     Address[]
-  orders        Order[]
-  cart          CartItem[]
-  driver        Driver?
-  ownedMerchants Merchant[]
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  password           String
+  name               String?
+  firstName          String?
+  lastName           String?
+  phone              String?
+  role               String              @default("USER")
+  emailVerified      DateTime?
+  image              String?
+  pointsBalance      Int                 @default(0)
+  pendingBonusPoints Int                 @default(0)
+  bonusActivated     Boolean             @default(false)
+  referralCode       String              @unique @default(cuid())
+  referredById       String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  deletedAt          DateTime?
+  addresses          Address[]
+  cart               CartItem[]
+  driver             Driver?
+  ownedMerchants     Merchant[]
+  orders             Order[]
   pointsTransactions PointsTransaction[]
-  
-  // Support chat relations
-  supportChats     SupportChat[]    @relation("UserSupportChats")
-  sentSupportMsgs  SupportMessage[] @relation("SupportMessageSender")
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // Password reset
-  resetToken        String?
-  resetTokenExpiry  DateTime?
-  deletedAt     DateTime? // Soft delete for data retention
+  referralsReceived  Referral?           @relation("ReferralReferee")
+  referralsMade      Referral[]          @relation("ReferralReferrer")
+  supportChats       SupportChat[]       @relation("UserSupportChats")
+  sentSupportMsgs    SupportMessage[]    @relation("SupportMessageSender")
+  referredBy         User?               @relation("UserReferrals", fields: [referredById], references: [id])
+  referredUsers      User[]              @relation("UserReferrals")
 }
 
 model Address {
   id           String   @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  label        String   // "Casa", "Trabajo", etc.
+  label        String
   street       String
   number       String
   apartment    String?
@@ -72,526 +53,343 @@ model Address {
   city         String   @default("Ushuaia")
   province     String   @default("Tierra del Fuego")
   zipCode      String?
-  
-  // Geolocation for delivery calculation
   latitude     Float?
   longitude    Float?
-  
   isDefault    Boolean  @default(false)
-  orders       Order[]
-  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
 }
 
-// ==================== PRODUCTS ====================
-
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String            @id @default(cuid())
+  name        String            @unique
+  slug        String            @unique
   description String?
   image       String?
-  isActive    Boolean   @default(true)
-  order       Int       @default(0)
-  
+  isActive    Boolean           @default(true)
+  order       Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   products    ProductCategory[]
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
 
 model Product {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
-  slug        String    @unique
+  slug        String            @unique
   description String?
-  
-  merchantId  String?   // Optional for migration
-  merchant    Merchant? @relation(fields: [merchantId], references: [id])
-  
-  // Pricing
+  merchantId  String?
   price       Float
-  costPrice   Float     // Admin only - for margin calculation
-  
-  // Stock
-  stock       Int       @default(0)
-  minStock    Int       @default(5) // Alert threshold
-  
-  // Images
-  images      ProductImage[]
-  
-  // Categories (many-to-many)
-  categories  ProductCategory[]
-  
-  // Variants
-  variants    ProductVariant[]
-  
-  // Status
-  isActive    Boolean   @default(true)
-  isFeatured  Boolean   @default(false)
-  
-  // Relations
-  orderItems  OrderItem[]
+  costPrice   Float
+  stock       Int               @default(0)
+  minStock    Int               @default(5)
+  isActive    Boolean           @default(true)
+  isFeatured  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   cartItems   CartItem[]
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  orderItems  OrderItem[]
+  merchant    Merchant?         @relation(fields: [merchantId], references: [id])
+  categories  ProductCategory[]
+  images      ProductImage[]
+  variants    ProductVariant[]
 }
 
 model ProductCategory {
   id         String   @id @default(cuid())
   productId  String
   categoryId String
-  
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@unique([productId, categoryId])
 }
 
 model ProductImage {
   id        String  @id @default(cuid())
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   url       String
   alt       String?
   order     Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ProductVariant {
   id        String  @id @default(cuid())
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  name      String  // e.g., "500ml", "1L", "Grande"
-  price     Float?  // Override price if different
+  name      String
+  price     Float?
   stock     Int     @default(0)
   isActive  Boolean @default(true)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
-
-// ==================== SHOPPING CART ====================
 
 model CartItem {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
   quantity  Int      @default(1)
-  variantId String?  // If variant selected
-  
+  variantId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, productId, variantId])
 }
 
-// ==================== ORDERS ====================
-
 model Order {
-  id              String   @id @default(cuid())
-  orderNumber     String   @unique // PSJ-YYYYMMDD-XXXX format
-  
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  addressId       String
-  address         Address  @relation(fields: [addressId], references: [id])
-  
-  merchantId      String?  // Optional for now to support migration, but should be required
-  merchant        Merchant? @relation(fields: [merchantId], references: [id])
-  
-  items           OrderItem[]
-  
-  // Status
-  status          String   @default("PENDING") // PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED
-  
-  // Payment
-  paymentId       String?  // Mercado Pago ID
-  paymentStatus   String   @default("PENDING") // PENDING, APPROVED, REJECTED, REFUNDED
-  paymentMethod   String?
-  
-  // Amounts
-  subtotal        Float
-  deliveryFee     Float    @default(0)
-  discount        Float    @default(0)
-  total           Float
-
-  // Commission & Payout
-  moovyCommission Float?   @default(0)
-  merchantPayout  Float?   @default(0)
-  commissionPaid  Boolean  @default(false)
-  
-  // Delivery details
-  distanceKm      Float?
-  deliveryNotes   String?
-  estimatedTime   Int?     // Minutes
-  
-  // Driver assignment
-  driverId        String?
-  driver          Driver?  @relation(fields: [driverId], references: [id])
-  deliveryStatus  String?  // ASSIGNED, PICKED_UP, IN_TRANSIT, DELIVERED
-  deliveredAt     DateTime?
-  deliveryPhoto   String?
-  
-  // Auto-assignment tracking (for 60-second timeout cascade)
-  assignmentAttempts    Int       @default(0)
-  lastAssignmentAt      DateTime?
-  pendingDriverId       String?   // Driver who received offer but hasn't accepted yet
-  assignmentExpiresAt   DateTime? // When current offer expires (60s timeout)
-  attemptedDriverIds    String?   // JSON array of driver IDs already tried
-  
-  // Customer rating for driver
-  driverRating    Int?     // 1-5 stars
-  ratingComment   String?  // Optional feedback
-  ratedAt         DateTime?
-  
-  // Notes
-  customerNotes   String?
-  adminNotes      String?
-  cancelReason    String?  // Reason for cancellation if order is cancelled
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  String      @id @default(cuid())
+  orderNumber         String      @unique
+  userId              String
+  addressId           String
+  merchantId          String?
+  status              String      @default("PENDING")
+  paymentId           String?
+  paymentStatus       String      @default("PENDING")
+  paymentMethod       String?
+  subtotal            Float
+  deliveryFee         Float       @default(0)
+  discount            Float       @default(0)
+  total               Float
+  distanceKm          Float?
+  deliveryNotes       String?
+  estimatedTime       Int?
+  driverId            String?
+  deliveryStatus      String?
+  deliveredAt         DateTime?
+  deliveryPhoto       String?
+  customerNotes       String?
+  adminNotes          String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  cancelReason        String?
+  commissionPaid      Boolean     @default(false)
+  driverRating        Int?
+  merchantPayout      Float?      @default(0)
+  moovyCommission     Float?      @default(0)
+  ratedAt             DateTime?
+  ratingComment       String?
+  assignmentAttempts  Int         @default(0)
+  assignmentExpiresAt DateTime?
+  attemptedDriverIds  String?
+  lastAssignmentAt    DateTime?
+  pendingDriverId     String?
+  address             Address     @relation(fields: [addressId], references: [id])
+  driver              Driver?     @relation(fields: [driverId], references: [id])
+  merchant            Merchant?   @relation(fields: [merchantId], references: [id])
+  user                User        @relation(fields: [userId], references: [id])
+  items               OrderItem[]
 }
 
 model OrderItem {
-  id         String  @id @default(cuid())
-  orderId    String
-  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  productId  String
-  product    Product @relation(fields: [productId], references: [id])
-  
-  name       String  // Snapshot of product name
-  price      Float   // Snapshot of price at purchase time
-  quantity   Int
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String
+  name        String
+  price       Float
+  quantity    Int
   variantName String?
-  
-  subtotal   Float
+  subtotal    Float
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id])
 }
-
-// ==================== MERCHANTS ====================
 
 model Merchant {
-  id             String    @id @default(cuid())
-  name           String
-  slug           String    @unique // for url: moovy.com/store/burgers-joe
-  description    String?
-  image          String?
-  banner         String?
-  
-  // Status
-  isActive       Boolean   @default(true)
-  isOpen         Boolean   @default(true)
-  isVerified     Boolean   @default(false)
-  
-  // Premium/Advertising (Commercio paga para destacar)
-  isPremium      Boolean   @default(false)
-  premiumTier    String?   @default("basic") // basic, gold, platinum
-  premiumUntil   DateTime? // Fecha fin de suscripción premium
-  displayOrder   Int       @default(0) // Mayor = aparece primero
-  
-  // Commission (Porcentaje que cobra Moovy por ventas)
-  commissionRate Float     @default(8) // 8% por defecto
-  
-  // Contact & Location
-  email          String?
-  phone          String?
-  address        String?
-  latitude       Float?
-  longitude      Float?
-  ubicacion      Unsupported("geography(Point, 4326)")?
-  
-  // Delivery Settings
-  deliveryRadiusKm Float     @default(5)
-  deliveryTimeMin  Int       @default(30)
-  deliveryTimeMax  Int       @default(45)
-  deliveryFee      Float     @default(0)
-
-  minOrderAmount   Float     @default(0)
-  
-  // Business Info (from registration)
-  cuit             String?
-  category         String?   @default("Otro") // Rubro
-  
-  // Extended Business Info (admin only)
-  cuil             String?   // CUIL del titular
-  businessName     String?   // Razón social
-  bankAccount      String?   // CBU/Alias para pagos
-  
-  // Owner Extended Info
-  ownerDni         String?   // DNI del dueño
-  ownerBirthDate   DateTime? // Fecha de nacimiento
-  
-  // Activity Info
-  startedAt        DateTime? // Fecha inicio actividad comercial
-  
-  // Social Media
-  instagramUrl     String?
-  facebookUrl      String?
-  whatsappNumber   String?
-  
-  // Internal Admin Notes
-  adminNotes       String?
-  
-  // Relations
-  ownerId        String
-  owner          User      @relation(fields: [ownerId], references: [id])
-  products       Product[]
-  orders         Order[]
-  
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-}
-
-// ==================== DRIVERS ====================
-
-model Driver {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Vehicle info
-  vehicleType  String? // MOTO, AUTO, BICI
-  vehicleBrand String?
-  vehicleModel String?
-  vehicleYear  Int?
-  vehicleColor String?
-  licensePlate String?
-  
-  // Status
-  isActive  Boolean  @default(true)
-  isOnline  Boolean  @default(false)
-  
-  // Real-time location for proximity-based assignment
+  id               String                    @id @default(cuid())
+  name             String
+  slug             String                    @unique
+  description      String?
+  image            String?
+  banner           String?
+  isActive         Boolean                   @default(true)
+  isOpen           Boolean                   @default(true)
+  isVerified       Boolean                   @default(false)
+  email            String?
+  phone            String?
+  address          String?
   latitude         Float?
   longitude        Float?
-  ubicacion        Unsupported("geography(Point, 4326)")?
-  lastLocationAt   DateTime?
-  
-  // Availability: DISPONIBLE, OCUPADO, FUERA_DE_SERVICIO
-  availabilityStatus String @default("FUERA_DE_SERVICIO")
-  
-  // Stats
-  totalDeliveries Int @default(0)
-  rating    Float?
-  
-  orders    Order[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  deliveryRadiusKm Float                     @default(5)
+  deliveryTimeMin  Int                       @default(30)
+  deliveryTimeMax  Int                       @default(45)
+  deliveryFee      Float                     @default(0)
+  minOrderAmount   Float                     @default(0)
+  cuit             String?
+  category         String?                   @default("Otro")
+  ownerId          String
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  adminNotes       String?
+  bankAccount      String?
+  businessName     String?
+  commissionRate   Float                     @default(8)
+  cuil             String?
+  displayOrder     Int                       @default(0)
+  facebookUrl      String?
+  instagramUrl     String?
+  isPremium        Boolean                   @default(false)
+  ownerBirthDate   DateTime?
+  ownerDni         String?
+  premiumTier      String?                   @default("basic")
+  premiumUntil     DateTime?
+  startedAt        DateTime?
+  whatsappNumber   String?
+  ubicacion        Unsupported("geography")?
+  owner            User                      @relation(fields: [ownerId], references: [id])
+  orders           Order[]
+  products         Product[]
 }
 
-
-// ==================== STORE SETTINGS ====================
+model Driver {
+  id                 String                    @id @default(cuid())
+  userId             String                    @unique
+  vehicleType        String?
+  vehicleBrand       String?
+  vehicleModel       String?
+  vehicleYear        Int?
+  vehicleColor       String?
+  licensePlate       String?
+  isActive           Boolean                   @default(true)
+  isOnline           Boolean                   @default(false)
+  totalDeliveries    Int                       @default(0)
+  rating             Float?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  availabilityStatus String                    @default("FUERA_DE_SERVICIO")
+  lastLocationAt     DateTime?
+  latitude           Float?
+  longitude          Float?
+  ubicacion          Unsupported("geography")?
+  user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders             Order[]
+}
 
 model StoreSettings {
-  id                   String   @id @default("settings")
-  
-  // Store status
-  isOpen               Boolean  @default(true)
-  closedMessage        String   @default("Estamos cerrados. ¡Volvemos pronto!")
-  
-  // Maintenance mode (shows "Volvemos Pronto" landing page)
-  isMaintenanceMode    Boolean  @default(false)
-  maintenanceMessage   String   @default("¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia.")
-  
-  // Tienda (Storefront) maintenance mode
-  tiendaMaintenance    Boolean  @default(false)
-  
-  // Promo Popup (configurable desde admin)
-  promoPopupEnabled    Boolean  @default(false)
-  promoPopupTitle      String?
-  promoPopupMessage    String?
-  promoPopupImage      String?
-  promoPopupLink       String?
-  promoPopupButtonText String?  @default("Ver más")
-  promoPopupDismissable Boolean @default(true)
-  
-  // Delivery pricing config
-  fuelPricePerLiter    Float    @default(1200)   // Current fuel price
-  fuelConsumptionPerKm Float    @default(0.06)   // Liters per km (moto default)
-  baseDeliveryFee      Float    @default(500)    // Minimum fee per trip
-  maintenanceFactor    Float    @default(1.35)   // 35% for maintenance/profit
-  freeDeliveryMinimum  Float?                    // Null = no free delivery
-  maxDeliveryDistance  Float    @default(15)     // Max km for delivery
-  
-  // Store location (origin for distance calculation)
-  storeName            String   @default("Moovy Ushuaia")
-  storeAddress         String   @default("Ushuaia, Tierra del Fuego")
-  originLat            Float    @default(-54.8019)
-  originLng            Float    @default(-68.3030)
-  
-  // Contact
-  whatsappNumber       String?
-  phone                String?
-  email                String?
-  
-  // Schedule
-  schedule             String?  // JSON with hours per day
-  
-  // Landing page cards visibility
-  showRepartidoresCard Boolean  @default(true)
-  showComerciosCard    Boolean  @default(true)
-  
-  updatedAt            DateTime @updatedAt
+  id                    String   @id @default("settings")
+  isOpen                Boolean  @default(true)
+  closedMessage         String   @default("Estamos cerrados. ¡Volvemos pronto!")
+  isMaintenanceMode     Boolean  @default(false)
+  maintenanceMessage    String   @default("¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia.")
+  fuelPricePerLiter     Float    @default(1200)
+  fuelConsumptionPerKm  Float    @default(0.06)
+  baseDeliveryFee       Float    @default(500)
+  maintenanceFactor     Float    @default(1.35)
+  freeDeliveryMinimum   Float?
+  maxDeliveryDistance   Float    @default(15)
+  storeName             String   @default("Moovy Ushuaia")
+  storeAddress          String   @default("Ushuaia, Tierra del Fuego")
+  originLat             Float    @default(-54.8019)
+  originLng             Float    @default(-68.3030)
+  whatsappNumber        String?
+  phone                 String?
+  email                 String?
+  schedule              String?
+  updatedAt             DateTime @updatedAt
+  promoPopupButtonText  String?  @default("Ver más")
+  promoPopupDismissable Boolean  @default(true)
+  promoPopupEnabled     Boolean  @default(false)
+  promoPopupImage       String?
+  promoPopupLink        String?
+  promoPopupMessage     String?
+  promoPopupTitle       String?
+  showComerciosCard     Boolean  @default(true)
+  showRepartidoresCard  Boolean  @default(true)
+  tiendaMaintenance     Boolean  @default(false)
 }
-
-// ==================== POINTS / LOYALTY SYSTEM ====================
 
 model PointsConfig {
   id                   String   @id @default("points_config")
-  
-  // Earning points
-  pointsPerDollar      Float    @default(1)     // Points earned per $1 spent
-  minPurchaseForPoints Float    @default(0)     // Minimum purchase to earn points
-  
-  // Redeeming points
-  pointsValue          Float    @default(0.01)  // Value in $ of each point
-  minPointsToRedeem    Int      @default(100)   // Minimum points to redeem
-  maxDiscountPercent   Float    @default(50)    // Max % discount with points
-  
-  // Bonuses
-  signupBonus          Int      @default(100)   // Points for new users
-  referralBonus        Int      @default(200)   // Points for referring
-  reviewBonus          Int      @default(10)    // Points for reviews
-  
-  // Expiration
-  pointsExpireDays     Int?                     // Null = never expire
-  
+  pointsPerDollar      Float    @default(1)
+  minPurchaseForPoints Float    @default(0)
+  pointsValue          Float    @default(0.01)
+  minPointsToRedeem    Int      @default(100)
+  maxDiscountPercent   Float    @default(50)
+  signupBonus          Int      @default(100)
+  referralBonus        Int      @default(200)
+  reviewBonus          Int      @default(10)
+  pointsExpireDays     Int?
   updatedAt            DateTime @updatedAt
 }
 
 model PointsTransaction {
-  id            String   @id @default(cuid())
-  
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  orderId       String?  // Related order if applicable
-  
-  // Transaction type: EARN, REDEEM, BONUS, EXPIRE, ADJUSTMENT
-  type          String
-  
-  // Amount: positive = earned, negative = spent/expired
-  amount        Int
-  balanceAfter  Int      // Balance after this transaction
-  
-  description   String?  // Human readable description
-  
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  orderId      String?
+  type         String
+  amount       Int
+  balanceAfter Int
+  description  String?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-// ==================== REFERRAL SYSTEM ====================
 
 model Referral {
-  id            String   @id @default(cuid())
-  
-  // The user who made the referral (referrer)
-  referrerId    String
-  referrer      User     @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
-  
-  // The user who was referred (referee/new user)
-  refereeId     String
-  referee       User     @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
-  
-  // Referral code used
-  codeUsed      String
-  
-  // Points awarded
-  referrerPoints Int     @default(50)  // Points given to referrer
-  refereePoints  Int     @default(100) // Bonus points to referee (signup)
-  
-  // Status
-  status        String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
-  
-  createdAt     DateTime @default(now())
-  
-  @@unique([refereeId]) // A user can only be referred once
+  id             String   @id @default(cuid())
+  referrerId     String
+  refereeId      String   @unique
+  codeUsed       String
+  referrerPoints Int      @default(50)
+  refereePoints  Int      @default(100)
+  status         String   @default("COMPLETED")
+  createdAt      DateTime @default(now())
+  referee        User     @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
+  referrer       User     @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
 }
-
-// ==================== SAVED CART ====================
 
 model SavedCart {
   id         String   @id @default(cuid())
   userId     String   @unique
-  items      Json     // Cart items stored as JSON array
-  merchantId String?  // Current merchant in cart (if applicable)
-  
+  items      Json
+  merchantId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
 
-// ==================== SUPPORT CHAT ====================
-
 model SupportChat {
-  id          String    @id @default(cuid())
-  
-  // User who initiated the chat (merchant owner or driver)
-  userId      String
-  user        User      @relation("UserSupportChats", fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Optional: link to merchant if chat is from a merchant
-  merchantId  String?
-  
-  // Chat metadata
-  subject     String?   // Optional subject/topic
-  status      String    @default("open") // open, closed, pending
-  
-  // Messages
-  messages    SupportMessage[]
-  
-  // Last message timestamp for sorting
-  lastMessageAt DateTime @default(now())
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String           @id @default(cuid())
+  userId        String
+  merchantId    String?
+  subject       String?
+  status        String           @default("open")
+  lastMessageAt DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  user          User             @relation("UserSupportChats", fields: [userId], references: [id], onDelete: Cascade)
+  messages      SupportMessage[]
 }
 
 model SupportMessage {
   id          String      @id @default(cuid())
-  
   chatId      String
-  chat        SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  
-  // Sender
   senderId    String
-  sender      User        @relation("SupportMessageSender", fields: [senderId], references: [id])
-  
-  // Message content
   content     String
-  
-  // Flag to identify if from admin
   isFromAdmin Boolean     @default(false)
-  
-  // Read status
   isRead      Boolean     @default(false)
-  
   createdAt   DateTime    @default(now())
+  chat        SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender      User        @relation("SupportMessageSender", fields: [senderId], references: [id])
 }
-
-// ==================== ORDER BACKUP ====================
 
 model OrderBackup {
   id          String   @id @default(cuid())
-  
-  // Identifier for the backup
-  backupName  String   // e.g., "backup-2024-01-23-12:30"
-  
-  // Original order data stored as JSON
-  orderData   String   // JSON string with all order info
-  
-  // Metadata
-  orderId     String?  // Original order ID (nullable since order is deleted)
-  orderNumber String?  // Order number for reference
-  total       Float?   // Order total for quick reference
-  
-  deletedBy   String?  // ID of admin who deleted
+  backupName  String
+  orderData   String
+  orderId     String?
+  orderNumber String?
+  total       Float?
+  deletedBy   String?
   deletedAt   DateTime @default(now())
-  
   createdAt   DateTime @default(now())
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
 }

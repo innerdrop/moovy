@@ -1,29 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useRef } from "react";
-
-// Dynamic imports for Leaflet (SSR incompatible)
-const MapContainer = dynamic(
-    () => import("react-leaflet").then((mod) => mod.MapContainer),
-    { ssr: false }
-);
-const TileLayer = dynamic(
-    () => import("react-leaflet").then((mod) => mod.TileLayer),
-    { ssr: false }
-);
-const Marker = dynamic(
-    () => import("react-leaflet").then((mod) => mod.Marker),
-    { ssr: false }
-);
-const Popup = dynamic(
-    () => import("react-leaflet").then((mod) => mod.Popup),
-    { ssr: false }
-);
-const Polyline = dynamic(
-    () => import("react-leaflet").then((mod) => mod.Polyline),
-    { ssr: false }
-);
+import { useState, useCallback, useEffect } from "react";
+import { GoogleMap, useJsApiLoader, DirectionsService, DirectionsRenderer, Marker } from "@react-google-maps/api";
+import { Loader2 } from "lucide-react";
 
 interface RiderMiniMapProps {
     driverLat?: number;
@@ -37,13 +16,19 @@ interface RiderMiniMapProps {
     height?: string;
 }
 
-/**
- * Mini-map component for rider dashboard showing:
- * - Driver position (blue)
- * - Merchant/pickup location (orange)
- * - Customer/delivery location (green)
- * - Route line between points
- */
+const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places", "geometry"];
+
+const containerStyle = {
+    width: "100%",
+    height: "100%",
+};
+
+// Default center (Ushuaia)
+const defaultCenter = {
+    lat: -54.8019,
+    lng: -68.3030,
+};
+
 export default function RiderMiniMap({
     driverLat,
     driverLng,
@@ -53,97 +38,130 @@ export default function RiderMiniMap({
     customerLat,
     customerLng,
     customerAddress = "Cliente",
-    height = "200px"
+    height = "250px"
 }: RiderMiniMapProps) {
-    const mapRef = useRef<any>(null);
+    const [response, setResponse] = useState<google.maps.DirectionsResult | null>(null);
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+        libraries,
+    });
 
-    // Calculate center point (prefer merchant, then customer, then driver)
-    const centerLat = merchantLat || customerLat || driverLat || -54.8019;
-    const centerLng = merchantLng || customerLng || driverLng || -68.3030;
-
-    // Build route points for polyline
-    const routePoints: [number, number][] = [];
-    if (driverLat && driverLng) routePoints.push([driverLat, driverLng]);
-    if (merchantLat && merchantLng) routePoints.push([merchantLat, merchantLng]);
-    if (customerLat && customerLng) routePoints.push([customerLat, customerLng]);
-
-    // Fit bounds to show all markers
-    useEffect(() => {
-        if (mapRef.current && routePoints.length > 1) {
-            try {
-                const map = mapRef.current;
-                // Create bounds from all points
-                const L = require("leaflet");
-                const bounds = L.latLngBounds(routePoints);
-                map.fitBounds(bounds, { padding: [30, 30] });
-            } catch (e) {
-                // Ignore if leaflet not loaded yet
-            }
+    const directionsCallback = useCallback((res: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+        if (res !== null && status === "OK") {
+            setResponse(res);
+        } else {
+            console.error(`Directions request failed: ${status}`);
         }
-    }, [routePoints]);
+    }, []);
 
-    if (typeof window === "undefined") return null;
+    // Calculate center
+    const center = merchantLat && merchantLng
+        ? { lat: merchantLat, lng: merchantLng }
+        : (driverLat && driverLng ? { lat: driverLat, lng: driverLng } : defaultCenter);
 
     return (
-        <div style={{ height, width: "100%" }} className="rounded-lg overflow-hidden border border-gray-200">
-            <MapContainer
-                center={[centerLat, centerLng]}
-                zoom={14}
-                style={{ height: "100%", width: "100%" }}
-                ref={mapRef}
-                zoomControl={false}
-                attributionControl={false}
-            >
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+        <div style={{ height, width: "100%" }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative">
+            {isLoaded ? (
+                <GoogleMap
+                    mapContainerStyle={containerStyle}
+                    center={center}
+                    zoom={14}
+                    options={{
+                        disableDefaultUI: true,
+                        zoomControl: false,
+                        styles: [
+                            {
+                                featureType: "poi",
+                                elementType: "labels",
+                                stylers: [{ visibility: "off" }],
+                            },
+                        ],
+                    }}
+                >
+                    {/* Directions Service */}
+                    {driverLat && driverLng && merchantLat && merchantLng && (
+                        <DirectionsService
+                            options={{
+                                origin: { lat: driverLat, lng: driverLng },
+                                destination: customerLat && customerLng
+                                    ? { lat: customerLat, lng: customerLng }
+                                    : { lat: merchantLat, lng: merchantLng },
+                                waypoints: customerLat && customerLng
+                                    ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
+                                    : [],
+                                travelMode: google.maps.TravelMode.DRIVING, // or MOTORCYCLE if available in API
+                            }}
+                            callback={directionsCallback}
+                        />
+                    )}
 
-                {/* Route polyline */}
-                {routePoints.length > 1 && (
-                    <Polyline
-                        positions={routePoints}
-                        color="#3b82f6"
-                        weight={3}
-                        opacity={0.7}
-                        dashArray="10, 10"
-                    />
-                )}
+                    {/* Directions Renderer */}
+                    {response !== null && (
+                        <DirectionsRenderer
+                            options={{
+                                directions: response,
+                                suppressMarkers: true, // We'll use our own custom markers
+                                polylineOptions: {
+                                    strokeColor: "#3b82f6",
+                                    strokeWeight: 5,
+                                    strokeOpacity: 0.8,
+                                },
+                            }}
+                        />
+                    )}
 
-                {/* Driver marker (blue) */}
-                {driverLat && driverLng && (
-                    <Marker position={[driverLat, driverLng]}>
-                        <Popup>
-                            <div className="text-center">
-                                <p className="font-bold text-blue-600">📍 Tu ubicación</p>
-                            </div>
-                        </Popup>
-                    </Marker>
-                )}
+                    {/* Custom Markers */}
+                    {/* Driver */}
+                    {driverLat && driverLng && (
+                        <Marker
+                            position={{ lat: driverLat, lng: driverLng }}
+                            icon={{
+                                url: "/markers/driver-marker.png", // Fallback to custom SVG if images don't exist
+                                scaledSize: new google.maps.Size(40, 40),
+                            }}
+                            title="Tu ubicación"
+                        />
+                    )}
 
-                {/* Merchant marker (orange) */}
-                {merchantLat && merchantLng && (
-                    <Marker position={[merchantLat, merchantLng]}>
-                        <Popup>
-                            <div className="text-center">
-                                <p className="font-bold text-orange-600">🏪 {merchantName}</p>
-                                <p className="text-xs text-gray-500">Punto de retiro</p>
-                            </div>
-                        </Popup>
-                    </Marker>
-                )}
+                    {/* Merchant */}
+                    {merchantLat && merchantLng && (
+                        <Marker
+                            position={{ lat: merchantLat, lng: merchantLng }}
+                            icon={{
+                                path: google.maps.SymbolPath.CIRCLE,
+                                fillOpacity: 1,
+                                fillColor: "#f97316", // Orange
+                                strokeColor: "white",
+                                strokeWeight: 2,
+                                scale: 8,
+                            }}
+                            title={merchantName}
+                        />
+                    )}
 
-                {/* Customer marker (green) */}
-                {customerLat && customerLng && (
-                    <Marker position={[customerLat, customerLng]}>
-                        <Popup>
-                            <div className="text-center">
-                                <p className="font-bold text-green-600">🏠 {customerAddress}</p>
-                                <p className="text-xs text-gray-500">Destino</p>
-                            </div>
-                        </Popup>
-                    </Marker>
-                )}
-            </MapContainer>
+                    {/* Customer */}
+                    {customerLat && customerLng && (
+                        <Marker
+                            position={{ lat: customerLat, lng: customerLng }}
+                            icon={{
+                                path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                                fillOpacity: 1,
+                                fillColor: "#22c55e", // Green
+                                strokeColor: "white",
+                                strokeWeight: 2,
+                                scale: 6,
+                            }}
+                            title={customerAddress}
+                        />
+                    )}
+                </GoogleMap>
+            ) : (
+                <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                    <p className="text-sm text-gray-500 font-medium">Cargando mapa interactivo...</p>
+                </div>
+            )}
         </div>
     );
 }

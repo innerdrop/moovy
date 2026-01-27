@@ -19,6 +19,7 @@ import {
     CheckCircle,
     AlertCircle
 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface DeliveryResult {
     distanceKm: number;
@@ -43,6 +44,8 @@ export default function CheckoutPage() {
         floor: "",
         city: "",
         notes: "",
+        latitude: undefined as number | undefined,
+        longitude: undefined as number | undefined,
     });
     // Validated Address ID (from saved addresses)
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -55,6 +58,8 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
+    const [saveAddress, setSaveAddress] = useState(false);
+    const [addressLabel, setAddressLabel] = useState("Casa");
 
     // Points state
     const [pointsUsed, setPointsUsed] = useState(0);
@@ -113,7 +118,9 @@ export default function CheckoutPage() {
             number: addr.number,
             floor: addr.apartment || "",
             city: addr.city,
-            notes: "", // Clear notes for fresh delivery instructions
+            notes: "",
+            latitude: addr.latitude || undefined,
+            longitude: addr.longitude || undefined,
         });
         // Reset delivery calculation when address changes
         setDeliveryResult(null);
@@ -128,6 +135,8 @@ export default function CheckoutPage() {
             floor: "",
             city: "Ushuaia",
             notes: "",
+            latitude: undefined,
+            longitude: undefined,
         });
         setDeliveryResult(null);
     };
@@ -150,6 +159,8 @@ export default function CheckoutPage() {
                         street: address.street,
                         number: address.number,
                         city: address.city || "Ushuaia",
+                        latitude: address.latitude,
+                        longitude: address.longitude,
                     },
                     merchantId: useCartStore.getState().merchantId,
                     orderTotal: subtotal,
@@ -185,6 +196,29 @@ export default function CheckoutPage() {
                 return;
             }
 
+            // If user wants to save the address and it's a new one
+            if (isNewAddress && saveAddress) {
+                try {
+                    await fetch("/api/profile/addresses", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            label: addressLabel,
+                            street: address.street,
+                            number: address.number,
+                            floor: address.floor,
+                            city: address.city,
+                            latitude: address.latitude,
+                            longitude: address.longitude,
+                            isDefault: savedAddresses.length === 0 // Make default if it's the first one
+                        })
+                    });
+                } catch (addrErr) {
+                    console.error("Error saving address to profile:", addrErr);
+                    // We don't block the order if address saving fails
+                }
+            }
+
             // Create order via API
             const response = await fetch("/api/orders", {
                 method: "POST",
@@ -206,6 +240,8 @@ export default function CheckoutPage() {
                         number: address.number,
                         floor: address.floor,
                         city: address.city,
+                        latitude: address.latitude,
+                        longitude: address.longitude,
                     } : undefined,
                     paymentMethod,
                     deliveryFee: deliveryResult.isFreeDelivery ? 0 : deliveryResult.totalCost,
@@ -358,40 +394,26 @@ export default function CheckoutPage() {
                                 {/* Address Form */}
                                 {(isNewAddress || savedAddresses.length === 0) ? (
                                     <div className="space-y-4 animate-fadeIn">
-                                        <div className="grid md:grid-cols-3 gap-4">
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Calle *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={address.street}
-                                                    onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                                                    placeholder="Av. Libertador"
-                                                    autoComplete="off"
-                                                    data-autofill-ignore="true"
-                                                    className="input"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Número *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={address.number}
-                                                    onChange={(e) => setAddress({ ...address, number: e.target.value })}
-                                                    placeholder="123"
-                                                    autoComplete="off"
-                                                    data-autofill-ignore="true"
-                                                    className="input"
-                                                    required
-                                                />
-                                            </div>
+                                        <div className="md:col-span-3">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Dirección *
+                                            </label>
+                                            <AddressAutocomplete
+                                                value={address.street && address.number ? `${address.street} ${address.number}` : address.street}
+                                                onChange={(val, lat, lng, street, num) => {
+                                                    setAddress({
+                                                        ...address,
+                                                        street: street || val,
+                                                        number: num || "",
+                                                        latitude: lat,
+                                                        longitude: lng,
+                                                    });
+                                                }}
+                                                placeholder="Buscá tu calle y número..."
+                                            />
                                         </div>
 
-                                        <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="grid md:grid-cols-1 gap-4 mt-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                                     Piso/Depto (opcional)
@@ -402,17 +424,6 @@ export default function CheckoutPage() {
                                                     onChange={(e) => setAddress({ ...address, floor: e.target.value })}
                                                     placeholder="1°A"
                                                     className="input"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Ciudad
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={address.city}
-                                                    className="input bg-gray-50"
-                                                    disabled
                                                 />
                                             </div>
                                         </div>
@@ -445,6 +456,35 @@ export default function CheckoutPage() {
                                         rows={2}
                                     />
                                 </div>
+
+                                {isNewAddress && (
+                                    <div className="mt-6 flex flex-col gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={saveAddress}
+                                                onChange={(e) => setSaveAddress(e.target.checked)}
+                                                className="w-5 h-5 rounded border-gray-300 text-moovy focus:ring-moovy"
+                                            />
+                                            <span className="text-sm font-semibold text-navy">Guardar dirección para futuros pedidos</span>
+                                        </label>
+
+                                        {saveAddress && (
+                                            <div className="animate-fadeIn pl-8">
+                                                <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wider">
+                                                    Etiqueta (ej: Casa, Trabajo)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={addressLabel}
+                                                    onChange={(e) => setAddressLabel(e.target.value)}
+                                                    className="w-full max-w-xs px-3 py-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-moovy bg-white"
+                                                    placeholder="Nombre de la ubicación..."
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <button
                                     onClick={() => {

@@ -80,6 +80,8 @@ export async function PATCH(
                     neighborhood: data.neighborhood,
                     city: data.city,
                     province: data.province,
+                    latitude: data.latitude,
+                    longitude: data.longitude,
                     isDefault: data.isDefault,
                     // Prisma ignores undefined values in update usually, but explicit cleaner is good practice if using spread
                 }
