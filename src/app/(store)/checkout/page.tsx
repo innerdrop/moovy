@@ -367,6 +367,8 @@ export default function CheckoutPage() {
                                                     value={address.street}
                                                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
                                                     placeholder="Av. Libertador"
+                                                    autoComplete="off"
+                                                    data-autofill-ignore="true"
                                                     className="input"
                                                     required
                                                 />
@@ -380,6 +382,8 @@ export default function CheckoutPage() {
                                                     value={address.number}
                                                     onChange={(e) => setAddress({ ...address, number: e.target.value })}
                                                     placeholder="123"
+                                                    autoComplete="off"
+                                                    data-autofill-ignore="true"
                                                     className="input"
                                                     required
                                                 />
@@ -598,14 +602,16 @@ export default function CheckoutPage() {
                                             disabled={isSubmitting}
                                             className="btn-primary flex-1 flex items-center justify-center gap-2"
                                         >
-                                            {isSubmitting ? (
-                                                <>
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                    Procesando...
-                                                </>
-                                            ) : (
-                                                "Confirmar Pedido"
-                                            )}
+                                            <span className="flex items-center gap-2">
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                        Procesando...
+                                                    </>
+                                                ) : (
+                                                    "Confirmar Pedido"
+                                                )}
+                                            </span>
                                         </button>
                                     </div>
                                 </div>
