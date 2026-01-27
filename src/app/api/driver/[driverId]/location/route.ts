@@ -7,11 +7,12 @@ import prisma from "@/lib/prisma";
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { driverId: string } }
+    context: { params: Promise<{ driverId: string }> }
 ) {
     try {
+        const { driverId } = await context.params;
         const driver = await prisma.driver.findUnique({
-            where: { id: params.driverId },
+            where: { id: driverId },
             select: {
                 id: true,
                 latitude: true,
