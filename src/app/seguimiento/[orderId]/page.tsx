@@ -129,11 +129,23 @@ export default function TrackingPage() {
         // Real-time driver position updates
         socket.on("posicion_repartidor", (data: DriverPosition) => {
             console.log("[Tracking] Driver position update:", data);
-            setDriverPosition(data);
 
-            // Smooth pan map to driver position
+            setDriverPosition(prev => {
+                // If we already have a position, we can animate/interpolate later
+                // For now, just setting it will trigger a re-render
+                return data;
+            });
+
+            // Smooth pan map to driver position if it's far from center
             if (mapRef.current) {
-                mapRef.current.panTo([data.lat, data.lng], { animate: true, duration: 1 });
+                const map = mapRef.current;
+                const center = map.getCenter();
+                const distToCenter = calculateDistanceInMeters(center.lat, center.lng, data.lat, data.lng);
+
+                // Only pan if driver is move than 100m from current center to avoid constant jumping
+                if (distToCenter > 100) {
+                    map.panTo([data.lat, data.lng], { animate: true, duration: 1.5 });
+                }
             }
         });
 
@@ -146,6 +158,45 @@ export default function TrackingPage() {
             socket.disconnect();
         };
     }, [orderId, order]);
+
+    // Helper for frontend distance calculation
+    function calculateDistanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+        const R = 6371000; // Radius of the earth in meters
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // Calculate remaining distance and ETA
+    const getTravelStats = () => {
+        if (!driverPosition || !order?.address.latitude || !order?.address.longitude) return null;
+
+        const distMeters = calculateDistanceInMeters(
+            driverPosition.lat,
+            driverPosition.lng,
+            order.address.latitude,
+            order.address.longitude
+        );
+
+        const distKm = distMeters / 1000;
+
+        // Assume average speed in Ushuaia (approx 25 km/h for moto delivery)
+        const avgSpeedKph = 25;
+        const timeHours = distKm / avgSpeedKph;
+        const timeMinutes = Math.max(1, Math.round(timeHours * 60 + 2)); // +2 mins for traffic/arrival
+
+        return {
+            distance: distKm.toFixed(1),
+            eta: timeMinutes
+        };
+    };
+
+    const stats = getTravelStats();
 
     if (loading) {
         return (
@@ -268,11 +319,18 @@ export default function TrackingPage() {
                     </div>
                     <div className="flex-1">
                         <h3 className="font-bold">{order.driver?.user.name || "Buscando repartidor..."}</h3>
-                        <p className="text-sm text-gray-400">
-                            {order.status === "DRIVER_ASSIGNED" && "Repartidor asignado"}
-                            {order.status === "PICKED_UP" && "Pedido recogido"}
-                            {["IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && "En camino a tu ubicación"}
-                        </p>
+                        <div className="flex flex-col">
+                            <p className="text-sm text-gray-400">
+                                {order.status === "DRIVER_ASSIGNED" && "Repartidor asignado"}
+                                {order.status === "PICKED_UP" && "Pedido recogido"}
+                                {["IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && "En camino a tu ubicación"}
+                            </p>
+                            {stats && (
+                                <p className="text-xs font-semibold text-orange-500 mt-0.5">
+                                    A {stats.distance} km • Llega en {stats.eta} min aprox.
+                                </p>
+                            )}
+                        </div>
                     </div>
                     {order.driver?.user.phone && (
                         <a

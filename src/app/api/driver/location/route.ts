@@ -65,18 +65,19 @@ export async function PUT(request: Request) {
         }
 
         if (shouldUpdate) {
-            await prisma.driver.update({
-                where: { id: driver.id },
-                data: {
-                    latitude,
-                    longitude,
-                    lastLocationAt: new Date(),
-                },
-            });
+            // Update both standard fields and PostGIS geography column
+            await prisma.$executeRaw`
+                UPDATE "Driver"
+                SET latitude = ${latitude},
+                    longitude = ${longitude},
+                    ubicacion = ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326),
+                    "lastLocationAt" = NOW()
+                WHERE id = ${driver.id}
+            `;
 
             return NextResponse.json({
                 updated: true,
-                message: "Ubicación actualizada",
+                message: "Ubicación actualizada correctamente con PostGIS",
             });
         }
 

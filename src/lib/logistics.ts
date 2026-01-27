@@ -14,7 +14,7 @@ export interface DriverWithDistance {
 }
 
 /**
- * Find available drivers sorted by proximity to a merchant
+ * Find available drivers sorted by proximity to a merchant using PostGIS
  * @param merchantLat Merchant latitude
  * @param merchantLng Merchant longitude
  * @param excludeDriverIds Array of driver IDs to exclude (already attempted)
@@ -24,43 +24,66 @@ export async function findNearestAvailableDrivers(
     merchantLat: number,
     merchantLng: number,
     excludeDriverIds: string[] = [],
-    maxDistanceKm: number = 15
+    maxDistanceKm: number = 20
 ): Promise<DriverWithDistance[]> {
-    // Get all available drivers with location
-    const drivers = await prisma.driver.findMany({
-        where: {
-            availabilityStatus: "DISPONIBLE",
-            isActive: true,
-            latitude: { not: null },
-            longitude: { not: null },
-            id: { notIn: excludeDriverIds },
-        },
-        select: {
-            id: true,
-            userId: true,
-            latitude: true,
-            longitude: true,
-            vehicleType: true,
-        },
-    });
+    // PostGIS query for proximity using the <-> operator (index-powered)
+    // ST_Distance returns meters for geography, so we divide by 1000 for km
+    // excludeDriverIds needs to be handled carefully in raw SQL
 
-    // Calculate distance for each driver and filter by max distance
-    const driversWithDistance: DriverWithDistance[] = drivers
-        .map((driver) => ({
-            ...driver,
-            latitude: driver.latitude!,
-            longitude: driver.longitude!,
-            distance: calculateDistance(
-                merchantLat,
-                merchantLng,
-                driver.latitude!,
-                driver.longitude!
-            ),
-        }))
-        .filter((d) => d.distance <= maxDistanceKm)
-        .sort((a, b) => a.distance - b.distance);
+    try {
+        const drivers = await prisma.$queryRaw`
+            SELECT 
+                d.id, 
+                d."userId", 
+                d.latitude, 
+                d.longitude, 
+                d."vehicleType",
+                ST_Distance(d.ubicacion, ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326)) / 1000 as distance
+            FROM "Driver" d
+            WHERE d."availabilityStatus" = 'DISPONIBLE'
+                AND d."isActive" = true
+                AND d.ubicacion IS NOT NULL
+                AND d.id NOT IN (${excludeDriverIds.length > 0 ? excludeDriverIds : ['none']})
+                AND ST_DWithin(d.ubicacion, ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326), ${maxDistanceKm * 1000})
+            ORDER BY d.ubicacion <-> ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326)
+            LIMIT 5
+        ` as any[];
 
-    return driversWithDistance;
+        return drivers.map(d => ({
+            ...d,
+            distance: Number(d.distance)
+        }));
+    } catch (error) {
+        console.error("[Logistics] Error in PostGIS query, falling back to Haversine:", error);
+
+        // Fallback to basic prisma query + haversine if PostGIS fails (safety)
+        const drivers = await prisma.driver.findMany({
+            where: {
+                availabilityStatus: "DISPONIBLE",
+                isActive: true,
+                latitude: { not: null },
+                longitude: { not: null },
+                id: { notIn: excludeDriverIds },
+            },
+        });
+
+        return drivers
+            .map((driver) => ({
+                id: driver.id,
+                userId: driver.userId,
+                latitude: driver.latitude!,
+                longitude: driver.longitude!,
+                vehicleType: driver.vehicleType,
+                distance: calculateDistance(
+                    merchantLat,
+                    merchantLng,
+                    driver.latitude!,
+                    driver.longitude!
+                ),
+            }))
+            .filter((d) => d.distance <= maxDistanceKm)
+            .sort((a, b) => a.distance - b.distance);
+    }
 }
 
 /**

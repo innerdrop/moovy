@@ -304,6 +304,7 @@ model Merchant {
   address        String?
   latitude       Float?
   longitude      Float?
+  ubicacion      Unsupported("geography(Point, 4326)")?
   
   // Delivery Settings
   deliveryRadiusKm Float     @default(5)
@@ -369,6 +370,7 @@ model Driver {
   // Real-time location for proximity-based assignment
   latitude         Float?
   longitude        Float?
+  ubicacion        Unsupported("geography(Point, 4326)")?
   lastLocationAt   DateTime?
   
   // Availability: DISPONIBLE, OCUPADO, FUERA_DE_SERVICIO
