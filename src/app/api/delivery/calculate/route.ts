@@ -6,7 +6,7 @@ import { calculateDistance, calculateDeliveryCost, DeliverySettings } from "@/li
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { destinationLat, destinationLng, address, orderTotal = 0 } = body;
+        const { destinationLat, destinationLng, address, merchantId, orderTotal = 0 } = body;
 
         let lat = destinationLat;
         let lng = destinationLng;
@@ -68,10 +68,29 @@ export async function POST(request: Request) {
             );
         }
 
-        // Calculate distance from store to destination
+        // Determine origin (Merchant or Global Store)
+        let originLat = settings.originLat;
+        let originLng = settings.originLng;
+        let originAddress = settings.storeAddress;
+
+        if (merchantId) {
+            const merchant = await prisma.merchant.findUnique({
+                where: { id: merchantId },
+                select: { latitude: true, longitude: true, address: true, name: true }
+            });
+
+            if (merchant?.latitude && merchant?.longitude) {
+                originLat = merchant.latitude;
+                originLng = merchant.longitude;
+                originAddress = merchant.address || merchant.name;
+                console.log(`[Delivery] Using merchant origin for ${merchant.name}: ${originLat}, ${originLng}`);
+            }
+        }
+
+        // Calculate distance from origin to destination
         const distanceKm = calculateDistance(
-            settings.originLat,
-            settings.originLng,
+            originLat,
+            originLng,
             parseFloat(lat),
             parseFloat(lng)
         );
@@ -84,8 +103,8 @@ export async function POST(request: Request) {
             maintenanceFactor: settings.maintenanceFactor,
             freeDeliveryMinimum: settings.freeDeliveryMinimum,
             maxDeliveryDistance: settings.maxDeliveryDistance,
-            originLat: settings.originLat,
-            originLng: settings.originLng,
+            originLat: originLat,
+            originLng: originLng,
         };
 
         // Calculate delivery cost
@@ -97,7 +116,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             ...result,
-            storeAddress: settings.storeAddress,
+            storeAddress: originAddress,
             message: result.isWithinRange
                 ? result.isFreeDelivery
                     ? "¡Envío gratis!"

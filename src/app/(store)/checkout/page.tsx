@@ -151,6 +151,7 @@ export default function CheckoutPage() {
                         number: address.number,
                         city: address.city || "Ushuaia",
                     },
+                    merchantId: useCartStore.getState().merchantId,
                     orderTotal: subtotal,
                 }),
             });
