@@ -13,7 +13,7 @@ interface AddressAutocompleteProps {
     restrictToArgentina?: boolean;
 }
 
-const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
+const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places", "geometry"];
 
 export function AddressAutocomplete({
     value,
