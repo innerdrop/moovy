@@ -120,7 +120,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Trust the host header (critical for VPS/Nginx)
     trustHost: true,
 
-    // Secret validation - MUST match middleware.ts
+    // Secret validation - MUST match proxy.ts
     secret: (() => {
         const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
         if (!secret && process.env.NODE_ENV === "production") {

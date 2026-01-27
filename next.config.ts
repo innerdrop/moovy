@@ -106,6 +106,9 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // transpile @react-google-maps/api for better Turbopack compatibility
+  transpilePackages: ["@react-google-maps/api"],
+
   // Disable x-powered-by header
   poweredByHeader: false,
 
