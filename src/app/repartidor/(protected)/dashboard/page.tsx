@@ -23,6 +23,13 @@ import {
     LogOut
 } from "lucide-react";
 import { useDriverLocation } from "@/hooks/useDriverLocation";
+import dynamic from "next/dynamic";
+
+// Dynamic import for mini-map (SSR incompatible)
+const RiderMiniMap = dynamic(
+    () => import("@/components/rider/RiderMiniMap"),
+    { ssr: false, loading: () => <div className="h-[150px] bg-gray-100 rounded-lg animate-pulse" /> }
+);
 
 export default function RepartidorDashboard() {
     const { data: session } = useSession();
@@ -298,9 +305,19 @@ export default function RepartidorDashboard() {
                                                 try {
                                                     const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
                                                     if (res.ok) {
-                                                        alert("¡Pedido aceptado! Ve al comercio.");
+                                                        // Refresh data first
                                                         const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
                                                         setDashboardData(fresh);
+
+                                                        // Open Google Maps with route to merchant
+                                                        if (pedido.merchantLat && pedido.merchantLng) {
+                                                            window.open(
+                                                                `https://www.google.com/maps/dir/?api=1&destination=${pedido.merchantLat},${pedido.merchantLng}&travelmode=motorcycle`,
+                                                                "_blank"
+                                                            );
+                                                        } else {
+                                                            alert("¡Pedido aceptado! Ve al comercio.");
+                                                        }
                                                     } else {
                                                         const err = await res.json();
                                                         alert(err.error || "Error");
@@ -475,6 +492,24 @@ export default function RepartidorDashboard() {
                                             <span className="font-medium">{pedido.direccion}</span>
                                         </div>
                                     </div>
+
+                                    {/* Mini-map showing route */}
+                                    {(pedido.merchantLat || pedido.navLat) && (
+                                        <div className="mb-3">
+                                            <RiderMiniMap
+                                                driverLat={driverLocation?.lat}
+                                                driverLng={driverLocation?.lng}
+                                                merchantLat={pedido.merchantLat}
+                                                merchantLng={pedido.merchantLng}
+                                                merchantName={pedido.comercio}
+                                                customerLat={pedido.customerLat}
+                                                customerLng={pedido.customerLng}
+                                                customerAddress={pedido.direccionCliente || "Cliente"}
+                                                height="150px"
+                                            />
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-2 mt-3">
                                         <button
                                             onClick={async () => {
@@ -519,7 +554,7 @@ export default function RepartidorDashboard() {
                                         </button>
                                         {pedido.navLat && pedido.navLng ? (
                                             <a
-                                                href={`https://www.google.com/maps/dir/?api=1&destination=${pedido.navLat},${pedido.navLng}`}
+                                                href={`https://www.google.com/maps/dir/?api=1&destination=${pedido.navLat},${pedido.navLng}&travelmode=motorcycle`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"

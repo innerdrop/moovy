@@ -95,12 +95,18 @@ export async function GET(request: Request) {
                 orderId: order.orderNumber || order.id.slice(-6), // Display ID for UI
                 comercio: order.merchant?.name || "Comercio",
                 direccion: displayAddress,
+                direccionCliente: order.address ? `${order.address.street} ${order.address.number}` : null,
                 labelDireccion: displayLabel,
                 estado: order.status.toLowerCase(),
                 hora: order.updatedAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-                // Navigation coordinates
+                // Navigation coordinates (for Google Maps button)
                 navLat,
-                navLng
+                navLng,
+                // Full coordinates for mini-map
+                merchantLat: order.merchant?.latitude,
+                merchantLng: order.merchant?.longitude,
+                customerLat: order.address?.latitude,
+                customerLng: order.address?.longitude
             };
         });
 

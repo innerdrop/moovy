@@ -222,14 +222,15 @@ export default function CheckoutPage() {
                 throw new Error(error.error || "Error al crear el pedido");
             }
 
-            // Clear cart and show success
+            // Clear cart and redirect to orders page
             clearCart();
             const result = await response.json();
             if (result.points?.earned) {
                 setEarnedPoints(result.points.earned);
                 showCelebration(result.points.earned);
             }
-            setOrderSuccess(true);
+            // Redirect to "Mis Pedidos" so user can track their order immediately
+            router.push("/mis-pedidos");
         } catch (error) {
             console.error("Error submitting order:", error);
             alert(error instanceof Error ? error.message : "Error al procesar el pedido");

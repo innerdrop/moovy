@@ -159,6 +159,40 @@ export default function TrackingPage() {
         };
     }, [orderId, order]);
 
+    // Polling fallback: fetch driver position every 10 seconds
+    useEffect(() => {
+        if (!orderId || !order?.driver?.id) return;
+
+        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
+        if (!trackableStatuses.includes(order.status)) return;
+
+        const pollDriverPosition = async () => {
+            try {
+                const res = await fetch(`/api/driver/${order.driver!.id}/location`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.latitude && data.longitude) {
+                        setDriverPosition({
+                            lat: data.latitude,
+                            lng: data.longitude,
+                            timestamp: Date.now()
+                        });
+                    }
+                }
+            } catch (e) {
+                // Ignore polling errors, WebSocket is primary
+            }
+        };
+
+        // Initial fetch
+        pollDriverPosition();
+
+        // Poll every 10 seconds as fallback
+        const interval = setInterval(pollDriverPosition, 10000);
+
+        return () => clearInterval(interval);
+    }, [orderId, order?.driver?.id, order?.status]);
+
     // Helper for frontend distance calculation
     function calculateDistanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
         const R = 6371000; // Radius of the earth in meters

@@ -34,6 +34,9 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
     PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-5 h-5" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
+    DRIVER_ASSIGNED: { label: "Repartidor en camino", color: "text-white", bgColor: "bg-blue-500", icon: <Truck className="w-5 h-5" /> },
+    PICKED_UP: { label: "Pedido recogido", color: "text-white", bgColor: "bg-orange-500", icon: <Truck className="w-5 h-5" /> },
+    ON_THE_WAY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     IN_DELIVERY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
@@ -75,7 +78,7 @@ export default function MisPedidosPage() {
         }
     }
 
-    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY"];
+    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"];
     const filteredOrders = orders.filter(order => {
         if (filter === "active") return activeStatuses.includes(order.status);
         if (filter === "completed") return !activeStatuses.includes(order.status);
@@ -207,6 +210,17 @@ export default function MisPedidosPage() {
                                         )}
                                         {isActive && (
                                             <div className="mt-4 pt-3 border-t border-gray-100">
+                                                {/* Show tracking button when driver is assigned or in delivery */}
+                                                {["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && (
+                                                    <Link
+                                                        href={`/seguimiento/${order.id}`}
+                                                        className="w-full mb-3 bg-[#e60012] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-98 transition"
+                                                    >
+                                                        <Truck className="w-5 h-5" />
+                                                        🔴 Seguir en Mapa (En Vivo)
+                                                    </Link>
+                                                )}
+
                                                 <div className="flex items-center gap-1">
                                                     {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step, idx) => {
                                                         const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"];
