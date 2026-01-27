@@ -73,6 +73,10 @@ export async function GET(request: Request) {
             orderBy: { updatedAt: "desc" }
         });
 
+        // Default coordinates for Ushuaia (fallback)
+        const DEFAULT_LAT_ACTIVE = -54.8019;
+        const DEFAULT_LNG_ACTIVE = -68.3030;
+
         const formattedActiveOrders = activeOrders.map(order => {
             // Determine relevant address based on status
             // If picked up, we need to go to customer. Before that, we are going to merchant.
@@ -80,14 +84,15 @@ export async function GET(request: Request) {
 
             let displayAddress = order.merchant?.address || "Comercio";
             let displayLabel = "Retirar en";
-            let navLat = order.merchant?.latitude;
-            let navLng = order.merchant?.longitude;
+            // Use merchant coords or fallback to default
+            let navLat = order.merchant?.latitude || DEFAULT_LAT_ACTIVE;
+            let navLng = order.merchant?.longitude || DEFAULT_LNG_ACTIVE;
 
             if (isPickedUp && order.address) {
                 displayAddress = `${order.address.street} ${order.address.number}, ${order.address.city}`;
                 displayLabel = "Entregar en";
-                navLat = order.address.latitude;
-                navLng = order.address.longitude;
+                navLat = order.address.latitude || DEFAULT_LAT_ACTIVE;
+                navLng = order.address.longitude || DEFAULT_LNG_ACTIVE;
             }
 
             return {
@@ -148,11 +153,15 @@ export async function GET(request: Request) {
             availableOrders = readyOrders;
             pendingOffers = pendingOrders;
         }
+        // Default coordinates for Ushuaia (fallback if merchant has no coordinates)
+        const DEFAULT_LAT = -54.8019;
+        const DEFAULT_LNG = -68.3030;
 
         // Helper to format orders with distance calculation
         const formatOrderWithLocation = (order: any) => {
-            const merchantLat = order.merchant?.latitude;
-            const merchantLng = order.merchant?.longitude;
+            // Use merchant coordinates or fallback to default Ushuaia center
+            const merchantLat = order.merchant?.latitude || DEFAULT_LAT;
+            const merchantLng = order.merchant?.longitude || DEFAULT_LNG;
             const customerLat = order.address?.latitude;
             const customerLng = order.address?.longitude;
 

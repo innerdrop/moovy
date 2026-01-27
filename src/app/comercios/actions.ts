@@ -250,6 +250,8 @@ const merchantSchema = z.object({
     deliveryTimeMax: z.coerce.number().int().min(10).optional(),
     deliveryFee: z.coerce.number().min(0).optional(),
     minOrderAmount: z.coerce.number().min(0).optional(),
+    latitude: z.coerce.number().optional().nullable(),
+    longitude: z.coerce.number().optional().nullable(),
 });
 
 export async function updateMerchant(formData: FormData) {
@@ -270,6 +272,8 @@ export async function updateMerchant(formData: FormData) {
         deliveryTimeMax: formData.get("deliveryTimeMax"),
         deliveryFee: formData.get("deliveryFee"),
         minOrderAmount: formData.get("minOrderAmount"),
+        latitude: formData.get("latitude"),
+        longitude: formData.get("longitude"),
     };
 
     const validation = merchantSchema.safeParse(rawData);
@@ -303,6 +307,8 @@ export async function updateMerchant(formData: FormData) {
                 deliveryTimeMax: data.deliveryTimeMax || 45,
                 deliveryFee: data.deliveryFee || 0,
                 minOrderAmount: data.minOrderAmount || 0,
+                latitude: data.latitude ?? null,
+                longitude: data.longitude ?? null,
             },
         });
 

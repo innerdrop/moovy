@@ -22,7 +22,7 @@ import {
     Clock,
     Sparkles
 } from "lucide-react";
-
+import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 function ComercioRegistroContent() {
     const router = useRouter();
@@ -48,6 +48,8 @@ function ComercioRegistroContent() {
         businessType: "",
         cuit: "",
         address: "",
+        latitude: null as number | null,
+        longitude: null as number | null,
         description: "",
     });
 
@@ -390,18 +392,18 @@ function ComercioRegistroContent() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Dirección del Comercio</label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        placeholder="Av. San Martín 1234, Ushuaia"
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
+                                <AddressAutocomplete
+                                    value={formData.address}
+                                    onChange={(address, lat, lng) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            address,
+                                            latitude: lat ?? prev.latitude,
+                                            longitude: lng ?? prev.longitude
+                                        }));
+                                    }}
+                                    placeholder="Av. San Martín 1234, Ushuaia"
+                                />
                             </div>
 
                             <div>

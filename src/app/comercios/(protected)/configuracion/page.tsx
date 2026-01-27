@@ -48,6 +48,8 @@ export default async function ConfiguracionPage() {
                     deliveryTimeMax: merchant.deliveryTimeMax,
                     deliveryFee: merchant.deliveryFee,
                     minOrderAmount: merchant.minOrderAmount,
+                    latitude: merchant.latitude,
+                    longitude: merchant.longitude,
                 }}
             />
         </div>

@@ -109,8 +109,9 @@ export default function TrackingPage() {
         const socket = io(`${socketUrl}/logistica`, {
             transports: ["websocket", "polling"],
             reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000,
+            timeout: 10000,
         });
 
         socketRef.current = socket;
@@ -123,6 +124,11 @@ export default function TrackingPage() {
 
         socket.on("disconnect", () => {
             console.log("[Tracking] Disconnected from socket server");
+            setConnected(false);
+        });
+
+        socket.on("connect_error", (err) => {
+            console.error("[Tracking] Socket connection error:", err.message);
             setConnected(false);
         });
 
@@ -261,7 +267,7 @@ export default function TrackingPage() {
     const centerLng = order.address.longitude || order.merchant?.longitude || -68.3030;
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+        <div className="h-screen bg-gray-900 text-white flex flex-col overflow-hidden">
             {/* Header */}
             <header className="bg-gray-800 p-4 flex items-center gap-4">
                 <button onClick={() => router.back()} className="p-2 hover:bg-gray-700 rounded-lg">

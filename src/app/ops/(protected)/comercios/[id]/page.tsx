@@ -24,6 +24,7 @@ import {
     Calendar,
     FileText
 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface Merchant {
     id: string;
@@ -38,6 +39,8 @@ interface Merchant {
     email: string | null;
     phone: string | null;
     address: string | null;
+    latitude: number | null;
+    longitude: number | null;
     category: string | null;
     cuit: string | null;
     cuil: string | null;
@@ -85,6 +88,9 @@ export default function MerchantDetailPage() {
         facebookUrl: "",
         whatsappNumber: "",
         adminNotes: "",
+        address: "",
+        latitude: null as number | null,
+        longitude: null as number | null,
     });
 
     useEffect(() => {
@@ -108,6 +114,9 @@ export default function MerchantDetailPage() {
                     facebookUrl: data.facebookUrl || "",
                     whatsappNumber: data.whatsappNumber || "",
                     adminNotes: data.adminNotes || "",
+                    address: data.address || "",
+                    latitude: data.latitude || null,
+                    longitude: data.longitude || null,
                 });
             }
         } catch (error) {
@@ -203,8 +212,8 @@ export default function MerchantDetailPage() {
                     <button
                         onClick={toggleVerified}
                         className={`px-4 py-2 rounded-lg font-medium transition ${merchant.isVerified
-                                ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                     >
                         {merchant.isVerified ? (
@@ -276,8 +285,8 @@ export default function MerchantDetailPage() {
                             <button
                                 onClick={() => setActiveTab("info")}
                                 className={`flex-1 py-3 px-4 text-sm font-medium transition ${activeTab === "info"
-                                        ? "bg-[#e60012] text-white"
-                                        : "text-gray-600 hover:bg-gray-50"
+                                    ? "bg-[#e60012] text-white"
+                                    : "text-gray-600 hover:bg-gray-50"
                                     }`}
                             >
                                 Información Extendida
@@ -285,8 +294,8 @@ export default function MerchantDetailPage() {
                             <button
                                 onClick={() => setActiveTab("legal")}
                                 className={`flex-1 py-3 px-4 text-sm font-medium transition ${activeTab === "legal"
-                                        ? "bg-[#e60012] text-white"
-                                        : "text-gray-600 hover:bg-gray-50"
+                                    ? "bg-[#e60012] text-white"
+                                    : "text-gray-600 hover:bg-gray-50"
                                     }`}
                             >
                                 Datos Fiscales
@@ -294,8 +303,8 @@ export default function MerchantDetailPage() {
                             <button
                                 onClick={() => setActiveTab("notes")}
                                 className={`flex-1 py-3 px-4 text-sm font-medium transition ${activeTab === "notes"
-                                        ? "bg-[#e60012] text-white"
-                                        : "text-gray-600 hover:bg-gray-50"
+                                    ? "bg-[#e60012] text-white"
+                                    : "text-gray-600 hover:bg-gray-50"
                                     }`}
                             >
                                 Notas Admin
@@ -375,6 +384,52 @@ export default function MerchantDetailPage() {
                                                 className="input w-full"
                                                 placeholder="+54 9 ..."
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t">
+                                        <h4 className="font-medium text-gray-700 mb-3">Ubicación y Dirección</h4>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    <MapPin className="w-4 h-4 inline mr-1" />
+                                                    Dirección
+                                                </label>
+                                                <AddressAutocomplete
+                                                    value={formData.address}
+                                                    onChange={(address, lat, lng) => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address,
+                                                            latitude: lat ?? prev.latitude,
+                                                            longitude: lng ?? prev.longitude
+                                                        }));
+                                                    }}
+                                                    placeholder="Dirección del comercio..."
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Latitud</label>
+                                                    <input
+                                                        type="number"
+                                                        value={formData.latitude || ""}
+                                                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })}
+                                                        className="input w-full bg-gray-50 text-gray-500"
+                                                        step="any"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Longitud</label>
+                                                    <input
+                                                        type="number"
+                                                        value={formData.longitude || ""}
+                                                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })}
+                                                        className="input w-full bg-gray-50 text-gray-500"
+                                                        step="any"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

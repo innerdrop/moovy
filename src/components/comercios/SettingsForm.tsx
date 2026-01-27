@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
 import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power } from "lucide-react";
+import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface SettingsFormProps {
     merchant: {
@@ -14,6 +15,8 @@ interface SettingsFormProps {
         email: string;
         phone: string;
         address: string;
+        latitude?: number | null;
+        longitude?: number | null;
         category: string;
         isOpen: boolean;
         deliveryTimeMin: number;
@@ -45,6 +48,9 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
     const [imageUrl, setImageUrl] = useState(merchant.image);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [address, setAddress] = useState(merchant.address);
+    const [lat, setLat] = useState<number | null>(merchant.latitude ?? null);
+    const [lng, setLng] = useState<number | null>(merchant.longitude ?? null);
 
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
@@ -80,8 +86,8 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
         <div className="space-y-6">
             {/* Store Status Toggle */}
             <div className={`rounded-xl p-4 border flex items-center justify-between ${isOpen
-                    ? "bg-green-50 border-green-200"
-                    : "bg-gray-100 border-gray-200"
+                ? "bg-green-50 border-green-200"
+                : "bg-gray-100 border-gray-200"
                 }`}>
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOpen ? "bg-green-500" : "bg-gray-400"
@@ -102,8 +108,8 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                     onClick={handleToggleStore}
                     disabled={isTogglingStore}
                     className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${isOpen
-                            ? "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-                            : "bg-green-600 text-white hover:bg-green-700"
+                        ? "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                        : "bg-green-600 text-white hover:bg-green-700"
                         }`}
                 >
                     {isTogglingStore ? (
@@ -235,14 +241,19 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                                 <MapPin className="w-4 h-4 inline mr-1" />
                                 Dirección
                             </label>
-                            <input
-                                name="address"
-                                type="text"
-                                defaultValue={merchant.address}
+                            <AddressAutocomplete
+                                value={address}
+                                onChange={(val, newLat, newLng) => {
+                                    setAddress(val);
+                                    if (newLat) setLat(newLat);
+                                    if (newLng) setLng(newLng);
+                                }}
                                 placeholder="Calle y número..."
-                                className="input"
-                                disabled={isLoading}
                             />
+                            {/* Hidden inputs for FormData */}
+                            <input type="hidden" name="address" value={address} />
+                            <input type="hidden" name="latitude" value={lat ?? ""} />
+                            <input type="hidden" name="longitude" value={lng ?? ""} />
                         </div>
                     </div>
                 </div>
@@ -329,7 +340,7 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                         Guardar Cambios
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }

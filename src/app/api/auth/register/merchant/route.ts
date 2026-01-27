@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
                     email: data.email,
                     phone: data.phone,
                     address: data.address,
+                    latitude: data.latitude ? parseFloat(data.latitude) : null,
+                    longitude: data.longitude ? parseFloat(data.longitude) : null,
                     description: data.description,
                     isActive: false, // Pending approval
                     isVerified: false

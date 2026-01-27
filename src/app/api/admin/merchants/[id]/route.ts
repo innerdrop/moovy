@@ -83,6 +83,9 @@ export async function PATCH(
         if (body.facebookUrl !== undefined) updateData.facebookUrl = body.facebookUrl || null;
         if (body.whatsappNumber !== undefined) updateData.whatsappNumber = body.whatsappNumber || null;
         if (body.adminNotes !== undefined) updateData.adminNotes = body.adminNotes || null;
+        if (body.address !== undefined) updateData.address = body.address || null;
+        if (body.latitude !== undefined) updateData.latitude = body.latitude !== null ? parseFloat(body.latitude) : null;
+        if (body.longitude !== undefined) updateData.longitude = body.longitude !== null ? parseFloat(body.longitude) : null;
 
         const merchant = await prisma.merchant.update({
             where: { id },

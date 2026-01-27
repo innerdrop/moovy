@@ -497,8 +497,8 @@ export default function RepartidorDashboard() {
                                     {(pedido.merchantLat || pedido.navLat) && (
                                         <div className="mb-3">
                                             <RiderMiniMap
-                                                driverLat={driverLocation?.lat}
-                                                driverLng={driverLocation?.lng}
+                                                driverLat={lat ?? undefined}
+                                                driverLng={lng ?? undefined}
                                                 merchantLat={pedido.merchantLat}
                                                 merchantLng={pedido.merchantLng}
                                                 merchantName={pedido.comercio}
