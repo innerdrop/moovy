@@ -19,28 +19,34 @@ function getPortalFromHost(host: string | null): PortalType {
 // Check maintenance mode via internal API
 async function isMaintenanceMode(request: NextRequest): Promise<boolean> {
     try {
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host') || 'localhost:3000';
-        const baseUrl = `${protocol}://${host}`;
+        // Use localhost to avoid hairpin NAT / loopback issues on VPS
+        const internalUrl = "http://127.0.0.1:3000/api/maintenance";
 
-        const res = await fetch(`${baseUrl}/api/maintenance`, {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500); // Sharp 1.5s timeout
+
+        const res = await fetch(internalUrl, {
             cache: 'no-store',
+            signal: controller.signal,
             headers: {
                 'x-middleware-check': 'true',
             },
         });
+
+        clearTimeout(timeoutId);
 
         if (res.ok) {
             const data = await res.json();
             return data.isMaintenanceMode === true;
         }
         return false;
-    } catch {
+    } catch (e) {
+        // If it fails or times out, assume NOT in maintenance to keep site alive
         return false;
     }
 }
 
-export default auth(async (request) => {
+export const proxy = auth(async (request) => {
     const { pathname } = request.nextUrl;
     const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
     const portal = getPortalFromHost(host);
