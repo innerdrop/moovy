@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowLeft, ShoppingBag, Briefcase, Compass, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Gift, Users, Award, ChevronRight, Bike, Store, Hotel, Map, Send, HelpCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState, useRef, useCallback } from "react";
 
 // ============================================
@@ -328,16 +329,27 @@ export default function LandingPage() {
 
     const currentColor = slidesConfig[currentSlide].color;
 
+    const { data: session } = useSession();
+    const isAdmin = (session?.user as any)?.role === "ADMIN";
+
     // Fetch site settings for card visibility
     useEffect(() => {
         fetch("/api/settings")
             .then(res => res.json())
-            .then(data => setSiteSettings({
-                showRepartidoresCard: data.showRepartidoresCard ?? true,
-                showComerciosCard: data.showComerciosCard ?? true,
-            }))
+            .then(data => {
+                // If maintenance mode is on and user is not admin, redirect
+                if (data.isMaintenanceMode && !isAdmin) {
+                    window.location.href = "/mantenimiento";
+                    return;
+                }
+
+                setSiteSettings({
+                    showRepartidoresCard: data.showRepartidoresCard ?? true,
+                    showComerciosCard: data.showComerciosCard ?? true,
+                });
+            })
             .catch(() => setSiteSettings({ showRepartidoresCard: true, showComerciosCard: true }));
-    }, []);
+    }, [isAdmin]);
 
     // Handle wheel for horizontal scroll ONLY (trackpad horizontal swipe)
     const handleWheel = useCallback((e: WheelEvent) => {

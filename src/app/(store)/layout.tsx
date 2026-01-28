@@ -42,7 +42,16 @@ export default function StoreLayout({
         fetch("/api/settings")
             .then(res => res.json())
             .then(data => {
-                if (data && data.promoPopupEnabled) {
+                if (!data) return;
+
+                // Check for store (tienda) maintenance
+                const isAdmin = (session?.user as any)?.role === "ADMIN";
+                if (data.tiendaMaintenance && !isAdmin) {
+                    window.location.href = "/mantenimiento";
+                    return;
+                }
+
+                if (data.promoPopupEnabled) {
                     setPromoSettings({
                         enabled: data.promoPopupEnabled,
                         title: data.promoPopupTitle,
@@ -55,7 +64,7 @@ export default function StoreLayout({
                 }
             })
             .catch(err => console.error("Error fetching settings:", err));
-    }, []);
+    }, [session]);
 
     // Callback when splash finishes
     const handleSplashDone = () => {
