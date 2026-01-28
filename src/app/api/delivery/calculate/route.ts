@@ -70,23 +70,34 @@ export async function POST(request: Request) {
             }
         }
 
-        // --- NEW: Calculate real road distance using Google Distance Matrix ---
+        // --- REAL ROAD DISTANCE: Google Distance Matrix ---
         let distanceKm = 0;
+        let isRealRoadDistance = false;
+
         try {
             const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-            const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLng}&destinations=${lat},${lng}&key=${apiKey}`;
+
+            // Build Distance Matrix URL with explicit driving mode
+            const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLng}&destinations=${lat},${lng}&mode=driving&units=metric&key=${apiKey}`;
+
+            console.log(`[DeliveryCalc] Requesting distance from ${originAddress} to destination...`);
+
             const distRes = await fetch(distUrl);
             const distData = await distRes.json();
 
             if (distData.status === "OK" && distData.rows[0].elements[0].status === "OK") {
-                // Distance is in meters
-                distanceKm = distData.rows[0].elements[0].distance.value / 1000;
+                // Distance value is in meters, convert to km
+                const distanceMeters = distData.rows[0].elements[0].distance.value;
+                distanceKm = distanceMeters / 1000;
+                isRealRoadDistance = true;
+                console.log(`[DeliveryCalc] Real road distance: ${distanceKm.toFixed(2)} km`);
             } else {
-                // Fallback to Haversine if API fails
+                console.warn(`[DeliveryCalc] Distance Matrix failed (${distData.status}), using fallback.`);
+                // Fallback to Haversine (straight line) if API fails
                 distanceKm = calculateDistance(originLat, originLng, parseFloat(lat), parseFloat(lng));
             }
         } catch (e) {
-            console.error("Distance Matrix error, using fallback:", e);
+            console.error("[DeliveryCalc] Critical error calling Distance Matrix:", e);
             distanceKm = calculateDistance(originLat, originLng, parseFloat(lat), parseFloat(lng));
         }
 
@@ -106,10 +117,13 @@ export async function POST(request: Request) {
         return NextResponse.json({
             ...result,
             storeAddress: originAddress,
+            isRealRoadDistance,
             message: result.isWithinRange
                 ? result.isFreeDelivery
                     ? "¡Envío gratis!"
-                    : `Costo de envío: $${result.totalCost}`
+                    : isRealRoadDistance
+                        ? `Costo de envío (recorrido real): $${result.totalCost}`
+                        : `Costo de envío (estimado): $${result.totalCost}`
                 : "Lo sentimos, la dirección está fuera de nuestra zona de delivery",
         });
     } catch (error) {

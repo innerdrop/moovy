@@ -27,6 +27,7 @@ interface DeliveryResult {
     isWithinRange: boolean;
     isFreeDelivery: boolean;
     message: string;
+    isRealRoadDistance?: boolean;
 }
 
 export default function CheckoutPage() {
@@ -539,8 +540,11 @@ export default function CheckoutPage() {
                                                         {deliveryResult.isFreeDelivery ? "¡Envío Gratis!" : "Envío disponible"}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-sm text-gray-600 flex items-center gap-1">
                                                     Distancia: {deliveryResult.distanceKm.toFixed(1)} km
+                                                    {deliveryResult.isRealRoadDistance && (
+                                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">Recorrido real</span>
+                                                    )}
                                                 </p>
                                                 {!deliveryResult.isFreeDelivery && (
                                                     <p className="text-xl font-bold text-moovy mt-2">
