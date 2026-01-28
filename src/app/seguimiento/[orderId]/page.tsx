@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { io, Socket } from "socket.io-client";
-import { ArrowLeft, Navigation, Phone, MapPin, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Navigation, Phone, MapPin, Clock, CheckCircle, Loader2, Package } from "lucide-react";
 
 interface OrderData {
     id: string;
@@ -23,12 +23,16 @@ interface OrderData {
             phone?: string;
         };
     };
+    driverRating?: number | null;
+    ratingComment?: string | null;
     merchant?: {
         name: string;
         latitude?: number;
         longitude?: number;
     };
 }
+
+import { Star } from "lucide-react";
 
 interface DriverPosition {
     lat: number;
@@ -57,6 +61,10 @@ export default function TrackingPage() {
     const [error, setError] = useState<string | null>(null);
     const [delivered, setDelivered] = useState(false);
     const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasRated, setHasRated] = useState(false);
 
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
@@ -93,7 +101,8 @@ export default function TrackingPage() {
     useEffect(() => {
         if (!orderId || !order) return;
 
-        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
+        // Only track when PICKED_UP or later (as requested)
+        const trackableStatuses = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
         if (!trackableStatuses.includes(order.status)) return;
 
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
@@ -143,6 +152,33 @@ export default function TrackingPage() {
         };
     })();
 
+    const handleRate = async () => {
+        if (rating === 0) {
+            alert("Por favor selecciona una calificación");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const res = await fetch(`/api/orders/${orderId}/rate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ rating, comment })
+            });
+
+            if (res.ok) {
+                setHasRated(true);
+            } else {
+                const data = await res.json();
+                alert(data.error || "Error al calificar");
+            }
+        } catch (e) {
+            alert("Error al enviar calificación");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (loading || !isLoaded) {
         return (
             <div className="h-screen bg-gray-900 flex flex-col items-center justify-center gap-4 text-white">
@@ -181,81 +217,152 @@ export default function TrackingPage() {
                 </div>
             </header>
 
-            {/* Delivered overlay */}
+            {/* Delivered overlay & Rating */}
             {delivered && (
-                <div className="absolute inset-0 bg-gray-900/95 flex flex-col items-center justify-center z-[100] p-6 text-center">
-                    <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-                        <CheckCircle className="w-16 h-16 text-green-500" />
-                    </div>
-                    <h2 className="text-3xl font-bold mb-2">¡Pedido Entregado!</h2>
-                    <p className="text-gray-400 mb-8 max-w-xs">Esperamos que disfrutes tu compra. Gracias por elegir Moovy.</p>
-                    <button
-                        onClick={() => router.push("/mis-pedidos")}
-                        className="w-full max-w-xs py-4 bg-orange-500 rounded-xl font-bold text-lg hover:bg-orange-600 transition shadow-xl shadow-orange-500/20"
-                    >
-                        Ver mis pedidos
-                    </button>
+                <div className="absolute inset-0 bg-gray-900/98 flex flex-col items-center justify-center z-[100] p-6 text-center animate-in fade-in duration-500">
+                    {!hasRated && !order.driverRating ? (
+                        <div className="w-full max-w-sm space-y-6">
+                            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <CheckCircle className="w-12 h-12 text-green-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-3xl font-bold mb-1">¡Entregado!</h2>
+                                <p className="text-gray-400">¿Cómo fue tu experiencia con {order.driver?.user.name.split(' ')[0] || "el repartidor"}?</p>
+                            </div>
+
+                            <div className="flex justify-center gap-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                        key={star}
+                                        onClick={() => setRating(star)}
+                                        className="p-1 transition-transform active:scale-90"
+                                    >
+                                        <Star
+                                            className={`w-10 h-10 transition-colors ${star <= rating ? "fill-orange-500 text-orange-500" : "text-gray-600"
+                                                }`}
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+
+                            <textarea
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                placeholder="Escribe un comentario sobre el servicio..."
+                                className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-sm focus:ring-2 focus:ring-orange-500 outline-none min-h-[100px] resize-none"
+                            />
+
+                            <button
+                                onClick={handleRate}
+                                disabled={isSubmitting}
+                                className="w-full py-4 bg-orange-500 rounded-xl font-bold text-lg hover:bg-orange-600 transition shadow-xl shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Enviando...
+                                    </>
+                                ) : "Enviar Valoración"}
+                            </button>
+
+                            <button
+                                onClick={() => router.push("/")}
+                                className="text-gray-500 text-sm hover:text-gray-300 transition"
+                            >
+                                Saltar por ahora
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-6 animate-in zoom-in duration-300">
+                            <div className="w-24 h-24 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto">
+                                <Star className="w-12 h-12 text-orange-500 fill-orange-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-3xl font-bold mb-2">¡Gracias por calificar!</h2>
+                                <p className="text-gray-400">Tu opinión ayuda a mejorar la comunidad de Moovy.</p>
+                            </div>
+                            <button
+                                onClick={() => router.push("/mis-pedidos")}
+                                className="w-full max-w-xs py-4 bg-gray-800 rounded-xl font-bold text-lg hover:bg-gray-700 transition"
+                            >
+                                Volver a mis pedidos
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Map */}
+            {/* Map Area */}
             <div className="flex-1 relative">
-                <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    center={center}
-                    zoom={16}
-                    onLoad={map => { mapRef.current = map; }}
-                    options={{
-                        disableDefaultUI: true,
-                        styles: [
-                            { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-                            { featureType: "transit", stylers: [{ visibility: "off" }] },
-                            { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
-                        ]
-                    }}
-                >
-                    {/* Driver Marker */}
-                    {driverPosition && (
-                        <Marker
-                            position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
-                            icon={{
-                                url: "/markers/driver-marker.png", // Ensure this exists or use a fallback
-                                scaledSize: new google.maps.Size(40, 40),
-                                anchor: new google.maps.Point(20, 20)
-                            }}
-                            onClick={() => setSelectedMarker("driver")}
-                        />
-                    )}
+                {/* Hide map if not picked up yet */}
+                {!["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY", "DELIVERED"].includes(order.status) ? (
+                    <div className="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center text-center p-8">
+                        <div className="w-24 h-24 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                            <Package className="w-12 h-12 text-orange-500" />
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Preparando tu pedido</h3>
+                        <p className="text-gray-400 max-w-xs">
+                            El mapa se activará automáticamente cuando el repartidor retire tu pedido del local.
+                        </p>
+                    </div>
+                ) : (
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={center}
+                        zoom={16}
+                        onLoad={map => { mapRef.current = map; }}
+                        options={{
+                            disableDefaultUI: true,
+                            styles: [
+                                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+                                { featureType: "transit", stylers: [{ visibility: "off" }] },
+                                { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
+                            ]
+                        }}
+                    >
+                        {/* Driver Marker */}
+                        {driverPosition && (
+                            <Marker
+                                position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
+                                icon={{
+                                    url: "/markers/driver-marker.png",
+                                    scaledSize: new google.maps.Size(40, 40),
+                                    anchor: new google.maps.Point(20, 20)
+                                }}
+                                onClick={() => setSelectedMarker("driver")}
+                            />
+                        )}
 
-                    {/* Destination Marker */}
-                    {order.address.latitude && order.address.longitude && (
-                        <Marker
-                            position={{ lat: order.address.latitude, lng: order.address.longitude }}
-                            icon={{
-                                path: google.maps.SymbolPath.CIRCLE,
-                                fillOpacity: 1,
-                                fillColor: "#ef4444",
-                                strokeColor: "white",
-                                strokeWeight: 2,
-                                scale: 8
-                            }}
-                            onClick={() => setSelectedMarker("destination")}
-                        />
-                    )}
+                        {/* Destination Marker */}
+                        {order.address.latitude && order.address.longitude && (
+                            <Marker
+                                position={{ lat: order.address.latitude, lng: order.address.longitude }}
+                                icon={{
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    fillOpacity: 1,
+                                    fillColor: "#ef4444",
+                                    strokeColor: "white",
+                                    strokeWeight: 2,
+                                    scale: 8
+                                }}
+                                onClick={() => setSelectedMarker("destination")}
+                            />
+                        )}
 
-                    {/* Info Windows */}
-                    {selectedMarker === "driver" && driverPosition && (
-                        <InfoWindow
-                            position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
-                            onCloseClick={() => setSelectedMarker(null)}
-                        >
-                            <div className="text-gray-900 p-1">
-                                <p className="font-bold text-sm">{order.driver?.user.name || "Repartidor"}</p>
-                                <p className="text-xs">Actualizado hace unos segundos</p>
-                            </div>
-                        </InfoWindow>
-                    )}
-                </GoogleMap>
+                        {/* Info Windows */}
+                        {selectedMarker === "driver" && driverPosition && (
+                            <InfoWindow
+                                position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
+                                onCloseClick={() => setSelectedMarker(null)}
+                            >
+                                <div className="text-gray-900 p-1">
+                                    <p className="font-bold text-sm">{order.driver?.user.name || "Repartidor"}</p>
+                                    <p className="text-xs">Actualizado hace unos segundos</p>
+                                </div>
+                            </InfoWindow>
+                        )}
+                    </GoogleMap>
+                )}
 
                 {/* Floating GPS Status */}
                 <div className="absolute top-4 right-4 bg-gray-800/80 backdrop-blur-md p-2 rounded-lg border border-gray-700 flex items-center gap-2">

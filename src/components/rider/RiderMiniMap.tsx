@@ -47,13 +47,36 @@ export default function RiderMiniMap({
         libraries,
     });
 
-    const directionsCallback = useCallback((res: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
-        if (res !== null && status === "OK") {
-            setResponse(res);
-        } else {
-            console.error(`Directions request failed: ${status}`);
-        }
-    }, []);
+    useEffect(() => {
+        if (!isLoaded || !driverLat || !driverLng || !merchantLat || !merchantLng) return;
+
+        const directionsService = new google.maps.DirectionsService();
+
+        const origin = { lat: driverLat, lng: driverLng };
+        const destination = customerLat && customerLng
+            ? { lat: customerLat, lng: customerLng }
+            : { lat: merchantLat, lng: merchantLng };
+
+        const waypoints = customerLat && customerLng
+            ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
+            : [];
+
+        directionsService.route(
+            {
+                origin,
+                destination,
+                waypoints,
+                travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    setResponse(result);
+                } else {
+                    console.error(`Directions request failed: ${status}`);
+                }
+            }
+        );
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng]);
 
     // Calculate center
     const center = merchantLat && merchantLng
@@ -79,29 +102,12 @@ export default function RiderMiniMap({
                         ],
                     }}
                 >
-                    {/* Directions Service */}
-                    {driverLat && driverLng && merchantLat && merchantLng && (
-                        <DirectionsService
-                            options={{
-                                origin: { lat: driverLat, lng: driverLng },
-                                destination: customerLat && customerLng
-                                    ? { lat: customerLat, lng: customerLng }
-                                    : { lat: merchantLat, lng: merchantLng },
-                                waypoints: customerLat && customerLng
-                                    ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
-                                    : [],
-                                travelMode: google.maps.TravelMode.DRIVING, // or MOTORCYCLE if available in API
-                            }}
-                            callback={directionsCallback}
-                        />
-                    )}
-
                     {/* Directions Renderer */}
                     {response !== null && (
                         <DirectionsRenderer
                             options={{
                                 directions: response,
-                                suppressMarkers: true, // We'll use our own custom markers
+                                suppressMarkers: true,
                                 polylineOptions: {
                                     strokeColor: "#3b82f6",
                                     strokeWeight: 5,
