@@ -215,7 +215,7 @@ export default function NewProductPage() {
                                     value={costPrice}
                                     onChange={(e) => setCostPrice(e.target.value)}
                                     placeholder="0"
-                                    className="input pl-8"
+                                    className="input pl-10"
                                     required
                                     min="0"
                                 />
@@ -233,7 +233,7 @@ export default function NewProductPage() {
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
                                     placeholder="0"
-                                    className="input pl-8"
+                                    className="input pl-10"
                                     required
                                     min="0"
                                 />

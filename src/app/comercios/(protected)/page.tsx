@@ -1,5 +1,5 @@
 // Comercios Portal - Dashboard Page
-import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle } from "lucide-react";
+import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle, LayoutDashboard, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -23,25 +23,22 @@ export default async function ComerciosDashboardPage() {
         );
     }
 
-    // Get real stats
+    // Get stats & recent orders
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [activeProducts, todayOrders, monthlyOrders, pendingOrders] = await Promise.all([
-        // Active products count
+    const [activeProducts, todayOrders, monthlyOrders, pendingOrdersCount, recentOrders] = await Promise.all([
         prisma.product.count({
             where: { merchantId: merchant.id, isActive: true },
         }),
-        // Today's orders count
         prisma.order.count({
             where: {
                 merchantId: merchant.id,
                 createdAt: { gte: today },
             },
         }),
-        // Monthly sales
         prisma.order.aggregate({
             where: {
                 merchantId: merchant.id,
@@ -50,100 +47,200 @@ export default async function ComerciosDashboardPage() {
             },
             _sum: { total: true },
         }),
-        // Pending orders (needing attention)
         prisma.order.count({
             where: {
                 merchantId: merchant.id,
                 status: { in: ["PENDING", "CONFIRMED"] },
             },
         }),
+        prisma.order.findMany({
+            where: { merchantId: merchant.id },
+            take: 5,
+            orderBy: { createdAt: "desc" },
+            include: {
+                user: { select: { name: true } }
+            }
+        })
     ]);
 
     const monthlySales = monthlyOrders._sum.total || 0;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6 max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                    <p className="text-gray-500">Bienvenido de nuevo, {userName}</p>
+                    <h1 className="text-2xl font-bold text-gray-900 group flex items-center gap-2">
+                        <LayoutDashboard className="w-6 h-6 text-blue-600" />
+                        Dashboard
+                    </h1>
+                    <p className="text-gray-500">Bienvenido de nuevo, <span className="text-blue-600 font-medium">{userName}</span></p>
                 </div>
-                <Link
-                    href="/comercios/productos/nuevo"
-                    className="hidden md:flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                >
-                    <Plus className="w-5 h-5" />
-                    Nuevo Producto
-                </Link>
+
+                <div className="flex items-center gap-3">
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${merchant.isOpen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <span className={`w-2 h-2 rounded-full ${merchant.isOpen ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                        {merchant.isOpen ? "Abierto" : "Cerrado"}
+                    </div>
+                    <Link
+                        href="/comercios/productos/nuevo"
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition shadow-sm hover:shadow-md text-sm font-semibold"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span className="hidden xs:inline">Nuevo Producto</span>
+                    </Link>
+                </div>
             </div>
 
             {/* Pending Orders Alert */}
-            {pendingOrders > 0 && (
+            {pendingOrdersCount > 0 && (
                 <Link
                     href="/comercios/pedidos"
-                    className="flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl hover:bg-amber-100 transition"
+                    className="flex items-center gap-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-900 px-5 py-4 rounded-2xl hover:shadow-md transition-all group"
                 >
-                    <Clock className="w-5 h-5" />
-                    <span className="font-medium">Tenés {pendingOrders} pedido{pendingOrders > 1 ? 's' : ''} pendiente{pendingOrders > 1 ? 's' : ''}</span>
-                    <span className="ml-auto text-amber-600">Ver pedidos →</span>
+                    <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <Clock className="w-5 h-5 text-amber-700" />
+                    </div>
+                    <div className="flex-1">
+                        <span className="font-bold block">Acción Requerida</span>
+                        <span className="text-sm opacity-90">Tenés {pendingOrdersCount} pedido{pendingOrdersCount > 1 ? 's' : ''} pendiente{pendingOrdersCount > 1 ? 's' : ''} para gestionar.</span>
+                    </div>
+                    <span className="text-amber-600 font-bold hidden sm:inline">Ver pedidos →</span>
                 </Link>
             )}
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                            <Package className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Productos Activos</p>
-                            <p className="text-2xl font-bold">{activeProducts}</p>
-                        </div>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-blue-200 transition-colors">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                        <Package className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Productos</p>
+                        <p className="text-2xl font-bold text-gray-900">{activeProducts}</p>
                     </div>
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                            <ShoppingCart className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Pedidos Hoy</p>
-                            <p className="text-2xl font-bold">{todayOrders}</p>
-                        </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-green-200 transition-colors">
+                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                        <ShoppingCart className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hoy</p>
+                        <p className="text-2xl font-bold text-gray-900">{todayOrders}</p>
                     </div>
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Ventas Mes</p>
-                            <p className="text-2xl font-bold">${monthlySales.toLocaleString("es-AR")}</p>
-                        </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-purple-200 transition-colors">
+                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                        <TrendingUp className="w-5 h-5 text-purple-600" />
                     </div>
+                    <div>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ventas Mes</p>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">${monthlySales.toLocaleString("es-AR")}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-amber-200 transition-colors">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
+                        <Settings className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <Link href="/comercios/configuracion" className="group">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuración</p>
+                        <p className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Ajustar tienda →</p>
+                    </Link>
                 </div>
             </div>
 
-            {/* Quick Actions (Mobile Focused) */}
-            <div className="grid grid-cols-2 gap-4 md:hidden">
-                <Link
-                    href="/comercios/productos/nuevo"
-                    className="flex flex-col items-center justify-center gap-2 p-6 bg-blue-600 text-white rounded-xl shadow-md"
-                >
-                    <Plus className="w-8 h-8" />
-                    <span className="font-medium">Crear Producto</span>
-                </Link>
-                <Link
-                    href="/comercios/pedidos"
-                    className="flex flex-col items-center justify-center gap-2 p-6 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-700"
-                >
-                    <ShoppingCart className="w-8 h-8 text-blue-600" />
-                    <span className="font-medium">Ver Pedidos</span>
-                </Link>
+            {/* Main Sections Grid */}
+            <div className="grid lg:grid-cols-3 gap-6">
+                {/* Recent Orders List */}
+                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-5 border-b border-gray-50 flex items-center justify-between">
+                        <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                            <ShoppingCart className="w-5 h-5 text-blue-600" />
+                            Pedidos Recientes
+                        </h2>
+                        <Link href="/comercios/pedidos" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+                            Ver todos
+                        </Link>
+                    </div>
+
+                    <div className="divide-y divide-gray-50">
+                        {recentOrders.length > 0 ? (
+                            recentOrders.map((order) => (
+                                <Link
+                                    key={order.id}
+                                    href={`/comercios/pedidos`}
+                                    className="p-4 flex items-center justify-between hover:bg-gray-50 transition"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${order.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                            order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                            #{order.orderNumber.slice(-3)}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm text-gray-900">{order.user?.name || "Cliente"}</p>
+                                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}hs</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-gray-900 text-sm">${order.total.toLocaleString("es-AR")}</p>
+                                        <p className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block ${order.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                            order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                            {order.status}
+                                        </p>
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="p-12 text-center">
+                                <AlertCircle className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                <p className="text-gray-400">No hay pedidos registrados aún.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Quick Shortcuts */}
+                <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg overflow-hidden relative">
+                        <Package className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10 rotate-12" />
+                        <h3 className="text-lg font-bold mb-2">Impulsa tu tienda</h3>
+                        <p className="text-blue-100 text-sm mb-6">Mantené tu catálogo actualizado para aparecer en las recomendaciones de los clientes.</p>
+                        <Link
+                            href="/comercios/productos"
+                            className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:scale-105 transition"
+                        >
+                            Gestionar Catálogo <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <Settings className="w-5 h-5 text-gray-400" />
+                            Accesos Rápidos
+                        </h3>
+                        <div className="grid grid-cols-1 gap-2">
+                            <Link href="/comercios/configuracion" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                                <span className="text-sm font-medium text-gray-600">Ver Perfil Público</span>
+                                <ArrowRight className="w-4 h-4 text-gray-300" />
+                            </Link>
+                            <Link href="/comercios/soporte" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                                <span className="text-sm font-medium text-gray-600">Ayuda y Soporte</span>
+                                <ArrowRight className="w-4 h-4 text-gray-300" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
+
+
 

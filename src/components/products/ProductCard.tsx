@@ -2,7 +2,7 @@
 
 // Product Card Component - Tarjeta de producto con botón Agregar funcional
 import Link from "next/link";
-import { Package, ShoppingCart, AlertCircle } from "lucide-react";
+import { Package, ShoppingCart, AlertCircle, Store } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
@@ -18,6 +18,9 @@ interface ProductCardProps {
         image?: string | null;
         categories?: { category: { name: string; slug: string } }[];
         merchantId?: string;
+        merchant?: {
+            isOpen: boolean;
+        };
     };
 }
 
@@ -26,11 +29,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     const [showConflict, setShowConflict] = useState(false);
     const [added, setAdded] = useState(false);
 
+    const isClosed = product.merchant && product.merchant.isOpen === false;
+    const isDisabled = product.stock <= 0 || isClosed;
+
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent Link navigation
         e.stopPropagation();
 
-        if (product.stock <= 0) return;
+        if (isDisabled) return;
 
         const item = {
             productId: product.id,
@@ -123,16 +129,25 @@ export default function ProductCard({ product }: ProductCardProps) {
                     {/* Add to Cart Button */}
                     <button
                         onClick={handleAddToCart}
-                        disabled={product.stock <= 0}
-                        className={`w-full mt-3 flex items-center justify-center gap-2 py-2 text-sm rounded-lg font-semibold transition-all ${product.stock <= 0
+                        disabled={isDisabled}
+                        className={`w-full mt-3 flex items-center justify-center gap-2 py-2 text-sm rounded-lg font-semibold transition-all ${isDisabled
                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                             : added
                                 ? "bg-green-500 text-white"
                                 : "bg-[#e60012] text-white hover:bg-red-700 active:scale-[0.98]"
                             }`}
                     >
-                        <ShoppingCart className="w-4 h-4" />
-                        {added ? "¡Agregado!" : product.stock <= 0 ? "Sin Stock" : "Agregar"}
+                        {isClosed ? (
+                            <>
+                                <Store className="w-4 h-4" />
+                                Cerrado
+                            </>
+                        ) : (
+                            <>
+                                <ShoppingCart className="w-4 h-4" />
+                                {added ? "¡Agregado!" : product.stock <= 0 ? "Sin Stock" : "Agregar"}
+                            </>
+                        )}
                     </button>
                 </div>
             </Link>

@@ -172,7 +172,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                         required
                                         defaultValue={product.price}
                                         placeholder="0.00"
-                                        className="input pl-8"
+                                        className="input pl-10"
                                         disabled={isLoading}
                                     />
                                 </div>

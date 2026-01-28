@@ -16,7 +16,8 @@ import {
     Loader2,
     Package,
     ShoppingCart,
-    Store
+    Store,
+    User
 } from "lucide-react";
 
 interface Merchant {
@@ -40,6 +41,7 @@ interface Merchant {
         firstName: string | null;
         lastName: string | null;
         email: string;
+        phone: string | null;
     } | null;
 }
 
@@ -193,20 +195,34 @@ export default function ComerciosPage() {
                             {/* Contact Info */}
                             <div className="p-3 space-y-2 text-sm border-b border-slate-100">
                                 {merchant.owner && (
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <Mail className="w-4 h-4 text-slate-400" />
-                                        <span className="truncate">{merchant.owner.email}</span>
+                                    <div className="flex items-center gap-2 text-slate-800 font-medium">
+                                        <User className="w-4 h-4 text-slate-400" />
+                                        <span className="truncate">{merchant.owner.firstName} {merchant.owner.lastName}</span>
                                     </div>
                                 )}
-                                {merchant.phone && (
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <Phone className="w-4 h-4 text-slate-400" />
-                                        <span>{merchant.phone}</span>
-                                    </div>
-                                )}
+                                <div className="grid grid-cols-1 gap-1 pl-6">
+                                    {merchant.email && (
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                            <Mail className="w-3.5 h-3.5 text-slate-400" />
+                                            <span className="truncate">{merchant.email}</span>
+                                        </div>
+                                    )}
+                                    {merchant.phone && (
+                                        <div className="flex items-center gap-2 text-slate-600" title="Teléfono del Negocio">
+                                            <Phone className="w-3.5 h-3.5 text-blue-400" />
+                                            <span>{merchant.phone} <span className="text-[10px] text-slate-400">(Negocio)</span></span>
+                                        </div>
+                                    )}
+                                    {merchant.owner?.phone && (
+                                        <div className="flex items-center gap-2 text-slate-600" title="Teléfono Personal">
+                                            <Phone className="w-3.5 h-3.5 text-green-400" />
+                                            <span>{merchant.owner.phone} <span className="text-[10px] text-slate-400">(Personal)</span></span>
+                                        </div>
+                                    )}
+                                </div>
                                 {merchant.address && (
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <MapPin className="w-4 h-4 text-slate-400" />
+                                    <div className="flex items-center gap-2 text-slate-600 pl-6 border-t pt-1 mt-1">
+                                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
                                         <span className="truncate">{merchant.address}</span>
                                     </div>
                                 )}

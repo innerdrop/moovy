@@ -71,15 +71,16 @@ export async function POST(request: NextRequest) {
                 data: {
                     ownerId: newUser.id,
                     name: data.businessName,
+                    businessName: data.businessName,
                     slug: slug,
                     category: data.businessType,
-                    cuit: data.cuit,
+                    cuit: data.cuit || null,
                     email: data.email,
-                    phone: data.phone,
+                    phone: data.businessPhone || data.phone,
                     address: data.address,
                     latitude: data.latitude ? parseFloat(data.latitude) : null,
                     longitude: data.longitude ? parseFloat(data.longitude) : null,
-                    description: data.description,
+                    description: data.description || "Nuevo comercio Moovy",
                     isActive: false, // Pending approval
                     isVerified: false
                 }

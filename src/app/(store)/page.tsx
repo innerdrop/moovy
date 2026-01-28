@@ -45,8 +45,9 @@ async function getFeaturedMerchants() {
     try {
         const merchants = await prisma.merchant.findMany({
             where: { isActive: true },
-            take: 8,
+            take: 12,
             orderBy: [
+                { isOpen: 'desc' },
                 { displayOrder: 'desc' },
                 { isPremium: 'desc' },
                 { name: 'asc' }
@@ -65,7 +66,7 @@ async function getFeaturedProducts() {
             include: {
                 categories: { include: { category: true } },
                 images: true,
-                merchant: { select: { id: true, name: true } }
+                merchant: { select: { id: true, name: true, isOpen: true } }
             },
             take: 8,
         });
@@ -271,6 +272,11 @@ async function LiveStoreView() {
                                             {product.stock <= 0 && (
                                                 <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded">
                                                     Sin Stock
+                                                </span>
+                                            )}
+                                            {product.merchant && !product.merchant.isOpen && (
+                                                <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-1 rounded">
+                                                    Cerrado
                                                 </span>
                                             )}
                                         </div>

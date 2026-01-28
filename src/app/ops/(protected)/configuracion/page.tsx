@@ -319,7 +319,7 @@ export default async function ConfigurationPage() {
                             <input
                                 type="number"
                                 defaultValue={settings?.fuelPricePerLiter || 1200}
-                                className="input pl-8"
+                                className="input pl-10"
                                 name="fuelPricePerLiter"
                             />
                         </div>
@@ -355,7 +355,7 @@ export default async function ConfigurationPage() {
                             <input
                                 type="number"
                                 defaultValue={settings?.baseDeliveryFee || 500}
-                                className="input pl-8"
+                                className="input pl-10"
                                 name="baseDeliveryFee"
                             />
                         </div>
@@ -404,7 +404,7 @@ export default async function ConfigurationPage() {
                             <input
                                 type="number"
                                 defaultValue={settings?.freeDeliveryMinimum || ""}
-                                className="input pl-8"
+                                className="input pl-10"
                                 placeholder="Dejá vacío para desactivar"
                                 name="freeDeliveryMinimum"
                             />

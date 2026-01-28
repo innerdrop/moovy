@@ -36,34 +36,34 @@ function ComercioRegistroContent() {
 
     // Form data
     const [formData, setFormData] = useState({
-        // Paso 1: Datos del responsable
+        businessName: "",
         firstName: "",
         lastName: "",
+        businessType: "",
         email: "",
         phone: "",
+        businessPhone: "",
+        address: "",
         password: "",
         confirmPassword: "",
-        // Paso 2: Datos del comercio
-        businessName: "",
-        businessType: "",
-        cuit: "",
-        address: "",
         latitude: null as number | null,
         longitude: null as number | null,
-        description: "",
     });
 
     const businessTypes = [
         "Restaurante",
+        "Pizzería",
+        "Hamburguesería",
+        "Parrilla",
         "Cafetería",
-        "Panadería",
         "Heladería",
-        "Minimercado",
+        "Panadería/Pastelería",
+        "Sushi",
+        "Comida Saludable",
         "Farmacia",
-        "Ferretería",
-        "Librería",
-        "Ropa y Accesorios",
-        "Electrónica",
+        "Supermercado/Almacén",
+        "Kiosco",
+        "Bebidas",
         "Otro"
     ];
 
@@ -94,11 +94,18 @@ function ComercioRegistroContent() {
         setError("");
         setIsLoading(true);
 
+        // Add prefix to phone numbers if they don't have it
+        const submissionData = {
+            ...formData,
+            phone: formData.phone.startsWith("+549") ? formData.phone : `+549${formData.phone}`,
+            businessPhone: formData.businessPhone.startsWith("+549") ? formData.businessPhone : `+549${formData.businessPhone}`
+        };
+
         try {
             const res = await fetch("/api/auth/register/merchant", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(submissionData)
             });
 
             const data = await res.json();
@@ -175,7 +182,7 @@ function ComercioRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 1: Personal Data */}
+                {/* Step 1: Business and Basic Info */}
                 {step === 1 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <div className="flex items-center justify-center mb-4">
@@ -184,7 +191,7 @@ function ComercioRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Registrar mi Comercio</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 1: Tus datos personales</p>
+                        <p className="text-sm text-gray-500 text-center mb-6">Paso 1: Información básica</p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -192,10 +199,30 @@ function ComercioRegistroContent() {
                             </div>
                         )}
 
-                        <form onSubmit={handleStep1Submit} className="space-y-4">
+                        <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nombre del Comercio <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        name="businessName"
+                                        value={formData.businessName}
+                                        onChange={handleChange}
+                                        placeholder="Mi local moovy"
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Nombre <span className="text-red-500">*</span>
+                                    </label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         <input
@@ -210,7 +237,9 @@ function ComercioRegistroContent() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Apellido <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="lastName"
@@ -224,82 +253,23 @@ function ComercioRegistroContent() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Tipo de negocio <span className="text-red-500">*</span>
+                                </label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
+                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <select
+                                        name="businessType"
+                                        value={formData.businessType}
                                         onChange={handleChange}
-                                        placeholder="juan@micomercio.com"
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                         required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="+54 2901 ..."
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        placeholder="Mínimo 6 caracteres"
-                                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        minLength={6}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                                     >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        name="confirmPassword"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        placeholder="Repetí tu contraseña"
-                                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        minLength={6}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
+                                        <option value="">Seleccioná un rubro</option>
+                                        {businessTypes.map((type) => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -317,7 +287,7 @@ function ComercioRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 2: Business Data */}
+                {/* Step 2: Contact and Address */}
                 {step === 2 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <button
@@ -333,8 +303,8 @@ function ComercioRegistroContent() {
                                 <Building2 className="w-6 h-6 text-white" />
                             </div>
                         </div>
-                        <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Datos del Comercio</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Información de tu negocio</p>
+                        <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Contacto y Dirección</h2>
+                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Completá el registro</p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -342,56 +312,89 @@ function ComercioRegistroContent() {
                             </div>
                         )}
 
-                        <form onSubmit={handleFinalSubmit} className="space-y-4">
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            if (formData.password !== formData.confirmPassword) {
+                                setError("Las contraseñas no coinciden");
+                                return;
+                            }
+                            if (formData.password.length < 6) {
+                                setError("La contraseña debe tener al menos 6 caracteres");
+                                return;
+                            }
+                            handleFinalSubmit(e);
+                        }} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Comercio</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Email <span className="text-red-500">*</span>
+                                </label>
                                 <div className="relative">
-                                    <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
-                                        type="text"
-                                        name="businessName"
-                                        value={formData.businessName}
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="Mi Super Negocio"
+                                        placeholder="juan@micomercio.com"
                                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Rubro</label>
-                                <select
-                                    name="businessType"
-                                    value={formData.businessType}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                    required
-                                >
-                                    <option value="">Seleccioná un rubro</option>
-                                    {businessTypes.map((type) => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">CUIT (opcional)</label>
-                                <div className="relative">
-                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="cuit"
-                                        value={formData.cuit}
-                                        onChange={handleChange}
-                                        placeholder="20-12345678-9"
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Teléfono (+549) <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold border-r pr-1.5 border-gray-200 text-sm">
+                                            +549
+                                        </span>
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            placeholder="2901 ..."
+                                            className="w-full pl-[5.5rem] pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                        Ingresá solo números, sin 0 y sin 15.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Teléfono Negocio (+549) <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold border-r pr-1.5 border-gray-200 text-sm">
+                                            +549
+                                        </span>
+                                        <input
+                                            type="tel"
+                                            name="businessPhone"
+                                            value={formData.businessPhone}
+                                            onChange={handleChange}
+                                            placeholder="2901 ..."
+                                            className="w-full pl-[5.5rem] pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                        Ingresá solo números, sin 0 y sin 15.
+                                    </p>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección del Comercio</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nombre o dirección del negocio <span className="text-red-500">*</span>
+                                </label>
                                 <AddressAutocomplete
                                     value={formData.address}
                                     onChange={(address, lat, lng, street, num) => {
@@ -402,20 +405,60 @@ function ComercioRegistroContent() {
                                             longitude: lng ?? prev.longitude
                                         }));
                                     }}
-                                    placeholder="Av. San Martín 1234, Ushuaia"
+                                    placeholder="Buscá tu dirección o nombre de negocio..."
+                                    required
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción breve</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    placeholder="Contanos un poco sobre tu negocio..."
-                                    rows={3}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Contraseña <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="Mínimo 6"
+                                            className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Confirmar <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            name="confirmPassword"
+                                            value={formData.confirmPassword}
+                                            onChange={handleChange}
+                                            placeholder="Repetí"
+                                            className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Benefits */}
@@ -428,7 +471,6 @@ function ComercioRegistroContent() {
                                     <li>✓ Llegá a miles de clientes en tu ciudad</li>
                                     <li>✓ Panel de gestión fácil de usar</li>
                                     <li>✓ Sin costo de alta</li>
-                                    <li>✓ Entregas con repartidores verificados</li>
                                 </ul>
                             </div>
 

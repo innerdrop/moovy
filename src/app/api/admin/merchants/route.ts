@@ -40,7 +40,7 @@ export async function GET(request: Request) {
             where,
             include: {
                 owner: {
-                    select: { firstName: true, lastName: true, email: true }
+                    select: { firstName: true, lastName: true, email: true, phone: true }
                 },
                 _count: {
                     select: { products: true, orders: true }

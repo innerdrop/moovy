@@ -11,6 +11,7 @@ interface AddressAutocompleteProps {
     className?: string;
     // We'll use Google's own bounds or restriction
     restrictToArgentina?: boolean;
+    required?: boolean;
 }
 
 const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places", "geometry"];
@@ -21,6 +22,7 @@ export function AddressAutocomplete({
     placeholder = "Ingresá tu dirección...",
     className = "",
     restrictToArgentina = true,
+    required = false,
 }: AddressAutocompleteProps) {
     const [inputValue, setInputValue] = useState(value);
     const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -116,6 +118,7 @@ export function AddressAutocomplete({
                             placeholder={placeholder}
                             className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
                             autoComplete="off"
+                            required={required}
                         />
                     </Autocomplete>
                 ) : (

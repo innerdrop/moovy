@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power } from "lucide-react";
+import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface SettingsFormProps {
@@ -23,6 +23,9 @@ interface SettingsFormProps {
         deliveryTimeMax: number;
         deliveryFee: number;
         minOrderAmount: number;
+        firstName: string;
+        lastName: string;
+        ownerPhone: string;
     };
 }
 
@@ -200,18 +203,67 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                     </div>
                 </div>
 
+                {/* Owner Info */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+                    <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <User className="w-5 h-5 text-blue-600" />
+                        Información del Propietario
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Nombre
+                            </label>
+                            <input
+                                name="firstName"
+                                type="text"
+                                defaultValue={merchant.firstName}
+                                className="input"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Apellido
+                            </label>
+                            <input
+                                name="lastName"
+                                type="text"
+                                defaultValue={merchant.lastName}
+                                className="input"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Phone className="w-4 h-4 inline mr-1" />
+                                Teléfono Personal
+                            </label>
+                            <input
+                                name="ownerPhone"
+                                type="tel"
+                                defaultValue={merchant.ownerPhone}
+                                placeholder="+54 9 ..."
+                                className="input"
+                                disabled={isLoading}
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Contact Info */}
                 <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Phone className="w-5 h-5 text-blue-600" />
-                        Contacto
+                        <Mail className="w-5 h-5 text-blue-600" />
+                        Información de contacto del Negocio
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 <Mail className="w-4 h-4 inline mr-1" />
-                                Email
+                                Email del Negocio
                             </label>
                             <input
                                 name="email"
@@ -225,13 +277,13 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 <Phone className="w-4 h-4 inline mr-1" />
-                                Teléfono
+                                Teléfono del Negocio
                             </label>
                             <input
                                 name="phone"
                                 type="tel"
                                 defaultValue={merchant.phone}
-                                placeholder="+54 2901 ..."
+                                placeholder="+54 9 ..."
                                 className="input"
                                 disabled={isLoading}
                             />

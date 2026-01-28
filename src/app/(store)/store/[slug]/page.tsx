@@ -49,7 +49,8 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         // Map product to include 'image' property for ProductCard
         const productWithImage = {
             ...product,
-            image: product.images[0]?.url || null
+            image: product.images[0]?.url || null,
+            merchant: { isOpen: merchant.isOpen }
         };
 
         productsByCategory[catName].push(productWithImage);
@@ -130,6 +131,16 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                     </div>
                 </div>
             </div>
+
+            {/* Closed Store Overlay/Banner */}
+            {!merchant.isOpen && (
+                <div className="bg-red-50 border-y border-red-100 py-3">
+                    <div className="container mx-auto px-4 flex items-center justify-center gap-2 text-red-600 font-bold">
+                        <Info className="w-5 h-5 flex-shrink-0" />
+                        <p className="text-sm md:text-base">ESTE COMERCIO ESTÁ CERRADO Y NO RECIBE PEDIDOS EN ESTE MOMENTO</p>
+                    </div>
+                </div>
+            )}
 
             {/* Categories Tabs (Simple scrollable list for now) */}
             <div className="sticky top-[60px] z-10 bg-white shadow-sm mb-6">

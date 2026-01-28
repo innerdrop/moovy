@@ -252,6 +252,9 @@ const merchantSchema = z.object({
     minOrderAmount: z.coerce.number().min(0).optional(),
     latitude: z.coerce.number().optional().nullable(),
     longitude: z.coerce.number().optional().nullable(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    ownerPhone: z.string().optional(),
 });
 
 export async function updateMerchant(formData: FormData) {
@@ -274,6 +277,9 @@ export async function updateMerchant(formData: FormData) {
         minOrderAmount: formData.get("minOrderAmount"),
         latitude: formData.get("latitude"),
         longitude: formData.get("longitude"),
+        firstName: formData.get("firstName"),
+        lastName: formData.get("lastName"),
+        ownerPhone: formData.get("ownerPhone"),
     };
 
     const validation = merchantSchema.safeParse(rawData);
@@ -293,24 +299,37 @@ export async function updateMerchant(formData: FormData) {
             return { error: "No se encontró un comercio asociado a tu cuenta." };
         }
 
-        await prisma.merchant.update({
-            where: { id: merchant.id },
-            data: {
-                name: data.name,
-                description: data.description || null,
-                image: data.image || null,
-                email: data.email || null,
-                phone: data.phone || null,
-                address: data.address || null,
-                category: data.category || "Otro",
-                deliveryTimeMin: data.deliveryTimeMin || 30,
-                deliveryTimeMax: data.deliveryTimeMax || 45,
-                deliveryFee: data.deliveryFee || 0,
-                minOrderAmount: data.minOrderAmount || 0,
-                latitude: data.latitude ?? null,
-                longitude: data.longitude ?? null,
-            },
-        });
+        // Update Merchant and Owner
+        await prisma.$transaction([
+            prisma.merchant.update({
+                where: { id: merchant.id },
+                data: {
+                    name: data.name,
+                    businessName: data.name, // Support both fields
+                    description: data.description || null,
+                    image: data.image || null,
+                    email: data.email || null,
+                    phone: data.phone || null,
+                    address: data.address || null,
+                    category: data.category || "Otro",
+                    deliveryTimeMin: data.deliveryTimeMin || 30,
+                    deliveryTimeMax: data.deliveryTimeMax || 45,
+                    deliveryFee: data.deliveryFee || 0,
+                    minOrderAmount: data.minOrderAmount || 0,
+                    latitude: data.latitude ?? null,
+                    longitude: data.longitude ?? null,
+                },
+            }),
+            prisma.user.update({
+                where: { id: session.user.id },
+                data: {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    name: `${data.firstName?.trim()} ${data.lastName?.trim()}`,
+                    phone: data.ownerPhone,
+                }
+            })
+        ]);
 
         revalidatePath("/comercios/configuracion");
         revalidatePath("/comercios");
@@ -343,6 +362,11 @@ export async function toggleMerchantOpen(isOpen: boolean) {
 
         revalidatePath("/comercios/configuracion");
         revalidatePath("/comercios");
+        revalidatePath("/tienda");
+        revalidatePath("/");
+        if (merchant.slug) {
+            revalidatePath(`/store/${merchant.slug}`);
+        }
         return { success: true, isOpen };
     } catch (error) {
         console.error("Error toggling merchant:", error);

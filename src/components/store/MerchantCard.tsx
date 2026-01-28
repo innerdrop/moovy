@@ -16,6 +16,7 @@ interface MerchantCardProps {
         isVerified?: boolean;
         isPremium?: boolean;
         premiumTier?: string | null;
+        isOpen: boolean;
     };
 }
 
@@ -52,8 +53,11 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                 )}
 
                 {/* Status Badge (Open/Closed) */}
-                <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
-                    ABIERTO
+                <div className={`absolute top-3 right-3 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-md transition-all duration-300 ${merchant.isOpen
+                    ? "bg-green-500/90 hover:bg-green-500"
+                    : "bg-gray-500/90 hover:bg-gray-600"
+                    }`}>
+                    {merchant.isOpen ? "ABIERTO" : "CERRADO"}
                 </div>
 
                 {/* Premium Badge - Priority over Verified */}

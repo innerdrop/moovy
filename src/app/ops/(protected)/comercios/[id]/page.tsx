@@ -56,6 +56,8 @@ interface Merchant {
     owner: {
         id: string;
         name: string;
+        firstName: string | null;
+        lastName: string | null;
         email: string;
         phone: string | null;
     };
@@ -313,7 +315,29 @@ export default function MerchantDetailPage() {
 
                         <div className="p-6">
                             {activeTab === "info" && (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
+                                    {/* Owner Info Details (Read-only as it belongs to User) */}
+                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                        <h3 className="font-bold text-navy flex items-center gap-2 mb-4">
+                                            <User className="w-5 h-5 text-blue-600" />
+                                            Datos del Propietario (Usuario)
+                                        </h3>
+                                        <div className="grid sm:grid-cols-3 gap-4 text-sm">
+                                            <div>
+                                                <p className="text-gray-500 mb-1">Nombre Completo</p>
+                                                <p className="font-medium text-slate-900">{merchant.owner.firstName} {merchant.owner.lastName}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 mb-1">Email Personal</p>
+                                                <p className="font-medium text-slate-900">{merchant.owner.email}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 mb-1">Teléfono Personal</p>
+                                                <p className="font-medium text-slate-900">{merchant.owner.phone || "No registrado"}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <h3 className="font-bold text-navy mb-4">Datos Adicionales del Comercio</h3>
 
                                     <div className="grid sm:grid-cols-2 gap-4">

@@ -420,7 +420,7 @@ export default function PuntosPage() {
                                 <Gift className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-[#e60012]">100 Puntos de Regalo</h3>
+                                <h3 className="font-bold text-[#e60012]">250 Puntos de Regalo</h3>
                                 <p className="text-sm text-gray-600">Al crear tu cuenta, ¡arrancás con puntos!</p>
                             </div>
                         </div>

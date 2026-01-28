@@ -46,7 +46,7 @@ export default async function ProductosPage() {
 
             {/* List */}
             {products.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
                     <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Package className="w-10 h-10 text-blue-500" />
                     </div>
@@ -56,76 +56,100 @@ export default async function ProductosPage() {
                     </p>
                     <Link
                         href="/comercios/productos/nuevo"
-                        className="btn-primary inline-flex items-center gap-2"
+                        className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition inline-flex items-center gap-2"
                     >
                         <Plus className="w-5 h-5" />
                         Crear Primer Producto
                     </Link>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                                <tr>
-                                    <th className="px-6 py-3 font-medium">Producto</th>
-                                    <th className="px-6 py-3 font-medium">Categoría</th>
-                                    <th className="px-6 py-3 font-medium">Precio</th>
-                                    <th className="px-6 py-3 font-medium">Stock</th>
-                                    <th className="px-6 py-3 font-medium text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {products.map((product) => (
-                                    <tr key={product.id} className="hover:bg-gray-50 transition">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-lg bg-gray-100 relative overflow-hidden flex-shrink-0">
-                                                    {product.images[0]?.url ? (
-                                                        <Image
-                                                            src={product.images[0].url}
-                                                            alt={product.name}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    ) : (
-                                                        <Package className="w-6 h-6 text-gray-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                                                    )}
-                                                </div>
-                                                <span className="font-medium text-gray-900">{product.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500 text-sm">
-                                            {product.categories[0]?.category.name || "Sin categoría"}
-                                        </td>
-                                        <td className="px-6 py-4 font-semibold text-gray-900">
+                <div className="space-y-4">
+                    {/* Desktop Table Header (hidden on mobile) */}
+                    <div className="hidden md:grid md:grid-cols-6 gap-4 px-6 py-3 bg-gray-50 rounded-xl text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        <div className="col-span-2">Producto</div>
+                        <div>Categoría</div>
+                        <div>Precio</div>
+                        <div>Stock</div>
+                        <div className="text-right">Acciones</div>
+                    </div>
+
+                    {/* Products Grid/List */}
+                    <div className="grid grid-cols-1 md:block gap-4">
+                        {products.map((product) => (
+                            <div
+                                key={product.id}
+                                className="bg-white rounded-2xl md:rounded-none md:border-b md:last:border-b-0 border border-gray-100 md:border-gray-50 p-4 md:px-6 md:py-4 hover:bg-gray-50 transition group"
+                            >
+                                <div className="flex flex-col md:grid md:grid-cols-6 gap-4 items-center">
+                                    {/* Product Info */}
+                                    <div className="col-span-2 flex items-center gap-4 w-full">
+                                        <div className="w-16 h-16 md:w-12 md:h-12 rounded-xl bg-gray-100 relative overflow-hidden flex-shrink-0 shadow-sm">
+                                            {product.images[0]?.url ? (
+                                                <Image
+                                                    src={product.images[0].url}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-cover group-hover:scale-110 transition-transform"
+                                                />
+                                            ) : (
+                                                <Package className="w-6 h-6 text-gray-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-gray-900 truncate">{product.name}</h4>
+                                            <span className="md:hidden text-xs text-gray-500">
+                                                {product.categories[0]?.category.name || "Sin categoría"}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Category (Desktop only) */}
+                                    <div className="hidden md:block text-sm text-gray-600 font-medium">
+                                        {product.categories[0]?.category.name || "—"}
+                                    </div>
+
+                                    {/* Price and Stock (Mobile: Row) */}
+                                    <div className="flex items-center justify-between w-full md:contents">
+                                        <div className="font-bold text-blue-600 md:text-gray-900">
                                             ${product.price.toLocaleString("es-AR")}
-                                        </td>
-                                        <td className="px-6 py-4">
+                                        </div>
+
+                                        <div>
                                             <div className="flex items-center gap-2">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${product.stock > 10 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${product.stock > 10 ? "bg-green-100 text-green-700" :
+                                                        product.stock > 0 ? "bg-amber-100 text-amber-700" :
+                                                            "bg-red-100 text-red-700"
                                                     }`}>
                                                     {product.stock} un.
                                                 </span>
                                                 {!product.isActive && (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-400">
                                                         Inactivo
                                                     </span>
                                                 )}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex items-center justify-end gap-2 md:w-full">
                                             <Link
                                                 href={`/comercios/productos/${product.id}`}
-                                                className="text-blue-600 hover:text-blue-800 p-2 inline-block"
+                                                className="flex-1 md:flex-none py-2 px-4 md:p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition text-center text-sm font-bold flex items-center justify-center gap-2"
                                             >
                                                 <Edit className="w-4 h-4" />
+                                                <span className="md:hidden">Editar</span>
                                             </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            <button
+                                                className="p-2 rounded-xl text-gray-400 hover:text-red-600 transition hidden md:block"
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

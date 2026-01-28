@@ -14,6 +14,7 @@ export default async function ConfiguracionPage() {
     // Get merchant for this user
     const merchant = await prisma.merchant.findFirst({
         where: { ownerId: session.user.id },
+        include: { owner: true }
     });
 
     if (!merchant) {
@@ -50,6 +51,9 @@ export default async function ConfiguracionPage() {
                     minOrderAmount: merchant.minOrderAmount,
                     latitude: merchant.latitude,
                     longitude: merchant.longitude,
+                    firstName: merchant.owner.firstName || "",
+                    lastName: merchant.owner.lastName || "",
+                    ownerPhone: merchant.owner.phone || "",
                 }}
             />
         </div>
