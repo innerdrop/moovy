@@ -120,8 +120,12 @@ export async function DELETE(
             return NextResponse.json({ error: "Dirección no encontrada" }, { status: 404 });
         }
 
-        await prisma.address.delete({
-            where: { id }
+        await prisma.address.update({
+            where: { id },
+            data: {
+                deletedAt: new Date(),
+                isDefault: false // Clear default status if deleted
+            }
         });
 
         return NextResponse.json({ success: true, message: "Dirección eliminada" });

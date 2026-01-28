@@ -80,10 +80,16 @@ export default function DireccionesPage() {
         if (!confirm("¿Estás seguro de eliminar esta dirección?")) return;
 
         try {
-            await fetch(`/api/profile/addresses/${id}`, { method: "DELETE" });
-            setAddresses(addresses.filter(a => a.id !== id));
+            const res = await fetch(`/api/profile/addresses/${id}`, { method: "DELETE" });
+            if (res.ok) {
+                setAddresses(addresses.filter(a => a.id !== id));
+            } else {
+                const errorData = await res.json();
+                alert(errorData.error || "No se pudo eliminar la dirección. Es posible que esté vinculada a pedidos anteriores.");
+            }
         } catch (error) {
             console.error("Error deleting address", error);
+            alert("Error de conexión al intentar eliminar la dirección.");
         }
     };
 

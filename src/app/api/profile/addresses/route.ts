@@ -14,7 +14,10 @@ export async function GET() {
         }
 
         const addresses = await prisma.address.findMany({
-            where: { userId: session.user.id },
+            where: {
+                userId: session.user.id,
+                deletedAt: null
+            },
             orderBy: [
                 { isDefault: 'desc' },
                 { createdAt: 'desc' }
