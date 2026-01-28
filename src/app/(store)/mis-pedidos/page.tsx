@@ -15,8 +15,15 @@ import {
     ShoppingBag,
     MapPin,
     Rocket,
-    Gift
+    Gift,
+    ExternalLink
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const OrderTrackingMiniMap = dynamic(
+    () => import("@/components/orders/OrderTrackingMiniMap"),
+    { ssr: false, loading: () => <div className="h-[180px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-xs text-gray-400">Cargando mapa...</div> }
+);
 
 interface Order {
     id: string;
@@ -26,7 +33,24 @@ interface Order {
     total: number;
     createdAt: string;
     items: Array<{ id: string; name: string; quantity: number; price: number }>;
-    address: { street: string; number: string; city: string };
+    address: {
+        street: string;
+        number: string;
+        city: string;
+        latitude?: number;
+        longitude?: number;
+    };
+    merchant?: {
+        name: string;
+        latitude?: number;
+        longitude?: number;
+    };
+    driver?: {
+        id: string;
+        latitude?: number;
+        longitude?: number;
+        user: { name: string };
+    };
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -210,15 +234,29 @@ export default function MisPedidosPage() {
                                         )}
                                         {isActive && (
                                             <div className="mt-4 pt-3 border-t border-gray-100">
-                                                {/* Show tracking button when driver is assigned or in delivery */}
                                                 {["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && (
-                                                    <Link
-                                                        href={`/seguimiento/${order.id}`}
-                                                        className="w-full mb-3 bg-[#e60012] text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-98 transition"
-                                                    >
-                                                        <Truck className="w-5 h-5" />
-                                                        🔴 Seguir en Mapa (En Vivo)
-                                                    </Link>
+                                                    <div className="mb-4">
+                                                        <OrderTrackingMiniMap
+                                                            orderId={order.id}
+                                                            orderStatus={order.status}
+                                                            merchantLat={order.merchant?.latitude}
+                                                            merchantLng={order.merchant?.longitude}
+                                                            merchantName={order.merchant?.name}
+                                                            customerLat={order.address.latitude}
+                                                            customerLng={order.address.longitude}
+                                                            customerAddress={`${order.address.street} ${order.address.number}`}
+                                                            initialDriverLat={order.driver?.latitude}
+                                                            initialDriverLng={order.driver?.longitude}
+                                                            height="180px"
+                                                        />
+                                                        <Link
+                                                            href={`/seguimiento/${order.id}`}
+                                                            className="mt-2 w-full bg-gray-50 text-gray-500 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 hover:bg-gray-100 transition uppercase tracking-widest"
+                                                        >
+                                                            <ExternalLink className="w-3 h-3" />
+                                                            Pantalla Completa
+                                                        </Link>
+                                                    </div>
                                                 )}
 
                                                 <div className="flex items-center gap-1">

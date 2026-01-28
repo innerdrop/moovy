@@ -242,8 +242,16 @@ export async function GET(request: Request) {
                     select: { id: true, name: true, email: true, phone: true },
                 },
                 driver: {
-                    select: { id: true, user: { select: { name: true } } },
+                    select: {
+                        id: true,
+                        latitude: true,
+                        longitude: true,
+                        user: { select: { name: true } }
+                    }
                 },
+                merchant: {
+                    select: { id: true, name: true, latitude: true, longitude: true }
+                }
             },
             orderBy: { createdAt: "desc" },
         });

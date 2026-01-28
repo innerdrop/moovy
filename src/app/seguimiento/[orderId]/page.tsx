@@ -304,7 +304,10 @@ export default function TrackingPage() {
                         zoom={16}
                         onLoad={map => { mapRef.current = map; }}
                         options={{
-                            disableDefaultUI: true,
+                            disableDefaultUI: false,
+                            zoomControl: true,
+                            scrollwheel: true,
+                            gestureHandling: "cooperative",
                             styles: [
                                 { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
                                 { featureType: "transit", stylers: [{ visibility: "off" }] },
