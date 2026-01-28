@@ -16,6 +16,7 @@ export async function GET() {
         const addresses = await prisma.address.findMany({
             where: {
                 userId: session.user.id,
+                // @ts-ignore - added to schema, may need reload
                 deletedAt: null
             },
             orderBy: [

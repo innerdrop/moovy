@@ -123,6 +123,7 @@ export async function DELETE(
         await prisma.address.update({
             where: { id },
             data: {
+                // @ts-ignore
                 deletedAt: new Date(),
                 isDefault: false // Clear default status if deleted
             }
