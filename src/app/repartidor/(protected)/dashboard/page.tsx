@@ -341,19 +341,10 @@ export default function RepartidorDashboard() {
                                                 try {
                                                     const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
                                                     if (res.ok) {
-                                                        // Refresh data first
+                                                        // Refresh data
                                                         const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
                                                         setDashboardData(fresh);
-
-                                                        // Open Google Maps with route to merchant
-                                                        if (pedido.merchantLat && pedido.merchantLng) {
-                                                            window.open(
-                                                                `https://www.google.com/maps/dir/?api=1&destination=${pedido.merchantLat},${pedido.merchantLng}&travelmode=motorcycle`,
-                                                                "_blank"
-                                                            );
-                                                        } else {
-                                                            alert("¡Pedido aceptado! Ve al comercio.");
-                                                        }
+                                                        alert("¡Pedido aceptado! Ve al comercio.");
                                                     } else {
                                                         const err = await res.json();
                                                         alert(err.error || "Error");

@@ -140,9 +140,28 @@ export async function PATCH(
             include: {
                 items: true,
                 address: true,
-                user: { select: { name: true, email: true, phone: true } },
+                user: { select: { id: true, name: true, email: true, phone: true } },
             },
         });
+
+        // --- REAL-TIME NOTIFICATIONS ---
+        if (data.status === "DELIVERED") {
+            try {
+                // Notify socket server to show rating popup to customer
+                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event: "pedido_entregado",
+                        room: `order:${id}`,
+                        data: { orderId: id }
+                    })
+                });
+            } catch (e) {
+                console.error("[Socket-Emit] Failed to notify delivery:", e);
+            }
+        }
 
         // Trigger auto-assignment when status changes to READY
         if (data.status === "READY" && existingOrder?.status !== "READY") {
