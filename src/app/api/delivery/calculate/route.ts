@@ -63,12 +63,32 @@ export async function POST(request: Request) {
                 select: { latitude: true, longitude: true, address: true, name: true }
             });
 
-            if (merchant?.latitude && merchant?.longitude) {
-                originLat = merchant.latitude;
-                originLng = merchant.longitude;
-                originAddress = merchant.address || merchant.name;
+            if (merchant) {
+                if (merchant.latitude && merchant.longitude) {
+                    originLat = merchant.latitude;
+                    originLng = merchant.longitude;
+                    originAddress = merchant.address || merchant.name;
+                    console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name}`);
+                } else if (merchant.address) {
+                    // Try to geocode merchant address if coords are missing
+                    console.log(`[DeliveryCalc] Merchant lacks coordinates, geocoding address: ${merchant.address}`);
+                    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+                    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(merchant.address + ", Ushuaia, Argentina")}&key=${apiKey}`;
+
+                    const geoResponse = await fetch(geocodeUrl);
+                    const geoData = await geoResponse.json();
+
+                    if (geoData.status === "OK" && geoData.results.length > 0) {
+                        originLat = geoData.results[0].geometry.location.lat;
+                        originLng = geoData.results[0].geometry.location.lng;
+                        originAddress = merchant.address;
+                        console.log(`[DeliveryCalc] Merchant geocoded to: ${originLat}, ${originLng}`);
+                    }
+                }
             }
         }
+
+        console.log(`[DeliveryCalc] Final Points -> Origin: ${originLat},${originLng} | Dest: ${lat},${lng}`);
 
         // --- REAL ROAD DISTANCE: Google Distance Matrix ---
         let distanceKm = 0;
