@@ -42,6 +42,20 @@ export const metadata: Metadata = {
     description: "Delivery rápido en Ushuaia.",
     type: "website",
     siteName: "Moovy",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Moovy - Tu Antojo Manda!",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Moovy | Tu Antojo Manda!",
+    description: "Delivery rápido en Ushuaia.",
+    images: ["/og-image.png"],
   },
 };
 
