@@ -142,7 +142,7 @@ export default function NewProductForm({ categories }: NewProductFormProps) {
                                     step="0.01"
                                     required
                                     placeholder="0.00"
-                                    className="input pl-10"
+                                    className="input pl-12"
                                     disabled={isLoading}
                                 />
                             </div>
