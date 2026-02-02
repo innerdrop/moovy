@@ -92,7 +92,7 @@ Este documento es la guía rápida para el trabajo diario en equipo. Seguí esto
   ```
 * **Para RECIBIR (Colaborador):**
   ```powershell
-  cat moovy_full_backup.sql | docker exec -i moovy-db psql -U postgres
+  Get-Content -Encoding UTF8 moovy_full_backup.sql | docker exec -i moovy-db psql -U postgres
   ```
 
 ---
