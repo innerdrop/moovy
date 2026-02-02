@@ -99,8 +99,12 @@ export default function EditProductPage() {
     }, [productId]);
 
     // Calculate margin
-    const margin = Number(price) - Number(costPrice);
-    const marginPercent = costPrice ? ((margin / Number(costPrice)) * 100).toFixed(1) : "0";
+    const numPrice = Number(price) || 0;
+    const numCost = Number(costPrice) || 0;
+    const margin = numPrice - numCost;
+    const marginPercent = numCost > 0
+        ? ((margin / numCost) * 100).toFixed(1)
+        : (numPrice > 0 ? "100.0" : "0.0");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -326,8 +330,8 @@ export default function EditProductPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Margen
                             </label>
-                            <div className={`input text-center font-bold ${margin > 0 ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-500"}`}>
-                                ${margin > 0 ? margin : 0} ({marginPercent}%)
+                            <div className={`input text-center font-bold ${margin > 0 ? "bg-green-50 text-green-600" : margin < 0 ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-500"}`}>
+                                ${margin.toLocaleString()} ({marginPercent}%)
                             </div>
                         </div>
                     </div>

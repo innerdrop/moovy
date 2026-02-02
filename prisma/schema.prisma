@@ -76,9 +76,7 @@ model Category {
   allowIndividualPurchase Boolean           @default(true)
   price                   Float             @default(0)
   products                ProductCategory[]
-  merchants               MerchantCategory[]
 }
-
 
 model Product {
   id          String            @id @default(cuid())
@@ -243,24 +241,10 @@ model Merchant {
   startedAt        DateTime?
   whatsappNumber   String?
   ubicacion        Unsupported("geography")?
-  owner             User                      @relation(fields: [ownerId], references: [id])
-  orders            Order[]
-  products          Product[]
-  acquiredPackages  MerchantCategory[]
+  owner            User                      @relation(fields: [ownerId], references: [id])
+  orders           Order[]
+  products         Product[]
 }
-
-model MerchantCategory {
-  id         String   @id @default(cuid())
-  merchantId String
-  categoryId String
-  createdAt  DateTime @default(now())
-
-  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@unique([merchantId, categoryId])
-}
-
 
 model Driver {
   id                 String                    @id @default(cuid())

@@ -247,7 +247,7 @@ export default function ProductsPage() {
                                             <td className="p-4">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <Link
-                                                        href={`/ops/productos/${product.id}`}
+                                                        href={`/ops/productos/${product.id}/editar`}
                                                         className="p-2 hover:bg-slate-100 rounded-lg transition"
                                                         title="Editar"
                                                     >

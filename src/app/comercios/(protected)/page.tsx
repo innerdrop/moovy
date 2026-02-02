@@ -102,10 +102,10 @@ export default async function ComerciosDashboardPage() {
                         <Clock className="w-5 h-5 text-amber-700" />
                     </div>
                     <div className="flex-1">
-                        <span className="font-bold block">Acción Requerida</span>
-                        <span className="text-sm opacity-90">Tenés {pendingOrdersCount} pedido{pendingOrdersCount > 1 ? 's' : ''} pendiente{pendingOrdersCount > 1 ? 's' : ''} para gestionar.</span>
+                        <span className="font-bold block">Accion Requerida</span>
+                        <span className="text-sm opacity-90">Tienes {pendingOrdersCount} pedido{pendingOrdersCount > 1 ? 's' : ''} pendiente{pendingOrdersCount > 1 ? 's' : ''} para gestionar.</span>
                     </div>
-                    <span className="text-amber-600 font-bold hidden sm:inline">Ver pedidos →</span>
+                    <span className="text-amber-600 font-bold hidden sm:inline">Ver pedidos &rarr;</span>
                 </Link>
             )}
 
@@ -146,8 +146,8 @@ export default async function ComerciosDashboardPage() {
                         <Settings className="w-5 h-5 text-amber-600" />
                     </div>
                     <Link href="/comercios/configuracion" className="group">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuración</p>
-                        <p className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Ajustar tienda →</p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuracion</p>
+                        <p className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Ajustar tienda &rarr;</p>
                     </Link>
                 </div>
             </div>
@@ -211,23 +211,23 @@ export default async function ComerciosDashboardPage() {
                     <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg overflow-hidden relative">
                         <Package className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10 rotate-12" />
                         <h3 className="text-lg font-bold mb-2">Impulsa tu tienda</h3>
-                        <p className="text-blue-100 text-sm mb-6">Mantené tu catálogo actualizado para aparecer en las recomendaciones de los clientes.</p>
+                        <p className="text-blue-100 text-sm mb-6">Manten tu catalogo actualizado para aparecer en las recomendaciones de los clientes.</p>
                         <Link
                             href="/comercios/productos"
                             className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:scale-105 transition"
                         >
-                            Gestionar Catálogo <ArrowRight className="w-4 h-4" />
+                            Gestionar Catalogo &rarr;
                         </Link>
                     </div>
 
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Settings className="w-5 h-5 text-gray-400" />
-                            Accesos Rápidos
+                            Accesos Rapidos
                         </h3>
                         <div className="grid grid-cols-1 gap-2">
                             <Link href="/comercios/configuracion" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
-                                <span className="text-sm font-medium text-gray-600">Ver Perfil Público</span>
+                                <span className="text-sm font-medium text-gray-600">Ver Perfil Publico</span>
                                 <ArrowRight className="w-4 h-4 text-gray-300" />
                             </Link>
                             <Link href="/comercios/soporte" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
@@ -241,6 +241,3 @@ export default async function ComerciosDashboardPage() {
         </div>
     );
 }
-
-
-
