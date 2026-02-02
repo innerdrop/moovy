@@ -38,18 +38,38 @@ async function main() {
         },
     });
 
+    // ==================== STORE SETTINGS ====================
+    console.log("\n⚙️ Creando Configuración...");
+    await prisma.storeSettings.upsert({
+        where: { id: "settings" },
+        update: {},
+        create: {
+            id: "settings",
+            storeName: "Moovy Ushuaia",
+            storeAddress: "Ushuaia, Tierra del Fuego",
+            isOpen: false,
+            originLat: -54.8019,
+            originLng: -68.303,
+            fuelPricePerLiter: 1200,
+            baseDeliveryFee: 500,
+            maintenanceFactor: 1.35,
+            maxDeliveryDistance: 15,
+            maxCategoriesHome: 10,
+        },
+    });
+
     // ==================== CATEGORIES ====================
     console.log("\n📂 Creando Categorías...");
     const categorias = await Promise.all([
-        prisma.category.create({
-            data: { name: "Hamburguesas", slug: "hamburguesas", order: 1 },
-        }),
-        prisma.category.create({
-            data: { name: "Pizzas", slug: "pizzas", order: 2 },
-        }),
-        prisma.category.create({
-            data: { name: "Sushi", slug: "sushi", order: 3 },
-        }),
+        prisma.category.upsert({ where: { slug: "hamburguesas" }, update: {}, create: { name: "Hamburguesas", slug: "hamburguesas", order: 1 } }),
+        prisma.category.upsert({ where: { slug: "pizzas" }, update: {}, create: { name: "Pizzas", slug: "pizzas", order: 2 } }),
+        prisma.category.upsert({ where: { slug: "sushi" }, update: {}, create: { name: "Sushi", slug: "sushi", order: 3 } }),
+        prisma.category.upsert({ where: { slug: "lacteos" }, update: {}, create: { name: "Lácteos", slug: "lacteos", order: 4 } }),
+        prisma.category.upsert({ where: { slug: "bebidas" }, update: {}, create: { name: "Bebidas", slug: "bebidas", order: 5 } }),
+        prisma.category.upsert({ where: { slug: "sandwicheria" }, update: {}, create: { name: "Sandwichería", slug: "sandwicheria", order: 6 } }),
+        prisma.category.upsert({ where: { slug: "golosinas" }, update: {}, create: { name: "Golosinas", slug: "golosinas", order: 7 } }),
+        prisma.category.upsert({ where: { slug: "almacen" }, update: {}, create: { name: "Almacén", slug: "almacen", order: 8 } }),
+        prisma.category.upsert({ where: { slug: "limpieza" }, update: {}, create: { name: "Limpieza", slug: "limpieza", order: 9 } }),
     ]);
 
     // ==================== COMERCIOS ====================
