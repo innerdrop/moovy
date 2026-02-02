@@ -25,7 +25,8 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     const navItems = [
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
-        { href: "/comercios/productos", icon: Package, label: "Productos" },
+        { href: "/comercios/productos", icon: Package, label: "Mis Productos" },
+        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Adquirir paquetes" },
         { href: "/comercios/soporte", icon: MessageCircle, label: "Soporte" },
         { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
     ];

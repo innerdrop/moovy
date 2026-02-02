@@ -62,6 +62,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             // Landing cards
             showRepartidoresCard: formData.get("showRepartidoresCard") === "on",
             showComerciosCard: formData.get("showComerciosCard") === "on",
+            maxCategoriesHome: formData.get("maxCategoriesHome"),
         };
 
         try {

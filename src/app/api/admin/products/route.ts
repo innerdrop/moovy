@@ -8,7 +8,7 @@ export async function GET(request: Request) {
         const session = await auth();
         const userRole = (session?.user as any)?.role;
 
-        if (!session || userRole !== "ADMIN") {
+        if (!session || !["ADMIN", "MERCHANT"].includes(userRole)) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -142,7 +142,24 @@ export async function PATCH(request: Request) {
                 if (updateData.price) updateData.price = parseFloat(updateData.price);
                 if (updateData.costPrice) updateData.costPrice = parseFloat(updateData.costPrice);
                 if (updateData.stock) updateData.stock = parseInt(updateData.stock);
-                update = updateData;
+
+                // Handle Category updates
+                if (updateData.categoryIds) {
+                    const categoryIds = updateData.categoryIds;
+                    delete updateData.categoryIds;
+
+                    // Delete existing categories for this product and create new ones
+                    await prisma.productCategory.deleteMany({
+                        where: { productId: id }
+                    });
+
+                    update.categories = {
+                        create: categoryIds.map((catId: string) => ({
+                            categoryId: catId
+                        }))
+                    };
+                }
+                update = { ...update, ...updateData };
                 break;
             default:
                 update = updateData;

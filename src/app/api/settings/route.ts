@@ -82,6 +82,9 @@ export async function PUT(request: Request) {
         if (data.originLat) updateData.originLat = parseFloat(data.originLat);
         if (data.originLng) updateData.originLng = parseFloat(data.originLng);
 
+        // Integers
+        if (data.maxCategoriesHome) updateData.maxCategoriesHome = parseInt(data.maxCategoriesHome);
+
         // Optional float (can be null)
         if (data.freeDeliveryMinimum) {
             updateData.freeDeliveryMinimum = parseFloat(data.freeDeliveryMinimum);

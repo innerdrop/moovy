@@ -300,6 +300,24 @@ export default async function ConfigurationPage() {
                             <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
                         </label>
                     </div>
+
+                    {/* Max Categories */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                        <label className="block text-sm font-medium text-navy mb-1 uppercase tracking-wider font-bold">
+                            Cantidad de Categorías en Sliders
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            defaultValue={settings?.maxCategoriesHome ?? 6}
+                            className="input w-32"
+                            name="maxCategoriesHome"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                            Define cuántas categorías se mostrarán en los sliders de Home y /tienda antes de repetir el ciclo.
+                        </p>
+                    </div>
                 </div>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm">

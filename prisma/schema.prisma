@@ -64,16 +64,18 @@ model Address {
 }
 
 model Category {
-  id          String            @id @default(cuid())
-  name        String            @unique
-  slug        String            @unique
-  description String?
-  image       String?
-  isActive    Boolean           @default(true)
-  order       Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  products    ProductCategory[]
+  id                      String            @id @default(cuid())
+  name                    String            @unique
+  slug                    String            @unique
+  description             String?
+  image                   String?
+  isActive                Boolean           @default(true)
+  order                   Int               @default(0)
+  price                   Float             @default(0)
+  allowIndividualPurchase Boolean           @default(true)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  products                ProductCategory[]
 }
 
 model Product {
@@ -299,6 +301,7 @@ model StoreSettings {
   showComerciosCard     Boolean  @default(true)
   showRepartidoresCard  Boolean  @default(true)
   tiendaMaintenance     Boolean  @default(false)
+  maxCategoriesHome     Int      @default(6)
 }
 
 model PointsConfig {

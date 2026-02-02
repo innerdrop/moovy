@@ -58,6 +58,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                     console.log("[Auth] Login successful for:", user.email, "Role:", user.role);
 
+                    const merchant = await prisma.merchant.findFirst({
+                        where: { ownerId: user.id },
+                        select: { id: true }
+                    });
+
                     return {
                         id: user.id,
                         email: user.email,
@@ -65,6 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         role: user.role as "ADMIN" | "USER" | "DRIVER",
                         image: user.image,
                         referralCode: user.referralCode,
+                        merchantId: merchant?.id || null,
                     };
                 } catch (error) {
                     console.error("[Auth] Authorize error:", error);
@@ -79,6 +85,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 token.id = user.id || "";
                 token.role = (user as any).role;
                 token.referralCode = (user as any).referralCode;
+                token.merchantId = (user as any).merchantId;
                 token.loginAt = Date.now();
             }
 
@@ -100,6 +107,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 session.user.id = token.id as string;
                 (session.user as any).role = token.role;
                 (session.user as any).referralCode = token.referralCode;
+                (session.user as any).merchantId = token.merchantId;
             }
             return session;
         },

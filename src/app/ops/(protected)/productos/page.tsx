@@ -61,11 +61,14 @@ export default function ProductsPage() {
 
             const res = await fetch(`/api/admin/products?${params}`);
             const data = await res.json();
-            setProducts(Array.isArray(data) ? data : []);
 
-            // Extract unique merchants
+            // Filter out master products (merchant is null) to show only merchant products
+            const merchantOnly = data.filter((p: any) => p.merchant !== null);
+            setProducts(merchantOnly);
+
+            // Extract unique merchants from the merchant products list
             const uniqueMerchants = new Map<string, Merchant>();
-            data.forEach((p: Product) => {
+            merchantOnly.forEach((p: Product) => {
                 if (p.merchant) {
                     uniqueMerchants.set(p.merchant.id, p.merchant);
                 }
@@ -131,8 +134,8 @@ export default function ProductsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Productos</h1>
-                    <p className="text-slate-600">{products.length} productos en total</p>
+                    <h1 className="text-2xl font-bold text-slate-900">Productos de Comercios</h1>
+                    <p className="text-slate-600">Supervisión de productos subidos por vendedores ({products.length})</p>
                 </div>
             </div>
 

@@ -1,20 +1,3 @@
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
-import {
-    LayoutDashboard,
-    ShoppingBag,
-    Package,
-    Settings,
-    LogOut,
-    Store,
-    Menu,
-    X
-} from "lucide-react";
-
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Pedidos", href: "/admin/orders", icon: ShoppingBag },

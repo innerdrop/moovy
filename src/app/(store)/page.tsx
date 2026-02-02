@@ -28,12 +28,12 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
     limpieza: SprayCan,
 };
 
-async function getCategories() {
+async function getCategories(limit: number = 6) {
     try {
         const categories = await prisma.category.findMany({
             where: { isActive: true },
             orderBy: { order: "asc" },
-            take: 6,
+            take: limit,
         });
         return categories;
     } catch (error) {
@@ -101,7 +101,8 @@ function MaintenanceView() {
 }
 
 async function LiveStoreView() {
-    const categories = await getCategories();
+    const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } });
+    const categories = await getCategories(settings?.maxCategoriesHome ?? 6);
     const merchants = await getFeaturedMerchants();
     const featuredProducts = await getFeaturedProducts();
 

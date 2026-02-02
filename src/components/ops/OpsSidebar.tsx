@@ -32,7 +32,8 @@ interface OpsSidebarProps {
 const navItems = [
     { href: "/ops", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/ops/live", icon: Activity, label: "En Vivo", badge: "🔴" },
-    { href: "/ops/productos", icon: Package, label: "Productos" },
+    { href: "/ops/catalogo-paquetes", icon: Package, label: "Catálogo de Paquetes" },
+    { href: "/ops/productos", icon: Store, label: "Productos Comercios" },
     { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
     { href: "/ops/comercios", icon: Building2, label: "Comercios" },
     { href: "/ops/repartidores", icon: Truck, label: "Repartidores" },
