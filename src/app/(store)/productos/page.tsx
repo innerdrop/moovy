@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Package, Filter } from "lucide-react";
 import ProductCard from "@/components/products/ProductCard";
 import ProductSearchBar from "@/components/products/ProductSearchBar";
+import { cleanEncoding } from "@/lib/utils/stringUtils";
 
 interface ProductsPageProps {
     searchParams: Promise<{ categoria?: string; buscar?: string }>;
@@ -87,7 +88,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                 }`}
                         >
-                            {cat.name}
+                            {cleanEncoding(cat.name)}
                         </Link>
                     ))}
                 </div>
@@ -123,7 +124,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                                             : "hover:bg-gray-100 text-gray-700"
                                             }`}
                                     >
-                                        {cat.name}
+                                        {cleanEncoding(cat.name)}
                                     </Link>
                                 </li>
                             ))}
@@ -136,7 +137,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                     {/* Header */}
                     <div className="mb-6">
                         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                            {currentCategory ? currentCategory.name : "Todos los Productos"}
+                            {currentCategory ? cleanEncoding(currentCategory.name) : "Todos los Productos"}
                         </h1>
                         <p className="text-gray-600">
                             {products.length} productos encontrados

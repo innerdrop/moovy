@@ -76,6 +76,7 @@ model Category {
   allowIndividualPurchase Boolean           @default(true)
   price                   Float             @default(0)
   products                ProductCategory[]
+  merchants               MerchantCategory[]
 }
 
 model Product {
@@ -98,6 +99,7 @@ model Product {
   categories  ProductCategory[]
   images      ProductImage[]
   variants    ProductVariant[]
+  acquiredBy  MerchantAcquiredProduct[]
 }
 
 model ProductCategory {
@@ -244,6 +246,8 @@ model Merchant {
   owner            User                      @relation(fields: [ownerId], references: [id])
   orders           Order[]
   products         Product[]
+  categories       MerchantCategory[]
+  acquiredProducts MerchantAcquiredProduct[]
 }
 
 model Driver {
@@ -396,4 +400,26 @@ model spatial_ref_sys {
   auth_srid Int?
   srtext    String? @db.VarChar(2048)
   proj4text String? @db.VarChar(2048)
+}
+
+model MerchantCategory {
+  id         String   @id @default(cuid())
+  merchantId String
+  categoryId String
+  createdAt  DateTime @default(now())
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, categoryId])
+}
+
+model MerchantAcquiredProduct {
+  id         String   @id @default(cuid())
+  merchantId String
+  productId  String
+  createdAt  DateTime @default(now())
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, productId])
 }

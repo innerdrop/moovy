@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { Star, MapPin, Clock, BadgeCheck, Sparkles } from "lucide-react";
+import { cleanEncoding } from "@/lib/utils/stringUtils";
 
 interface MerchantCardProps {
     merchant: {
@@ -48,7 +49,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                     <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                        <span className="text-4xl font-bold opacity-20">{merchant.name.charAt(0)}</span>
+                        <span className="text-4xl font-bold opacity-20">{cleanEncoding(merchant.name).charAt(0)}</span>
                     </div>
                 )}
 
@@ -75,7 +76,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                 <div className="flex justify-between items-start mb-1">
                     <div className="flex items-center gap-1.5">
                         <h3 className="font-bold text-gray-900 text-lg group-hover:text-[#e60012] transition line-clamp-1">
-                            {merchant.name}
+                            {cleanEncoding(merchant.name)}
                         </h3>
                         {merchant.isPremium ? (
                             <Sparkles className="w-4 h-4 text-yellow-500 flex-shrink-0" />
@@ -90,7 +91,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                 </div>
 
                 <p className="text-gray-500 text-sm line-clamp-2 mb-3 min-h-[40px]">
-                    {merchant.description || "Sin descripción"}
+                    {cleanEncoding(merchant.description || "Sin descripción")}
                 </p>
 
                 <div className="flex items-center gap-4 text-xs text-gray-500 border-t border-gray-100 pt-3">
@@ -100,7 +101,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                     </div>
                     <div className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" />
-                        <span className="truncate max-w-[100px]">{merchant.address || "Ushuaia"}</span>
+                        <span className="truncate max-w-[100px]">{cleanEncoding(merchant.address || "Ushuaia")}</span>
                     </div>
                     <div className="ml-auto font-medium text-gray-900">
                         {merchant.deliveryFee === 0 ? (

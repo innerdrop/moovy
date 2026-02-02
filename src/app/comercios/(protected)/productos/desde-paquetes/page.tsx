@@ -13,13 +13,17 @@ import {
     EyeOff,
     Check,
     X,
+    Plus,
     ToggleLeft,
     ToggleRight,
     ShoppingBag,
     Sparkles
 } from "lucide-react";
 import Link from "next/link";
-import { toggleProductActive } from "@/app/comercios/actions";
+import { toggleProductActive, importCatalogProducts } from "@/app/comercios/actions";
+import { cleanEncoding } from "@/lib/utils/stringUtils";
+
+const cleanName = cleanEncoding;
 
 interface PackageCategory {
     id: string;
@@ -30,16 +34,19 @@ interface PackageCategory {
     totalProducts: number;
     activeProducts: number;
     inactiveProducts: number;
+    isFullPackage?: boolean;
 }
 
 interface Product {
-    id: string;
+    id: string; // Master ID
+    merchantProductId: string | null;
     name: string;
     slug: string;
     description: string | null;
     price: number;
     stock: number;
     isActive: boolean;
+    isImported: boolean;
     image: string | null;
 }
 
@@ -98,14 +105,14 @@ export default function ProductosDesdePaquetesPage() {
         fetchPackages(); // Refresh counts
     };
 
-    const handleToggleProduct = async (productId: string, currentActive: boolean) => {
-        setTogglingProduct(productId);
+    const handleToggleProduct = async (merchantProductId: string, currentActive: boolean) => {
+        setTogglingProduct(merchantProductId);
         try {
-            const result = await toggleProductActive(productId, !currentActive);
+            const result = await toggleProductActive(merchantProductId, !currentActive);
             if (result.success) {
                 // Update local state
                 setProducts(prev => prev.map(p =>
-                    p.id === productId ? { ...p, isActive: !currentActive } : p
+                    p.merchantProductId === merchantProductId ? { ...p, isActive: !currentActive } : p
                 ));
             } else {
                 alert(result.error || "Error al actualizar el producto");
@@ -117,11 +124,32 @@ export default function ProductosDesdePaquetesPage() {
         }
     };
 
+    const handleImportProduct = async (masterId: string) => {
+        setTogglingProduct(masterId);
+        try {
+            const result = await importCatalogProducts([masterId]);
+            if (result.success) {
+                // Refresh the current package products to see it as imported
+                if (selectedPackage) {
+                    await fetchProducts(selectedPackage.id);
+                }
+            } else {
+                alert(result.error || "Error al importar el producto");
+            }
+        } catch (error) {
+            console.error("Error importing product:", error);
+        } finally {
+            setTogglingProduct(null);
+        }
+    };
+
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Cargando paquetes...</p>
+            <div className="flex flex-col items-center justify-center py-32 gap-6 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm animate-pulse">
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                </div>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sincronizando tus adquisiciones...</p>
             </div>
         );
     }
@@ -129,22 +157,22 @@ export default function ProductosDesdePaquetesPage() {
     // Empty state - no packages
     if (!loading && packages.length === 0) {
         return (
-            <div className="max-w-2xl mx-auto py-16 text-center">
-                <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                    <ShoppingBag className="w-12 h-12 text-slate-300" />
+            <div className="max-w-2xl mx-auto py-20 text-center bg-white rounded-[3rem] border border-gray-100 shadow-sm p-12">
+                <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-blue-600">
+                    <ShoppingBag className="w-12 h-12" />
                 </div>
-                <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-4">
-                    No tenés paquetes
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                    Tu Galería está Vacía
                 </h1>
-                <p className="text-slate-500 mb-8 font-medium max-w-md mx-auto">
-                    Aún no has adquirido ningún paquete de productos. Explorá nuestro catálogo y empezá a vender con datos oficiales de Moovy.
+                <p className="text-gray-500 mb-8 font-medium max-w-md mx-auto leading-relaxed">
+                    Aún no has activado productos del catálogo Moovy. Adquirí paquetes o productos individuales para empezar a vender con fotos profesionales.
                 </p>
                 <Link
                     href="/comercios/adquirir-paquetes"
-                    className="inline-flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+                    className="inline-flex items-center gap-3 px-10 py-5 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-200 active:scale-95"
                 >
                     <Sparkles className="w-5 h-5" />
-                    Explorar Paquetes
+                    Explorar Catálogo Moovy
                 </Link>
             </div>
         );
@@ -153,122 +181,163 @@ export default function ProductosDesdePaquetesPage() {
     // Products view (when a package is selected)
     if (selectedPackage) {
         return (
-            <div className="space-y-8 animate-in slide-in-from-right duration-500">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="space-y-4">
                         <button
                             onClick={handleBackToPackages}
-                            className="flex items-center gap-2 text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest text-[10px] mb-2 transition"
+                            className="group flex items-center gap-2 text-gray-400 hover:text-blue-600 font-bold uppercase tracking-wider text-[10px] transition-colors"
                         >
-                            <ChevronLeft className="w-4 h-4" />
-                            Volver a Paquetes
+                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                            Volver a Mis Rubros
                         </button>
-                        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
-                            {selectedPackage.name}
-                        </h1>
-                        <p className="text-slate-500 font-medium">
-                            Activá o desactivá productos de este paquete
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl">
-                            <Eye className="w-4 h-4 text-green-600" />
-                            <span className="text-sm font-bold text-green-700">
-                                {products.filter(p => p.isActive).length} activos
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl">
-                            <EyeOff className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm font-bold text-slate-500">
-                                {products.filter(p => !p.isActive).length} inactivos
-                            </span>
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+                                    {cleanName(selectedPackage.name)}
+                                </h1>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${selectedPackage.isFullPackage
+                                    ? "bg-blue-600 text-white border-blue-500"
+                                    : "bg-amber-100 text-amber-700 border-amber-200"
+                                    }`}>
+                                    {selectedPackage.isFullPackage ? "Paquete Full" : "Items Adquiridos"}
+                                </span>
+                            </div>
+                            <p className="text-gray-500 font-medium italic">
+                                "{selectedPackage.description || "Gestión de visibilidad de productos Moovy"}"
+                            </p>
                         </div>
                     </div>
                 </header>
 
-                {/* Info Banner */}
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
-                    <Package className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
-                    <div>
-                        <p className="text-sm font-bold text-blue-900">Gestión rápida de visibilidad</p>
-                        <p className="text-xs text-blue-700/80">
-                            Los productos activos aparecen en tu tienda. Los inactivos están ocultos pero no se eliminan.
-                        </p>
+                {/* Dashboard Stats Panel */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                            <Package className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Rubro</p>
+                            <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
+                            <Eye className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">En Tienda</p>
+                            <p className="text-2xl font-bold text-green-600">{products.filter(p => p.isImported && p.isActive).length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                            <EyeOff className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ocultos</p>
+                            <p className="text-2xl font-bold text-amber-600">{products.filter(p => p.isImported && !p.isActive).length}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-[2rem] border border-blue-50 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white">
+                            <Plus className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sin Agregar</p>
+                            <p className="text-2xl font-bold text-blue-600">{products.filter(p => !p.isImported).length}</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Products Grid */}
+                {/* Products Grid - More Professional Look */}
                 {loadingProducts ? (
-                    <div className="flex items-center justify-center py-16">
-                        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2rem] border border-gray-100">
+                        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                        <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Cargando inventario...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {products.map((product) => (
                             <div
                                 key={product.id}
-                                className={`group bg-white rounded-3xl border-2 transition-all duration-300 overflow-hidden ${product.isActive
-                                        ? "border-green-200 shadow-sm hover:shadow-lg"
-                                        : "border-slate-100 opacity-70 hover:opacity-100"
+                                className={`group bg-white rounded-[2rem] border transition-all duration-300 overflow-hidden flex flex-col ${!product.isImported
+                                    ? "border-blue-100 bg-blue-50/10 shadow-sm opacity-90"
+                                    : product.isActive
+                                        ? "border-green-100 shadow-sm hover:shadow-xl hover:-translate-y-1"
+                                        : "border-gray-100 opacity-60 hover:opacity-90 grayscale-0"
                                     }`}
                             >
-                                {/* Product Image */}
-                                <div className="aspect-square relative overflow-hidden bg-slate-50">
+                                {/* Media Container */}
+                                <div className="aspect-square relative overflow-hidden bg-gray-50 border-b border-gray-100">
                                     {product.image ? (
                                         <Image
                                             src={product.image}
                                             alt={product.name}
                                             fill
-                                            className={`object-cover transition-all duration-500 ${product.isActive ? "group-hover:scale-105" : "grayscale"
-                                                }`}
+                                            className="object-cover transition-all duration-700 group-hover:scale-110"
                                         />
                                     ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center text-slate-200">
+                                        <div className="absolute inset-0 flex items-center justify-center text-gray-200">
                                             <Package className="w-16 h-16" />
                                         </div>
                                     )}
 
-                                    {/* Status Badge */}
-                                    <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-lg ${product.isActive
-                                            ? "bg-green-500 text-white"
-                                            : "bg-slate-400 text-white"
+                                    {/* Glassmorphism Badge */}
+                                    <div className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg border border-white/30 ${!product.isImported ? "bg-blue-600/90 text-white" :
+                                        product.isActive ? "bg-green-600/90 text-white" : "bg-gray-800/80 text-white"
                                         }`}>
-                                        {product.isActive ? "Visible" : "Oculto"}
+                                        {!product.isImported ? "En Catálogo" : product.isActive ? "Visible" : "Oculto"}
                                     </div>
                                 </div>
 
-                                {/* Product Info */}
-                                <div className="p-5 space-y-4">
+                                {/* Content */}
+                                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                                     <div>
-                                        <h3 className="font-black text-lg text-slate-900 uppercase tracking-tight leading-tight">
-                                            {product.name}
+                                        <h3 className="font-bold text-lg text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">
+                                            {cleanName(product.name)}
                                         </h3>
-                                        <p className="text-sm text-slate-500 font-medium mt-1">
-                                            ${product.price.toLocaleString("es-AR")} · Stock: {product.stock}
-                                        </p>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <p className="text-xl font-black text-gray-900">
+                                                ${product.price.toLocaleString("es-AR")}
+                                            </p>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                {product.isImported ? `Stock: ${product.stock} un.` : "Listo para importar"}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    {/* Toggle Button */}
+                                    {/* Action Toggle / Import */}
                                     <button
-                                        onClick={() => handleToggleProduct(product.id, product.isActive)}
-                                        disabled={togglingProduct === product.id}
-                                        className={`w-full py-3 px-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${product.isActive
-                                                ? "bg-green-50 text-green-700 hover:bg-green-100"
-                                                : "bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-                                            } disabled:opacity-50`}
+                                        onClick={() => product.isImported
+                                            ? handleToggleProduct(product.merchantProductId!, product.isActive)
+                                            : handleImportProduct(product.id)
+                                        }
+                                        disabled={togglingProduct === (product.isImported ? product.merchantProductId : product.id)}
+                                        className={`w-full py-4 px-4 rounded-xl font-bold text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-3 ${!product.isImported
+                                            ? "bg-blue-600 text-white border-blue-500 hover:bg-blue-700 shadow-lg shadow-blue-100" :
+                                            product.isActive
+                                                ? "bg-green-50 text-green-700 border-green-100 hover:bg-green-100"
+                                                : "bg-blue-600 text-white border-blue-500 hover:bg-blue-700 shadow-lg shadow-blue-100"
+                                            } disabled:opacity-50 active:scale-95`}
                                     >
-                                        {togglingProduct === product.id ? (
+                                        {togglingProduct === (product.isImported ? product.merchantProductId : product.id) ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : !product.isImported ? (
+                                            <>
+                                                <Plus className="w-5 h-5" />
+                                                Agregar a mi Tienda
+                                            </>
                                         ) : product.isActive ? (
                                             <>
                                                 <ToggleRight className="w-5 h-5" />
-                                                En Tienda
+                                                Quitar de Tienda
                                             </>
                                         ) : (
                                             <>
-                                                <ToggleLeft className="w-5 h-5" />
-                                                Activar
+                                                <ToggleLeft className="w-5 h-5 shadow-sm" />
+                                                Activar en Tienda
                                             </>
                                         )}
                                     </button>
@@ -281,84 +350,93 @@ export default function ProductosDesdePaquetesPage() {
         );
     }
 
-    // Packages Grid (default view)
+    // Packages Grid (default view) - Compact Redesign
     return (
-        <div className="space-y-8">
-            {/* Header */}
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-10 animate-in fade-in duration-700">
+            {/* Header Area */}
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
-                        Mis Paquetes
+                    <h1 className="text-4xl font-bold text-gray-900 tracking-tight mb-2">
+                        Mis Productos Moovy
                     </h1>
-                    <p className="text-slate-500 font-medium">
-                        Explorá tus paquetes adquiridos y gestioná qué productos mostrar
+                    <p className="text-lg text-gray-500 font-medium">
+                        Gestioná la visibilidad de tus rubros y adquisiciones oficiales.
                     </p>
                 </div>
                 <Link
                     href="/comercios/adquirir-paquetes"
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+                    className="flex items-center justify-center gap-3 px-8 py-4 bg-white border border-gray-100 text-blue-600 rounded-[1.25rem] font-bold hover:bg-blue-50 hover:border-blue-100 transition shadow-sm hover:shadow-md group"
                 >
-                    <Sparkles className="w-5 h-5" />
-                    Adquirir más paquetes
+                    <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                    Adquirir más Contenido
+                    <ArrowRight className="w-4 h-4" />
                 </Link>
             </header>
 
-            {/* Packages Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Premium Compact Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {packages.map((pkg) => (
                     <div
                         key={pkg.id}
                         onClick={() => handleSelectPackage(pkg)}
-                        className="group cursor-pointer bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+                        className="group cursor-pointer bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:border-blue-200 transition-all duration-500 overflow-hidden relative"
                     >
-                        {/* Image */}
-                        <div className="aspect-[4/3] relative">
+                        {/* Compact Visual Header */}
+                        <div className="aspect-[2.2/1] relative overflow-hidden">
                             {pkg.image ? (
                                 <Image
                                     src={pkg.image}
                                     alt={pkg.name}
                                     fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
                                 />
                             ) : (
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-                                    <Layers className="w-20 h-20 text-white/30" />
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+                                    <Layers className="w-12 h-12 text-white/20" />
                                 </div>
                             )}
 
-                            {/* Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/10 to-transparent" />
+                            {/* Status Badges Overlay */}
+                            <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
+                                <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] shadow-lg border border-white/20 ${pkg.isFullPackage
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white/90 backdrop-blur text-blue-700"
+                                    }`}>
+                                    {pkg.isFullPackage ? "Fulll Pack" : "Mixed Box"}
+                                </span>
 
-                            {/* Info on image */}
-                            <div className="absolute bottom-6 left-6 right-6">
-                                <h3 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
-                                    {pkg.name}
-                                </h3>
-                                <p className="text-white/70 text-xs font-bold uppercase tracking-widest mt-1">
-                                    {pkg.totalProducts} productos
-                                </p>
+                                <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-white/10">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+                                    <span className="text-[9px] font-bold text-white uppercase tracking-wider">{pkg.totalProducts} SKU</span>
+                                </div>
                             </div>
+
+                            {/* Gradient Fade */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/10" />
                         </div>
 
-                        {/* Stats Bar */}
-                        <div className="p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                                    <span className="text-xs font-bold text-slate-600">
-                                        {pkg.activeProducts} activos
+                        {/* Content Area */}
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">
+                                    {cleanName(pkg.name)}
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1 line-clamp-1 font-medium italic">
+                                    {pkg.description || "Colección de productos oficiales Moovy"}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                <div className="flex gap-2">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-lg text-[10px] font-bold text-gray-500">
+                                        Explorar Rubro
+                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                                     </span>
                                 </div>
-                                {pkg.inactiveProducts > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-2 h-2 rounded-full bg-slate-300" />
-                                        <span className="text-xs font-bold text-slate-400">
-                                            {pkg.inactiveProducts} ocultos
-                                        </span>
-                                    </div>
-                                )}
+                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                    <Package className="w-5 h-5" />
+                                </div>
                             </div>
-                            <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
                         </div>
                     </div>
                 ))}

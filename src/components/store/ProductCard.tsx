@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { Store, Plus } from "lucide-react";
+import { cleanEncoding } from "@/lib/utils/stringUtils";
 
 interface ProductCardProps {
     product: {
@@ -39,10 +40,10 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
 
             <div className="p-3 flex-1 flex flex-col">
                 <h3 className="font-semibold text-gray-800 text-sm group-hover:text-[#e60012] transition line-clamp-2 mb-1">
-                    {product.name}
+                    {cleanEncoding(product.name)}
                 </h3>
                 <p className="text-gray-500 text-xs line-clamp-2 mb-auto">
-                    {product.description}
+                    {cleanEncoding(product.description)}
                 </p>
 
                 <div className="flex items-center justify-between mt-3">

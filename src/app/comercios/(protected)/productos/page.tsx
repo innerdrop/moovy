@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus, Search, Edit, Trash2, Package, Layers, ArrowRight } from "lucide-react";
 import ProductStatusToggle from "@/components/comercios/ProductStatusToggle";
+import DeleteProductButton from "@/components/comercios/DeleteProductButton";
+import { cleanEncoding } from "@/lib/utils/stringUtils";
 
 export default async function ProductosPage() {
     const session = await auth();
@@ -23,7 +25,7 @@ export default async function ProductosPage() {
     }
 
     const products = await prisma.product.findMany({
-        where: { merchantId: merchant.id },
+        where: { merchantId: merchant.id, isActive: true },
         include: { images: true, categories: { include: { category: true } } },
         orderBy: { createdAt: "desc" },
     });
@@ -117,16 +119,16 @@ export default async function ProductosPage() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-bold text-gray-900 truncate">{product.name}</h4>
+                                            <h4 className="font-bold text-gray-900 truncate">{cleanEncoding(product.name)}</h4>
                                             <span className="md:hidden text-xs text-gray-500">
-                                                {product.categories[0]?.category.name || "Sin categoría"}
+                                                {cleanEncoding(product.categories[0]?.category.name || "Sin categoría")}
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* Category (Desktop only) */}
                                     <div className="hidden md:block text-sm text-gray-600 font-medium">
-                                        {product.categories[0]?.category.name || "—"}
+                                        {cleanEncoding(product.categories[0]?.category.name || "—")}
                                     </div>
 
                                     {/* Price and Stock (Mobile: Row) */}
@@ -158,12 +160,10 @@ export default async function ProductosPage() {
                                             <Edit className="w-4 h-4" />
                                             <span className="md:hidden">Editar</span>
                                         </Link>
-                                        <button
-                                            className="p-2 rounded-xl text-gray-400 hover:text-red-600 transition hidden md:block"
-                                            title="Eliminar"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <DeleteProductButton
+                                            productId={product.id}
+                                            productName={product.name}
+                                        />
                                     </div>
                                 </div>
                             </div>

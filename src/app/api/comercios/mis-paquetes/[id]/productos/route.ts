@@ -25,10 +25,11 @@ export async function GET(request: Request, { params }: RouteParams) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
         }
 
-        // Obtener productos del comercio que pertenecen a esta categoría
-        const products = await prisma.product.findMany({
+        // 1. Obtener todos los productos MAESTROS de esta categoría
+        const masterProducts = await prisma.product.findMany({
             where: {
-                merchantId: merchant.id,
+                merchantId: null,
+                isActive: true,
                 categories: {
                     some: {
                         categoryId: categoryId
@@ -39,19 +40,47 @@ export async function GET(request: Request, { params }: RouteParams) {
                 images: {
                     orderBy: { order: 'asc' },
                     take: 1
-                },
-                categories: {
-                    include: {
-                        category: {
-                            select: {
-                                id: true,
-                                name: true
-                            }
-                        }
-                    }
                 }
             },
             orderBy: { name: 'asc' }
+        });
+
+        // 2. Obtener los productos que EL COMERCIO ya tiene en esta categoría
+        const merchantProducts = await prisma.product.findMany({
+            where: {
+                merchantId: merchant.id,
+                categories: {
+                    some: {
+                        categoryId: categoryId
+                    }
+                }
+            },
+            select: {
+                id: true,
+                name: true,
+                isActive: true,
+                stock: true,
+                price: true
+            }
+        });
+
+        // 3. Cruzar información
+        const unifiedProducts = masterProducts.map(master => {
+            // Buscamos si el comercio ya tiene este producto (mapeo por nombre o slug base)
+            const imported = merchantProducts.find(p => p.name === master.name);
+
+            return {
+                id: master.id, // ID del maestro
+                merchantProductId: imported?.id || null, // ID del producto del comercio si existe
+                name: master.name,
+                slug: master.slug,
+                description: master.description,
+                price: imported?.price || master.price,
+                stock: imported?.stock || 0,
+                isActive: imported?.isActive || false,
+                isImported: !!imported,
+                image: master.images[0]?.url || null
+            };
         });
 
         // Obtener info de la categoría
@@ -68,16 +97,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
         return NextResponse.json({
             category,
-            products: products.map(p => ({
-                id: p.id,
-                name: p.name,
-                slug: p.slug,
-                description: p.description,
-                price: p.price,
-                stock: p.stock,
-                isActive: p.isActive,
-                image: p.images[0]?.url || null
-            }))
+            products: unifiedProducts
         });
 
     } catch (error) {
