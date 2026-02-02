@@ -26,8 +26,8 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     const navItems = [
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
-        { href: "/comercios/productos", icon: Package, label: "Mis Productos" },
-        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Adquirir paquetes" },
+        { href: "/comercios/productos", icon: Package, label: "Productos" },
+        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
         { href: "/comercios/soporte", icon: MessageCircle, label: "Soporte" },
         { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
     ];
@@ -101,25 +101,29 @@ export default async function ComerciosLayout({ children }: { children: React.Re
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 pb-24 lg:p-8 overflow-y-auto">
+            <main className="flex-1 p-4 pb-20 lg:p-8 overflow-y-auto">
                 {children}
             </main>
 
-            {/* Mobile Bottom Navigation */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-2 z-30 pb-safe">
-                <nav className="flex items-center justify-between">
+            {/* Mobile Bottom Navigation - Identical to Client Style */}
+            <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                <div className="flex items-center justify-between h-16 px-2 max-w-md mx-auto relative text-center">
                     {navItems.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-blue-600 active:text-blue-700 transition"
+                            className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
                         >
-                            <item.icon className="w-6 h-6" />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <item.icon className="w-6 h-6 mb-0.5" />
+                            <span className="text-[10px] font-medium leading-tight">
+                                {item.label}
+                            </span>
                         </Link>
                     ))}
-                </nav>
-            </div>
+                </div>
+                {/* Safe area padding for iPhones with notch */}
+                <div className="h-[env(safe-area-inset-bottom)] bg-white" />
+            </nav>
         </div>
     );
 }
