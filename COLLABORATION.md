@@ -162,6 +162,27 @@ Si tu colaborador necesita tener las mismas categorías y configuraciones que vo
     ```
 Esto llenará su base de datos local con los rubros, comercios de prueba y configuración general de la tienda automáticamente.
 
+### 8. Clonación Exacta de Base de Datos (Dump)
+
+Si querés que tu colaborador tenga **EXACTAMENTE** los mismos productos, fotos y datos reales que vos (no solo los de prueba), deben hacer un "Dump".
+
+#### Pasos para el Dueño (Enviar):
+1. Abrí la terminal y ejecutá este comando para sacar una copia de tu Docker:
+   ```powershell
+   docker exec -t moovy-db-1 pg_dumpall -c -U postgres > moovy_full_backup.sql
+   ```
+2. Pasale el archivo `moovy_full_backup.sql` a tu colaborador (por fuera de Git).
+
+#### Pasos para el Colaborador (Recibir):
+1. Poné el archivo en la carpeta del proyecto.
+2. Ejecutá este comando para "inyectar" los datos en tu Docker:
+   ```powershell
+   cat moovy_full_backup.sql | docker exec -i moovy-db-1 psql -U postgres
+   ```
+
+> [!IMPORTANT]
+> El comando `npx prisma db seed` es solo para **datos de prueba (demos)**. Para **datos reales de trabajo**, usen siempre el método de **Dump**.
+
 ---
 
-*Moovy - Guía de Ingeniería v1.2*
+*Moovy - Guía de Ingeniería v1.3*
