@@ -13,7 +13,8 @@ import {
     Layers,
     Info,
     ArrowRight,
-    Plus
+    Plus,
+    Sparkles
 } from "lucide-react";
 
 interface Product {
@@ -39,6 +40,7 @@ interface Category {
 
 export default function BuyFromCatalogPage() {
     const router = useRouter();
+    const [viewMode, setViewMode] = useState<"selection" | "catalog">("selection");
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -130,10 +132,10 @@ export default function BuyFromCatalogPage() {
                 </p>
                 <div className="flex gap-4">
                     <button
-                        onClick={() => { setCompleted(false); setSelectedCategory(null); fetchData(); }}
+                        onClick={() => { setCompleted(false); setSelectedCategory(null); setViewMode("selection"); fetchData(); }}
                         className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition"
                     >
-                        Ver más paquetes
+                        Volver al Inicio
                     </button>
                     <a
                         href="/comercios/productos"
@@ -141,6 +143,92 @@ export default function BuyFromCatalogPage() {
                     >
                         Ir a Mis Productos
                     </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (viewMode === "selection") {
+        return (
+            <div className="max-w-5xl mx-auto py-12 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest border border-blue-100 mb-2">
+                        <Sparkles className="w-4 h-4" />
+                        Ecosistema Moovy Oficial
+                    </div>
+                    <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter">
+                        PAQUETES <span className="text-blue-600">MOOVY</span>
+                    </h1>
+                    <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto">
+                        Gestiona tus adquisiciones oficiales o explora nuevos rubros para potenciar tu catálogo.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Opción 1: Explorar Catálogo */}
+                    <div
+                        onClick={() => setViewMode("catalog")}
+                        className="group relative cursor-pointer bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+                    >
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <ShoppingBag className="w-32 h-32 text-blue-600 rotate-12" />
+                        </div>
+
+                        <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20 mb-8 group-hover:scale-110 transition-transform">
+                            <Plus className="w-10 h-10 stroke-[3px]" />
+                        </div>
+
+                        <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-4">
+                            ADQUIRIR NUEVOS PAQUETES
+                        </h3>
+                        <p className="text-slate-500 font-medium leading-relaxed mb-8">
+                            Explora el catálogo oficial de Moovy, adquiere rubros completos con fotos profesionales y descripciones técnicas listas para vender.
+                        </p>
+
+                        <div className="flex items-center gap-2 text-blue-600 font-black uppercase tracking-widest text-sm">
+                            Explorar Catálogo
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                        </div>
+                    </div>
+
+                    {/* Opción 2: Mis Paquetes */}
+                    <div
+                        onClick={() => router.push("/comercios/productos/desde-paquetes")}
+                        className="group relative cursor-pointer bg-slate-900 rounded-[3rem] p-10 shadow-xl shadow-slate-900/20 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+                    >
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Layers className="w-32 h-32 text-white -rotate-12" />
+                        </div>
+
+                        <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform border border-white/20">
+                            <Layers className="w-10 h-10" />
+                        </div>
+
+                        <h3 className="text-3xl font-black text-white tracking-tight leading-none mb-4">
+                            GESTIONAR MIS PAQUETES
+                        </h3>
+                        <p className="text-white/60 font-medium leading-relaxed mb-8">
+                            Administra la visibilidad de los productos que ya has adquirido. Activa o quita items de tu tienda oficial en segundos.
+                        </p>
+
+                        <div className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-sm">
+                            Ver mis adquisiciones
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pt-8 text-center flex items-center justify-center gap-6">
+                    <div className="flex -space-x-3">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                                {i}
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                        +500 comercios ya operan con Paquetes Moovy
+                    </p>
                 </div>
             </div>
         );
@@ -162,6 +250,16 @@ export default function BuyFromCatalogPage() {
                 </div>
 
                 <div className="flex gap-2">
+                    {!selectedCategory && (
+                        <button
+                            onClick={() => setViewMode("selection")}
+                            className="px-5 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition flex items-center gap-2"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                            Volver
+                        </button>
+                    )}
+
                     {selectedCategory && (
                         <>
                             <button
