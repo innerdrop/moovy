@@ -342,7 +342,7 @@ export default function CatalogPackagesPage() {
                                     >
                                         <Power className="w-5 h-5" />
                                     </button>
-                                    <Link href={`/ops/productos/${product.id}`} className="p-3 bg-white text-slate-900 rounded-full shadow-lg hover:scale-110 transition">
+                                    <Link href={`/ops/productos/${product.id}/editar`} className="p-3 bg-white text-slate-900 rounded-full shadow-lg hover:scale-110 transition">
                                         <Edit className="w-5 h-5" />
                                     </Link>
                                     <button
@@ -414,7 +414,7 @@ export default function CatalogPackagesPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Link href={`/ops/productos/${p.id}`} className="p-2 text-slate-400 hover:text-red-600 transition">
+                                                <Link href={`/ops/productos/${p.id}/editar`} className="p-2 text-slate-400 hover:text-red-600 transition">
                                                     <Edit className="w-5 h-5" />
                                                 </Link>
                                                 <button
