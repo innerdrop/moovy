@@ -33,7 +33,6 @@ async function getStats() {
             totalOrders,
             pendingOrders,
             totalUsers,
-            isStoreOpen: settings?.isOpen ?? true,
         };
     } catch (error) {
         return {
@@ -41,7 +40,6 @@ async function getStats() {
             totalOrders: 0,
             pendingOrders: 0,
             totalUsers: 0,
-            isStoreOpen: true,
         };
     }
 }
@@ -105,19 +103,6 @@ export default async function AdminDashboard() {
                     <p className="text-gray-600">Bienvenido al panel de administración</p>
                 </div>
 
-                {/* Store Status */}
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${stats.isStoreOpen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    <span className={`w-3 h-3 rounded-full ${stats.isStoreOpen ? "bg-green-500" : "bg-red-500"}`} />
-                    <span className="font-medium">
-                        Tienda {stats.isStoreOpen ? "Abierta" : "Cerrada"}
-                    </span>
-                    <Link
-                        href="/admin/configuracion"
-                        className="text-xs underline ml-2"
-                    >
-                        Cambiar
-                    </Link>
-                </div>
             </div>
 
             {/* Stats Grid */}

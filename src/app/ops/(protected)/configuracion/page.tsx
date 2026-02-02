@@ -44,44 +44,6 @@ export default async function ConfigurationPage() {
                 <p className="text-gray-600">Configurá los parámetros de tu tienda</p>
             </div>
 
-            {/* Store Status Card */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    <Store className="w-5 h-5 text-moovy" />
-                    Estado de la Tienda
-                </h2>
-
-                <div className="space-y-4">
-                    {/* Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Tienda Abierta</h3>
-                            <p className="text-sm text-gray-600">
-                                Cuando está cerrada, los clientes verán un mensaje y no podrán hacer pedidos
-                            </p>
-                        </div>
-                        <Switch
-                            name="isOpen"
-                            defaultChecked={settings?.isOpen ?? true}
-                        />
-                    </div>
-
-                    {/* Closed Message */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Mensaje cuando está cerrada
-                        </label>
-                        <textarea
-                            defaultValue={settings?.closedMessage || ""}
-                            className="input resize-none"
-                            rows={2}
-                            placeholder="Estamos cerrados. ¡Volvemos pronto!"
-                            name="closedMessage"
-                        />
-                    </div>
-                </div>
-            </div>
-
             {/* Maintenance Mode Card */}
             <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-orange-200">
                 <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
