@@ -21,6 +21,8 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
         const formData = new FormData(formRef.current!);
 
         // Build settings object from form
+        // Checkboxes in HTML: if checked, they are present in FormData as "on"
+        // If not checked, they are NOT present in FormData.
         const settings: any = {
             // Store status
             isOpen: formData.get("isOpen") === "on",
