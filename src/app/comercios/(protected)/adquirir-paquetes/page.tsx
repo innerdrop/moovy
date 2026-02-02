@@ -47,6 +47,7 @@ export default function BuyFromCatalogPage() {
     const [completed, setCompleted] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [cart, setCart] = useState<string[]>([]); // For individual selection
+    const [ownedCategories, setOwnedCategories] = useState<string[]>([]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -58,6 +59,13 @@ export default function BuyFromCatalogPage() {
 
             const prodData = await prodRes.json();
             const catData = await catRes.json();
+
+            // Fetch merchant's owned categories
+            const misPaquetesRes = await fetch("/api/comercios/mis-paquetes");
+            const misPaquetesData = await misPaquetesRes.json();
+            if (Array.isArray(misPaquetesData)) {
+                setOwnedCategories(misPaquetesData.map((p: any) => p.id));
+            }
 
             if (Array.isArray(prodData)) {
                 // Filter: Only master products (merchant is null) AND currently active in Ops
@@ -206,6 +214,14 @@ export default function BuyFromCatalogPage() {
                                         ) : (
                                             <div className="absolute inset-0 bg-slate-50 flex items-center justify-center text-slate-200">
                                                 <Layers className="w-20 h-20" />
+                                            </div>
+                                        )}
+                                        {ownedCategories.includes(cat.id) && (
+                                            <div className="absolute top-6 left-6 z-10">
+                                                <div className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg border border-white/20 flex items-center gap-1.5 animate-in slide-in-from-left duration-300">
+                                                    <Check className="w-3 h-3" />
+                                                    Adquirido
+                                                </div>
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/10 to-transparent"></div>

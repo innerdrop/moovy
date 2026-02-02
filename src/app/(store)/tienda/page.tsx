@@ -14,6 +14,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import HeroSlider from "@/components/home/HeroSlider";
 import MerchantCard from "@/components/store/MerchantCard";
+import AdBanner from "@/components/store/AdBanner";
 
 // Configuration
 
@@ -121,6 +122,7 @@ async function LiveStoreView() {
         <div className="animate-fadeIn">
 
             <HeroSlider />
+
             <section className="pt-4 pb-4 lg:pt-6 lg:pb-6 bg-white overflow-hidden">
                 <div className="container mx-auto px-4">
                     <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 text-center">
@@ -207,6 +209,17 @@ async function LiveStoreView() {
                 </div>
             </section>
 
+            {/* Banner 2: Entre Categorías y Comercios */}
+            <div className="container mx-auto px-4 py-8">
+                <AdBanner
+                    id="ad-mid-tienda"
+                    title="Noches de Pizza & Pelis"
+                    subtitle="2x1 en locales seleccionados de 20hs a 23hs. Solo por hoy."
+                    variant="dark"
+                    buttonText="Ver Locales"
+                />
+            </div>
+
             <section className="py-6 lg:py-8 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-8">
@@ -232,6 +245,17 @@ async function LiveStoreView() {
                     </div>
                 </div>
             </section>
+
+            {/* Banner 3: Entre Comercios y Recomendados */}
+            <div className="container mx-auto px-4 py-12">
+                <AdBanner
+                    id="ad-featured-tienda"
+                    title="Únete al Club Moovy"
+                    subtitle="Acuumulá puntos con cada compra y canjealos por envíos gratis y descuentos."
+                    variant="secondary"
+                    buttonText="Registrate Gratis"
+                />
+            </div>
 
             {/* Featured Products */}
             <section className="py-12 lg:py-16 bg-white border-t border-gray-100">
@@ -315,6 +339,19 @@ async function LiveStoreView() {
                     </Link>
                 </div>
             </section>
+
+            {/* Banner 4: Antes del Footer */}
+            <div className="container mx-auto px-4 py-20">
+                <div className="max-w-4xl mx-auto">
+                    <AdBanner
+                        id="ad-footer-tienda"
+                        title="¿Sos comerciante?"
+                        subtitle="Registrá tu local en Moovy y empezá a vender a toda la ciudad hoy mismo."
+                        variant="dark"
+                        buttonText="¡Quiero unirme!"
+                    />
+                </div>
+            </div>
 
             {/* Footer */}
             <footer className="bg-gray-900 text-gray-300 py-12">

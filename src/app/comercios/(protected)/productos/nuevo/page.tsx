@@ -6,23 +6,33 @@ export default async function NewProductPage() {
     const session = await auth();
     const merchantId = (session?.user as any)?.merchantId;
 
-    // Fetch categories for the dropdown
+    // 1. Get categories the merchant has purchased/acquired
+    const merchantCategoryIds = await prisma.merchantCategory.findMany({
+        where: { merchantId: merchantId },
+        select: { categoryId: true }
+    }).then(results => results.map(r => r.categoryId));
+
+
+    // 2. Fetch only those categories for the dropdown
     const categories = await prisma.category.findMany({
-        where: { isActive: true },
+        where: {
+            id: { in: merchantCategoryIds },
+            isActive: true
+        },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
     });
 
-    // Fetch all master products that belong to categories this merchant has access to
-    // In this simplified version, let's just fetch all master products
-    // Alternatively, we could filter by specific "PackagePurchase" if that model existed
-    // For now, based on user's "paquetes que compró", we'll fetch master products.
-    // If the merchant ALREADY HAS a product cloned from that master, we can still show it or filter it.
-
+    // 3. Fetch only master products from those acquired categories
     const masterProducts = await prisma.product.findMany({
         where: {
             merchantId: null, // Master products
             isActive: true,
+            categories: {
+                some: {
+                    categoryId: { in: merchantCategoryIds }
+                }
+            }
         },
         include: {
             images: { take: 1 },
@@ -49,3 +59,4 @@ export default async function NewProductPage() {
         </div>
     );
 }
+

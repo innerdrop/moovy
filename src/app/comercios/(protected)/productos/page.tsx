@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Search, Edit, Trash2, Package } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, Layers, ArrowRight } from "lucide-react";
+import ProductStatusToggle from "@/components/comercios/ProductStatusToggle";
 
 export default async function ProductosPage() {
     const session = await auth();
@@ -43,6 +44,26 @@ export default async function ProductosPage() {
                     Nuevo Producto
                 </Link>
             </div>
+
+            {/* Promo Banner - Products from Packages */}
+            <Link
+                href="/comercios/productos/desde-paquetes"
+                className="group flex items-center justify-between p-5 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl text-white shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
+                        <Layers className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-lg">¿Tenés paquetes adquiridos?</h3>
+                        <p className="text-white/80 text-sm">Gestioná qué productos mostrar en tu tienda de forma visual</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl font-bold text-sm group-hover:bg-white/30 transition">
+                    Ver Paquetes
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+            </Link>
 
             {/* List */}
             {products.length === 0 ? (
@@ -115,37 +136,34 @@ export default async function ProductosPage() {
                                         </div>
 
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${product.stock > 10 ? "bg-green-100 text-green-700" :
-                                                        product.stock > 0 ? "bg-amber-100 text-amber-700" :
-                                                            "bg-red-100 text-red-700"
-                                                    }`}>
-                                                    {product.stock} un.
-                                                </span>
-                                                {!product.isActive && (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-400">
-                                                        Inactivo
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${product.stock > 10 ? "bg-green-100 text-green-700" :
+                                                product.stock > 0 ? "bg-amber-100 text-amber-700" :
+                                                    "bg-red-100 text-red-700"
+                                                }`}>
+                                                {product.stock} un.
+                                            </span>
                                         </div>
+                                    </div>
 
-                                        {/* Actions */}
-                                        <div className="flex items-center justify-end gap-2 md:w-full">
-                                            <Link
-                                                href={`/comercios/productos/${product.id}`}
-                                                className="flex-1 md:flex-none py-2 px-4 md:p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition text-center text-sm font-bold flex items-center justify-center gap-2"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                                <span className="md:hidden">Editar</span>
-                                            </Link>
-                                            <button
-                                                className="p-2 rounded-xl text-gray-400 hover:text-red-600 transition hidden md:block"
-                                                title="Eliminar"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                    {/* Actions */}
+                                    <div className="flex items-center justify-end gap-2 md:w-full">
+                                        <ProductStatusToggle
+                                            productId={product.id}
+                                            initialStatus={product.isActive}
+                                        />
+                                        <Link
+                                            href={`/comercios/productos/${product.id}`}
+                                            className="md:p-2 py-2 px-4 rounded-xl border border-gray-200 text-gray-600 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition text-center text-sm font-bold flex items-center justify-center gap-2"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                            <span className="md:hidden">Editar</span>
+                                        </Link>
+                                        <button
+                                            className="p-2 rounded-xl text-gray-400 hover:text-red-600 transition hidden md:block"
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -156,3 +174,4 @@ export default async function ProductosPage() {
         </div>
     );
 }
+

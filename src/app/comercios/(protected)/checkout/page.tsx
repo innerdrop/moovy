@@ -90,12 +90,15 @@ function CheckoutContent() {
             // Emulated delay for payment processing
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Activate products (Clone to merchant panel)
-            const ids = products.map(p => p.id);
+            // Activate package or products
+            const body = mode === "package"
+                ? { categoryId }
+                : { productIds: products.map(p => p.id) };
+
             const res = await fetch("/api/merchant/import", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productIds: ids })
+                body: JSON.stringify(body)
             });
 
             if (res.ok) {
@@ -109,6 +112,7 @@ function CheckoutContent() {
             setIsProcessing(false);
         }
     };
+
 
     if (loading) {
         return (
