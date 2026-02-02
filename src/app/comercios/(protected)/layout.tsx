@@ -1,4 +1,4 @@
-// Comercios Layout - Panel de Comercio
+import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 
+import SupportNavBadge, { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
+
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
     const role = (session?.user as any)?.role;
@@ -28,7 +30,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/productos", icon: Package, label: "Productos" },
         { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
-        { href: "/comercios/soporte", icon: MessageCircle, label: "Soporte" },
+        // Soporte is handled separately via SupportNavBadge component
         { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
     ];
 
@@ -50,17 +52,36 @@ export default async function ComerciosLayout({ children }: { children: React.Re
 
                 <nav className="flex-1 p-4">
                     <ul className="space-y-1">
-                        {navItems.map((item) => (
-                            <li key={item.href}>
-                                <Link
-                                    href={item.href}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition font-medium"
-                                >
-                                    <item.icon className="w-5 h-5" />
-                                    {item.label}
-                                </Link>
-                            </li>
-                        ))}
+                        {navItems.map((item) => {
+                            // Insert Support before Configuration (last item)
+                            if (item.href === "/comercios/configuracion") {
+                                return (
+                                    <React.Fragment key="support-wrapper">
+                                        <li key="soporte-nav"><SupportNavBadge /></li>
+                                        <li key={item.href}>
+                                            <Link
+                                                href={item.href}
+                                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition font-medium"
+                                            >
+                                                <item.icon className="w-5 h-5" />
+                                                {item.label}
+                                            </Link>
+                                        </li>
+                                    </React.Fragment>
+                                );
+                            }
+                            return (
+                                <li key={item.href}>
+                                    <Link
+                                        href={item.href}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition font-medium"
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        {item.label}
+                                    </Link>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </nav>
 
@@ -108,18 +129,37 @@ export default async function ComerciosLayout({ children }: { children: React.Re
             {/* Mobile Bottom Navigation - Identical to Client Style */}
             <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                 <div className="flex items-center justify-between h-16 px-2 max-w-md mx-auto relative text-center">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
-                        >
-                            <item.icon className="w-6 h-6 mb-0.5" />
-                            <span className="text-[10px] font-medium leading-tight">
-                                {item.label}
-                            </span>
-                        </Link>
-                    ))}
+                    {navItems.map((item) => {
+                        if (item.href === "/comercios/configuracion") {
+                            return (
+                                <React.Fragment key="support-mobile-wrapper">
+                                    <SupportNavBadgeMobile key="soporte-nav-mobile" />
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
+                                    >
+                                        <item.icon className="w-6 h-6 mb-0.5" />
+                                        <span className="text-[10px] font-medium leading-tight">
+                                            {item.label}
+                                        </span>
+                                    </Link>
+                                </React.Fragment>
+                            );
+                        }
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
+                            >
+                                <item.icon className="w-6 h-6 mb-0.5" />
+                                <span className="text-[10px] font-medium leading-tight">
+                                    {item.label}
+                                </span>
+                            </Link>
+                        );
+                    })}
                 </div>
                 {/* Safe area padding for iPhones with notch */}
                 <div className="h-[env(safe-area-inset-bottom)] bg-white" />

@@ -373,68 +373,63 @@ export default function ProductosDesdePaquetesPage() {
                 </Link>
             </header>
 
-            {/* Premium Compact Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Ultra Compact Performance Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {packages.map((pkg) => (
                     <div
                         key={pkg.id}
                         onClick={() => handleSelectPackage(pkg)}
-                        className="group cursor-pointer bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:border-blue-200 transition-all duration-500 overflow-hidden relative"
+                        className="group cursor-pointer bg-white rounded-[1.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col overflow-hidden"
                     >
-                        {/* Compact Visual Header */}
-                        <div className="aspect-[2.2/1] relative overflow-hidden">
+                        {/* Compact Header Bar */}
+                        <div className="h-24 relative overflow-hidden bg-slate-900">
                             {pkg.image ? (
                                 <Image
                                     src={pkg.image}
                                     alt={pkg.name}
                                     fill
-                                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    className="object-cover opacity-60 transition-transform duration-700 group-hover:scale-110"
                                 />
                             ) : (
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
-                                    <Layers className="w-12 h-12 text-white/20" />
+                                    <Layers className="w-8 h-8 text-white/20" />
                                 </div>
                             )}
 
-                            {/* Status Badges Overlay */}
-                            <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
-                                <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] shadow-lg border border-white/20 ${pkg.isFullPackage
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-white/90 backdrop-blur text-blue-700"
-                                    }`}>
-                                    {pkg.isFullPackage ? "Fulll Pack" : "Mixed Box"}
-                                </span>
-
-                                <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-white/10">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
-                                    <span className="text-[9px] font-bold text-white uppercase tracking-wider">{pkg.totalProducts} SKU</span>
-                                </div>
+                            {/* SKU Counter Overlay - Even Bigger text */}
+                            <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-2 focus:ring-0 shadow-2xl">
+                                <div className="w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.8)]" />
+                                <span className="text-sm font-medium text-white uppercase tracking-wider">{pkg.totalProducts} SKU</span>
                             </div>
 
-                            {/* Gradient Fade */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/10" />
+                            <div className="absolute bottom-3 left-3">
+                                <span className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest border border-white/20 shadow-lg ${pkg.isFullPackage
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white text-blue-900"
+                                    }`}>
+                                    {pkg.isFullPackage ? "Full Pack" : "Mixed"}
+                                </span>
+                            </div>
                         </div>
 
-                        {/* Content Area */}
-                        <div className="p-6 space-y-4">
+                        {/* Text Area - Enlarged Typography */}
+                        <div className="p-6 flex flex-col justify-between flex-1">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">
+                                <h3 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors uppercase tracking-tighter leading-none line-clamp-1">
                                     {cleanName(pkg.name)}
                                 </h3>
-                                <p className="text-xs text-gray-400 mt-1 line-clamp-1 font-medium italic">
-                                    {pkg.description || "Colección de productos oficiales Moovy"}
+                                <p className="text-sm text-gray-400 mt-2 line-clamp-1 font-bold italic uppercase tracking-widest">
+                                    Explorar catálogo moovy
                                 </p>
                             </div>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                <div className="flex gap-2">
-                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-lg text-[10px] font-bold text-gray-500">
-                                        Explorar Rubro
-                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                                    </span>
-                                </div>
-                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                                    <Package className="w-5 h-5" />
+                            <div className="flex items-center justify-between pt-5 mt-5 border-t border-gray-100">
+                                <span className="text-xs font-medium text-blue-600 uppercase tracking-widest flex items-center gap-2 group-hover:translate-x-2 transition-transform">
+                                    Ver Rubro Completo
+                                    <ArrowRight className="w-5 h-5" />
+                                </span>
+                                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-md">
+                                    <Package className="w-6 h-6" />
                                 </div>
                             </div>
                         </div>
