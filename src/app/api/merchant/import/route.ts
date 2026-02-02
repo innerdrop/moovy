@@ -11,10 +11,32 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const { productIds } = await request.json();
+        const { productIds, categoryId } = await request.json();
+
+        if (categoryId) {
+            // Record category purchase/acquisition
+            await prisma.merchantCategory.upsert({
+                where: {
+                    merchantId_categoryId: {
+                        merchantId: merchantId,
+                        categoryId: categoryId
+                    }
+                },
+                update: {},
+                create: {
+                    merchantId: merchantId,
+                    categoryId: categoryId
+                }
+            });
+
+            return NextResponse.json({
+                message: "Paquete adquirido con éxito",
+                success: true
+            });
+        }
 
         if (!productIds || !Array.isArray(productIds)) {
-            return NextResponse.json({ error: "IDs de productos requeridos" }, { status: 400 });
+            return NextResponse.json({ error: "IDs de productos o Categoría requeridos" }, { status: 400 });
         }
 
         // Fetch master products to clone
@@ -36,6 +58,13 @@ export async function POST(request: Request) {
             for (const master of masterProducts) {
                 // Generate a unique slug for the merchant (merchantId + original slug)
                 const newSlug = `${master.slug}-${merchantId.substring(0, 5)}`;
+
+                // Check if already exists to avoid duplicates
+                const existing = await tx.product.findFirst({
+                    where: { slug: newSlug }
+                });
+
+                if (existing) continue;
 
                 const newProduct = await tx.product.create({
                     data: {
@@ -69,8 +98,10 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             message: "Productos importados con éxito",
-            count: clonedProducts.length
+            count: clonedProducts.length,
+            success: true
         });
+
 
     } catch (error) {
         console.error("Error importing products:", error);

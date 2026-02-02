@@ -10,8 +10,9 @@ import {
     Store,
     LogOut,
     Menu,
-    MessageCircle
+    MessageCircle,
 } from "lucide-react";
+
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();

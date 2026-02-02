@@ -20,6 +20,9 @@ async function main() {
     await prisma.address.deleteMany({});
     await prisma.pointsTransaction.deleteMany({});
     await prisma.referral.deleteMany({});
+    // Support system must be deleted before users
+    await prisma.supportMessage.deleteMany({});
+    await prisma.supportChat.deleteMany({});
     await prisma.user.deleteMany({});
 
     console.log("✅ Base de datos limpia");
