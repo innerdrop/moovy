@@ -63,7 +63,11 @@ async function getFeaturedMerchants() {
 async function getFeaturedProducts() {
     try {
         const products = await prisma.product.findMany({
-            where: { isActive: true, isFeatured: true },
+            where: {
+                isActive: true,
+                isFeatured: true,
+                merchantId: { not: null } // Solo productos con comercio asignado
+            },
             include: {
                 categories: { include: { category: true } },
                 images: true,

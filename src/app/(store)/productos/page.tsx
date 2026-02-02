@@ -12,7 +12,10 @@ interface ProductsPageProps {
 }
 
 async function getProducts(categoria?: string, buscar?: string): Promise<Product[]> {
-    const where: any = { isActive: true };
+    const where: any = {
+        isActive: true,
+        merchantId: { not: null } // Solo productos con comercio asignado
+    };
 
     if (categoria) {
         where.categories = {

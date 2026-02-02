@@ -34,6 +34,9 @@ export interface Category {
 export async function getAllProducts(): Promise<Product[]> {
     try {
         const products = await prisma.product.findMany({
+            where: {
+                merchantId: { not: null } // Solo productos con comercio asignado
+            },
             include: {
                 categories: {
                     include: {
@@ -71,8 +74,11 @@ export async function getAllCategories(): Promise<Category[]> {
 
 export async function getProductById(id: string): Promise<Product | null> {
     try {
-        const product = await prisma.product.findUnique({
-            where: { id },
+        const product = await prisma.product.findFirst({
+            where: {
+                id,
+                merchantId: { not: null } // Solo productos con comercio asignado
+            },
             include: {
                 categories: {
                     include: {
