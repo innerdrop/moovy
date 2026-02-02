@@ -48,23 +48,24 @@ export default function BuyFromCatalogPage() {
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [cart, setCart] = useState<string[]>([]); // For individual selection
     const [ownedCategories, setOwnedCategories] = useState<string[]>([]);
+    const [ownedProducts, setOwnedProducts] = useState<string[]>([]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [prodRes, catRes] = await Promise.all([
+            const [prodRes, catRes, acqRes] = await Promise.all([
                 fetch("/api/admin/products"),
-                fetch("/api/admin/categories")
+                fetch("/api/admin/categories"),
+                fetch("/api/comercios/adquisiciones")
             ]);
 
             const prodData = await prodRes.json();
             const catData = await catRes.json();
+            const acqData = await acqRes.json();
 
-            // Fetch merchant's owned categories
-            const misPaquetesRes = await fetch("/api/comercios/mis-paquetes");
-            const misPaquetesData = await misPaquetesRes.json();
-            if (Array.isArray(misPaquetesData)) {
-                setOwnedCategories(misPaquetesData.map((p: any) => p.id));
+            if (!acqData.error) {
+                setOwnedCategories(acqData.categories || []);
+                setOwnedProducts(acqData.products || []);
             }
 
             if (Array.isArray(prodData)) {
@@ -86,6 +87,7 @@ export default function BuyFromCatalogPage() {
     }, []);
 
     const toggleInCart = (id: string) => {
+        if (ownedProducts.includes(id)) return; // Don't add if already owned
         setCart(prev =>
             prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
         );
@@ -96,8 +98,9 @@ export default function BuyFromCatalogPage() {
             if (!selectedCategory) return;
             router.push(`/comercios/checkout?mode=package&categoryId=${selectedCategory.id}`);
         } else {
-            if (cart.length === 0) return;
-            router.push(`/comercios/checkout?mode=items&productIds=${cart.join(",")}`);
+            const newItems = cart.filter(id => !ownedProducts.includes(id));
+            if (newItems.length === 0) return;
+            router.push(`/comercios/checkout?mode=items&productIds=${newItems.join(",")}`);
         }
     };
 
@@ -285,12 +288,15 @@ export default function BuyFromCatalogPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {filteredItems.map(p => {
                             const isSelected = cart.includes(p.id);
+                            const isAlreadyOwned = ownedProducts.includes(p.id) || ownedCategories.includes(selectedCategory.id);
+
                             return (
                                 <div
                                     key={p.id}
-                                    onClick={() => selectedCategory.allowIndividualPurchase && toggleInCart(p.id)}
-                                    className={`group bg-white rounded-[2rem] border-2 transition-all duration-300 overflow-hidden flex flex-col ${isSelected ? "border-blue-600 ring-8 ring-blue-50 shadow-2xl" : "border-slate-50 shadow-sm hover:shadow-lg"
-                                        } ${selectedCategory.allowIndividualPurchase ? "cursor-pointer" : ""}`}
+                                    onClick={() => selectedCategory.allowIndividualPurchase && !isAlreadyOwned && toggleInCart(p.id)}
+                                    className={`group bg-white rounded-[2rem] border-2 transition-all duration-300 overflow-hidden flex flex-col ${isSelected ? "border-blue-600 ring-8 ring-blue-50 shadow-2xl" :
+                                        isAlreadyOwned ? "border-green-100 bg-gray-50/50 opacity-80" : "border-slate-50 shadow-sm hover:shadow-lg"
+                                        } ${selectedCategory.allowIndividualPurchase && !isAlreadyOwned ? "cursor-pointer" : ""}`}
                                 >
                                     <div className="aspect-square relative overflow-hidden bg-slate-50">
                                         {p.images?.[0]?.url ? (
@@ -300,6 +306,15 @@ export default function BuyFromCatalogPage() {
                                         {isSelected && (
                                             <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-[2px] flex items-center justify-center">
                                                 <Check className="w-16 h-16 text-white bg-blue-600 rounded-full p-4 shadow-2xl animate-in zoom-in duration-300" />
+                                            </div>
+                                        )}
+
+                                        {isAlreadyOwned && (
+                                            <div className="absolute inset-0 bg-green-500/10 backdrop-blur-[1px] flex items-center justify-center">
+                                                <div className="bg-green-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-in zoom-in">
+                                                    <Check className="w-4 h-4" />
+                                                    Adquirido
+                                                </div>
                                             </div>
                                         )}
 
@@ -316,10 +331,15 @@ export default function BuyFromCatalogPage() {
                                         </p>
                                         <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                                             <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-none">Moovy Oficial</span>
-                                            {selectedCategory.allowIndividualPurchase && (
+                                            {selectedCategory.allowIndividualPurchase && !isAlreadyOwned && (
                                                 <div className={`p-2 rounded-xl transition-all ${isSelected ? "bg-blue-600 text-white rotate-0" : "bg-slate-50 text-slate-400 group-hover:rotate-12 transition-transform"}`}>
                                                     <Plus className={`w-5 h-5 ${isSelected ? "hidden" : "block"}`} />
                                                     <Check className={`w-5 h-5 ${isSelected ? "block" : "hidden"}`} />
+                                                </div>
+                                            )}
+                                            {isAlreadyOwned && (
+                                                <div className="p-2 bg-green-50 text-green-500 rounded-xl">
+                                                    <Check className="w-5 h-5" />
                                                 </div>
                                             )}
                                         </div>

@@ -6,33 +6,35 @@ export default async function NewProductPage() {
     const session = await auth();
     const merchantId = (session?.user as any)?.merchantId;
 
-    // 1. Get categories the merchant has purchased/acquired
-    const merchantCategoryIds = await prisma.merchantCategory.findMany({
-        where: { merchantId: merchantId },
-        select: { categoryId: true }
-    }).then(results => results.map(r => r.categoryId));
+    // 1. Get categories and individual products the merchant has purchased/acquired
+    const [merchantCategoryIds, merchantProductIds] = await Promise.all([
+        prisma.merchantCategory.findMany({
+            where: { merchantId: merchantId },
+            select: { categoryId: true }
+        }).then((results: { categoryId: string }[]) => results.map(r => r.categoryId)),
+        prisma.merchantAcquiredProduct.findMany({
+            where: { merchantId: merchantId },
+            select: { productId: true }
+        }).then((results: { productId: string }[]) => results.map(r => r.productId))
+    ]);
 
-
-    // 2. Fetch only those categories for the dropdown
-    const categories = await prisma.category.findMany({
-        where: {
-            id: { in: merchantCategoryIds },
-            isActive: true
-        },
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
-    });
-
-    // 3. Fetch only master products from those acquired categories
+    // 2. Fetch all products: either from an acquired category OR acquired individually
     const masterProducts = await prisma.product.findMany({
         where: {
-            merchantId: null, // Master products
+            merchantId: null, // Master products only
             isActive: true,
-            categories: {
-                some: {
-                    categoryId: { in: merchantCategoryIds }
+            OR: [
+                {
+                    categories: {
+                        some: {
+                            categoryId: { in: merchantCategoryIds }
+                        }
+                    }
+                },
+                {
+                    id: { in: merchantProductIds }
                 }
-            }
+            ]
         },
         include: {
             images: { take: 1 },
@@ -41,6 +43,21 @@ export default async function NewProductPage() {
             }
         },
         orderBy: { name: "asc" }
+    });
+
+    // 3. Get unique categories from all available master products
+    // This ensures that even if only one product from a category was bought, the category appears in the dropdown
+    const availableCategoryIds = Array.from(new Set(
+        masterProducts.flatMap(p => p.categories.map(c => c.categoryId))
+    ));
+
+    const categories = await prisma.category.findMany({
+        where: {
+            id: { in: availableCategoryIds },
+            isActive: true
+        },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
     });
 
     return (

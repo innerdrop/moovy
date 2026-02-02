@@ -30,6 +30,107 @@ async function verifyMerchantOwnership(productId: string, userId: string) {
     return product ? merchant : null;
 }
 
+export async function importCatalogProducts(productIds: string[]) {
+    const session = await auth();
+    const merchantId = (session?.user as any)?.merchantId;
+
+    if (!session || !merchantId) {
+        return { error: "No autorizado" };
+    }
+
+    try {
+        // 1. Get merchant's acquisition rights
+        const [acquiredCategories, acquiredIndividual] = await Promise.all([
+            prisma.merchantCategory.findMany({
+                where: { merchantId },
+                select: { categoryId: true }
+            }).then((res: { categoryId: string }[]) => res.map(r => r.categoryId)),
+            prisma.merchantAcquiredProduct.findMany({
+                where: { merchantId },
+                select: { productId: true }
+            }).then((res: { productId: string }[]) => res.map(r => r.productId))
+        ]);
+
+        // 2. Fetch master products that match requested IDs AND are either in an acquired category OR individually acquired
+        const masterProducts = await prisma.product.findMany({
+            where: {
+                id: { in: productIds },
+                merchantId: null,
+                OR: [
+                    {
+                        categories: {
+                            some: {
+                                categoryId: { in: acquiredCategories }
+                            }
+                        }
+                    },
+                    {
+                        id: { in: acquiredIndividual }
+                    }
+                ]
+            },
+            include: {
+                categories: true,
+                images: true
+            }
+        });
+
+        if (masterProducts.length === 0) {
+            return { error: "No se encontraron productos válidos o no tienes permisos." };
+        }
+
+        let count = 0;
+        await prisma.$transaction(async (tx) => {
+            for (const master of masterProducts) {
+                const newSlug = `${master.slug}-${merchantId.substring(0, 5)}`;
+
+                const existing = await tx.product.findFirst({
+                    where: {
+                        OR: [
+                            { slug: newSlug },
+                            { name: master.name, merchantId: merchantId }
+                        ]
+                    }
+                });
+
+                if (existing) continue;
+
+                await tx.product.create({
+                    data: {
+                        name: master.name,
+                        slug: newSlug,
+                        description: master.description,
+                        price: master.price,
+                        costPrice: master.costPrice,
+                        stock: 100,
+                        isActive: true,
+                        merchantId: merchantId,
+                        images: {
+                            create: master.images.map(img => ({
+                                url: img.url,
+                                alt: img.alt,
+                                order: img.order
+                            }))
+                        },
+                        categories: {
+                            create: master.categories.map(cat => ({
+                                categoryId: cat.categoryId
+                            }))
+                        }
+                    }
+                });
+                count++;
+            }
+        });
+
+        revalidatePath("/comercios/productos");
+        return { success: true, count };
+    } catch (error) {
+        console.error("Error importing products:", error);
+        return { error: "Error al importar productos" };
+    }
+}
+
 export async function createProduct(formData: FormData) {
     const session = await auth();
     if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
@@ -194,14 +295,22 @@ export async function deleteProduct(productId: string) {
             return { error: "No tienes permiso para eliminar este producto." };
         }
 
-        // Soft delete - just deactivate
-        await prisma.product.update({
-            where: { id: productId },
-            data: { isActive: false },
-        });
-
-        revalidatePath("/comercios/productos");
-        return { success: true };
+        // Try to hard delete first
+        try {
+            await prisma.product.delete({
+                where: { id: productId },
+            });
+            revalidatePath("/comercios/productos");
+            return { success: true, message: "Producto eliminado definitivamente." };
+        } catch (error) {
+            // If it has dependencies (like OrderItems), soft delete it
+            await prisma.product.update({
+                where: { id: productId },
+                data: { isActive: false },
+            });
+            revalidatePath("/comercios/productos");
+            return { success: true, message: "Producto desactivado (tiene historial de ventas)." };
+        }
     } catch (error) {
         console.error("Error deleting product:", error);
         return { error: "Error al eliminar el producto." };

@@ -22,7 +22,7 @@ export async function GET() {
         }
 
         // Fetch categories directly from MerchantCategory
-        const ownedPackages = await prisma.merchantCategory.findMany({
+        const ownedMerchantCategories = await prisma.merchantCategory.findMany({
             where: { merchantId: merchant.id },
             include: {
                 category: {
@@ -35,9 +35,51 @@ export async function GET() {
             }
         });
 
+        // Fetch categories where the merchant has acquired specific products
+        const acquiredProducts = await prisma.merchantAcquiredProduct.findMany({
+            where: { merchantId: merchant.id },
+            include: {
+                product: {
+                    include: {
+                        categories: {
+                            include: {
+                                category: {
+                                    include: {
+                                        _count: {
+                                            select: { products: true }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Merge categories
+        const categoryMap = new Map();
+
+        ownedMerchantCategories.forEach(mc => {
+            categoryMap.set(mc.category.id, {
+                ...mc.category,
+                isFullPackage: true
+            });
+        });
+
+        acquiredProducts.forEach((ap: any) => {
+            ap.product.categories.forEach((pc: any) => {
+                if (!categoryMap.has(pc.category.id)) {
+                    categoryMap.set(pc.category.id, {
+                        ...pc.category,
+                        isFullPackage: false
+                    });
+                }
+            });
+        });
+
         // Convert to response format
-        const packages = ownedPackages.map(p => {
-            const cat = p.category;
+        const packages = Array.from(categoryMap.values()).map(cat => {
             return {
                 id: cat.id,
                 name: cat.name,
@@ -45,6 +87,7 @@ export async function GET() {
                 description: cat.description,
                 image: cat.image,
                 totalProducts: cat._count.products,
+                isFullPackage: cat.isFullPackage,
                 // These stats are now less relevant since they are not automatically imported,
                 // but kept for compatibility with UI if needed.
                 activeProducts: 0,
