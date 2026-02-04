@@ -83,7 +83,7 @@ async function updateProduct(id: string, data: any) {
                 data: {
                     url: data.imageUrl,
                     productId: id,
-                    isPrimary: true
+                    order: 0
                 }
             });
         }

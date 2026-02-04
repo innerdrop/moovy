@@ -26,7 +26,8 @@ import {
     Power,
     Ban,
     Upload,
-    Camera
+    Camera,
+    Save
 } from "lucide-react";
 
 interface Product {
@@ -76,7 +77,14 @@ export default function CatalogPackagesPage() {
 
     // Confirmation Modal State
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+    const [confirmAction, setConfirmAction] = useState<{
+        title: string;
+        message: string;
+        confirmText?: string;
+        confirmColor?: string;
+        icon?: "save" | "delete";
+        onConfirm: () => void
+    } | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -123,8 +131,7 @@ export default function CatalogPackagesPage() {
     );
 
     // Handlers
-    const handleCategorySubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const saveCategoryData = async () => {
         const isEditing = !!editingCategory;
         const url = "/api/admin/categories";
         const method = isEditing ? "PATCH" : "POST";
@@ -145,6 +152,30 @@ export default function CatalogPackagesPage() {
             }
         } catch (error) {
             console.error("Error saving category:", error);
+        }
+    };
+
+    const handleCategorySubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const isEditing = !!editingCategory;
+
+        if (isEditing) {
+            // Show confirmation modal for edits
+            setConfirmAction({
+                title: "Guardar Cambios",
+                message: `¿Querés guardar los cambios realizados en el paquete "${categoryForm.name}"?`,
+                confirmText: "Guardar",
+                confirmColor: "bg-green-600 hover:bg-green-700",
+                icon: "save",
+                onConfirm: async () => {
+                    setShowConfirmModal(false);
+                    await saveCategoryData();
+                }
+            });
+            setShowConfirmModal(true);
+        } else {
+            // For new packages, save directly
+            await saveCategoryData();
         }
     };
 
@@ -192,6 +223,9 @@ export default function CatalogPackagesPage() {
         setConfirmAction({
             title: "Eliminar Paquete",
             message: `¿Estás seguro de que querés eliminar el rubro "${categoryName}"? Solo se podrá eliminar si no tiene productos asociados.`,
+            confirmText: "Eliminar",
+            confirmColor: "bg-red-600 hover:bg-red-700",
+            icon: "delete",
             onConfirm: async () => {
                 try {
                     const res = await fetch(`/api/admin/categories?id=${categoryId}`, {
@@ -205,6 +239,8 @@ export default function CatalogPackagesPage() {
                         setConfirmAction({
                             title: "Error",
                             message: error.error || "No se pudo eliminar el rubro. Asegurate de que esté vacío.",
+                            confirmText: "Aceptar",
+                            confirmColor: "bg-slate-600 hover:bg-slate-700",
                             onConfirm: () => setShowConfirmModal(false)
                         });
                         return;
@@ -758,8 +794,12 @@ export default function CatalogPackagesPage() {
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in slide-in-from-bottom-4 duration-500">
                         <div className="p-6 text-center">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                                <Trash2 className="w-8 h-8 text-red-600" />
+                            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${confirmAction.icon === "save" ? "bg-green-100" : "bg-red-100"}`}>
+                                {confirmAction.icon === "save" ? (
+                                    <Save className="w-8 h-8 text-green-600" />
+                                ) : (
+                                    <Trash2 className="w-8 h-8 text-red-600" />
+                                )}
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 mb-2">
                                 {confirmAction.title}
@@ -777,9 +817,9 @@ export default function CatalogPackagesPage() {
                             </button>
                             <button
                                 onClick={confirmAction.onConfirm}
-                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors"
+                                className={`flex-1 py-3 text-white rounded-xl font-medium transition-colors ${confirmAction.confirmColor || "bg-red-600 hover:bg-red-700"}`}
                             >
-                                Confirmar
+                                {confirmAction.confirmText || "Confirmar"}
                             </button>
                         </div>
                     </div>
