@@ -74,6 +74,10 @@ export default function CatalogPackagesPage() {
         image: ""
     });
 
+    // Confirmation Modal State
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -184,23 +188,34 @@ export default function CatalogPackagesPage() {
         }
     };
 
-    const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
-        if (!confirm(`¿Estás seguro de que querés eliminar el rubro "${categoryName}"?\n\nSolo se podrá eliminar si no tiene productos asociados.`)) return;
-        try {
-            const res = await fetch(`/api/admin/categories?id=${categoryId}`, {
-                method: "DELETE"
-            });
+    const handleDeleteCategory = (categoryId: string, categoryName: string) => {
+        setConfirmAction({
+            title: "Eliminar Paquete",
+            message: `¿Estás seguro de que querés eliminar el rubro "${categoryName}"? Solo se podrá eliminar si no tiene productos asociados.`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/categories?id=${categoryId}`, {
+                        method: "DELETE"
+                    });
 
-            if (res.ok) {
-                fetchData();
-            } else {
-                const error = await res.json();
-                alert(error.error || "No se pudo eliminar el rubro. Asegurate de que esté vacío.");
+                    if (res.ok) {
+                        fetchData();
+                    } else {
+                        const error = await res.json();
+                        setConfirmAction({
+                            title: "Error",
+                            message: error.error || "No se pudo eliminar el rubro. Asegurate de que esté vacío.",
+                            onConfirm: () => setShowConfirmModal(false)
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Error deleting category:", error);
+                }
+                setShowConfirmModal(false);
             }
-        } catch (error) {
-            console.error("Error deleting category:", error);
-            alert("Error de conexión al eliminar el rubro.");
-        }
+        });
+        setShowConfirmModal(true);
     };
 
     const handleAssignCategory = async () => {
@@ -494,7 +509,7 @@ export default function CatalogPackagesPage() {
                 </div>
             ) : (
                 /* PACKAGES VIEW - Apple-inspired Design */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {filteredCategories.map((cat) => (
                         <div
                             key={cat.id}
@@ -559,7 +574,7 @@ export default function CatalogPackagesPage() {
                                 {/* Action Button */}
                                 <button
                                     onClick={() => setSelectedCategory(cat)}
-                                    className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors duration-300 flex items-center justify-center gap-2"
+                                    className="w-full py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl text-sm font-medium hover:from-red-600 hover:to-rose-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
                                 >
                                     <Package className="w-4 h-4" />
                                     Ver productos
@@ -732,6 +747,39 @@ export default function CatalogPackagesPage() {
                                 className="w-full py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-100"
                             >
                                 Confirmar Asignación
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && confirmAction && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                                <Trash2 className="w-8 h-8 text-red-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                {confirmAction.title}
+                            </h3>
+                            <p className="text-slate-500 text-sm leading-relaxed">
+                                {confirmAction.message}
+                            </p>
+                        </div>
+                        <div className="p-4 bg-slate-50 flex gap-3">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmAction.onConfirm}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors"
+                            >
+                                Confirmar
                             </button>
                         </div>
                     </div>
