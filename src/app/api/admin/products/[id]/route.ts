@@ -17,6 +17,7 @@ export async function GET(
             include: {
                 categories: { include: { category: true } },
                 variants: true,
+                images: true,
             },
         });
 
@@ -36,6 +37,67 @@ export async function GET(
     }
 }
 
+// Helper function for update logic
+async function updateProduct(id: string, data: any) {
+    // Update basic fields
+    const updateData: any = {
+        name: data.name,
+        description: data.description,
+        price: parseFloat(data.price),
+        costPrice: data.costPrice !== undefined ? parseFloat(data.costPrice) : undefined,
+        stock: parseInt(data.stock),
+        minStock: data.minStock !== undefined ? parseInt(data.minStock) : undefined,
+        isFeatured: data.isFeatured,
+        isActive: data.isActive,
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    if (data.slug) updateData.slug = data.slug;
+    if (data.image) updateData.image = data.image;
+
+    // Handle category updates if provided
+    if (data.categoryId) {
+        updateData.categories = {
+            deleteMany: {}, // Clear existing
+            create: [{ category: { connect: { id: data.categoryId } } }]
+        };
+    } else if (data.categoryIds) {
+        updateData.categories = {
+            deleteMany: {}, // Clear existing
+            create: data.categoryIds.map((catId: string) => ({
+                category: { connect: { id: catId } }
+            }))
+        };
+    }
+
+    // Handle image URL update
+    if (data.imageUrl !== undefined) {
+        // Delete existing images
+        await prisma.productImage.deleteMany({ where: { productId: id } });
+
+        // Add new image if provided
+        if (data.imageUrl) {
+            await prisma.productImage.create({
+                data: {
+                    url: data.imageUrl,
+                    productId: id,
+                    isPrimary: true
+                }
+            });
+        }
+    }
+
+    const product = await prisma.product.update({
+        where: { id },
+        data: updateData,
+        include: { categories: true, images: true }
+    });
+
+    return product;
+}
+
 // PUT - Update product (Admin only)
 export async function PUT(
     request: Request,
@@ -50,35 +112,29 @@ export async function PUT(
         const { id } = await context.params;
         const data = await request.json();
 
-        // Update basic fields
-        const updateData: any = {
-            name: data.name,
-            description: data.description,
-            price: parseFloat(data.price),
-            stock: parseInt(data.stock),
-            isFeatured: data.isFeatured,
-            isActive: data.isActive,
-        };
+        const product = await updateProduct(id, data);
+        return NextResponse.json(product);
+    } catch (error) {
+        console.error("Error updating product:", error);
+        return NextResponse.json({ error: "Error al actualizar producto" }, { status: 500 });
+    }
+}
 
-        if (data.slug) updateData.slug = data.slug;
-        if (data.image) updateData.image = data.image;
-
-        // Handle category updates if provided
-        if (data.categoryIds) {
-            updateData.categories = {
-                deleteMany: {}, // Clear existing
-                create: data.categoryIds.map((catId: string) => ({
-                    category: { connect: { id: catId } }
-                }))
-            };
+// PATCH - Update product (Admin only) - Alias for PUT
+export async function PATCH(
+    request: Request,
+    context: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await auth();
+        if (!session || (session.user as any)?.role !== "ADMIN") {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const product = await prisma.product.update({
-            where: { id },
-            data: updateData,
-            include: { categories: true }
-        });
+        const { id } = await context.params;
+        const data = await request.json();
 
+        const product = await updateProduct(id, data);
         return NextResponse.json(product);
     } catch (error) {
         console.error("Error updating product:", error);
