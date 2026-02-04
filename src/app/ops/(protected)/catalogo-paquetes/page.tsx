@@ -184,6 +184,25 @@ export default function CatalogPackagesPage() {
         }
     };
 
+    const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
+        if (!confirm(`¿Estás seguro de que querés eliminar el rubro "${categoryName}"?\n\nSolo se podrá eliminar si no tiene productos asociados.`)) return;
+        try {
+            const res = await fetch(`/api/admin/categories?id=${categoryId}`, {
+                method: "DELETE"
+            });
+
+            if (res.ok) {
+                fetchData();
+            } else {
+                const error = await res.json();
+                alert(error.error || "No se pudo eliminar el rubro. Asegurate de que esté vacío.");
+            }
+        } catch (error) {
+            console.error("Error deleting category:", error);
+            alert("Error de conexión al eliminar el rubro.");
+        }
+    };
+
     const handleAssignCategory = async () => {
         if (!assigningProduct || !targetCategoryId) return;
         try {
@@ -515,8 +534,16 @@ export default function CatalogPackagesPage() {
                                 <button
                                     onClick={() => openEditCategory(cat)}
                                     className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all"
+                                    title="Editar"
                                 >
                                     <Edit className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                                    className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all"
+                                    title="Eliminar"
+                                >
+                                    <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
