@@ -494,10 +494,10 @@ export default function CatalogPackagesPage() {
                 </div>
             ) : (
                 /* PACKAGES VIEW */
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredCategories.map((cat) => (
                         <div key={cat.id} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:border-red-200 transition-all duration-300">
-                            <div className="aspect-[4/5] bg-slate-100 relative overflow-hidden">
+                            <div className="aspect-[16/6] bg-slate-100 relative overflow-hidden">
                                 {cat.image ? (
                                     <Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
                                 ) : (
@@ -506,14 +506,14 @@ export default function CatalogPackagesPage() {
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-                                <div className="absolute bottom-4 left-4 right-4 flex flex-col items-start gap-1">
-                                    <div className="w-full">
-                                        <h3 className="text-base font-black text-white leading-tight uppercase tracking-tight line-clamp-2">{cat.name}</h3>
-                                        <p className="text-white/70 text-[9px] font-bold mt-1 uppercase tracking-widest">{cat._count?.products || 0} SKU oficiales</p>
+                                <div className="absolute inset-x-0 bottom-0 p-6 flex justify-between items-end bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent">
+                                    <div className="flex-1">
+                                        <h3 className="text-xl font-black text-white leading-tight uppercase tracking-tight">{cat.name}</h3>
+                                        <p className="text-white/70 text-xs font-bold mt-1 uppercase tracking-widest">{cat._count?.products || 0} SKU oficiales</p>
                                     </div>
-                                    <div className="mt-2 text-left">
-                                        <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-none">Precio</p>
-                                        <p className="text-base font-black text-white">${(cat.price || 0).toLocaleString()}</p>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none mb-1">Precio Paquete</p>
+                                        <p className="text-2xl font-black text-white">${(cat.price || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
                                 <button
@@ -526,25 +526,25 @@ export default function CatalogPackagesPage() {
                             <div className="p-2 border-t border-slate-100 flex justify-between gap-1">
                                 <button
                                     onClick={() => setSelectedCategory(cat)}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-red-600 transition-all font-bold text-[10px] uppercase tracking-wider"
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl hover:bg-red-600 transition-all font-black text-xs uppercase tracking-widest"
                                     title="Ver Productos"
                                 >
-                                    <Eye className="w-4 h-4" />
-                                    <span>Ver</span>
+                                    <Eye className="w-5 h-5" />
+                                    <span>Listado de Productos</span>
                                 </button>
                                 <button
                                     onClick={() => openEditCategory(cat)}
-                                    className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all"
+                                    className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all"
                                     title="Editar"
                                 >
-                                    <Edit className="w-4 h-4" />
+                                    <Edit className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                                    className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all"
+                                    className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all"
                                     title="Eliminar"
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
@@ -555,7 +555,7 @@ export default function CatalogPackagesPage() {
                             setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "" });
                             setShowCategoryModal(true);
                         }}
-                        className="aspect-[4/5] rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50/30 transition-all group"
+                        className="aspect-[16/6] rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50/30 transition-all group"
                     >
                         <div className="p-3 rounded-2xl bg-slate-50 group-hover:bg-red-100 transition-colors">
                             <Plus className="w-6 h-6" />
