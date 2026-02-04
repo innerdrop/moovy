@@ -493,74 +493,94 @@ export default function CatalogPackagesPage() {
                     </div>
                 </div>
             ) : (
-                /* PACKAGES VIEW */
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                /* PACKAGES VIEW - Apple-inspired Design */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {filteredCategories.map((cat) => (
-                        <div key={cat.id} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:border-red-200 transition-all duration-300">
-                            <div className="aspect-[16/6] bg-slate-100 relative overflow-hidden">
+                        <div
+                            key={cat.id}
+                            className="group relative bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-500"
+                        >
+                            {/* Compact Image Header */}
+                            <div className="h-28 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden">
                                 {cat.image ? (
-                                    <Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    <Image
+                                        src={cat.image}
+                                        alt={cat.name}
+                                        fill
+                                        className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                                    />
                                 ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-slate-200 bg-slate-50">
-                                        <Layers className="w-16 h-16" />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 flex items-center justify-center">
+                                            <Layers className="w-7 h-7 text-slate-400" />
+                                        </div>
                                     </div>
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-                                <div className="absolute inset-x-0 bottom-0 p-6 flex justify-between items-end bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent">
-                                    <div className="flex-1">
-                                        <h3 className="text-xl font-black text-white leading-tight uppercase tracking-tight">{cat.name}</h3>
-                                        <p className="text-white/70 text-xs font-bold mt-1 uppercase tracking-widest">{cat._count?.products || 0} SKU oficiales</p>
+                                {/* Subtle overlay gradient */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                {/* Floating action buttons - appear on hover */}
+                                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }}
+                                        className="p-2 bg-white/90 backdrop-blur-md text-slate-600 rounded-xl hover:bg-white hover:text-blue-600 shadow-lg transition-all"
+                                        title="Editar"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id, cat.name); }}
+                                        className="p-2 bg-white/90 backdrop-blur-md text-slate-600 rounded-xl hover:bg-white hover:text-red-600 shadow-lg transition-all"
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5">
+                                <div className="flex items-start justify-between gap-4 mb-4">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-slate-900 text-base leading-tight truncate">
+                                            {cat.name}
+                                        </h3>
+                                        <p className="text-slate-500 text-xs mt-1">
+                                            {cat._count?.products || 0} productos
+                                        </p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none mb-1">Precio Paquete</p>
-                                        <p className="text-2xl font-black text-white">${(cat.price || 0).toLocaleString()}</p>
+                                    <div className="text-right flex-shrink-0">
+                                        <p className="text-2xl font-bold text-slate-900">
+                                            ${(cat.price || 0).toLocaleString()}
+                                        </p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }}
-                                    className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-md text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-red-600 shadow-xl"
-                                >
-                                    <Settings2 className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="p-2 border-t border-slate-100 flex justify-between gap-1">
+
+                                {/* Action Button */}
                                 <button
                                     onClick={() => setSelectedCategory(cat)}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl hover:bg-red-600 transition-all font-black text-xs uppercase tracking-widest"
-                                    title="Ver Productos"
+                                    className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors duration-300 flex items-center justify-center gap-2"
                                 >
-                                    <Eye className="w-5 h-5" />
-                                    <span>Listado de Productos</span>
-                                </button>
-                                <button
-                                    onClick={() => openEditCategory(cat)}
-                                    className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all"
-                                    title="Editar"
-                                >
-                                    <Edit className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                                    className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all"
-                                    title="Eliminar"
-                                >
-                                    <Trash2 className="w-5 h-5" />
+                                    <Package className="w-4 h-4" />
+                                    Ver productos
                                 </button>
                             </div>
                         </div>
                     ))}
+
+                    {/* Add New Card */}
                     <button
                         onClick={() => {
                             setEditingCategory(null);
                             setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "" });
                             setShowCategoryModal(true);
                         }}
-                        className="aspect-[16/6] rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50/30 transition-all group"
+                        className="h-full min-h-[220px] rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center gap-3 text-slate-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50/30 transition-all duration-300 group"
                     >
-                        <div className="p-3 rounded-2xl bg-slate-50 group-hover:bg-red-100 transition-colors">
+                        <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:shadow-md group-hover:scale-110 transition-all">
                             <Plus className="w-6 h-6" />
                         </div>
-                        <span className="font-bold text-sm uppercase tracking-widest">Nuevo Paquete</span>
+                        <span className="font-medium text-sm">Nuevo Paquete</span>
                     </button>
                 </div>
             )}
