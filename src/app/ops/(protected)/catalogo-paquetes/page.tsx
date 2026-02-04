@@ -444,7 +444,7 @@ export default function CatalogPackagesPage() {
                 </div>
             ) : (
                 /* PACKAGES VIEW */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                     {filteredCategories.map((cat) => (
                         <div key={cat.id} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:border-red-200 transition-all duration-300">
                             <div className="aspect-[16/10] bg-slate-100 relative overflow-hidden">
@@ -456,14 +456,14 @@ export default function CatalogPackagesPage() {
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-                                <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+                                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                                     <div>
-                                        <h3 className="text-xl font-black text-white leading-tight uppercase tracking-tight">{cat.name}</h3>
+                                        <h3 className="text-lg font-black text-white leading-tight uppercase tracking-tight">{cat.name}</h3>
                                         <p className="text-white/70 text-xs font-bold mt-1 uppercase tracking-widest">{cat._count?.products || 0} SKU oficiales</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Precio Paquete</p>
-                                        <p className="text-xl font-black text-white">${(cat.price || 0).toLocaleString()}</p>
+                                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none">Precio Paquete</p>
+                                        <p className="text-lg font-black text-white">${(cat.price || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
                                 <button
@@ -556,6 +556,36 @@ export default function CatalogPackagesPage() {
                                     rows={3}
                                     className="w-full px-4 py-3 bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500 transition-all text-sm"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Imagen de Portada (URL)</label>
+                                <div className="flex flex-col gap-3">
+                                    <input
+                                        type="text"
+                                        value={categoryForm.image}
+                                        onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
+                                        placeholder="https://ejemplo.com/imagen.jpg"
+                                        className="w-full px-4 py-3 bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500 transition-all text-xs font-mono"
+                                    />
+                                    {categoryForm.image && (
+                                        <div className="relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-100 bg-slate-50 group/preview">
+                                            <Image
+                                                src={categoryForm.image}
+                                                alt="Preview"
+                                                fill
+                                                className="object-cover"
+                                                onError={(e) => {
+                                                    // Simple error handling for invalid URLs
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 bg-black/20 transition-opacity">
+                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Vista Previa</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
