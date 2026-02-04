@@ -24,7 +24,9 @@ import {
     FolderPlus,
     EyeOff,
     Power,
-    Ban
+    Ban,
+    Upload,
+    Camera
 } from "lucide-react";
 
 interface Product {
@@ -57,6 +59,7 @@ export default function CatalogPackagesPage() {
     const [search, setSearch] = useState("");
     const [view, setView] = useState<"packages" | "pending">("packages");
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -151,6 +154,34 @@ export default function CatalogPackagesPage() {
             image: cat.image || ""
         });
         setShowCategoryModal(true);
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setCategoryForm(prev => ({ ...prev, image: data.url }));
+            } else {
+                alert("Error al subir la imagen");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Error de conexión al subir la imagen");
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleAssignCategory = async () => {
@@ -559,15 +590,28 @@ export default function CatalogPackagesPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Imagen de Portada (URL)</label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Imagen de Portada</label>
                                 <div className="flex flex-col gap-3">
-                                    <input
-                                        type="text"
-                                        value={categoryForm.image}
-                                        onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
-                                        placeholder="https://ejemplo.com/imagen.jpg"
-                                        className="w-full px-4 py-3 bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500 transition-all text-xs font-mono"
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={categoryForm.image}
+                                            onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
+                                            placeholder="URL de la imagen..."
+                                            className="flex-1 px-4 py-3 bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500 transition-all text-xs font-mono"
+                                        />
+                                        <label className="flex items-center justify-center p-3 bg-slate-900 text-white rounded-2xl cursor-pointer hover:bg-slate-800 transition shadow-lg shadow-slate-200">
+                                            {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                disabled={uploading}
+                                            />
+                                        </label>
+                                    </div>
+
                                     {categoryForm.image && (
                                         <div className="relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-100 bg-slate-50 group/preview">
                                             <Image
@@ -576,7 +620,6 @@ export default function CatalogPackagesPage() {
                                                 fill
                                                 className="object-cover"
                                                 onError={(e) => {
-                                                    // Simple error handling for invalid URLs
                                                     (e.target as HTMLImageElement).style.display = 'none';
                                                 }}
                                             />
