@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
     ArrowLeft,
     Save,
@@ -12,6 +13,10 @@ import {
     Tag,
     Box,
     Check,
+    Loader2,
+    Upload,
+    ImageIcon,
+    X
 } from "lucide-react";
 
 interface Category {
@@ -26,6 +31,7 @@ export default function NewProductPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     // Form state
     const [name, setName] = useState("");
@@ -36,6 +42,7 @@ export default function NewProductPage() {
     const [categoryId, setCategoryId] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [isFeatured, setIsFeatured] = useState(false);
+    const [imageUrl, setImageUrl] = useState("");
 
     // Load categories
     useEffect(() => {
@@ -71,6 +78,31 @@ export default function NewProductPage() {
         ? ((margin / numCost) * 100).toFixed(1)
         : (numPrice > 0 ? "100.0" : "0.0");
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setImageUrl(data.url);
+            }
+        } catch (error) {
+            console.error("Error uploading image:", error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -90,13 +122,14 @@ export default function NewProductPage() {
                     categoryId,
                     isActive,
                     isFeatured,
+                    imageUrl,
                 }),
             });
 
             if (res.ok) {
                 setSuccess(true);
                 setTimeout(() => {
-                    router.push("/admin/productos");
+                    router.push("/ops/catalogo-paquetes");
                 }, 1500);
             } else {
                 const data = await res.json();
@@ -114,7 +147,7 @@ export default function NewProductPage() {
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
                 <Link
-                    href="/admin/productos"
+                    href="/ops/catalogo-paquetes"
                     className="p-2 hover:bg-gray-100 rounded-lg transition"
                 >
                     <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -145,6 +178,57 @@ export default function NewProductPage() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Image Upload */}
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-moovy" />
+                        Imagen del Producto
+                    </h2>
+
+                    <div className="flex items-center gap-6">
+                        <div className="w-32 h-32 bg-slate-100 rounded-xl overflow-hidden relative border-2 border-dashed border-slate-200">
+                            {imageUrl ? (
+                                <>
+                                    <Image src={imageUrl} alt={name || "Producto"} fill className="object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setImageUrl("")}
+                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                    <ImageIcon className="w-8 h-8 mb-1" />
+                                    <span className="text-[10px]">Sin imagen</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex-1">
+                            <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+                                {uploading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Upload className="w-4 h-4" />
+                                )}
+                                {uploading ? "Subiendo..." : "Subir imagen"}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={uploading}
+                                />
+                            </label>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Formatos: JPG, PNG, WebP. Se optimizará automáticamente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Basic Info */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                     <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
@@ -304,7 +388,7 @@ export default function NewProductPage() {
                 {/* Submit */}
                 <div className="flex gap-3">
                     <Link
-                        href="/admin/productos"
+                        href="/ops/catalogo-paquetes"
                         className="btn-outline flex-1 text-center"
                     >
                         Cancelar
@@ -315,7 +399,10 @@ export default function NewProductPage() {
                         className="btn-primary flex-1 flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
-                            <span>Guardando...</span>
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Guardando...
+                            </>
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
@@ -328,4 +415,3 @@ export default function NewProductPage() {
         </div>
     );
 }
-
