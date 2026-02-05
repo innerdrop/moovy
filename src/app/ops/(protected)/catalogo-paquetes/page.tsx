@@ -64,6 +64,7 @@ export default function CatalogPackagesPage() {
     const [search, setSearch] = useState("");
     const [view, setView] = useState<"packages" | "pending">("packages");
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+    const [subcategoryFilter, setSubcategoryFilter] = useState<string>("all");
     const [uploading, setUploading] = useState(false);
 
     const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -130,8 +131,18 @@ export default function CatalogPackagesPage() {
         return ids;
     };
 
+    // Get subcategories of selected category (if it's a parent)
+    const selectedCategoryChildren = selectedCategory
+        ? categories.find(c => c.id === selectedCategory.id)?.children || []
+        : [];
+
     const productsInCategory = selectedCategory
         ? products.filter(p => {
+            // If subcategory filter is active, only show that subcategory's products
+            if (subcategoryFilter !== "all") {
+                return p.categories.some(c => c.category.id === subcategoryFilter);
+            }
+            // Otherwise show all products from this category and its children
             const categoryIds = getCategoryIds(selectedCategory);
             return p.categories.some(c => categoryIds.includes(c.category.id));
         })
@@ -353,7 +364,7 @@ export default function CatalogPackagesPage() {
                     {selectedCategory && (
                         <div className="flex gap-2">
                             <button
-                                onClick={() => setSelectedCategory(null)}
+                                onClick={() => { setSelectedCategory(null); setSubcategoryFilter("all"); }}
                                 className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition font-medium"
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -396,7 +407,7 @@ export default function CatalogPackagesPage() {
                     <button
                         onClick={() => {
                             setEditingCategory(null);
-                            setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "" });
+                            setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "", parentId: null });
                             setShowCategoryModal(true);
                         }}
                         className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
@@ -429,6 +440,34 @@ export default function CatalogPackagesPage() {
                     <Package className="w-8 h-8 opacity-20" />
                 </div>
             </div>
+
+            {/* Subcategory Filter - only show when viewing a parent category with children */}
+            {selectedCategory && selectedCategoryChildren.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Filtrar por:</span>
+                    <button
+                        onClick={() => setSubcategoryFilter("all")}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${subcategoryFilter === "all"
+                            ? "bg-slate-900 text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
+                    >
+                        Todos ({productsInCategory.length})
+                    </button>
+                    {selectedCategoryChildren.map(child => (
+                        <button
+                            key={child.id}
+                            onClick={() => setSubcategoryFilter(child.id)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${subcategoryFilter === child.id
+                                ? "bg-red-600 text-white"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                }`}
+                        >
+                            {child.name} ({child._count?.products || 0})
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex items-center justify-center py-24">
@@ -570,7 +609,7 @@ export default function CatalogPackagesPage() {
                     {filteredCategories.map((cat) => {
                         const hasChildren = cat.children && cat.children.length > 0;
                         const totalProducts = hasChildren
-                            ? cat.children.reduce((sum, c) => sum + (c._count?.products || 0), 0)
+                            ? cat.children!.reduce((sum, c) => sum + (c._count?.products || 0), 0)
                             : (cat._count?.products || 0);
 
                         return hasChildren ? (
@@ -604,7 +643,7 @@ export default function CatalogPackagesPage() {
                                     {/* Stats */}
                                     <div className="grid grid-cols-2 gap-3 mb-4">
                                         <div className="bg-white/5 rounded-xl p-3 text-center">
-                                            <p className="text-2xl font-bold text-white">{cat.children.length}</p>
+                                            <p className="text-2xl font-bold text-white">{cat.children!.length}</p>
                                             <p className="text-[10px] text-white/50 uppercase tracking-widest">Subcategorías</p>
                                         </div>
                                         <div className="bg-white/5 rounded-xl p-3 text-center">
@@ -624,7 +663,7 @@ export default function CatalogPackagesPage() {
                                 <div className="bg-white rounded-t-3xl p-4">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Subpaquetes incluidos</p>
                                     <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                                        {cat.children.map(child => (
+                                        {cat.children!.map(child => (
                                             <div
                                                 key={child.id}
                                                 className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl group/child hover:bg-slate-100 transition cursor-pointer"
