@@ -119,8 +119,22 @@ export default function CatalogPackagesPage() {
     // Derived State
     const pendingProducts = products.filter(p => p.categories.length === 0);
 
+    // Get all category IDs to filter (including children if parent category)
+    const getCategoryIds = (cat: Category): string[] => {
+        const ids = [cat.id];
+        // Find the full category object from categories array to get children
+        const fullCategory = categories.find(c => c.id === cat.id);
+        if (fullCategory?.children && fullCategory.children.length > 0) {
+            fullCategory.children.forEach(child => ids.push(child.id));
+        }
+        return ids;
+    };
+
     const productsInCategory = selectedCategory
-        ? products.filter(p => p.categories.some(c => c.category.id === selectedCategory.id))
+        ? products.filter(p => {
+            const categoryIds = getCategoryIds(selectedCategory);
+            return p.categories.some(c => categoryIds.includes(c.category.id));
+        })
         : [];
 
     // Show only root categories (with children inside them)
