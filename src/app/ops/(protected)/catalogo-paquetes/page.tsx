@@ -50,8 +50,12 @@ interface Category {
     image: string | null;
     price: number;
     allowIndividualPurchase: boolean;
+    parentId: string | null;
+    parent?: Category | null;
+    children?: Category[];
     _count?: { products: number };
 }
+
 
 export default function CatalogPackagesPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -72,7 +76,8 @@ export default function CatalogPackagesPage() {
         description: "",
         price: 5000,
         allowIndividualPurchase: true,
-        image: ""
+        image: "",
+        parentId: "" as string | null
     });
 
     // Confirmation Modal State
@@ -118,8 +123,9 @@ export default function CatalogPackagesPage() {
         ? products.filter(p => p.categories.some(c => c.category.id === selectedCategory.id))
         : [];
 
+    // Show only root categories (with children inside them)
     const filteredCategories = categories.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
+        !c.parentId && c.name.toLowerCase().includes(search.toLowerCase())
     );
 
     const filteredPending = pendingProducts.filter(p =>
@@ -147,7 +153,7 @@ export default function CatalogPackagesPage() {
             if (res.ok) {
                 setShowCategoryModal(false);
                 setEditingCategory(null);
-                setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "" });
+                setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "", parentId: null });
                 fetchData();
             }
         } catch (error) {
@@ -186,7 +192,8 @@ export default function CatalogPackagesPage() {
             description: cat.description || "",
             price: cat.price,
             allowIndividualPurchase: cat.allowIndividualPurchase,
-            image: cat.image || ""
+            image: cat.image || "",
+            parentId: cat.parentId || null
         });
         setShowCategoryModal(true);
     };
@@ -607,13 +614,50 @@ export default function CatalogPackagesPage() {
                                     </div>
                                 </div>
 
+                                {/* Subcategories (if has children) */}
+                                {cat.children && cat.children.length > 0 && (
+                                    <div className="mb-4 space-y-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subcategorías</p>
+                                        <div className="space-y-1.5">
+                                            {cat.children.map(child => (
+                                                <div
+                                                    key={child.id}
+                                                    className="flex items-center justify-between p-2 bg-slate-50 rounded-lg group/child hover:bg-slate-100 transition"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
+                                                            <Layers className="w-3 h-3 text-slate-400" />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-slate-700">{child.name}</span>
+                                                        <span className="text-[10px] text-slate-400">({child._count?.products || 0})</span>
+                                                    </div>
+                                                    <div className="flex gap-1 opacity-0 group-hover/child:opacity-100 transition">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setSelectedCategory(child); }}
+                                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded transition"
+                                                        >
+                                                            <Eye className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); openEditCategory(child); }}
+                                                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded transition"
+                                                        >
+                                                            <Edit className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Action Button */}
                                 <button
                                     onClick={() => setSelectedCategory(cat)}
                                     className="w-full py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl text-sm font-medium hover:from-red-600 hover:to-rose-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
                                 >
                                     <Package className="w-4 h-4" />
-                                    Ver productos
+                                    {cat.children && cat.children.length > 0 ? "Ver todos los productos" : "Ver productos"}
                                 </button>
                             </div>
                         </div>
@@ -675,6 +719,23 @@ export default function CatalogPackagesPage() {
                                     onChange={(e) => setCategoryForm({ ...categoryForm, price: parseFloat(e.target.value) })}
                                     className="w-full px-4 py-3 bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500 transition-all font-bold text-lg"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Categoría Padre (opcional)</label>
+                                <select
+                                    value={categoryForm.parentId || ""}
+                                    onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value || null })}
+                                    className="w-full px-4 py-3 bg-slate-50 border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500 transition-all text-sm"
+                                >
+                                    <option value="">Sin categoría padre (raíz)</option>
+                                    {categories
+                                        .filter(c => !c.parentId && c.id !== editingCategory?.id)
+                                        .map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))
+                                    }
+                                </select>
                             </div>
 
                             <div className="space-y-2">
