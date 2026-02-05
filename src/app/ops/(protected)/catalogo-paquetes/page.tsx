@@ -413,7 +413,7 @@ export default function CatalogPackagesPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
                     >
                         <Plus className="w-5 h-5" />
-                        Nuevo Paquete
+                        Agregar Paquete Maestro
                     </button>
                 </div>
             </div>
@@ -699,9 +699,23 @@ export default function CatalogPackagesPage() {
                                         ))}
                                     </div>
 
+                                    {/* Add Subcategory Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingCategory(null);
+                                            setCategoryForm({ name: "", description: "", price: 5000, allowIndividualPurchase: true, image: "", parentId: cat.id });
+                                            setShowCategoryModal(true);
+                                        }}
+                                        className="w-full mt-2 py-2 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl text-sm font-medium hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Agregar Subcategoría
+                                    </button>
+
                                     <button
                                         onClick={() => setSelectedCategory(cat)}
-                                        className="w-full mt-3 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl text-sm font-medium hover:from-red-600 hover:to-rose-700 transition-all flex items-center justify-center gap-2"
+                                        className="w-full mt-2 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl text-sm font-medium hover:from-red-600 hover:to-rose-700 transition-all flex items-center justify-center gap-2"
                                     >
                                         <Eye className="w-4 h-4" />
                                         Ver todos los productos
@@ -790,7 +804,7 @@ export default function CatalogPackagesPage() {
                         <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:shadow-md group-hover:scale-110 transition-all">
                             <Plus className="w-6 h-6" />
                         </div>
-                        <span className="font-medium text-sm">Nuevo Paquete</span>
+                        <span className="font-medium text-sm">Nuevo Paquete Maestro</span>
                     </button>
                 </div>
             )}

@@ -35,6 +35,9 @@ interface Category {
     image: string | null;
     price: number;
     allowIndividualPurchase: boolean;
+    parentId: string | null;
+    parent?: Category | null;
+    children?: Category[];
     _count?: { products: number };
 }
 
@@ -106,14 +109,27 @@ export default function BuyFromCatalogPage() {
         }
     };
 
-    // Filter categories by search
+    // Filter categories - only show master packages (root categories, no parentId)
     const filteredCategories = categories.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
+        !c.parentId && c.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    // Products in selected category
+    // Get all category IDs including children for product filtering
+    const getCategoryIds = (cat: Category): string[] => {
+        const ids = [cat.id];
+        const fullCategory = categories.find(c => c.id === cat.id);
+        if (fullCategory?.children && fullCategory.children.length > 0) {
+            fullCategory.children.forEach(child => ids.push(child.id));
+        }
+        return ids;
+    };
+
+    // Products in selected category (including children subcategories)
     const productsInCategory = selectedCategory
-        ? products.filter(p => p.categories.some(c => c.category.id === selectedCategory.id))
+        ? products.filter(p => {
+            const categoryIds = getCategoryIds(selectedCategory);
+            return p.categories.some(c => categoryIds.includes(c.category.id));
+        })
         : [];
 
     const filteredItems = productsInCategory.filter(p =>
@@ -303,46 +319,81 @@ export default function BuyFromCatalogPage() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                            {filteredCategories.map((cat) => (
-                                <div
-                                    key={cat.id}
-                                    onClick={() => { setSelectedCategory(cat); setSearch(""); }}
-                                    className="group cursor-pointer bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
-                                >
-                                    <div className="aspect-[4/3] relative">
-                                        {cat.image ? (
-                                            <Image src={cat.image} alt={cat.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                                        ) : (
-                                            <div className="absolute inset-0 bg-slate-50 flex items-center justify-center text-slate-200">
-                                                <Layers className="w-20 h-20" />
+                            {filteredCategories.map((cat) => {
+                                const hasChildren = cat.children && cat.children.length > 0;
+                                const totalProducts = hasChildren
+                                    ? cat.children!.reduce((sum, c) => sum + (c._count?.products || 0), 0)
+                                    : (cat._count?.products || 0);
+
+                                return (
+                                    <div
+                                        key={cat.id}
+                                        onClick={() => { setSelectedCategory(cat); setSearch(""); }}
+                                        className="group cursor-pointer bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+                                    >
+                                        <div className="aspect-[4/3] relative">
+                                            {cat.image ? (
+                                                <Image src={cat.image} alt={cat.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                                            ) : (
+                                                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white/20">
+                                                    <Layers className="w-20 h-20" />
+                                                </div>
+                                            )}
+                                            {ownedCategories.includes(cat.id) && (
+                                                <div className="absolute top-6 left-6 z-10">
+                                                    <div className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg border border-white/20 flex items-center gap-1.5 animate-in slide-in-from-left duration-300">
+                                                        <Check className="w-3 h-3" />
+                                                        Adquirido
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/10 to-transparent"></div>
+                                            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+                                                <div>
+                                                    <h3 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">{cat.name}</h3>
+                                                    {hasChildren ? (
+                                                        <p className="text-white/70 text-xs font-bold uppercase tracking-widest mt-1">
+                                                            {cat.children!.length} subcategorías · {totalProducts} productos
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-white/70 text-xs font-bold uppercase tracking-widest mt-1">
+                                                            Contiene {cat._count?.products || 0} SKU
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Precio</p>
+                                                    <p className="text-2xl font-black text-white">${(cat.price || 0).toLocaleString()}</p>
+                                                </div>
                                             </div>
-                                        )}
-                                        {ownedCategories.includes(cat.id) && (
-                                            <div className="absolute top-6 left-6 z-10">
-                                                <div className="bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg border border-white/20 flex items-center gap-1.5 animate-in slide-in-from-left duration-300">
-                                                    <Check className="w-3 h-3" />
-                                                    Adquirido
+                                        </div>
+
+                                        {/* Subcategories list for master packages */}
+                                        {hasChildren && (
+                                            <div className="p-4 bg-slate-50 border-b border-slate-100">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Incluye:</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {cat.children!.slice(0, 5).map(child => (
+                                                        <span key={child.id} className="text-xs font-medium bg-white text-slate-600 px-2 py-1 rounded-lg border border-slate-200">
+                                                            {child.name}
+                                                        </span>
+                                                    ))}
+                                                    {cat.children!.length > 5 && (
+                                                        <span className="text-xs font-bold text-slate-400 px-2 py-1">
+                                                            +{cat.children!.length - 5} más
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/10 to-transparent"></div>
-                                        <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
-                                            <div>
-                                                <h3 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">{cat.name}</h3>
-                                                <p className="text-white/70 text-xs font-bold uppercase tracking-widest mt-1">Contiene {cat._count?.products || 0} SKU</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Precio</p>
-                                                <p className="text-2xl font-black text-white">${(cat.price || 0).toLocaleString()}</p>
-                                            </div>
+
+                                        <div className="p-4 bg-slate-50 group-hover:bg-blue-600 transition-colors flex items-center justify-between">
+                                            <span className="text-xs font-black uppercase tracking-widest text-slate-400 group-hover:text-white/80 transition-colors">Explorar Contenido</span>
+                                            <ArrowRight className="w-5 h-5 text-blue-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
                                         </div>
                                     </div>
-                                    <div className="p-4 bg-slate-50 group-hover:bg-blue-600 transition-colors flex items-center justify-between">
-                                        <span className="text-xs font-black uppercase tracking-widest text-slate-400 group-hover:text-white/80 transition-colors">Explorar Contenido</span>
-                                        <ArrowRight className="w-5 h-5 text-blue-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
