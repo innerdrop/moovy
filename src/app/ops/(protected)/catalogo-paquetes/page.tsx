@@ -678,13 +678,21 @@ export default function CatalogPackagesPage() {
                                                         <p className="text-[10px] text-slate-400">{child._count?.products || 0} productos</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold text-slate-600">${(child.price || 0).toLocaleString()}</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-sm font-bold text-slate-600 mr-1">${(child.price || 0).toLocaleString()}</span>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openEditCategory(child); }}
                                                         className="p-1.5 text-slate-300 hover:text-blue-600 hover:bg-white rounded transition opacity-0 group-hover/child:opacity-100"
+                                                        title="Editar / Mover"
                                                     >
                                                         <Edit className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteCategory(child.id, child.name); }}
+                                                        className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-white rounded transition opacity-0 group-hover/child:opacity-100"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
                                             </div>
