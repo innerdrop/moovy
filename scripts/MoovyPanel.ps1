@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 # Configuracion
-$projectPath = "C:\moovy"
+$projectPath = "c:\Users\Mauro\Desktop\moovy"
 
 # Funcion para mostrar notificacion Windows
 function Show-Notification {
