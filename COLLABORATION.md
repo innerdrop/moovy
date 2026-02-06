@@ -22,32 +22,26 @@ Esto guarda tu código, exporta tu base de datos actual para el equipo y sube to
 
 ---
 
-## 🌿 Crear una Feature
+## 🌿 Flujo Completo de Trabajo
 
-1. **Crear rama desde develop:**
-   ```powershell
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/mi-feature
-   ```
+### 1. Iniciar nuevos cambios
+```powershell
+.\scripts\start.ps1
+```
+Te permite elegir el tipo (feature/fix/hotfix/refactor) y crea la rama automaticamente.
 
-2. **Desarrollar y commitear:**
-   ```powershell
-   git add .
-   git commit -m "feat: descripción del cambio"
-   ```
+### 2. Trabajar normalmente
+Desarrolla, prueba y guarda commits intermedios si quieres:
+```powershell
+git add .
+git commit -m "avance parcial"
+```
 
-3. **Si modificás el schema de Prisma:**
-   ```powershell
-   npx prisma db push
-   ```
-
-4. **Subir cambios:**
-   ```powershell
-   git push origin feature/mi-feature
-   ```
-
-5. **Crear Pull Request** hacia `develop` en GitHub.
+### 3. Finalizar y publicar
+```powershell
+.\scripts\finish.ps1 -Message "feat: descripcion del cambio"
+```
+Esto mergea tus cambios a develop y los publica para el equipo.
 
 ---
 
