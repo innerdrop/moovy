@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { auth } from "@/lib/auth";
+import sharp from "sharp";
 
 export async function POST(request: Request) {
     try {
@@ -23,16 +24,38 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "File must be an image" }, { status: 400 });
         }
 
-        // Generate unique filename
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = `${Date.now()}-${file.name.replaceAll(" ", "_")}`;
+        // Get original buffer
+        const originalBuffer = Buffer.from(await file.arrayBuffer());
 
-        // Ensure directory exists (handled by creation command, but good practice)
-        // In local/VPS we write to public/uploads/products
+        // Process image with sharp:
+        // 1. Resize to max 1200px width (maintaining aspect ratio)
+        // 2. Convert to WebP format
+        // 3. Compress to 80% quality
+        // 4. Remove EXIF/metadata
+        const optimizedBuffer = await sharp(originalBuffer)
+            .resize(1200, null, {
+                withoutEnlargement: true,  // Don't upscale small images
+                fit: 'inside'
+            })
+            .webp({ quality: 80 })
+            .rotate() // Auto-rotate based on EXIF orientation before stripping
+            .toBuffer();
+
+        // Generate unique filename with .webp extension
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replaceAll(" ", "_");
+        const filename = `${Date.now()}-${baseName}.webp`;
+
+        // Ensure directory exists
         const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
 
         try {
-            await writeFile(path.join(uploadDir, filename), buffer);
+            await mkdir(uploadDir, { recursive: true });
+        } catch {
+            // Directory already exists, ignore
+        }
+
+        try {
+            await writeFile(path.join(uploadDir, filename), optimizedBuffer);
         } catch (error) {
             console.error("Error saving file:", error);
             return NextResponse.json({ error: "Failed to save file" }, { status: 500 });

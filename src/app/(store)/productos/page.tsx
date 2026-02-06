@@ -12,31 +12,52 @@ interface ProductsPageProps {
 }
 
 async function getProducts(categoria?: string, buscar?: string): Promise<Product[]> {
-    const where: any = {
+    const baseWhere: any = {
         isActive: true,
-        merchantId: { not: null } // Solo productos con comercio asignado
+        OR: [
+            // Products with direct merchant assignment
+            { merchantId: { not: null } },
+            // Master catalog products that have been acquired by merchants
+            {
+                merchantId: null,
+                acquiredBy: {
+                    some: {
+                        merchant: { isActive: true }
+                    }
+                }
+            }
+        ]
     };
 
     if (categoria) {
-        where.categories = {
+        baseWhere.categories = {
             some: { category: { slug: categoria } }
         };
     }
 
     if (buscar) {
-        where.OR = [
-            { name: { contains: buscar, mode: 'insensitive' } },
-            { description: { contains: buscar, mode: 'insensitive' } },
-            { merchant: { name: { contains: buscar, mode: 'insensitive' } } },
+        baseWhere.AND = [
+            {
+                OR: [
+                    { name: { contains: buscar, mode: 'insensitive' } },
+                    { description: { contains: buscar, mode: 'insensitive' } },
+                ]
+            }
         ];
     }
 
     const products = await prisma.product.findMany({
-        where,
+        where: baseWhere,
         include: {
             categories: { include: { category: true } },
             images: true,
             merchant: true,
+            acquiredBy: {
+                include: {
+                    merchant: true
+                },
+                take: 1
+            }
         },
         orderBy: { name: "asc" },
     });
@@ -44,7 +65,9 @@ async function getProducts(categoria?: string, buscar?: string): Promise<Product
     // Map to ensure interface compatibility (especially null vs undefined)
     return products.map(p => ({
         ...p,
-        merchantId: p.merchantId || undefined,
+        // Use direct merchant or first acquiring merchant
+        merchant: p.merchant || p.acquiredBy?.[0]?.merchant || null,
+        merchantId: p.merchantId || p.acquiredBy?.[0]?.merchantId || undefined,
         image: p.images[0]?.url || null
     }));
 }

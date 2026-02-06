@@ -75,9 +75,13 @@ model Category {
   updatedAt               DateTime          @updatedAt
   allowIndividualPurchase Boolean           @default(true)
   price                   Float             @default(0)
+  parentId                String?
+  parent                  Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children                Category[]        @relation("CategoryHierarchy")
   products                ProductCategory[]
   merchants               MerchantCategory[]
 }
+
 
 model Product {
   id          String            @id @default(cuid())

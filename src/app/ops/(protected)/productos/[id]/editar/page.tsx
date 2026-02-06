@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
     ArrowLeft,
     Save,
@@ -13,7 +14,10 @@ import {
     Box,
     Check,
     Loader2,
-    Trash2
+    Trash2,
+    Upload,
+    ImageIcon,
+    X
 } from "lucide-react";
 
 interface Category {
@@ -34,6 +38,7 @@ interface Product {
     isActive: boolean;
     isFeatured: boolean;
     categories: Array<{ category: Category }>;
+    images?: Array<{ url: string }>;
 }
 
 export default function EditProductPage() {
@@ -47,6 +52,7 @@ export default function EditProductPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     // Form state
     const [name, setName] = useState("");
@@ -58,6 +64,18 @@ export default function EditProductPage() {
     const [categoryId, setCategoryId] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [isFeatured, setIsFeatured] = useState(false);
+    const [imageUrl, setImageUrl] = useState("");
+
+    // Confirmation Modal State
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<{
+        title: string;
+        message: string;
+        confirmText: string;
+        confirmColor: string;
+        icon: "save" | "delete";
+        onConfirm: () => void
+    } | null>(null);
 
     // Load product and categories
     useEffect(() => {
@@ -85,6 +103,9 @@ export default function EditProductPage() {
                     if (product.categories[0]) {
                         setCategoryId(product.categories[0].category.id);
                     }
+                    if (product.images?.[0]?.url) {
+                        setImageUrl(product.images[0].url);
+                    }
                 } else {
                     setError("Producto no encontrado");
                 }
@@ -106,66 +127,111 @@ export default function EditProductPage() {
         ? ((margin / numCost) * 100).toFixed(1)
         : (numPrice > 0 ? "100.0" : "0.0");
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-        setIsSaving(true);
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
 
         try {
-            const res = await fetch(`/api/admin/products/${productId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name,
-                    description,
-                    price: Number(price),
-                    costPrice: Number(costPrice),
-                    stock: Number(stock),
-                    minStock: Number(minStock),
-                    categoryId,
-                    isActive,
-                    isFeatured,
-                }),
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData
             });
 
             if (res.ok) {
-                setSuccess(true);
-                setTimeout(() => {
-                    router.push("/admin/productos");
-                }, 1500);
-            } else {
                 const data = await res.json();
-                setError(data.error || "Error al actualizar el producto");
+                setImageUrl(data.url);
             }
-        } catch (err) {
-            setError("Error de conexión");
+        } catch (error) {
+            console.error("Error uploading image:", error);
         } finally {
-            setIsSaving(false);
+            setUploading(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (!confirm("¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.")) {
-            return;
-        }
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
 
-        setIsDeleting(true);
-        try {
-            const res = await fetch(`/api/admin/products/${productId}`, {
-                method: "DELETE",
-            });
+        setConfirmAction({
+            title: "Guardar Cambios",
+            message: `¿Querés guardar los cambios realizados en "${name}"?`,
+            confirmText: "Guardar",
+            confirmColor: "bg-green-600 hover:bg-green-700",
+            icon: "save",
+            onConfirm: async () => {
+                setShowConfirmModal(false);
+                setError("");
+                setIsSaving(true);
 
-            if (res.ok) {
-                router.push("/admin/productos");
-            } else {
-                const data = await res.json();
-                setError(data.error || "Error al eliminar el producto");
+                try {
+                    const res = await fetch(`/api/admin/products/${productId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            name,
+                            description,
+                            price: Number(price),
+                            costPrice: Number(costPrice),
+                            stock: Number(stock),
+                            minStock: Number(minStock),
+                            categoryId,
+                            isActive,
+                            isFeatured,
+                            imageUrl,
+                        }),
+                    });
+
+                    if (res.ok) {
+                        setSuccess(true);
+                        setTimeout(() => {
+                            router.push("/ops/catalogo-paquetes");
+                        }, 1500);
+                    } else {
+                        const data = await res.json();
+                        setError(data.error || "Error al actualizar el producto");
+                    }
+                } catch (err) {
+                    setError("Error de conexión");
+                } finally {
+                    setIsSaving(false);
+                }
             }
-        } catch (err) {
-            setError("Error de conexión");
-        } finally {
-            setIsDeleting(false);
-        }
+        });
+        setShowConfirmModal(true);
+    };
+
+    const handleDelete = () => {
+        setConfirmAction({
+            title: "Eliminar Producto",
+            message: `¿Estás seguro de eliminar "${name}"? Esta acción no se puede deshacer.`,
+            confirmText: "Eliminar",
+            confirmColor: "bg-red-600 hover:bg-red-700",
+            icon: "delete",
+            onConfirm: async () => {
+                setShowConfirmModal(false);
+                setIsDeleting(true);
+                try {
+                    const res = await fetch(`/api/admin/products/${productId}`, {
+                        method: "DELETE",
+                    });
+
+                    if (res.ok) {
+                        router.push("/ops/catalogo-paquetes");
+                    } else {
+                        const data = await res.json();
+                        setError(data.error || "Error al eliminar el producto");
+                    }
+                } catch (err) {
+                    setError("Error de conexión");
+                } finally {
+                    setIsDeleting(false);
+                }
+            }
+        });
+        setShowConfirmModal(true);
     };
 
     if (isLoading) {
@@ -182,7 +248,7 @@ export default function EditProductPage() {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                     <Link
-                        href="/admin/productos"
+                        href="/ops/catalogo-paquetes"
                         className="p-2 hover:bg-gray-100 rounded-lg transition"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -227,6 +293,57 @@ export default function EditProductPage() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Image Upload */}
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-[#e60012]" />
+                        Imagen del Producto
+                    </h2>
+
+                    <div className="flex items-center gap-6">
+                        <div className="w-32 h-32 bg-slate-100 rounded-xl overflow-hidden relative border-2 border-dashed border-slate-200">
+                            {imageUrl ? (
+                                <>
+                                    <Image src={imageUrl} alt={name} fill className="object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setImageUrl("")}
+                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                    <ImageIcon className="w-8 h-8 mb-1" />
+                                    <span className="text-[10px]">Sin imagen</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex-1">
+                            <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+                                {uploading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Upload className="w-4 h-4" />
+                                )}
+                                {uploading ? "Subiendo..." : "Subir imagen"}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={uploading}
+                                />
+                            </label>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Formatos: JPG, PNG, WebP. Se optimizará automáticamente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Basic Info */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                     <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
@@ -400,7 +517,7 @@ export default function EditProductPage() {
                 {/* Submit */}
                 <div className="flex gap-3">
                     <Link
-                        href="/admin/productos"
+                        href="/ops/catalogo-paquetes"
                         className="btn-outline flex-1 text-center"
                     >
                         Cancelar
@@ -424,6 +541,43 @@ export default function EditProductPage() {
                     </button>
                 </div>
             </form>
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && confirmAction && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="p-6 text-center">
+                            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${confirmAction.icon === "delete" ? "bg-red-100" : "bg-green-100"}`}>
+                                {confirmAction.icon === "delete" ? (
+                                    <Trash2 className="w-8 h-8 text-red-600" />
+                                ) : (
+                                    <Save className="w-8 h-8 text-green-600" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                {confirmAction.title}
+                            </h3>
+                            <p className="text-slate-500 text-sm leading-relaxed">
+                                {confirmAction.message}
+                            </p>
+                        </div>
+                        <div className="p-4 bg-slate-50 flex gap-3">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmAction.onConfirm}
+                                className={`flex-1 py-3 text-white rounded-xl font-medium transition-colors ${confirmAction.confirmColor}`}
+                            >
+                                {confirmAction.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

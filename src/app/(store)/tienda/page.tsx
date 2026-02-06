@@ -62,21 +62,47 @@ async function getFeaturedMerchants() {
 
 async function getFeaturedProducts() {
     try {
+        // Get featured products that have been acquired by at least one active merchant
         const products = await prisma.product.findMany({
             where: {
                 isActive: true,
                 isFeatured: true,
-                merchantId: { not: null } // Solo productos con comercio asignado
+                OR: [
+                    // Products with direct merchant assignment
+                    { merchantId: { not: null } },
+                    // Master catalog products that have been acquired by merchants
+                    {
+                        merchantId: null,
+                        acquiredBy: {
+                            some: {
+                                merchant: { isActive: true }
+                            }
+                        }
+                    }
+                ]
             },
             include: {
                 categories: { include: { category: true } },
                 images: true,
-                merchant: { select: { id: true, name: true, isOpen: true } }
+                merchant: { select: { id: true, name: true, isOpen: true } },
+                acquiredBy: {
+                    include: {
+                        merchant: { select: { id: true, name: true, isOpen: true } }
+                    },
+                    take: 1
+                }
             },
             take: 8,
         });
-        return products;
+
+        // Transform products to include merchant info from acquiredBy if needed
+        return products.map(p => ({
+            ...p,
+            // If no direct merchant, use first acquiring merchant
+            merchant: p.merchant || p.acquiredBy?.[0]?.merchant || null
+        }));
     } catch (error) {
+        console.error("Error fetching featured products:", error);
         return [];
     }
 }

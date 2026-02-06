@@ -30,6 +30,16 @@ Este documento es la guía rápida para el trabajo diario en equipo. Seguí esto
    ```
    *Ejemplo: `git checkout -b feature/ajuste-footer`*
 
+### 🏷️ Tipos de Ramas (Convención)
+Usá estos prefijos para que el equipo entienda qué estás haciendo antes de abrir el código:
+
+*   **`feature/`**: Funcionalidades nuevas o mejoras (Ej: `feature/login-social`).
+*   **`fix/`**: Corrección de errores o bugs (Ej: `fix/error-calculo-margen`).
+*   **`refactor/`**: Limpieza o mejora de código sin cambiar la funcionalidad (Ej: `refactor/db-client`).
+*   **`hotfix/`**: Arreglos urgentes que deben ir a producción inmediato (Ej: `hotfix/caida-web`).
+*   **`docs/`**: Solo cambios en manuales o documentación (Ej: `docs/actualizar-mp`).
+*   **`chore/`**: Tareas de mantenimiento, actualización de paquetes, etc. (Ej: `chore/npm-update`).
+
 ---
 
 ## 💾 3. Guardando tu Progreso
