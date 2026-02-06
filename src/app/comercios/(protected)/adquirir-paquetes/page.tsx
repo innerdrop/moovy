@@ -54,6 +54,7 @@ export default function BuyFromCatalogPage() {
     const [cart, setCart] = useState<string[]>([]); // For individual selection
     const [ownedCategories, setOwnedCategories] = useState<string[]>([]);
     const [ownedProducts, setOwnedProducts] = useState<string[]>([]);
+    const [subcategoryFilter, setSubcategoryFilter] = useState<string>("all");
 
     const fetchData = async () => {
         setLoading(true);
@@ -127,6 +128,11 @@ export default function BuyFromCatalogPage() {
     // Products in selected category (including children subcategories)
     const productsInCategory = selectedCategory
         ? products.filter(p => {
+            // If subcategoryFilter is set, filter by that specific subcategory
+            if (subcategoryFilter !== "all") {
+                return p.categories.some(c => c.category.id === subcategoryFilter);
+            }
+            // Otherwise show all products from the master package (including all subcategories)
             const categoryIds = getCategoryIds(selectedCategory);
             return p.categories.some(c => categoryIds.includes(c.category.id));
         })
@@ -135,6 +141,9 @@ export default function BuyFromCatalogPage() {
     const filteredItems = productsInCategory.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase())
     );
+
+    // Get subcategories of selected master package for the filter
+    const subcategories = selectedCategory?.children || [];
 
     if (completed) {
         return (
@@ -279,7 +288,7 @@ export default function BuyFromCatalogPage() {
                     {selectedCategory && (
                         <>
                             <button
-                                onClick={() => setSelectedCategory(null)}
+                                onClick={() => { setSelectedCategory(null); setSubcategoryFilter("all"); }}
                                 className="px-5 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition flex items-center gap-2"
                             >
                                 <ChevronLeft className="w-5 h-5" />
@@ -408,6 +417,43 @@ export default function BuyFromCatalogPage() {
                             <p className="text-xs text-blue-700/80">Todos los productos incluyen foto profesional y descripción. Podrás ajustar tus precios de venta luego de la adquisición.</p>
                         </div>
                     </div>
+
+                    {/* Subcategory Navigation Tabs */}
+                    {subcategories.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-2 overflow-hidden">
+                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                                <button
+                                    onClick={() => setSubcategoryFilter("all")}
+                                    className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${subcategoryFilter === "all"
+                                        ? "bg-blue-600 text-white shadow-lg"
+                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                >
+                                    Todos ({productsInCategory.length > 0 ? products.filter(p => {
+                                        const categoryIds = getCategoryIds(selectedCategory);
+                                        return p.categories.some(c => categoryIds.includes(c.category.id));
+                                    }).length : 0})
+                                </button>
+                                {subcategories.map(sub => {
+                                    const subProductCount = products.filter(p =>
+                                        p.categories.some(c => c.category.id === sub.id)
+                                    ).length;
+                                    return (
+                                        <button
+                                            key={sub.id}
+                                            onClick={() => setSubcategoryFilter(sub.id)}
+                                            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${subcategoryFilter === sub.id
+                                                ? "bg-blue-600 text-white shadow-lg"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                }`}
+                                        >
+                                            {sub.name} ({subProductCount})
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Selection Controls if allowed */}
                     {selectedCategory.allowIndividualPurchase && cart.length > 0 && (
