@@ -28,15 +28,25 @@ npm install
 Write-Host "[PRISMA] Generando cliente Prisma..." -ForegroundColor Yellow
 npx prisma generate
 
-# 5. Sincronizar esquema de base de datos
+# 5. Sincronizar esquema y datos de base de datos
 if ($ResetDB) {
-    Write-Host "[DB] Reseteando base de datos..." -ForegroundColor Red
+    Write-Host "[DB] Reseteando base de datos completa..." -ForegroundColor Red
     docker exec -i moovy-db psql -U postgres -d moovy_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
     npx prisma db push
     npx prisma db seed
-} else {
-    Write-Host "[DB] Sincronizando esquema de base de datos..." -ForegroundColor Yellow
-    npx prisma db push
+}
+else {
+    if (Test-Path "database_dump.sql") {
+        Write-Host "[DB] Importando datos compartidos desde database_dump.sql..." -ForegroundColor Yellow
+        # Limpiar antes de importar para evitar conflictos de "ya existe"
+        docker exec -i moovy-db psql -U postgres -d moovy_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+        Get-Content -Encoding UTF8 database_dump.sql | docker exec -i moovy-db psql -U postgres moovy_db
+        Write-Host "[DB] Datos importados con exito." -ForegroundColor Green
+    }
+    else {
+        Write-Host "[DB] Sincronizando esquema (no se encontro dump)..." -ForegroundColor Yellow
+        npx prisma db push
+    }
 }
 
 Write-Host ""

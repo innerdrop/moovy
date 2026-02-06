@@ -20,21 +20,25 @@ if ($currentBranch -eq "main") {
     exit 1
 }
 
-# 2. Mostrar archivos modificados
+# 2. Exportar Base de Datos
+Write-Host "[DB] Exportando base de datos a database_dump.sql..." -ForegroundColor Yellow
+docker exec moovy-db pg_dump -U postgres moovy_db > database_dump.sql
+
+# 3. Mostrar archivos modificados
 Write-Host ""
 Write-Host "[CHANGES] Archivos modificados:" -ForegroundColor Yellow
 git status --short
 Write-Host ""
 
-# 3. Agregar todos los cambios
+# 4. Agregar todos los cambios (incluyendo el nuevo dump)
 Write-Host "[GIT] Agregando cambios..." -ForegroundColor Yellow
 git add .
 
-# 4. Crear commit
+# 5. Crear commit
 Write-Host "[GIT] Creando commit..." -ForegroundColor Yellow
 git commit -m $Message
 
-# 5. Push a origin
+# 6. Push a origin
 Write-Host "[GIT] Subiendo a GitHub..." -ForegroundColor Yellow
 git push origin $currentBranch
 
