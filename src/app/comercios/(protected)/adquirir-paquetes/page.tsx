@@ -177,10 +177,6 @@ export default function BuyFromCatalogPage() {
         return (
             <div className="max-w-5xl mx-auto py-12 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 <div className="text-center space-y-4">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest border border-blue-100 mb-2">
-                        <Sparkles className="w-4 h-4" />
-                        Ecosistema Moovy Oficial
-                    </div>
                     <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter">
                         PAQUETES <span className="text-blue-600">MOOVY</span>
                     </h1>
@@ -260,7 +256,7 @@ export default function BuyFromCatalogPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 font-poppins">
             {/* Header Area */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

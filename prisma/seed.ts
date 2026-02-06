@@ -7,22 +7,24 @@ async function main() {
     console.log("🗑️ Limpiando base de datos...");
 
     // Clear all data in order (respect foreign keys)
+    // First: Delete tables that reference other tables
     await prisma.orderItem.deleteMany({});
     await prisma.order.deleteMany({});
     await prisma.cartItem.deleteMany({});
     await prisma.productImage.deleteMany({});
     await prisma.productVariant.deleteMany({});
     await prisma.productCategory.deleteMany({});
+    await prisma.merchantAcquiredProduct.deleteMany({});
+    await prisma.merchantCategory.deleteMany({});
     await prisma.product.deleteMany({});
     await prisma.category.deleteMany({});
-    await prisma.merchant.deleteMany({});
+    await prisma.supportMessage.deleteMany({});
+    await prisma.supportChat.deleteMany({});
     await prisma.driver.deleteMany({});
+    await prisma.merchant.deleteMany({});
     await prisma.address.deleteMany({});
     await prisma.pointsTransaction.deleteMany({});
     await prisma.referral.deleteMany({});
-    // Support system must be deleted before users
-    await prisma.supportMessage.deleteMany({});
-    await prisma.supportChat.deleteMany({});
     await prisma.user.deleteMany({});
 
     console.log("✅ Base de datos limpia");

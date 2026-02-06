@@ -54,7 +54,7 @@ export default async function ProductosPage() {
                         href="/comercios/productos/desde-paquetes"
                         className="flex-1 md:flex-none py-4 px-6 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm text-center"
                     >
-                        Ver Rubros Oficiales
+                        Mis Paquetes
                     </Link>
                     <Link
                         href="/comercios/productos/nuevo"
