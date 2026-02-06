@@ -10,6 +10,7 @@ import {
     Phone,
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
+import { Switch } from "./Switch";
 
 async function getSettings() {
     try {
@@ -43,49 +44,6 @@ export default async function ConfigurationPage() {
                 <p className="text-gray-600">Configurá los parámetros de tu tienda</p>
             </div>
 
-            {/* Store Status Card */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    <Store className="w-5 h-5 text-moovy" />
-                    Estado de la Tienda
-                </h2>
-
-                <div className="space-y-4">
-                    {/* Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Tienda Abierta</h3>
-                            <p className="text-sm text-gray-600">
-                                Cuando está cerrada, los clientes verán un mensaje y no podrán hacer pedidos
-                            </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.isOpen}
-                                className="sr-only peer"
-                                name="isOpen"
-                            />
-                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-moovy"></div>
-                        </label>
-                    </div>
-
-                    {/* Closed Message */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Mensaje cuando está cerrada
-                        </label>
-                        <textarea
-                            defaultValue={settings?.closedMessage || ""}
-                            className="input resize-none"
-                            rows={2}
-                            placeholder="Estamos cerrados. ¡Volvemos pronto!"
-                            name="closedMessage"
-                        />
-                    </div>
-                </div>
-            </div>
-
             {/* Maintenance Mode Card */}
             <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-orange-200">
                 <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
@@ -101,15 +59,11 @@ export default async function ConfigurationPage() {
                                 Cuando está activo, la landing mostrará "Volvemos Pronto"
                             </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.isMaintenanceMode}
-                                className="sr-only peer"
-                                name="isMaintenanceMode"
-                            />
-                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-500"></div>
-                        </label>
+                        <Switch
+                            name="isMaintenanceMode"
+                            defaultChecked={settings?.isMaintenanceMode ?? false}
+                            activeColor="bg-orange-500"
+                        />
                     </div>
 
                     {/* Tienda Maintenance Toggle */}
@@ -120,15 +74,11 @@ export default async function ConfigurationPage() {
                                 Cuando está activo, la ruta /tienda mostrará su mensaje de mantenimiento
                             </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.tiendaMaintenance}
-                                className="sr-only peer"
-                                name="tiendaMaintenance"
-                            />
-                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500"></div>
-                        </label>
+                        <Switch
+                            name="tiendaMaintenance"
+                            defaultChecked={settings?.tiendaMaintenance ?? false}
+                            activeColor="bg-red-500"
+                        />
                     </div>
 
                     {/* Maintenance Message */}
@@ -163,15 +113,11 @@ export default async function ConfigurationPage() {
                                 Se mostrará al ingresar a la tienda (una vez por sesión)
                             </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.promoPopupEnabled}
-                                className="sr-only peer"
-                                name="promoPopupEnabled"
-                            />
-                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-500"></div>
-                        </label>
+                        <Switch
+                            name="promoPopupEnabled"
+                            defaultChecked={settings?.promoPopupEnabled ?? false}
+                            activeColor="bg-purple-500"
+                        />
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
@@ -271,15 +217,11 @@ export default async function ConfigurationPage() {
                                 Activa/desactiva la tarjeta de registro de repartidores en la landing
                             </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.showRepartidoresCard ?? true}
-                                className="sr-only peer"
-                                name="showRepartidoresCard"
-                            />
-                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
+                        <Switch
+                            name="showRepartidoresCard"
+                            defaultChecked={settings?.showRepartidoresCard ?? true}
+                            activeColor="bg-blue-500"
+                        />
                     </div>
 
                     {/* Comercios Toggle */}
@@ -290,15 +232,11 @@ export default async function ConfigurationPage() {
                                 Activa/desactiva la tarjeta de registro de comercios en la landing
                             </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.showComerciosCard ?? true}
-                                className="sr-only peer"
-                                name="showComerciosCard"
-                            />
-                            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
+                        <Switch
+                            name="showComerciosCard"
+                            defaultChecked={settings?.showComerciosCard ?? true}
+                            activeColor="bg-blue-500"
+                        />
                     </div>
 
                     {/* Max Categories */}

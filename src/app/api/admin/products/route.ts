@@ -82,6 +82,11 @@ export async function POST(request: Request) {
             .replace(/\s+/g, "-")
             .replace(/[^a-z0-9-]/g, "");
 
+        // Normalize categoryId to categoryIds array
+        const categoryIds = data.categoryIds?.length
+            ? data.categoryIds
+            : (data.categoryId ? [data.categoryId] : []);
+
         const product = await prisma.product.create({
             data: {
                 name: data.name,
@@ -93,14 +98,23 @@ export async function POST(request: Request) {
                 minStock: parseInt(data.minStock || 5),
                 isFeatured: data.isFeatured || false,
                 isActive: data.isActive !== false,
-                categories: data.categoryIds?.length ? {
-                    create: data.categoryIds.map((catId: string) => ({
+                categories: categoryIds.length ? {
+                    create: categoryIds.map((catId: string) => ({
                         category: { connect: { id: catId } }
                     }))
                 } : undefined,
+                // Create ProductImage if imageUrl is provided
+                images: data.imageUrl ? {
+                    create: {
+                        url: data.imageUrl,
+                        alt: data.name,
+                        order: 0
+                    }
+                } : undefined
             },
             include: {
                 categories: { include: { category: true } },
+                images: true
             },
         });
 

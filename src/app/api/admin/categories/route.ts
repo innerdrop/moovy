@@ -10,6 +10,11 @@ export async function GET() {
             orderBy: { order: "asc" },
             include: {
                 _count: { select: { products: true } },
+                children: {
+                    orderBy: { order: "asc" },
+                    include: { _count: { select: { products: true } } }
+                },
+                parent: true
             },
         });
 
@@ -54,6 +59,7 @@ export async function POST(request: Request) {
                 price: parseFloat(data.price || 0),
                 allowIndividualPurchase: data.allowIndividualPurchase !== false,
                 order: newOrder,
+                parentId: data.parentId || null,
             },
         });
 
