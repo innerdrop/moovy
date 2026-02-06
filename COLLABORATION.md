@@ -2,11 +2,17 @@
 
 ## 📋 Flujo de Trabajo
 
-### Sincronizarse con el equipo
+### Sincronizarse con el equipo (Bajar cambios)
 ```powershell
 .\scripts\sync.ps1
 ```
-Esto actualiza código, dependencias, base de datos y arranca el servidor.
+Esto actualiza código, dependencias y la base de datos (datos compartidos).
+
+### Publicar mis cambios (Subir cambios)
+```powershell
+.\scripts\publish.ps1 -Message "descripcion del cambio"
+```
+Esto guarda tu código, exporta tu base de datos actual para el equipo y sube todo a GitHub.
 
 ### Reiniciar base de datos desde cero
 ```powershell
