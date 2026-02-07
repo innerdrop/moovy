@@ -45,7 +45,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         );
     };
 
-    // Smaller square cards for scrollable row
+    // Square cards for scrollable row - same size, just square
     const ScrollableCategoryCard = ({ cat }: { cat: Category }) => {
         const iconKey = cat.icon || cat.slug;
         const icon = getCategoryIcon(iconKey);
@@ -55,11 +55,11 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 href={`/productos?categoria=${cat.slug}`}
                 className="group flex flex-col items-center flex-shrink-0"
             >
-                <div className="w-[72px] h-[72px] bg-white rounded-xl shadow-sm flex flex-col items-center justify-end p-1.5 pb-1 group-hover:shadow-md group-hover:scale-105 transition-all duration-200 border border-gray-100">
+                <div className="w-[100px] h-[100px] bg-white rounded-2xl shadow-md flex flex-col items-center justify-end p-2 pb-2 group-hover:shadow-lg group-hover:scale-105 transition-all duration-200 border border-gray-100">
                     <div className="flex-1 w-full flex items-center justify-center">
                         {icon}
                     </div>
-                    <span className="text-[9px] font-bold text-gray-600 text-center leading-none truncate w-full">
+                    <span className="text-[11px] font-bold text-gray-700 text-center leading-tight truncate w-full">
                         {cat.name}
                     </span>
                 </div>
@@ -67,17 +67,17 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         );
     };
 
-    // "Ver más" card at the end
+    // "Ver más" card at the end - same size as categories
     const VerMasCard = () => (
         <Link
             href="/productos"
             className="group flex flex-col items-center flex-shrink-0"
         >
-            <div className="w-[72px] h-[72px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-sm flex flex-col items-center justify-center gap-1 group-hover:shadow-md group-hover:scale-105 transition-all duration-200 border border-gray-200">
-                <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center">
-                    <ChevronRight className="w-5 h-5 text-[#e60012]" />
+            <div className="w-[100px] h-[100px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-md flex flex-col items-center justify-center gap-2 group-hover:shadow-lg group-hover:scale-105 transition-all duration-200 border border-gray-200">
+                <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center">
+                    <ChevronRight className="w-6 h-6 text-[#e60012]" />
                 </div>
-                <span className="text-[9px] font-bold text-gray-600 text-center leading-none">
+                <span className="text-[11px] font-bold text-gray-600 text-center leading-tight">
                     Ver más
                 </span>
             </div>
