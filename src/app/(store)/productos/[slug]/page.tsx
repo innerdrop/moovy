@@ -44,6 +44,7 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [addedToCart, setAddedToCart] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
     const addItem = useCartStore((state) => state.addItem);
     const openCart = useCartStore((state) => state.openCart);
@@ -168,31 +169,56 @@ export default function ProductDetailPage() {
             </Link>
 
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-                {/* Product Image */}
-                <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden relative">
-                    {product.images.length > 0 ? (
-                        <img
-                            src={product.images[0].url}
-                            alt={product.images[0].alt || product.name}
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-24 h-24 text-gray-300" />
-                        </div>
-                    )}
+                {/* Product Images Gallery */}
+                <div className="space-y-4">
+                    {/* Main Image */}
+                    <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden relative">
+                        {product.images.length > 0 ? (
+                            <img
+                                src={product.images[selectedImageIndex]?.url || product.images[0].url}
+                                alt={product.images[selectedImageIndex]?.alt || product.name}
+                                className="w-full h-full object-cover transition-opacity duration-300"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-24 h-24 text-gray-300" />
+                            </div>
+                        )}
 
-                    {product.isFeatured && (
-                        <span className="absolute top-4 left-4 bg-[#e60012] text-white px-3 py-1 rounded-full text-sm font-medium">
-                            ⭐ Destacado
-                        </span>
-                    )}
-
-                    {!inStock && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="bg-red-500 text-white px-4 py-2 rounded-full font-semibold">
-                                Sin Stock
+                        {product.isFeatured && (
+                            <span className="absolute top-4 left-4 bg-[#e60012] text-white px-3 py-1 rounded-full text-sm font-medium">
+                                ⭐ Destacado
                             </span>
+                        )}
+
+                        {!inStock && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <span className="bg-red-500 text-white px-4 py-2 rounded-full font-semibold">
+                                    Sin Stock
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Thumbnails */}
+                    {product.images.length > 1 && (
+                        <div className="flex gap-3 overflow-x-auto pb-2">
+                            {product.images.map((image, index) => (
+                                <button
+                                    key={image.id}
+                                    onClick={() => setSelectedImageIndex(index)}
+                                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
+                                            ? "border-[#e60012] ring-2 ring-[#e60012]/30"
+                                            : "border-gray-200 hover:border-gray-400"
+                                        }`}
+                                >
+                                    <img
+                                        src={image.url}
+                                        alt={image.alt || `Imagen ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>

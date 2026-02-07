@@ -87,9 +87,17 @@ export default function ProductCard({ product }: ProductCardProps) {
             >
                 {/* Product Image */}
                 <div className="aspect-square bg-gray-100 relative overflow-hidden flex-shrink-0">
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <Package className="w-12 h-12" />
-                    </div>
+                    {product.image ? (
+                        <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            <Package className="w-12 h-12" />
+                        </div>
+                    )}
                     {product.isFeatured && (
                         <span className="absolute top-2 left-2 bg-[#e60012] text-white text-xs px-2 py-1 rounded-full">
                             ⭐ Destacado

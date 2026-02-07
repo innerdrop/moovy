@@ -87,6 +87,7 @@ export async function importCatalogProducts(productIds: string[]) {
         }
 
         let count = 0;
+        let skipped = 0;
         await prisma.$transaction(async (tx) => {
             for (const master of masterProducts) {
                 const newSlug = `${master.slug}-${merchantId.substring(0, 5)}`;
@@ -100,7 +101,10 @@ export async function importCatalogProducts(productIds: string[]) {
                     }
                 });
 
-                if (existing) continue;
+                if (existing) {
+                    skipped++;
+                    continue;
+                }
 
                 await tx.product.create({
                     data: {
@@ -131,6 +135,12 @@ export async function importCatalogProducts(productIds: string[]) {
         });
 
         revalidatePath("/comercios/productos");
+        revalidatePath("/comercios/productos/nuevo");
+
+        if (count === 0 && skipped > 0) {
+            return { error: "Este producto ya existe en tu inventario." };
+        }
+
         return { success: true, count };
     } catch (error) {
         console.error("Error importing products:", error);

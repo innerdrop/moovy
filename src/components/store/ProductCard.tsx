@@ -26,10 +26,17 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
             className="card overflow-hidden group bg-white border border-gray-100 rounded-xl block h-full flex flex-col"
         >
             <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                {/* Image placeholder */}
-                <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
-                    <Store className="w-10 h-10 opacity-20" />
-                </div>
+                {product.image ? (
+                    <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
+                        <Store className="w-10 h-10 opacity-20" />
+                    </div>
+                )}
 
                 {product.isFeatured && (
                     <span className="absolute top-2 left-2 bg-[#e60012] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">

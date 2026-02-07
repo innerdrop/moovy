@@ -14,19 +14,8 @@ interface ProductsPageProps {
 async function getProducts(categoria?: string, buscar?: string): Promise<Product[]> {
     const baseWhere: any = {
         isActive: true,
-        OR: [
-            // Products with direct merchant assignment
-            { merchantId: { not: null } },
-            // Master catalog products that have been acquired by merchants
-            {
-                merchantId: null,
-                acquiredBy: {
-                    some: {
-                        merchant: { isActive: true }
-                    }
-                }
-            }
-        ]
+        // Solo productos que pertenecen a un comercio (no catálogo maestro)
+        merchantId: { not: null }
     };
 
     if (categoria) {
