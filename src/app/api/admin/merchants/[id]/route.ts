@@ -85,7 +85,33 @@ export async function PATCH(
         if (body.facebookUrl !== undefined) updateData.facebookUrl = body.facebookUrl || null;
         if (body.whatsappNumber !== undefined) updateData.whatsappNumber = body.whatsappNumber || null;
         if (body.adminNotes !== undefined) updateData.adminNotes = body.adminNotes || null;
-        if (body.address !== undefined) updateData.address = body.address || null;
+
+        // Address with automatic geocoding
+        if (body.address !== undefined) {
+            updateData.address = body.address || null;
+
+            // Auto-geocode if address is provided and no coordinates given
+            if (body.address && (body.latitude === undefined || body.longitude === undefined)) {
+                try {
+                    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+                    const fullAddress = `${body.address}, Ushuaia, Tierra del Fuego, Argentina`;
+                    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
+
+                    const geoResponse = await fetch(geocodeUrl);
+                    const geoData = await geoResponse.json();
+
+                    if (geoData.status === "OK" && geoData.results.length > 0) {
+                        updateData.latitude = geoData.results[0].geometry.location.lat;
+                        updateData.longitude = geoData.results[0].geometry.location.lng;
+                        console.log(`[Merchant] Auto-geocoded "${body.address}" to ${updateData.latitude}, ${updateData.longitude}`);
+                    }
+                } catch (geoError) {
+                    console.error("[Merchant] Geocoding error:", geoError);
+                }
+            }
+        }
+
+        // Manual coordinates override (if explicitly provided)
         if (body.latitude !== undefined) updateData.latitude = body.latitude !== null ? parseFloat(body.latitude) : null;
         if (body.longitude !== undefined) updateData.longitude = body.longitude !== null ? parseFloat(body.longitude) : null;
 

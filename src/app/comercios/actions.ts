@@ -412,6 +412,29 @@ export async function updateMerchant(formData: FormData) {
 
     const data = validation.data;
 
+    // Auto-geocode if address is provided but no coordinates
+    let finalLatitude = data.latitude ?? null;
+    let finalLongitude = data.longitude ?? null;
+
+    if (data.address && (!finalLatitude || !finalLongitude)) {
+        try {
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+            const fullAddress = `${data.address}, Ushuaia, Tierra del Fuego, Argentina`;
+            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
+
+            const geoResponse = await fetch(geocodeUrl);
+            const geoData = await geoResponse.json();
+
+            if (geoData.status === "OK" && geoData.results.length > 0) {
+                finalLatitude = geoData.results[0].geometry.location.lat;
+                finalLongitude = geoData.results[0].geometry.location.lng;
+                console.log(`[Merchant] Auto-geocoded "${data.address}" to ${finalLatitude}, ${finalLongitude}`);
+            }
+        } catch (geoError) {
+            console.error("[Merchant] Geocoding error:", geoError);
+        }
+    }
+
     try {
         const merchant = await prisma.merchant.findFirst({
             where: { ownerId: session.user.id },
@@ -438,8 +461,8 @@ export async function updateMerchant(formData: FormData) {
                     deliveryTimeMax: data.deliveryTimeMax || 45,
                     deliveryFee: data.deliveryFee || 0,
                     minOrderAmount: data.minOrderAmount || 0,
-                    latitude: data.latitude ?? null,
-                    longitude: data.longitude ?? null,
+                    latitude: finalLatitude,
+                    longitude: finalLongitude,
                 },
             }),
             prisma.user.update({
