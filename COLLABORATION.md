@@ -31,17 +31,11 @@ Esto guarda tu código, exporta tu base de datos actual para el equipo y sube to
 Te permite elegir el tipo (feature/fix/hotfix/refactor) y crea la rama automaticamente.
 
 ### 2. Trabajar normalmente
-Desarrolla, prueba y guarda commits intermedios si quieres:
-```powershell
-git add .
-git commit -m "avance parcial"
-```
-
-### 3. Finalizar y publicar
-```powershell
-.\scripts\finish.ps1 -Message "feat: descripcion del cambio"
-```
-Esto mergea tus cambios a develop y los publica para el equipo.
+### Comandos Básicos (PowerShell)
+- `.\scripts\sync.ps1`: Sincroniza código y base de datos con el equipo.
+- `.\scripts\publish.ps1`: Sube tus cambios de tu rama a `develop`.
+- `.\scripts\devmain.ps1`: Pasa los cambios finales de `develop` a `main` (Producción).
+- `.\scripts\finish.ps1`: Finaliza una tarea, mergea y limpia ramas.
 
 ---
 
