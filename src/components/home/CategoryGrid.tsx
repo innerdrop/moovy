@@ -41,16 +41,15 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                             href={`/productos?categoria=${cat.slug}`}
                             className="group flex flex-col items-center"
                         >
-                            {/* White rounded box - icon fills it */}
-                            <div className="w-full aspect-square bg-white rounded-2xl shadow-sm flex items-center justify-center p-1 group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
-                                <div className="w-full h-full flex items-center justify-center p-1">
+                            {/* White rounded box - icon + text inside */}
+                            <div className="w-full aspect-square bg-white rounded-2xl shadow-sm flex flex-col items-center justify-center p-1.5 group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
+                                <div className="flex-1 w-full flex items-center justify-center">
                                     {icon}
                                 </div>
+                                <span className="text-[10px] font-bold text-gray-700 text-center leading-tight truncate w-full px-1 pb-0.5">
+                                    {cat.name}
+                                </span>
                             </div>
-                            {/* Text OUTSIDE the box */}
-                            <span className="mt-1.5 text-[11px] font-semibold text-gray-700 text-center leading-tight">
-                                {cat.name}
-                            </span>
                         </Link>
                     );
                 })}
