@@ -75,8 +75,8 @@ export async function POST(request: Request) {
                     merchant.longitude < -50 && merchant.longitude > -80;
 
                 if (hasValidCoords) {
-                    originLat = merchant.latitude;
-                    originLng = merchant.longitude;
+                    originLat = merchant.latitude as number;
+                    originLng = merchant.longitude as number;
                     originAddress = merchant.address || merchant.name;
                     console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name} (${originLat}, ${originLng})`);
                 } else if (merchant.address) {
