@@ -33,7 +33,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Configuración del VPS (Hostinger)
-$VPS_HOST = "srv834796"
+$VPS_HOST = "31.97.14.156"
 $VPS_USER = "root"
 $VPS_PATH = "/var/www/moovy"
 
