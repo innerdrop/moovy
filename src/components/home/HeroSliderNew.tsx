@@ -145,7 +145,7 @@ export default function HeroSliderNew() {
     const slide = slides[current];
 
     return (
-        <div className="w-full pt-3 pb-2">
+        <div className="w-full pt-2 pb-1">
             <div
                 className={`relative mx-3 bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}
                 onTouchStart={onTouchStart}

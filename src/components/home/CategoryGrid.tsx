@@ -23,7 +23,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const displayCategories = categories.slice(0, 8);
 
     return (
-        <section className="py-4 px-3">
+        <section className="py-2 px-3">
             {/* Header */}
             <h2 className="text-xl font-bold text-gray-900 mb-4">
                 Explora Categorías
