@@ -64,14 +64,24 @@ export async function POST(request: Request) {
             });
 
             if (merchant) {
-                if (merchant.latitude && merchant.longitude) {
+                // Check if merchant has VALID coordinates (not null, not 0,0 which is middle of ocean)
+                const hasValidCoords =
+                    merchant.latitude !== null &&
+                    merchant.longitude !== null &&
+                    merchant.latitude !== 0 &&
+                    merchant.longitude !== 0 &&
+                    // Must be in Argentina region roughly
+                    merchant.latitude < -20 && merchant.latitude > -60 &&
+                    merchant.longitude < -50 && merchant.longitude > -80;
+
+                if (hasValidCoords) {
                     originLat = merchant.latitude;
                     originLng = merchant.longitude;
                     originAddress = merchant.address || merchant.name;
-                    console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name}`);
+                    console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name} (${originLat}, ${originLng})`);
                 } else if (merchant.address) {
-                    // Try to geocode merchant address if coords are missing
-                    console.log(`[DeliveryCalc] Merchant lacks coordinates, geocoding address: ${merchant.address}`);
+                    // Try to geocode merchant address if coords are missing or invalid
+                    console.log(`[DeliveryCalc] Merchant lacks valid coordinates, geocoding address: ${merchant.address}`);
                     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
                     const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(merchant.address + ", Ushuaia, Argentina")}&key=${apiKey}`;
 
