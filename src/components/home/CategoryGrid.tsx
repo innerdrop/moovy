@@ -24,7 +24,6 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const scrollableCategories = categories.slice(3);
 
     const CategoryItem = ({ cat, className = "" }: { cat: Category, className?: string }) => {
-        // Fallback or icon from DB
         const iconKey = cat.icon || cat.slug;
         const icon = getCategoryIcon(iconKey);
 
@@ -46,7 +45,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     };
 
     return (
-        <section className="py-4 space-y-4">
+        <section className="py-4 space-y-4 overflow-hidden">
             <div className="px-5 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">
                     Explora Categorías
@@ -62,16 +61,16 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
 
             {/* Top Row: Fixed 3 Categories */}
             <div className="px-5 grid grid-cols-3 gap-3">
-                {fixedCategories.map((cat, index) => (
+                {fixedCategories.map((cat) => (
                     <CategoryItem key={`fixed-${cat.id}`} cat={cat} className="w-full" />
                 ))}
             </div>
 
-            {/* Bottom Row: Manual Scrollable Carousel (if any remain) */}
+            {/* Bottom Row: Manual Scrollable Carousel */}
             {scrollableCategories.length > 0 && (
-                <div className="overflow-x-auto whitespace-nowrap scrollbar-hide px-5 -mr-5 pb-2" style={{ scrollbarWidth: 'none' }}>
-                    <div className="flex gap-3 w-max pr-5">
-                        {scrollableCategories.map((cat, index) => (
+                <div className="overflow-x-auto scrollbar-hide px-5 pb-2" style={{ scrollbarWidth: 'none' }}>
+                    <div className="flex gap-3 w-max">
+                        {scrollableCategories.map((cat) => (
                             <CategoryItem key={`scroll-${cat.id}`} cat={cat} className="w-[85px] flex-shrink-0" />
                         ))}
                     </div>

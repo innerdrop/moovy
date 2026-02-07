@@ -16,7 +16,6 @@ interface FavoritesCarouselProps {
     merchants: Merchant[];
 }
 
-// Placeholder food images for demo
 const placeholderImages = [
     "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=200&fit=crop",
     "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=200&fit=crop",
@@ -29,7 +28,7 @@ export default function FavoritesCarousel({ merchants }: FavoritesCarouselProps)
     if (!merchants || merchants.length === 0) return null;
 
     return (
-        <section className="py-5">
+        <section className="py-5 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 mb-4">
                 <h2 className="text-lg font-bold text-gray-900">
@@ -45,7 +44,7 @@ export default function FavoritesCarousel({ merchants }: FavoritesCarouselProps)
 
             {/* Carousel */}
             <div className="overflow-x-auto scrollbar-hide px-4" style={{ scrollbarWidth: 'none' }}>
-                <div className="flex gap-3 pb-2">
+                <div className="flex gap-3 pb-2 w-max">
                     {merchants.slice(0, 8).map((merchant, index) => (
                         <Link
                             key={merchant.id}

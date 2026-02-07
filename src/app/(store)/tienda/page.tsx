@@ -83,7 +83,7 @@ async function LiveStoreView() {
     const merchants = await getFeaturedMerchants();
 
     return (
-        <div className="animate-fadeIn bg-white min-h-screen pb-24">
+        <div className="animate-fadeIn bg-white min-h-screen pb-24 overflow-x-hidden">
             {/* Hero Slider */}
             <HeroSliderNew />
 
