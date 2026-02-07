@@ -25,12 +25,12 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     return (
         <section className="py-5 px-4">
             {/* Header */}
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-5">
                 Explora Categorías
             </h2>
 
             {/* Grid 4x2 */}
-            <div className="grid grid-cols-4 gap-x-3 gap-y-4 mb-4">
+            <div className="grid grid-cols-4 gap-3 mb-5">
                 {displayCategories.map((cat) => {
                     const iconKey = cat.icon || cat.slug;
                     const icon = getCategoryIcon(iconKey);
@@ -41,14 +41,14 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                             href={`/productos?categoria=${cat.slug}`}
                             className="group flex flex-col items-center"
                         >
-                            {/* Circular icon container */}
-                            <div className="w-[70px] h-[70px] bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center group-hover:shadow-md group-hover:scale-105 transition-all duration-200 border border-gray-100">
-                                <div className="w-10 h-10 flex items-center justify-center">
+                            {/* White rounded box - icon fills it */}
+                            <div className="w-full aspect-square bg-white rounded-2xl shadow-sm flex items-center justify-center p-1 group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
+                                <div className="w-full h-full flex items-center justify-center p-1">
                                     {icon}
                                 </div>
                             </div>
-                            {/* Category name */}
-                            <span className="mt-2 text-[11px] font-semibold text-gray-700 text-center leading-tight group-hover:text-[#e60012] transition-colors">
+                            {/* Text OUTSIDE the box */}
+                            <span className="mt-1.5 text-[11px] font-semibold text-gray-700 text-center leading-tight">
                                 {cat.name}
                             </span>
                         </Link>
@@ -56,8 +56,8 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 })}
             </div>
 
-            {/* Footer with "Ver todas" */}
-            <div className="flex items-center justify-end">
+            {/* Footer */}
+            <div className="flex justify-end">
                 <Link
                     href="/productos"
                     className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-[#e60012] transition-colors border border-gray-200 rounded-full px-4 py-1.5"

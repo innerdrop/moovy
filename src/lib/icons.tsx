@@ -50,9 +50,9 @@ export function getCategoryIcon(iconName: string | null | undefined): React.Reac
             <Image
                 src={CATEGORY_ICON_PATHS[iconName]}
                 alt={iconName}
-                width={40}
-                height={40}
-                className="object-contain"
+                width={200}
+                height={200}
+                className="w-full h-full object-contain"
             />
         );
     }
