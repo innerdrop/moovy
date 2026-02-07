@@ -76,11 +76,13 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
 
             {/* Row 2: Scrollable categories */}
             {scrollableCategories.length > 0 && (
-                <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ scrollbarWidth: 'none' }}>
-                    <div className="flex gap-3 w-max">
-                        {scrollableCategories.map((cat) => (
-                            <ScrollableCategoryCard key={cat.id} cat={cat} />
-                        ))}
+                <div className="overflow-hidden -mx-3">
+                    <div className="overflow-x-auto scrollbar-hide px-3 py-1" style={{ scrollbarWidth: 'none' }}>
+                        <div className="flex gap-2 w-max pr-3">
+                            {scrollableCategories.map((cat) => (
+                                <ScrollableCategoryCard key={cat.id} cat={cat} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
