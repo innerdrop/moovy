@@ -64,7 +64,9 @@ $remoteCommand = "cd $VPS_PATH && " +
                  "npm install && " +
                  "npx prisma generate && " +
                  "npx prisma db push && " +
-                 "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump.sql && " +
+                 "iconv -f UTF-16LE -t UTF-8 database_dump.sql -o database_dump_utf8.sql 2>/dev/null || cp database_dump.sql database_dump_utf8.sql && " +
+                 "sed -i 's/\r$//' database_dump_utf8.sql && " +
+                 "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump_utf8.sql && " +
                  "npm run build && " +
                  "pm2 restart moovy"
 
