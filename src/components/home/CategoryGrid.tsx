@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -14,7 +15,7 @@ interface CategoryGridProps {
 }
 
 // SVG Icons for categories
-const categoryIcons: Record<string, JSX.Element> = {
+const categoryIcons: Record<string, React.ReactNode> = {
     vinos: (
         <svg viewBox="0 0 40 40" className="w-8 h-8">
             <path d="M20 5 L25 18 Q25 25 20 28 Q15 25 15 18 L20 5" fill="#8B0000" />
@@ -115,54 +116,47 @@ const defaultIcon = (
 );
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {
-    // Duplicate to fill 2 rows if needed
-    const displayCategories = categories.length < 8
-        ? [...categories, ...categories].slice(0, 10)
-        : categories.slice(0, 10);
+    // Fill to 10 if we have enough
+    const displayCategories = categories.length > 0 ? categories.slice(0, 10) : [];
 
     return (
-        <section className="py-5">
-            <div className="px-4">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">
-                    Explorá Categorías
+        <section className="py-6">
+            <div className="px-5 mb-5 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                    Explora Categorías
                 </h2>
+                <Link
+                    href="/productos"
+                    className="text-sm font-bold text-gray-400 flex items-center gap-0.5 hover:text-[#e60012] transition-colors"
+                >
+                    Ver todas
+                    <ChevronRight className="w-4 h-4" />
+                </Link>
             </div>
 
-            {/* Scrollable Grid */}
-            <div className="overflow-x-auto scrollbar-hide px-4" style={{ scrollbarWidth: 'none' }}>
-                <div className="grid grid-rows-2 grid-flow-col gap-3 pb-2" style={{ width: 'max-content' }}>
+            {/* Scrollable Container */}
+            <div className="overflow-x-auto scrollbar-hide px-5" style={{ scrollbarWidth: 'none' }}>
+                <div className="grid grid-rows-2 grid-flow-col gap-x-4 gap-y-6 pb-2" style={{ width: 'max-content' }}>
                     {displayCategories.map((cat, index) => {
                         const icon = categoryIcons[cat.slug] || defaultIcon;
                         return (
                             <Link
                                 key={`${cat.id}-${index}`}
                                 href={`/productos?categoria=${cat.slug}`}
-                                className="flex flex-col items-center gap-2 w-20 group"
+                                className="flex flex-col items-center gap-3 w-[85px] group"
                             >
-                                <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center group-hover:shadow-lg group-hover:scale-105 transition-all border border-gray-100">
-                                    {icon}
+                                <div className="w-[85px] h-[85px] bg-white rounded-[24px] shadow-[0_8px_20px_-6px_rgba(0,0,0,0.12)] flex items-center justify-center group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 border border-gray-50/50">
+                                    <div className="scale-110">
+                                        {icon}
+                                    </div>
                                 </div>
-                                <span className="text-xs font-medium text-gray-700 text-center truncate w-full group-hover:text-[#e60012] transition-colors">
+                                <span className="text-[13px] font-bold text-gray-600 text-center truncate w-full group-hover:text-[#e60012] transition-colors">
                                     {cat.name}
                                 </span>
                             </Link>
                         );
                     })}
                 </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between px-4 mt-3">
-                <button className="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-                    Tse ude fnsa
-                </button>
-                <Link
-                    href="/productos"
-                    className="text-sm font-semibold text-gray-700 flex items-center gap-1 hover:text-[#e60012] transition-colors"
-                >
-                    Ver todas
-                    <ChevronRight className="w-4 h-4" />
-                </Link>
             </div>
         </section>
     );
