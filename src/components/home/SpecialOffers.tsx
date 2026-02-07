@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 
 export default function SpecialOffers() {
     return (
-        <section className="py-5 px-4">
+        <section className="py-4 px-2">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900">

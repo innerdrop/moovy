@@ -120,39 +120,39 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const displayCategories = categories.length > 0 ? categories.slice(0, 10) : [];
 
     return (
-        <section className="py-6">
-            <div className="px-5 mb-5 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+        <section className="py-4">
+            <div className="px-5 mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">
                     Explora Categorías
                 </h2>
                 <Link
                     href="/productos"
-                    className="text-sm font-bold text-gray-400 flex items-center gap-0.5 hover:text-[#e60012] transition-colors"
+                    className="text-xs font-bold text-gray-400 flex items-center gap-0.5 hover:text-[#e60012] transition-colors"
                 >
                     Ver todas
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
             </div>
 
             {/* Scrollable Container */}
             <div className="overflow-x-auto scrollbar-hide px-5" style={{ scrollbarWidth: 'none' }}>
-                <div className="grid grid-rows-2 grid-flow-col gap-x-4 gap-y-6 pb-2" style={{ width: 'max-content' }}>
+                <div className="grid grid-rows-2 grid-flow-col gap-x-2.5 gap-y-3 pb-2" style={{ width: 'max-content' }}>
                     {displayCategories.map((cat, index) => {
                         const icon = categoryIcons[cat.slug] || defaultIcon;
                         return (
                             <Link
                                 key={`${cat.id}-${index}`}
                                 href={`/productos?categoria=${cat.slug}`}
-                                className="flex flex-col items-center gap-3 w-[85px] group"
+                                className="group"
                             >
-                                <div className="w-[85px] h-[85px] bg-white rounded-[24px] shadow-[0_8px_20px_-6px_rgba(0,0,0,0.12)] flex items-center justify-center group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 border border-gray-50/50">
-                                    <div className="scale-110">
+                                <div className="w-[82px] h-[82px] bg-white rounded-2xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] flex flex-col items-center justify-center gap-1 group-hover:shadow-md group-hover:scale-105 transition-all duration-300 border border-gray-100">
+                                    <div className="scale-90 h-10 flex items-center justify-center">
                                         {icon}
                                     </div>
+                                    <span className="text-[11px] font-bold text-gray-600 text-center truncate px-1 w-full group-hover:text-[#e60012] transition-colors">
+                                        {cat.name}
+                                    </span>
                                 </div>
-                                <span className="text-[13px] font-bold text-gray-600 text-center truncate w-full group-hover:text-[#e60012] transition-colors">
-                                    {cat.name}
-                                </span>
                             </Link>
                         );
                     })}

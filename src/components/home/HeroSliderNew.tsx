@@ -109,7 +109,7 @@ export default function HeroSliderNew() {
 
     return (
         <div className="px-2 pt-4">
-            <div className={`relative bg-gradient-to-r ${slide.gradient} rounded-[32px] overflow-hidden shadow-lg transition-all duration-500`}>
+            <div className={`relative bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}>
                 <div className="flex items-center min-h-[180px]">
                     {/* Text Content */}
                     <div className="flex-1 p-6 z-10">
