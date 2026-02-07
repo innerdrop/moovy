@@ -58,14 +58,6 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             showRepartidoresCard: formData.get("showRepartidoresCard") === "on",
             showComerciosCard: formData.get("showComerciosCard") === "on",
             maxCategoriesHome: formData.get("maxCategoriesHome"),
-
-            // Category Grid Configuration
-            categoryGridColumns: parseInt(formData.get("categoryGridColumns") as string) || 4,
-            categoryGridRows: parseInt(formData.get("categoryGridRows") as string) || 2,
-            categoryCardSize: formData.get("categoryCardSize") || "medium",
-            categoryScrollable: formData.get("categoryScrollable") === "on",
-            categoryAutoScroll: formData.get("categoryAutoScroll") === "on",
-            categoryAutoScrollSpeed: parseInt(formData.get("categoryAutoScrollSpeed") as string) || 3000,
         };
 
         try {
