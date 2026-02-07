@@ -535,7 +535,7 @@ export default function RepartidorDashboard() {
                                                 customerLng={pedido.customerLng}
                                                 customerAddress={pedido.direccionCliente || "Cliente"}
                                                 customerName={pedido.nombreCliente || pedido.clienteNombre || "Cliente"}
-                                                height="250px"
+                                                height="70vh"
                                                 navigationMode={true}
                                             />
                                         </div>

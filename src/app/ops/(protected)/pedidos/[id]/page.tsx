@@ -195,7 +195,7 @@ export default function AdminOrderDetailPage() {
                             Pedido #{order.orderNumber}
                         </h1>
                         <p className="text-gray-500">
-                            {createdAt.toLocaleDateString("es-AR")} - {createdAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                            {createdAt.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })} - {createdAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}
                         </p>
                     </div>
                 </div>

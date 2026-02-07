@@ -65,6 +65,8 @@ function RiderMiniMapComponent({
     const mapRef = useRef<google.maps.Map | null>(null);
     const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
     const [remainingPath, setRemainingPath] = useState<google.maps.LatLngLiteral[]>([]);
+    const [userInteracted, setUserInteracted] = useState(false);
+    const recenterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [showCustomerInfo, setShowCustomerInfo] = useState(false);
 
     const { isLoaded } = useJsApiLoader({
@@ -142,12 +144,51 @@ function RiderMiniMapComponent({
         setRemainingPath(routePath.slice(closestIndex));
     }, [navigationMode, driverLat, driverLng, routePath]);
 
-    // Auto-center on driver in navigation mode
+    // Auto-center on driver in navigation mode (respects user interaction)
     useEffect(() => {
         if (!navigationMode || !mapRef.current || !driverLat || !driverLng) return;
 
-        mapRef.current.panTo({ lat: driverLat, lng: driverLng });
-    }, [navigationMode, driverLat, driverLng]);
+        // Only auto-center if user hasn't interacted recently
+        if (!userInteracted) {
+            mapRef.current.panTo({ lat: driverLat, lng: driverLng });
+        }
+    }, [navigationMode, driverLat, driverLng, userInteracted]);
+
+    // Handle user interaction - pause auto-centering for 10 seconds
+    const handleUserInteraction = useCallback(() => {
+        setUserInteracted(true);
+
+        // Clear existing timeout
+        if (recenterTimeoutRef.current) {
+            clearTimeout(recenterTimeoutRef.current);
+        }
+
+        // Resume auto-centering after 10 seconds of no interaction
+        recenterTimeoutRef.current = setTimeout(() => {
+            setUserInteracted(false);
+        }, 10000);
+    }, []);
+
+    // Re-center button handler
+    const handleRecenter = useCallback(() => {
+        if (mapRef.current && driverLat && driverLng) {
+            mapRef.current.panTo({ lat: driverLat, lng: driverLng });
+            mapRef.current.setZoom(17);
+            setUserInteracted(false);
+            if (recenterTimeoutRef.current) {
+                clearTimeout(recenterTimeoutRef.current);
+            }
+        }
+    }, [driverLat, driverLng]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (recenterTimeoutRef.current) {
+                clearTimeout(recenterTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
@@ -204,16 +245,32 @@ function RiderMiniMapComponent({
                 </div>
             )}
 
+            {/* Re-center button when user has interacted */}
+            {navigationMode && userInteracted && (
+                <button
+                    onClick={handleRecenter}
+                    className="absolute bottom-4 right-4 z-10 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 transition-all"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                    </svg>
+                    Centrar
+                </button>
+            )}
+
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={center}
                 zoom={navigationMode ? 17 : 14}
                 onLoad={onMapLoad}
+                onDragStart={handleUserInteraction}
+                onZoomChanged={handleUserInteraction}
                 options={{
-                    disableDefaultUI: navigationMode,
-                    zoomControl: !navigationMode,
-                    scrollwheel: !navigationMode,
-                    gestureHandling: navigationMode ? "none" : "cooperative",
+                    disableDefaultUI: false,
+                    zoomControl: true,
+                    scrollwheel: true,
+                    gestureHandling: "greedy",
                     styles: navigationMode ? navigationMapStyles : normalMapStyles,
                 }}
             >

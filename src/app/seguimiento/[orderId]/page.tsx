@@ -153,6 +153,13 @@ export default function TrackingPage() {
 
         socket.on("pedido_entregado", () => setDelivered(true));
 
+        // Listen for status updates (e.g., picked up)
+        socket.on("order_status_update", (data: { orderId: string; status: string }) => {
+            if (data.orderId === orderId) {
+                setOrder(prev => prev ? { ...prev, status: data.status } : prev);
+            }
+        });
+
         return () => {
             socket.disconnect();
         };

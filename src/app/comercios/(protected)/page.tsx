@@ -183,7 +183,7 @@ export default async function ComerciosDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm text-gray-900">{order.user?.name || "Cliente"}</p>
-                                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}hs</p>
+                                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })}hs</p>
                                         </div>
                                     </div>
                                     <div className="text-right">

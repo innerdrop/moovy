@@ -25,6 +25,7 @@ export async function GET(
                 address: true,
                 user: { select: { id: true, name: true, email: true, phone: true } },
                 driver: { select: { id: true, user: { select: { name: true, phone: true } } } },
+                merchant: { select: { name: true, latitude: true, longitude: true, address: true } },
             },
         });
 
@@ -145,6 +146,24 @@ export async function PATCH(
         });
 
         // --- REAL-TIME NOTIFICATIONS ---
+        // Notify when order is picked up (En Camino)
+        if (data.status === "PICKED_UP") {
+            try {
+                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event: "order_status_update",
+                        room: `order:${id}`,
+                        data: { orderId: id, status: "PICKED_UP", message: "¡Tu pedido está en camino!" }
+                    })
+                });
+            } catch (e) {
+                console.error("[Socket-Emit] Failed to notify picked up:", e);
+            }
+        }
+
         if (data.status === "DELIVERED") {
             try {
                 // Notify socket server to show rating popup to customer

@@ -259,7 +259,11 @@ export default function ComercioPedidosPage() {
                                         <div className="text-right">
                                             <p className="text-lg font-bold text-blue-600">{formatPrice(order.total)}</p>
                                             <p className="text-xs text-gray-400">
-                                                {new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                                                {new Date(order.createdAt).toLocaleTimeString("es-AR", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                    timeZone: "America/Argentina/Buenos_Aires"
+                                                })}
                                             </p>
                                         </div>
                                     </div>
@@ -361,8 +365,8 @@ export default function ComercioPedidosPage() {
                                 <label
                                     key={reason}
                                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedReason === reason
-                                            ? "border-red-500 bg-red-50"
-                                            : "border-gray-200 hover:border-gray-300"
+                                        ? "border-red-500 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
                                         }`}
                                 >
                                     <input
@@ -378,8 +382,8 @@ export default function ComercioPedidosPage() {
                             ))}
                             <label
                                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedReason === "Otro motivo"
-                                        ? "border-red-500 bg-red-50"
-                                        : "border-gray-200 hover:border-gray-300"
+                                    ? "border-red-500 bg-red-50"
+                                    : "border-gray-200 hover:border-gray-300"
                                     }`}
                             >
                                 <input
