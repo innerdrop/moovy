@@ -32,13 +32,40 @@ if ($LASTEXITCODE -ne 0) {
     exit
 }
 
+# Configuración del VPS (Hostinger)
+$VPS_HOST = "srv834796"
+$VPS_USER = "root"
+$VPS_PATH = "/var/www/moovy"
+
 # 4. Subir cambios a GitHub
 Write-Host "[GIT] Subiendo main a GitHub..." -ForegroundColor Yellow
 git push origin main
 
-# 5. Volver a develop
-Write-Host "[GIT] Volviendo a develop..." -ForegroundColor Yellow
+# 5. AUTO-DEPLOY A VPS (Hostinger)
+Write-Host "`n[VPS] Iniciando despliegue remoto en Hostinger..." -ForegroundColor Cyan
+Write-Host "----------------------------------------------" -ForegroundColor Cyan
+
+# Comando que se ejecutará en el servidor
+$remoteCommand = "cd $VPS_PATH && " +
+                 "git fetch origin main && " +
+                 "git reset --hard origin/main && " +
+                 "npm install && " +
+                 "npx prisma generate && " +
+                 "npx prisma db push && " +
+                 "npm run build && " +
+                 "pm2 restart moovy"
+
+ssh "$VPS_USER@$VPS_HOST" "$remoteCommand"
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "`n[OK] DESPLIEGUE EN VPS EXITOSO" -ForegroundColor Green
+} else {
+    Write-Host "`n[ERROR] El despliegue en el VPS falló. Revisá la conexión SSH o los logs del servidor." -ForegroundColor Red
+}
+
+# 6. Volver a develop
+Write-Host "`n[GIT] Volviendo a develop..." -ForegroundColor Yellow
 git checkout develop
 
-Write-Host "`n[OK] MAIN ACTUALIZADO EXITOSAMENTE" -ForegroundColor Green
-Write-Host "Cierre el servidor y vuelva a ejecutar npm run dev si es necesario." -ForegroundColor Gray
+Write-Host "`n[FINALIZADO] Código en GitHub y VPS actualizado." -ForegroundColor Green
+Write-Host "Podés ver tu app en producción ahora." -ForegroundColor Gray
