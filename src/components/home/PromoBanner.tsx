@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 
 export default function PromoBanner() {
     return (
-        <section className="px-2 py-4">
+        <section className="px-2 py-2">
             <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl overflow-hidden shadow-xl">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-20">
