@@ -1,8 +1,16 @@
-# Script para pasar cambios de develop a main (Auto-Mode)
+# Script para pasar cambios de develop a main (Auto-Mode) + Deploy a VPS + Sync DB
 # Uso: .\scripts\devmain.ps1
 
-Write-Host "`n[DEPLOY] PASANDO CAMBIOS A MAIN" -ForegroundColor Cyan
-Write-Host "==============================" -ForegroundColor Cyan
+Write-Host "`n[DEPLOY] PASANDO CAMBIOS A MAIN + VPS" -ForegroundColor Cyan
+Write-Host "======================================" -ForegroundColor Cyan
+
+# Configuración del VPS (Hostinger)
+$VPS_HOST = "31.97.14.156"
+$VPS_USER = "root"
+$VPS_PATH = "/var/www/moovy"
+$VPS_DB_PORT = "5436"
+$VPS_DB_USER = "postgres"
+$VPS_DB_NAME = "moovy_db"
 
 # 0. Verificar si hay cambios sin guardar
 $status = git status --porcelain
@@ -12,19 +20,22 @@ if ($status) {
     git commit -m "sync: cambios automáticos antes de deploy"
 }
 
-# 1. Asegurar que estamos en develop y actualizados
+# 1. Exportar base de datos local
+Write-Host "[DB] Exportando base de datos local..." -ForegroundColor Yellow
+docker exec moovy-postgres pg_dump -U postgres moovy_db > database_dump.sql
+
+# 2. Asegurar que estamos en develop y actualizados
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
 git checkout develop
 git pull origin develop --no-edit
 
-# 2. Ir a main y traer cambios remotos
+# 3. Ir a main y traer cambios remotos
 Write-Host "[GIT] Actualizando main..." -ForegroundColor Yellow
 git checkout main
 git pull origin main --no-edit
 
-# 3. Mergear develop en main
+# 4. Mergear develop en main
 Write-Host "[GIT] Mergenado develop -> main (No-Edit)..." -ForegroundColor Yellow
-# Usamos --no-edit para que no abra el editor Vim
 git merge develop --no-edit -m "deploy: actualización desde develop ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))"
 
 if ($LASTEXITCODE -ne 0) {
@@ -32,40 +43,42 @@ if ($LASTEXITCODE -ne 0) {
     exit
 }
 
-# Configuración del VPS (Hostinger)
-$VPS_HOST = "31.97.14.156"
-$VPS_USER = "root"
-$VPS_PATH = "/var/www/moovy"
-
-# 4. Subir cambios a GitHub
+# 5. Subir cambios a GitHub
 Write-Host "[GIT] Subiendo main a GitHub..." -ForegroundColor Yellow
 git push origin main
 
-# 5. AUTO-DEPLOY A VPS (Hostinger)
+# 6. AUTO-DEPLOY A VPS (Hostinger)
 Write-Host "`n[VPS] Iniciando despliegue remoto en Hostinger..." -ForegroundColor Cyan
 Write-Host "----------------------------------------------" -ForegroundColor Cyan
 
-# Comando que se ejecutará en el servidor
+# 6a. Subir el dump de la base de datos al servidor
+Write-Host "[DB] Subiendo base de datos al servidor..." -ForegroundColor Yellow
+scp database_dump.sql "$VPS_USER@${VPS_HOST}:$VPS_PATH/"
+
+# 6b. Ejecutar comandos en el servidor
+Write-Host "[VPS] Actualizando código y base de datos..." -ForegroundColor Yellow
+
 $remoteCommand = "cd $VPS_PATH && " +
                  "git fetch origin main && " +
                  "git reset --hard origin/main && " +
                  "npm install && " +
                  "npx prisma generate && " +
                  "npx prisma db push && " +
+                 "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump.sql && " +
                  "npm run build && " +
                  "pm2 restart moovy"
 
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand"
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "`n[OK] DESPLIEGUE EN VPS EXITOSO" -ForegroundColor Green
+    Write-Host "`n[OK] DESPLIEGUE COMPLETO (Código + Base de Datos)" -ForegroundColor Green
 } else {
     Write-Host "`n[ERROR] El despliegue en el VPS falló. Revisá la conexión SSH o los logs del servidor." -ForegroundColor Red
 }
 
-# 6. Volver a develop
+# 7. Volver a develop
 Write-Host "`n[GIT] Volviendo a develop..." -ForegroundColor Yellow
 git checkout develop
 
-Write-Host "`n[FINALIZADO] Código en GitHub y VPS actualizado." -ForegroundColor Green
-Write-Host "Podés ver tu app en producción ahora." -ForegroundColor Gray
+Write-Host "`n[FINALIZADO] Código y datos sincronizados con producción." -ForegroundColor Green
+Write-Host "Tu app está actualizada en: https://moovy.com.ar (o tu dominio)" -ForegroundColor Gray
