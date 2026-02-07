@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Store, Plus, Check, ShoppingCart, AlertCircle } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
