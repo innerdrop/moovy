@@ -5,10 +5,10 @@ import { ChevronRight } from "lucide-react";
 
 export default function SpecialOffers() {
     return (
-        <section className="py-2 px-2">
+        <section className="py-3 px-3">
             {/* Header */}
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-gray-900">
+            <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-gray-900">
                     Ofertas Especiales
                 </h2>
                 <Link

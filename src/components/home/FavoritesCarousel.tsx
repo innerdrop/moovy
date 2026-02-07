@@ -28,10 +28,10 @@ export default function FavoritesCarousel({ merchants }: FavoritesCarouselProps)
     if (!merchants || merchants.length === 0) return null;
 
     return (
-        <section className="py-2 overflow-hidden">
+        <section className="py-3 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 mb-2">
-                <h2 className="text-lg font-bold text-gray-900">
+            <div className="flex items-center justify-between px-4 mb-3">
+                <h2 className="text-xl font-bold text-gray-900">
                     Favoritos de la Semana
                 </h2>
                 <Link
@@ -49,7 +49,7 @@ export default function FavoritesCarousel({ merchants }: FavoritesCarouselProps)
                         <Link
                             key={merchant.id}
                             href={`/store/${merchant.slug}`}
-                            className="flex-shrink-0 w-36 group"
+                            className="flex-shrink-0 w-40 group"
                         >
                             <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all border border-gray-100">
                                 {/* Image */}

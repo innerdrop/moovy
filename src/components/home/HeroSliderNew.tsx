@@ -145,20 +145,20 @@ export default function HeroSliderNew() {
     const slide = slides[current];
 
     return (
-        <div className="w-full pt-2 pb-1">
+        <div className="w-full pt-3 pb-2">
             <div
-                className={`relative mx-2 bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}
+                className={`relative mx-3 bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
             >
-                <div className="flex items-center min-h-[180px]">
+                <div className="flex items-center min-h-[200px]">
                     {/* Text Content */}
                     <div className="flex-1 p-6 z-10">
-                        <h2 className="text-white text-xl font-bold mb-1 leading-tight">
+                        <h2 className="text-white text-2xl font-bold mb-2 leading-tight">
                             {slide.title}
                         </h2>
-                        <p className="text-white/80 text-xs mb-4">
+                        <p className="text-white/80 text-sm mb-4">
                             {slide.subtitle}
                         </p>
                         <Link

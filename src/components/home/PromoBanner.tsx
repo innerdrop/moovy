@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 
 export default function PromoBanner() {
     return (
-        <section className="px-2 py-2">
+        <section className="px-3 py-3">
             <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl overflow-hidden shadow-xl">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-20">
@@ -13,17 +13,17 @@ export default function PromoBanner() {
                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-red-500 rounded-full blur-3xl -ml-16 -mb-16" />
                 </div>
 
-                <div className="flex items-center p-5 relative z-10">
+                <div className="flex items-center p-6 relative z-10">
                     {/* Text Content */}
                     <div className="flex-1">
-                        <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mb-2">
+                        <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1 mb-2">
                             Publicidad
                             <ChevronRight className="w-3 h-3" />
                         </span>
-                        <h3 className="text-xl font-bold text-white leading-tight mb-1">
+                        <h3 className="text-2xl font-bold text-white leading-tight mb-2">
                             Noches de<br />Pizza & Pelis
                         </h3>
-                        <p className="text-xs text-gray-400 mb-4">
+                        <p className="text-sm text-gray-400 mb-4">
                             2x1 en locales seleccionados de 20hs a 23hs.
                         </p>
                         <Link
