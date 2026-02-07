@@ -11,7 +11,14 @@ const productSchema = z.object({
     description: z.string().optional(),
     price: z.coerce.number().min(0, "El precio no puede ser negativo"),
     stock: z.coerce.number().int().min(0, "El stock no puede ser negativo"),
-    imageUrl: z.string().min(1, "Debes subir al menos una imagen"),
+    imageUrls: z.string().transform((val) => {
+        try {
+            const parsed = JSON.parse(val);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }).refine((arr) => arr.length > 0, "Debes subir al menos una imagen"),
     categoryId: z.string().optional(),
 });
 
@@ -209,7 +216,7 @@ export async function updateProduct(productId: string, formData: FormData) {
         description: formData.get("description"),
         price: formData.get("price"),
         stock: formData.get("stock"),
-        imageUrl: formData.get("imageUrl"),
+        imageUrls: formData.get("imageUrls"),
         categoryId: formData.get("categoryId"),
     };
 
@@ -239,24 +246,19 @@ export async function updateProduct(productId: string, formData: FormData) {
             },
         });
 
-        // Update image if changed
-        const existingImage = await prisma.productImage.findFirst({
+        // Sync images: delete all existing and create new ones
+        await prisma.productImage.deleteMany({
             where: { productId: productId },
         });
 
-        if (existingImage) {
-            await prisma.productImage.update({
-                where: { id: existingImage.id },
-                data: { url: data.imageUrl, alt: data.name },
-            });
-        } else {
-            await prisma.productImage.create({
-                data: {
+        if (data.imageUrls.length > 0) {
+            await prisma.productImage.createMany({
+                data: data.imageUrls.map((url: string, index: number) => ({
                     productId: productId,
-                    url: data.imageUrl,
+                    url: url,
                     alt: data.name,
-                    order: 0,
-                },
+                    order: index,
+                })),
             });
         }
 
@@ -274,6 +276,7 @@ export async function updateProduct(productId: string, formData: FormData) {
         }
 
         revalidatePath("/comercios/productos");
+        revalidatePath("/tienda");
     } catch (error) {
         console.error("Error updating product:", error);
         return { error: "Error al actualizar el producto. Inténtalo de nuevo." };

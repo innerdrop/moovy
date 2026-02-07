@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { updateProduct, deleteProduct } from "@/app/comercios/actions";
-import ImageUpload from "@/components/ui/ImageUpload";
+import MultiImageUpload from "@/components/ui/MultiImageUpload";
 import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
 import Link from 'next/link';
 
@@ -13,7 +13,7 @@ interface EditProductFormProps {
         description: string;
         price: number;
         stock: number;
-        imageUrl: string;
+        imageUrls: string[];
         categoryId: string;
         isActive: boolean;
     };
@@ -24,20 +24,21 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [imageUrl, setImageUrl] = useState(product.imageUrl);
+    const [imageUrls, setImageUrls] = useState<string[]>(product.imageUrls);
     const [error, setError] = useState("");
 
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
         setError("");
 
-        if (!imageUrl) {
-            setError("Debes subir una imagen para el producto");
+        if (imageUrls.length === 0) {
+            setError("Debes subir al menos una imagen para el producto");
             setIsLoading(false);
             return;
         }
 
-        formData.append("imageUrl", imageUrl);
+        // Send all image URLs as JSON array
+        formData.append("imageUrls", JSON.stringify(imageUrls));
 
         const result = await updateProduct(product.id, formData);
 
@@ -104,20 +105,18 @@ export default function EditProductForm({ product, categories }: EditProductForm
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {/* Left Column: Image */}
+                    {/* Left Column: Images */}
                     <div className="md:col-span-1 space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Imagen del Producto
+                                Imágenes del Producto
                             </label>
-                            <ImageUpload
-                                value={imageUrl}
-                                onChange={setImageUrl}
+                            <MultiImageUpload
+                                values={imageUrls}
+                                onChange={setImageUrls}
+                                maxImages={4}
                                 disabled={isLoading}
                             />
-                            <p className="text-xs text-gray-500 mt-2">
-                                Recomendado: 800x800px. Formato cuadrado.
-                            </p>
                         </div>
                     </div>
 

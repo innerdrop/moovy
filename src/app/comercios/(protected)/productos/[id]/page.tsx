@@ -58,7 +58,7 @@ export default async function EditProductPage({ params }: PageProps) {
                     description: product.description || "",
                     price: product.price,
                     stock: product.stock,
-                    imageUrl: product.images[0]?.url || "",
+                    imageUrls: product.images.map(img => img.url),
                     categoryId: product.categories[0]?.categoryId || "",
                     isActive: product.isActive,
                 }}
