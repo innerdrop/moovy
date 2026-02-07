@@ -258,6 +258,114 @@ export default async function ConfigurationPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Category Grid Configuration */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-emerald-200">
+                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+                    📦 Diseño de Categorías (Tienda)
+                </h2>
+
+                <div className="space-y-4">
+                    <div className="grid md:grid-cols-3 gap-4">
+                        {/* Columns */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Columnas
+                            </label>
+                            <select
+                                name="categoryGridColumns"
+                                defaultValue={settings?.categoryGridColumns ?? 4}
+                                className="input w-full"
+                            >
+                                <option value={3}>3 columnas</option>
+                                <option value={4}>4 columnas</option>
+                            </select>
+                        </div>
+
+                        {/* Rows */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Filas visibles
+                            </label>
+                            <select
+                                name="categoryGridRows"
+                                defaultValue={settings?.categoryGridRows ?? 2}
+                                className="input w-full"
+                            >
+                                <option value={1}>1 fila</option>
+                                <option value={2}>2 filas</option>
+                                <option value={3}>3 filas</option>
+                            </select>
+                        </div>
+
+                        {/* Card Size */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tamaño de tarjetas
+                            </label>
+                            <select
+                                name="categoryCardSize"
+                                defaultValue={settings?.categoryCardSize ?? "medium"}
+                                className="input w-full"
+                            >
+                                <option value="small">Pequeño</option>
+                                <option value="medium">Mediano</option>
+                                <option value="large">Grande</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Scrollable Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                        <div>
+                            <h3 className="font-semibold text-navy">Scroll Horizontal</h3>
+                            <p className="text-sm text-gray-600">
+                                Permite deslizar las categorías hacia los costados
+                            </p>
+                        </div>
+                        <Switch
+                            name="categoryScrollable"
+                            defaultChecked={settings?.categoryScrollable ?? false}
+                            activeColor="bg-emerald-500"
+                        />
+                    </div>
+
+                    {/* Auto-scroll Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                        <div>
+                            <h3 className="font-semibold text-navy">Auto-scroll</h3>
+                            <p className="text-sm text-gray-600">
+                                Las categorías se mueven automáticamente
+                            </p>
+                        </div>
+                        <Switch
+                            name="categoryAutoScroll"
+                            defaultChecked={settings?.categoryAutoScroll ?? false}
+                            activeColor="bg-emerald-500"
+                        />
+                    </div>
+
+                    {/* Auto-scroll Speed */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Velocidad Auto-scroll (ms)
+                        </label>
+                        <input
+                            type="number"
+                            min="1000"
+                            max="10000"
+                            step="500"
+                            defaultValue={settings?.categoryAutoScrollSpeed ?? 3000}
+                            className="input w-40"
+                            name="categoryAutoScrollSpeed"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Tiempo entre cada movimiento (1000ms = 1 segundo)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div className="bg-white rounded-xl p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5 text-moovy" />

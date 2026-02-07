@@ -310,7 +310,15 @@ model StoreSettings {
   showComerciosCard     Boolean  @default(true)
   showRepartidoresCard  Boolean  @default(true)
   tiendaMaintenance     Boolean  @default(false)
-  maxCategoriesHome     Int      @default(6)
+  maxCategoriesHome     Int      @default(8)
+  
+  // Category Grid Configuration
+  categoryGridColumns      Int      @default(4)
+  categoryGridRows         Int      @default(2)
+  categoryCardSize         String   @default("medium")
+  categoryScrollable       Boolean  @default(false)
+  categoryAutoScroll       Boolean  @default(false)
+  categoryAutoScrollSpeed  Int      @default(3000)
 }
 
 model PointsConfig {

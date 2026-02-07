@@ -82,13 +82,24 @@ async function LiveStoreView() {
     const categories = await getCategories(settings?.maxCategoriesHome ?? 10);
     const merchants = await getFeaturedMerchants();
 
+    // Category grid config from settings
+    const categoryGridConfig = {
+        columns: settings?.categoryGridColumns ?? 4,
+        rows: settings?.categoryGridRows ?? 2,
+        cardSize: (settings?.categoryCardSize ?? "medium") as "small" | "medium" | "large",
+        scrollable: settings?.categoryScrollable ?? false,
+        autoScroll: settings?.categoryAutoScroll ?? false,
+        autoScrollSpeed: settings?.categoryAutoScrollSpeed ?? 3000,
+        maxCategories: settings?.maxCategoriesHome ?? 8,
+    };
+
     return (
         <div className="animate-fadeIn bg-white min-h-screen pb-24 overflow-x-hidden">
             {/* Hero Slider */}
             <HeroSliderNew />
 
             {/* Categories Grid */}
-            <CategoryGrid categories={categories} />
+            <CategoryGrid categories={categories} config={categoryGridConfig} />
 
             {/* Promo Banner (Pizza & Pelis) */}
             <PromoBanner />
