@@ -20,9 +20,9 @@ if ($status) {
     git commit -m "sync: cambios automáticos antes de deploy"
 }
 
-# 1. Exportar base de datos local (UTF-8 sin BOM para Linux)
+# 1. Exportar base de datos local (con --clean para limpiar antes de importar)
 Write-Host "[DB] Exportando base de datos local..." -ForegroundColor Yellow
-docker exec moovy-db pg_dump -U postgres moovy_db | Out-File -FilePath database_dump.sql -Encoding utf8
+docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db | Out-File -FilePath database_dump.sql -Encoding utf8
 
 # 2. Asegurar que estamos en develop y actualizados
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
