@@ -42,6 +42,11 @@ git commit -m $Message
 Write-Host "[GIT] Subiendo a GitHub..." -ForegroundColor Yellow
 git push origin $currentBranch
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Error al subir a GitHub. Verifica tu conexion." -ForegroundColor Red
+    exit 1
+}
+
 Write-Host ""
 Write-Host "[OK] CAMBIOS PUBLICADOS EXITOSAMENTE" -ForegroundColor Green
 Write-Host "[INFO] Tu companero puede ejecutar: .\scripts\sync.ps1" -ForegroundColor Cyan
