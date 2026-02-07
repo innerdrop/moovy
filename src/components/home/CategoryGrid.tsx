@@ -45,7 +45,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         );
     };
 
-    // Square cards for scrollable row - same size, just square
+    // Square cards for scrollable row - with visible text
     const ScrollableCategoryCard = ({ cat }: { cat: Category }) => {
         const iconKey = cat.icon || cat.slug;
         const icon = getCategoryIcon(iconKey);
@@ -55,11 +55,11 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 href={`/productos?categoria=${cat.slug}`}
                 className="group flex flex-col items-center flex-shrink-0"
             >
-                <div className="w-[100px] h-[100px] bg-white rounded-2xl shadow-md flex flex-col items-center justify-end p-2 pb-2 group-hover:shadow-lg group-hover:scale-105 transition-all duration-200 border border-gray-100">
-                    <div className="flex-1 w-full flex items-center justify-center">
+                <div className="w-[100px] h-[100px] bg-white rounded-2xl shadow-md flex flex-col items-center p-2 group-hover:shadow-lg group-hover:scale-105 transition-all duration-200 border border-gray-100">
+                    <div className="w-full h-[65px] flex items-center justify-center">
                         {icon}
                     </div>
-                    <span className="text-[11px] font-bold text-gray-700 text-center leading-tight truncate w-full">
+                    <span className="text-[11px] font-bold text-gray-700 text-center leading-tight truncate w-full mt-auto">
                         {cat.name}
                     </span>
                 </div>

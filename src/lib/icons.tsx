@@ -22,6 +22,8 @@ export const CATEGORY_ICON_PATHS: Record<string, string> = {
     escenciales: "/icons/categories/cat_escenciales.png",
     pizzas: "/icons/categories/cat_pizzas.png",
     helados: "/icons/categories/cat_helados.png",
+    adultos: "/icons/categories/cat_adultos.png",
+    pastas: "/icons/categories/cat_pastas.png",
 };
 
 // Default icon (simple circle with package icon)
