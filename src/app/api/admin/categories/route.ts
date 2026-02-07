@@ -60,6 +60,7 @@ export async function POST(request: Request) {
                 allowIndividualPurchase: data.allowIndividualPurchase !== false,
                 order: newOrder,
                 parentId: data.parentId || null,
+                icon: data.icon || null,
             },
         });
 

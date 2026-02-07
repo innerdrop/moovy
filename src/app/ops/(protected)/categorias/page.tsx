@@ -12,14 +12,18 @@ import {
     Check,
     X,
     GripVertical,
-    Package
+    Package,
+    Search
 } from "lucide-react";
+import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/icons";
 
 interface Category {
     id: string;
     name: string;
     slug: string;
     description: string | null;
+    image?: string | null;
+    icon?: string | null;
     isActive: boolean;
     order: number;
     _count?: { products: number };
@@ -35,6 +39,8 @@ export default function AdminCategoriasPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formName, setFormName] = useState("");
     const [formDescription, setFormDescription] = useState("");
+    const [formIcon, setFormIcon] = useState("");
+    const [showIconSelector, setShowIconSelector] = useState(false);
     const [formIsActive, setFormIsActive] = useState(true);
     const [error, setError] = useState("");
 
@@ -61,18 +67,22 @@ export default function AdminCategoriasPage() {
         setEditingId(category.id);
         setFormName(category.name);
         setFormDescription(category.description || "");
+        setFormIcon(category.icon || "");
         setFormIsActive(category.isActive);
         setShowForm(true);
         setError("");
+        setShowIconSelector(false);
     }
 
     function startNew() {
         setEditingId(null);
         setFormName("");
         setFormDescription("");
+        setFormIcon("");
         setFormIsActive(true);
         setShowForm(true);
         setError("");
+        setShowIconSelector(false);
     }
 
     function cancelForm() {
@@ -80,7 +90,9 @@ export default function AdminCategoriasPage() {
         setEditingId(null);
         setFormName("");
         setFormDescription("");
+        setFormIcon("");
         setError("");
+        setShowIconSelector(false);
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -104,6 +116,7 @@ export default function AdminCategoriasPage() {
                 body: JSON.stringify({
                     name: formName,
                     description: formDescription || null,
+                    icon: formIcon || null,
                     isActive: formIsActive,
                 }),
             });
@@ -223,7 +236,107 @@ export default function AdminCategoriasPage() {
                             />
                         </div>
 
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Icono
+                            </label>
+
+                            <div className="border border-gray-200 rounded-lg p-3">
+                                {formIcon ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 p-2">
+                                            {getCategoryIcon(formIcon)}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-gray-900 capitalize">{formIcon}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormIcon("")}
+                                                className="text-xs text-red-500 hover:text-red-700 mt-0.5"
+                                            >
+                                                Quitar icono
+                                            </button>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowIconSelector(true)}
+                                            className="text-sm text-moovy font-medium hover:underline"
+                                        >
+                                            Cambiar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowIconSelector(true)}
+                                        className="w-full py-3 flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-moovy hover:text-moovy transition-colors"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        Seleccionar Icono
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Icon Selector Modal (Embedded) */}
+                            {showIconSelector && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+                                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+                                        <div className="p-4 border-b flex items-center justify-between">
+                                            <h3 className="font-bold text-gray-900">Seleccionar Icono</h3>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowIconSelector(false)}
+                                                className="text-gray-400 hover:text-gray-600"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="p-4">
+                                            {/* Search */}
+                                            <div className="relative mb-4">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Buscar icono..."
+                                                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-moovy"
+                                                    onChange={(e) => {
+                                                        const term = e.target.value.toLowerCase();
+                                                        // Simple filter visual implementation
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-60 overflow-y-auto p-1">
+                                                {Object.entries(CATEGORY_ICONS).map(([key, icon]) => (
+                                                    <button
+                                                        key={key}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormIcon(key);
+                                                            setShowIconSelector(false);
+                                                        }}
+                                                        className={`aspect-square flex flex-col items-center justify-center gap-1 p-2 rounded-xl border transition-all ${formIcon === key
+                                                            ? "border-moovy bg-moovy-light/20 shadow-sm ring-1 ring-moovy"
+                                                            : "border-gray-100 hover:bg-gray-50 hover:border-gray-300"
+                                                            }`}
+                                                    >
+                                                        <div className="w-8 h-8">
+                                                            {icon}
+                                                        </div>
+                                                        <span className="text-[10px] text-gray-500 truncate w-full text-center capitalize">
+                                                            {key}
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <label className="flex items-center gap-2 cursor-pointer mt-4">
                             <input
                                 type="checkbox"
                                 checked={formIsActive}
@@ -233,7 +346,7 @@ export default function AdminCategoriasPage() {
                             <span className="text-sm text-gray-700">Categoría activa</span>
                         </label>
 
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex gap-3 pt-4 border-t mt-4">
                             <button
                                 type="button"
                                 onClick={cancelForm}
@@ -310,8 +423,8 @@ export default function AdminCategoriasPage() {
                                         <button
                                             onClick={() => toggleActive(category)}
                                             className={`px-3 py-1 rounded-full text-xs font-medium ${category.isActive
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-gray-100 text-gray-500"
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-gray-100 text-gray-500"
                                                 }`}
                                         >
                                             {category.isActive ? "Activa" : "Inactiva"}

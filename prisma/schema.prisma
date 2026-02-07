@@ -69,6 +69,7 @@ model Category {
   slug                    String            @unique
   description             String?
   image                   String?
+  icon                    String?
   isActive                Boolean           @default(true)
   order                   Int               @default(0)
   createdAt               DateTime          @default(now())

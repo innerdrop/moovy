@@ -58,6 +58,7 @@ export async function PATCH(
         if (data.image !== undefined) updateData.image = data.image;
         if (data.isActive !== undefined) updateData.isActive = data.isActive;
         if (data.order !== undefined) updateData.order = data.order;
+        if (data.icon !== undefined) updateData.icon = data.icon;
 
         const category = await prisma.category.update({
             where: { id },
