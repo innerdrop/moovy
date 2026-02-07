@@ -1,16 +1,11 @@
 # Panel de Control Moovy - GUI
-# Ejecutar desde la raiz del proyecto
+# Ejecutar: powershell -ExecutionPolicy Bypass -File MoovyPanel.ps1
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName Microsoft.VisualBasic
 
-# Detectar ruta del proyecto (donde esta el exe o el script)
-$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-$projectPath = if ($scriptDir -like "*scripts*") { Split-Path -Parent $scriptDir } else { $scriptDir }
-if (-not (Test-Path "$projectPath\package.json")) {
-    $projectPath = Get-Location
-}
+# Configuracion
+$projectPath = "C:\moovy"
 
 # Funcion para mostrar notificacion Windows
 function Show-Notification {
@@ -41,7 +36,8 @@ function Run-Script {
         
         if ($Args) {
             $process = Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$scriptPath`" $Args" -WorkingDirectory $projectPath -Wait -PassThru -NoNewWindow
-        } else {
+        }
+        else {
             $process = Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$scriptPath`"" -WorkingDirectory $projectPath -Wait -PassThru -NoNewWindow
         }
         
@@ -49,12 +45,14 @@ function Run-Script {
             $statusLabel.Text = "$ScriptName completado!"
             $statusLabel.ForeColor = [System.Drawing.Color]::Green
             Show-Notification "Moovy" "$ScriptName ejecutado exitosamente" "Info"
-        } else {
-            $statusLabel.Text = "$ScriptName finalizado"
-            $statusLabel.ForeColor = [System.Drawing.Color]::Yellow
-            Show-Notification "Moovy" "$ScriptName finalizado" "Info"
         }
-    } catch {
+        else {
+            $statusLabel.Text = "$ScriptName termino con errores"
+            $statusLabel.ForeColor = [System.Drawing.Color]::Red
+            Show-Notification "Moovy" "$ScriptName tuvo errores" "Warning"
+        }
+    }
+    catch {
         $statusLabel.Text = "Error: $_"
         $statusLabel.ForeColor = [System.Drawing.Color]::Red
         Show-Notification "Moovy" "Error ejecutando $ScriptName" "Error"
@@ -64,7 +62,7 @@ function Run-Script {
 # Crear ventana principal
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Moovy - Panel de Control"
-$form.Size = New-Object System.Drawing.Size(320, 400)
+$form.Size = New-Object System.Drawing.Size(320, 380)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -115,7 +113,7 @@ $form.Controls.Add($btnSync)
 # Boton Start
 $btnStart = Create-Button "Iniciar Nueva Rama" 140 ([System.Drawing.Color]::FromArgb(70, 130, 180)) {
     Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -NoExit -File `"$projectPath\scripts\start.ps1`"" -WorkingDirectory $projectPath
-    $statusLabel.Text = "Nueva rama iniciada en terminal"
+    $statusLabel.Text = "Abriendo terminal para nueva rama..."
     $statusLabel.ForeColor = [System.Drawing.Color]::Cyan
 }
 $form.Controls.Add($btnStart)
@@ -123,16 +121,18 @@ $form.Controls.Add($btnStart)
 # Boton Publish
 $btnPublish = Create-Button "Publicar Cambios" 195 ([System.Drawing.Color]::FromArgb(255, 140, 0)) {
     $message = [Microsoft.VisualBasic.Interaction]::InputBox("Descripcion del cambio:", "Publicar Cambios", "feat: ")
-    if ($message -and $message -ne "") {
+    if ($message) {
         Run-Script "publish.ps1" "-Message `"$message`""
     }
 }
+# Cargar VB para InputBox
+Add-Type -AssemblyName Microsoft.VisualBasic
 $form.Controls.Add($btnPublish)
 
 # Boton Finish
 $btnFinish = Create-Button "Finalizar y Mergear a Develop" 250 ([System.Drawing.Color]::FromArgb(138, 43, 226)) {
     $message = [Microsoft.VisualBasic.Interaction]::InputBox("Descripcion del cambio:", "Finalizar Cambios", "feat: ")
-    if ($message -and $message -ne "") {
+    if ($message) {
         Run-Script "finish.ps1" "-Message `"$message`""
     }
 }
@@ -140,15 +140,15 @@ $form.Controls.Add($btnFinish)
 
 # Label de estado
 $statusLabel = New-Object System.Windows.Forms.Label
-$statusLabel.Text = "Listo - Proyecto: $projectPath"
-$statusLabel.Font = New-Object System.Drawing.Font("Segoe UI", 8)
+$statusLabel.Text = "Listo"
+$statusLabel.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $statusLabel.ForeColor = [System.Drawing.Color]::Gray
 $statusLabel.AutoSize = $false
-$statusLabel.Size = New-Object System.Drawing.Size(280, 40)
+$statusLabel.Size = New-Object System.Drawing.Size(280, 25)
 $statusLabel.Location = New-Object System.Drawing.Point(20, 310)
 $statusLabel.TextAlign = "MiddleCenter"
 $form.Controls.Add($statusLabel)
 
 # Mostrar ventana
-$form.Add_Shown({$form.Activate()})
+$form.Add_Shown({ $form.Activate() })
 [void]$form.ShowDialog()
