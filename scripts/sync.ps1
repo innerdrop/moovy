@@ -40,6 +40,8 @@ else {
         Write-Host "[DB] Importando datos compartidos desde database_dump.sql..." -ForegroundColor Yellow
         # Limpiar antes de importar para evitar conflictos de "ya existe"
         docker exec -i moovy-db psql -U postgres -d moovy_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+        # Habilitar PostGIS (requerido para campo geography)
+        docker exec -i moovy-db psql -U postgres -d moovy_db -c "CREATE EXTENSION IF NOT EXISTS postgis;"
         Get-Content -Encoding UTF8 database_dump.sql | docker exec -i moovy-db psql -U postgres moovy_db
         Write-Host "[DB] Datos importados con exito." -ForegroundColor Green
     }
