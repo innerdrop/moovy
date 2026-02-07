@@ -216,6 +216,8 @@ export async function GET(request: Request) {
                 completados: completedToday,
                 gananciasHoy: earnings
             },
+            isOnline: driver.isOnline,
+            availabilityStatus: driver.availabilityStatus,
             pedidosActivos: formattedActiveOrders,
             pedidosDisponibles: availableOrders.map(formatOrderWithLocation),
             pedidosPendientes: pendingOffers.map(formatOrderWithLocation)

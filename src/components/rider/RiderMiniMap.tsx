@@ -19,7 +19,7 @@ interface RiderMiniMapProps {
     navigationMode?: boolean; // Enable navigation mode with auto-centering
 }
 
-const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places", "geometry"];
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
 const containerStyle = {
     width: "100%",
@@ -30,19 +30,6 @@ const defaultCenter = {
     lat: -54.8019,
     lng: -68.3030,
 };
-
-// Dark mode map style for navigation
-const navigationMapStyles = [
-    { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-    { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
-    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
-    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
-    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
-    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-];
 
 const normalMapStyles = [
     { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
@@ -73,6 +60,8 @@ function RiderMiniMapComponent({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
         libraries,
+        language: 'es',
+        region: 'AR'
     });
 
     // Calculate route path
@@ -94,6 +83,14 @@ function RiderMiniMapComponent({
             ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
             : [];
 
+        if (navigationMode) {
+            console.log("[RiderMap] Updating route...", {
+                driver: { lat: driverLat, lng: driverLng },
+                dest: destination,
+                hasWaypoints: waypoints.length > 0
+            });
+        }
+
         directionsService.route(
             {
                 origin,
@@ -114,6 +111,8 @@ function RiderMiniMapComponent({
                     });
                     setRoutePath(path);
                     setRemainingPath(path);
+                } else {
+                    console.error("[RiderMap] Route failed:", status);
                 }
             }
         );
@@ -200,6 +199,35 @@ function RiderMiniMapComponent({
         return defaultCenter;
     }, [driverLat, driverLng, merchantLat, merchantLng]);
 
+    // Fit bounds to show both driver/merchant and destination
+    useEffect(() => {
+        if (!mapRef.current || !isLoaded || navigationMode) return;
+
+        const bounds = new google.maps.LatLngBounds();
+        let pointsCovered = 0;
+
+        if (driverLat && driverLng) {
+            bounds.extend({ lat: driverLat, lng: driverLng });
+            pointsCovered++;
+        } else if (merchantLat && merchantLng) {
+            bounds.extend({ lat: merchantLat, lng: merchantLng });
+            pointsCovered++;
+        }
+
+        if (customerLat && customerLng) {
+            bounds.extend({ lat: customerLat, lng: customerLng });
+            pointsCovered++;
+        } else if (merchantLat && merchantLng && driverLat) {
+            // If going to merchant
+            bounds.extend({ lat: merchantLat, lng: merchantLng });
+            pointsCovered++;
+        }
+
+        if (pointsCovered >= 2) {
+            mapRef.current.fitBounds(bounds, 50);
+        }
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, navigationMode]);
+
     // Create arrow icon for driver in navigation mode
     const driverIcon = useMemo(() => {
         if (!isLoaded) return undefined;
@@ -271,7 +299,7 @@ function RiderMiniMapComponent({
                     zoomControl: true,
                     scrollwheel: true,
                     gestureHandling: "greedy",
-                    styles: navigationMode ? navigationMapStyles : normalMapStyles,
+                    styles: normalMapStyles,
                 }}
             >
                 {/* Route path - shows remaining route in navigation mode */}
@@ -279,8 +307,8 @@ function RiderMiniMapComponent({
                     <Polyline
                         path={remainingPath}
                         options={{
-                            strokeColor: navigationMode ? "#60a5fa" : "#3b82f6",
-                            strokeWeight: navigationMode ? 6 : 4,
+                            strokeColor: "#4285F4",
+                            strokeWeight: 6,
                             strokeOpacity: 0.9,
                         }}
                     />

@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' https://api.mercadopago.com https://*.googleapis.com; frame-src https://*.google.com; frame-ancestors 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' https://api.mercadopago.com https://*.googleapis.com ws://localhost:3001 http://localhost:3001 https://*.somosmoovy.com wss://*.somosmoovy.com; frame-src https://*.google.com; frame-ancestors 'self';",
           },
         ],
       },

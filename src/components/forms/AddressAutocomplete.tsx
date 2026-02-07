@@ -30,8 +30,9 @@ export function AddressAutocomplete({
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries,
+        libraries: ["places", "geometry"],
         language: 'es',
+        region: 'AR'
     });
 
     // Update internal state when prop changes

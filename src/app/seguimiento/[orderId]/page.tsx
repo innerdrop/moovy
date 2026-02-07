@@ -2,9 +2,28 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline } from "@react-google-maps/api";
 import { io, Socket } from "socket.io-client";
-import { ArrowLeft, Phone, MapPin, Clock, CheckCircle, Loader2, Package, Star, Rocket, Navigation, Store, User } from "lucide-react";
+import {
+    ArrowLeft,
+    Phone,
+    MapPin,
+    Clock,
+    CheckCircle,
+    Loader2,
+    Package,
+    Star,
+    Rocket,
+    Navigation,
+    Store,
+    User,
+    ChevronRight,
+    MessageCircle,
+    Bell,
+    XCircle,
+    X
+} from "lucide-react";
+import Link from "next/link";
 
 interface OrderData {
     id: string;
@@ -18,6 +37,8 @@ interface OrderData {
     };
     driver?: {
         id: string;
+        latitude?: number;
+        longitude?: number;
         user: {
             name: string;
             phone?: string;
@@ -54,24 +75,6 @@ const containerStyle = {
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
-// Dark map styles for better visual appeal
-const darkMapStyles = [
-    { elementType: "geometry", stylers: [{ color: "#1d2c4d" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#1a3646" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#8ec3b9" }] },
-    { featureType: "administrative.country", elementType: "geometry.stroke", stylers: [{ color: "#4b6878" }] },
-    { featureType: "land", stylers: [{ color: "#2c3e50" }] },
-    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "poi", elementType: "geometry", stylers: [{ color: "#283d6a" }] },
-    { featureType: "road", elementType: "geometry", stylers: [{ color: "#304a7d" }] },
-    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#255763" }] },
-    { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#98a5be" }] },
-    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#2c6675" }] },
-    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f4a5e" }] },
-    { featureType: "transit", stylers: [{ visibility: "off" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] },
-];
-
 export default function TrackingPage() {
     const params = useParams();
     const router = useRouter();
@@ -97,6 +100,8 @@ export default function TrackingPage() {
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
         libraries,
+        language: 'es',
+        region: 'AR'
     });
 
     // Fetch order details
@@ -111,6 +116,14 @@ export default function TrackingPage() {
                 if (data.status === "DELIVERED") {
                     setDelivered(true);
                 }
+
+                if (data.driver?.latitude && data.driver?.longitude) {
+                    setDriverPosition({
+                        lat: data.driver.latitude,
+                        lng: data.driver.longitude,
+                        timestamp: Date.now()
+                    });
+                }
             } catch (e: any) {
                 setError(e.message);
             } finally {
@@ -121,133 +134,221 @@ export default function TrackingPage() {
         if (orderId) fetchOrder();
     }, [orderId]);
 
-    // Directions logic with distance and time calculation
+    // Directions logic
     useEffect(() => {
-        if (!isLoaded || !order || !order.merchant?.latitude || !order.address.latitude) return;
+        const addr = order?.address;
+        const driver = order?.driver;
+        const merchant = order?.merchant;
+        const status = order?.status?.toUpperCase() || "";
 
-        const directionsService = new google.maps.DirectionsService();
+        if (!isLoaded || !order) return;
 
-        // Determine origin based on driver position and order status
-        let origin: google.maps.LatLngLiteral;
-        let destination: google.maps.LatLngLiteral = { lat: order.address.latitude, lng: order.address.longitude || 0 };
-        let waypoints: google.maps.DirectionsWaypoint[] = [];
+        const solveDirections = async () => {
+            let destLat = addr?.latitude;
+            let destLng = addr?.longitude;
 
-        if (driverPosition) {
-            origin = { lat: driverPosition.lat, lng: driverPosition.lng };
-
-            // If driver hasn't picked up yet, route through merchant
-            if (order.status === "DRIVER_ASSIGNED") {
-                waypoints = [{
-                    location: { lat: order.merchant.latitude, lng: order.merchant.longitude || 0 },
-                    stopover: true
-                }];
-            }
-        } else {
-            origin = { lat: order.merchant.latitude, lng: order.merchant.longitude || 0 };
-        }
-
-        directionsService.route(
-            {
-                origin,
-                destination,
-                waypoints,
-                travelMode: google.maps.TravelMode.DRIVING,
-            },
-            (result, status) => {
-                if (status === google.maps.DirectionsStatus.OK && result) {
-                    setDirections(result);
-
-                    // Extract distance and duration from route
-                    const route = result.routes[0];
-                    if (route && route.legs) {
-                        let totalDistance = 0;
-                        let totalDuration = 0;
-
-                        route.legs.forEach(leg => {
-                            totalDistance += leg.distance?.value || 0;
-                            totalDuration += leg.duration?.value || 0;
-                        });
-
-                        setRouteInfo({
-                            distance: totalDistance >= 1000
-                                ? `${(totalDistance / 1000).toFixed(1)} km`
-                                : `${totalDistance} m`,
-                            duration: totalDuration >= 3600
-                                ? `${Math.floor(totalDuration / 3600)}h ${Math.floor((totalDuration % 3600) / 60)}min`
-                                : `${Math.ceil(totalDuration / 60)} min`,
-                            distanceValue: totalDistance,
-                            durationValue: totalDuration
-                        });
+            // FALLBACK: If DB has no coordinates, try geocoding the address string
+            if (!destLat && addr?.street) {
+                console.log("[Tracking] Address has no coordinates, geocoding...", addr.street);
+                const geocoder = new google.maps.Geocoder();
+                try {
+                    const result = await geocoder.geocode({
+                        address: `${addr.street} ${addr.number}, ${addr.city || "Ushuaia"}, Argentina`
+                    });
+                    if (result.results[0]) {
+                        destLat = result.results[0].geometry.location.lat();
+                        destLng = result.results[0].geometry.location.lng();
+                        console.log("[Tracking] Geocoding success:", { destLat, destLng });
                     }
+                } catch (e) {
+                    console.error("[Tracking] Geocoding failed:", e);
                 }
             }
-        );
+
+            if (!destLat) {
+                console.log("[Tracking] Directions skipped: still no destination coordinates");
+                return;
+            }
+
+            const directionsService = new google.maps.DirectionsService();
+
+            const destination: google.maps.LatLngLiteral = {
+                lat: typeof destLat === 'string' ? parseFloat(destLat) : destLat,
+                lng: typeof destLng === 'string' ? parseFloat(destLng) : (destLng || 0)
+            };
+
+            let origin: google.maps.LatLngLiteral;
+            let waypoints: google.maps.DirectionsWaypoint[] = [];
+
+            const currentDriverPos = driverPosition
+                || (driver?.latitude && driver?.longitude
+                    ? { lat: parseFloat(driver.latitude as any), lng: parseFloat(driver.longitude as any) } : null);
+
+            if (currentDriverPos) {
+                origin = { lat: currentDriverPos.lat, lng: currentDriverPos.lng };
+                if (status === "DRIVER_ASSIGNED" && merchant?.latitude) {
+                    waypoints = [{
+                        location: { lat: parseFloat(merchant.latitude as any), lng: parseFloat(merchant.longitude as any || "0") },
+                        stopover: true
+                    }];
+                }
+            } else if (merchant?.latitude) {
+                origin = { lat: parseFloat(merchant.latitude as any), lng: parseFloat(merchant.longitude as any || "0") };
+            } else {
+                console.log("[Tracking] No valid origin found for route");
+                return;
+            }
+
+            console.log("[Tracking] Requesting route:", { origin, destination, waypoints: waypoints.length });
+
+            directionsService.route(
+                {
+                    origin,
+                    destination,
+                    waypoints,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    optimizeWaypoints: true
+                },
+                (result, status) => {
+                    if (status === google.maps.DirectionsStatus.OK && result) {
+                        console.log("[Tracking] Route found:", result.routes[0].summary);
+                        setDirections(result);
+                        const route = result.routes[0];
+                        if (route && route.legs) {
+                            let d = 0, t = 0;
+                            route.legs.forEach(leg => {
+                                d += leg.distance?.value || 0;
+                                t += leg.duration?.value || 0;
+                            });
+                            setRouteInfo({
+                                distance: d >= 1000 ? `${(d / 1000).toFixed(1)} km` : `${d} m`,
+                                duration: `${Math.ceil(t / 60)} min`,
+                                distanceValue: d,
+                                durationValue: t
+                            });
+                        }
+                    } else {
+                        console.error("[Tracking] Directions request failed due to " + status);
+                    }
+                }
+            );
+        };
+
+        solveDirections();
     }, [isLoaded, order, driverPosition]);
 
-    // Connect to Socket.io
+    // Socket.io connection
     useEffect(() => {
         if (!orderId || !order) return;
 
         const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
-        if (!trackableStatuses.includes(order.status)) return;
+        const currentStatus = order.status.toUpperCase();
+        if (!trackableStatuses.includes(currentStatus)) {
+            console.log("[Tracking] Status not trackable:", currentStatus);
+            return;
+        }
 
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "https://somosmoovy.com";
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+        console.log("[Tracking] Connecting to socket:", socketUrl);
+
         const socket = io(`${socketUrl}/logistica`, {
             transports: ["websocket", "polling"],
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000
         });
 
         socketRef.current = socket;
 
         socket.on("connect", () => {
+            console.log("[Tracking] Connected to socket!");
             setConnected(true);
             socket.emit("track_order", orderId);
         });
 
-        socket.on("disconnect", () => setConnected(false));
+        socket.on("connect_error", (err) => {
+            console.error("[Tracking] Socket connection error:", err.message);
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log("[Tracking] Disconnected:", reason);
+            setConnected(false);
+        });
 
         socket.on("posicion_repartidor", (data: DriverPosition) => {
+            console.log("[Tracking] New position received:", data);
             setDriverPosition(data);
         });
 
-        socket.on("pedido_entregado", () => setDelivered(true));
+        socket.on("pedido_entregado", () => {
+            setDelivered(true);
+        });
 
-        // Listen for status updates (e.g., picked up)
         socket.on("order_status_update", (data: { orderId: string; status: string }) => {
+            console.log("[Tracking] Status update:", data);
             if (data.orderId === orderId) {
                 setOrder(prev => prev ? { ...prev, status: data.status } : prev);
             }
         });
 
         return () => {
+            console.log("[Tracking] Cleaning up socket");
             socket.disconnect();
         };
-    }, [orderId, order]);
+    }, [orderId, order?.id, order?.status]);
 
-    // Fit map bounds to show all markers
+    // Fit map bounds to show all relevant points
     useEffect(() => {
-        if (!mapRef.current || !directions) return;
+        if (!mapRef.current || !isLoaded) return;
 
         const bounds = new google.maps.LatLngBounds();
+        let hasPoints = false;
 
-        if (driverPosition) {
-            bounds.extend({ lat: driverPosition.lat, lng: driverPosition.lng });
+        const currentDriverPos = driverPosition
+            || (order?.driver?.latitude && order?.driver?.longitude ? { lat: order.driver.latitude, lng: order.driver.longitude } : null);
+
+        if (currentDriverPos) {
+            bounds.extend(currentDriverPos);
+            hasPoints = true;
         }
+
         if (order?.merchant?.latitude) {
             bounds.extend({ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 });
-        }
-        if (order?.address.latitude) {
-            bounds.extend({ lat: order.address.latitude, lng: order.address.longitude || 0 });
+            hasPoints = true;
         }
 
-        mapRef.current.fitBounds(bounds, 60);
-    }, [directions, driverPosition, order]);
-
-    const handleRate = async () => {
-        if (rating === 0) {
-            alert("Por favor selecciona una calificación");
+        // Use directions bounds if available for better framing
+        if (directions && directions.routes[0]?.bounds) {
+            mapRef.current.fitBounds(directions.routes[0].bounds, {
+                top: 100,
+                right: 50,
+                bottom: 100,
+                left: 50
+            });
             return;
         }
 
+        if (order?.address.latitude) {
+            bounds.extend({ lat: order.address.latitude, lng: order.address.longitude || 0 });
+            hasPoints = true;
+        } else if (directions && directions.routes[0]?.legs[0]?.end_location) {
+            // Fallback to directions end_location if DB has no coords
+            bounds.extend(directions.routes[0].legs[0].end_location);
+            hasPoints = true;
+        }
+
+        if (hasPoints) {
+            // Apply bounds with reasonable padding
+            mapRef.current.fitBounds(bounds, {
+                top: 100,
+                right: 50,
+                bottom: 100,
+                left: 50
+            });
+        }
+    }, [isLoaded, directions, driverPosition, order?.id, order?.merchant, order?.address]);
+
+    const handleRate = async () => {
+        if (rating === 0) return alert("Selecciona una calificación");
         setIsSubmitting(true);
         try {
             const res = await fetch(`/api/orders/${orderId}/rate`, {
@@ -255,44 +356,22 @@ export default function TrackingPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ rating, comment })
             });
-
-            if (res.ok) {
-                setHasRated(true);
-            } else {
-                const data = await res.json();
-                alert(data.error || "Error al calificar");
-            }
-        } catch (e) {
-            alert("Error al enviar calificación");
-        } finally {
-            setIsSubmitting(false);
-        }
+            if (res.ok) setHasRated(true);
+        } catch (e) { alert("Error al calificar"); } finally { setIsSubmitting(false); }
     };
 
-    const center = useMemo(() => {
-        if (driverPosition) return { lat: driverPosition.lat, lng: driverPosition.lng };
-        if (order?.address.latitude) return { lat: order.address.latitude, lng: order.address.longitude || 0 };
-        return { lat: -54.8019, lng: -68.3030 };
-    }, [driverPosition, order]);
-
-    // Get status step (0-3)
     const getStatusStep = () => {
         switch (order?.status) {
             case "PENDING":
             case "CONFIRMED":
             case "PREPARING":
-            case "READY":
-                return 0;
-            case "DRIVER_ASSIGNED":
-                return 1;
+            case "READY": return 0;
+            case "DRIVER_ASSIGNED": return 1;
             case "PICKED_UP":
             case "IN_DELIVERY":
-            case "ON_THE_WAY":
-                return 2;
-            case "DELIVERED":
-                return 3;
-            default:
-                return 0;
+            case "ON_THE_WAY": return 2;
+            case "DELIVERED": return 3;
+            default: return 0;
         }
     };
 
@@ -300,41 +379,46 @@ export default function TrackingPage() {
 
     if (loading || !isLoaded) {
         return (
-            <div className="h-screen bg-gray-900 flex flex-col items-center justify-center gap-4 text-white">
-                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
-                <p className="animate-pulse font-bold tracking-widest text-xs uppercase">Estableciendo conexión...</p>
+            <div className="h-screen bg-white flex flex-col items-center justify-center gap-4">
+                <div className="relative">
+                    <Rocket className="w-10 h-10 text-[#e60012] animate-bounce" />
+                    <Loader2 className="w-16 h-16 text-gray-100 animate-spin absolute -top-3 -left-3 -z-10" />
+                </div>
+                <p className="font-black italic tracking-tighter text-gray-900 uppercase">Localizando pedido...</p>
             </div>
         );
     }
 
     if (error || !order) {
         return (
-            <div className="h-screen bg-gray-900 flex flex-col items-center justify-center text-white p-4">
-                <p className="text-red-400 mb-4">{error || "No se pudo cargar el pedido"}</p>
-                <button onClick={() => router.back()} className="px-6 py-2 bg-gray-800 rounded-lg">Volver</button>
+            <div className="h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+                <XCircle className="w-16 h-16 text-red-500 mb-4" />
+                <h1 className="text-xl font-bold mb-2">¡Ups! Algo salió mal</h1>
+                <p className="text-gray-500 mb-8">{error || "No se pudo cargar el pedido"}</p>
+                <button onClick={() => router.back()} className="px-8 py-3 bg-gray-900 text-white font-bold rounded-xl">Volver</button>
             </div>
         );
     }
 
     return (
-        <div className="h-screen bg-gray-900 text-white flex flex-col overflow-hidden">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden font-sans">
             {/* Delivered overlay & Rating */}
             {delivered && (
-                <div className="absolute inset-0 bg-gray-900/98 flex flex-col items-center justify-center z-[100] p-6 text-center animate-in fade-in duration-500 backdrop-blur-sm">
+                <div className="fixed inset-0 bg-white/95 flex flex-col items-center justify-center z-[100] p-6 text-center transition-all duration-500 backdrop-blur-md">
                     {!hasRated && !order.driverRating ? (
-                        <div className="w-full max-w-sm space-y-6">
-                            <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-2 ring-4 ring-green-500/10">
-                                <CheckCircle className="w-12 h-12 text-green-500" />
+                        <div className="w-full max-w-sm space-y-8 animate-in fade-in zoom-in-95 duration-500">
+                            <div className="w-24 h-24 bg-green-100 rounded-[32px] flex items-center justify-center mx-auto mb-4 rotate-12">
+                                <CheckCircle className="w-12 h-12 text-green-600" />
                             </div>
-                            <div className="space-y-1">
-                                <h2 className="text-4xl font-black italic tracking-tighter">¡LLEGÓ TU PEDIDO!</h2>
-                                <p className="text-gray-400 text-sm font-medium">¿Cómo fue tu experiencia con {order.driver?.user.name.split(' ')[0] || "nuestro repartidor"}?</p>
+                            <div className="space-y-2">
+                                <h2 className="text-4xl font-black italic tracking-tighter text-gray-900 uppercase leading-none">¡PEDIDO RECIBIDO!</h2>
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Cuéntanos cómo te atendió {order.driver?.user.name.split(' ')[0]}</p>
                             </div>
 
-                            <div className="flex justify-center gap-1">
+                            <div className="flex justify-center gap-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
-                                    <button key={star} onClick={() => setRating(star)} className="p-1 transition-all active:scale-75">
-                                        <Star className={`w-12 h-12 transition-colors ${star <= rating ? "fill-orange-500 text-orange-500 scale-110" : "text-gray-700"}`} />
+                                    <button key={star} onClick={() => setRating(star)} className="p-1 transition-all active:scale-75 hover:scale-110">
+                                        <Star className={`w-10 h-10 transition-colors ${star <= rating ? "fill-orange-500 text-orange-500" : "text-gray-200"}`} />
                                     </button>
                                 ))}
                             </div>
@@ -343,272 +427,330 @@ export default function TrackingPage() {
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
                                 placeholder="Escribe un comentario..."
-                                className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-orange-500 outline-none min-h-[100px] resize-none"
+                                className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-5 text-sm focus:border-orange-500 outline-none min-h-[120px] resize-none font-medium text-gray-700"
                             />
 
                             <button
                                 onClick={handleRate}
                                 disabled={isSubmitting}
-                                className="w-full py-5 bg-orange-600 rounded-2xl font-black text-xl hover:bg-orange-700 transition shadow-2xl shadow-orange-600/30 disabled:opacity-50"
+                                className="w-full py-5 bg-gray-900 text-white rounded-[24px] font-black text-lg hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-95 italic uppercase tracking-widest"
                             >
-                                {isSubmitting ? "ENVIANDO..." : "VALORAR SERVICIO"}
+                                {isSubmitting ? "ENVIANDO..." : "CALIFICAR"}
                             </button>
 
-                            <button onClick={() => router.push("/mis-pedidos")} className="text-gray-500 text-xs font-bold hover:text-gray-300 transition tracking-widest uppercase">
-                                VER MIS PEDIDOS
-                            </button>
+                            <button onClick={() => router.push("/mis-pedidos")} className="text-gray-400 text-[10px] font-black uppercase tracking-[3px]">IR A MIS PEDIDOS</button>
                         </div>
                     ) : (
-                        <div className="space-y-8 animate-in zoom-in duration-300">
-                            <div className="w-28 h-28 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto ring-8 ring-orange-500/5">
-                                <Star className="w-14 h-14 text-orange-500 fill-orange-500" />
+                        <div className="space-y-8 animate-in zoom-in duration-500">
+                            <div className="w-32 h-32 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                                <Star className="w-16 h-16 text-orange-500 fill-orange-500" />
                             </div>
                             <div className="space-y-2">
-                                <h2 className="text-4xl font-black italic tracking-tighter">¡GRACIAS!</h2>
-                                <p className="text-gray-400 text-sm font-medium">Tu valoración nos ayuda a ser mejores.</p>
+                                <h2 className="text-4xl font-black italic tracking-tighter text-gray-900 uppercase">¡GRACIAS!</h2>
+                                <p className="text-gray-400 font-bold uppercase tracking-[4px] text-xs">Valoración enviada</p>
                             </div>
                             <button
                                 onClick={() => router.push("/mis-pedidos")}
-                                className="w-full max-w-xs py-5 bg-gray-800 rounded-2xl font-black text-xl hover:bg-gray-700 transition tracking-tighter"
+                                className="w-full max-w-xs py-5 bg-gray-900 text-white rounded-[24px] font-black text-lg tracking-widest uppercase italic"
                             >
-                                VOLVER A MIS PEDIDOS
+                                CONTINUAR
                             </button>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* MAP SECTION - Takes 60% of screen */}
-            <div className="relative h-[60vh] flex-shrink-0">
-                {/* Back Button */}
+            {/* MAP SECTION (60%) */}
+            <div className="relative h-[55vh] flex-shrink-0 z-10 shadow-lg">
                 <button
                     onClick={() => router.back()}
-                    className="absolute top-4 left-4 z-20 w-12 h-12 bg-gray-900/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
+                    className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-6 h-6 text-gray-900" />
                 </button>
 
-                {/* Order Number Badge */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900/90 backdrop-blur rounded-full px-4 py-2 shadow-lg">
-                    <span className="text-xs font-black text-orange-500 tracking-widest">#{order.orderNumber}</span>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900 text-white rounded-full px-5 py-2 shadow-2xl border-2 border-white/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest">#{order.orderNumber}</span>
                 </div>
 
-                {/* Live Indicator */}
-                <div className={`absolute top-4 right-4 z-20 px-3 py-2 rounded-full shadow-lg flex items-center gap-2 ${connected ? "bg-green-500/20 border border-green-500/30" : "bg-gray-900/90"}`}>
-                    <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-gray-500"}`} />
-                    <span className="text-[10px] font-black uppercase tracking-wider">{connected ? "En Vivo" : "Conectando"}</span>
+                <div className={`absolute top-4 right-4 z-20 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border border-white ${connected ? "bg-white/90 backdrop-blur-md" : "bg-red-50"}`}>
+                    <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{connected ? "En Vivo" : "Desconectado"}</span>
                 </div>
 
-                {/* Map or Waiting State */}
-                {!["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY", "DELIVERED"].includes(order.status) ? (
-                    <div className="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center text-center p-8 z-10">
-                        <div className="w-24 h-24 bg-orange-500/5 rounded-full flex items-center justify-center mb-6 animate-pulse border border-orange-500/20">
-                            <Package className="w-12 h-12 text-orange-500" />
-                        </div>
-                        <h3 className="text-2xl font-black italic mb-2 tracking-tighter">PREPARANDO TU PEDIDO</h3>
-                        <p className="text-gray-500 text-sm max-w-[240px] font-medium leading-tight">
-                            El mapa se activará cuando el repartidor comience el viaje.
-                        </p>
-                    </div>
-                ) : (
-                    <GoogleMap
-                        mapContainerStyle={containerStyle}
-                        center={center}
-                        zoom={15}
-                        onLoad={map => { mapRef.current = map; }}
-                        options={{
-                            disableDefaultUI: true,
-                            zoomControl: false,
-                            scrollwheel: true,
-                            gestureHandling: "greedy",
-                            styles: darkMapStyles
-                        }}
-                    >
-                        {directions && (
-                            <DirectionsRenderer
-                                options={{
-                                    directions: directions,
-                                    suppressMarkers: true,
-                                    preserveViewport: false,
-                                    polylineOptions: { strokeColor: "#f97316", strokeWeight: 5, strokeOpacity: 0.9 }
-                                }}
-                            />
-                        )}
+                <GoogleMap
+                    mapContainerStyle={containerStyle}
+                    center={{ lat: order.address.latitude || -54.8019, lng: order.address.longitude || -68.3030 }}
+                    zoom={15}
+                    onLoad={map => { mapRef.current = map; }}
+                    options={{
+                        disableDefaultUI: true,
+                        zoomControl: false,
+                        scrollwheel: true,
+                        gestureHandling: "greedy",
+                    }}
+                >
+                    {/* Animated Route Line */}
+                    {directions && directions.routes[0].overview_path && (
+                        <Polyline
+                            path={directions.routes[0].overview_path}
+                            options={{
+                                strokeColor: "#4285F4",
+                                strokeOpacity: 0,
+                                strokeWeight: 6,
+                                icons: [{
+                                    icon: {
+                                        path: 'M 0,-1.5 L 0,1.5',
+                                        strokeOpacity: 1,
+                                        strokeWeight: 4,
+                                        scale: 3,
+                                        strokeColor: "#4285F4",
+                                    },
+                                    offset: '0',
+                                    repeat: '20px'
+                                }, {
+                                    icon: {
+                                        path: 'M -2,0 L 0,2 L 2,0',
+                                        strokeOpacity: 1,
+                                        strokeWeight: 2,
+                                        scale: 2,
+                                        strokeColor: "#2196F3",
+                                    },
+                                    offset: '50%',
+                                    repeat: '40px'
+                                }]
+                            }}
+                            onLoad={(polyline) => {
+                                let count = 0;
+                                const interval = setInterval(() => {
+                                    count = (count + 1) % 200;
+                                    const icons = polyline.get('icons');
+                                    if (icons && icons[0]) {
+                                        icons[0].offset = (count / 2) + '%';
+                                        polyline.set('icons', icons);
+                                    }
+                                }, 50);
+                                (polyline as any)._animationInterval = interval;
+                            }}
+                            onUnmount={(polyline) => {
+                                if ((polyline as any)._animationInterval) {
+                                    clearInterval((polyline as any)._animationInterval);
+                                }
+                            }}
+                        />
+                    )}
 
-                        {/* Merchant Marker - Blue Store */}
-                        {order.merchant?.latitude && (
-                            <Marker
-                                position={{ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 }}
-                                icon={{
-                                    url: "data:image/svg+xml," + encodeURIComponent(`
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-                                            <circle cx="20" cy="20" r="18" fill="#3b82f6" stroke="white" stroke-width="3"/>
-                                            <path d="M12 18h16v10H12z M14 14h12l2 4H12l2-4z" fill="white"/>
-                                        </svg>
-                                    `),
-                                    scaledSize: new google.maps.Size(40, 40),
-                                    anchor: new google.maps.Point(20, 20)
-                                }}
-                            />
-                        )}
+                    {/* Background Route Line (Static) */}
+                    {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
+                        <Polyline
+                            path={directions.routes[0].overview_path}
+                            options={{
+                                strokeColor: "#4285F4",
+                                strokeOpacity: 0.2,
+                                strokeWeight: 8,
+                            }}
+                        />
+                    )}
 
-                        {/* Driver Marker - Green Motorcycle */}
-                        {driverPosition && (
-                            <Marker
-                                position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
-                                icon={{
-                                    url: "data:image/svg+xml," + encodeURIComponent(`
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                                            <circle cx="24" cy="24" r="22" fill="#22c55e" stroke="white" stroke-width="3"/>
-                                            <circle cx="14" cy="28" r="5" fill="white"/>
-                                            <circle cx="34" cy="28" r="5" fill="white"/>
-                                            <path d="M10 24 L20 18 L28 18 L38 24" stroke="white" stroke-width="3" fill="none"/>
-                                            <circle cx="24" cy="16" r="4" fill="white"/>
-                                        </svg>
-                                    `),
-                                    scaledSize: new google.maps.Size(48, 48),
-                                    anchor: new google.maps.Point(24, 24)
-                                }}
-                            />
-                        )}
+                    {/* Directions calculation logic (hidden renderer) */}
+                    {directions && (
+                        <DirectionsRenderer
+                            options={{
+                                directions: directions,
+                                suppressMarkers: true,
+                                suppressPolylines: true, // We draw our own animated one
+                                preserveViewport: true,
+                            }}
+                        />
+                    )}
 
-                        {/* Destination Marker - Red Pin */}
-                        {order.address.latitude && (
-                            <Marker
-                                position={{ lat: order.address.latitude, lng: order.address.longitude || 0 }}
-                                icon={{
-                                    url: "data:image/svg+xml," + encodeURIComponent(`
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
-                                            <path d="M20 0 C8.954 0 0 8.954 0 20 C0 35 20 50 20 50 C20 50 40 35 40 20 C40 8.954 31.046 0 20 0z" fill="#ef4444" stroke="white" stroke-width="2"/>
-                                            <circle cx="20" cy="18" r="8" fill="white"/>
-                                        </svg>
-                                    `),
-                                    scaledSize: new google.maps.Size(40, 50),
-                                    anchor: new google.maps.Point(20, 50)
-                                }}
-                            />
-                        )}
-                    </GoogleMap>
-                )}
+                    {/* Merchant Marker */}
+                    {order.merchant?.latitude && (
+                        <Marker
+                            position={{ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 }}
+                            icon={{
+                                url: "data:image/svg+xml," + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+                                        <circle cx="18" cy="18" r="16" fill="#3b82f6" stroke="white" stroke-width="3"/>
+                                        <path d="M11 17h14v8H11z M13 13h10l2 4H11l2-4z" fill="white"/>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(36, 36),
+                                anchor: new google.maps.Point(18, 18)
+                            }}
+                        />
+                    )}
+
+                    {/* Driver Marker */}
+                    {driverPosition && (
+                        <Marker
+                            position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
+                            icon={{
+                                url: "data:image/svg+xml," + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+                                        <circle cx="22" cy="22" r="20" fill="#22c55e" stroke="white" stroke-width="3"/>
+                                        <path d="M15 26 L23 20 L29 20 L37 26" stroke="white" stroke-width="3" fill="none"/>
+                                        <circle cx="15" cy="28" r="4" fill="white"/>
+                                        <circle cx="29" cy="28" r="4" fill="white"/>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(44, 44),
+                                anchor: new google.maps.Point(22, 22)
+                            }}
+                        />
+                    )}
+
+                    {/* Destination Marker */}
+                    {(order.address.latitude || (directions && directions.routes[0]?.legs[0]?.end_location)) && (
+                        <Marker
+                            position={order.address.latitude
+                                ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
+                                : directions!.routes[0].legs[0].end_location
+                            }
+                            icon={{
+                                url: "data:image/svg+xml," + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
+                                        <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
+                                        <circle cx="18" cy="18" r="7" fill="white"/>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(36, 46),
+                                anchor: new google.maps.Point(18, 46)
+                            }}
+                        />
+                    )}
+                </GoogleMap>
             </div>
 
-            {/* BOTTOM INFO PANEL */}
-            <div className="flex-1 bg-gray-800 rounded-t-[32px] -mt-6 relative z-10 shadow-2xl overflow-y-auto">
-                {/* Handle */}
-                <div className="flex justify-center pt-3 pb-2">
-                    <div className="w-10 h-1 bg-gray-600 rounded-full" />
-                </div>
+            {/* BOTTOM PANEL */}
+            <div className="flex-1 bg-white rounded-t-[36px] -mt-10 relative z-20 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col">
+                <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto my-4 flex-shrink-0" />
 
-                <div className="px-5 pb-8 space-y-5">
-                    {/* Status Progress Bar */}
-                    <div className="bg-gray-700/50 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            {["Confirmado", "Recogiendo", "En camino", "Entregado"].map((step, index) => (
-                                <div key={step} className="flex flex-col items-center flex-1">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${index <= statusStep
-                                            ? "bg-orange-500 text-white"
-                                            : "bg-gray-600 text-gray-400"
-                                        }`}>
-                                        {index === 0 && <CheckCircle className="w-4 h-4" />}
-                                        {index === 1 && <Store className="w-4 h-4" />}
-                                        {index === 2 && <Navigation className="w-4 h-4" />}
-                                        {index === 3 && <MapPin className="w-4 h-4" />}
-                                    </div>
-                                    <span className={`text-[9px] font-bold uppercase tracking-wider ${index <= statusStep ? "text-orange-500" : "text-gray-500"
-                                        }`}>{step}</span>
-                                </div>
-                            ))}
-                        </div>
-                        {/* Progress line */}
-                        <div className="h-1 bg-gray-600 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-500"
-                                style={{ width: `${(statusStep / 3) * 100}%` }}
-                            />
-                        </div>
+                <div className="flex-1 overflow-y-auto px-6 pb-10 space-y-6">
+                    {/* Status Message */}
+                    <div className="text-center">
+                        <p className="text-[10px] font-black text-[#e60012] uppercase tracking-[4px] mb-2 px-6 py-1 bg-red-50 rounded-full w-fit mx-auto">Estado del Pedido</p>
+                        <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase">
+                            {order.status.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
+                            {order.status.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
+                            {["IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && "TU PEDIDO ESTÁ LLEGANDO"}
+                            {order.status.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
+                            {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order.status.toUpperCase()) && "PREPARANDO TU PEDIDO"}
+                        </h1>
                     </div>
 
-                    {/* Distance & Time Cards */}
-                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && (
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 rounded-2xl p-4 text-center">
-                                <Navigation className="w-6 h-6 text-blue-400 mx-auto mb-1" />
-                                <p className="text-2xl font-black text-white">{routeInfo.distance}</p>
-                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Distancia</p>
+                    {/* Timeline Progress */}
+                    <div className="flex items-center justify-between px-2 pt-2">
+                        {[
+                            { icon: <Store className="w-4 h-4" />, label: "Tienda" },
+                            { icon: <Package className="w-4 h-4" />, label: "Preparado" },
+                            { icon: <Rocket className="w-4 h-4" />, label: "En Viaje" },
+                            { icon: <CheckCircle className="w-4 h-4" />, label: "Recibido" }
+                        ].map((step, idx) => {
+                            const status = order.status.toUpperCase();
+                            const activeIdx = idx <= (
+                                status === "DELIVERED" ? 3 :
+                                    ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status) ? 2 :
+                                        ["CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(status) ? 1 : 0
+                            );
+                            return (
+                                <div key={idx} className="flex flex-col items-center gap-2 flex-1 relative">
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${activeIdx ? "bg-gray-900 text-white scale-110 shadow-lg" : "bg-gray-50 text-gray-300"}`}>
+                                        {step.icon}
+                                    </div>
+                                    <span className={`text-[8px] font-black uppercase tracking-widest ${activeIdx ? "text-gray-900" : "text-gray-300"}`}>{step.label}</span>
+                                    {idx < 3 && (
+                                        <div className={`absolute top-5 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 ${idx < statusStep ? "bg-gray-900" : "bg-gray-100"}`} />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* ETA Card */}
+                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && (
+                        <div className="bg-gray-900 rounded-[28px] p-6 text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
+                            <div className="flex flex-col gap-1">
+                                <p className="text-[10px] font-black text-white/50 uppercase tracking-[3px]">Llegada Estimada</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-4xl font-black italic tracking-tighter">{routeInfo.duration}</p>
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
+                                </div>
                             </div>
-                            <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-500/30 rounded-2xl p-4 text-center">
-                                <Clock className="w-6 h-6 text-green-400 mx-auto mb-1" />
-                                <p className="text-2xl font-black text-white">{routeInfo.duration}</p>
-                                <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Tiempo Est.</p>
+                            <div className="text-right">
+                                <Navigation className="w-8 h-8 text-blue-400 mb-1 ml-auto" />
+                                <p className="text-sm font-black italic">{routeInfo.distance}</p>
                             </div>
                         </div>
                     )}
 
-                    {/* Driver Info Card */}
-                    <div className="bg-gray-700/50 rounded-2xl p-4">
-                        <div className="flex items-center gap-4">
-                            <div className="relative">
-                                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center">
-                                    <Rocket className="w-7 h-7 text-white" />
-                                </div>
-                                {connected && (
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800" />
-                                )}
+                    {/* Driver Card */}
+                    <div className="bg-gray-50 rounded-[32px] p-5 flex items-center gap-4 border border-gray-100">
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 relative">
+                            <User className="w-8 h-8 text-gray-400" />
+                            {connected && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />}
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Tu repartidor</p>
+                            <h3 className="text-lg font-black italic tracking-tighter text-gray-900 uppercase leading-none">{order.driver?.user.name || "Asignando..."}</h3>
+                            <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-gray-400 bg-white w-fit px-2 py-0.5 rounded-full shadow-sm">
+                                <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
+                                <span>4.9 (500+)</span>
                             </div>
-
-                            <div className="flex-1">
-                                <h3 className="font-black text-lg leading-tight">
-                                    {order.driver?.user.name || "Asignando repartidor..."}
-                                </h3>
-                                <p className="text-xs text-gray-400 font-medium">
-                                    {order.status === "DRIVER_ASSIGNED" && "🏪 Yendo al comercio"}
-                                    {order.status === "PICKED_UP" && "📦 Recogió tu pedido"}
-                                    {["IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && "🚀 En camino a tu dirección"}
-                                    {order.status === "DELIVERED" && "✅ Pedido entregado"}
-                                </p>
-                            </div>
-
+                        </div>
+                        <div className="flex gap-2">
                             {order.driver?.user.phone && (
-                                <a
-                                    href={`tel:${order.driver.user.phone}`}
-                                    className="w-12 h-12 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-lg transition active:scale-95"
-                                >
-                                    <Phone className="w-5 h-5" />
+                                <a href={`tel:${order.driver.user.phone}`} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-gray-100 active:scale-90 transition">
+                                    <Phone className="w-5 h-5 text-green-600" />
                                 </a>
                             )}
                         </div>
                     </div>
 
-                    {/* Delivery Address */}
-                    <div className="bg-gray-700/50 rounded-2xl p-4">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">📍 Dirección de Entrega</p>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <MapPin className="w-5 h-5 text-red-400" />
+                    {/* Addresses */}
+                    <div className="space-y-3">
+                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                                <MapPin className="w-5 h-5 text-[#e60012]" />
                             </div>
-                            <p className="text-sm font-bold text-gray-200">{order.address.street} {order.address.number}</p>
+                            <div className="overflow-hidden">
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Tu dirección</p>
+                                <p className="text-sm font-bold text-gray-900 truncate">{order.address.street} {order.address.number}</p>
+                            </div>
                         </div>
+
+                        {order.merchant && (
+                            <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                                    <Store className="w-5 h-5 text-blue-500" />
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Comercio</p>
+                                    <p className="text-sm font-bold text-gray-900 truncate">{order.merchant.name}</p>
+                                    <p className="text-[10px] text-gray-400 font-medium truncate italic">{order.merchant.address}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Merchant Info */}
-                    {order.merchant && (
-                        <div className="bg-gray-700/50 rounded-2xl p-4">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">🏪 Comercio</p>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <Store className="w-5 h-5 text-blue-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-gray-200">{order.merchant.name}</p>
-                                    {order.merchant.address && (
-                                        <p className="text-xs text-gray-400">{order.merchant.address}</p>
-                                    )}
-                                </div>
-                            </div>
+                    <Link href="/mis-pedidos" className="flex items-center justify-between p-5 bg-gray-50 rounded-2xl group active:scale-95 transition">
+                        <div className="flex items-center gap-3">
+                            <Clock className="w-5 h-5 text-gray-400" />
+                            <span className="text-xs font-black uppercase tracking-widest text-gray-900">Ver resumen de compra</span>
                         </div>
-                    )}
+                        <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 transition" />
+                    </Link>
                 </div>
             </div>
+
+            <style jsx global>{`
+                @keyframes zoomIn {
+                    from { transform: scale(0.95); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }
+

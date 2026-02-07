@@ -37,16 +37,6 @@ const defaultCenter = {
     lng: -68.3030,
 };
 
-const darkMapStyles = [
-    { elementType: "geometry", stylers: [{ color: "#1d2c4d" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#1a3646" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#8ec3b9" }] },
-    { featureType: "land", stylers: [{ color: "#2c3e50" }] },
-    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "road", elementType: "geometry", stylers: [{ color: "#304a7d" }] },
-    { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#98a5be" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] },
-];
 
 function OrderTrackingMiniMap({
     orderId,
@@ -70,10 +60,19 @@ function OrderTrackingMiniMap({
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
 
+    // Sync driver pos with props if they update
+    useEffect(() => {
+        if (initialDriverLat && initialDriverLng) {
+            setDriverPos({ lat: initialDriverLat, lng: initialDriverLng });
+        }
+    }, [initialDriverLat, initialDriverLng]);
+
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
         libraries,
+        language: 'es',
+        region: 'AR'
     });
 
     // Handle Socket Connection
@@ -154,16 +153,28 @@ function OrderTrackingMiniMap({
 
     // Fit bounds to show all markers
     useEffect(() => {
-        if (!mapRef.current || !directions) return;
+        if (!mapRef.current || !isLoaded) return;
 
         const bounds = new google.maps.LatLngBounds();
+        let hasPoints = false;
 
-        if (driverPos) bounds.extend(driverPos);
-        if (merchantLat && merchantLng) bounds.extend({ lat: merchantLat, lng: merchantLng });
-        if (customerLat && customerLng) bounds.extend({ lat: customerLat, lng: customerLng });
+        if (driverPos) {
+            bounds.extend(driverPos);
+            hasPoints = true;
+        }
+        if (merchantLat && merchantLng) {
+            bounds.extend({ lat: merchantLat, lng: merchantLng });
+            hasPoints = true;
+        }
+        if (customerLat && customerLng) {
+            bounds.extend({ lat: customerLat, lng: customerLng });
+            hasPoints = true;
+        }
 
-        mapRef.current.fitBounds(bounds, 50);
-    }, [directions, driverPos, merchantLat, merchantLng, customerLat, customerLng]);
+        if (hasPoints) {
+            mapRef.current.fitBounds(bounds, 50);
+        }
+    }, [isLoaded, directions, driverPos, merchantLat, merchantLng, customerLat, customerLng]);
 
     const center = useMemo(() => {
         if (driverPos) return driverPos;
@@ -191,7 +202,9 @@ function OrderTrackingMiniMap({
                     zoomControl: false,
                     scrollwheel: true,
                     gestureHandling: "greedy",
-                    styles: darkMapStyles,
+                    styles: [
+                        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+                    ],
                 }}
             >
                 {directions && (
@@ -201,7 +214,7 @@ function OrderTrackingMiniMap({
                             suppressMarkers: true,
                             preserveViewport: true,
                             polylineOptions: {
-                                strokeColor: "#e60012",
+                                strokeColor: "#4285F4",
                                 strokeWeight: 6,
                                 strokeOpacity: 0.8,
                             },
