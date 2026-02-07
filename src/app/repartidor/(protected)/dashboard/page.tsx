@@ -71,6 +71,7 @@ export default function RepartidorDashboard() {
     const {
         latitude: lat,
         longitude: lng,
+        heading: driverHeading,
         connected: socketConnected,
         isTracking,
         error: locationHookError
@@ -520,19 +521,22 @@ export default function RepartidorDashboard() {
                                         </div>
                                     </div>
 
-                                    {/* Mini-map showing route */}
+                                    {/* Mini-map showing route - Navigation Mode when active */}
                                     {(pedido.merchantLat || pedido.navLat) && (
                                         <div className="mb-3">
                                             <RiderMiniMap
                                                 driverLat={lat ?? undefined}
                                                 driverLng={lng ?? undefined}
+                                                driverHeading={driverHeading ?? 0}
                                                 merchantLat={pedido.merchantLat}
                                                 merchantLng={pedido.merchantLng}
                                                 merchantName={pedido.comercio}
                                                 customerLat={pedido.customerLat}
                                                 customerLng={pedido.customerLng}
                                                 customerAddress={pedido.direccionCliente || "Cliente"}
-                                                height="150px"
+                                                customerName={pedido.nombreCliente || pedido.clienteNombre || "Cliente"}
+                                                height="250px"
+                                                navigationMode={true}
                                             />
                                         </div>
                                     )}

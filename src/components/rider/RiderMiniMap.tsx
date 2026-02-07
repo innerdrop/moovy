@@ -1,19 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
 import { Loader2 } from "lucide-react";
 
 interface RiderMiniMapProps {
     driverLat?: number;
     driverLng?: number;
+    driverHeading?: number; // Heading in degrees for arrow rotation
     merchantLat?: number;
     merchantLng?: number;
     merchantName?: string;
     customerLat?: number;
     customerLng?: number;
     customerAddress?: string;
+    customerName?: string; // Customer name to display on map
     height?: string;
+    navigationMode?: boolean; // Enable navigation mode with auto-centering
 }
 
 const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places", "geometry"];
@@ -28,36 +31,64 @@ const defaultCenter = {
     lng: -68.3030,
 };
 
+// Dark mode map style for navigation
+const navigationMapStyles = [
+    { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
+    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
+    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+];
+
+const normalMapStyles = [
+    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+];
+
 function RiderMiniMapComponent({
     driverLat,
     driverLng,
+    driverHeading = 0,
     merchantLat,
     merchantLng,
     merchantName = "Comercio",
     customerLat,
     customerLng,
     customerAddress = "Cliente",
-    height = "250px"
+    customerName,
+    height = "250px",
+    navigationMode = false
 }: RiderMiniMapProps) {
-    const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+    const mapRef = useRef<google.maps.Map | null>(null);
+    const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
+    const [remainingPath, setRemainingPath] = useState<google.maps.LatLngLiteral[]>([]);
+    const [showCustomerInfo, setShowCustomerInfo] = useState(false);
+
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
         libraries,
     });
 
-    // Request directions
+    // Calculate route path
     useEffect(() => {
-        if (!isLoaded || !driverLat || !driverLng || !merchantLat || !merchantLng) return;
+        if (!isLoaded || !driverLat || !driverLng) return;
 
-        const directionsService = new google.maps.DirectionsService();
-
-        const origin = { lat: driverLat, lng: driverLng };
         const destination = customerLat && customerLng
             ? { lat: customerLat, lng: customerLng }
-            : { lat: merchantLat, lng: merchantLng };
+            : merchantLat && merchantLng
+                ? { lat: merchantLat, lng: merchantLng }
+                : null;
 
-        const waypoints = (customerLat && customerLng)
+        if (!destination) return;
+
+        const directionsService = new google.maps.DirectionsService();
+        const origin = { lat: driverLat, lng: driverLng };
+
+        const waypoints = (customerLat && customerLng && merchantLat && merchantLng)
             ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
             : [];
 
@@ -69,18 +100,90 @@ function RiderMiniMapComponent({
                 travelMode: google.maps.TravelMode.DRIVING,
             },
             (result, status) => {
-                if (status === google.maps.DirectionsStatus.OK) {
-                    setDirections(result);
+                if (status === google.maps.DirectionsStatus.OK && result) {
+                    // Extract path from all route legs
+                    const path: google.maps.LatLngLiteral[] = [];
+                    result.routes[0].legs.forEach(leg => {
+                        leg.steps.forEach(step => {
+                            step.path.forEach(point => {
+                                path.push({ lat: point.lat(), lng: point.lng() });
+                            });
+                        });
+                    });
+                    setRoutePath(path);
+                    setRemainingPath(path);
                 }
             }
         );
     }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng]);
+
+    // Update remaining path as driver moves (erase path behind driver)
+    useEffect(() => {
+        if (!navigationMode || !driverLat || !driverLng || routePath.length === 0) return;
+
+        const driverPos = { lat: driverLat, lng: driverLng };
+
+        // Find the closest point on the path to the driver
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        routePath.forEach((point, index) => {
+            const distance = Math.sqrt(
+                Math.pow(point.lat - driverPos.lat, 2) +
+                Math.pow(point.lng - driverPos.lng, 2)
+            );
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
+            }
+        });
+
+        // Only show path from current position forward
+        setRemainingPath(routePath.slice(closestIndex));
+    }, [navigationMode, driverLat, driverLng, routePath]);
+
+    // Auto-center on driver in navigation mode
+    useEffect(() => {
+        if (!navigationMode || !mapRef.current || !driverLat || !driverLng) return;
+
+        mapRef.current.panTo({ lat: driverLat, lng: driverLng });
+    }, [navigationMode, driverLat, driverLng]);
+
+    const onMapLoad = useCallback((map: google.maps.Map) => {
+        mapRef.current = map;
+    }, []);
 
     const center = useMemo(() => {
         if (driverLat && driverLng) return { lat: driverLat, lng: driverLng };
         if (merchantLat && merchantLng) return { lat: merchantLat, lng: merchantLng };
         return defaultCenter;
     }, [driverLat, driverLng, merchantLat, merchantLng]);
+
+    // Create arrow icon for driver in navigation mode
+    const driverIcon = useMemo(() => {
+        if (!isLoaded) return undefined;
+
+        if (navigationMode) {
+            return {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillOpacity: 1,
+                fillColor: "#22c55e", // Green
+                strokeColor: "#166534",
+                strokeWeight: 2,
+                scale: 7,
+                rotation: driverHeading,
+            };
+        }
+
+        return {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillOpacity: 1,
+            fillColor: "#22c55e",
+            strokeColor: "white",
+            strokeWeight: 2,
+            scale: 8,
+        };
+    }, [isLoaded, navigationMode, driverHeading]);
 
     if (!isLoaded) {
         return (
@@ -93,81 +196,109 @@ function RiderMiniMapComponent({
 
     return (
         <div style={{ height, width: "100%" }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative">
+            {/* Navigation Mode Badge */}
+            {navigationMode && (
+                <div className="absolute top-2 left-2 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
+                    <span className="w-2 h-2 bg-white rounded-full"></span>
+                    NAVEGANDO
+                </div>
+            )}
+
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={center}
-                zoom={14}
+                zoom={navigationMode ? 17 : 14}
+                onLoad={onMapLoad}
                 options={{
-                    disableDefaultUI: false,
-                    zoomControl: true,
-                    scrollwheel: true,
-                    gestureHandling: "cooperative",
-                    styles: [
-                        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-                    ],
+                    disableDefaultUI: navigationMode,
+                    zoomControl: !navigationMode,
+                    scrollwheel: !navigationMode,
+                    gestureHandling: navigationMode ? "none" : "cooperative",
+                    styles: navigationMode ? navigationMapStyles : normalMapStyles,
                 }}
             >
-                {directions && (
-                    <DirectionsRenderer
+                {/* Route path - shows remaining route in navigation mode */}
+                {remainingPath.length > 0 && (
+                    <Polyline
+                        path={remainingPath}
                         options={{
-                            directions: directions,
-                            suppressMarkers: true,
-                            preserveViewport: true, // IMPORTANT: Prevents map from jumping/shaking on update
-                            polylineOptions: {
-                                strokeColor: "#3b82f6",
-                                strokeWeight: 4,
-                                strokeOpacity: 0.8,
-                            },
+                            strokeColor: navigationMode ? "#60a5fa" : "#3b82f6",
+                            strokeWeight: navigationMode ? 6 : 4,
+                            strokeOpacity: 0.9,
                         }}
                     />
                 )}
 
-                {/* Driver - GREEN */}
+                {/* Driver marker - arrow in navigation mode */}
                 {driverLat && driverLng && (
                     <Marker
                         position={{ lat: driverLat, lng: driverLng }}
-                        icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillOpacity: 1,
-                            fillColor: "#22c55e", // Green
-                            strokeColor: "white",
-                            strokeWeight: 2,
-                            scale: 8,
-                        }}
+                        icon={driverIcon}
                         title="Tu ubicación"
+                        zIndex={1000}
                     />
                 )}
 
-                {/* Merchant - BLUE */}
+                {/* Merchant marker - Blue */}
                 {merchantLat && merchantLng && (
                     <Marker
                         position={{ lat: merchantLat, lng: merchantLng }}
                         icon={{
                             path: google.maps.SymbolPath.CIRCLE,
                             fillOpacity: 1,
-                            fillColor: "#3b82f6", // Blue
+                            fillColor: "#3b82f6",
                             strokeColor: "white",
                             strokeWeight: 2,
-                            scale: 7,
+                            scale: navigationMode ? 10 : 7,
                         }}
                         title={merchantName}
+                        label={navigationMode ? {
+                            text: "🏪",
+                            fontSize: "16px",
+                        } : undefined}
                     />
                 )}
 
-                {/* Customer - RED */}
+                {/* Customer marker - Red with name label */}
                 {customerLat && customerLng && (
-                    <Marker
-                        position={{ lat: customerLat, lng: customerLng }}
-                        icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillOpacity: 1,
-                            fillColor: "#ef4444", // Red
-                            strokeColor: "white",
-                            strokeWeight: 2,
-                            scale: 7,
-                        }}
-                        title={customerAddress}
-                    />
+                    <>
+                        <Marker
+                            position={{ lat: customerLat, lng: customerLng }}
+                            icon={{
+                                path: google.maps.SymbolPath.CIRCLE,
+                                fillOpacity: 1,
+                                fillColor: "#ef4444",
+                                strokeColor: "white",
+                                strokeWeight: 3,
+                                scale: navigationMode ? 12 : 7,
+                            }}
+                            title={customerName || customerAddress}
+                            onClick={() => setShowCustomerInfo(true)}
+                        />
+
+                        {/* Customer name InfoWindow - always shown in navigation mode */}
+                        {(navigationMode || showCustomerInfo) && (
+                            <InfoWindow
+                                position={{ lat: customerLat, lng: customerLng }}
+                                onCloseClick={() => setShowCustomerInfo(false)}
+                                options={{
+                                    pixelOffset: new google.maps.Size(0, -15),
+                                    disableAutoPan: true,
+                                }}
+                            >
+                                <div className="px-2 py-1 text-center">
+                                    <p className="font-bold text-gray-900 text-sm">
+                                        {customerName || "Cliente"}
+                                    </p>
+                                    {customerAddress && (
+                                        <p className="text-xs text-gray-500 max-w-[150px] truncate">
+                                            {customerAddress}
+                                        </p>
+                                    )}
+                                </div>
+                            </InfoWindow>
+                        )}
+                    </>
                 )}
             </GoogleMap>
         </div>
