@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCategoryIcon } from "@/lib/icons";

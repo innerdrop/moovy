@@ -97,10 +97,47 @@ function DeliveryIllustration() {
 
 export default function HeroSliderNew() {
     const [current, setCurrent] = useState(0);
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+    // Minimum swipe distance (in px)
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || (!touchEnd && touchEnd !== 0)) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+            nextSlide();
+        }
+        if (isRightSwipe) {
+            prevSlide();
+        }
+    };
+
+    const nextSlide = () => {
+        setCurrent((prev) => (prev + 1) % slides.length);
+    };
+
+    const prevSlide = () => {
+        setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+    };
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setCurrent((prev) => (prev + 1) % slides.length);
+            nextSlide();
         }, 5000);
         return () => clearInterval(timer);
     }, []);
@@ -108,8 +145,13 @@ export default function HeroSliderNew() {
     const slide = slides[current];
 
     return (
-        <div className="px-2 pt-4">
-            <div className={`relative bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}>
+        <div className="w-full pt-4 pb-2">
+            <div
+                className={`relative mx-2 bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+            >
                 <div className="flex items-center min-h-[180px]">
                     {/* Text Content */}
                     <div className="flex-1 p-6 z-10">
@@ -122,6 +164,7 @@ export default function HeroSliderNew() {
                         <Link
                             href={slide.buttonLink}
                             className="inline-flex items-center gap-1 bg-white text-[#e60012] px-4 py-2 rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+                            onClick={(e) => e.stopPropagation()} // Prevent swiping when clicking button
                         >
                             {slide.buttonText}
                             <ChevronRight className="w-4 h-4" />
@@ -140,7 +183,7 @@ export default function HeroSliderNew() {
             </div>
 
             {/* Dots Indicator */}
-            <div className="flex justify-center gap-1.5 mt-3">
+            <div className="flex justify-center gap-1.5 mt-2">
                 {slides.map((_, idx) => (
                     <button
                         key={idx}
