@@ -22,7 +22,7 @@ if ($status) {
 
 # 1. Exportar base de datos local
 Write-Host "[DB] Exportando base de datos local..." -ForegroundColor Yellow
-docker exec moovy-postgres pg_dump -U postgres moovy_db > database_dump.sql
+docker exec moovy-db pg_dump -U postgres moovy_db > database_dump.sql
 
 # 2. Asegurar que estamos en develop y actualizados
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
