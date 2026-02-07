@@ -1,7 +1,6 @@
 "use client";
 
-// My Orders Page - Mis Pedidos
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
@@ -16,13 +15,16 @@ import {
     MapPin,
     Rocket,
     Gift,
-    ExternalLink
+    ExternalLink,
+    ChevronRight,
+    ArrowLeft,
+    Phone
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const OrderTrackingMiniMap = dynamic(
     () => import("@/components/orders/OrderTrackingMiniMap"),
-    { ssr: false, loading: () => <div className="h-[180px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-xs text-gray-400">Cargando mapa...</div> }
+    { ssr: false, loading: () => <div className="h-full w-full bg-gray-100 animate-pulse flex items-center justify-center text-xs text-gray-400">Cargando mapa...</div> }
 );
 
 interface Order {
@@ -49,7 +51,7 @@ interface Order {
         id: string;
         latitude?: number;
         longitude?: number;
-        user: { name: string };
+        user: { name: string, phone?: string };
     };
 }
 
@@ -58,8 +60,8 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
     PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-5 h-5" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
-    DRIVER_ASSIGNED: { label: "Repartidor en camino", color: "text-white", bgColor: "bg-blue-500", icon: <Truck className="w-5 h-5" /> },
-    PICKED_UP: { label: "Pedido recogido", color: "text-white", bgColor: "bg-orange-500", icon: <Truck className="w-5 h-5" /> },
+    DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-white", bgColor: "bg-blue-500", icon: <Truck className="w-5 h-5" /> },
+    PICKED_UP: { label: "Pedido en camino", color: "text-white", bgColor: "bg-orange-500", icon: <Truck className="w-5 h-5" /> },
     ON_THE_WAY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     IN_DELIVERY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
@@ -67,29 +69,23 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
 };
 
 export default function MisPedidosPage() {
-    const { status: authStatus } = useSession();
+    const { data: session, status: authStatus } = useSession();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+    const [filter, setFilter] = useState<"all" | "active" | "completed">("active");
 
     const isAuthenticated = authStatus === "authenticated";
 
     useEffect(() => {
         if (!isAuthenticated) {
-            setLoading(false);
+            if (authStatus !== "loading") setLoading(false);
             return;
         }
 
-        // Initial load
         loadOrders();
-
-        // Polling every 10 seconds to keep statuses updated
-        const intervalId = setInterval(() => {
-            loadOrders(true); // silent refresh
-        }, 10000);
-
+        const intervalId = setInterval(() => loadOrders(true), 10000);
         return () => clearInterval(intervalId);
-    }, [isAuthenticated]);
+    }, [isAuthenticated, authStatus]);
 
     async function loadOrders(silent = false) {
         try {
@@ -103,191 +99,206 @@ export default function MisPedidosPage() {
     }
 
     const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"];
-    const filteredOrders = orders.filter(order => {
-        if (filter === "active") return activeStatuses.includes(order.status);
-        if (filter === "completed") return !activeStatuses.includes(order.status);
-        return true;
-    });
 
-    // Loading state
+    const activeOrders = useMemo(() => orders.filter(o => activeStatuses.includes(o.status)), [orders]);
+    const completedOrders = useMemo(() => orders.filter(o => !activeStatuses.includes(o.status)), [orders]);
+
+    const filteredOrders = useMemo(() => {
+        if (filter === "active") return activeOrders;
+        if (filter === "completed") return completedOrders;
+        return orders;
+    }, [filter, orders, activeOrders, completedOrders]);
+
+    // Trackable order for the top map
+    const trackableOrder = useMemo(() => {
+        return activeOrders.find(o => ["DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"].includes(o.status));
+    }, [activeOrders]);
+
     if (authStatus === "loading" || loading) {
-        return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[#e60012]" /></div>;
+        return <div className="h-screen flex items-center justify-center bg-white"><Loader2 className="w-10 h-10 animate-spin text-[#e60012]" /></div>;
     }
 
-    // ========== EMPTY STATE FOR ANONYMOUS USERS ==========
     if (!isAuthenticated) {
         return (
-            <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center p-6 text-center">
-                {/* Illustration */}
+            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-white">
                 <div className="relative mb-6">
-                    <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center">
-                        <Package className="w-16 h-16 text-gray-300" />
+                    <div className="w-32 h-32 bg-gray-50 rounded-full flex items-center justify-center">
+                        <Package className="w-16 h-16 text-gray-200" />
                     </div>
                     <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-[#e60012] rounded-full flex items-center justify-center shadow-lg">
                         <Rocket className="w-6 h-6 text-white" />
                     </div>
                 </div>
-
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Tus pedidos aparecerán aquí
-                </h1>
-
-                <p className="text-gray-500 mb-8 max-w-xs">
-                    Creá tu cuenta MOOVER y empezá a pedir con envío gratis en tu primer pedido.
-                </p>
-
-                {/* CTA Buttons */}
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Tus pedidos aparecerán aquí</h1>
+                <p className="text-gray-500 mb-8 max-w-xs">Creá tu cuenta MOOVER y empezá a pedir con beneficios exclusivos.</p>
                 <div className="flex flex-col gap-3 w-full max-w-xs">
-                    <Link
-                        href="/registro"
-                        className="btn-primary py-4 text-lg flex items-center justify-center gap-2"
-                    >
-                        <Rocket className="w-5 h-5" />
-                        Crear mi cuenta
-                    </Link>
-
-                    <Link
-                        href="/login"
-                        className="text-[#e60012] font-medium py-3"
-                    >
-                        Ya tengo cuenta, iniciar sesión
-                    </Link>
-                </div>
-
-                {/* Benefit badges */}
-                <div className="mt-8 flex flex-wrap justify-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-full">
-                        <Gift className="w-3 h-3" />
-                        100 puntos de regalo
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full">
-                        <Truck className="w-3 h-3" />
-                        Envío gratis primer pedido
-                    </span>
+                    <Link href="/registro" className="w-full py-4 bg-[#e60012] text-white rounded-xl font-bold shadow-lg shadow-red-500/20">Crear mi cuenta</Link>
+                    <Link href="/login" className="text-[#e60012] font-semibold py-3 font-bold">Iniciar sesión</Link>
                 </div>
             </div>
         );
     }
 
-    // ========== ORDERS VIEW FOR AUTHENTICATED USERS ==========
     return (
-        <>
-            {/* Filter Tabs */}
-            <div className="sticky top-14 z-30 bg-white border-b px-4 py-2">
-                <div className="flex gap-2">
-                    {[{ key: "all", label: "Todos" }, { key: "active", label: "Activos" }, { key: "completed", label: "Completados" }].map((tab) => (
-                        <button key={tab.key} onClick={() => setFilter(tab.key as typeof filter)}
-                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${filter === tab.key ? "bg-[#e60012] text-white" : "bg-gray-100 text-gray-600"}`}>
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="p-4">
-                {filteredOrders.length === 0 ? (
-                    <div className="text-center py-16 bg-white rounded-xl">
-                        <ShoppingBag className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-                        <h2 className="text-lg font-semibold text-gray-600 mb-2">
-                            {filter === "active" ? "No tenés pedidos activos" : filter === "completed" ? "No tenés pedidos completados" : "No tenés pedidos aún"}
-                        </h2>
-                        <p className="text-gray-500 mb-6 text-sm">Cuando hagas tu primer pedido, aparecerá acá</p>
-                        <Link href="/productos" className="btn-primary">Ver Productos</Link>
+        <div className="min-h-screen flex flex-col bg-gray-50 overflow-hidden">
+            {/* STICKY MAP SECTION (If active order tracking) */}
+            {trackableOrder && (
+                <div className="h-[45vh] relative flex-shrink-0 z-10 shadow-lg">
+                    <OrderTrackingMiniMap
+                        orderId={trackableOrder.id}
+                        orderStatus={trackableOrder.status}
+                        merchantLat={trackableOrder.merchant?.latitude}
+                        merchantLng={trackableOrder.merchant?.longitude}
+                        merchantName={trackableOrder.merchant?.name}
+                        customerLat={trackableOrder.address.latitude}
+                        customerLng={trackableOrder.address.longitude}
+                        customerAddress={`${trackableOrder.address.street} ${trackableOrder.address.number}`}
+                        initialDriverLat={trackableOrder.driver?.latitude}
+                        initialDriverLng={trackableOrder.driver?.longitude}
+                        height="100%"
+                        showEta={true}
+                    />
+                    {/* Map Info Overlay */}
+                    <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
+                        <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white/50 pointer-events-auto">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#e60012]">Tracking En Vivo</p>
+                            <p className="text-sm font-bold text-gray-900 leading-none">#{trackableOrder.orderNumber}</p>
+                        </div>
+                        <Link
+                            href={`/seguimiento/${trackableOrder.id}`}
+                            className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-white/50 flex items-center justify-center pointer-events-auto hover:bg-white transition"
+                        >
+                            <ExternalLink className="w-5 h-5 text-gray-700" />
+                        </Link>
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        {filteredOrders.map((order) => {
+                </div>
+            )}
+
+            {/* CONTENT SECTION */}
+            <div className={`flex-1 flex flex-col bg-white overflow-hidden ${trackableOrder ? "rounded-t-[32px] -mt-8 relative z-20 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]" : ""}`}>
+                {/* Header / Tabs */}
+                <div className="flex-shrink-0 border-b bg-white/80 backdrop-blur-md sticky top-0 z-30">
+                    <div className="p-4 flex items-center justify-between">
+                        <h1 className="text-xl font-black italic tracking-tighter text-gray-900 uppercase">Mis Pedidos</h1>
+                        <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-1 rounded-full">{orders.length} TOTAL</span>
+                    </div>
+                    <div className="px-4 pb-3 flex gap-2">
+                        {[{ key: "active", label: "Activos", count: activeOrders.length }, { key: "completed", label: "Historial", count: completedOrders.length }].map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setFilter(tab.key as any)}
+                                className={`flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${filter === tab.key
+                                        ? "bg-gray-900 text-white shadow-lg"
+                                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                    }`}
+                            >
+                                {tab.label} {tab.count > 0 && `(${tab.count})`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Orders List */}
+                <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-4">
+                    {filteredOrders.length === 0 ? (
+                        <div className="text-center py-20 flex flex-col items-center">
+                            <ShoppingBag className="w-16 h-16 text-gray-100 mb-4" />
+                            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay pedidos {filter === "active" ? "activos" : "en el historial"}</p>
+                            <Link href="/productos" className="mt-4 px-6 py-3 bg-[#e60012] text-white font-bold rounded-xl text-sm">Hacer un pedido</Link>
+                        </div>
+                    ) : (
+                        filteredOrders.map((order) => {
                             const status = statusConfig[order.status] || statusConfig.PENDING;
-                            const createdAt = new Date(order.createdAt);
                             const isActive = activeStatuses.includes(order.status);
+                            const isBeingTracked = trackableOrder?.id === order.id;
 
                             return (
-                                <div key={order.id} className={`bg-white rounded-xl overflow-hidden ${isActive ? "ring-2 ring-[#e60012]/30" : ""}`}>
-                                    <div className={`px-4 py-3 ${status.bgColor} flex items-center justify-between`}>
+                                <div
+                                    key={order.id}
+                                    className={`group bg-white border-2 rounded-2xl transition-all duration-300 ${isActive
+                                            ? isBeingTracked ? "border-[#e60012]" : "border-gray-900"
+                                            : "border-gray-100 hover:border-gray-200"
+                                        }`}
+                                >
+                                    <div className={`px-4 py-2 flex items-center justify-between border-b ${isActive ? "bg-gray-50" : ""}`}>
                                         <div className="flex items-center gap-2">
-                                            <span className={status.color}>{status.icon}</span>
-                                            <span className={`font-semibold text-sm ${status.color}`}>{status.label}</span>
+                                            <div className={`w-2 h-2 rounded-full ${isActive ? "bg-[#e60012] animate-pulse" : "bg-gray-300"}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{status.label}</span>
                                         </div>
-                                        <span className="text-xs text-gray-500">
-                                            {createdAt.toLocaleDateString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                            {new Date(order.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "long" })}
                                         </span>
                                     </div>
-                                    <div className="p-4">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div>
-                                                <p className="font-bold text-gray-900 text-lg">#{order.orderNumber}</p>
-                                                <p className="text-sm text-gray-500">{order.items.length} {order.items.length === 1 ? "producto" : "productos"}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-[#e60012]">{formatPrice(order.total)}</p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5 mb-3">
-                                            {order.items.slice(0, 2).map((item) => (
-                                                <span key={item.id} className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">{item.quantity}x {item.name}</span>
-                                            ))}
-                                            {order.items.length > 2 && <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">+{order.items.length - 2} más</span>}
-                                        </div>
-                                        {order.address && (
-                                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                <MapPin className="w-3 h-3" />
-                                                {order.address.street} {order.address.number}
-                                            </div>
-                                        )}
-                                        {isActive && (
-                                            <div className="mt-4 pt-3 border-t border-gray-100">
-                                                {["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status) && (
-                                                    <div className="mb-4">
-                                                        <OrderTrackingMiniMap
-                                                            orderId={order.id}
-                                                            orderStatus={order.status}
-                                                            merchantLat={order.merchant?.latitude}
-                                                            merchantLng={order.merchant?.longitude}
-                                                            merchantName={order.merchant?.name}
-                                                            customerLat={order.address.latitude}
-                                                            customerLng={order.address.longitude}
-                                                            customerAddress={`${order.address.street} ${order.address.number}`}
-                                                            initialDriverLat={order.driver?.latitude}
-                                                            initialDriverLng={order.driver?.longitude}
-                                                            height="180px"
-                                                        />
-                                                        <Link
-                                                            href={`/seguimiento/${order.id}`}
-                                                            className="mt-2 w-full bg-gray-50 text-gray-500 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 hover:bg-gray-100 transition uppercase tracking-widest"
-                                                        >
-                                                            <ExternalLink className="w-3 h-3" />
-                                                            Pantalla Completa
-                                                        </Link>
-                                                    </div>
-                                                )}
 
-                                                <div className="flex items-center gap-1">
+                                    <div className="p-4">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-black text-xl italic tracking-tighter text-gray-900 uppercase leading-none">
+                                                        #{order.orderNumber}
+                                                    </h3>
+                                                    {order.merchant && (
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">
+                                                            {order.merchant.name}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {order.items.slice(0, 3).map((item) => (
+                                                        <span key={item.id} className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">{item.quantity}x {item.name}</span>
+                                                    ))}
+                                                    {order.items.length > 3 && <span className="text-[10px] font-bold text-gray-400 px-2 py-0.5">+{order.items.length - 3}</span>}
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xl font-black text-[#e60012] leading-none mb-1">{formatPrice(order.total)}</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase">{order.items.length} {order.items.length === 1 ? "Producto" : "Productos"}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Status progress for non-tracked active orders */}
+                                        {isActive && !isBeingTracked && (
+                                            <div className="mt-4 pt-4 border-t border-gray-50">
+                                                <div className="flex items-center gap-1.5 h-1.5">
                                                     {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step, idx) => {
                                                         const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"];
                                                         const currentIdx = stepOrder.indexOf(order.status);
                                                         const stepIdx = stepOrder.indexOf(step);
-                                                        const isCompleted = stepIdx <= currentIdx;
-
-                                                        // Color logic: Yellow -> Orange -> Green
-                                                        // 0-1: Yellow, 2-3: Orange, 4-5: Green
-                                                        let barColor = "bg-[#e60012]"; // Default red
-                                                        if (stepIdx <= 1) barColor = "bg-yellow-400";
-                                                        else if (stepIdx <= 3) barColor = "bg-orange-500";
-                                                        else barColor = "bg-green-500";
-
-                                                        return <div key={step} className={`flex-1 h-1.5 rounded-full transition-colors duration-500 ${isCompleted ? barColor : "bg-gray-200"}`} />;
+                                                        const isDone = stepIdx <= currentIdx;
+                                                        return <div key={step} className={`flex-1 h-full rounded-full transition-all duration-700 ${isDone ? "bg-gray-900" : "bg-gray-100"}`} />;
                                                     })}
-                                                </div>
-                                                <div className="flex justify-between mt-2 text-[10px] text-gray-400">
-                                                    <span>Pedido</span><span>Listo</span><span>Entregado</span>
                                                 </div>
                                             </div>
                                         )}
+
+                                        <div className="mt-4 flex gap-2">
+                                            <Link
+                                                href={`/seguimiento/${order.id}`}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isActive
+                                                        ? "bg-gray-900 text-white shadow-md active:scale-95"
+                                                        : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                                                    }`}
+                                            >
+                                                {isActive ? "Seguir Pedido" : "Ver Detalle"}
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Link>
+
+                                            {order.driver?.user.phone && isActive && (
+                                                <a
+                                                    href={`tel:${order.driver.user.phone}`}
+                                                    className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shadow-md hover:bg-green-600 transition-all active:scale-90"
+                                                >
+                                                    <Phone className="w-5 h-5 shadow-sm" />
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
-                        })}
-                    </div>
-                )}
+                        })
+                    )}
+                </div>
             </div>
-        </>
+        </div>
     );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock, Navigation } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
 interface OrderTrackingMiniMapProps {
@@ -17,6 +17,12 @@ interface OrderTrackingMiniMapProps {
     initialDriverLat?: number;
     initialDriverLng?: number;
     height?: string;
+    showEta?: boolean;
+}
+
+interface RouteInfo {
+    distance: string;
+    duration: string;
 }
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
@@ -31,6 +37,17 @@ const defaultCenter = {
     lng: -68.3030,
 };
 
+const darkMapStyles = [
+    { elementType: "geometry", stylers: [{ color: "#1d2c4d" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#1a3646" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#8ec3b9" }] },
+    { featureType: "land", stylers: [{ color: "#2c3e50" }] },
+    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#304a7d" }] },
+    { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#98a5be" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] },
+];
+
 function OrderTrackingMiniMap({
     orderId,
     orderStatus,
@@ -42,13 +59,16 @@ function OrderTrackingMiniMap({
     customerAddress = "Cliente",
     initialDriverLat,
     initialDriverLng,
-    height = "180px"
+    height = "180px",
+    showEta = false
 }: OrderTrackingMiniMapProps) {
     const [driverPos, setDriverPos] = useState<{ lat: number, lng: number } | null>(
         initialDriverLat && initialDriverLng ? { lat: initialDriverLat, lng: initialDriverLng } : null
     );
     const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+    const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
     const socketRef = useRef<Socket | null>(null);
+    const mapRef = useRef<google.maps.Map | null>(null);
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -60,7 +80,6 @@ function OrderTrackingMiniMap({
     useEffect(() => {
         if (!orderId) return;
 
-        // Only connect if order is in a trackable state
         const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
         if (!trackableStatuses.includes(orderStatus)) return;
 
@@ -84,20 +103,18 @@ function OrderTrackingMiniMap({
         };
     }, [orderId, orderStatus]);
 
-    // Request directions
+    // Request directions and calculate ETA
     useEffect(() => {
         if (!isLoaded || !merchantLat || !merchantLng || !customerLat || !customerLng) return;
 
         const directionsService = new google.maps.DirectionsService();
 
-        // Origin is Driver if available, otherwise Merchant
         const origin = driverPos
             ? { lat: driverPos.lat, lng: driverPos.lng }
             : { lat: merchantLat, lng: merchantLng };
 
         const destination = { lat: customerLat, lng: customerLng };
 
-        // Waypoint at merchant if driver hasn't picked up yet
         const waypoints = (driverPos && orderStatus === "DRIVER_ASSIGNED")
             ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
             : [];
@@ -110,12 +127,43 @@ function OrderTrackingMiniMap({
                 travelMode: google.maps.TravelMode.DRIVING,
             },
             (result, status) => {
-                if (status === google.maps.DirectionsStatus.OK) {
+                if (status === google.maps.DirectionsStatus.OK && result) {
                     setDirections(result);
+
+                    const route = result.routes[0];
+                    if (route && route.legs) {
+                        let totalDistance = 0;
+                        let totalDuration = 0;
+
+                        route.legs.forEach(leg => {
+                            totalDistance += leg.distance?.value || 0;
+                            totalDuration += leg.duration?.value || 0;
+                        });
+
+                        setRouteInfo({
+                            distance: totalDistance >= 1000
+                                ? `${(totalDistance / 1000).toFixed(1)} km`
+                                : `${totalDistance} m`,
+                            duration: `${Math.ceil(totalDuration / 60)} min`
+                        });
+                    }
                 }
             }
         );
     }, [isLoaded, driverPos, merchantLat, merchantLng, customerLat, customerLng, orderStatus]);
+
+    // Fit bounds to show all markers
+    useEffect(() => {
+        if (!mapRef.current || !directions) return;
+
+        const bounds = new google.maps.LatLngBounds();
+
+        if (driverPos) bounds.extend(driverPos);
+        if (merchantLat && merchantLng) bounds.extend({ lat: merchantLat, lng: merchantLng });
+        if (customerLat && customerLng) bounds.extend({ lat: customerLat, lng: customerLng });
+
+        mapRef.current.fitBounds(bounds, 50);
+    }, [directions, driverPos, merchantLat, merchantLng, customerLat, customerLng]);
 
     const center = useMemo(() => {
         if (driverPos) return driverPos;
@@ -132,19 +180,18 @@ function OrderTrackingMiniMap({
     }
 
     return (
-        <div style={{ height }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative">
+        <div style={{ height }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative group">
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={center}
                 zoom={14}
+                onLoad={map => { mapRef.current = map; }}
                 options={{
-                    disableDefaultUI: false,
-                    zoomControl: true,
+                    disableDefaultUI: true,
+                    zoomControl: false,
                     scrollwheel: true,
-                    gestureHandling: "cooperative",
-                    styles: [
-                        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-                    ],
+                    gestureHandling: "greedy",
+                    styles: darkMapStyles,
                 }}
             >
                 {directions && (
@@ -154,61 +201,79 @@ function OrderTrackingMiniMap({
                             suppressMarkers: true,
                             preserveViewport: true,
                             polylineOptions: {
-                                strokeColor: "#3b82f6",
-                                strokeWeight: 4,
+                                strokeColor: "#e60012",
+                                strokeWeight: 6,
                                 strokeOpacity: 0.8,
                             },
                         }}
                     />
                 )}
 
-                {/* Driver - GREEN */}
-                {driverPos && (
-                    <Marker
-                        position={driverPos}
-                        icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillOpacity: 1,
-                            fillColor: "#22c55e",
-                            strokeColor: "white",
-                            strokeWeight: 2,
-                            scale: 7,
-                        }}
-                    />
-                )}
-
-                {/* Merchant - BLUE */}
+                {/* Merchant Marker */}
                 {merchantLat && merchantLng && (
                     <Marker
                         position={{ lat: merchantLat, lng: merchantLng }}
                         icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillOpacity: 1,
-                            fillColor: "#3b82f6",
-                            strokeColor: "white",
-                            strokeWeight: 2,
-                            scale: 6,
+                            url: "data:image/svg+xml," + encodeURIComponent(`
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+                                    <circle cx="15" cy="15" r="13" fill="#3b82f6" stroke="white" stroke-width="2"/>
+                                    <path d="M10 14h10v6H10z" fill="white"/>
+                                </svg>
+                            `),
+                            scaledSize: new google.maps.Size(30, 30),
+                            anchor: new google.maps.Point(15, 15)
                         }}
-                        title={merchantName}
                     />
                 )}
 
-                {/* Customer - RED */}
+                {/* Driver Marker */}
+                {driverPos && (
+                    <Marker
+                        position={driverPos}
+                        icon={{
+                            url: "data:image/svg+xml," + encodeURIComponent(`
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                                    <circle cx="20" cy="20" r="18" fill="#22c55e" stroke="white" stroke-width="3"/>
+                                    <path d="M14 20l12-8v16z" fill="white" transform="rotate(${directions?.routes[0]?.legs[0]?.steps[0]?.start_location ? 0 : 0})"/>
+                                </svg>
+                            `),
+                            scaledSize: new google.maps.Size(40, 40),
+                            anchor: new google.maps.Point(20, 20)
+                        }}
+                    />
+                )}
+
+                {/* Customer Marker */}
                 {customerLat && customerLng && (
                     <Marker
                         position={{ lat: customerLat, lng: customerLng }}
                         icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillOpacity: 1,
-                            fillColor: "#ef4444",
-                            strokeColor: "white",
-                            strokeWeight: 2,
-                            scale: 7,
+                            url: "data:image/svg+xml," + encodeURIComponent(`
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">
+                                    <path d="M15 0 C6.7 0 0 6.7 0 15 C0 26 15 38 15 38 C15 38 30 26 30 15 C30 6.7 23.3 0 15 0z" fill="#ef4444" stroke="white" stroke-width="2"/>
+                                    <circle cx="15" cy="14" r="6" fill="white"/>
+                                </svg>
+                            `),
+                            scaledSize: new google.maps.Size(30, 38),
+                            anchor: new google.maps.Point(15, 38)
                         }}
-                        title={customerAddress}
                     />
                 )}
             </GoogleMap>
+
+            {/* ETA Overlay */}
+            {showEta && routeInfo && (
+                <div className="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl p-3 flex items-center justify-between shadow-lg animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-orange-500" />
+                        <span className="text-xs font-bold text-gray-900">Llegada en {routeInfo.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Navigation className="w-4 h-4 text-blue-500" />
+                        <span className="text-xs font-medium text-gray-500">{routeInfo.distance}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
