@@ -14,13 +14,17 @@ import {
     DollarSign,
     Calendar,
     ChevronRight,
+    ChevronUp,
     Power,
     Loader2,
     MapPin,
     Timer,
     ExternalLink,
     Map,
-    LogOut
+    LogOut,
+    Menu,
+    Phone,
+    User
 } from "lucide-react";
 import { useDriverLocation } from "@/hooks/useDriverLocation";
 import dynamic from "next/dynamic";
@@ -28,7 +32,7 @@ import dynamic from "next/dynamic";
 // Dynamic import for mini-map (SSR incompatible)
 const RiderMiniMap = dynamic(
     () => import("@/components/rider/RiderMiniMap"),
-    { ssr: false, loading: () => <div className="h-[150px] bg-gray-100 rounded-lg animate-pulse" /> }
+    { ssr: false, loading: () => <div className="h-full w-full bg-gray-200 animate-pulse" /> }
 );
 
 export default function RepartidorDashboard() {
@@ -36,6 +40,7 @@ export default function RepartidorDashboard() {
     const [isOnline, setIsOnline] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isToggling, setIsToggling] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
 
     // Fetch initial status
     useEffect(() => {
@@ -129,532 +134,384 @@ export default function RepartidorDashboard() {
 
     const { stats, pedidosActivos, pedidosDisponibles, pedidosPendientes } = dashboardData;
 
+    // Get the current active order (if any)
+    const pedidoActivo = pedidosActivos?.[0];
+
+    // Determine current status text
+    const getStatusText = () => {
+        if (!isOnline) return "Desconectado";
+        if (pedidoActivo) {
+            if (pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived") {
+                return "Recogiendo";
+            }
+            if (pedidoActivo.estado === "picked_up" || pedidoActivo.estado === "on_the_way" || pedidoActivo.estado === "in_delivery") {
+                return "Repartiendo";
+            }
+        }
+        return "Listo";
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className={`${isOnline ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-gray-500 to-gray-600'} text-white px-4 py-6 pb-20 transition-colors duration-500`}>
-                <div className="max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className={`${isOnline ? 'text-green-100' : 'text-gray-300'} text-sm`}>Bienvenido</p>
-                                    <h1 className="text-2xl font-bold">
-                                        {session?.user?.name || "Repartidor"}
-                                    </h1>
-                                </div>
+        <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
+            {/* STICKY MAP SECTION - Takes 60% of screen */}
+            <div className="relative h-[60vh] flex-shrink-0">
+                {/* Map */}
+                <div className="absolute inset-0">
+                    <RiderMiniMap
+                        driverLat={lat ?? undefined}
+                        driverLng={lng ?? undefined}
+                        driverHeading={driverHeading ?? 0}
+                        merchantLat={pedidoActivo?.merchantLat}
+                        merchantLng={pedidoActivo?.merchantLng}
+                        merchantName={pedidoActivo?.comercio}
+                        customerLat={pedidoActivo?.customerLat}
+                        customerLng={pedidoActivo?.customerLng}
+                        customerAddress={pedidoActivo?.direccionCliente || "Cliente"}
+                        customerName={pedidoActivo?.nombreCliente || pedidoActivo?.clienteNombre || "Cliente"}
+                        height="100%"
+                        navigationMode={!!pedidoActivo}
+                    />
+                </div>
+
+                {/* Floating Menu Button */}
+                <button
+                    onClick={() => setShowMenu(!showMenu)}
+                    className="absolute top-4 left-4 z-20 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+                >
+                    <Menu className="w-6 h-6 text-gray-700" />
+                </button>
+
+                {/* Status Indicator (top center) */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-white rounded-full px-4 py-2 shadow-lg flex items-center gap-2">
+                    <span className="text-xs text-gray-500 font-medium">Estado</span>
+                    <div className={`w-2 h-2 rounded-full ${isOnline ? (pedidoActivo ? 'bg-orange-500' : 'bg-green-500') : 'bg-gray-400'}`} />
+                    <span className="text-sm font-bold text-gray-900">{getStatusText()}</span>
+                </div>
+
+                {/* Support Button (top right) */}
+                <Link
+                    href="/repartidor/soporte"
+                    className="absolute top-4 right-4 z-20 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+                >
+                    <MessageCircle className="w-5 h-5 text-gray-700" />
+                </Link>
+
+                {/* Google Maps Navigate Button (left side) */}
+                {pedidoActivo && pedidoActivo.navLat && pedidoActivo.navLng && (
+                    <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${pedidoActivo.navLat},${pedidoActivo.navLng}&travelmode=driving`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-green-500 hover:bg-green-600 text-white rounded-full px-4 py-3 shadow-xl flex items-center gap-2 font-bold transition-all active:scale-95"
+                    >
+                        <Navigation className="w-5 h-5" />
+                        Navegar
+                    </a>
+                )}
+
+                {/* Re-center GPS button */}
+                <button
+                    onClick={() => {
+                        // This is handled by the RiderMiniMap component internally
+                    }}
+                    className="absolute bottom-4 right-4 z-20 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                    </svg>
+                </button>
+
+                {/* Floating Menu Dropdown */}
+                {showMenu && (
+                    <div className="absolute top-20 left-4 z-30 bg-white rounded-2xl shadow-2xl w-64 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="p-4 border-b bg-gradient-to-r from-green-500 to-green-600 text-white">
+                            <p className="font-bold text-lg">{session?.user?.name || "Repartidor"}</p>
+                            <p className="text-green-100 text-xs">Moovy Rider</p>
+                        </div>
+                        <nav className="py-2">
+                            <Link href="/repartidor/historial" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                                <Calendar className="w-5 h-5 text-green-600" />
+                                <span className="font-medium text-gray-700">Historial</span>
+                            </Link>
+                            <Link href="/repartidor/ganancias" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                                <TrendingUp className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium text-gray-700">Ganancias</span>
+                            </Link>
+                            <Link href="/repartidor/perfil" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                                <User className="w-5 h-5 text-purple-600" />
+                                <span className="font-medium text-gray-700">Mi Perfil</span>
+                            </Link>
+                            <Link href="/repartidor/soporte" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                                <MessageCircle className="w-5 h-5 text-orange-600" />
+                                <span className="font-medium text-gray-700">Soporte</span>
+                            </Link>
+                            <div className="border-t mt-2 pt-2">
                                 <button
                                     onClick={() => signOut({ callbackUrl: "/repartidor/login" })}
-                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-2 text-xs border border-white/10 mr-4"
+                                    className="flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition w-full text-left"
                                 >
-                                    <LogOut className="w-4 h-4" />
-                                    <span>Cerrar Sesión</span>
+                                    <LogOut className="w-5 h-5 text-red-500" />
+                                    <span className="font-medium text-red-600">Cerrar Sesión</span>
                                 </button>
                             </div>
-                        </div>
-
-                        {/* Online Toggle Button */}
-                        <button
-                            onClick={toggleOnline}
-                            disabled={isLoading || isToggling}
-                            className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${isOnline
-                                ? 'bg-white shadow-lg shadow-green-500/30'
-                                : 'bg-white/20 hover:bg-white/30'
-                                } ${(isLoading || isToggling) ? 'opacity-70' : ''}`}
-                        >
-                            {isToggling ? (
-                                <Loader2 className={`w-8 h-8 animate-spin ${isOnline ? 'text-green-500' : 'text-white'}`} />
-                            ) : (
-                                <Power className={`w-8 h-8 ${isOnline ? 'text-green-500' : 'text-white'}`} />
-                            )}
-                            {isOnline && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
-                            )}
-                        </button>
+                        </nav>
                     </div>
+                )}
 
-                    {/* Status Indicator & GPS Status */}
-                    <div className="flex flex-col gap-2 text-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                {isLoading ? (
-                                    <span className="text-gray-300 italic">Cargando estado...</span>
-                                ) : isOnline ? (
-                                    <>
-                                        <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />
-                                        <span className="text-green-100 font-medium">En línea y disponible</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                                        <span className="text-gray-300">Fuera de línea</span>
-                                    </>
+                {/* Click outside to close menu */}
+                {showMenu && (
+                    <div
+                        className="absolute inset-0 z-10"
+                        onClick={() => setShowMenu(false)}
+                    />
+                )}
+            </div>
+
+            {/* SCROLLABLE BOTTOM PANEL */}
+            <div className="flex-1 bg-white rounded-t-[24px] -mt-6 relative z-10 shadow-2xl overflow-y-auto">
+                {/* Handle/indicator for dragging feel */}
+                <div className="flex justify-center pt-3 pb-2">
+                    <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                </div>
+
+                {/* Content */}
+                <div className="px-4 pb-8">
+                    {/* If there's an active order */}
+                    {pedidoActivo ? (
+                        <div className="space-y-4">
+                            {/* Customer/Order Info Card */}
+                            <div className="flex items-center justify-between py-2">
+                                <div>
+                                    <h2 className="font-bold text-xl text-gray-900">
+                                        {pedidoActivo.nombreCliente || pedidoActivo.clienteNombre || "Cliente"}
+                                    </h2>
+                                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                                        {pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived"
+                                            ? "Ir al comercio"
+                                            : "Ir a la dirección del cliente"}
+                                        <span className="mx-1">•</span>
+                                        <span className="text-green-600 font-medium">
+                                            Llegada en {pedidoActivo.tiempoAlCliente || pedidoActivo.tiempoAlComercio || "?"} min
+                                        </span>
+                                    </p>
+                                </div>
+                                {pedidoActivo.telefonoCliente && (
+                                    <a
+                                        href={`tel:${pedidoActivo.telefonoCliente}`}
+                                        className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition"
+                                    >
+                                        <Phone className="w-5 h-5 text-gray-600" />
+                                    </a>
                                 )}
                             </div>
 
-                            {/* GPS Pulse Indicator */}
-                            {isOnline && (
-                                <div className="flex items-center gap-2 border-l border-white/20 pl-4">
-                                    {locationHookError ? (
-                                        <div className="flex items-center gap-1.5 text-red-200 bg-red-500/20 px-2 py-0.5 rounded-full border border-red-400/30">
-                                            <MapPin className="w-3 h-3" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">GPS Error</span>
-                                        </div>
-                                    ) : lat && lng ? (
-                                        <div className="flex items-center gap-1.5 text-green-200 bg-green-500/20 px-2 py-0.5 rounded-full border border-green-400/30">
-                                            <Navigation className="w-3 h-3 animate-pulse" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-green-300">GPS OK</span>
-                                        </div>
+                            {/* Direction Section */}
+                            <div className="border-t pt-4">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Dirección</p>
+                                <div className="flex items-start gap-3">
+                                    <MapPin className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                    <p className="text-gray-800 font-medium">
+                                        {pedidoActivo.direccion || pedidoActivo.direccionCliente || "Dirección no disponible"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <button
+                                onClick={async () => {
+                                    const newStatus =
+                                        (pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived") ? "PICKED_UP" :
+                                            (pedidoActivo.estado === "picked_up" || pedidoActivo.estado === "on_the_way" || pedidoActivo.estado === "in_delivery") ? "DELIVERED" :
+                                                null;
+
+                                    if (!newStatus) return;
+
+                                    const actionName = newStatus === "PICKED_UP" ? "iniciar el viaje" : "finalizar la entrega";
+                                    if (!confirm(`¿Confirmas que vas a ${actionName}?`)) return;
+
+                                    try {
+                                        const res = await fetch(`/api/orders/${pedidoActivo.id}`, {
+                                            method: "PATCH",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ status: newStatus })
+                                        });
+
+                                        if (res.ok) {
+                                            alert("¡Estado actualizado!");
+                                            // Trigger refresh
+                                            const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
+                                            setDashboardData(fresh);
+                                        } else {
+                                            const err = await res.json();
+                                            alert(err.error || "Error al actualizar");
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                        alert("Error de conexión");
+                                    }
+                                }}
+                                className="w-full py-4 bg-[#e60012] hover:bg-[#c5000f] text-white font-bold text-lg rounded-2xl shadow-lg shadow-red-500/20 transition-all active:scale-98 flex items-center justify-center gap-2"
+                            >
+                                {(pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived")
+                                    ? "Tengo el pedido"
+                                    : "Continuar con la entrega"}
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ) : (
+                        /* No active order - show offers or waiting state */
+                        <div className="space-y-4">
+                            {/* Online/Offline Toggle */}
+                            <div className="flex items-center justify-between py-3">
+                                <div>
+                                    <h2 className="font-bold text-xl text-gray-900">
+                                        {isOnline ? "Buscando pedidos..." : "Estás desconectado"}
+                                    </h2>
+                                    <p className="text-sm text-gray-500">
+                                        {isOnline
+                                            ? "Te avisaremos cuando haya un pedido cercano"
+                                            : "Conéctate para empezar a recibir pedidos"
+                                        }
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={toggleOnline}
+                                    disabled={isLoading || isToggling}
+                                    className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${isOnline
+                                        ? 'bg-green-500 shadow-lg shadow-green-500/30'
+                                        : 'bg-gray-300 hover:bg-gray-400'
+                                        } ${(isLoading || isToggling) ? 'opacity-70' : ''}`}
+                                >
+                                    {isToggling ? (
+                                        <Loader2 className="w-8 h-8 animate-spin text-white" />
                                     ) : (
-                                        <div className="flex items-center gap-1.5 text-amber-200 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-400/30">
-                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider italic">Buscando GPS...</span>
-                                        </div>
+                                        <Power className="w-8 h-8 text-white" />
+                                    )}
+                                    {isOnline && (
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* GPS/Location status */}
+                            {isOnline && (
+                                <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-xl ${locationHookError
+                                        ? 'bg-red-50 text-red-700'
+                                        : lat && lng
+                                            ? 'bg-green-50 text-green-700'
+                                            : 'bg-amber-50 text-amber-700'
+                                    }`}>
+                                    {locationHookError ? (
+                                        <>
+                                            <MapPin className="w-4 h-4" />
+                                            <span className="font-medium">{locationHookError}. Necesitas compartir tu ubicación.</span>
+                                        </>
+                                    ) : lat && lng ? (
+                                        <>
+                                            <Navigation className="w-4 h-4 animate-pulse" />
+                                            <span className="font-medium">GPS activo - Ubicación compartida</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span className="font-medium">Buscando ubicación GPS...</span>
+                                        </>
                                     )}
                                 </div>
                             )}
-                        </div>
 
-                        {/* Location Error Warning */}
-                        {isOnline && locationHookError && (
-                            <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-3 mt-2 animate-pulse">
-                                <p className="text-xs text-red-100 font-medium flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    {locationHookError}. Es necesario compartir tu ubicación para recibir pedidos.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+                            {/* Pending Order Offers */}
+                            {pedidosPendientes && pedidosPendientes.length > 0 && (
+                                <div className="space-y-3 mt-4">
+                                    <h3 className="font-bold text-lg text-orange-600 flex items-center gap-2">
+                                        <Package className="w-5 h-5 animate-bounce" />
+                                        ¡Nueva oferta de pedido!
+                                    </h3>
+                                    {pedidosPendientes.map((pedido) => (
+                                        <div key={pedido.id} className="bg-orange-50 border-2 border-orange-400 rounded-2xl p-4">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <p className="font-bold text-gray-900">{pedido.comercio}</p>
+                                                    <p className="text-sm text-gray-600">{pedido.direccion}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-2xl text-orange-600">${pedido.gananciaEstimada}</p>
+                                                    <p className="text-xs text-gray-500">Tu ganancia</p>
+                                                </div>
+                                            </div>
 
-            {/* Stats Cards - Overlapping */}
-            <div className="px-4 -mt-14 mb-6">
-                <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <Package className="w-4 h-4" />
-                            Hoy
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900">{stats.pedidosHoy}</p>
-                        <p className="text-xs text-gray-500">pedidos</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 text-orange-500 text-xs mb-1">
-                            <Clock className="w-4 h-4" />
-                            En camino
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900">{stats.enCamino}</p>
-                        <p className="text-xs text-gray-500">activos</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 text-green-500 text-xs mb-1">
-                            <CheckCircle2 className="w-4 h-4" />
-                            Completados
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900">{stats.completados}</p>
-                        <p className="text-xs text-gray-500">entregas</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 text-blue-500 text-xs mb-1">
-                            <DollarSign className="w-4 h-4" />
-                            Ganancias
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900">
-                            ${stats.gananciasHoy.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-500">hoy</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Pedidos Pendientes (OFERTAS EXCLUSIVAS) */}
-            {pedidosPendientes && pedidosPendientes.length > 0 && (
-                <div className="px-4 mb-6">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="flex items-center gap-2 mb-3">
-                            <h2 className="text-xl font-bold text-orange-600 border-l-4 border-orange-500 pl-2">
-                                ¡Ofertas de Pedido!
-                            </h2>
-                            <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full animate-bounce">
-                                ¡Acepta ya!
-                            </span>
-                        </div>
-
-                        <div className="space-y-4">
-                            {pedidosPendientes.map((pedido) => (
-                                <div key={pedido.id} className="bg-white rounded-xl p-5 shadow-xl border-2 border-orange-400 relative overflow-hidden ring-4 ring-orange-500/10">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <h3 className="font-bold text-xl text-gray-900">{pedido.comercio}</h3>
-                                            <p className="text-sm text-gray-600 mb-1 font-medium">{pedido.direccion}</p>
-                                            {pedido.direccionCliente && (
-                                                <p className="text-xs text-orange-600 font-bold italic">Entrega a: {pedido.direccionCliente}</p>
+                                            {pedido.expiresAt && (
+                                                <div className="bg-orange-100 rounded-lg py-2 px-3 mb-3 flex items-center justify-center gap-2">
+                                                    <Clock className="w-4 h-4 text-orange-600" />
+                                                    <span className="font-bold text-orange-700">
+                                                        Expira en: {Math.max(0, Math.floor((new Date(pedido.expiresAt).getTime() - Date.now()) / 1000))}s
+                                                    </span>
+                                                </div>
                                             )}
+
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!confirm("¿Rechazar este pedido?")) return;
+                                                        try {
+                                                            const res = await fetch(`/api/driver/orders/${pedido.id}/reject`, { method: "POST" });
+                                                            if (res.ok) {
+                                                                const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
+                                                                setDashboardData(fresh);
+                                                            }
+                                                        } catch (e) { alert("Error"); }
+                                                    }}
+                                                    className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition"
+                                                >
+                                                    Rechazar
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
+                                                            if (res.ok) {
+                                                                const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
+                                                                setDashboardData(fresh);
+                                                                alert("¡Pedido aceptado!");
+                                                            } else {
+                                                                const err = await res.json();
+                                                                alert(err.error || "Error");
+                                                            }
+                                                        } catch (e) { alert("Error"); }
+                                                    }}
+                                                    className="flex-[2] bg-orange-500 text-white font-black py-3 rounded-xl hover:bg-orange-600 transition shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2"
+                                                >
+                                                    <Bike className="w-5 h-5" />
+                                                    ¡ACEPTAR!
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="block font-black text-2xl text-orange-600">
-                                                ${pedido.gananciaEstimada}
-                                            </span>
-                                            <span className="text-xs text-gray-400 font-bold uppercase">Tu Ganancia</span>
-                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Stats cards when online and no pending offers */}
+                            {isOnline && (!pedidosPendientes || pedidosPendientes.length === 0) && (
+                                <div className="grid grid-cols-3 gap-3 mt-4">
+                                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                                        <p className="text-2xl font-bold text-gray-900">{stats.pedidosHoy}</p>
+                                        <p className="text-xs text-gray-500">Hoy</p>
                                     </div>
-
-                                    {/* Countdown Timer */}
-                                    {pedido.expiresAt && (
-                                        <div className="my-3 py-2 bg-orange-50 rounded-lg border border-orange-200 flex items-center justify-center gap-2">
-                                            <Clock className="w-5 h-5 text-orange-600 animate-pulse" />
-                                            <span className="text-orange-700 font-black">
-                                                Expira en: {Math.max(0, Math.floor((new Date(pedido.expiresAt).getTime() - Date.now()) / 1000))}s
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    <div className="flex gap-2 flex-wrap mt-2 mb-4">
-                                        <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-bold">
-                                            <Timer className="w-3.5 h-3.5" />
-                                            {pedido.tiempoAlComercio} min al comercio
-                                        </div>
-                                        <div className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-bold">
-                                            <Map className="w-3.5 h-3.5" />
-                                            {pedido.distanciaTotal} total
-                                        </div>
+                                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                                        <p className="text-2xl font-bold text-green-600">{stats.completados}</p>
+                                        <p className="text-xs text-gray-500">Completados</p>
                                     </div>
-
-                                    <div className="flex items-center justify-between gap-3">
-                                        <button
-                                            onClick={async () => {
-                                                if (!confirm("¿Rechazar este pedido? Se ofrecerá a otro repartidor.")) return;
-                                                try {
-                                                    const res = await fetch(`/api/driver/orders/${pedido.id}/reject`, { method: "POST" });
-                                                    if (res.ok) {
-                                                        const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
-                                                        setDashboardData(fresh);
-                                                    }
-                                                } catch (e) { alert("Error"); }
-                                            }}
-                                            className="flex-1 bg-gray-100 text-gray-500 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition"
-                                        >
-                                            Rechazar
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
-                                                    if (res.ok) {
-                                                        // Refresh data
-                                                        const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
-                                                        setDashboardData(fresh);
-                                                        alert("¡Pedido aceptado! Ve al comercio.");
-                                                    } else {
-                                                        const err = await res.json();
-                                                        alert(err.error || "Error");
-                                                    }
-                                                } catch (e) { alert("Error"); }
-                                            }}
-                                            className="flex-[2] bg-orange-500 text-white font-black py-4 px-6 rounded-xl shadow-lg shadow-orange-500/30 hover:bg-orange-600 active:scale-95 transition flex items-center justify-center gap-2 text-lg"
-                                        >
-                                            <Bike className="w-6 h-6" />
-                                            ¡ACEPTAR!
-                                        </button>
+                                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                                        <p className="text-2xl font-bold text-blue-600">${stats.gananciasHoy.toLocaleString()}</p>
+                                        <p className="text-xs text-gray-500">Ganado</p>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Pedidos Disponibles (New!) */}
-            {pedidosDisponibles && pedidosDisponibles.length > 0 && (
-                <div className="px-4 mb-6">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="flex items-center gap-2 mb-3">
-                            <h2 className="text-lg font-semibold text-gray-900 border-l-4 border-green-500 pl-2">
-                                Disponibles para tomar
-                            </h2>
-                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
-                                ¡Nuevo!
-                            </span>
-                        </div>
-
-                        <div className="space-y-3">
-                            {pedidosDisponibles.map((pedido) => (
-                                <div key={pedido.id} className="bg-white rounded-xl p-4 shadow-md border-l-4 border-l-green-500 relative overflow-hidden">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <h3 className="font-bold text-gray-900">{pedido.comercio}</h3>
-                                            <p className="text-sm text-gray-500 mb-1">{pedido.direccion}</p>
-                                            {pedido.direccionCliente && (
-                                                <p className="text-xs text-gray-400">→ {pedido.direccionCliente}</p>
-                                            )}
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="block font-bold text-lg text-green-600">
-                                                ${pedido.gananciaEstimada || 3000}
-                                            </span>
-                                            <span className="text-xs text-gray-400">Ganancia est.</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Time estimates */}
-                                    <div className="flex gap-2 flex-wrap mt-2 mb-3">
-                                        {pedido.tiempoAlComercio > 0 && (
-                                            <div className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                                <Timer className="w-3 h-3" />
-                                                {pedido.tiempoAlComercio} min al comercio
-                                            </div>
-                                        )}
-                                        {pedido.tiempoAlCliente > 0 && (
-                                            <div className="flex items-center gap-1 text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded">
-                                                <MapPin className="w-3 h-3" />
-                                                {pedido.tiempoAlCliente} min al cliente
-                                            </div>
-                                        )}
-                                        {pedido.distanciaTotal && (
-                                            <div className="flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                                {pedido.distanciaTotal} total
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center justify-between mt-3 gap-2">
-                                        <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                            <Clock className="w-3 h-3" />
-                                            Hace {Math.floor((Date.now() - new Date(pedido.createdAt).getTime()) / 60000)} min
-                                        </div>
-
-                                        {/* Open in Maps button */}
-                                        {pedido.merchantLat && pedido.merchantLng && (
-                                            <a
-                                                href={`https://www.google.com/maps/dir/?api=1&destination=${pedido.merchantLat},${pedido.merchantLng}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200"
-                                            >
-                                                <ExternalLink className="w-3 h-3" />
-                                                Maps
-                                            </a>
-                                        )}
-
-                                        <button
-                                            onClick={async () => {
-                                                if (!confirm("¿Aceptar este pedido?")) return;
-                                                try {
-                                                    const res = await fetch(`/api/orders/${pedido.id}/accept`, { method: "POST" });
-                                                    if (res.ok) {
-                                                        alert("¡Pedido asignado! Ve al comercio.");
-                                                        // Refresh logic handled by polling
-                                                    } else {
-                                                        const err = await res.json();
-                                                        alert(err.error || "Error");
-                                                    }
-                                                } catch (e) { alert("Error de conexión"); }
-                                            }}
-                                            className="flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-green-700 active:scale-95 transition flex items-center justify-center gap-2"
-                                        >
-                                            <Bike className="w-4 h-4" />
-                                            Aceptar
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Pedidos Activos */}
-            <div className="px-4 mb-6">
-                <div className="max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-lg font-semibold text-gray-900">Pedidos Activos</h2>
-                        <Link
-                            href="/repartidor/pedidos"
-                            className="text-sm text-green-600 hover:underline flex items-center gap-1"
-                        >
-                            Ver todos <ChevronRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-
-                    {!isOnline ? (
-                        <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-                            <Power className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-700 font-medium">Estás fuera de línea</p>
-                            <p className="text-sm text-gray-400 mb-4">Conéctate para recibir pedidos</p>
-                            <button
-                                onClick={toggleOnline}
-                                disabled={isToggling}
-                                className="bg-green-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors disabled:opacity-50"
-                            >
-                                {isToggling ? "Conectando..." : "Conectarme"}
-                            </button>
-                        </div>
-                    ) : pedidosActivos && pedidosActivos.length > 0 ? (
-                        <div className="space-y-3">
-                            {pedidosActivos.map((pedido) => (
-                                <div
-                                    key={pedido.id}
-                                    className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-                                >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div>
-                                            <p className="font-semibold text-gray-900">{pedido.comercio}</p>
-                                            <p className="text-sm text-gray-500">{pedido.orderId || pedido.id}</p>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${pedido.estado === "driver_assigned" ? "bg-blue-100 text-blue-700" :
-                                            pedido.estado === "picked_up" ? "bg-orange-100 text-orange-700" :
-                                                "bg-gray-100 text-gray-700"
-                                            }`}>
-                                            {
-                                                pedido.estado === "driver_assigned" ? "Recolectar" :
-                                                    pedido.estado === "picked_up" ? "En Camino" :
-                                                        pedido.estado
-                                            }
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col gap-1 mt-2 mb-3">
-                                        <span className="text-xs text-gray-500 font-medium">{pedido.labelDireccion || "Dirección"}:</span>
-                                        <div className="flex items-center gap-2 text-sm text-gray-800">
-                                            <Navigation className="w-4 h-4 text-green-600" />
-                                            <span className="font-medium">{pedido.direccion}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Mini-map showing route - Navigation Mode when active */}
-                                    {(pedido.merchantLat || pedido.navLat) && (
-                                        <div className="mb-3">
-                                            <RiderMiniMap
-                                                driverLat={lat ?? undefined}
-                                                driverLng={lng ?? undefined}
-                                                driverHeading={driverHeading ?? 0}
-                                                merchantLat={pedido.merchantLat}
-                                                merchantLng={pedido.merchantLng}
-                                                merchantName={pedido.comercio}
-                                                customerLat={pedido.customerLat}
-                                                customerLng={pedido.customerLng}
-                                                customerAddress={pedido.direccionCliente || "Cliente"}
-                                                customerName={pedido.nombreCliente || pedido.clienteNombre || "Cliente"}
-                                                height="70vh"
-                                                navigationMode={true}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center gap-2 mt-3">
-                                        <button
-                                            onClick={async () => {
-                                                const newStatus =
-                                                    (pedido.estado === "driver_assigned" || pedido.estado === "driver_arrived") ? "PICKED_UP" :
-                                                        (pedido.estado === "picked_up" || pedido.estado === "on_the_way" || pedido.estado === "in_delivery") ? "DELIVERED" :
-                                                            null;
-
-                                                if (!newStatus) return;
-
-                                                const actionName = newStatus === "PICKED_UP" ? "iniciar el viaje" : "finalizar la entrega";
-                                                if (!confirm(`¿Confirmas que vas a ${actionName}?`)) return;
-
-                                                try {
-                                                    const res = await fetch(`/api/orders/${pedido.id}`, {
-                                                        method: "PATCH",
-                                                        headers: { "Content-Type": "application/json" },
-                                                        body: JSON.stringify({ status: newStatus })
-                                                    });
-
-                                                    if (res.ok) {
-                                                        alert("¡Estado actualizado!");
-                                                        // Trigger refresh
-                                                        const fresh = await fetch("/api/driver/dashboard").then(r => r.json());
-                                                        setDashboardData(fresh);
-                                                    } else {
-                                                        const err = await res.json();
-                                                        alert(err.error || "Error al actualizar");
-                                                    }
-                                                } catch (e) {
-                                                    console.error(e);
-                                                    alert("Error de conexión");
-                                                }
-                                            }}
-                                            className="flex-1 bg-green-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
-                                        >
-                                            {
-                                                (pedido.estado === "driver_assigned" || pedido.estado === "driver_arrived") ? "Iniciar Viaje (Ya tengo el pedido)" :
-                                                    (pedido.estado === "picked_up" || pedido.estado === "on_the_way" || pedido.estado === "in_delivery") ? "Finalizar Entrega" :
-                                                        "Estado Desconocido"
-                                            }
-                                        </button>
-                                        {pedido.navLat && pedido.navLng ? (
-                                            <a
-                                                href={`https://www.google.com/maps/dir/?api=1&destination=${pedido.navLat},${pedido.navLng}&travelmode=motorcycle`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
-                                            >
-                                                <Navigation className="w-4 h-4" />
-                                                Maps
-                                            </a>
-                                        ) : (
-                                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                                                Ver
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-                            <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No hay pedidos activos</p>
-                            <p className="text-sm text-gray-400">Los nuevos pedidos aparecerán aquí</p>
+                            )}
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Quick Actions */}
-            <div className="px-4 mb-6">
-                <div className="max-w-4xl mx-auto">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Acciones Rápidas</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Link
-                            href="/repartidor/historial"
-                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-green-200 transition-colors"
-                        >
-                            <Calendar className="w-6 h-6 text-green-500 mb-2" />
-                            <p className="font-medium text-gray-900">Historial</p>
-                            <p className="text-xs text-gray-500">Ver entregas pasadas</p>
-                        </Link>
-                        <Link
-                            href="/repartidor/ganancias"
-                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-green-200 transition-colors"
-                        >
-                            <TrendingUp className="w-6 h-6 text-blue-500 mb-2" />
-                            <p className="font-medium text-gray-900">Ganancias</p>
-                            <p className="text-xs text-gray-500">Resumen de ingresos</p>
-                        </Link>
-                        <Link
-                            href="/repartidor/soporte"
-                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-green-200 transition-colors"
-                        >
-                            <MessageCircle className="w-6 h-6 text-purple-500 mb-2" />
-                            <p className="font-medium text-gray-900">Soporte</p>
-                            <p className="text-xs text-gray-500">Ayuda y consultas</p>
-                        </Link>
-                        <Link
-                            href="/repartidor/perfil"
-                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-green-200 transition-colors"
-                        >
-                            <Bike className="w-6 h-6 text-orange-500 mb-2" />
-                            <p className="font-medium text-gray-900">Mi Perfil</p>
-                            <p className="text-xs text-gray-500">Configuración</p>
-                        </Link>
-                    </div>
-                </div>
-            </div>
-
-            {/* Footer spacing */}
-            <div className="h-8" />
         </div>
     );
 }
