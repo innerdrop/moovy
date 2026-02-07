@@ -191,13 +191,13 @@ export async function createProduct(formData: FormData) {
                 costPrice: data.price * 0.7,
                 stock: data.stock,
                 merchantId: merchant.id,
-                images: {
-                    create: {
-                        url: data.imageUrl,
+                images: data.imageUrls && data.imageUrls.length > 0 ? {
+                    create: data.imageUrls.map((url: string, index: number) => ({
+                        url,
                         alt: data.name,
-                        order: 0,
-                    },
-                },
+                        order: index,
+                    })),
+                } : undefined,
                 categories: data.categoryId ? {
                     create: {
                         categoryId: data.categoryId,
