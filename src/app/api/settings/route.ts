@@ -59,7 +59,6 @@ export async function PUT(request: Request) {
         if (data.closedMessage !== undefined) updateData.closedMessage = data.closedMessage || "";
         if (data.maintenanceMessage !== undefined) updateData.maintenanceMessage = data.maintenanceMessage || "";
         if (data.storeName !== undefined) updateData.storeName = data.storeName;
-        if (data.storeAddress !== undefined) updateData.storeAddress = data.storeAddress;
         if (data.whatsappNumber !== undefined) updateData.whatsappNumber = data.whatsappNumber || null;
         if (data.phone !== undefined) updateData.phone = data.phone || null;
         if (data.email !== undefined) updateData.email = data.email || null;
@@ -79,8 +78,7 @@ export async function PUT(request: Request) {
         if (data.baseDeliveryFee) updateData.baseDeliveryFee = parseFloat(data.baseDeliveryFee);
         if (data.maintenanceFactor) updateData.maintenanceFactor = parseFloat(data.maintenanceFactor);
         if (data.maxDeliveryDistance) updateData.maxDeliveryDistance = parseFloat(data.maxDeliveryDistance);
-        if (data.originLat) updateData.originLat = parseFloat(data.originLat);
-        if (data.originLng) updateData.originLng = parseFloat(data.originLng);
+
 
         // Integers
         if (data.maxCategoriesHome) updateData.maxCategoriesHome = parseInt(data.maxCategoriesHome);

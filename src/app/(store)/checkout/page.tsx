@@ -58,6 +58,16 @@ export default function CheckoutPage() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Get merchantId from store or from first item (fallback for older cart instances)
+    const storeMerchantId = useCartStore((state) => state.merchantId);
+    const merchantId = storeMerchantId || items[0]?.merchantId;
+
+    useEffect(() => {
+        // Log for debugging
+        console.log("[Checkout] Current Cart Items:", items);
+        console.log("[Checkout] Resolved MerchantID:", merchantId);
+    }, [items, merchantId]);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [saveAddress, setSaveAddress] = useState(false);
     const [addressLabel, setAddressLabel] = useState("Casa");
@@ -149,6 +159,8 @@ export default function CheckoutPage() {
         }
 
         setIsCalculating(true);
+        console.log("[Checkout] Calculating delivery for:", address.street, address.number);
+        console.log("[Checkout] Using MerchantID:", merchantId);
 
         try {
             // Send address to server - server handles geocoding
@@ -163,7 +175,7 @@ export default function CheckoutPage() {
                         latitude: address.latitude,
                         longitude: address.longitude,
                     },
-                    merchantId: useCartStore.getState().merchantId,
+                    merchantId,
                     orderTotal: subtotal,
                 }),
             });
@@ -188,9 +200,9 @@ export default function CheckoutPage() {
         if (!deliveryResult?.isWithinRange) return;
 
         setIsSubmitting(true);
+        console.log("[Checkout] Submitting order for MerchantID:", merchantId);
 
         try {
-            const merchantId = useCartStore.getState().merchantId;
             if (!merchantId) {
                 alert("Error: No se identificó el comercio. Por favor vaciá el carrito e intentá de nuevo.");
                 setIsSubmitting(false);

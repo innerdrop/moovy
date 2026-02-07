@@ -38,11 +38,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             freeDeliveryMinimum: formData.get("freeDeliveryMinimum"),
             maxDeliveryDistance: formData.get("maxDeliveryDistance"),
 
-            // Store location
-            storeName: formData.get("storeName"),
-            storeAddress: formData.get("storeAddress"),
-            originLat: formData.get("originLat"),
-            originLng: formData.get("originLng"),
+
 
             // Contact
             whatsappNumber: formData.get("whatsappNumber"),

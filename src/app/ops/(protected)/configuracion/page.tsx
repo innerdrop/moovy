@@ -386,66 +386,7 @@ export default async function ConfigurationPage() {
                 </div>
             </div>
 
-            {/* Store Location */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-moovy" />
-                    Ubicación de la Tienda
-                </h2>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nombre de la tienda
-                        </label>
-                        <input
-                            type="text"
-                            defaultValue={settings?.storeName || "Moovy"}
-                            className="input"
-                            name="storeName"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Dirección
-                        </label>
-                        <input
-                            type="text"
-                            defaultValue={settings?.storeAddress || ""}
-                            className="input"
-                            placeholder="Calle 123, "
-                            name="storeAddress"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Latitud
-                        </label>
-                        <input
-                            type="number"
-                            step="any"
-                            defaultValue={settings?.originLat || -31.5375}
-                            className="input"
-                            name="originLat"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Longitud
-                        </label>
-                        <input
-                            type="number"
-                            step="any"
-                            defaultValue={settings?.originLng || -68.5364}
-                            className="input"
-                            name="originLng"
-                        />
-                    </div>
-                </div>
-            </div>
 
             {/* Contact */}
             <div className="bg-white rounded-xl p-6 shadow-sm">

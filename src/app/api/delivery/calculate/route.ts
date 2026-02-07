@@ -52,50 +52,83 @@ export async function POST(request: Request) {
 
         if (!settings) throw new Error("Configuración no encontrada");
 
-        // Determine origin
-        let originLat = settings.originLat;
-        let originLng = settings.originLng;
-        let originAddress = settings.storeAddress;
+        // Determine origin (Strictly from Merchant now, no global fallback)
+        let originLat: number | null = null;
+        let originLng: number | null = null;
+        let originAddress: string | null = null;
 
-        if (merchantId) {
-            const merchant = await prisma.merchant.findUnique({
-                where: { id: merchantId },
-                select: { latitude: true, longitude: true, address: true, name: true }
+        if (!merchantId) {
+            console.error("[DeliveryCalc] No merchantId provided in request");
+            return NextResponse.json({
+                distanceKm: 0,
+                totalCost: 0,
+                isWithinRange: false,
+                isFreeDelivery: false,
+                message: "No se pudo identificar el comercio para calcular el envío.",
             });
+        }
 
-            if (merchant) {
-                // Check if merchant has VALID coordinates (not null, not 0,0 which is middle of ocean)
-                const hasValidCoords =
-                    merchant.latitude !== null &&
-                    merchant.longitude !== null &&
-                    merchant.latitude !== 0 &&
-                    merchant.longitude !== 0 &&
-                    // Must be in Argentina region roughly
-                    merchant.latitude < -20 && merchant.latitude > -60 &&
-                    merchant.longitude < -50 && merchant.longitude > -80;
+        const merchant = await prisma.merchant.findUnique({
+            where: { id: merchantId },
+            select: { latitude: true, longitude: true, address: true, name: true }
+        });
 
-                if (hasValidCoords) {
-                    originLat = merchant.latitude as number;
-                    originLng = merchant.longitude as number;
-                    originAddress = merchant.address || merchant.name;
-                    console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name} (${originLat}, ${originLng})`);
-                } else if (merchant.address) {
-                    // Try to geocode merchant address if coords are missing or invalid
-                    console.log(`[DeliveryCalc] Merchant lacks valid coordinates, geocoding address: ${merchant.address}`);
-                    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-                    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(merchant.address + ", Ushuaia, Argentina")}&key=${apiKey}`;
+        if (!merchant) {
+            console.error(`[DeliveryCalc] Merchant not found for ID: ${merchantId}`);
+            return NextResponse.json({
+                distanceKm: 0,
+                totalCost: 0,
+                isWithinRange: false,
+                isFreeDelivery: false,
+                message: "El comercio asociado no existe.",
+            });
+        }
 
-                    const geoResponse = await fetch(geocodeUrl);
-                    const geoData = await geoResponse.json();
+        // Check if merchant has VALID coordinates (not null, not 0,0 which is middle of ocean)
+        const hasValidCoords =
+            merchant.latitude !== null &&
+            merchant.longitude !== null &&
+            merchant.latitude !== 0 &&
+            merchant.longitude !== 0 &&
+            // Must be in Argentina region roughly
+            merchant.latitude < -20 && merchant.latitude > -60 &&
+            merchant.longitude < -50 && merchant.longitude > -80;
 
-                    if (geoData.status === "OK" && geoData.results.length > 0) {
-                        originLat = geoData.results[0].geometry.location.lat;
-                        originLng = geoData.results[0].geometry.location.lng;
-                        originAddress = merchant.address;
-                        console.log(`[DeliveryCalc] Merchant geocoded to: ${originLat}, ${originLng}`);
-                    }
+        if (hasValidCoords) {
+            originLat = merchant.latitude as number;
+            originLng = merchant.longitude as number;
+            originAddress = merchant.address || merchant.name;
+            console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name} (${originLat}, ${originLng})`);
+        } else if (merchant.address) {
+            // Try to geocode merchant address if coords are missing or invalid
+            console.log(`[DeliveryCalc] Merchant lacks valid coordinates, geocoding address: ${merchant.address}`);
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(merchant.address + ", Ushuaia, Argentina")}&key=${apiKey}`;
+
+            try {
+                const geoResponse = await fetch(geocodeUrl);
+                const geoData = await geoResponse.json();
+
+                if (geoData.status === "OK" && geoData.results.length > 0) {
+                    originLat = geoData.results[0].geometry.location.lat;
+                    originLng = geoData.results[0].geometry.location.lng;
+                    originAddress = merchant.address;
+                    console.log(`[DeliveryCalc] Merchant geocoded to: ${originLat}, ${originLng}`);
                 }
+            } catch (geoErr) {
+                console.error("[DeliveryCalc] Geocoding error for merchant:", geoErr);
             }
+        }
+
+        if (!originLat || !originLng) {
+            console.error(`[DeliveryCalc] Could not determine origin for merchant: ${merchant.name}`);
+            return NextResponse.json({
+                distanceKm: 0,
+                totalCost: 0,
+                isWithinRange: false,
+                isFreeDelivery: false,
+                message: "El comercio no tiene una ubicación válida configurada.",
+            });
         }
 
         console.log(`[DeliveryCalc] Final Points -> Origin: ${originLat},${originLng} | Dest: ${lat},${lng}`);

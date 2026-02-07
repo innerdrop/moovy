@@ -50,6 +50,7 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         const productWithImage = {
             ...product,
             image: product.images[0]?.url || null,
+            merchantId: merchant.id,
             merchant: { isOpen: merchant.isOpen }
         };
 

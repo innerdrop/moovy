@@ -29,6 +29,7 @@ interface Product {
     stock: number;
     isActive: boolean;
     isFeatured: boolean;
+    merchantId: string; // Required for cart
     categories: Array<{ category: { id: string; name: string; slug: string } }>;
     images: Array<{ id: string; url: string; alt: string | null }>;
 }
@@ -84,6 +85,7 @@ export default function ProductDetailPage() {
             price: product.price,
             quantity: quantity,
             image: product.images[0]?.url || undefined,
+            merchantId: product.merchantId,
         });
 
         setAddedToCart(true);
@@ -208,8 +210,8 @@ export default function ProductDetailPage() {
                                     key={image.id}
                                     onClick={() => setSelectedImageIndex(index)}
                                     className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
-                                            ? "border-[#e60012] ring-2 ring-[#e60012]/30"
-                                            : "border-gray-200 hover:border-gray-400"
+                                        ? "border-[#e60012] ring-2 ring-[#e60012]/30"
+                                        : "border-gray-200 hover:border-gray-400"
                                         }`}
                                 >
                                     <img
