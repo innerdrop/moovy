@@ -183,106 +183,174 @@ export default function ProductsPage() {
                     <Loader2 className="w-8 h-8 animate-spin text-red-500" />
                 </div>
             ) : products.length > 0 ? (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="text-left p-4 font-semibold text-slate-600 text-sm">Producto</th>
-                                    <th className="text-left p-4 font-semibold text-slate-600 text-sm">Comercio</th>
-                                    <th className="text-right p-4 font-semibold text-slate-600 text-sm">Precio</th>
-                                    <th className="text-center p-4 font-semibold text-slate-600 text-sm">Stock</th>
-                                    <th className="text-center p-4 font-semibold text-slate-600 text-sm">Estado</th>
-                                    <th className="text-right p-4 font-semibold text-slate-600 text-sm">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {products.map((product) => {
-                                    const isLowStock = product.stock <= product.minStock;
-                                    const image = product.images[0]?.url;
+                <>
+                    {/* Desktop Table */}
+                    <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="text-left p-4 font-semibold text-slate-600 text-sm">Producto</th>
+                                        <th className="text-left p-4 font-semibold text-slate-600 text-sm">Comercio</th>
+                                        <th className="text-right p-4 font-semibold text-slate-600 text-sm">Precio</th>
+                                        <th className="text-center p-4 font-semibold text-slate-600 text-sm">Stock</th>
+                                        <th className="text-center p-4 font-semibold text-slate-600 text-sm">Estado</th>
+                                        <th className="text-right p-4 font-semibold text-slate-600 text-sm">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {products.map((product) => {
+                                        const isLowStock = product.stock <= product.minStock;
+                                        const image = product.images[0]?.url;
 
-                                    return (
-                                        <tr key={product.id} className="hover:bg-slate-50 transition">
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
-                                                        {image ? (
-                                                            <Image src={image} alt={product.name} width={48} height={48} className="object-cover" />
-                                                        ) : (
-                                                            <Package className="w-5 h-5 text-slate-400" />
-                                                        )}
+                                        return (
+                                            <tr key={product.id} className="hover:bg-slate-50 transition">
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                                            {image ? (
+                                                                <Image src={image} alt={product.name} width={48} height={48} className="object-cover" />
+                                                            ) : (
+                                                                <Package className="w-5 h-5 text-slate-400" />
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium text-slate-900 truncate">{product.name}</p>
+                                                            <p className="text-xs text-slate-500 truncate">{product.categories.map(c => c.category.name).join(", ") || "Sin categoría"}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="font-medium text-slate-900 truncate">{product.name}</p>
-                                                        <p className="text-xs text-slate-500 truncate">{product.categories.map(c => c.category.name).join(", ") || "Sin categoría"}</p>
+                                                </td>
+                                                <td className="p-4">
+                                                    {product.merchant ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Building2 className="w-4 h-4 text-slate-400" />
+                                                            <span className="text-sm text-slate-700">{product.merchant.name}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-sm text-slate-400">MOOVY</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <span className="font-bold text-red-600">{formatPrice(product.price)}</span>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isLowStock ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                                                        }`}>
+                                                        {isLowStock && <AlertTriangle className="w-3 h-3" />}
+                                                        {product.stock}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
+                                                        }`}>
+                                                        {product.isActive ? "Activo" : "Inactivo"}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Link
+                                                            href={`/ops/productos/${product.id}/editar`}
+                                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit className="w-4 h-4 text-slate-600" />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => toggleActive(product.id)}
+                                                            disabled={actionLoading === product.id}
+                                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                                            title={product.isActive ? "Desactivar" : "Activar"}
+                                                        >
+                                                            {actionLoading === product.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : product.isActive ? (
+                                                                <EyeOff className="w-4 h-4 text-slate-600" />
+                                                            ) : (
+                                                                <Eye className="w-4 h-4 text-green-600" />
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDeleteModal(product)}
+                                                            className="p-2 hover:bg-red-50 rounded-lg transition"
+                                                            title="Eliminar"
+                                                        >
+                                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                                        </button>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                {product.merchant ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="w-4 h-4 text-slate-400" />
-                                                        <span className="text-sm text-slate-700">{product.merchant.name}</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-sm text-slate-400">MOOVY</span>
-                                                )}
-                                            </td>
-                                            <td className="p-4 text-right">
-                                                <span className="font-bold text-red-600">{formatPrice(product.price)}</span>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isLowStock ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="md:hidden space-y-3">
+                        {products.map((product) => {
+                            const isLowStock = product.stock <= product.minStock;
+                            const image = product.images[0]?.url;
+
+                            return (
+                                <div key={product.id} className="bg-white rounded-xl p-4 shadow-sm">
+                                    <div className="flex gap-3">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                                            {image ? (
+                                                <Image src={image} alt={product.name} width={64} height={64} className="object-cover" />
+                                            ) : (
+                                                <Package className="w-6 h-6 text-slate-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-slate-900 truncate">{product.name}</p>
+                                            <p className="text-xs text-slate-500 truncate">{product.merchant?.name || "MOOVY"}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="font-bold text-red-600 text-sm">{formatPrice(product.price)}</span>
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isLowStock ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
                                                     }`}>
                                                     {isLowStock && <AlertTriangle className="w-3 h-3" />}
                                                     {product.stock}
                                                 </span>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
                                                     }`}>
                                                     {product.isActive ? "Activo" : "Inactivo"}
                                                 </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Link
-                                                        href={`/ops/productos/${product.id}/editar`}
-                                                        className="p-2 hover:bg-slate-100 rounded-lg transition"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit className="w-4 h-4 text-slate-600" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => toggleActive(product.id)}
-                                                        disabled={actionLoading === product.id}
-                                                        className="p-2 hover:bg-slate-100 rounded-lg transition"
-                                                        title={product.isActive ? "Desactivar" : "Activar"}
-                                                    >
-                                                        {actionLoading === product.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : product.isActive ? (
-                                                            <EyeOff className="w-4 h-4 text-slate-600" />
-                                                        ) : (
-                                                            <Eye className="w-4 h-4 text-green-600" />
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setDeleteModal(product)}
-                                                        className="p-2 hover:bg-red-50 rounded-lg transition"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 className="w-4 h-4 text-red-500" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t">
+                                        <Link
+                                            href={`/ops/productos/${product.id}/editar`}
+                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                        >
+                                            <Edit className="w-5 h-5 text-slate-600" />
+                                        </Link>
+                                        <button
+                                            onClick={() => toggleActive(product.id)}
+                                            disabled={actionLoading === product.id}
+                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                        >
+                                            {actionLoading === product.id ? (
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                            ) : product.isActive ? (
+                                                <EyeOff className="w-5 h-5 text-slate-600" />
+                                            ) : (
+                                                <Eye className="w-5 h-5 text-green-600" />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setDeleteModal(product)}
+                                            className="p-2 hover:bg-red-50 rounded-lg transition"
+                                        >
+                                            <Trash2 className="w-5 h-5 text-red-500" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                </div>
+                </>
             ) : (
                 <div className="bg-white rounded-xl p-12 text-center shadow-sm">
                     <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />

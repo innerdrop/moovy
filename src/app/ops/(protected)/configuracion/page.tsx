@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
 import { Switch } from "./Switch";
+import PromoBannerImageUpload from "./PromoBannerImageUpload";
 
 async function getSettings() {
     try {
@@ -256,6 +257,116 @@ export default async function ConfigurationPage() {
                             Define cuántas categorías se mostrarán en los sliders de Home y /tienda antes de repetir el ciclo.
                         </p>
                     </div>
+
+                    {/* Hero Slider Interval */}
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                        <label className="block text-sm font-medium text-navy mb-1 uppercase tracking-wider font-bold">
+                            ⏱️ Intervalo del Hero Slider (segundos)
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="30"
+                            step="1"
+                            defaultValue={Math.round((settings?.heroSliderInterval ?? 5000) / 1000)}
+                            className="input w-32"
+                            name="heroSliderInterval"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                            Define cada cuántos segundos cambia automáticamente el slide del carrusel principal.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Slide Publicitario Card */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-pink-200">
+                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+                    🎯 Slide Publicitario
+                </h2>
+                <p className="text-sm text-gray-600 mb-4">
+                    Configurá el banner promocional que aparece en /tienda debajo de las categorías.
+                </p>
+
+                <div className="space-y-4">
+                    {/* Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-pink-50 rounded-lg">
+                        <div>
+                            <h3 className="font-semibold text-navy">Mostrar Banner</h3>
+                            <p className="text-sm text-gray-600">
+                                Activa o desactiva el banner promocional
+                            </p>
+                        </div>
+                        <Switch
+                            name="promoBannerEnabled"
+                            defaultChecked={(settings as any)?.promoBannerEnabled ?? true}
+                            activeColor="bg-pink-500"
+                        />
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Título (usa \n para salto de línea)
+                        </label>
+                        <input
+                            type="text"
+                            defaultValue={(settings as any)?.promoBannerTitle ?? "Noches de\nPizza & Pelis"}
+                            className="input"
+                            name="promoBannerTitle"
+                            placeholder="Noches de\nPizza & Pelis"
+                        />
+                    </div>
+
+                    {/* Subtitle */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Subtítulo / Descripción
+                        </label>
+                        <input
+                            type="text"
+                            defaultValue={(settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs."}
+                            className="input"
+                            name="promoBannerSubtitle"
+                            placeholder="2x1 en locales seleccionados..."
+                        />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {/* Button Text */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Texto del Botón
+                            </label>
+                            <input
+                                type="text"
+                                defaultValue={(settings as any)?.promoBannerButtonText ?? "Ver locales"}
+                                className="input"
+                                name="promoBannerButtonText"
+                                placeholder="Ver locales"
+                            />
+                        </div>
+
+                        {/* Button Link */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Link del Botón
+                            </label>
+                            <input
+                                type="text"
+                                defaultValue={(settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas"}
+                                className="input"
+                                name="promoBannerButtonLink"
+                                placeholder="/productos?categoria=pizzas"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Image Upload */}
+                    <PromoBannerImageUpload
+                        currentImage={(settings as any)?.promoBannerImage}
+                        name="promoBannerImage"
+                    />
                 </div>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm">

@@ -22,7 +22,8 @@ import {
     X,
     Building2,
     MessageCircle,
-    DollarSign
+    DollarSign,
+    Image as ImageIcon
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -40,6 +41,7 @@ const navItems = [
     { href: "/ops/clientes", icon: Users, label: "Clientes" },
     { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
     { href: "/ops/categorias", icon: Tag, label: "Categorías" },
+    { href: "/ops/slides", icon: ImageIcon, label: "Hero Slider" },
     { href: "/ops/puntos", icon: Gift, label: "Puntos" },
     { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/ops/configuracion", icon: Settings, label: "Config" },

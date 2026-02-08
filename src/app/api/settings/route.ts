@@ -82,6 +82,16 @@ export async function PUT(request: Request) {
 
         // Integers
         if (data.maxCategoriesHome) updateData.maxCategoriesHome = parseInt(data.maxCategoriesHome);
+        // Hero slider interval (value comes from ConfigForm already in milliseconds)
+        if (data.heroSliderInterval) updateData.heroSliderInterval = parseInt(data.heroSliderInterval);
+
+        // Promo Banner (Slide Publicitario)
+        if (typeof data.promoBannerEnabled === "boolean") updateData.promoBannerEnabled = data.promoBannerEnabled;
+        if (data.promoBannerTitle !== undefined) updateData.promoBannerTitle = data.promoBannerTitle || "";
+        if (data.promoBannerSubtitle !== undefined) updateData.promoBannerSubtitle = data.promoBannerSubtitle || "";
+        if (data.promoBannerButtonText !== undefined) updateData.promoBannerButtonText = data.promoBannerButtonText || "";
+        if (data.promoBannerButtonLink !== undefined) updateData.promoBannerButtonLink = data.promoBannerButtonLink || "";
+        if (data.promoBannerImage !== undefined) updateData.promoBannerImage = data.promoBannerImage || null;
 
         // Optional float (can be null)
         if (data.freeDeliveryMinimum) {

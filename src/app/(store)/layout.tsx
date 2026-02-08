@@ -9,6 +9,7 @@ import WelcomeSplash from "@/components/home/WelcomeSplash";
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
+import ScrollToTop from "@/components/ScrollToTop";
 import { useCartStore } from "@/store/cart";
 
 const SPLASH_SHOWN_KEY = "moovy_splash_v4";
@@ -100,6 +101,9 @@ export default function StoreLayout({
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* Scroll to top on navigation */}
+            <ScrollToTop />
+
             {/* Header compacto tipo app */}
             <AppHeader
                 isLoggedIn={!!isLoggedIn}
