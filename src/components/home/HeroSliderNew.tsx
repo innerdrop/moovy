@@ -19,37 +19,6 @@ interface HeroSliderNewProps {
     slides?: Slide[];
 }
 
-// Default slides (fallback)
-const defaultSlides: Slide[] = [
-    {
-        id: "1",
-        title: "Delivery Rápido",
-        subtitle: "Llevamos tu antojo donde estés",
-        buttonText: "Explora ahora",
-        buttonLink: "/productos",
-        gradient: "from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]",
-        image: null
-    },
-    {
-        id: "2",
-        title: "Ofertas del Día",
-        subtitle: "Descuentos exclusivos para vos",
-        buttonText: "Ver ofertas",
-        buttonLink: "/productos?ofertas=true",
-        gradient: "from-[#ff6b35] via-[#ff8c42] to-[#ffba69]",
-        image: null
-    },
-    {
-        id: "3",
-        title: "Kioscos 24hs",
-        subtitle: "Tu antojo a cualquier hora",
-        buttonText: "Pedir ahora",
-        buttonLink: "/productos",
-        gradient: "from-[#e60012] via-[#c70010] to-[#a5000d]",
-        image: null
-    }
-];
-
 // SVG Illustration of delivery person on scooter
 function DeliveryIllustration() {
     return (
@@ -105,7 +74,14 @@ function DeliveryIllustration() {
 }
 
 export default function HeroSliderNew({ slides: propSlides }: HeroSliderNewProps) {
-    const slides = propSlides && propSlides.length > 0 ? propSlides : defaultSlides;
+    // Only show slides from database - no defaults
+    const slides = propSlides || [];
+
+    // Don't render anything if no slides
+    if (slides.length === 0) {
+        return null;
+    }
+
     const [current, setCurrent] = useState(0);
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
