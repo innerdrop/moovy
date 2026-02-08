@@ -133,9 +133,9 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
     if (!slide) return null;
 
     return (
-        <div className="w-full pt-3 pb-2 md:py-6 max-w-[1600px] mx-auto">
+        <div className="w-full pt-3 pb-2 md:py-6 max-w-7xl mx-auto">
             <div
-                className={`relative mx-2 md:mx-4 lg:mx-6 ${!slide.image ? `bg-gradient-to-r ${slide.gradient}` : ''} rounded-2xl md:rounded-3xl overflow-hidden shadow-lg transition-all duration-500`}
+                className={`relative mx-3 md:mx-8 lg:mx-16 ${!slide.image ? `bg-gradient-to-r ${slide.gradient}` : ''} rounded-2xl md:rounded-3xl overflow-hidden shadow-lg transition-all duration-500`}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
@@ -155,7 +155,7 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
                     </div>
                 )}
 
-                <div className="relative flex items-center min-h-[220px] md:min-h-[320px] lg:min-h-[400px]">
+                <div className="relative flex items-center min-h-[300px] md:min-h-[450px] lg:min-h-[550px]">
                     {/* Text Content */}
                     <div className="flex-1 p-6 md:p-10 lg:p-12 z-10">
                         <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight drop-shadow-lg">
