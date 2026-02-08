@@ -366,8 +366,8 @@ export default function AdminSlidesPage() {
                                     onDrop={handleFileDrop}
                                     onClick={() => fileInputRef.current?.click()}
                                     className={`relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${dragOver
-                                            ? "border-moovy bg-moovy-light"
-                                            : "border-gray-300 hover:border-gray-400"
+                                        ? "border-moovy bg-moovy-light"
+                                        : "border-gray-300 hover:border-gray-400"
                                         }`}
                                 >
                                     <input
@@ -516,11 +516,12 @@ export default function AdminSlidesPage() {
                             key={slide.id}
                             className={`bg-white rounded-xl shadow-sm overflow-hidden border ${slide.isActive ? "border-gray-100" : "border-gray-300 opacity-60"}`}
                         >
-                            <div className="flex items-center gap-4 p-4">
+                            {/* Mobile: Stacked layout */}
+                            <div className="flex flex-col md:flex-row md:items-center gap-3 p-4">
                                 {/* Preview thumbnail */}
-                                <div className={`w-32 h-20 rounded-lg bg-gradient-to-r ${slide.gradient} flex items-center justify-center flex-shrink-0`}>
+                                <div className={`w-full md:w-32 h-24 md:h-20 rounded-lg bg-gradient-to-r ${slide.gradient} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
                                     {slide.image ? (
-                                        <img src={slide.image} alt="" className="w-16 h-16 object-contain" />
+                                        <img src={slide.image} alt="" className="w-full h-full object-cover" />
                                     ) : (
                                         <ImageIcon className="w-8 h-8 text-white/50" />
                                     )}
@@ -530,52 +531,55 @@ export default function AdminSlidesPage() {
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-navy truncate">{slide.title}</h3>
                                     <p className="text-sm text-gray-500 truncate">{slide.subtitle}</p>
-                                    <p className="text-xs text-gray-400 mt-1">
+                                    <p className="text-xs text-gray-400 mt-1 hidden md:block">
                                         Botón: {slide.buttonText} → {slide.buttonLink}
                                     </p>
                                 </div>
 
-                                {/* Order controls */}
-                                <div className="flex flex-col gap-1">
-                                    <button
-                                        onClick={() => moveSlide(index, "up")}
-                                        disabled={index === 0}
-                                        className={`p-1.5 rounded-lg transition ${index === 0 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-moovy hover:bg-moovy-light"}`}
-                                    >
-                                        <ArrowUp className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => moveSlide(index, "down")}
-                                        disabled={index === slides.length - 1}
-                                        className={`p-1.5 rounded-lg transition ${index === slides.length - 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-moovy hover:bg-moovy-light"}`}
-                                    >
-                                        <ArrowDown className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                {/* Actions row - always visible */}
+                                <div className="flex items-center justify-between md:justify-end gap-2 pt-2 md:pt-0 border-t md:border-0">
+                                    {/* Order controls */}
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => moveSlide(index, "up")}
+                                            disabled={index === 0}
+                                            className={`p-2 rounded-lg transition ${index === 0 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-moovy hover:bg-moovy-light"}`}
+                                        >
+                                            <ArrowUp className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => moveSlide(index, "down")}
+                                            disabled={index === slides.length - 1}
+                                            className={`p-2 rounded-lg transition ${index === slides.length - 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-moovy hover:bg-moovy-light"}`}
+                                        >
+                                            <ArrowDown className="w-4 h-4" />
+                                        </button>
+                                    </div>
 
-                                {/* Actions */}
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => toggleActive(slide)}
-                                        className={`p-2 rounded-lg transition ${slide.isActive ? "text-green-600 hover:bg-green-50" : "text-gray-400 hover:bg-gray-100"}`}
-                                        title={slide.isActive ? "Desactivar" : "Activar"}
-                                    >
-                                        {slide.isActive ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                                    </button>
-                                    <button
-                                        onClick={() => startEdit(slide)}
-                                        className="p-2 text-gray-500 hover:text-moovy hover:bg-moovy-light rounded-lg transition"
-                                        title="Editar"
-                                    >
-                                        <Edit2 className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(slide.id, slide.title)}
-                                        className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    {/* Action buttons */}
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => toggleActive(slide)}
+                                            className={`p-2 rounded-lg transition ${slide.isActive ? "text-green-600 hover:bg-green-50" : "text-gray-400 hover:bg-gray-100"}`}
+                                            title={slide.isActive ? "Desactivar" : "Activar"}
+                                        >
+                                            {slide.isActive ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                                        </button>
+                                        <button
+                                            onClick={() => startEdit(slide)}
+                                            className="p-2 text-gray-500 hover:text-moovy hover:bg-moovy-light rounded-lg transition"
+                                            title="Editar"
+                                        >
+                                            <Edit2 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(slide.id, slide.title)}
+                                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

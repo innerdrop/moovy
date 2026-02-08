@@ -237,7 +237,7 @@ export default function ClientsPage() {
                 </div>
             </div>
 
-            {/* Table */}
+            {/* Table / Cards */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 {/* Select All */}
                 <div className="px-4 py-3 bg-gray-50 border-b flex items-center gap-3">
@@ -255,7 +255,8 @@ export default function ClientsPage() {
                     </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">
                             <tr>
@@ -346,6 +347,68 @@ export default function ClientsPage() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y divide-gray-100">
+                    {loading ? (
+                        <div className="px-6 py-12 text-center text-gray-500">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#e60012]" />
+                            Cargando clientes...
+                        </div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="px-6 py-12 text-center text-gray-500">
+                            <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            No se encontraron clientes.
+                        </div>
+                    ) : (
+                        filteredUsers.map((user) => (
+                            <div key={user.id} className={`p-4 ${selectedUsers.includes(user.id) ? 'bg-red-50' : ''}`}>
+                                <div className="flex items-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedUsers.includes(user.id)}
+                                        onChange={() => toggleSelectUser(user.id)}
+                                        className="w-4 h-4 mt-3 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
+                                    />
+                                    <div className="w-10 h-10 rounded-full bg-[#e60012]/10 flex items-center justify-center text-[#e60012] font-bold flex-shrink-0">
+                                        {(user.name || user.email).charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-gray-900">{user.name || "Sin nombre"}</p>
+                                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                            <span>{user.phone || "Sin tel."}</span>
+                                            <span className="flex items-center gap-1">
+                                                <Gift className="w-3 h-3 text-[#e60012]" />
+                                                {user.pointsBalance} pts
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t">
+                                    <button
+                                        onClick={() => setViewUser(user)}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                                    >
+                                        <Eye className="w-5 h-5 text-gray-500" />
+                                    </button>
+                                    <button
+                                        onClick={() => openEditModal(user)}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                                    >
+                                        <Edit className="w-5 h-5 text-blue-500" />
+                                    </button>
+                                    <button
+                                        onClick={() => setResetUser(user)}
+                                        className="p-2 hover:bg-orange-100 rounded-lg transition"
+                                    >
+                                        <Key className="w-5 h-5 text-orange-500" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 
