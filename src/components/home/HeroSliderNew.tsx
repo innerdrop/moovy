@@ -161,12 +161,12 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
                         <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight drop-shadow-lg">
                             {slide.title}
                         </h2>
-                        <p className="text-white/90 text-sm md:text-lg lg:text-xl mb-6 md:mb-10 max-w-md drop-shadow">
+                        <p className="text-white/90 text-sm md:text-lg lg:text-xl mb-4 md:mb-6 max-w-md drop-shadow">
                             {slide.subtitle}
                         </p>
                         <Link
                             href={slide.buttonLink}
-                            className="inline-flex items-center gap-1 md:gap-2 bg-white text-[#e60012] px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+                            className="absolute bottom-6 md:bottom-10 lg:bottom-12 left-6 md:left-10 lg:left-12 inline-flex items-center gap-1 md:gap-2 bg-white text-[#e60012] px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-95 z-20"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {slide.buttonText}
