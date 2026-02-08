@@ -1,10 +1,12 @@
 "use client";
 
 // Merchant Orders Page - Panel de Pedidos del Comercio
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
+import { formatTime } from "@/lib/timezone";
+import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import {
     ShoppingBag,
     Clock,
@@ -15,7 +17,9 @@ import {
     Loader2,
     RefreshCw,
     Bell,
-    AlertTriangle
+    AlertTriangle,
+    Wifi,
+    WifiOff
 } from "lucide-react";
 
 interface Order {
@@ -59,6 +63,8 @@ export default function ComercioPedidosPage() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
+    const [merchantId, setMerchantId] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Cancellation modal state
     const [cancelModal, setCancelModal] = useState<{ open: boolean; orderId: string | null; orderNumber: string }>({
@@ -69,6 +75,16 @@ export default function ComercioPedidosPage() {
     const [selectedReason, setSelectedReason] = useState("");
     const [customReason, setCustomReason] = useState("");
     const [isCancelling, setIsCancelling] = useState(false);
+
+    // Fetch merchant ID for socket room
+    useEffect(() => {
+        fetch("/api/merchant/me")
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data?.id) setMerchantId(data.id);
+            })
+            .catch(() => { });
+    }, []);
 
     const loadOrders = useCallback(async (silent = false) => {
         try {
@@ -85,10 +101,36 @@ export default function ComercioPedidosPage() {
         }
     }, []);
 
+    // Real-time order updates via WebSocket
+    const { isConnected } = useRealtimeOrders({
+        role: "merchant",
+        merchantId: merchantId || undefined,
+        enabled: !!merchantId,
+        onNewOrder: (order) => {
+            // Play notification sound
+            if (audioRef.current) {
+                audioRef.current.play().catch(() => { });
+            }
+            // Reload orders to get full data
+            loadOrders(true);
+        },
+        onStatusChange: (orderId, status) => {
+            // Update order in list or reload
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status } : o
+            ));
+        },
+        onOrderCancelled: (orderId) => {
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: "CANCELLED" } : o
+            ));
+        },
+    });
+
     useEffect(() => {
         loadOrders();
-        // Poll every 10 seconds for new orders
-        const intervalId = setInterval(() => loadOrders(true), 10000);
+        // Fallback polling every 30 seconds (reduced from 10s since we have real-time)
+        const intervalId = setInterval(() => loadOrders(true), 30000);
         return () => clearInterval(intervalId);
     }, [loadOrders]);
 
@@ -259,11 +301,7 @@ export default function ComercioPedidosPage() {
                                         <div className="text-right">
                                             <p className="text-lg font-bold text-blue-600">{formatPrice(order.total)}</p>
                                             <p className="text-xs text-gray-400">
-                                                {new Date(order.createdAt).toLocaleTimeString("es-AR", {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                    timeZone: "America/Argentina/Buenos_Aires"
-                                                })}
+                                                {formatTime(order.createdAt)}
                                             </p>
                                         </div>
                                     </div>

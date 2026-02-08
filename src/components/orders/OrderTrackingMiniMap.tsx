@@ -57,6 +57,8 @@ function OrderTrackingMiniMap({
     );
     const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
     const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+    const [userInteracted, setUserInteracted] = useState(false);
+    const [hasPickupCentered, setHasPickupCentered] = useState(false);
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -154,9 +156,25 @@ function OrderTrackingMiniMap({
         );
     }, [isLoaded, driverPos, merchantLat, merchantLng, customerLat, customerLng, orderStatus]);
 
-    // Fit bounds to show all markers
+    // Intelligent centering on pickup - show rider + customer once
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return;
+
+        // Only trigger once when status changes to PICKED_UP or IN_DELIVERY
+        const isPickedUp = ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'].includes(orderStatus);
+        if (isPickedUp && !hasPickupCentered && driverPos && customerLat && customerLng) {
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(driverPos);
+            bounds.extend({ lat: customerLat, lng: customerLng });
+            mapRef.current.fitBounds(bounds, 60);
+            setHasPickupCentered(true);
+            setUserInteracted(false); // Allow this one auto-center
+        }
+    }, [isLoaded, orderStatus, driverPos, customerLat, customerLng, hasPickupCentered]);
+
+    // Fit bounds to show all markers (only on initial load, respects user interaction)
+    useEffect(() => {
+        if (!mapRef.current || !isLoaded || userInteracted || hasPickupCentered) return;
 
         const bounds = new google.maps.LatLngBounds();
         let hasPoints = false;
@@ -177,7 +195,24 @@ function OrderTrackingMiniMap({
         if (hasPoints) {
             mapRef.current.fitBounds(bounds, 50);
         }
-    }, [isLoaded, directions, driverPos, merchantLat, merchantLng, customerLat, customerLng]);
+    }, [isLoaded, directions]);
+
+    // Handle user interaction - prevent auto-recentering
+    const handleUserInteraction = () => {
+        setUserInteracted(true);
+    };
+
+    // Re-center button handler
+    const handleRecenter = () => {
+        if (!mapRef.current) return;
+
+        const bounds = new google.maps.LatLngBounds();
+        if (driverPos) bounds.extend(driverPos);
+        if (customerLat && customerLng) bounds.extend({ lat: customerLat, lng: customerLng });
+
+        mapRef.current.fitBounds(bounds, 60);
+        setUserInteracted(false);
+    };
 
     const center = useMemo(() => {
         if (driverPos) return driverPos;
@@ -200,9 +235,11 @@ function OrderTrackingMiniMap({
                 center={center}
                 zoom={14}
                 onLoad={map => { mapRef.current = map; }}
+                onDragStart={handleUserInteraction}
+                onZoomChanged={handleUserInteraction}
                 options={{
-                    disableDefaultUI: true,
-                    zoomControl: false,
+                    disableDefaultUI: false,
+                    zoomControl: true,
                     scrollwheel: true,
                     gestureHandling: "greedy",
                     styles: [
@@ -277,6 +314,20 @@ function OrderTrackingMiniMap({
                     />
                 )}
             </GoogleMap>
+
+            {/* Re-center button when user has panned */}
+            {userInteracted && driverPos && (
+                <button
+                    onClick={handleRecenter}
+                    className="absolute top-2 right-2 z-10 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                    </svg>
+                    Centrar
+                </button>
+            )}
 
             {/* ETA Overlay */}
             {showEta && routeInfo && (

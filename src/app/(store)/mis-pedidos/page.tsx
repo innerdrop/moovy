@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
+import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import {
     Package,
     Clock,
@@ -18,7 +19,9 @@ import {
     ExternalLink,
     ChevronRight,
     ArrowLeft,
-    Phone
+    Phone,
+    Wifi,
+    WifiOff
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -75,19 +78,9 @@ export default function MisPedidosPage() {
     const [filter, setFilter] = useState<"all" | "active" | "completed">("active");
 
     const isAuthenticated = authStatus === "authenticated";
+    const userId = session?.user?.id;
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            if (authStatus !== "loading") setLoading(false);
-            return;
-        }
-
-        loadOrders();
-        const intervalId = setInterval(() => loadOrders(true), 10000);
-        return () => clearInterval(intervalId);
-    }, [isAuthenticated, authStatus]);
-
-    async function loadOrders(silent = false) {
+    const loadOrders = useCallback(async (silent = false) => {
         try {
             const res = await fetch("/api/orders");
             if (res.ok) setOrders(await res.json());
@@ -96,7 +89,41 @@ export default function MisPedidosPage() {
         } finally {
             if (!silent) setLoading(false);
         }
-    }
+    }, []);
+
+    // Real-time order updates via WebSocket
+    const { isConnected } = useRealtimeOrders({
+        role: "customer",
+        userId: userId || undefined,
+        enabled: isAuthenticated && !!userId,
+        onStatusChange: (orderId, status) => {
+            // Update order status in real-time
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status } : o
+            ));
+        },
+        onOrderCancelled: (orderId) => {
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: "CANCELLED" } : o
+            ));
+        },
+        onDriverAssigned: (orderId) => {
+            // Reload to get driver details
+            loadOrders(true);
+        },
+    });
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            if (authStatus !== "loading") setLoading(false);
+            return;
+        }
+
+        loadOrders();
+        // Fallback polling every 30 seconds (reduced from 10s since we have real-time)
+        const intervalId = setInterval(() => loadOrders(true), 30000);
+        return () => clearInterval(intervalId);
+    }, [isAuthenticated, authStatus, loadOrders]);
 
     const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"];
 

@@ -129,10 +129,10 @@ export async function PATCH(
             updateData.deliveredAt = new Date();
         }
 
-        // Get current order to check status change
+        // Get current order to check status change AND get merchantId/userId for socket rooms
         const existingOrder = await prisma.order.findUnique({
             where: { id },
-            select: { status: true },
+            select: { status: true, merchantId: true, userId: true },
         });
 
         const order = await prisma.order.update({
@@ -142,11 +142,55 @@ export async function PATCH(
                 items: true,
                 address: true,
                 user: { select: { id: true, name: true, email: true, phone: true } },
+                merchant: { select: { id: true, name: true } },
             },
         });
 
         // --- REAL-TIME NOTIFICATIONS ---
-        // Notify when order is picked up (En Camino)
+        // Emit status change to ALL relevant rooms for any status update
+        if (data.status && existingOrder?.status !== data.status) {
+            try {
+                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+
+                // Rooms to notify: order tracking, merchant, customer, admin
+                const rooms = [
+                    `order:${id}`,
+                    existingOrder?.merchantId ? `merchant:${existingOrder.merchantId}` : null,
+                    existingOrder?.userId ? `customer:${existingOrder.userId}` : null,
+                    "admin:orders"
+                ].filter(Boolean);
+
+                // Emit to each room
+                for (const room of rooms) {
+                    await fetch(`${socketUrl}/emit`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            event: "order_status_changed",
+                            room,
+                            data: {
+                                orderId: id,
+                                status: data.status,
+                                previousStatus: existingOrder?.status,
+                                order: {
+                                    id: order.id,
+                                    orderNumber: order.orderNumber,
+                                    status: order.status,
+                                    total: order.total,
+                                    merchantId: order.merchantId,
+                                    userId: order.userId,
+                                }
+                            }
+                        })
+                    });
+                }
+                console.log(`[Socket-Emit] Status ${data.status} broadcasted to ${rooms.length} rooms`);
+            } catch (e) {
+                console.error("[Socket-Emit] Failed to broadcast status change:", e);
+            }
+        }
+
+        // Legacy: Notify when order is picked up (keep for backwards compatibility)
         if (data.status === "PICKED_UP") {
             try {
                 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";

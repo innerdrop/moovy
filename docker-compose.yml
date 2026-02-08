@@ -6,6 +6,7 @@ services:
     container_name: moovy-db
     ports:
       - "5436:5432"
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

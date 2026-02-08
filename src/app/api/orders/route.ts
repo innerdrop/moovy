@@ -192,6 +192,52 @@ export async function POST(request: Request) {
             // Don't fail the order if points fail, but log it
         }
 
+        // --- REAL-TIME: Notify merchant and admin about new order ---
+        if (merchantId) {
+            try {
+                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+
+                // Notify merchant
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event: "new_order",
+                        room: `merchant:${merchantId}`,
+                        data: {
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            status: order.status,
+                            userId: session.user.id,
+                        }
+                    })
+                });
+
+                // Notify admin
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event: "new_order",
+                        room: "admin:orders",
+                        data: {
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            status: order.status,
+                            merchantId,
+                            userId: session.user.id,
+                        }
+                    })
+                });
+
+                console.log(`[Socket-Emit] New order ${order.orderNumber} notified to merchant and admin`);
+            } catch (e) {
+                console.error("[Socket-Emit] Failed to notify new order:", e);
+            }
+        }
+
         return NextResponse.json({
             success: true,
             order: {

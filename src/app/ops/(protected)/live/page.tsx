@@ -1,8 +1,9 @@
 "use client";
 
 // Ops Live Orders Dashboard - Real-time order monitoring
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { formatPrice } from "@/lib/delivery";
+import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import {
     Package,
     Clock,
@@ -15,7 +16,9 @@ import {
     MapPin,
     Phone,
     Bell,
-    Activity
+    Activity,
+    Wifi,
+    WifiOff
 } from "lucide-react";
 
 interface Order {
@@ -47,6 +50,7 @@ export default function OpsLiveDashboardPage() {
     const [stats, setStats] = useState({ pending: 0, inProgress: 0, ready: 0, inDelivery: 0 });
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const loadOrders = useCallback(async (silent = false) => {
         try {
@@ -64,10 +68,35 @@ export default function OpsLiveDashboardPage() {
         }
     }, []);
 
+    // Real-time order updates via WebSocket
+    const { isConnected } = useRealtimeOrders({
+        role: "admin",
+        enabled: true,
+        onNewOrder: (order) => {
+            // Play notification sound for new orders
+            if (audioRef.current) {
+                audioRef.current.play().catch(() => { });
+            }
+            loadOrders(true);
+        },
+        onStatusChange: (orderId, status) => {
+            // Update order status in list
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status } : o
+            ));
+            // Reload for stats update
+            loadOrders(true);
+        },
+        onOrderCancelled: (orderId) => {
+            setOrders(prev => prev.filter(o => o.id !== orderId));
+            loadOrders(true);
+        },
+    });
+
     useEffect(() => {
         loadOrders();
-        // Poll every 5 seconds for real-time monitoring
-        const intervalId = setInterval(() => loadOrders(true), 5000);
+        // Fallback polling every 15 seconds (reduced from 5s since we have real-time)
+        const intervalId = setInterval(() => loadOrders(true), 15000);
         return () => clearInterval(intervalId);
     }, [loadOrders]);
 

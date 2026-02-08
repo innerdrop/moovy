@@ -153,7 +153,7 @@ function RiderMiniMapComponent({
                         const animateStep = () => {
                             if (currentIndex < path.length) {
                                 setAnimatedPath(path.slice(0, currentIndex + 1));
-                                currentIndex += Math.max(1, Math.floor(path.length / 30)); // Faster feel
+                                currentIndex += Math.max(1, Math.floor(path.length / 60)); // 50% slower for smoother animation
                                 animationFrameRef.current = requestAnimationFrame(animateStep);
                             } else {
                                 setAnimatedPath(path);
@@ -257,15 +257,10 @@ function RiderMiniMapComponent({
         setRemainingPath(routePath.slice(closestIndex));
     }, [navigationMode, driverLat, driverLng, routePath]);
 
-    // Auto-center on driver in navigation mode (respects user interaction)
-    useEffect(() => {
-        if (!navigationMode || !mapRef.current || !driverLat || !driverLng) return;
-
-        // Only auto-center if user hasn't interacted recently
-        if (!userInteracted) {
-            mapRef.current.panTo({ lat: driverLat, lng: driverLng });
-        }
-    }, [navigationMode, driverLat, driverLng, userInteracted]);
+    // Auto-centering is DISABLED to allow free pan/zoom
+    // User can manually recenter using the Centrar button
+    // Old behavior was: if (!userInteracted) panTo driver position
+    // Now: no automatic panning, user has full control
 
     // Handle user interaction - pause auto-centering for 10 seconds
     const handleUserInteraction = useCallback(() => {
@@ -282,17 +277,32 @@ function RiderMiniMapComponent({
         }, 10000);
     }, []);
 
-    // Re-center button handler
+    // Re-center button handler - fits driver + destination in view
     const handleRecenter = useCallback(() => {
         if (mapRef.current && driverLat && driverLng) {
-            mapRef.current.panTo({ lat: driverLat, lng: driverLng });
-            mapRef.current.setZoom(17);
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend({ lat: driverLat, lng: driverLng });
+
+            // Include destination in bounds
+            if (orderStatus && ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'].includes(orderStatus)) {
+                // Going to customer
+                if (customerLat && customerLng) {
+                    bounds.extend({ lat: customerLat, lng: customerLng });
+                }
+            } else {
+                // Going to merchant
+                if (merchantLat && merchantLng) {
+                    bounds.extend({ lat: merchantLat, lng: merchantLng });
+                }
+            }
+
+            mapRef.current.fitBounds(bounds, 60); // 60px padding
             setUserInteracted(false);
             if (recenterTimeoutRef.current) {
                 clearTimeout(recenterTimeoutRef.current);
             }
         }
-    }, [driverLat, driverLng]);
+    }, [driverLat, driverLng, customerLat, customerLng, merchantLat, merchantLng, orderStatus]);
 
     // Cleanup timeout and animation on unmount
     useEffect(() => {
@@ -390,11 +400,11 @@ function RiderMiniMapComponent({
                 </div>
             )}
 
-            {/* Re-center button when user has interacted */}
-            {navigationMode && userInteracted && (
+            {/* Re-center button - always visible in navigation mode */}
+            {navigationMode && (
                 <button
                     onClick={handleRecenter}
-                    className="absolute bottom-4 right-4 z-10 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 transition-all"
+                    className="absolute top-2 right-24 z-10 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <circle cx="12" cy="12" r="3" />

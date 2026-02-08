@@ -122,6 +122,31 @@ logistica.on("connection", (socket) => {
             driverSockets.delete(socket.data.driverId);
         }
     });
+
+    // --- NEW ROOM JOIN EVENTS FOR REAL-TIME ORDER UPDATES ---
+
+    // Merchant joins their orders room
+    socket.on("join_merchant_room", (merchantId: string) => {
+        console.log(`[Socket] Merchant ${merchantId} joined their room`);
+        socket.join(`merchant:${merchantId}`);
+        socket.data.merchantId = merchantId;
+        socket.data.role = "merchant";
+    });
+
+    // Customer joins their orders room
+    socket.on("join_customer_room", (userId: string) => {
+        console.log(`[Socket] Customer ${userId} joined their room`);
+        socket.join(`customer:${userId}`);
+        socket.data.userId = userId;
+        socket.data.role = "customer";
+    });
+
+    // Admin joins orders tracking room
+    socket.on("join_admin_orders", () => {
+        console.log(`[Socket] Admin joined orders room`);
+        socket.join("admin:orders");
+        socket.data.role = "admin";
+    });
 });
 
 // HTTP endpoint for internal API calls to emit events
