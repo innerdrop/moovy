@@ -96,6 +96,16 @@ async function LiveStoreView() {
     const slides = await getHeroSlides();
     const slideInterval = (settings as any)?.heroSliderInterval ?? 5000;
 
+    // Promo Banner settings
+    const promoBanner = {
+        enabled: (settings as any)?.promoBannerEnabled ?? true,
+        title: (settings as any)?.promoBannerTitle ?? "Noches de\\nPizza & Pelis",
+        subtitle: (settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs.",
+        buttonText: (settings as any)?.promoBannerButtonText ?? "Ver locales",
+        buttonLink: (settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas",
+        image: (settings as any)?.promoBannerImage || null,
+    };
+
     return (
         <div className="animate-fadeIn bg-white min-h-screen pb-24 md:pb-8 overflow-x-hidden">
             {/* Hero Slider */}
@@ -104,8 +114,8 @@ async function LiveStoreView() {
             {/* Categories Grid */}
             <CategoryGrid categories={categories} />
 
-            {/* Promo Banner (Pizza & Pelis) */}
-            <PromoBanner />
+            {/* Promo Banner (Configurable) */}
+            <PromoBanner {...promoBanner} />
 
             {/* Special Offers */}
             <SpecialOffers />

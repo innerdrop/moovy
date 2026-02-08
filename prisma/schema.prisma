@@ -326,6 +326,13 @@ model StoreSettings {
   tiendaMaintenance     Boolean  @default(false)
   maxCategoriesHome     Int      @default(6)
   heroSliderInterval    Int      @default(5000) // milliseconds between slides
+  // Promo Banner (Slide Publicitario)
+  promoBannerEnabled    Boolean  @default(true)
+  promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
+  promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
+  promoBannerButtonText String   @default("Ver locales")
+  promoBannerButtonLink String   @default("/productos?categoria=pizzas")
+  promoBannerImage      String?  // URL de imagen personalizada (opcional)
 }
 
 model PointsConfig {
