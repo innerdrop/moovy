@@ -19,40 +19,30 @@ interface CategoryGridProps {
 export default function CategoryGrid({ categories }: CategoryGridProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPausedRef = useRef(false);
-    const isMobileRef = useRef(false);
+    const [isClient, setIsClient] = React.useState(false);
 
     // First 3 categories fixed (larger), rest scrollable
     const fixedCategories = categories.slice(0, 3);
     const scrollableCategories = categories.slice(3);
 
-    // Check if mobile on mount
+    // Mark as client-side after mount
     useEffect(() => {
-        isMobileRef.current = window.innerWidth < 768;
-        const handleResize = () => {
-            isMobileRef.current = window.innerWidth < 768;
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        setIsClient(true);
     }, []);
 
-    // Auto-scroll effect - works on both mobile and desktop
+    // Auto-scroll effect using setInterval for better mobile support
     useEffect(() => {
+        if (!isClient) return;
         if (scrollableCategories.length === 0) return;
 
         const scrollContainer = scrollRef.current;
         if (!scrollContainer) return;
 
-        let animationId: number;
-        let lastTime = 0;
-        const speed = 30; // pixels per second
+        const speed = 1; // pixels per interval
 
-        const autoScroll = (currentTime: number) => {
-            if (lastTime === 0) lastTime = currentTime;
-            const deltaTime = (currentTime - lastTime) / 1000;
-            lastTime = currentTime;
-
+        const intervalId = setInterval(() => {
             if (!isPausedRef.current && scrollContainer) {
-                scrollContainer.scrollLeft += speed * deltaTime;
+                scrollContainer.scrollLeft += speed;
 
                 // Reset to start when reaching halfway (seamless loop)
                 const halfWidth = scrollContainer.scrollWidth / 2;
@@ -60,19 +50,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                     scrollContainer.scrollLeft = 0;
                 }
             }
-            animationId = requestAnimationFrame(autoScroll);
-        };
+        }, 30); // ~33fps
 
-        // Small delay before starting animation
-        const timeoutId = setTimeout(() => {
-            animationId = requestAnimationFrame(autoScroll);
-        }, 500);
-
-        return () => {
-            clearTimeout(timeoutId);
-            cancelAnimationFrame(animationId);
-        };
-    }, [scrollableCategories.length]);
+        return () => clearInterval(intervalId);
+    }, [isClient, scrollableCategories.length]);
 
     // Touch/mouse handlers using ref
     const handleInteractionStart = useCallback(() => {
