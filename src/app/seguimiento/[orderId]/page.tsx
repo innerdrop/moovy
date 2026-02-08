@@ -159,7 +159,11 @@ export default function TrackingPage() {
                 const geocoder = new google.maps.Geocoder();
                 try {
                     const result = await geocoder.geocode({
+<<<<<<< HEAD
                         address: `${addr.street} ${addr.number}, ${(addr as { city?: string }).city || "Ushuaia"}, Argentina`
+=======
+                        address: `${addr.street} ${addr.number}, Ushuaia, Argentina`
+>>>>>>> 412ca104bfd10062217211b1de564cc22ab18052
                     });
                     if (result.results[0]) {
                         destLat = result.results[0].geometry.location.lat();
