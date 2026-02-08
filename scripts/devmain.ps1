@@ -18,8 +18,9 @@ git checkout develop
 git pull origin develop --no-edit
 
 # 1. Exportar base de datos local (ahora que estamos sincronizados)
-Write-Host "[DB] Exportando base de datos local..." -ForegroundColor Yellow
-docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db | Out-File -FilePath database_dump.sql -Encoding utf8
+Write-Host "[DB] Exportando base de datos local (UTF-8)..." -ForegroundColor Yellow
+$dump = docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db
+[System.IO.File]::WriteAllLines("$(Get-Location)\database_dump.sql", $dump)
 
 # 2. Verificar si hay cambios (incluyendo el nuevo dump) y guardarlos
 $status = git status --porcelain
@@ -61,13 +62,13 @@ Write-Host "[VPS] Actualizando código y base de datos..." -ForegroundColor Yell
 
 $remoteCommand = "cd $VPS_PATH && " +
 "git fetch origin main && " +
+"git fetch origin main && " +
 "git reset --hard origin/main && " +
 "npm install && " +
 "npx prisma generate && " +
-"iconv -f UTF-16LE -t UTF-8 database_dump.sql -o database_dump_utf8.sql 2>/dev/null || cp database_dump.sql database_dump_utf8.sql && " +
-"sed -i 's/\r$//' database_dump_utf8.sql && " +
+"sed -i 's/\r$//' database_dump.sql && " +
 "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && " +
-"PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump_utf8.sql && " +
+"PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump.sql && " +
 "npm run build && " +
 "pm2 restart moovy"
 

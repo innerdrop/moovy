@@ -21,8 +21,9 @@ if ($currentBranch -eq "main") {
 }
 
 # 2. Exportar Base de Datos
-Write-Host "[DB] Exportando base de datos a database_dump.sql..." -ForegroundColor Yellow
-docker exec moovy-db pg_dump -U postgres moovy_db > database_dump.sql
+Write-Host "[DB] Exportando base de datos a database_dump.sql (UTF-8)..." -ForegroundColor Yellow
+$dump = docker exec moovy-db pg_dump -U postgres moovy_db
+[System.IO.File]::WriteAllLines("$(Get-Location)\database_dump.sql", $dump)
 
 # 3. Mostrar archivos modificados
 Write-Host ""
