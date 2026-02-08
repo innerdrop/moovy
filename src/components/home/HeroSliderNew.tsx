@@ -135,18 +135,33 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
     return (
         <div className="w-full pt-3 pb-2 md:py-6 max-w-7xl mx-auto">
             <div
-                className={`relative mx-3 md:mx-8 lg:mx-16 bg-gradient-to-r ${slide.gradient} rounded-2xl md:rounded-3xl overflow-hidden shadow-lg transition-all duration-500`}
+                className={`relative mx-3 md:mx-8 lg:mx-16 ${!slide.image ? `bg-gradient-to-r ${slide.gradient}` : ''} rounded-2xl md:rounded-3xl overflow-hidden shadow-lg transition-all duration-500`}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
             >
-                <div className="flex items-center min-h-[200px] md:min-h-[280px] lg:min-h-[320px]">
+                {/* Background Image - covers entire slide */}
+                {slide.image && (
+                    <div className="absolute inset-0">
+                        <Image
+                            src={slide.image}
+                            alt={slide.title}
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                        {/* Overlay for text readability */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+                    </div>
+                )}
+
+                <div className="relative flex items-center min-h-[200px] md:min-h-[280px] lg:min-h-[320px]">
                     {/* Text Content */}
                     <div className="flex-1 p-6 md:p-10 lg:p-12 z-10">
-                        <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight">
+                        <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight drop-shadow-lg">
                             {slide.title}
                         </h2>
-                        <p className="text-white/80 text-sm md:text-lg lg:text-xl mb-4 md:mb-6 max-w-md">
+                        <p className="text-white/90 text-sm md:text-lg lg:text-xl mb-4 md:mb-6 max-w-md drop-shadow">
                             {slide.subtitle}
                         </p>
                         <Link
@@ -159,25 +174,21 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
                         </Link>
                     </div>
 
-                    {/* Image or Illustration */}
-                    <div className="w-40 h-32 md:w-64 md:h-48 lg:w-80 lg:h-60 -mr-2 md:mr-4 flex items-center justify-center">
-                        {slide.image ? (
-                            <Image
-                                src={slide.image}
-                                alt={slide.title}
-                                width={320}
-                                height={240}
-                                className="w-full h-full object-contain"
-                            />
-                        ) : (
+                    {/* Illustration only when no image */}
+                    {!slide.image && (
+                        <div className="w-40 h-32 md:w-64 md:h-48 lg:w-80 lg:h-60 -mr-2 md:mr-4 flex items-center justify-center">
                             <DeliveryIllustration />
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/10 rounded-full -mr-16 md:-mr-24 -mt-16 md:-mt-24" />
-                <div className="absolute bottom-0 left-0 w-20 md:w-32 h-20 md:h-32 bg-white/5 rounded-full -ml-10 md:-ml-16 -mb-10 md:-mb-16" />
+                {/* Decorative Elements - only show when no image */}
+                {!slide.image && (
+                    <>
+                        <div className="absolute top-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/10 rounded-full -mr-16 md:-mr-24 -mt-16 md:-mt-24" />
+                        <div className="absolute bottom-0 left-0 w-20 md:w-32 h-20 md:h-32 bg-white/5 rounded-full -ml-10 md:-ml-16 -mb-10 md:-mb-16" />
+                    </>
+                )}
             </div>
 
             {/* Dots Indicator */}
