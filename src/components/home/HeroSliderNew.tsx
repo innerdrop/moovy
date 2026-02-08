@@ -132,40 +132,40 @@ export default function HeroSliderNew({ slides: propSlides }: HeroSliderNewProps
     if (!slide) return null;
 
     return (
-        <div className="w-full pt-3 pb-2">
+        <div className="w-full pt-3 pb-2 md:py-6 max-w-7xl mx-auto">
             <div
-                className={`relative mx-3 bg-gradient-to-r ${slide.gradient} rounded-2xl overflow-hidden shadow-lg transition-all duration-500`}
+                className={`relative mx-3 md:mx-8 lg:mx-16 bg-gradient-to-r ${slide.gradient} rounded-2xl md:rounded-3xl overflow-hidden shadow-lg transition-all duration-500`}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
             >
-                <div className="flex items-center min-h-[200px]">
+                <div className="flex items-center min-h-[200px] md:min-h-[280px] lg:min-h-[320px]">
                     {/* Text Content */}
-                    <div className="flex-1 p-6 z-10">
-                        <h2 className="text-white text-2xl font-bold mb-2 leading-tight">
+                    <div className="flex-1 p-6 md:p-10 lg:p-12 z-10">
+                        <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight">
                             {slide.title}
                         </h2>
-                        <p className="text-white/80 text-sm mb-4">
+                        <p className="text-white/80 text-sm md:text-lg lg:text-xl mb-4 md:mb-6 max-w-md">
                             {slide.subtitle}
                         </p>
                         <Link
                             href={slide.buttonLink}
-                            className="inline-flex items-center gap-1 bg-white text-[#e60012] px-4 py-2 rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+                            className="inline-flex items-center gap-1 md:gap-2 bg-white text-[#e60012] px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {slide.buttonText}
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
                         </Link>
                     </div>
 
                     {/* Image or Illustration */}
-                    <div className="w-40 h-32 -mr-2 flex items-center justify-center">
+                    <div className="w-40 h-32 md:w-64 md:h-48 lg:w-80 lg:h-60 -mr-2 md:mr-4 flex items-center justify-center">
                         {slide.image ? (
                             <Image
                                 src={slide.image}
                                 alt={slide.title}
-                                width={160}
-                                height={128}
+                                width={320}
+                                height={240}
                                 className="w-full h-full object-contain"
                             />
                         ) : (
@@ -175,19 +175,19 @@ export default function HeroSliderNew({ slides: propSlides }: HeroSliderNewProps
                 </div>
 
                 {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full -ml-10 -mb-10" />
+                <div className="absolute top-0 right-0 w-32 md:w-48 h-32 md:h-48 bg-white/10 rounded-full -mr-16 md:-mr-24 -mt-16 md:-mt-24" />
+                <div className="absolute bottom-0 left-0 w-20 md:w-32 h-20 md:h-32 bg-white/5 rounded-full -ml-10 md:-ml-16 -mb-10 md:-mb-16" />
             </div>
 
             {/* Dots Indicator */}
-            <div className="flex justify-center gap-1.5 mt-2">
+            <div className="flex justify-center gap-1.5 md:gap-2 mt-2 md:mt-4">
                 {slides.map((_, idx) => (
                     <button
                         key={idx}
                         onClick={() => setCurrent(idx)}
-                        className={`w-2 h-2 rounded-full transition-all ${idx === current
-                            ? "bg-[#e60012] w-5"
-                            : "bg-gray-300"
+                        className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all ${idx === current
+                            ? "bg-[#e60012] w-5 md:w-8"
+                            : "bg-gray-300 hover:bg-gray-400"
                             }`}
                     />
                 ))}

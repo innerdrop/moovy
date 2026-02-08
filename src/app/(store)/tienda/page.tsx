@@ -96,7 +96,7 @@ async function LiveStoreView() {
     const slides = await getHeroSlides();
 
     return (
-        <div className="animate-fadeIn bg-white min-h-screen pb-24 overflow-x-hidden">
+        <div className="animate-fadeIn bg-white min-h-screen pb-24 md:pb-8 overflow-x-hidden">
             {/* Hero Slider */}
             <HeroSliderNew slides={slides} />
 
