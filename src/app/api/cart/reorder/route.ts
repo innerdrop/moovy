@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -38,59 +38,30 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
-        // Get or create user's cart
-        let cart = await prisma.cart.findFirst({
+        // Prepare items for the cart based on the store's CartItem interface
+        const newCartItems = originalOrder.items.map(item => ({
+            id: `${item.productId}-default-${Date.now()}`,
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            variantName: item.variantName || undefined,
+            merchantId: originalOrder.merchantId || undefined
+        }));
+
+        // Upsert the saved cart
+        await prisma.savedCart.upsert({
             where: { userId: session.user.id },
-            include: { items: true }
-        });
-
-        if (!cart) {
-            cart = await prisma.cart.create({
-                data: {
-                    userId: session.user.id,
-                    merchantId: originalOrder.merchantId
-                },
-                include: { items: true }
-            });
-        } else if (cart.merchantId !== originalOrder.merchantId) {
-            // Clear cart if switching merchants
-            await prisma.cartItem.deleteMany({
-                where: { cartId: cart.id }
-            });
-            await prisma.cart.update({
-                where: { id: cart.id },
-                data: { merchantId: originalOrder.merchantId }
-            });
-        }
-
-        // Add items from original order to cart
-        for (const item of originalOrder.items) {
-            const existingCartItem = await prisma.cartItem.findFirst({
-                where: {
-                    cartId: cart.id,
-                    productId: item.productId
-                }
-            });
-
-            if (existingCartItem) {
-                // Update quantity
-                await prisma.cartItem.update({
-                    where: { id: existingCartItem.id },
-                    data: { quantity: existingCartItem.quantity + item.quantity }
-                });
-            } else {
-                // Add new item
-                await prisma.cartItem.create({
-                    data: {
-                        cartId: cart.id,
-                        productId: item.productId!,
-                        quantity: item.quantity,
-                        price: item.price,
-                        notes: item.notes
-                    }
-                });
+            update: {
+                items: newCartItems,
+                merchantId: originalOrder.merchantId || null
+            },
+            create: {
+                userId: session.user.id,
+                items: newCartItems,
+                merchantId: originalOrder.merchantId || null
             }
-        }
+        });
 
         return NextResponse.json({
             success: true,
