@@ -24,6 +24,7 @@ export const CATEGORY_ICON_PATHS: Record<string, string> = {
     helados: "/icons/categories/cat_helados.png",
     adultos: "/icons/categories/cat_adultos.png",
     pastas: "/icons/categories/cat_pastas.png",
+    kiosko: "/icons/categories/cat_kiosko.png",
 };
 
 // Default icon (simple circle with package icon)
