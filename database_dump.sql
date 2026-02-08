@@ -81,6 +81,7 @@ ALTER TABLE IF EXISTS ONLY public."OrderBackup" DROP CONSTRAINT IF EXISTS "Order
 ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_pkey";
+ALTER TABLE IF EXISTS ONLY public."HeroSlide" DROP CONSTRAINT IF EXISTS "HeroSlide_pkey";
 ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_pkey";
 ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_pkey";
 ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_pkey";
@@ -105,6 +106,7 @@ DROP TABLE IF EXISTS public."Order";
 DROP TABLE IF EXISTS public."MerchantCategory";
 DROP TABLE IF EXISTS public."MerchantAcquiredProduct";
 DROP TABLE IF EXISTS public."Merchant";
+DROP TABLE IF EXISTS public."HeroSlide";
 DROP TABLE IF EXISTS public."Driver";
 DROP TABLE IF EXISTS public."Category";
 DROP TABLE IF EXISTS public."CartItem";
@@ -204,7 +206,8 @@ CREATE TABLE public."Category" (
     "updatedAt" timestamp(3) without time zone NOT NULL,
     "allowIndividualPurchase" boolean DEFAULT true NOT NULL,
     price double precision DEFAULT 0 NOT NULL,
-    "parentId" text
+    "parentId" text,
+    icon text
 );
 
 
@@ -238,6 +241,27 @@ CREATE TABLE public."Driver" (
 
 
 ALTER TABLE public."Driver" OWNER TO postgres;
+
+--
+-- Name: HeroSlide; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."HeroSlide" (
+    id text NOT NULL,
+    title text NOT NULL,
+    subtitle text NOT NULL,
+    "buttonText" text NOT NULL,
+    "buttonLink" text NOT NULL,
+    gradient text DEFAULT 'from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]'::text NOT NULL,
+    image text,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "order" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."HeroSlide" OWNER TO postgres;
 
 --
 -- Name: Merchant; Type: TABLE; Schema: public; Owner: postgres
@@ -591,7 +615,15 @@ CREATE TABLE public."StoreSettings" (
     "showComerciosCard" boolean DEFAULT true NOT NULL,
     "showRepartidoresCard" boolean DEFAULT true NOT NULL,
     "tiendaMaintenance" boolean DEFAULT false NOT NULL,
-    "maxCategoriesHome" integer DEFAULT 6 NOT NULL
+    "maxCategoriesHome" integer DEFAULT 6 NOT NULL,
+    "heroSliderInterval" integer DEFAULT 5000 NOT NULL,
+    "promoBannerButtonLink" text DEFAULT '/productos?categoria=pizzas'::text NOT NULL,
+    "promoBannerButtonText" text DEFAULT 'Ver locales'::text NOT NULL,
+    "promoBannerEnabled" boolean DEFAULT true NOT NULL,
+    "promoBannerImage" text,
+    "promoBannerSubtitle" text DEFAULT '2x1 en locales seleccionados de 20hs a 23hs.'::text NOT NULL,
+    "promoBannerTitle" text DEFAULT 'Noches de
+Pizza & Pelis'::text NOT NULL
 );
 
 
@@ -704,22 +736,22 @@ COPY public."CartItem" (id, "userId", "productId", quantity, "variantId", "creat
 -- Data for Name: Category; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Category" (id, name, slug, description, image, "isActive", "order", "createdAt", "updatedAt", "allowIndividualPurchase", price, "parentId") FROM stdin;
-cml0zoxi500dhygioxr9f0loc	Juegos	juegos			t	0	2026-01-30 14:39:48.893	2026-02-05 22:01:55.038	t	0	cml9lh7l90000qxvofmv8r1i7
-cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-05 15:11:49.689	t	0	cml9lh7l90000qxvofmv8r1i7
-cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	t	3	2026-01-26 15:34:21.563	2026-02-05 15:11:49.693	t	0	cml9lh7l90000qxvofmv8r1i7
-cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	2	2026-01-26 15:34:21.563	2026-02-05 15:11:49.698	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow3e0000ygiogdypolr3	Combos	combos	\N	\N	t	0	2026-01-30 14:39:47.065	2026-02-05 15:11:49.701	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow6h000fygio11bf03c6	Gaseosas	gaseosas	\N	\N	t	0	2026-01-30 14:39:47.178	2026-02-05 15:11:49.704	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow6y000kygio98l495ny	Hielo & Otros	hielo-otros	\N	\N	t	0	2026-01-30 14:39:47.195	2026-02-05 15:11:49.708	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow7d000pygioyc93s0na	Aperitivos	aperitivos	\N	\N	t	0	2026-01-30 14:39:47.209	2026-02-05 15:11:49.713	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow7t000uygio3e9l5uwk	Snacks	snacks	\N	\N	t	0	2026-01-30 14:39:47.225	2026-02-05 15:11:49.716	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow88000zygioaxhmxkcx	Aguas & Jugos	aguas-jugos	\N	\N	t	0	2026-01-30 14:39:47.24	2026-02-05 15:11:49.72	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	0	2026-01-30 14:39:47.297	2026-02-05 15:11:49.724	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	t	0	2026-01-30 14:39:47.514	2026-02-05 15:11:49.729	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	0	2026-01-30 14:39:48.683	2026-02-05 15:11:49.733	t	0	cml9lh7l90000qxvofmv8r1i7
-cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			t	0	2026-01-30 14:39:48.329	2026-02-05 15:11:49.739	t	5000	cml9lh7l90000qxvofmv8r1i7
-cml9lh7l90000qxvofmv8r1i7	Kioscos y Almacenes	kioscos-y-almacenes	Paquete completo para kioscos y almacenes. Incluye todas las subcategor??as de productos.		t	0	2026-02-05 15:11:49.678	2026-02-05 22:11:09.031	t	50000	\N
+COPY public."Category" (id, name, slug, description, image, "isActive", "order", "createdAt", "updatedAt", "allowIndividualPurchase", price, "parentId", icon) FROM stdin;
+cml0zoxi500dhygioxr9f0loc	Juegos	juegos			t	0	2026-01-30 14:39:48.893	2026-02-05 22:01:55.038	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-05 15:11:49.689	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	t	3	2026-01-26 15:34:21.563	2026-02-05 15:11:49.693	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	2	2026-01-26 15:34:21.563	2026-02-05 15:11:49.698	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow3e0000ygiogdypolr3	Combos	combos	\N	\N	t	0	2026-01-30 14:39:47.065	2026-02-05 15:11:49.701	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow6h000fygio11bf03c6	Gaseosas	gaseosas	\N	\N	t	0	2026-01-30 14:39:47.178	2026-02-05 15:11:49.704	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow6y000kygio98l495ny	Hielo & Otros	hielo-otros	\N	\N	t	0	2026-01-30 14:39:47.195	2026-02-05 15:11:49.708	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow7d000pygioyc93s0na	Aperitivos	aperitivos	\N	\N	t	0	2026-01-30 14:39:47.209	2026-02-05 15:11:49.713	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow7t000uygio3e9l5uwk	Snacks	snacks	\N	\N	t	0	2026-01-30 14:39:47.225	2026-02-05 15:11:49.716	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow88000zygioaxhmxkcx	Aguas & Jugos	aguas-jugos	\N	\N	t	0	2026-01-30 14:39:47.24	2026-02-05 15:11:49.72	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	0	2026-01-30 14:39:47.297	2026-02-05 15:11:49.724	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	t	0	2026-01-30 14:39:47.514	2026-02-05 15:11:49.729	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	0	2026-01-30 14:39:48.683	2026-02-05 15:11:49.733	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			t	0	2026-01-30 14:39:48.329	2026-02-05 15:11:49.739	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
+cml9lh7l90000qxvofmv8r1i7	Kioscos y Almacenes	kioscos-y-almacenes	Paquete completo para kioscos y almacenes. Incluye todas las subcategor??as de productos.		t	0	2026-02-05 15:11:49.678	2026-02-05 22:11:09.031	t	50000	\N	\N
 \.
 
 
@@ -731,6 +763,17 @@ COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel
 cmkvbvo7w0026r0gkcidihjmf	cmkvbvo7s0023r0gk3wyvfr2v	BICICLETA	\N	\N	\N	\N	\N	t	f	0	\N	2026-01-26 15:34:21.789	2026-01-26 15:34:21.789	FUERA_DE_SERVICIO	\N	\N	\N	\N
 cmkvbvo83002ar0gkqelv54hh	cmkvbvo800027r0gksb401d3p	AUTO	\N	\N	\N	\N	XYZ 999	t	f	0	\N	2026-01-26 15:34:21.795	2026-01-26 15:34:21.795	FUERA_DE_SERVICIO	\N	\N	\N	\N
 cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	f	0	\N	2026-01-26 15:34:21.779	2026-02-08 07:01:39.124	FUERA_DE_SERVICIO	2026-02-08 07:02:25.384	-54.82899327952958	-68.34960188246315	0101000020E610000027F392E05F1651C07717A8731C6A4BC0
+\.
+
+
+--
+-- Data for Name: HeroSlide; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradient, image, "isActive", "order", "createdAt", "updatedAt") FROM stdin;
+cmldvcnti0000do9zm126edud	Orgullo Fueguino	Tienda online desde el fin del mundo	Conocenos	/nosotros	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770562753927-3c2v3.jpg	t	1	2026-02-08 14:59:18.293	2026-02-08 14:59:18.293
+cmldvmkbo0000c61suezudlsa	Variedad Total	Todo lo que busc├ís en un solo lugar!	Ver productos	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563218118-gcx6pl.png	t	2	2026-02-08 15:07:00.324	2026-02-08 15:07:00.324
+cmldvnqa80001c61s2jjg4049	Delivery R├ípido	Llevamos tu antojo donde est├⌐s	Ver m├ís	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-08 15:07:54.704
 \.
 
 
@@ -1251,8 +1294,8 @@ COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "update
 -- Data for Name: StoreSettings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome") FROM stdin;
-settings	f	Estamos cerrados. ??Volvemos pronto!	f	??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.	1200	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-02-03 21:43:04.763	Participa ahora!	t	f			Sorteo Febrero 2026	Super Promo!	t	t	f	10
+COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderInterval", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle") FROM stdin;
+settings	f	Estamos cerrados. ??Volvemos pronto!	f	??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.	1200	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-02-08 15:04:40.296	Participa ahora!	t	f			Sorteo Febrero 2026	Super Promo!	t	t	f	10	5000	/productos?categoria=pizzas	Ver locales	t	/uploads/promo/promo-1770563078358-oldbl8.png	2x1 en locales seleccionados de 20hs a 23hs.	Noches de Pizza & Pelis
 \.
 
 
@@ -1293,11 +1336,11 @@ cmkvbvo800027r0gksb401d3p	rider3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoF
 cmkvbvo8f002fr0gks60vb2et	cliente3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 3	\N	\N	\N	CLIENT	\N	\N	0	0	f	cmkvbvo8f002gr0gkxvsgolli	\N	2026-01-26 15:34:21.808	2026-01-26 15:34:21.808	\N	\N	\N
 cmkvbvo8c002dr0gk22kda2cw	cliente2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 2	\N	\N	\N	CLIENT	\N	\N	5000	0	f	cmkvbvo8c002er0gk53tvzvvh	\N	2026-01-26 15:34:21.804	2026-02-01 22:21:09.161	\N	\N	\N
 cmkvbvo87002br0gkyyz8i0cs	cliente1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 1	\N	\N	\N	CLIENT	\N	\N	52900	0	t	cmkvbvo87002cr0gkde84ikuu	\N	2026-01-26 15:34:21.799	2026-02-05 21:51:19.353	\N	\N	\N
-cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-05 21:58:34.612	\N	\N	\N
 cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	 				MERCHANT	\N	\N	0	0	f	cmkvbvo57000sr0gkah2nixeg	\N	2026-01-26 15:34:21.692	2026-02-07 01:55:59.576	\N	\N	\N
 cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-08 05:42:57.132	\N	\N	\N
 cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-08 06:58:04.605	\N	\N	\N
 cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	85750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-08 06:58:49.973	\N	\N	\N
+cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-08 14:44:29.104	\N	\N	\N
 \.
 
 
@@ -1350,6 +1393,14 @@ ALTER TABLE ONLY public."Category"
 
 ALTER TABLE ONLY public."Driver"
     ADD CONSTRAINT "Driver_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: HeroSlide HeroSlide_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."HeroSlide"
+    ADD CONSTRAINT "HeroSlide_pkey" PRIMARY KEY (id);
 
 
 --
