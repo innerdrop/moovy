@@ -294,17 +294,27 @@ h6 {
   }
 
   100% {
-    transform: translateX(-33.33%);
+    transform: translateX(-50%);
   }
 }
 
 @keyframes scroll-left {
   0% {
-    transform: translateX(-33.33%);
+    transform: translateX(-50%);
   }
 
   100% {
     transform: translateX(0);
+  }
+}
+
+/* Marquee animation - smooth infinite scroll */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
   }
 }
 

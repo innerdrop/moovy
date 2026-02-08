@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCategoryIcon } from "@/lib/icons";
@@ -17,55 +17,11 @@ interface CategoryGridProps {
 }
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const isPausedRef = useRef(false);
+    if (categories.length === 0) return null;
 
     // First 3 categories fixed (larger), rest scrollable
     const fixedCategories = categories.slice(0, 3);
     const scrollableCategories = categories.slice(3);
-
-    // Auto-scroll effect - using ref to avoid re-creating animation loop
-    useEffect(() => {
-        if (scrollableCategories.length === 0) return;
-
-        const scrollContainer = scrollRef.current;
-        if (!scrollContainer) return;
-
-        let animationId: number;
-        const speed = 0.5; // pixels per frame
-
-        const autoScroll = () => {
-            if (!isPausedRef.current && scrollContainer) {
-                scrollContainer.scrollLeft += speed;
-
-                // Reset to start when reaching halfway (seamless loop)
-                const halfWidth = scrollContainer.scrollWidth / 2;
-                if (scrollContainer.scrollLeft >= halfWidth) {
-                    scrollContainer.scrollLeft = 0;
-                }
-            }
-            animationId = requestAnimationFrame(autoScroll);
-        };
-
-        animationId = requestAnimationFrame(autoScroll);
-
-        return () => cancelAnimationFrame(animationId);
-    }, [scrollableCategories.length]);
-
-    // Early return after hooks
-    if (categories.length === 0) return null;
-
-    // Touch/mouse handlers using ref
-    const handleInteractionStart = useCallback(() => {
-        isPausedRef.current = true;
-    }, []);
-
-    const handleInteractionEnd = useCallback(() => {
-        // Resume after a short delay
-        setTimeout(() => {
-            isPausedRef.current = false;
-        }, 1000);
-    }, []);
 
     // Large cards for top row
     const FixedCategoryCard = ({ cat }: { cat: Category }) => {
@@ -137,26 +93,20 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 ))}
             </div>
 
-            {/* Row 2: Scrollable categories with auto-scroll */}
+            {/* Row 2: Scrollable categories with marquee animation */}
             {scrollableCategories.length > 0 && (
                 <div className="overflow-hidden -mx-3">
                     <div
-                        ref={scrollRef}
-                        className="overflow-x-auto scrollbar-hide px-3 py-1"
-                        style={{ scrollbarWidth: 'none' }}
-                        onTouchStart={handleInteractionStart}
-                        onTouchEnd={handleInteractionEnd}
-                        onMouseDown={handleInteractionStart}
-                        onMouseUp={handleInteractionEnd}
-                        onMouseLeave={handleInteractionEnd}
+                        className="flex gap-2 w-max px-3 py-1"
+                        style={{
+                            animation: 'marquee 30s linear infinite',
+                        }}
                     >
-                        <div className="flex gap-2 w-max">
-                            {/* Duplicate items for seamless loop */}
-                            {[...scrollableCategories, ...scrollableCategories].map((cat, idx) => (
-                                <ScrollableCategoryCard key={`${cat.id}-${idx}`} cat={cat} />
-                            ))}
-                            <VerMasCard />
-                        </div>
+                        {/* Duplicate items for seamless loop */}
+                        {[...scrollableCategories, ...scrollableCategories].map((cat, idx) => (
+                            <ScrollableCategoryCard key={`${cat.id}-${idx}`} cat={cat} />
+                        ))}
+                        <VerMasCard />
                     </div>
                 </div>
             )}
