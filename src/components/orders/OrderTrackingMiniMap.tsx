@@ -104,17 +104,20 @@ function OrderTrackingMiniMap({
 
     // Request directions and calculate ETA
     useEffect(() => {
-        if (!isLoaded || !merchantLat || !merchantLng || !customerLat || !customerLng) return;
+        if (!isLoaded || !customerLat || !customerLng) return;
 
-        const directionsService = new google.maps.DirectionsService();
-
+        // Origin is driver if available, otherwise merchant
         const origin = driverPos
             ? { lat: driverPos.lat, lng: driverPos.lng }
-            : { lat: merchantLat, lng: merchantLng };
+            : (merchantLat && merchantLng) ? { lat: merchantLat, lng: merchantLng } : null;
 
+        if (!origin) return;
+
+        const directionsService = new google.maps.DirectionsService();
         const destination = { lat: customerLat, lng: customerLng };
 
-        const waypoints = (driverPos && orderStatus === "DRIVER_ASSIGNED")
+        // Waypoints only if we have merchant and haven't picked up yet
+        const waypoints = (driverPos && orderStatus === "DRIVER_ASSIGNED" && merchantLat && merchantLng)
             ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
             : [];
 
@@ -247,11 +250,12 @@ function OrderTrackingMiniMap({
                             url: "data:image/svg+xml," + encodeURIComponent(`
                                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
                                     <circle cx="20" cy="20" r="18" fill="#22c55e" stroke="white" stroke-width="3"/>
-                                    <path d="M14 20l12-8v16z" fill="white" transform="rotate(${directions?.routes[0]?.legs[0]?.steps[0]?.start_location ? 0 : 0})"/>
+                                    <path d="M20 10 L28 28 L20 24 L12 28 Z" fill="white" />
                                 </svg>
                             `),
                             scaledSize: new google.maps.Size(40, 40),
-                            anchor: new google.maps.Point(20, 20)
+                            anchor: new google.maps.Point(20, 20),
+                            rotation: (directions?.routes[0]?.legs[0]?.steps[0] as any)?.start_location ? 0 : 0 // Default to 0 for now as heading isn't in socket yet
                         }}
                     />
                 )}
