@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCategoryIcon } from "@/lib/icons";
@@ -19,9 +19,6 @@ interface CategoryGridProps {
 export default function CategoryGrid({ categories }: CategoryGridProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPausedRef = useRef(false);
-    const [, forceUpdate] = useState(0);
-
-    if (categories.length === 0) return null;
 
     // First 3 categories fixed (larger), rest scrollable
     const fixedCategories = categories.slice(0, 3);
@@ -54,6 +51,9 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
 
         return () => cancelAnimationFrame(animationId);
     }, [scrollableCategories.length]);
+
+    // Early return after hooks
+    if (categories.length === 0) return null;
 
     // Touch/mouse handlers using ref
     const handleInteractionStart = useCallback(() => {
