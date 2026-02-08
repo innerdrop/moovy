@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
 import { Switch } from "./Switch";
+import PromoBannerImageUpload from "./PromoBannerImageUpload";
 
 async function getSettings() {
     try {
@@ -361,22 +362,11 @@ export default async function ConfigurationPage() {
                         </div>
                     </div>
 
-                    {/* Image URL (optional) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            URL de Imagen (opcional)
-                        </label>
-                        <input
-                            type="text"
-                            defaultValue={(settings as any)?.promoBannerImage ?? ""}
-                            className="input"
-                            name="promoBannerImage"
-                            placeholder="https://... o /uploads/..."
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Si agregás una imagen, reemplazará la ilustración por defecto.
-                        </p>
-                    </div>
+                    {/* Image Upload */}
+                    <PromoBannerImageUpload
+                        currentImage={(settings as any)?.promoBannerImage}
+                        name="promoBannerImage"
+                    />
                 </div>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm">
