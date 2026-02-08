@@ -161,7 +161,7 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
                         <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight drop-shadow-lg">
                             {slide.title}
                         </h2>
-                        <p className="text-white/90 text-sm md:text-lg lg:text-xl mb-4 md:mb-6 max-w-md drop-shadow">
+                        <p className="text-white/90 text-sm md:text-lg lg:text-xl mb-6 md:mb-10 max-w-md drop-shadow">
                             {slide.subtitle}
                         </p>
                         <Link
