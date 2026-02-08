@@ -155,7 +155,7 @@ export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000
                     </div>
                 )}
 
-                <div className="relative flex items-center min-h-[300px] md:min-h-[450px] lg:min-h-[550px]">
+                <div className="relative flex items-center min-h-[260px] md:min-h-[380px] lg:min-h-[480px]">
                     {/* Text Content */}
                     <div className="flex-1 p-6 md:p-10 lg:p-12 z-10">
                         <h2 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 leading-tight drop-shadow-lg">
