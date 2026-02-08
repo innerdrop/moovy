@@ -42,6 +42,18 @@ async function getFeaturedMerchants() {
     }
 }
 
+async function getHeroSlides() {
+    try {
+        const slides = await prisma.heroSlide.findMany({
+            where: { isActive: true },
+            orderBy: { order: "asc" },
+        });
+        return slides;
+    } catch (error) {
+        return [];
+    }
+}
+
 async function getStoreSettings() {
     try {
         const settings = await prisma.storeSettings.findUnique({
@@ -81,11 +93,12 @@ async function LiveStoreView() {
     const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } });
     const categories = await getCategories(settings?.maxCategoriesHome ?? 10);
     const merchants = await getFeaturedMerchants();
+    const slides = await getHeroSlides();
 
     return (
         <div className="animate-fadeIn bg-white min-h-screen pb-24 overflow-x-hidden">
             {/* Hero Slider */}
-            <HeroSliderNew />
+            <HeroSliderNew slides={slides} />
 
             {/* Categories Grid */}
             <CategoryGrid categories={categories} />

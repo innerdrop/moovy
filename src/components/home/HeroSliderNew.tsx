@@ -2,41 +2,51 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 
 interface Slide {
-    id: number;
+    id: string;
     title: string;
     subtitle: string;
     buttonText: string;
     buttonLink: string;
     gradient: string;
+    image: string | null;
 }
 
-const slides: Slide[] = [
+interface HeroSliderNewProps {
+    slides?: Slide[];
+}
+
+// Default slides (fallback)
+const defaultSlides: Slide[] = [
     {
-        id: 1,
+        id: "1",
         title: "Delivery Rápido",
         subtitle: "Llevamos tu antojo donde estés",
         buttonText: "Explora ahora",
         buttonLink: "/productos",
-        gradient: "from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]"
+        gradient: "from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]",
+        image: null
     },
     {
-        id: 2,
+        id: "2",
         title: "Ofertas del Día",
         subtitle: "Descuentos exclusivos para vos",
         buttonText: "Ver ofertas",
         buttonLink: "/productos?ofertas=true",
-        gradient: "from-[#ff6b35] via-[#ff8c42] to-[#ffba69]"
+        gradient: "from-[#ff6b35] via-[#ff8c42] to-[#ffba69]",
+        image: null
     },
     {
-        id: 3,
+        id: "3",
         title: "Kioscos 24hs",
         subtitle: "Tu antojo a cualquier hora",
         buttonText: "Pedir ahora",
         buttonLink: "/productos",
-        gradient: "from-[#e60012] via-[#c70010] to-[#a5000d]"
+        gradient: "from-[#e60012] via-[#c70010] to-[#a5000d]",
+        image: null
     }
 ];
 
@@ -78,31 +88,40 @@ function DeliveryIllustration() {
             {/* Delivery Box */}
             <rect x="45" y="65" width="30" height="25" rx="3" fill="#ff6b35" />
             <rect x="48" y="68" width="24" height="6" rx="1" fill="#fff" opacity="0.8" />
-            <text x="52" y="86" fontSize="6" fill="#fff" fontWeight="bold">MOOVY</text>
+            <text x="60" y="73" fontSize="5" fill="#333" textAnchor="middle" fontWeight="bold">moovy</text>
+            <rect x="48" y="78" width="24" height="10" rx="1" fill="#fff" opacity="0.3" />
 
-            {/* Location Pin */}
-            <g transform="translate(155, 50)">
-                <path d="M15 0 C6.7 0 0 6.7 0 15 C0 26 15 35 15 35 C15 35 30 26 30 15 C30 6.7 23.3 0 15 0z" fill="#e60012" />
-                <circle cx="15" cy="14" r="7" fill="#fff" />
-                <circle cx="15" cy="14" r="3" fill="#e60012" />
-            </g>
+            {/* Motion Lines */}
+            <path d="M35 95 L20 95" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M35 100 L15 100" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M35 105 L25 105" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" />
 
-            {/* Dust/Motion Lines */}
-            <path d="M40 125 L25 123" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M35 130 L20 129" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M42 120 L30 118" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" />
+            {/* Speed particles */}
+            <circle cx="30" cy="85" r="2" fill="rgba(255,255,255,0.5)" />
+            <circle cx="25" cy="110" r="1.5" fill="rgba(255,255,255,0.4)" />
+            <circle cx="20" cy="92" r="1" fill="rgba(255,255,255,0.3)" />
         </svg>
     );
 }
 
-export default function HeroSliderNew() {
+export default function HeroSliderNew({ slides: propSlides }: HeroSliderNewProps) {
+    const slides = propSlides && propSlides.length > 0 ? propSlides : defaultSlides;
     const [current, setCurrent] = useState(0);
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-    // Minimum swipe distance (in px)
+    // Minimum swipe distance for triggering navigation (in px)
     const minSwipeDistance = 50;
 
+    const nextSlide = () => {
+        setCurrent((prev) => (prev + 1) % slides.length);
+    };
+
+    const prevSlide = () => {
+        setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+    };
+
+    // Touch handlers
     const onTouchStart = (e: React.TouchEvent) => {
         setTouchEnd(null);
         setTouchStart(e.targetTouches[0].clientX);
@@ -113,36 +132,28 @@ export default function HeroSliderNew() {
     };
 
     const onTouchEnd = () => {
-        if (!touchStart || (!touchEnd && touchEnd !== 0)) return;
-
+        if (!touchStart || !touchEnd) return;
         const distance = touchStart - touchEnd;
         const isLeftSwipe = distance > minSwipeDistance;
         const isRightSwipe = distance < -minSwipeDistance;
 
         if (isLeftSwipe) {
             nextSlide();
-        }
-        if (isRightSwipe) {
+        } else if (isRightSwipe) {
             prevSlide();
         }
     };
 
-    const nextSlide = () => {
-        setCurrent((prev) => (prev + 1) % slides.length);
-    };
-
-    const prevSlide = () => {
-        setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-    };
-
+    // Auto-slide
     useEffect(() => {
         const timer = setInterval(() => {
             nextSlide();
         }, 5000);
         return () => clearInterval(timer);
-    }, []);
+    }, [slides.length]);
 
     const slide = slides[current];
+    if (!slide) return null;
 
     return (
         <div className="w-full pt-3 pb-2">
@@ -164,16 +175,26 @@ export default function HeroSliderNew() {
                         <Link
                             href={slide.buttonLink}
                             className="inline-flex items-center gap-1 bg-white text-[#e60012] px-4 py-2 rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
-                            onClick={(e) => e.stopPropagation()} // Prevent swiping when clicking button
+                            onClick={(e) => e.stopPropagation()}
                         >
                             {slide.buttonText}
                             <ChevronRight className="w-4 h-4" />
                         </Link>
                     </div>
 
-                    {/* Illustration */}
-                    <div className="w-40 h-32 -mr-2">
-                        <DeliveryIllustration />
+                    {/* Image or Illustration */}
+                    <div className="w-40 h-32 -mr-2 flex items-center justify-center">
+                        {slide.image ? (
+                            <Image
+                                src={slide.image}
+                                alt={slide.title}
+                                width={160}
+                                height={128}
+                                className="w-full h-full object-contain"
+                            />
+                        ) : (
+                            <DeliveryIllustration />
+                        )}
                     </div>
                 </div>
 

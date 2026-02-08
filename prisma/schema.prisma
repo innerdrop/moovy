@@ -63,6 +63,20 @@ model Address {
   orders       Order[]
 }
 
+model HeroSlide {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String
+  buttonText  String
+  buttonLink  String
+  gradient    String   @default("from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]")
+  image       String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Category {
   id                      String            @id @default(cuid())
   name                    String            @unique
