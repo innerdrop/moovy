@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCategoryIcon } from "@/lib/icons";
@@ -17,11 +17,49 @@ interface CategoryGridProps {
 }
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [isPaused, setIsPaused] = useState(false);
+
     if (categories.length === 0) return null;
 
     // First 3 categories fixed (larger), rest scrollable
     const fixedCategories = categories.slice(0, 3);
     const scrollableCategories = categories.slice(3);
+
+    // Auto-scroll effect
+    useEffect(() => {
+        if (scrollableCategories.length === 0) return;
+
+        const scrollContainer = scrollRef.current;
+        if (!scrollContainer) return;
+
+        let animationId: number;
+        const speed = 0.5; // pixels per frame
+
+        const autoScroll = () => {
+            if (!isPaused && scrollContainer) {
+                scrollContainer.scrollLeft += speed;
+
+                // Reset to start when reaching halfway (seamless loop)
+                const halfWidth = scrollContainer.scrollWidth / 2;
+                if (scrollContainer.scrollLeft >= halfWidth) {
+                    scrollContainer.scrollLeft = 0;
+                }
+            }
+            animationId = requestAnimationFrame(autoScroll);
+        };
+
+        animationId = requestAnimationFrame(autoScroll);
+
+        return () => cancelAnimationFrame(animationId);
+    }, [isPaused, scrollableCategories.length]);
+
+    // Touch/mouse handlers
+    const handleTouchStart = () => setIsPaused(true);
+    const handleTouchEnd = () => {
+        // Resume after a short delay
+        setTimeout(() => setIsPaused(false), 1500);
+    };
 
     // Large cards for top row
     const FixedCategoryCard = ({ cat }: { cat: Category }) => {
@@ -45,7 +83,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         );
     };
 
-    // Square cards for scrollable row - smaller icons, visible text
+    // Square cards for scrollable row
     const ScrollableCategoryCard = ({ cat }: { cat: Category }) => {
         const iconKey = cat.icon || cat.slug;
         const icon = getCategoryIcon(iconKey);
@@ -67,7 +105,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         );
     };
 
-    // "Ver más" card at the end - same size as categories
+    // "Ver más" card at the end
     const VerMasCard = () => (
         <Link
             href="/productos"
@@ -93,11 +131,20 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 ))}
             </div>
 
-            {/* Row 2: Scrollable categories with subtle auto-scroll */}
+            {/* Row 2: Scrollable categories with auto-scroll */}
             {scrollableCategories.length > 0 && (
                 <div className="overflow-hidden -mx-3">
-                    <div className="overflow-x-auto scrollbar-hide px-3 py-1" style={{ scrollbarWidth: 'none' }}>
-                        <div className="flex gap-2 w-max animate-scroll-right">
+                    <div
+                        ref={scrollRef}
+                        className="overflow-x-auto scrollbar-hide px-3 py-1"
+                        style={{ scrollbarWidth: 'none' }}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                        onMouseDown={handleTouchStart}
+                        onMouseUp={handleTouchEnd}
+                        onMouseLeave={handleTouchEnd}
+                    >
+                        <div className="flex gap-2 w-max">
                             {/* Duplicate items for seamless loop */}
                             {[...scrollableCategories, ...scrollableCategories].map((cat, idx) => (
                                 <ScrollableCategoryCard key={`${cat.id}-${idx}`} cat={cat} />
