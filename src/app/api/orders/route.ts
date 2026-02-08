@@ -246,7 +246,7 @@ export async function GET(request: Request) {
                         id: true,
                         latitude: true,
                         longitude: true,
-                        user: { select: { name: true } }
+                        user: { select: { name: true, phone: true } }
                     }
                 },
                 merchant: {

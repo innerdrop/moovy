@@ -24,6 +24,19 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Driver not found" }, { status: 404 });
         }
 
+        // --- Update Driver Location ---
+        if (hasDriverLocation) {
+            await prisma.$executeRaw`
+                UPDATE "Driver" 
+                SET 
+                    latitude = ${driverLat}, 
+                    longitude = ${driverLng},
+                    "lastLocationAt" = NOW(),
+                    ubicacion = ST_SetSRID(ST_MakePoint(${driverLng}, ${driverLat}), 4326)
+                WHERE id = ${driver.id}
+            `;
+        }
+
         // --- Stats ---
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -124,7 +137,7 @@ export async function GET(request: Request) {
             // 1. First, find orders PENDING for this specific driver (Offers)
             const pendingOrders = await prisma.order.findMany({
                 where: {
-                    status: "READY",
+                    status: { in: ["PREPARING", "READY"] },
                     pendingDriverId: driver.id,
                     driverId: null
                 },
@@ -138,7 +151,7 @@ export async function GET(request: Request) {
             // 2. Then, find general available orders (if they haven't seen them yet)
             const readyOrders = await prisma.order.findMany({
                 where: {
-                    status: "READY",
+                    status: { in: ["PREPARING", "READY"] },
                     driverId: null,
                     pendingDriverId: null // Not yet offered to anyone (or expired)
                 },

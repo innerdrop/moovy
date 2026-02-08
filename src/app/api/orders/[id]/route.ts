@@ -177,13 +177,22 @@ export async function PATCH(
                         data: { orderId: id }
                     })
                 });
+
+                // FREE THE DRIVER
+                if (order.driverId) {
+                    await prisma.driver.update({
+                        where: { id: order.driverId },
+                        data: { availabilityStatus: "DISPONIBLE" }
+                    });
+                    console.log(`[Order] Driver ${order.driverId} freed after delivery of ${order.orderNumber}`);
+                }
             } catch (e) {
-                console.error("[Socket-Emit] Failed to notify delivery:", e);
+                console.error("[Socket-Emit] Failed to notify delivery or free driver:", e);
             }
         }
 
-        // Trigger auto-assignment when status changes to READY
-        if (data.status === "READY" && existingOrder?.status !== "READY") {
+        // Trigger auto-assignment when status changes to PREPARING
+        if (data.status === "PREPARING" && existingOrder?.status !== "PREPARING") {
             // Fire and forget - don't block the response
             assignOrderToNearestDriver(id).then((result) => {
                 if (result.success) {
@@ -249,6 +258,19 @@ export async function DELETE(
                 where: { id },
                 data: { status: "CANCELLED" },
             });
+
+            // FREE THE DRIVER IF ASSIGNED
+            if (order.driverId) {
+                await tx.driver.update({
+                    where: { id: order.driverId },
+                    data: { availabilityStatus: "DISPONIBLE" }
+                });
+            }
+
+            // ALSO CLEAR PENDING DRIVER IF APPLICABLE
+            // (Standard practice: if cancelled, they aren't busy anymore with THIS)
+            // Note: If they were just "pending offer", they aren't marked as BUSY yet, 
+            // but we clear the relationship in the order anyway.
         });
 
         return NextResponse.json({ success: true, message: "Pedido cancelado" });

@@ -109,9 +109,14 @@ export default function MisPedidosPage() {
         return orders;
     }, [filter, orders, activeOrders, completedOrders]);
 
-    // Trackable order for the top map
+    // Trackable order for the top map - only after rider picks up
     const trackableOrder = useMemo(() => {
-        return activeOrders.find(o => ["DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"].includes(o.status));
+        return activeOrders.find(o => ["PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"].includes(o.status));
+    }, [activeOrders]);
+
+    // Order being prepared (rider assigned but not picked up yet) - show info panel
+    const preparingOrder = useMemo(() => {
+        return activeOrders.find(o => ["DRIVER_ASSIGNED", "PREPARING", "READY"].includes(o.status));
     }, [activeOrders]);
 
     if (authStatus === "loading" || loading) {
@@ -174,8 +179,50 @@ export default function MisPedidosPage() {
                 </div>
             )}
 
+            {/* PREPARATION INFO PANEL (Before rider picks up) */}
+            {!trackableOrder && preparingOrder && (
+                <div className="h-[35vh] relative flex-shrink-0 z-10 shadow-lg bg-gradient-to-b from-orange-50 via-white to-orange-50/30 flex flex-col items-center justify-center px-6">
+                    <div className="absolute top-4 left-4 right-4 flex justify-between">
+                        <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white/50">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">Preparando</p>
+                            <p className="text-sm font-bold text-gray-900 leading-none">#{preparingOrder.orderNumber}</p>
+                        </div>
+                    </div>
+
+                    <div className="relative mb-4">
+                        <div className="w-20 h-20 bg-orange-100 rounded-[28px] flex items-center justify-center animate-pulse">
+                            <Package className="w-10 h-10 text-orange-500" />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-200">
+                            <Loader2 className="w-3 h-3 text-orange-500 animate-spin" />
+                        </div>
+                    </div>
+
+                    <h3 className="text-lg font-black italic tracking-tight text-gray-900 uppercase text-center">
+                        {preparingOrder.status === "DRIVER_ASSIGNED" ? "Repartidor en camino al comercio" : "Preparando tu pedido"}
+                    </h3>
+                    <p className="text-gray-500 text-sm text-center mt-1 max-w-xs">
+                        {preparingOrder.status === "DRIVER_ASSIGNED"
+                            ? "El mapa se activará cuando recoja tu pedido"
+                            : "Te notificaremos cuando esté listo"}
+                    </p>
+
+                    {preparingOrder.merchant && (
+                        <div className="mt-4 bg-white rounded-2xl p-3 shadow-md border border-orange-100 flex items-center gap-3 w-full max-w-xs">
+                            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <MapPin className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-bold text-gray-900 text-sm truncate">{preparingOrder.merchant.name}</p>
+                                <p className="text-xs text-gray-500 truncate">Comercio asignado</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* CONTENT SECTION */}
-            <div className={`flex-1 flex flex-col bg-white overflow-hidden ${trackableOrder ? "rounded-t-[32px] -mt-8 relative z-20 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]" : ""}`}>
+            <div className={`flex-1 flex flex-col bg-white overflow-hidden ${(trackableOrder || preparingOrder) ? "rounded-t-[32px] -mt-8 relative z-20 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]" : ""}`}>
                 {/* Header / Tabs */}
                 <div className="flex-shrink-0 border-b bg-white/80 backdrop-blur-md sticky top-0 z-30">
                     <div className="p-4 flex items-center justify-between">
@@ -188,8 +235,8 @@ export default function MisPedidosPage() {
                                 key={tab.key}
                                 onClick={() => setFilter(tab.key as any)}
                                 className={`flex-1 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${filter === tab.key
-                                        ? "bg-gray-900 text-white shadow-lg"
-                                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                    ? "bg-gray-900 text-white shadow-lg"
+                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                                     }`}
                             >
                                 {tab.label} {tab.count > 0 && `(${tab.count})`}
@@ -216,8 +263,8 @@ export default function MisPedidosPage() {
                                 <div
                                     key={order.id}
                                     className={`group bg-white border-2 rounded-2xl transition-all duration-300 ${isActive
-                                            ? isBeingTracked ? "border-[#e60012]" : "border-gray-900"
-                                            : "border-gray-100 hover:border-gray-200"
+                                        ? isBeingTracked ? "border-[#e60012]" : "border-gray-900"
+                                        : "border-gray-100 hover:border-gray-200"
                                         }`}
                                 >
                                     <div className={`px-4 py-2 flex items-center justify-between border-b ${isActive ? "bg-gray-50" : ""}`}>
@@ -273,10 +320,10 @@ export default function MisPedidosPage() {
 
                                         <div className="mt-4 flex gap-2">
                                             <Link
-                                                href={`/seguimiento/${order.id}`}
+                                                href={isActive ? `/seguimiento/${order.id}` : `/mis-pedidos/${order.id}`}
                                                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isActive
-                                                        ? "bg-gray-900 text-white shadow-md active:scale-95"
-                                                        : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                                                    ? "bg-gray-900 text-white shadow-md active:scale-95"
+                                                    : "bg-gray-50 text-gray-500 hover:bg-gray-100"
                                                     }`}
                                             >
                                                 {isActive ? "Seguir Pedido" : "Ver Detalle"}

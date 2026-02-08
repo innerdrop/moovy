@@ -17,6 +17,8 @@ interface RiderMiniMapProps {
     customerName?: string; // Customer name to display on map
     height?: string;
     navigationMode?: boolean; // Enable navigation mode with auto-centering
+    orderStatus?: string; // Track order status for route transitions
+    onRouteTransition?: () => void; // Callback when route changes
 }
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
@@ -47,13 +49,19 @@ function RiderMiniMapComponent({
     customerAddress = "Cliente",
     customerName,
     height = "250px",
-    navigationMode = false
+    navigationMode = false,
+    orderStatus,
+    onRouteTransition
 }: RiderMiniMapProps) {
     const mapRef = useRef<google.maps.Map | null>(null);
     const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
     const [remainingPath, setRemainingPath] = useState<google.maps.LatLngLiteral[]>([]);
+    const [animatedPath, setAnimatedPath] = useState<google.maps.LatLngLiteral[]>([]); // For drawing animation
+    const [isAnimating, setIsAnimating] = useState(false);
     const [userInteracted, setUserInteracted] = useState(false);
     const recenterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
+    const prevOrderStatusRef = useRef<string | undefined>(undefined);
     const [showCustomerInfo, setShowCustomerInfo] = useState(false);
 
     const { isLoaded } = useJsApiLoader({
@@ -68,26 +76,42 @@ function RiderMiniMapComponent({
     useEffect(() => {
         if (!isLoaded || !driverLat || !driverLng) return;
 
-        const destination = customerLat && customerLng
-            ? { lat: customerLat, lng: customerLng }
-            : merchantLat && merchantLng
-                ? { lat: merchantLat, lng: merchantLng }
-                : null;
+        // Cancel any existing animation
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
 
-        if (!destination) return;
+        // Stage-based destination logic: 
+        // If not picked up yet, destination is Merchant. 
+        // Once picked up, destination is Customer.
+        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(orderStatus || "");
+
+        const destination = isPickedUp
+            ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
+            : (merchantLat && merchantLng ? { lat: merchantLat, lng: merchantLng } : null);
+
+        if (!destination) {
+            setRoutePath([]);
+            setRemainingPath([]);
+            setAnimatedPath([]);
+            setIsAnimating(false);
+            return;
+        }
 
         const directionsService = new google.maps.DirectionsService();
         const origin = { lat: driverLat, lng: driverLng };
 
-        const waypoints = (customerLat && customerLng && merchantLat && merchantLng)
-            ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
-            : [];
+        // We use staged navigation, so no waypoints needed. 
+        // This prevents the route from going "through" the merchant to the customer prematurely.
+        const waypoints: google.maps.DirectionsWaypoint[] = [];
 
         if (navigationMode) {
             console.log("[RiderMap] Updating route...", {
                 driver: { lat: driverLat, lng: driverLng },
                 dest: destination,
-                hasWaypoints: waypoints.length > 0
+                stage: isPickedUp ? "CUSTOMER" : "MERCHANT",
+                status: orderStatus
             });
         }
 
@@ -109,14 +133,104 @@ function RiderMiniMapComponent({
                             });
                         });
                     });
+
+                    // Check if this is a route transition (status changed)
+                    const isTransition = prevOrderStatusRef.current !== undefined &&
+                        prevOrderStatusRef.current !== orderStatus &&
+                        (orderStatus === "PICKED_UP" || orderStatus === "IN_DELIVERY" || orderStatus === "ON_THE_WAY");
+
+                    // Immediate update of primary state
                     setRoutePath(path);
-                    setRemainingPath(path);
+
+                    if (isTransition) {
+                        // Trigger animated route drawing
+                        setIsAnimating(true);
+                        setAnimatedPath([]);
+                        onRouteTransition?.();
+
+                        // Animate the route drawing progressively
+                        let currentIndex = 0;
+                        const animateStep = () => {
+                            if (currentIndex < path.length) {
+                                setAnimatedPath(path.slice(0, currentIndex + 1));
+                                currentIndex += Math.max(1, Math.floor(path.length / 30)); // Faster feel
+                                animationFrameRef.current = requestAnimationFrame(animateStep);
+                            } else {
+                                setAnimatedPath(path);
+                                setRemainingPath(path);
+                                setIsAnimating(false);
+                                animationFrameRef.current = null;
+
+                                // Fit map to new route after animation
+                                if (mapRef.current && customerLat && customerLng && driverLat && driverLng) {
+                                    const bounds = new google.maps.LatLngBounds();
+                                    bounds.extend({ lat: driverLat, lng: driverLng });
+                                    bounds.extend({ lat: customerLat, lng: customerLng });
+                                    mapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 150, left: 50 });
+                                }
+                            }
+                        };
+                        animationFrameRef.current = requestAnimationFrame(animateStep);
+                    } else {
+                        setRemainingPath(path);
+                        setAnimatedPath(path);
+                        setIsAnimating(false);
+                    }
+
+                    prevOrderStatusRef.current = orderStatus;
                 } else {
                     console.error("[RiderMap] Route failed:", status);
+                    // Clear if failed
+                    setRoutePath([]);
+                    setRemainingPath([]);
                 }
             }
         );
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng]);
+
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, onRouteTransition, navigationMode]);
+
+    // Immediately clear route when orderStatus changes OR becomes null (finished)
+    const prevMerchantLatRef = useRef<number | undefined>(merchantLat);
+    useEffect(() => {
+        const orderFinished = prevOrderStatusRef.current && !orderStatus;
+        const statusChanged = orderStatus && prevOrderStatusRef.current && orderStatus !== prevOrderStatusRef.current;
+        const merchantCleared = prevMerchantLatRef.current !== undefined && merchantLat === undefined;
+
+        if (orderFinished || statusChanged || merchantCleared) {
+            // Status changed or merchant cleared (picked up) - immediately clear old route
+            setRoutePath([]);
+            setRemainingPath([]);
+            setAnimatedPath([]);
+            setIsAnimating(false);
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
+
+            // If it was finished, reset the ref so it can detect new orders
+            if (orderFinished) {
+                prevOrderStatusRef.current = undefined;
+            }
+        }
+
+        prevMerchantLatRef.current = merchantLat;
+    }, [orderStatus, merchantLat]);
+
+    // Clear route when delivery is completed (navigationMode becomes false)
+    useEffect(() => {
+        if (!navigationMode) {
+            setRoutePath([]);
+            setRemainingPath([]);
+            setAnimatedPath([]);
+            setIsAnimating(false);
+            prevOrderStatusRef.current = undefined;
+        }
+    }, [navigationMode]);
 
     // Update remaining path as driver moves (erase path behind driver)
     useEffect(() => {
@@ -180,11 +294,14 @@ function RiderMiniMapComponent({
         }
     }, [driverLat, driverLng]);
 
-    // Cleanup timeout on unmount
+    // Cleanup timeout and animation on unmount
     useEffect(() => {
         return () => {
             if (recenterTimeoutRef.current) {
                 clearTimeout(recenterTimeoutRef.current);
+            }
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
             }
         };
     }, []);
@@ -303,13 +420,56 @@ function RiderMiniMapComponent({
                 }}
             >
                 {/* Route path - shows remaining route in navigation mode */}
-                {remainingPath.length > 0 && (
+                {/* Uses animatedPath during animation for drawing effect */}
+                {/* Key forces remount when stage or destination changes to ensure clean state */}
+                {navigationMode && (isAnimating ? animatedPath : remainingPath).length > 0 && (
                     <Polyline
-                        path={remainingPath}
+                        key={`route-${orderStatus || 'idle'}-${isAnimating ? 'anim' : 'static'}-${merchantLat || 0}-${customerLat || 0}`}
+                        path={isAnimating ? animatedPath : remainingPath}
                         options={{
-                            strokeColor: "#4285F4",
-                            strokeWeight: 6,
-                            strokeOpacity: 0.9,
+                            strokeColor: isAnimating ? "#22c55e" : "#4285F4", // Green during animation
+                            strokeWeight: isAnimating ? 8 : 6,
+                            strokeOpacity: isAnimating ? 0.9 : 0, // Hide main path when flow is shown
+                            icons: isAnimating ? [] : [{
+                                icon: {
+                                    path: 'M 0,-1.5 L 0,1.5',
+                                    strokeOpacity: 1,
+                                    strokeWeight: 4,
+                                    scale: 3,
+                                    strokeColor: "#4285F4",
+                                },
+                                offset: '0',
+                                repeat: '20px'
+                            }, {
+                                icon: {
+                                    path: 'M -2,0 L 0,2 L 2,0',
+                                    strokeOpacity: 1,
+                                    strokeWeight: 2,
+                                    scale: 2,
+                                    strokeColor: "#2196F3",
+                                },
+                                offset: '50%',
+                                repeat: '40px'
+                            }]
+                        }}
+                        onLoad={(polyline) => {
+                            if (isAnimating) return;
+
+                            let count = 0;
+                            const interval = setInterval(() => {
+                                count = (count + 1) % 200;
+                                const icons = polyline.get('icons');
+                                if (icons && icons[0]) {
+                                    icons[0].offset = (count / 2) + '%';
+                                    polyline.set('icons', icons);
+                                }
+                            }, 50);
+                            (polyline as any)._animationInterval = interval;
+                        }}
+                        onUnmount={(polyline) => {
+                            if ((polyline as any)._animationInterval) {
+                                clearInterval((polyline as any)._animationInterval);
+                            }
                         }}
                     />
                 )}
@@ -390,5 +550,5 @@ function RiderMiniMapComponent({
     );
 }
 
-// Memoize to prevent flickering during dashboard polling
-export default React.memo(RiderMiniMapComponent);
+// Export WITHOUT memo to ensure state resets correctly on prop changes
+export default RiderMiniMapComponent;
