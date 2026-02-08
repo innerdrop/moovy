@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCategoryIcon } from "@/lib/icons";
@@ -18,7 +18,8 @@ interface CategoryGridProps {
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [isPaused, setIsPaused] = useState(false);
+    const isPausedRef = useRef(false);
+    const [, forceUpdate] = useState(0);
 
     if (categories.length === 0) return null;
 
@@ -26,7 +27,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const fixedCategories = categories.slice(0, 3);
     const scrollableCategories = categories.slice(3);
 
-    // Auto-scroll effect
+    // Auto-scroll effect - using ref to avoid re-creating animation loop
     useEffect(() => {
         if (scrollableCategories.length === 0) return;
 
@@ -37,7 +38,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         const speed = 0.5; // pixels per frame
 
         const autoScroll = () => {
-            if (!isPaused && scrollContainer) {
+            if (!isPausedRef.current && scrollContainer) {
                 scrollContainer.scrollLeft += speed;
 
                 // Reset to start when reaching halfway (seamless loop)
@@ -52,14 +53,19 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         animationId = requestAnimationFrame(autoScroll);
 
         return () => cancelAnimationFrame(animationId);
-    }, [isPaused, scrollableCategories.length]);
+    }, [scrollableCategories.length]);
 
-    // Touch/mouse handlers
-    const handleTouchStart = () => setIsPaused(true);
-    const handleTouchEnd = () => {
+    // Touch/mouse handlers using ref
+    const handleInteractionStart = useCallback(() => {
+        isPausedRef.current = true;
+    }, []);
+
+    const handleInteractionEnd = useCallback(() => {
         // Resume after a short delay
-        setTimeout(() => setIsPaused(false), 1500);
-    };
+        setTimeout(() => {
+            isPausedRef.current = false;
+        }, 1000);
+    }, []);
 
     // Large cards for top row
     const FixedCategoryCard = ({ cat }: { cat: Category }) => {
@@ -138,11 +144,11 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                         ref={scrollRef}
                         className="overflow-x-auto scrollbar-hide px-3 py-1"
                         style={{ scrollbarWidth: 'none' }}
-                        onTouchStart={handleTouchStart}
-                        onTouchEnd={handleTouchEnd}
-                        onMouseDown={handleTouchStart}
-                        onMouseUp={handleTouchEnd}
-                        onMouseLeave={handleTouchEnd}
+                        onTouchStart={handleInteractionStart}
+                        onTouchEnd={handleInteractionEnd}
+                        onMouseDown={handleInteractionStart}
+                        onMouseUp={handleInteractionEnd}
+                        onMouseLeave={handleInteractionEnd}
                     >
                         <div className="flex gap-2 w-max">
                             {/* Duplicate items for seamless loop */}
