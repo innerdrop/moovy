@@ -27,11 +27,17 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Dynamics imports for heavy components
 const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
     ssr: false,
     loading: () => <div className="h-full w-full bg-gray-100 animate-pulse flex items-center justify-center text-gray-400">Preparando mapa...</div>
+});
+
+const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
+    ssr: false,
+    loading: () => <div className="h-[45vh] bg-white rounded-t-[32px] animate-pulse" />
 });
 
 interface DashboardStats {
@@ -91,6 +97,13 @@ export default function RiderDashboard() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
+    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+
+    // Push notifications
+    const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed } = usePushNotifications();
+
+    // Track bottom sheet state to adjust map size
+    const [sheetState, setSheetState] = useState<"expanded" | "minimized" | "hidden">("expanded");
 
     // Fetch dashboard data
     const fetchDashboard = useCallback(async (silent = false) => {
@@ -114,12 +127,42 @@ export default function RiderDashboard() {
     // Initial load and periodic refresh
     useEffect(() => {
         fetchDashboard();
-        const interval = setInterval(() => fetchDashboard(true), 15000);
+        const interval = setInterval(() => fetchDashboard(true), 3000);
         return () => clearInterval(interval);
     }, [fetchDashboard]);
 
+    // Show notification prompt when rider lands on dashboard
+    useEffect(() => {
+        if (pushSupported && pushPermission === 'default' && !isSubscribed) {
+            // Show prompt after a short delay
+            const timer = setTimeout(() => setShowNotificationPrompt(true), 2000);
+            return () => clearTimeout(timer);
+        }
+        if (pushPermission === 'granted' && isSubscribed) {
+            setShowNotificationPrompt(false);
+        }
+    }, [isOnline, pushSupported, pushPermission, isSubscribed]);
+
+    // Handle notification permission request
+    const handleEnableNotifications = async () => {
+        const success = await requestPermission();
+        if (success) {
+            setShowNotificationPrompt(false);
+        }
+    };
+
     // Handle online/offline toggle
     const toggleOnline = async () => {
+        // Prevent going online without location
+        if (!isOnline && !location) {
+            alert("No podemos activarte sin acceso a tu ubicación GPS.");
+            // Try to trigger geolocation again if possible
+            if (typeof window !== "undefined" && navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(() => { }, () => { });
+            }
+            return;
+        }
+
         try {
             setIsToggling(true);
             const res = await fetch("/api/driver/toggle-status", {
@@ -152,6 +195,70 @@ export default function RiderDashboard() {
         );
     }
 
+    // --- Permissions / Empty States ---
+
+    // 1. Check for location permission or actual errors (crucial for riders)
+    // We show this if location is missing, even if not online, to ensure they are ready
+    if ((!location || locationHookError) && !isLoading) {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        return (
+            <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-center animate-in fade-in duration-500 overflow-y-auto">
+                <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6 flex-shrink-0">
+                    <MapPin className="w-12 h-12 text-[#e60012] animate-pulse" />
+                </div>
+
+                <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase leading-none mb-2">GPS No Disponible</h1>
+
+                <p className="text-gray-500 text-sm mb-6 leading-tight max-w-xs">
+                    {locationHookError?.includes("denied")
+                        ? "Has denegado el acceso al GPS. Los repartidores necesitan seguimiento activo para trabajar."
+                        : "Necesitamos tu ubicación para mostrarte las mejores ofertas cerca de ti."}
+                </p>
+
+                <div className="space-y-4 w-full max-w-xs mb-8">
+                    <button
+                        onClick={() => {
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    () => window.location.reload(),
+                                    (err) => alert("Error: " + err.message)
+                                );
+                            }
+                        }}
+                        className="w-full py-5 bg-[#e60012] text-white font-black rounded-2xl italic uppercase tracking-widest transition active:scale-95 shadow-xl shadow-red-100 flex items-center justify-center gap-3"
+                    >
+                        <Navigation className="w-5 h-5" />
+                        Compartir Ubicación
+                    </button>
+
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="w-full py-4 bg-gray-100 text-gray-600 font-black rounded-2xl italic uppercase tracking-widest transition active:scale-95"
+                    >
+                        Refrescar
+                    </button>
+                </div>
+
+                {isIOS && (
+                    <div className="bg-gray-50 rounded-2xl p-4 text-left w-full border border-gray-100">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Si el botón no funciona:</p>
+                        <ul className="text-[11px] space-y-2 text-gray-600 font-medium">
+                            <li className="flex gap-2">
+                                <span className="bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 text-[8px] font-bold">1</span>
+                                <span>Ve a <b>Ajustes</b> &gt; <b>Privacidad</b> &gt; <b>Localización</b>.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 text-[8px] font-bold">2</span>
+                                <span>Asegúrate de que tu <b>Navegador</b> esté en <b>"Al usar la app"</b>.</span>
+                            </li>
+                        </ul>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     const { stats, pedidosActivos, pedidosPendientes } = dashboardData || {
         stats: { pedidosHoy: 0, enCamino: 0, completados: 0, gananciasHoy: 0 },
         pedidosActivos: [],
@@ -160,10 +267,18 @@ export default function RiderDashboard() {
 
     const pedidoActivo = pedidosActivos[0];
 
+    // Calculate map height based on sheet state
+    const mapHeight = sheetState === "expanded" ? "55vh"
+        : sheetState === "minimized" ? "calc(100vh - 100px)"
+            : "100vh";
+
     return (
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden font-sans">
-            {/* STICKY MAP SECTION (55% height) */}
-            <div className="h-[55vh] relative flex-shrink-0 z-10 shadow-lg">
+            {/* STICKY MAP SECTION - expands when sheet collapses */}
+            <div
+                className="relative flex-shrink-0 z-10 shadow-lg transition-all duration-300 ease-out"
+                style={{ height: mapHeight }}
+            >
                 <RiderMiniMap
                     driverLat={location?.latitude}
                     driverLng={location?.longitude}
@@ -177,6 +292,7 @@ export default function RiderDashboard() {
                     customerName={pedidoActivo?.nombreCliente || undefined}
                     height="100%"
                     navigationMode={!!pedidoActivo}
+                    orderStatus={pedidoActivo?.estado?.toUpperCase()}
                 />
 
                 {/* Floating Map UI */}
@@ -202,7 +318,7 @@ export default function RiderDashboard() {
                                 className="bg-[#4285F4] hover:bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-xl pointer-events-auto flex items-center gap-3 active:scale-95 transition-all font-bold uppercase tracking-wider text-xs border-2 border-white"
                             >
                                 <Navigation className="w-5 h-5" />
-                                NAVEGAR
+                                IR A MAPS
                             </a>
                         )}
                     </div>
@@ -214,11 +330,51 @@ export default function RiderDashboard() {
                 </Link>
             </div>
 
-            {/* BOTTOM PANEL */}
-            <div className="flex-1 bg-white rounded-t-[32px] -mt-8 relative z-20 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col">
-                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3 flex-shrink-0" />
+            {/* Notification Permission Banner */}
+            {showNotificationPrompt && (
+                <div className="absolute top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-300">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-4 shadow-xl">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span className="text-2xl">🔔</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-white text-sm">¡Activa las notificaciones!</h4>
+                                <p className="text-blue-100 text-xs mt-0.5">Recibe alertas instantáneas cuando haya nuevas ofertas de entrega.</p>
+                            </div>
+                            <button
+                                onClick={() => setShowNotificationPrompt(false)}
+                                className="text-white/60 hover:text-white p-1"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                            <button
+                                onClick={handleEnableNotifications}
+                                className="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 rounded-xl active:scale-98 transition"
+                            >
+                                Activar ahora
+                            </button>
+                            <button
+                                onClick={() => setShowNotificationPrompt(false)}
+                                className="px-4 text-white/80 font-medium text-xs"
+                            >
+                                Ahora no
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                <div className="flex-1 overflow-y-auto px-6 pb-10">
+            {/* BOTTOM PANEL - Collapsible */}
+            <BottomSheet
+                initialState="expanded"
+                expandedHeight="45vh"
+                minimizedHeight="100px"
+                onStateChange={setSheetState}
+            >
+                <div className="px-6 pb-10">
                     {pedidoActivo ? (
                         <div className="space-y-6">
                             <div className="flex justify-between items-start">
@@ -425,7 +581,7 @@ export default function RiderDashboard() {
                         </div>
                     )}
                 </div>
-            </div>
+            </BottomSheet>
 
             {isMenuOpen && (
                 <div className="fixed inset-0 z-50 flex">

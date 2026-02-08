@@ -143,6 +143,12 @@ export default function TrackingPage() {
 
         if (!isLoaded || !order) return;
 
+        if (status === "DELIVERED") {
+            setDirections(null);
+            setRouteInfo(null);
+            return;
+        }
+
         const solveDirections = async () => {
             let destLat = addr?.latitude;
             let destLng = addr?.longitude;
@@ -153,7 +159,7 @@ export default function TrackingPage() {
                 const geocoder = new google.maps.Geocoder();
                 try {
                     const result = await geocoder.geocode({
-                        address: `${addr.street} ${addr.number}, ${addr.city || "Ushuaia"}, Argentina`
+                        address: `${addr.street} ${addr.number}, ${(addr as { city?: string }).city || "Ushuaia"}, Argentina`
                     });
                     if (result.results[0]) {
                         destLat = result.results[0].geometry.location.lat();
@@ -460,133 +466,206 @@ export default function TrackingPage() {
                 </div>
             )}
 
-            {/* MAP SECTION (60%) */}
-            <div className="relative h-[55vh] flex-shrink-0 z-10 shadow-lg">
-                <button
-                    onClick={() => router.back()}
-                    className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
-                >
-                    <ArrowLeft className="w-6 h-6 text-gray-900" />
-                </button>
+            {/* Check if order is picked up (rider has the package) */}
+            {(() => {
+                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase());
 
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900 text-white rounded-full px-5 py-2 shadow-2xl border-2 border-white/20">
-                    <span className="text-[10px] font-black uppercase tracking-widest">#{order.orderNumber}</span>
-                </div>
+                if (!isPickedUp) {
+                    // PREPARATION UI - Before pickup
+                    return (
+                        <div className="relative h-[55vh] flex-shrink-0 z-10 shadow-lg bg-gradient-to-b from-orange-50 via-white to-orange-50/30 flex flex-col items-center justify-center px-6">
+                            <button
+                                onClick={() => router.back()}
+                                className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
+                            >
+                                <ArrowLeft className="w-6 h-6 text-gray-900" />
+                            </button>
 
-                <div className={`absolute top-4 right-4 z-20 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border border-white ${connected ? "bg-white/90 backdrop-blur-md" : "bg-red-50"}`}>
-                    <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{connected ? "En Vivo" : "Desconectado"}</span>
-                </div>
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900 text-white rounded-full px-5 py-2 shadow-2xl border-2 border-white/20">
+                                <span className="text-[10px] font-black uppercase tracking-widest">#{order.orderNumber}</span>
+                            </div>
 
-                <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    center={{ lat: order.address.latitude || -54.8019, lng: order.address.longitude || -68.3030 }}
-                    zoom={15}
-                    onLoad={map => { mapRef.current = map; }}
-                    options={{
-                        disableDefaultUI: true,
-                        zoomControl: false,
-                        scrollwheel: true,
-                        gestureHandling: "greedy",
-                    }}
-                >
-                    {/* Animated Route Line */}
-                    {directions && directions.routes[0].overview_path && (
-                        <Polyline
-                            path={directions.routes[0].overview_path}
+                            {/* Animated Package Icon */}
+                            <div className="relative mb-6">
+                                <div className="w-24 h-24 bg-orange-100 rounded-[32px] flex items-center justify-center animate-pulse">
+                                    <Package className="w-12 h-12 text-orange-500" />
+                                </div>
+                                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-200">
+                                    <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                                </div>
+                            </div>
+
+                            <h3 className="text-2xl font-black italic tracking-tight text-gray-900 uppercase text-center leading-tight">
+                                {order.status.toUpperCase() === "DRIVER_ASSIGNED" ? "Repartidor asignado" : "Preparando tu pedido"}
+                            </h3>
+                            <p className="text-gray-500 text-sm text-center mt-2 max-w-xs">
+                                {order.status.toUpperCase() === "DRIVER_ASSIGNED"
+                                    ? "El repartidor está yendo al comercio a recoger tu pedido"
+                                    : "El mapa se activará cuando el repartidor recoja tu pedido"}
+                            </p>
+
+                            {/* Merchant Info */}
+                            {order.merchant && (
+                                <div className="mt-6 bg-white rounded-2xl p-4 shadow-lg border border-orange-100 flex items-center gap-4 w-full max-w-sm">
+                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                        <Store className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-gray-900">{order.merchant.name}</p>
+                                        <p className="text-xs text-gray-500">Preparando tu pedido</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Driver Info if assigned */}
+                            {order.driver && (
+                                <div className="mt-3 bg-white rounded-2xl p-4 shadow-lg border border-green-100 flex items-center gap-4 w-full max-w-sm">
+                                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                        <User className="w-6 h-6 text-green-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-gray-900">{order.driver.user.name}</p>
+                                        <p className="text-xs text-gray-500">Tu repartidor</p>
+                                    </div>
+                                    {order.driver.user.phone && (
+                                        <a href={`tel:${order.driver.user.phone}`} className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                                            <Phone className="w-5 h-5 text-white" />
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+
+                // MAP SECTION - After pickup (rider has the package)
+                return (
+                    <div className="relative h-[55vh] flex-shrink-0 z-10 shadow-lg">
+                        <button
+                            onClick={() => router.back()}
+                            className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
+                        >
+                            <ArrowLeft className="w-6 h-6 text-gray-900" />
+                        </button>
+
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900 text-white rounded-full px-5 py-2 shadow-2xl border-2 border-white/20">
+                            <span className="text-[10px] font-black uppercase tracking-widest">#{order.orderNumber}</span>
+                        </div>
+
+                        <div className={`absolute top-4 right-4 z-20 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border border-white ${connected ? "bg-white/90 backdrop-blur-md" : "bg-red-50"}`}>
+                            <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{connected ? "En Vivo" : "Desconectado"}</span>
+                        </div>
+
+                        <GoogleMap
+                            mapContainerStyle={containerStyle}
+                            center={{ lat: order.address.latitude || -54.8019, lng: order.address.longitude || -68.3030 }}
+                            zoom={15}
+                            onLoad={map => { mapRef.current = map; }}
                             options={{
-                                strokeColor: "#4285F4",
-                                strokeOpacity: 0,
-                                strokeWeight: 6,
-                                icons: [{
-                                    icon: {
-                                        path: 'M 0,-1.5 L 0,1.5',
-                                        strokeOpacity: 1,
-                                        strokeWeight: 4,
-                                        scale: 3,
+                                disableDefaultUI: true,
+                                zoomControl: false,
+                                scrollwheel: true,
+                                gestureHandling: "greedy",
+                            }}
+                        >
+                            {/* Animated Route Line */}
+                            {directions && directions.routes[0].overview_path && (
+                                <Polyline
+                                    path={directions.routes[0].overview_path}
+                                    options={{
                                         strokeColor: "#4285F4",
-                                    },
-                                    offset: '0',
-                                    repeat: '20px'
-                                }, {
-                                    icon: {
-                                        path: 'M -2,0 L 0,2 L 2,0',
-                                        strokeOpacity: 1,
-                                        strokeWeight: 2,
-                                        scale: 2,
-                                        strokeColor: "#2196F3",
-                                    },
-                                    offset: '50%',
-                                    repeat: '40px'
-                                }]
-                            }}
-                            onLoad={(polyline) => {
-                                let count = 0;
-                                const interval = setInterval(() => {
-                                    count = (count + 1) % 200;
-                                    const icons = polyline.get('icons');
-                                    if (icons && icons[0]) {
-                                        icons[0].offset = (count / 2) + '%';
-                                        polyline.set('icons', icons);
-                                    }
-                                }, 50);
-                                (polyline as any)._animationInterval = interval;
-                            }}
-                            onUnmount={(polyline) => {
-                                if ((polyline as any)._animationInterval) {
-                                    clearInterval((polyline as any)._animationInterval);
-                                }
-                            }}
-                        />
-                    )}
+                                        strokeOpacity: 0,
+                                        strokeWeight: 6,
+                                        icons: [{
+                                            icon: {
+                                                path: 'M 0,-1.5 L 0,1.5',
+                                                strokeOpacity: 1,
+                                                strokeWeight: 4,
+                                                scale: 3,
+                                                strokeColor: "#4285F4",
+                                            },
+                                            offset: '0',
+                                            repeat: '20px'
+                                        }, {
+                                            icon: {
+                                                path: 'M -2,0 L 0,2 L 2,0',
+                                                strokeOpacity: 1,
+                                                strokeWeight: 2,
+                                                scale: 2,
+                                                strokeColor: "#2196F3",
+                                            },
+                                            offset: '50%',
+                                            repeat: '40px'
+                                        }]
+                                    }}
+                                    onLoad={(polyline) => {
+                                        let count = 0;
+                                        const interval = setInterval(() => {
+                                            count = (count + 1) % 200;
+                                            const icons = polyline.get('icons');
+                                            if (icons && icons[0]) {
+                                                icons[0].offset = (count / 2) + '%';
+                                                polyline.set('icons', icons);
+                                            }
+                                        }, 50);
+                                        (polyline as any)._animationInterval = interval;
+                                    }}
+                                    onUnmount={(polyline) => {
+                                        if ((polyline as any)._animationInterval) {
+                                            clearInterval((polyline as any)._animationInterval);
+                                        }
+                                    }}
+                                />
+                            )}
 
-                    {/* Background Route Line (Static) */}
-                    {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
-                        <Polyline
-                            path={directions.routes[0].overview_path}
-                            options={{
-                                strokeColor: "#4285F4",
-                                strokeOpacity: 0.2,
-                                strokeWeight: 8,
-                            }}
-                        />
-                    )}
+                            {/* Background Route Line (Static) */}
+                            {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
+                                <Polyline
+                                    path={directions.routes[0].overview_path}
+                                    options={{
+                                        strokeColor: "#4285F4",
+                                        strokeOpacity: 0.2,
+                                        strokeWeight: 8,
+                                    }}
+                                />
+                            )}
 
-                    {/* Directions calculation logic (hidden renderer) */}
-                    {directions && (
-                        <DirectionsRenderer
-                            options={{
-                                directions: directions,
-                                suppressMarkers: true,
-                                suppressPolylines: true, // We draw our own animated one
-                                preserveViewport: true,
-                            }}
-                        />
-                    )}
+                            {/* Directions calculation logic (hidden renderer) */}
+                            {directions && (
+                                <DirectionsRenderer
+                                    options={{
+                                        directions: directions,
+                                        suppressMarkers: true,
+                                        suppressPolylines: true, // We draw our own animated one
+                                        preserveViewport: true,
+                                    }}
+                                />
+                            )}
 
-                    {/* Merchant Marker */}
-                    {order.merchant?.latitude && (
-                        <Marker
-                            position={{ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 }}
-                            icon={{
-                                url: "data:image/svg+xml," + encodeURIComponent(`
+                            {/* Merchant Marker */}
+                            {order.merchant?.latitude && (
+                                <Marker
+                                    position={{ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 }}
+                                    icon={{
+                                        url: "data:image/svg+xml," + encodeURIComponent(`
                                     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
                                         <circle cx="18" cy="18" r="16" fill="#3b82f6" stroke="white" stroke-width="3"/>
                                         <path d="M11 17h14v8H11z M13 13h10l2 4H11l2-4z" fill="white"/>
                                     </svg>
                                 `),
-                                scaledSize: new google.maps.Size(36, 36),
-                                anchor: new google.maps.Point(18, 18)
-                            }}
-                        />
-                    )}
+                                        scaledSize: new google.maps.Size(36, 36),
+                                        anchor: new google.maps.Point(18, 18)
+                                    }}
+                                />
+                            )}
 
-                    {/* Driver Marker */}
-                    {driverPosition && (
-                        <Marker
-                            position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
-                            icon={{
-                                url: "data:image/svg+xml," + encodeURIComponent(`
+                            {/* Driver Marker */}
+                            {driverPosition && (
+                                <Marker
+                                    position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
+                                    icon={{
+                                        url: "data:image/svg+xml," + encodeURIComponent(`
                                     <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
                                         <circle cx="22" cy="22" r="20" fill="#22c55e" stroke="white" stroke-width="3"/>
                                         <path d="M15 26 L23 20 L29 20 L37 26" stroke="white" stroke-width="3" fill="none"/>
@@ -594,33 +673,35 @@ export default function TrackingPage() {
                                         <circle cx="29" cy="28" r="4" fill="white"/>
                                     </svg>
                                 `),
-                                scaledSize: new google.maps.Size(44, 44),
-                                anchor: new google.maps.Point(22, 22)
-                            }}
-                        />
-                    )}
+                                        scaledSize: new google.maps.Size(44, 44),
+                                        anchor: new google.maps.Point(22, 22)
+                                    }}
+                                />
+                            )}
 
-                    {/* Destination Marker */}
-                    {(order.address.latitude || (directions && directions.routes[0]?.legs[0]?.end_location)) && (
-                        <Marker
-                            position={order.address.latitude
-                                ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
-                                : directions!.routes[0].legs[0].end_location
-                            }
-                            icon={{
-                                url: "data:image/svg+xml," + encodeURIComponent(`
+                            {/* Destination Marker */}
+                            {(order.address.latitude || (directions && directions.routes[0]?.legs[0]?.end_location)) && (
+                                <Marker
+                                    position={order.address.latitude
+                                        ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
+                                        : directions!.routes[0].legs[0].end_location
+                                    }
+                                    icon={{
+                                        url: "data:image/svg+xml," + encodeURIComponent(`
                                     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
                                         <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
                                         <circle cx="18" cy="18" r="7" fill="white"/>
                                     </svg>
                                 `),
-                                scaledSize: new google.maps.Size(36, 46),
-                                anchor: new google.maps.Point(18, 46)
-                            }}
-                        />
-                    )}
-                </GoogleMap>
-            </div>
+                                        scaledSize: new google.maps.Size(36, 46),
+                                        anchor: new google.maps.Point(18, 46)
+                                    }}
+                                />
+                            )}
+                        </GoogleMap>
+                    </div>
+                );
+            })()}
 
             {/* BOTTOM PANEL */}
             <div className="flex-1 bg-white rounded-t-[36px] -mt-10 relative z-20 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col">

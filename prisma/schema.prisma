@@ -40,6 +40,20 @@ model User {
   sentSupportMsgs    SupportMessage[]    @relation("SupportMessageSender")
   referredBy         User?               @relation("UserReferrals", fields: [referredById], references: [id])
   referredUsers      User[]              @relation("UserReferrals")
+  pushSubscriptions  PushSubscription[]
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String   // Public key for encryption
+  auth      String   // Auth secret for encryption
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
 }
 
 model Address {

@@ -12,25 +12,26 @@ $VPS_DB_PORT = "5436"
 $VPS_DB_USER = "postgres"
 $VPS_DB_NAME = "moovy_db"
 
-# 0. Verificar si hay cambios sin guardar
-$status = git status --porcelain
-if ($status) {
-    Write-Host "[GIT] Guardando cambios pendientes..." -ForegroundColor Yellow
-    git add .
-    git commit -m "sync: cambios automáticos antes de deploy"
-}
-
-# 1. Exportar base de datos local (con --clean para limpiar antes de importar)
-Write-Host "[DB] Exportando base de datos local..." -ForegroundColor Yellow
-docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db | Out-File -FilePath database_dump.sql -Encoding utf8
-
-# 2. Asegurar que estamos en develop y actualizados
-Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
+# 0. Asegurar que estamos en develop y sincronizados
+Write-Host "[GIT] Sincronizando develop con origin..." -ForegroundColor Yellow
 git checkout develop
 git pull origin develop --no-edit
 
-# 3. Ir a main y traer cambios remotos
-Write-Host "[GIT] Actualizando main..." -ForegroundColor Yellow
+# 1. Exportar base de datos local (ahora que estamos sincronizados)
+Write-Host "[DB] Exportando base de datos local..." -ForegroundColor Yellow
+docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db | Out-File -FilePath database_dump.sql -Encoding utf8
+
+# 2. Verificar si hay cambios (incluyendo el nuevo dump) y guardarlos
+$status = git status --porcelain
+if ($status) {
+    Write-Host "[GIT] Guardando cambios y base de datos..." -ForegroundColor Yellow
+    git add .
+    git commit -m "sync: actualización de datos previa a deploy"
+    git push origin develop
+}
+
+# 3. Ir a main y traer cambios remotos de forma segura
+Write-Host "[GIT] Sincronizando main..." -ForegroundColor Yellow
 git checkout main
 git pull origin main --no-edit
 
@@ -59,22 +60,23 @@ scp database_dump.sql "$VPS_USER@${VPS_HOST}:$VPS_PATH/"
 Write-Host "[VPS] Actualizando código y base de datos..." -ForegroundColor Yellow
 
 $remoteCommand = "cd $VPS_PATH && " +
-                 "git fetch origin main && " +
-                 "git reset --hard origin/main && " +
-                 "npm install && " +
-                 "npx prisma generate && " +
-                 "iconv -f UTF-16LE -t UTF-8 database_dump.sql -o database_dump_utf8.sql 2>/dev/null || cp database_dump.sql database_dump_utf8.sql && " +
-                 "sed -i 's/\r$//' database_dump_utf8.sql && " +
-                 "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && " +
-                 "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump_utf8.sql && " +
-                 "npm run build && " +
-                 "pm2 restart moovy"
+"git fetch origin main && " +
+"git reset --hard origin/main && " +
+"npm install && " +
+"npx prisma generate && " +
+"iconv -f UTF-16LE -t UTF-8 database_dump.sql -o database_dump_utf8.sql 2>/dev/null || cp database_dump.sql database_dump_utf8.sql && " +
+"sed -i 's/\r$//' database_dump_utf8.sql && " +
+"PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && " +
+"PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump_utf8.sql && " +
+"npm run build && " +
+"pm2 restart moovy"
 
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n[OK] DESPLIEGUE COMPLETO (Código + Base de Datos)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "`n[ERROR] El despliegue en el VPS falló. Revisá la conexión SSH o los logs del servidor." -ForegroundColor Red
 }
 

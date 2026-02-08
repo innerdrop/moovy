@@ -3,6 +3,7 @@
 
 import { prisma } from "./prisma";
 import { calculateDistance } from "./geo";
+import { sendNewOfferNotification } from "./push";
 
 export interface DriverWithDistance {
     id: string;
@@ -42,8 +43,9 @@ export async function findNearestAvailableDrivers(
             FROM "Driver" d
             WHERE d."availabilityStatus" = 'DISPONIBLE'
                 AND d."isActive" = true
+                AND d."isOnline" = true
                 AND d.ubicacion IS NOT NULL
-                AND d.id NOT IN (${excludeDriverIds.length > 0 ? excludeDriverIds : ['none']})
+                AND NOT (d.id = ANY(${excludeDriverIds.length > 0 ? excludeDriverIds : ['none']}))
                 AND ST_DWithin(d.ubicacion, ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326), ${maxDistanceKm * 1000})
             ORDER BY d.ubicacion <-> ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326)
             LIMIT 5
@@ -61,6 +63,7 @@ export async function findNearestAvailableDrivers(
             where: {
                 availabilityStatus: "DISPONIBLE",
                 isActive: true,
+                isOnline: true,
                 latitude: { not: null },
                 longitude: { not: null },
                 id: { notIn: excludeDriverIds },
@@ -159,6 +162,15 @@ export async function assignOrderToNearestDriver(
             `[Logistics] Order ${order.orderNumber} offered to driver ${nearestDriver.id} (${nearestDriver.distance.toFixed(2)}km away). Expires at ${expiresAt.toISOString()}`
         );
 
+        // Send push notification to rider (fire and forget)
+        const estimatedEarnings = Math.round(500 + nearestDriver.distance * 300);
+        sendNewOfferNotification(
+            nearestDriver.userId,
+            order.merchant?.name || 'Comercio',
+            estimatedEarnings,
+            orderId
+        ).catch(err => console.error('[Logistics] Push notification error:', err));
+
         return { success: true, driverId: nearestDriver.id };
     } catch (error) {
         console.error("[Logistics] Error assigning order:", error);
@@ -180,7 +192,7 @@ export async function processExpiredAssignments(): Promise<number> {
             pendingDriverId: { not: null },
             assignmentExpiresAt: { lt: now },
             driverId: null, // Not yet accepted
-            status: "READY",
+            status: { in: ["PREPARING", "READY"] },
         },
     });
 
