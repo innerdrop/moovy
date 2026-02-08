@@ -737,7 +737,6 @@ COPY public."CartItem" (id, "userId", "productId", quantity, "variantId", "creat
 --
 
 COPY public."Category" (id, name, slug, description, image, "isActive", "order", "createdAt", "updatedAt", "allowIndividualPurchase", price, "parentId", icon) FROM stdin;
-cml0zoxi500dhygioxr9f0loc	Juegos	juegos			t	0	2026-01-30 14:39:48.893	2026-02-05 22:01:55.038	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-05 15:11:49.689	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	t	3	2026-01-26 15:34:21.563	2026-02-05 15:11:49.693	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	2	2026-01-26 15:34:21.563	2026-02-05 15:11:49.698	t	0	cml9lh7l90000qxvofmv8r1i7	\N
@@ -752,6 +751,7 @@ cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	t	0	2026-01-30 14:39:47.514	
 cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	0	2026-01-30 14:39:48.683	2026-02-05 15:11:49.733	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			t	0	2026-01-30 14:39:48.329	2026-02-05 15:11:49.739	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
 cml9lh7l90000qxvofmv8r1i7	Kioscos y Almacenes	kioscos-y-almacenes	Paquete completo para kioscos y almacenes. Incluye todas las subcategor??as de productos.		t	0	2026-02-05 15:11:49.678	2026-02-05 22:11:09.031	t	50000	\N	\N
+cml0zoxi500dhygioxr9f0loc	Juegos	juegos	\N		t	0	2026-01-30 14:39:48.893	2026-02-08 23:46:48.48	t	0	cml9lh7l90000qxvofmv8r1i7	juegos
 \.
 
 
@@ -1340,7 +1340,7 @@ cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1Me
 cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-08 05:42:57.132	\N	\N	\N
 cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-08 06:58:04.605	\N	\N	\N
 cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	85750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-08 06:58:49.973	\N	\N	\N
-cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-08 22:46:47.12	\N	\N	\N
+cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-08 23:39:12.88	\N	\N	\N
 \.
 
 
