@@ -51,16 +51,18 @@ export function getIconPath(iconName: string | null | undefined): string | null 
     return CATEGORY_ICON_PATHS[iconName] || null;
 }
 
+// Version marker to force cache refresh when icons are updated
+// Incremented this to force reload of the new Canva icons
+const ICON_VERSION = "2.1";
+
 // Get icon as React Node
 export function getCategoryIcon(iconName: string | null | undefined): React.ReactNode {
-    // If we have a PNG for this icon, use Image component
+    // If we have a PNG for this icon, use standard img tag to allow version queries
     if (iconName && iconName in CATEGORY_ICON_PATHS) {
         return (
-            <Image
-                src={CATEGORY_ICON_PATHS[iconName]}
+            <img
+                src={`${CATEGORY_ICON_PATHS[iconName]}?v=${ICON_VERSION}`}
                 alt={iconName}
-                width={200}
-                height={200}
                 className="w-full h-full object-contain"
             />
         );
@@ -74,13 +76,11 @@ export function getCategoryIcon(iconName: string | null | undefined): React.Reac
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = Object.fromEntries(
     Object.keys(CATEGORY_ICON_PATHS).map(key => [
         key,
-        <Image
+        <img
             key={key}
-            src={CATEGORY_ICON_PATHS[key]}
+            src={`${CATEGORY_ICON_PATHS[key]}?v=${ICON_VERSION}`}
             alt={key}
-            width={40}
-            height={40}
-            className="object-contain"
+            className="w-10 h-10 object-contain"
         />
     ])
 );
