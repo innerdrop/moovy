@@ -93,16 +93,15 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 ))}
             </div>
 
-            {/* Row 2: Scrollable categories - bigger squares + Ver más */}
+            {/* Row 2: Scrollable categories with subtle auto-scroll */}
             {scrollableCategories.length > 0 && (
                 <div className="overflow-hidden -mx-3">
-                    <div className="overflow-x-auto scrollbar-hide px-3 py-1" style={{ scrollbarWidth: 'none' }}>
-                        <div className="flex gap-2 w-max pr-3">
-                            {scrollableCategories.map((cat) => (
-                                <ScrollableCategoryCard key={cat.id} cat={cat} />
-                            ))}
-                            <VerMasCard />
-                        </div>
+                    <div className="flex gap-2 w-max px-3 py-1 animate-scroll-left">
+                        {/* Duplicate items for seamless loop */}
+                        {[...scrollableCategories, ...scrollableCategories].map((cat, idx) => (
+                            <ScrollableCategoryCard key={`${cat.id}-${idx}`} cat={cat} />
+                        ))}
+                        <VerMasCard />
                     </div>
                 </div>
             )}
