@@ -1,7 +1,7 @@
 "use client";
 
 // Admin Slides Page - Gestión de Hero Slider
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Plus,
     Edit2,
@@ -13,7 +13,8 @@ import {
     Eye,
     EyeOff,
     Save,
-    X
+    X,
+    Upload
 } from "lucide-react";
 
 interface Slide {
@@ -53,6 +54,11 @@ export default function AdminSlidesPage() {
     const [formImage, setFormImage] = useState("");
     const [formIsActive, setFormIsActive] = useState(true);
     const [error, setError] = useState("");
+
+    // Image upload state
+    const [uploading, setUploading] = useState(false);
+    const [dragOver, setDragOver] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadSlides();
@@ -96,6 +102,53 @@ export default function AdminSlidesPage() {
         setFormIsActive(true);
         setShowForm(true);
         setError("");
+    }
+
+    // Handle image upload
+    async function handleImageUpload(file: File) {
+        setUploading(true);
+        setError("");
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch("/api/admin/slides/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setFormImage(data.url);
+            } else {
+                const data = await res.json();
+                setError(data.error || "Error al subir la imagen");
+            }
+        } catch (error) {
+            setError("Error de conexión al subir imagen");
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    function handleFileDrop(e: React.DragEvent) {
+        e.preventDefault();
+        setDragOver(false);
+
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+            handleImageUpload(file);
+        } else {
+            setError("Solo se permiten archivos de imagen");
+        }
+    }
+
+    function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleImageUpload(file);
+        }
     }
 
     function cancelForm() {
@@ -301,17 +354,76 @@ export default function AdminSlidesPage() {
                                 />
                             </div>
 
-                            <div>
+                            <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    URL de Imagen (opcional)
+                                    Imagen del Slide
                                 </label>
-                                <input
-                                    type="text"
-                                    value={formImage}
-                                    onChange={(e) => setFormImage(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-moovy focus:border-transparent"
-                                    placeholder="https://..."
-                                />
+
+                                {/* Drop zone */}
+                                <div
+                                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                                    onDragLeave={() => setDragOver(false)}
+                                    onDrop={handleFileDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${dragOver
+                                            ? "border-moovy bg-moovy-light"
+                                            : "border-gray-300 hover:border-gray-400"
+                                        }`}
+                                >
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileSelect}
+                                        className="hidden"
+                                    />
+
+                                    {uploading ? (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Loader2 className="w-8 h-8 animate-spin text-moovy" />
+                                            <p className="text-sm text-gray-600">Subiendo imagen...</p>
+                                        </div>
+                                    ) : formImage ? (
+                                        <div className="flex items-center gap-4">
+                                            <img
+                                                src={formImage}
+                                                alt="Preview"
+                                                className="w-24 h-24 object-contain rounded-lg bg-gray-100"
+                                            />
+                                            <div className="flex-1 text-left">
+                                                <p className="text-sm font-medium text-gray-900">Imagen cargada</p>
+                                                <p className="text-xs text-gray-500 truncate max-w-[200px]">{formImage}</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); setFormImage(""); }}
+                                                    className="mt-2 text-xs text-red-500 hover:text-red-700"
+                                                >
+                                                    Quitar imagen
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Upload className="w-8 h-8 text-gray-400" />
+                                            <p className="text-sm text-gray-600">
+                                                Arrastra una imagen o <span className="text-moovy font-medium">haz click</span> para seleccionar
+                                            </p>
+                                            <p className="text-xs text-gray-400">JPG, PNG, WEBP o GIF (máx. 5MB)</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Or URL input */}
+                                <div className="mt-3">
+                                    <p className="text-xs text-gray-500 mb-1">O pega una URL:</p>
+                                    <input
+                                        type="text"
+                                        value={formImage}
+                                        onChange={(e) => setFormImage(e.target.value)}
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-moovy focus:border-transparent"
+                                        placeholder="https://..."
+                                    />
+                                </div>
                             </div>
 
                             <div>

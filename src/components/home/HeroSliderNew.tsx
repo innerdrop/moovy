@@ -17,6 +17,7 @@ interface Slide {
 
 interface HeroSliderNewProps {
     slides?: Slide[];
+    slideInterval?: number; // milliseconds
 }
 
 // SVG Illustration of delivery person on scooter
@@ -73,7 +74,7 @@ function DeliveryIllustration() {
     );
 }
 
-export default function HeroSliderNew({ slides: propSlides }: HeroSliderNewProps) {
+export default function HeroSliderNew({ slides: propSlides, slideInterval = 5000 }: HeroSliderNewProps) {
     // Only show slides from database - no defaults
     const slides = propSlides || [];
 
@@ -120,13 +121,13 @@ export default function HeroSliderNew({ slides: propSlides }: HeroSliderNewProps
         }
     };
 
-    // Auto-slide
+    // Auto-slide with configurable interval
     useEffect(() => {
         const timer = setInterval(() => {
             nextSlide();
-        }, 5000);
+        }, slideInterval);
         return () => clearInterval(timer);
-    }, [slides.length]);
+    }, [slides.length, slideInterval]);
 
     const slide = slides[current];
     if (!slide) return null;

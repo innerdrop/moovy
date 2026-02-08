@@ -256,6 +256,25 @@ export default async function ConfigurationPage() {
                             Define cuántas categorías se mostrarán en los sliders de Home y /tienda antes de repetir el ciclo.
                         </p>
                     </div>
+
+                    {/* Hero Slider Interval */}
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                        <label className="block text-sm font-medium text-navy mb-1 uppercase tracking-wider font-bold">
+                            ⏱️ Intervalo del Hero Slider (segundos)
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="30"
+                            step="1"
+                            defaultValue={Math.round((settings?.heroSliderInterval ?? 5000) / 1000)}
+                            className="input w-32"
+                            name="heroSliderInterval"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                            Define cada cuántos segundos cambia automáticamente el slide del carrusel principal.
+                        </p>
+                    </div>
                 </div>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm">
