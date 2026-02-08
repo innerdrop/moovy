@@ -13,7 +13,7 @@ import {
     SprayCan
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import HeroSlider from "@/components/home/HeroSlider";
+import HeroSliderNew from "@/components/home/HeroSliderNew";
 import MerchantCard from "@/components/store/MerchantCard";
 
 // Configuration
@@ -30,6 +30,18 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
     almacen: Store,
     limpieza: SprayCan,
 };
+
+async function getHeroSlides() {
+    try {
+        const slides = await prisma.heroSlide.findMany({
+            where: { isActive: true },
+            orderBy: { order: "asc" },
+        });
+        return slides;
+    } catch (error) {
+        return [];
+    }
+}
 
 async function getCategories(limit: number = 6) {
     try {
@@ -108,11 +120,13 @@ async function LiveStoreView() {
     const categories = await getCategories(settings?.maxCategoriesHome ?? 6);
     const merchants = await getFeaturedMerchants();
     const featuredProducts = await getFeaturedProducts();
+    const slides = await getHeroSlides();
+    const slideInterval = settings?.heroSliderInterval ?? 5000;
 
     return (
         <div className="animate-fadeIn">
 
-            <HeroSlider />
+            <HeroSliderNew slides={slides} slideInterval={slideInterval} />
             <section className="pt-4 pb-4 lg:pt-6 lg:pb-6 bg-white overflow-hidden">
                 <div className="container mx-auto px-4">
                     <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 text-center">
