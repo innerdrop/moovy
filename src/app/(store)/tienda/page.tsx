@@ -94,7 +94,7 @@ async function LiveStoreView() {
     const categories = await getCategories(settings?.maxCategoriesHome ?? 10);
     const merchants = await getFeaturedMerchants();
     const slides = await getHeroSlides();
-    const slideInterval = settings?.heroSliderInterval ?? 5000;
+    const slideInterval = (settings as any)?.heroSliderInterval ?? 5000;
 
     return (
         <div className="animate-fadeIn bg-white min-h-screen pb-24 md:pb-8 overflow-x-hidden">
