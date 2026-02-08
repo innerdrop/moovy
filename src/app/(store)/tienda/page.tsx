@@ -94,16 +94,16 @@ async function LiveStoreView() {
     const categories = await getCategories(settings?.maxCategoriesHome ?? 10);
     const merchants = await getFeaturedMerchants();
     const slides = await getHeroSlides();
-    const slideInterval = (settings as any)?.heroSliderInterval ?? 5000;
+    const slideInterval = settings?.heroSliderInterval ?? 5000;
 
     // Promo Banner settings
     const promoBanner = {
-        enabled: (settings as any)?.promoBannerEnabled ?? true,
-        title: (settings as any)?.promoBannerTitle ?? "Noches de\\nPizza & Pelis",
-        subtitle: (settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs.",
-        buttonText: (settings as any)?.promoBannerButtonText ?? "Ver locales",
-        buttonLink: (settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas",
-        image: (settings as any)?.promoBannerImage || null,
+        enabled: settings?.promoBannerEnabled ?? true,
+        title: settings?.promoBannerTitle ?? "Noches de\\nPizza & Pelis",
+        subtitle: settings?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs.",
+        buttonText: settings?.promoBannerButtonText ?? "Ver locales",
+        buttonLink: settings?.promoBannerButtonLink ?? "/productos?categoria=pizzas",
+        image: settings?.promoBannerImage || null,
     };
 
     return (

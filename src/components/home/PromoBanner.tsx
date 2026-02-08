@@ -22,8 +22,10 @@ export default function PromoBanner({
     // Don't render if disabled
     if (!enabled) return null;
 
-    // Parse title for line breaks
-    const titleLines = title.split("\\n");
+    // Parse title for line breaks (handles both real newlines and escaped \\n)
+    const titleLines = title.includes("\\n")
+        ? title.split("\\n")
+        : title.split("\n");
 
     return (
         <section className="px-3 md:px-8 lg:px-16 py-3 md:py-6 max-w-7xl mx-auto">

@@ -34,25 +34,24 @@ model User {
   ownedMerchants     Merchant[]
   orders             Order[]
   pointsTransactions PointsTransaction[]
+  pushSubscriptions  PushSubscription[]
   referralsReceived  Referral?           @relation("ReferralReferee")
   referralsMade      Referral[]          @relation("ReferralReferrer")
   supportChats       SupportChat[]       @relation("UserSupportChats")
   sentSupportMsgs    SupportMessage[]    @relation("SupportMessageSender")
   referredBy         User?               @relation("UserReferrals", fields: [referredById], references: [id])
   referredUsers      User[]              @relation("UserReferrals")
-  pushSubscriptions  PushSubscription[]
 }
 
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String
   endpoint  String   @unique
-  p256dh    String   // Public key for encryption
-  auth      String   // Auth secret for encryption
+  p256dh    String
+  auth      String
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId])
 }
 
@@ -78,61 +77,60 @@ model Address {
 }
 
 model HeroSlide {
-  id          String   @id @default(cuid())
-  title       String
-  subtitle    String
-  buttonText  String
-  buttonLink  String
-  gradient    String   @default("from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]")
-  image       String?
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  subtitle   String
+  buttonText String
+  buttonLink String
+  gradient   String   @default("from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]")
+  image      String?
+  isActive   Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Category {
-  id                      String            @id @default(cuid())
-  name                    String            @unique
-  slug                    String            @unique
+  id                      String             @id @default(cuid())
+  name                    String             @unique
+  slug                    String             @unique
   description             String?
   image                   String?
-  icon                    String?
-  isActive                Boolean           @default(true)
-  order                   Int               @default(0)
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  allowIndividualPurchase Boolean           @default(true)
-  price                   Float             @default(0)
+  isActive                Boolean            @default(true)
+  order                   Int                @default(0)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  allowIndividualPurchase Boolean            @default(true)
+  price                   Float              @default(0)
   parentId                String?
-  parent                  Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children                Category[]        @relation("CategoryHierarchy")
-  products                ProductCategory[]
+  icon                    String?
+  parent                  Category?          @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children                Category[]         @relation("CategoryHierarchy")
   merchants               MerchantCategory[]
+  products                ProductCategory[]
 }
 
-
 model Product {
-  id          String            @id @default(cuid())
+  id          String                    @id @default(cuid())
   name        String
-  slug        String            @unique
+  slug        String                    @unique
   description String?
   merchantId  String?
   price       Float
   costPrice   Float
-  stock       Int               @default(0)
-  minStock    Int               @default(5)
-  isActive    Boolean           @default(true)
-  isFeatured  Boolean           @default(false)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  stock       Int                       @default(0)
+  minStock    Int                       @default(5)
+  isActive    Boolean                   @default(true)
+  isFeatured  Boolean                   @default(false)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
   cartItems   CartItem[]
+  acquiredBy  MerchantAcquiredProduct[]
   orderItems  OrderItem[]
-  merchant    Merchant?         @relation(fields: [merchantId], references: [id])
+  merchant    Merchant?                 @relation(fields: [merchantId], references: [id])
   categories  ProductCategory[]
   images      ProductImage[]
   variants    ProductVariant[]
-  acquiredBy  MerchantAcquiredProduct[]
 }
 
 model ProductCategory {
@@ -277,10 +275,10 @@ model Merchant {
   whatsappNumber   String?
   ubicacion        Unsupported("geography")?
   owner            User                      @relation(fields: [ownerId], references: [id])
+  acquiredProducts MerchantAcquiredProduct[]
+  categories       MerchantCategory[]
   orders           Order[]
   products         Product[]
-  categories       MerchantCategory[]
-  acquiredProducts MerchantAcquiredProduct[]
 }
 
 model Driver {
@@ -339,14 +337,13 @@ model StoreSettings {
   showRepartidoresCard  Boolean  @default(true)
   tiendaMaintenance     Boolean  @default(false)
   maxCategoriesHome     Int      @default(6)
-  heroSliderInterval    Int      @default(5000) // milliseconds between slides
-  // Promo Banner (Slide Publicitario)
-  promoBannerEnabled    Boolean  @default(true)
-  promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
-  promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
-  promoBannerButtonText String   @default("Ver locales")
+  heroSliderInterval    Int      @default(5000)
   promoBannerButtonLink String   @default("/productos?categoria=pizzas")
-  promoBannerImage      String?  // URL de imagen personalizada (opcional)
+  promoBannerButtonText String   @default("Ver locales")
+  promoBannerEnabled    Boolean  @default(true)
+  promoBannerImage      String?
+  promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
+  promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
 }
 
 model PointsConfig {
@@ -448,8 +445,8 @@ model MerchantCategory {
   merchantId String
   categoryId String
   createdAt  DateTime @default(now())
-  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
   @@unique([merchantId, categoryId])
 }
