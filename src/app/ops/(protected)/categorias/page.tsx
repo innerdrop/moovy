@@ -13,7 +13,9 @@ import {
     X,
     GripVertical,
     Package,
-    Search
+    Search,
+    ArrowUp,
+    ArrowDown
 } from "lucide-react";
 import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/icons";
 
@@ -167,6 +169,32 @@ export default function AdminCategoriasPage() {
             }
         } catch (error) {
             console.error("Error toggling category:", error);
+        }
+    }
+
+    async function moveCategory(index: number, direction: "up" | "down") {
+        const newIndex = direction === "up" ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= categories.length) return;
+
+        // Swap categories in the array
+        const newCategories = [...categories];
+        [newCategories[index], newCategories[newIndex]] = [newCategories[newIndex], newCategories[index]];
+
+        // Update local state immediately for responsive UI
+        setCategories(newCategories);
+
+        // Save new order to server
+        try {
+            const categoryIds = newCategories.map(c => c.id);
+            await fetch("/api/admin/categories/reorder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categoryIds }),
+            });
+        } catch (error) {
+            console.error("Error reordering categories:", error);
+            // Reload original order on error
+            await loadCategories();
         }
     }
 
@@ -394,13 +422,16 @@ export default function AdminCategoriasPage() {
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Estado
                                 </th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Orden
+                                </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Acciones
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
-                            {categories.map((category) => (
+                            {categories.map((category, index) => (
                                 <tr key={category.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -429,6 +460,32 @@ export default function AdminCategoriasPage() {
                                         >
                                             {category.isActive ? "Activa" : "Inactiva"}
                                         </button>
+                                    </td>
+                                    <td className="px-4 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <button
+                                                onClick={() => moveCategory(index, "up")}
+                                                disabled={index === 0}
+                                                className={`p-1.5 rounded-lg transition ${index === 0
+                                                    ? "text-gray-300 cursor-not-allowed"
+                                                    : "text-gray-500 hover:text-moovy hover:bg-moovy-light"
+                                                    }`}
+                                                title="Subir"
+                                            >
+                                                <ArrowUp className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => moveCategory(index, "down")}
+                                                disabled={index === categories.length - 1}
+                                                className={`p-1.5 rounded-lg transition ${index === categories.length - 1
+                                                    ? "text-gray-300 cursor-not-allowed"
+                                                    : "text-gray-500 hover:text-moovy hover:bg-moovy-light"
+                                                    }`}
+                                                title="Bajar"
+                                            >
+                                                <ArrowDown className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">

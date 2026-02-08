@@ -56,7 +56,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 className="group flex flex-col items-center flex-shrink-0"
             >
                 <div className="w-[115px] h-[115px] bg-white rounded-2xl shadow-md flex flex-col items-center p-2 group-hover:shadow-lg group-hover:scale-105 transition-all duration-200 border border-gray-100">
-                    <div className="w-16 h-16 flex items-center justify-center flex-shrink-0">
+                    <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
                         {icon}
                     </div>
                     <span className="text-xs font-bold text-gray-700 text-center leading-tight w-full mt-auto line-clamp-2">
