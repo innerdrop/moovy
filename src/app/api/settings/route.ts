@@ -82,8 +82,8 @@ export async function PUT(request: Request) {
 
         // Integers
         if (data.maxCategoriesHome) updateData.maxCategoriesHome = parseInt(data.maxCategoriesHome);
-        // Hero slider interval (convert seconds to milliseconds)
-        if (data.heroSliderInterval) updateData.heroSliderInterval = parseInt(data.heroSliderInterval) * 1000;
+        // Hero slider interval (value comes from ConfigForm already in milliseconds)
+        if (data.heroSliderInterval) updateData.heroSliderInterval = parseInt(data.heroSliderInterval);
 
         // Optional float (can be null)
         if (data.freeDeliveryMinimum) {

@@ -38,8 +38,6 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             freeDeliveryMinimum: formData.get("freeDeliveryMinimum"),
             maxDeliveryDistance: formData.get("maxDeliveryDistance"),
 
-
-
             // Contact
             whatsappNumber: formData.get("whatsappNumber"),
             phone: formData.get("phone"),
@@ -58,6 +56,9 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             showRepartidoresCard: formData.get("showRepartidoresCard") === "on",
             showComerciosCard: formData.get("showComerciosCard") === "on",
             maxCategoriesHome: formData.get("maxCategoriesHome"),
+
+            // Hero Slider interval (convert seconds to milliseconds)
+            heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
         };
 
         try {
