@@ -19,9 +19,6 @@ interface CategoryGridProps {
 export default function CategoryGrid({ categories }: CategoryGridProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPausedRef = useRef(false);
-    const [, forceUpdate] = useState(0);
-
-    if (categories.length === 0) return null;
 
     // First 3 categories fixed (larger), rest scrollable
     const fixedCategories = categories.slice(0, 3);
@@ -66,6 +63,9 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
             isPausedRef.current = false;
         }, 1000);
     }, []);
+
+    // Early return AFTER all hooks
+    if (categories.length === 0) return null;
 
     // Large cards for top row
     const FixedCategoryCard = ({ cat }: { cat: Category }) => {
