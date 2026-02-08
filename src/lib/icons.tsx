@@ -18,13 +18,11 @@ export const CATEGORY_ICON_PATHS: Record<string, string> = {
     panaderia: "/icons/categories/cat_panaderia.png",
     snacks: "/icons/categories/cat_snacks.png",
     mascotas: "/icons/categories/cat_mascotas.png",
-    perfumeria: "/icons/categories/cat_perfumeria.png",
     escenciales: "/icons/categories/cat_escenciales.png",
     pizzas: "/icons/categories/cat_pizzas.png",
     helados: "/icons/categories/cat_helados.png",
-    adultos: "/icons/categories/cat_adultos.png",
     pastas: "/icons/categories/cat_pastas.png",
-    kiosko: "/icons/categories/cat_kiosko.png",
+    kiosko: "/icons/categories/cat_kiosco.png",
 };
 
 // Default icon (simple circle with package icon)
