@@ -58,9 +58,29 @@ Solo cuando `develop` tiene varias tareas terminadas y queremos que el cliente l
     5. Actualiza la base de datos del servidor con los nuevos datos locales.
     6. Reinicia la app.
 
+### 6. Extra: Datos de Produccion a Local
+Si necesitas ver exactamente lo mismo que el cliente para investigar un error:
+```powershell
+.\scripts\pull-db.ps1
+```
+*   **¿Que hace?** Se conecta al VPS, genera un backup real y lo descarga a tu PC.
+*   **Luego:** Corre `.\scripts\sync.ps1` para cargar esa data en tu entorno local.
+
 ---
 
-## 📋 Resumen de Comandos
+## �️ Seguridad y Mantenimiento
+
+### Auditoria de Vulnerabilidades
+Es buena practica revisar la seguridad del proyecto al menos una vez por semana:
+```powershell
+npm audit
+```
+*   **¿Que hace?** Escanea las librerias y te avisa si hay parches de seguridad pendientes.
+*   **Correccion:** Si hay fallos, consultame antes de usar `npm audit fix --force` para evitar roturas.
+
+---
+
+## �📋 Resumen de Comandos
 
 | Comando | Frecuencia | Para que sirve | Rama (Donde ejecutar) |
 | :--- | :--- | :--- | :--- |
@@ -69,7 +89,9 @@ Solo cuando `develop` tiene varias tareas terminadas y queremos que el cliente l
 | `.\scripts\publish.ps1` | **Cada tanto** | Backup de tu trabajo y tu base de datos local. | **feature/*** (Tu rama de tarea) |
 | `.\scripts\finish.ps1` | **Al terminar una tarea** | Impactar tus cambios en la rama del equipo (`develop`). | **feature/*** (Tu rama de tarea) |
 | `.\scripts\devmain.ps1` | **Al final del hitos/semana** | Subir todo a la web real (Produccion). | **develop** (O cualquiera) |
+| `.\scripts\pull-db.ps1` | **Cuando necesites data real** | Traer el backup de la web real a tu computadora local. | **Cualquiera** |
 | `.\scripts\reset-db.ps1` | **Emergencias** | Si se rompe la base de datos, empieza de cero con el seed. | **Cualquiera** |
+| `npm audit` | **Semanalmente** | Revisar si hay fallos de seguridad en las librerias. | **Cualquiera** |
 
 ---
 
