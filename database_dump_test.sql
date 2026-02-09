@@ -16,6 +16,103 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_referredById_fkey";
+ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_senderId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_chatId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SupportChat" DROP CONSTRAINT IF EXISTS "SupportChat_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_referrerId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_refereeId_fkey";
+ALTER TABLE IF EXISTS ONLY public."PushSubscription" DROP CONSTRAINT IF EXISTS "PushSubscription_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Product" DROP CONSTRAINT IF EXISTS "Product_merchantId_fkey";
+ALTER TABLE IF EXISTS ONLY public."ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_productId_fkey";
+ALTER TABLE IF EXISTS ONLY public."ProductImage" DROP CONSTRAINT IF EXISTS "ProductImage_productId_fkey";
+ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_productId_fkey";
+ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_categoryId_fkey";
+ALTER TABLE IF EXISTS ONLY public."PointsTransaction" DROP CONSTRAINT IF EXISTS "PointsTransaction_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_merchantId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_driverId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_addressId_fkey";
+ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_productId_fkey";
+ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_orderId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_ownerId_fkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_merchantId_fkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_categoryId_fkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_productId_fkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_merchantId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_parentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_productId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Address" DROP CONSTRAINT IF EXISTS "Address_userId_fkey";
+DROP INDEX IF EXISTS public."User_referralCode_key";
+DROP INDEX IF EXISTS public."User_email_key";
+DROP INDEX IF EXISTS public."SavedCart_userId_key";
+DROP INDEX IF EXISTS public."Referral_refereeId_key";
+DROP INDEX IF EXISTS public."PushSubscription_userId_idx";
+DROP INDEX IF EXISTS public."PushSubscription_endpoint_key";
+DROP INDEX IF EXISTS public."Product_slug_key";
+DROP INDEX IF EXISTS public."ProductCategory_productId_categoryId_key";
+DROP INDEX IF EXISTS public."Order_orderNumber_key";
+DROP INDEX IF EXISTS public."Merchant_slug_key";
+DROP INDEX IF EXISTS public."MerchantCategory_merchantId_categoryId_key";
+DROP INDEX IF EXISTS public."MerchantAcquiredProduct_merchantId_productId_key";
+DROP INDEX IF EXISTS public."Driver_userId_key";
+DROP INDEX IF EXISTS public."Category_slug_key";
+DROP INDEX IF EXISTS public."Category_name_key";
+DROP INDEX IF EXISTS public."CartItem_userId_productId_variantId_key";
+ALTER TABLE IF EXISTS ONLY public._prisma_migrations DROP CONSTRAINT IF EXISTS _prisma_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
+ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_pkey";
+ALTER TABLE IF EXISTS ONLY public."SupportChat" DROP CONSTRAINT IF EXISTS "SupportChat_pkey";
+ALTER TABLE IF EXISTS ONLY public."StoreSettings" DROP CONSTRAINT IF EXISTS "StoreSettings_pkey";
+ALTER TABLE IF EXISTS ONLY public."SavedCart" DROP CONSTRAINT IF EXISTS "SavedCart_pkey";
+ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_pkey";
+ALTER TABLE IF EXISTS ONLY public."PushSubscription" DROP CONSTRAINT IF EXISTS "PushSubscription_pkey";
+ALTER TABLE IF EXISTS ONLY public."Product" DROP CONSTRAINT IF EXISTS "Product_pkey";
+ALTER TABLE IF EXISTS ONLY public."ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_pkey";
+ALTER TABLE IF EXISTS ONLY public."ProductImage" DROP CONSTRAINT IF EXISTS "ProductImage_pkey";
+ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_pkey";
+ALTER TABLE IF EXISTS ONLY public."PointsTransaction" DROP CONSTRAINT IF EXISTS "PointsTransaction_pkey";
+ALTER TABLE IF EXISTS ONLY public."PointsConfig" DROP CONSTRAINT IF EXISTS "PointsConfig_pkey";
+ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_pkey";
+ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_pkey";
+ALTER TABLE IF EXISTS ONLY public."OrderBackup" DROP CONSTRAINT IF EXISTS "OrderBackup_pkey";
+ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_pkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_pkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_pkey";
+ALTER TABLE IF EXISTS ONLY public."HeroSlide" DROP CONSTRAINT IF EXISTS "HeroSlide_pkey";
+ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_pkey";
+ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_pkey";
+ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_pkey";
+ALTER TABLE IF EXISTS ONLY public."Address" DROP CONSTRAINT IF EXISTS "Address_pkey";
+DROP TABLE IF EXISTS public._prisma_migrations;
+DROP TABLE IF EXISTS public."User";
+DROP TABLE IF EXISTS public."SupportMessage";
+DROP TABLE IF EXISTS public."SupportChat";
+DROP TABLE IF EXISTS public."StoreSettings";
+DROP TABLE IF EXISTS public."SavedCart";
+DROP TABLE IF EXISTS public."Referral";
+DROP TABLE IF EXISTS public."PushSubscription";
+DROP TABLE IF EXISTS public."ProductVariant";
+DROP TABLE IF EXISTS public."ProductImage";
+DROP TABLE IF EXISTS public."ProductCategory";
+DROP TABLE IF EXISTS public."Product";
+DROP TABLE IF EXISTS public."PointsTransaction";
+DROP TABLE IF EXISTS public."PointsConfig";
+DROP TABLE IF EXISTS public."OrderItem";
+DROP TABLE IF EXISTS public."OrderBackup";
+DROP TABLE IF EXISTS public."Order";
+DROP TABLE IF EXISTS public."MerchantCategory";
+DROP TABLE IF EXISTS public."MerchantAcquiredProduct";
+DROP TABLE IF EXISTS public."Merchant";
+DROP TABLE IF EXISTS public."HeroSlide";
+DROP TABLE IF EXISTS public."Driver";
+DROP TABLE IF EXISTS public."Category";
+DROP TABLE IF EXISTS public."CartItem";
+DROP TABLE IF EXISTS public."Address";
+DROP EXTENSION IF EXISTS postgis;
+-- *not* dropping schema, since initdb creates it
 --
 -- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
 --
@@ -508,7 +605,7 @@ CREATE TABLE public."StoreSettings" (
     email text,
     schedule text,
     "updatedAt" timestamp(3) without time zone NOT NULL,
-    "promoPopupButtonText" text DEFAULT 'Ver m????s'::text,
+    "promoPopupButtonText" text DEFAULT 'Ver m??s'::text,
     "promoPopupDismissable" boolean DEFAULT true NOT NULL,
     "promoPopupEnabled" boolean DEFAULT false NOT NULL,
     "promoPopupImage" text,
@@ -653,7 +750,7 @@ cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	0	2026-01-30 14:39:47.297	20
 cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	t	0	2026-01-30 14:39:47.514	2026-02-05 15:11:49.729	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	0	2026-01-30 14:39:48.683	2026-02-05 15:11:49.733	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			t	0	2026-01-30 14:39:48.329	2026-02-05 15:11:49.739	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
-cml9lh7l90000qxvofmv8r1i7	Kioscos y Almacenes	kioscos-y-almacenes	Paquete completo para kioscos y almacenes. Incluye todas las subcategor????as de productos.		t	0	2026-02-05 15:11:49.678	2026-02-05 22:11:09.031	t	50000	\N	\N
+cml9lh7l90000qxvofmv8r1i7	Kioscos y Almacenes	kioscos-y-almacenes	Paquete completo para kioscos y almacenes. Incluye todas las subcategor??as de productos.		t	0	2026-02-05 15:11:49.678	2026-02-05 22:11:09.031	t	50000	\N	\N
 cml0zoxi500dhygioxr9f0loc	Juegos	juegos	\N		t	0	2026-01-30 14:39:48.893	2026-02-08 23:46:48.48	t	0	cml9lh7l90000qxvofmv8r1i7	juegos
 \.
 
@@ -676,7 +773,7 @@ cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	f
 COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradient, image, "isActive", "order", "createdAt", "updatedAt") FROM stdin;
 cmldvcnti0000do9zm126edud	Orgullo Fueguino	Tienda online desde el fin del mundo	Conocenos	/nosotros	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770562753927-3c2v3.jpg	t	1	2026-02-08 14:59:18.293	2026-02-08 14:59:18.293
 cmldvmkbo0000c61suezudlsa	Variedad Total	Todo lo que busc??s en un solo lugar!	Ver productos	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563218118-gcx6pl.png	t	2	2026-02-08 15:07:00.324	2026-02-08 15:07:00.324
-cmldvnqa80001c61s2jjg4049	Delivery R????pido	Llevamos tu antojo donde est????s	Ver m????s	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-08 15:07:54.704
+cmldvnqa80001c61s2jjg4049	Delivery R??pido	Llevamos tu antojo donde est??s	Ver m??s	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-08 15:07:54.704
 \.
 
 
@@ -843,7 +940,7 @@ cml0zowjo0039ygioqg9zzfwy	INMORTAL	inmortal-23xop	2 Fernet 750ml + 4 Coca-Colca 
 cml0zow4q0002ygio1z3yvt0a	COMBO CAMPARI	combo-campari-u5htv	INCLUYE: 1 Campari 1lt. + 2 Jugos Citric 1L + 1 Hielo 2Kg	\N	23900	0	0	5	t	f	2026-01-30 14:39:47.113	2026-02-02 04:46:05.46
 cml0zowle003eygio2lvjmvh5	Cepita Naranja 1.5L	cepita-naranja-1-5l-r21co	Tamao: 1.5L - Sabor: Naranja	\N	0	0	0	5	t	f	2026-01-30 14:39:47.715	2026-02-05 15:19:54.638
 cml0zox4n008eygioznyef44n	Grolsch 473	grolsch-473-3p50o	Tamao: 473ml	\N	2600	0	0	5	t	f	2026-01-30 14:39:48.407	2026-02-05 15:23:43.406
-cmkvbvo6w001or0gkh6my0iu3	Roll Salmn	comercio-3-roll-salm????sn	\N	cmkvbvo6k001gr0gknt85jfb9	5500	3300	100	5	t	f	2026-01-26 15:34:21.752	2026-02-04 16:09:55.035
+cmkvbvo6w001or0gkh6my0iu3	Roll Salmn	comercio-3-roll-salm??n	\N	cmkvbvo6k001gr0gknt85jfb9	5500	3300	100	5	t	f	2026-01-26 15:34:21.752	2026-02-04 16:09:55.035
 cml4byqzb000o7c7e8hie5vrz	Santa Julia Tardo 	santa-julia-tard-o-ymuzp-cmkvb	Vino dulce natural de cosecha tarda. Presenta aromas intensos a miel, flores blancas y frutas tropicales maduras. En boca es untuoso, con buena acidez que equilibra su dulzura, ideal para acompaar postres, quesos azules o disfrutar solo como vino de sobremesa. / 500ml	cmkvbvo5b000ur0gk0eib5xpt	7000	0	100	5	t	f	2026-02-01 22:46:40.919	2026-02-04 16:09:55.053
 cml4byrgf00117c7e9qixucyd	PRIME x3 - Super Fino	prime-x3-super-fino-elo3i-cmkvb	Sensacin natural, casi como no sentir nada.	cmkvbvo3z0008r0gkc7qfxplz	2700	0	100	5	t	f	2026-02-01 22:46:41.535	2026-02-04 16:09:55.057
 cml4byrgm00147c7e88j2quw8	PRIME x3 - Ultra Fino	prime-x3-ultra-fino-1qxtg-cmkvb	Diseado para mxima sensibilidad sin perder proteccin.	cmkvbvo3z0008r0gkc7qfxplz	2700	0	100	5	t	f	2026-02-01 22:46:41.543	2026-02-04 16:09:55.066
@@ -1124,7 +1221,7 @@ cmkvbvo5j000yr0gkdnm4pds1	cmkvbvo5f000wr0gkwdsxy501	https://images.unsplash.com/
 cmkvbvo5x0014r0gkezdjzc28	cmkvbvo5s0012r0gknilcgfre	https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400	Pizza Pepperoni	0
 cmkvbvo68001ar0gkrvepubof	cmkvbvo650018r0gkp96zwmxm	https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400	Pizza 4 Quesos	0
 cmkvbvo6q001kr0gk3t9shxed	cmkvbvo6n001ir0gkd49h1c39	https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400	Roll California	0
-cmkvbvo70001qr0gkoy36b1tu	cmkvbvo6w001or0gkh6my0iu3	https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400	Roll Salm????sn	0
+cmkvbvo70001qr0gkoy36b1tu	cmkvbvo6w001or0gkh6my0iu3	https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400	Roll Salm??n	0
 cmkvbvo7a001wr0gkgtk8ta04	cmkvbvo76001ur0gk6sv6o03m	https://images.unsplash.com/photo-1553621042-f6e147245754?w=400	Combo 30 piezas	0
 cml4bpilf000i7c7e3ok5m1v2	cml4bpile000h7c7e66as2x35	/uploads/products/1769985460341-IMG_5353.jpg	Apple iPhone 17 Pro Max (256 GB) - Naranja c??smico	0
 cml9lcue0000dpwgoshscyu0f	cml0zoxcy00blygio420b0myj	/uploads/products/1770304101427-798464-800-600.webp	\N	0
@@ -1243,7 +1340,7 @@ cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1Me
 cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-08 05:42:57.132	\N	\N	\N
 cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-08 06:58:04.605	\N	\N	\N
 cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	85750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-08 06:58:49.973	\N	\N	\N
-cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-09 00:39:10.278	\N	\N	\N
+cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-08 23:39:12.88	\N	\N	\N
 \.
 
 

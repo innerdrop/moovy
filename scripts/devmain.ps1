@@ -86,4 +86,4 @@ Write-Host "`n[GIT] Volviendo a develop..." -ForegroundColor Yellow
 git checkout develop
 
 Write-Host "`n[FINALIZADO] Código y datos sincronizados con producción." -ForegroundColor Green
-Write-Host "Tu app está actualizada en: https://moovy.com.ar (o tu dominio)" -ForegroundColor Gray
+Write-Host "Tu app está actualizada en: https://somosmoovy.com" -ForegroundColor Gray
