@@ -4,6 +4,10 @@
 Write-Host "`n[DEPLOY] PASANDO CAMBIOS A MAIN + VPS" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 
+# Colector de errores
+$errorSummary = @()
+function Add-Error { param($msg) $script:errorSummary += $msg }
+
 # Configuración del VPS (Hostinger)
 $VPS_HOST = "31.97.14.156"
 $VPS_USER = "root"
@@ -14,13 +18,18 @@ $VPS_DB_NAME = "moovy_db"
 
 # 0. Asegurar que estamos en develop y sincronizados
 Write-Host "[GIT] Sincronizando develop con origin..." -ForegroundColor Yellow
-git checkout develop
+git checkout develop 2>$null
 git pull origin develop --no-edit
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al actualizar develop" }
 
 # 1. Exportar base de datos local (ahora que estamos sincronizados)
 Write-Host "[DB] Exportando base de datos local (UTF-8)..." -ForegroundColor Yellow
-$dump = docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db
-[System.IO.File]::WriteAllLines("$(Get-Location)\database_dump.sql", $dump)
+try {
+    $dump = docker exec moovy-db pg_dump -U postgres --clean --if-exists moovy_db
+    [System.IO.File]::WriteAllLines("$(Get-Location)\database_dump.sql", $dump)
+} catch {
+    Add-Error "[DB] Error al exportar la base de datos local"
+}
 
 # 2. Verificar si hay cambios (incluyendo el nuevo dump) y guardarlos
 $status = git status --porcelain
@@ -29,6 +38,7 @@ if ($status) {
     git add .
     git commit -m "sync: actualización de datos previa a deploy"
     git push origin develop
+    if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir cambios a develop" }
 }
 
 # 3. Ir a main y traer cambios remotos de forma segura
@@ -39,8 +49,8 @@ git pull origin main --no-edit
 # 4. Mergear develop en main
 Write-Host "[GIT] Mergenado develop -> main (No-Edit)..." -ForegroundColor Yellow
 git merge develop --no-edit -m "deploy: actualización desde develop ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))"
-
 if ($LASTEXITCODE -ne 0) {
+    Add-Error "[GIT] Conflictos al mergear develop en main"
     Write-Host "`n[ERROR] Conflictos detectados. Por favor resolvelos manualmente." -ForegroundColor Red
     exit
 }
@@ -48,6 +58,7 @@ if ($LASTEXITCODE -ne 0) {
 # 5. Subir cambios a GitHub
 Write-Host "[GIT] Subiendo main a GitHub..." -ForegroundColor Yellow
 git push origin main
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir main a GitHub" }
 
 # 6. AUTO-DEPLOY A VPS (Hostinger)
 Write-Host "`n[VPS] Iniciando despliegue remoto en Hostinger..." -ForegroundColor Cyan
@@ -56,6 +67,7 @@ Write-Host "----------------------------------------------" -ForegroundColor Cya
 # 6a. Subir el dump de la base de datos al servidor
 Write-Host "[DB] Subiendo base de datos al servidor..." -ForegroundColor Yellow
 scp database_dump.sql "$VPS_USER@${VPS_HOST}:$VPS_PATH/"
+if ($LASTEXITCODE -ne 0) { Add-Error "[DB] Error al subir el dump al VPS (SCP)" }
 
 # 6b. Ejecutar comandos en el servidor
 Write-Host "[VPS] Actualizando código y base de datos..." -ForegroundColor Yellow
@@ -73,6 +85,7 @@ $remoteCommand = "cd $VPS_PATH && " +
 "pm2 restart moovy"
 
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand"
+if ($LASTEXITCODE -ne 0) { Add-Error "[VPS] Error en los comandos remotos (Build/DB/PM2)" }
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n[OK] DESPLIEGUE COMPLETO (Código + Base de Datos)" -ForegroundColor Green
@@ -85,5 +98,18 @@ else {
 Write-Host "`n[GIT] Volviendo a develop..." -ForegroundColor Yellow
 git checkout develop
 
-Write-Host "`n[FINALIZADO] Código y datos sincronizados con producción." -ForegroundColor Green
-Write-Host "Tu app está actualizada en: https://somosmoovy.com" -ForegroundColor Gray
+Write-Host "`n[FINALIZADO] Proceso terminado." -ForegroundColor Green
+
+if ($errorSummary.Count -gt 0) {
+    Write-Host "`n--------------------------------------" -ForegroundColor Red
+    Write-Host "[REPORTE DE ERRORES]" -ForegroundColor Red
+    foreach ($err in $errorSummary) {
+        Write-Host " - $err" -ForegroundColor Red
+    }
+    Write-Host "--------------------------------------" -ForegroundColor Red
+    Write-Host "`nPor favor, revisá los fallos arriba mencionados." -ForegroundColor Yellow
+} else {
+    Write-Host "`n[OK] Todo se ejecutó sin problemas." -ForegroundColor Green
+    Write-Host "Tu app está actualizada en: https://somosmoovy.com" -ForegroundColor Gray
+}
+Write-Host ""

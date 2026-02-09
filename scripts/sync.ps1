@@ -9,6 +9,10 @@ param(
 Write-Host ""
 Write-Host "[SYNC] SINCRONIZANDO PROYECTO MOOVY" -ForegroundColor Cyan
 Write-Host "====================================" -ForegroundColor Cyan
+
+# Colector de errores
+$errorSummary = @()
+function Add-Error { param($msg) $script:errorSummary += $msg }
 Write-Host ""
 
 # 1. Detener procesos Node si estan corriendo
@@ -19,6 +23,7 @@ taskkill /F /IM node.exe /T 2>$null
 Write-Host "[GIT] Actualizando codigo desde develop..." -ForegroundColor Yellow
 git fetch origin
 git pull origin develop
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al actualizar el codigo (Git Pull)" }
 
 # 3. Instalar dependencias si cambiaron
 Write-Host "[NPM] Verificando dependencias..." -ForegroundColor Yellow
@@ -27,6 +32,7 @@ npm install
 # 4. Generar cliente Prisma
 Write-Host "[PRISMA] Generando cliente Prisma..." -ForegroundColor Yellow
 npx prisma generate
+if ($LASTEXITCODE -ne 0) { Add-Error "[PRISMA] Error al generar el cliente" }
 
 # 5. Sincronizar esquema y datos de base de datos
 if ($ResetDB) {
@@ -48,11 +54,21 @@ else {
     else {
         Write-Host "[DB] Sincronizando esquema (no se encontro dump)..." -ForegroundColor Yellow
         npx prisma db push
+        if ($LASTEXITCODE -ne 0) { Add-Error "[DB] Error al sincronizar el esquema" }
     }
 }
 
 Write-Host ""
-Write-Host "[OK] SINCRONIZACION COMPLETA" -ForegroundColor Green
+if ($errorSummary.Count -gt 0) {
+    Write-Host "--------------------------------------" -ForegroundColor Red
+    Write-Host "[REPORTE DE ERRORES]" -ForegroundColor Red
+    foreach ($err in $errorSummary) {
+        Write-Host " - $err" -ForegroundColor Red
+    }
+    Write-Host "--------------------------------------" -ForegroundColor Red
+} else {
+    Write-Host "[OK] SINCRONIZACION COMPLETA" -ForegroundColor Green
+}
 Write-Host ""
 
 # 6. Iniciar servidor de desarrollo
