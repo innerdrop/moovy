@@ -644,21 +644,21 @@ COPY public."CartItem" (id, "userId", "productId", quantity, "variantId", "creat
 --
 
 COPY public."Category" (id, name, slug, description, image, "isActive", "order", "createdAt", "updatedAt", "allowIndividualPurchase", price, "parentId", icon) FROM stdin;
-cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	f	0	2026-01-30 14:39:47.514	2026-02-09 02:01:10.535	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-09 02:01:10.536	t	0	cml9lh7l90000qxvofmv8r1i7	hamburguesas
-cml9lh7l90000qxvofmv8r1i7	Kioscos	kioscos	Paquete completo para kioscos y almacenes. Incluye todas las subcategor????as de productos.		t	2	2026-02-05 15:11:49.678	2026-02-09 02:01:10.536	t	50000	\N	kiosko
-cml0zow6h000fygio11bf03c6	Gaseosas	gaseosas	\N	\N	t	3	2026-01-30 14:39:47.178	2026-02-09 02:01:10.537	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	4	2026-01-30 14:39:47.297	2026-02-09 02:01:10.538	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	6	2026-01-30 14:39:48.683	2026-02-09 02:01:10.539	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zoxi500dhygioxr9f0loc	Juegos	juegos	\N		t	7	2026-01-30 14:39:48.893	2026-02-09 02:01:10.539	t	0	cml9lh7l90000qxvofmv8r1i7	juegos
-cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			f	8	2026-01-30 14:39:48.329	2026-02-09 02:01:10.54	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow3e0000ygiogdypolr3	Combos	combos	\N	\N	f	9	2026-01-30 14:39:47.065	2026-02-09 02:01:10.541	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow6y000kygio98l495ny	Hielo & Otros	hielo-otros	\N	\N	f	10	2026-01-30 14:39:47.195	2026-02-09 02:01:10.541	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow7d000pygioyc93s0na	Aperitivos	aperitivos	\N	\N	f	11	2026-01-30 14:39:47.209	2026-02-09 02:01:10.542	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow88000zygioaxhmxkcx	Aguas & Jugos	aguas-jugos	\N	\N	f	12	2026-01-30 14:39:47.24	2026-02-09 02:01:10.543	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	f	14	2026-01-26 15:34:21.563	2026-02-09 02:01:10.543	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	13	2026-01-26 15:34:21.563	2026-02-09 02:01:10.543	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow7t000uygio3e9l5uwk	Snacks	snacks	\N	\N	t	5	2026-01-30 14:39:47.225	2026-02-09 02:01:27.203	t	0	cml9lh7l90000qxvofmv8r1i7	snacks
+cml9lh7l90000qxvofmv8r1i7	Kioscos	kioscos	Paquete completo para kioscos y almacenes. Incluye todas las subcategor????as de productos.		t	2	2026-02-05 15:11:49.678	2026-02-09 17:09:13.457	t	50000	\N	kiosko
+cml0zow6h000fygio11bf03c6	Gaseosas	gaseosas	\N	\N	t	3	2026-01-30 14:39:47.178	2026-02-09 17:09:13.457	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	4	2026-01-30 14:39:47.297	2026-02-09 17:09:13.458	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	f	0	2026-01-30 14:39:47.514	2026-02-09 17:09:13.454	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-09 17:09:13.456	t	0	cml9lh7l90000qxvofmv8r1i7	hamburguesas
+cml0zow7t000uygio3e9l5uwk	Snacks	snacks	\N	\N	t	5	2026-01-30 14:39:47.225	2026-02-09 17:09:13.458	t	0	cml9lh7l90000qxvofmv8r1i7	snacks
+cml0zoxi500dhygioxr9f0loc	Juegos	juegos	\N		t	7	2026-01-30 14:39:48.893	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	juegos
+cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			f	8	2026-01-30 14:39:48.329	2026-02-09 17:09:13.47	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow3e0000ygiogdypolr3	Combos	combos	\N	\N	f	9	2026-01-30 14:39:47.065	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow7d000pygioyc93s0na	Aperitivos	aperitivos	\N	\N	f	11	2026-01-30 14:39:47.209	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	6	2026-01-30 14:39:48.683	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	13	2026-01-26 15:34:21.563	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow6y000kygio98l495ny	Hielo & Otros	hielo-otros	\N	\N	f	10	2026-01-30 14:39:47.195	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow88000zygioaxhmxkcx	Aguas & Jugos	aguas-jugos	\N	\N	f	12	2026-01-30 14:39:47.24	2026-02-09 17:09:13.47	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	f	14	2026-01-26 15:34:21.563	2026-02-09 17:09:13.471	t	0	cml9lh7l90000qxvofmv8r1i7	\N
 \.
 
 
@@ -1208,7 +1208,7 @@ COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "update
 --
 
 COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderInterval", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle") FROM stdin;
-settings	f	Estamos cerrados. ??Volvemos pronto!	t	??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.	1200	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-02-09 01:39:01.945	Participa ahora!	t	f			Sorteo Febrero 2026	Super Promo!	t	t	f	10	5000	/productos?categoria=pizzas	Ver locales	t	/uploads/promo/promo-1770563078358-oldbl8.png	2x1 en locales seleccionados de 20hs a 23hs.	Noches de Pizza & Pelis
+settings	f	Estamos cerrados. ??Volvemos pronto!	f	??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.	1200	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-02-09 16:32:39.552	Participa ahora!	t	f			Sorteo Febrero 2026	Super Promo!	t	t	f	10	5000	/productos?categoria=pizzas	Ver locales	t	/uploads/promo/promo-1770563078358-oldbl8.png	2x1 en locales seleccionados de 20hs a 23hs.	Noches de Pizza & Pelis
 \.
 
 
@@ -1253,7 +1253,7 @@ cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EI
 cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-09 02:05:18.646	\N	\N	\N
 cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-09 02:14:02.083	\N	\N	\N
 cmkvbvo7s0023r0gk3wyvfr2v	rider2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 2	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7s0024r0gkvoz8se8y	\N	2026-01-26 15:34:21.784	2026-02-09 02:15:18.932	\N	\N	\N
-cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-09 15:04:37.044	\N	\N	\N
+cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-09 16:32:27.247	\N	\N	\N
 \.
 
 

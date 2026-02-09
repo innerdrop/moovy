@@ -191,8 +191,8 @@ export default function AdminPedidosPage() {
                         key={f.value}
                         onClick={() => setFilter(f.value)}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${filter === f.value
-                                ? "bg-[#e60012] text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-[#e60012] text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                     >
                         {f.label}
@@ -202,29 +202,116 @@ export default function AdminPedidosPage() {
 
             {/* Orders List */}
             {orders.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-xl">
-                    <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No hay pedidos</p>
+                <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-slate-100">
+                    <Package className="w-20 h-20 text-slate-200 mx-auto mb-4" />
+                    <p className="text-slate-400 font-medium text-lg">No hay pedidos registrados</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    {/* Select All */}
-                    <div className="px-4 py-3 bg-gray-50 border-b flex items-center gap-3">
-                        <input
-                            type="checkbox"
-                            checked={selectedOrders.length === orders.length && orders.length > 0}
-                            onChange={toggleSelectAll}
-                            className="w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
-                        />
-                        <span className="text-sm text-gray-600">
-                            {selectedOrders.length > 0
-                                ? `${selectedOrders.length} seleccionado(s)`
-                                : "Seleccionar todos"
-                            }
-                        </span>
+                <div className="space-y-4">
+                    {/* Select All / Bulk Actions */}
+                    <div className="px-4 py-3 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={selectedOrders.length === orders.length && orders.length > 0}
+                                onChange={toggleSelectAll}
+                                className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy transition-all"
+                            />
+                            <span className="text-sm font-bold text-navy uppercase tracking-wider">
+                                {selectedOrders.length > 0
+                                    ? `${selectedOrders.length} seleccionado(s)`
+                                    : "Seleccionar todos"
+                                }
+                            </span>
+                        </label>
+
+                        {selectedOrders.length > 0 && (
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Eliminar Selección
+                            </button>
+                        )}
                     </div>
 
-                    <div className="divide-y">
+                    {/* Desktop View */}
+                    <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+                        <table className="w-full">
+                            <thead className="bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th className="p-4 w-12"></th>
+                                    <th className="text-left p-4 font-bold text-navy text-xs uppercase tracking-widest">Pedido</th>
+                                    <th className="text-left p-4 font-bold text-navy text-xs uppercase tracking-widest">Cliente</th>
+                                    <th className="text-center p-4 font-bold text-navy text-xs uppercase tracking-widest">Estado</th>
+                                    <th className="text-right p-4 font-bold text-navy text-xs uppercase tracking-widest">Total</th>
+                                    <th className="p-4 w-20"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {orders.map((order) => {
+                                    const status = statusConfig[order.status] || statusConfig.PENDING;
+                                    const isSelected = selectedOrders.includes(order.id);
+
+                                    return (
+                                        <tr key={order.id} className={`hover:bg-slate-50/50 transition-colors ${isSelected ? "bg-red-50/30" : ""}`}>
+                                            <td className="p-4">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelectOrder(order.id)}
+                                                    className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy transition-all"
+                                                />
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-extrabold text-navy">#{order.orderNumber}</span>
+                                                    <span className="text-[11px] text-slate-400 font-medium">
+                                                        {new Date(order.createdAt).toLocaleString("es-AR")}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
+                                                        {(order.user.name || order.user.email).charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-slate-800 text-sm line-clamp-1">{order.user.name || order.user.email}</span>
+                                                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                            <MapPin className="w-3 h-3" />
+                                                            {order.address?.street || "Sin dirección"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${status.color}`}>
+                                                    {status.icon}
+                                                    {status.label}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <span className="font-extrabold text-navy">{formatPrice(order.total)}</span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <Link
+                                                    href={`/ops/pedidos/${order.id}`}
+                                                    className="inline-flex items-center justify-center w-10 h-10 bg-slate-50 text-slate-400 hover:text-moovy hover:bg-red-50 rounded-xl transition-all border border-slate-100"
+                                                >
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile View: Premium Cards */}
+                    <div className="md:hidden space-y-4">
                         {orders.map((order) => {
                             const status = statusConfig[order.status] || statusConfig.PENDING;
                             const isSelected = selectedOrders.includes(order.id);
@@ -232,60 +319,58 @@ export default function AdminPedidosPage() {
                             return (
                                 <div
                                     key={order.id}
-                                    className={`p-4 hover:bg-gray-50 transition ${isSelected ? "bg-red-50" : ""}`}
+                                    className={`bg-white rounded-2xl shadow-sm border p-4 transition-all relative overflow-hidden ${isSelected ? "border-moovy ring-1 ring-moovy bg-red-50/20" : "border-slate-100"}`}
                                 >
-                                    <div className="flex items-start gap-3">
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={() => toggleSelectOrder(order.id)}
-                                            className="w-4 h-4 mt-1 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
-                                        />
+                                    {/* Action Row */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleSelectOrder(order.id)}
+                                                className="w-6 h-6 rounded-lg border-slate-300 text-moovy focus:ring-moovy"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID PEDIDO</span>
+                                                <span className="font-extrabold text-navy text-lg line-height-none">#{order.orderNumber}</span>
+                                            </div>
+                                        </div>
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest ${status.color}`}>
+                                            {status.label}
+                                        </span>
+                                    </div>
 
+                                    {/* Content */}
+                                    <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-moovy border border-slate-200 shadow-sm font-black text-sm">
+                                            {(order.user.name || order.user.email).charAt(0).toUpperCase()}
+                                        </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                <span className="font-bold text-navy">#{order.orderNumber}</span>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
-                                                    {status.icon}
-                                                    {status.label}
-                                                </span>
-                                                <span className="text-sm text-gray-500">
-                                                    {new Date(order.createdAt).toLocaleString("es-AR")}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                                                <span className="flex items-center gap-1">
-                                                    <User className="w-4 h-4" />
-                                                    {order.user.name || order.user.email}
-                                                </span>
-                                                {order.address && (
-                                                    <span className="flex items-center gap-1">
-                                                        <MapPin className="w-4 h-4" />
-                                                        {order.address.street} {order.address.number}
-                                                    </span>
-                                                )}
-                                                {order.driver && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Truck className="w-4 h-4" />
-                                                        {order.driver.user.name}
-                                                    </span>
-                                                )}
+                                            <p className="font-bold text-navy truncate">{order.user.name || order.user.email}</p>
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                                                <MapPin className="w-3 h-3" />
+                                                <span className="truncate">{order.address?.street} {order.address?.number}</span>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="text-right">
-                                            <p className="font-bold text-navy">{formatPrice(order.total)}</p>
-                                            <p className="text-xs text-gray-500">{order.items.length} items</p>
+                                    {/* Footer Info */}
+                                    <div className="flex items-center justify-between mt-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Total abonado</span>
+                                            <span className="font-black text-xl text-moovy">{formatPrice(order.total)}</span>
                                         </div>
-
                                         <Link
                                             href={`/ops/pedidos/${order.id}`}
-                                            className="p-2 text-gray-400 hover:text-[#e60012] hover:bg-gray-100 rounded-lg transition"
+                                            className="flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm"
                                         >
-                                            <ChevronRight className="w-5 h-5" />
+                                            Ver detalles
+                                            <ChevronRight className="w-4 h-4" />
                                         </Link>
                                     </div>
+
+                                    {/* Decoration Line */}
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${status.color.split(' ')[0].replace('-50', '-500').replace('-100', '-500')}`}></div>
                                 </div>
                             );
                         })}

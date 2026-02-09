@@ -238,27 +238,26 @@ export default function ClientsPage() {
             </div>
 
             {/* Table / Cards */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                {/* Select All */}
-                <div className="px-4 py-3 bg-gray-50 border-b flex items-center gap-3">
-                    <input
-                        type="checkbox"
-                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
-                    />
-                    <span className="text-sm text-gray-600">
-                        {selectedUsers.length > 0
-                            ? `${selectedUsers.length} seleccionado(s)`
-                            : "Seleccionar todos"
-                        }
-                    </span>
-                </div>
+            <div className="space-y-4">
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
+                        <input
+                            type="checkbox"
+                            checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                            onChange={toggleSelectAll}
+                            className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy"
+                        />
+                        <span className="text-sm font-bold text-navy uppercase tracking-wider">
+                            {selectedUsers.length > 0
+                                ? `${selectedUsers.length} seleccionado(s)`
+                                : "Seleccionar todos los clientes"
+                            }
+                        </span>
+                    </div>
 
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">
+                        <thead className="bg-slate-50/50 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
                             <tr>
                                 <th className="px-4 py-4 w-10"></th>
                                 <th className="px-4 py-4">Usuario</th>
@@ -268,77 +267,74 @@ export default function ClientsPage() {
                                 <th className="px-4 py-4 text-right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-slate-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#e60012]" />
-                                        Cargando clientes...
+                                    <td colSpan={6} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-moovy" />
+                                        Sincronizando clientes...
                                     </td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                        <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                                    <td colSpan={6} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                        <User className="w-16 h-16 mx-auto mb-3 text-slate-200" />
                                         No se encontraron clientes.
                                     </td>
                                 </tr>
                             ) : (
                                 filteredUsers.map((user) => (
-                                    <tr key={user.id} className={`hover:bg-gray-50 transition ${selectedUsers.includes(user.id) ? 'bg-red-50' : ''}`}>
+                                    <tr key={user.id} className={`hover:bg-slate-50/50 transition-colors ${selectedUsers.includes(user.id) ? 'bg-red-50/30' : ''}`}>
                                         <td className="px-4 py-4">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedUsers.includes(user.id)}
                                                 onChange={() => toggleSelectUser(user.id)}
-                                                className="w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
+                                                className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy"
                                             />
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-[#e60012]/10 flex items-center justify-center text-[#e60012] font-bold">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-black shadow-sm border border-slate-200">
                                                     {(user.name || user.email).charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{user.name || "Sin nombre"}</p>
-                                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                                    <p className="font-bold text-navy">{user.name || "Sin nombre"}</p>
+                                                    <p className="text-xs text-slate-400 font-medium">{user.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-600">
+                                        <td className="px-4 py-4 text-sm font-semibold text-slate-600">
                                             {user.phone || "-"}
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
-                                                <Gift className="w-4 h-4 text-[#e60012]" />
+                                            <div className="flex items-center gap-1.5 text-sm font-black text-moovy">
+                                                <Gift className="w-4 h-4" />
                                                 {user.pointsBalance}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500">
+                                        <td className="px-4 py-4 text-sm font-medium text-slate-400">
                                             {new Date(user.createdAt).toLocaleDateString("es-AR")}
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button
                                                     onClick={() => setViewUser(user)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                                    title="Ver detalles"
+                                                    className="p-2 hover:bg-slate-50 rounded-xl transition-all text-slate-400 hover:text-navy"
                                                 >
-                                                    <Eye className="w-4 h-4 text-gray-500" />
+                                                    <Eye className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => openEditModal(user)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition"
-                                                    title="Editar"
+                                                    className="p-2 hover:bg-blue-50 rounded-xl transition-all text-slate-400 hover:text-blue-600"
                                                 >
-                                                    <Edit className="w-4 h-4 text-blue-500" />
+                                                    <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => setResetUser(user)}
-                                                    className="p-2 hover:bg-orange-100 rounded-lg transition"
-                                                    title="Restablecer contraseña"
+                                                    className="p-2 hover:bg-orange-50 rounded-xl transition-all text-slate-400 hover:text-orange-500"
                                                 >
-                                                    <Key className="w-4 h-4 text-orange-500" />
+                                                    <Key className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -349,61 +345,85 @@ export default function ClientsPage() {
                     </table>
                 </div>
 
-                {/* Mobile Cards */}
-                <div className="md:hidden divide-y divide-gray-100">
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
                     {loading ? (
-                        <div className="px-6 py-12 text-center text-gray-500">
-                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#e60012]" />
+                        <div className="px-6 py-16 text-center text-slate-400 bg-white rounded-2xl shadow-sm border border-slate-100">
+                            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-moovy" />
                             Cargando clientes...
                         </div>
                     ) : filteredUsers.length === 0 ? (
-                        <div className="px-6 py-12 text-center text-gray-500">
-                            <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                        <div className="px-6 py-16 text-center text-slate-400 bg-white rounded-2xl shadow-sm border border-slate-100">
+                            <User className="w-16 h-16 mx-auto mb-3 text-slate-200" />
                             No se encontraron clientes.
                         </div>
                     ) : (
                         filteredUsers.map((user) => (
-                            <div key={user.id} className={`p-4 ${selectedUsers.includes(user.id) ? 'bg-red-50' : ''}`}>
-                                <div className="flex items-start gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedUsers.includes(user.id)}
-                                        onChange={() => toggleSelectUser(user.id)}
-                                        className="w-4 h-4 mt-3 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
-                                    />
-                                    <div className="w-10 h-10 rounded-full bg-[#e60012]/10 flex items-center justify-center text-[#e60012] font-bold flex-shrink-0">
-                                        {(user.name || user.email).charAt(0).toUpperCase()}
+                            <div
+                                key={user.id}
+                                className={`bg-white rounded-2xl shadow-sm border p-4 transition-all relative overflow-hidden ${selectedUsers.includes(user.id) ? 'border-moovy ring-1 ring-moovy bg-red-50/30' : 'border-slate-100'}`}
+                            >
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedUsers.includes(user.id)}
+                                            onChange={() => toggleSelectUser(user.id)}
+                                            className="w-6 h-6 rounded-lg border-slate-300 text-moovy focus:ring-moovy transition-all"
+                                        />
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-moovy font-black text-lg border border-slate-100 flex-shrink-0 shadow-sm">
+                                            {(user.name || user.email).charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="font-extrabold text-navy truncate">{user.name || "Sin nombre"}</h3>
+                                            <p className="text-xs text-slate-400 font-bold truncate tracking-tight">{user.email}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900">{user.name || "Sin nombre"}</p>
-                                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                            <span>{user.phone || "Sin tel."}</span>
-                                            <span className="flex items-center gap-1">
-                                                <Gift className="w-3 h-3 text-[#e60012]" />
-                                                {user.pointsBalance} pts
-                                            </span>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Puntos</span>
+                                        <div className="flex items-center gap-1 font-black text-moovy">
+                                            <Gift className="w-3.5 h-3.5" />
+                                            {user.pointsBalance}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t">
+
+                                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50/50 rounded-xl mb-4 border border-slate-50">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Teléfono</span>
+                                        <p className="text-xs font-bold text-navy truncate flex items-center gap-1.5">
+                                            <Phone className="w-3 h-3 text-slate-400" />
+                                            {user.phone || "No registra"}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Miembro desde</span>
+                                        <p className="text-xs font-bold text-slate-500">
+                                            {new Date(user.createdAt).toLocaleDateString("es-AR")}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
                                     <button
                                         onClick={() => setViewUser(user)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                                        className="flex-1 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm hover:opacity-90 flex items-center justify-center gap-2"
                                     >
-                                        <Eye className="w-5 h-5 text-gray-500" />
+                                        <Eye className="w-4 h-4" />
+                                        Perfil
                                     </button>
                                     <button
                                         onClick={() => openEditModal(user)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                                        className="flex-1 py-2 bg-white border border-slate-200 text-navy rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 flex items-center justify-center gap-2"
                                     >
-                                        <Edit className="w-5 h-5 text-blue-500" />
+                                        <Edit className="w-4 h-4" />
+                                        Editar
                                     </button>
                                     <button
                                         onClick={() => setResetUser(user)}
-                                        className="p-2 hover:bg-orange-100 rounded-lg transition"
+                                        className="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center hover:bg-orange-100 border border-orange-100 transition-all"
                                     >
-                                        <Key className="w-5 h-5 text-orange-500" />
+                                        <Key className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>

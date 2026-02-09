@@ -145,146 +145,144 @@ export default function ComerciosPage() {
 
             {/* Merchants Grid */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <Loader2 className="w-10 h-10 animate-spin text-moovy mb-4" />
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sincronizando comercios...</p>
                 </div>
             ) : merchants.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {merchants.map((merchant) => (
-                        <div key={merchant.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition">
-                            {/* Header */}
-                            <div className="p-4 border-b border-slate-100">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
-                                        {merchant.image ? (
-                                            <Image src={merchant.image} alt={merchant.name} width={48} height={48} className="object-cover" />
-                                        ) : (
-                                            <Store className="w-6 h-6 text-slate-400" />
+                        <div key={merchant.id} className="group bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col">
+                            {/* Header Section */}
+                            <div className="p-5 border-b border-slate-50 flex items-start gap-4">
+                                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-100 shadow-inner group-hover:scale-105 transition-transform duration-300">
+                                    {merchant.image ? (
+                                        <Image src={merchant.image} alt={merchant.name} width={64} height={64} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Store className="w-8 h-8 text-slate-300" />
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0 pt-1">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <h3 className="font-black text-navy text-lg truncate leading-tight">{merchant.name}</h3>
+                                        {merchant.isVerified && (
+                                            <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0 shadow-sm shadow-blue-200">
+                                                <CheckCircle className="w-3 h-3 text-white fill-current" />
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="font-bold text-slate-900 truncate">{merchant.name}</h3>
-                                            {merchant.isVerified && (
-                                                <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-slate-500">{merchant.category || "Sin categoría"}</p>
+                                    <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none">
+                                        {merchant.category || "General"}
+                                    </span>
+                                </div>
+                                <div className={`w-3 h-3 rounded-full border-2 ${merchant.isActive ? 'bg-green-500 border-green-100 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-slate-300 border-slate-100'}`} />
+                            </div>
+
+                            {/* Stats Dashboard */}
+                            <div className="grid grid-cols-2 gap-px bg-slate-50 border-b border-slate-50">
+                                <div className="bg-white p-4 text-center group-hover:bg-slate-50/50 transition-colors">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Productos</p>
+                                    <div className="flex items-center justify-center gap-1.5 font-black text-navy text-xl">
+                                        <Package className="w-5 h-5 text-moovy/20" />
+                                        {merchant._count.products}
+                                    </div>
+                                </div>
+                                <div className="bg-white p-4 text-center group-hover:bg-slate-50/50 transition-colors">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pedidos</p>
+                                    <div className="flex items-center justify-center gap-1.5 font-black text-navy text-xl">
+                                        <ShoppingCart className="w-5 h-5 text-moovy/20" />
+                                        {merchant._count.orders}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Stats */}
-                            <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100">
-                                <div className="p-3 text-center">
-                                    <div className="flex items-center justify-center gap-1 text-slate-600">
-                                        <Package className="w-4 h-4" />
-                                        <span className="font-bold">{merchant._count.products}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-400">Productos</p>
-                                </div>
-                                <div className="p-3 text-center">
-                                    <div className="flex items-center justify-center gap-1 text-slate-600">
-                                        <ShoppingCart className="w-4 h-4" />
-                                        <span className="font-bold">{merchant._count.orders}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-400">Pedidos</p>
-                                </div>
-                            </div>
-
-                            {/* Contact Info */}
-                            <div className="p-3 space-y-2 text-sm border-b border-slate-100">
+                            {/* Info Section */}
+                            <div className="p-5 flex-1 space-y-4">
+                                {/* Owner */}
                                 {merchant.owner && (
-                                    <div className="flex items-center gap-2 text-slate-800 font-medium">
-                                        <User className="w-4 h-4 text-slate-400" />
-                                        <span className="truncate">{merchant.owner.firstName} {merchant.owner.lastName}</span>
+                                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-navy/5 border border-navy/5">
+                                        <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-black text-xs shadow-sm">
+                                            {merchant.owner.firstName?.charAt(0)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-black text-navy/40 uppercase tracking-widest leading-none mb-1">Dueño</p>
+                                            <p className="font-bold text-navy text-sm truncate">{merchant.owner.firstName} {merchant.owner.lastName}</p>
+                                        </div>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 gap-1 pl-6">
+
+                                {/* Details */}
+                                <div className="space-y-3 px-1">
                                     {merchant.email && (
-                                        <div className="flex items-center gap-2 text-slate-600">
-                                            <Mail className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="truncate">{merchant.email}</span>
+                                        <div className="flex items-center gap-3 text-slate-600">
+                                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                                <Mail className="w-3.5 h-3.5 text-blue-500" />
+                                            </div>
+                                            <span className="text-xs font-bold truncate">{merchant.email}</span>
                                         </div>
                                     )}
                                     {merchant.phone && (
-                                        <div className="flex items-center gap-2 text-slate-600" title="Teléfono del Negocio">
-                                            <Phone className="w-3.5 h-3.5 text-blue-400" />
-                                            <span>{merchant.phone} <span className="text-[10px] text-slate-400">(Negocio)</span></span>
+                                        <div className="flex items-center gap-3 text-slate-600">
+                                            <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                                                <Phone className="w-3.5 h-3.5 text-green-500" />
+                                            </div>
+                                            <span className="text-xs font-bold">{merchant.phone}</span>
                                         </div>
                                     )}
-                                    {merchant.owner?.phone && (
-                                        <div className="flex items-center gap-2 text-slate-600" title="Teléfono Personal">
-                                            <Phone className="w-3.5 h-3.5 text-green-400" />
-                                            <span>{merchant.owner.phone} <span className="text-[10px] text-slate-400">(Personal)</span></span>
+                                    {merchant.address && (
+                                        <div className="flex items-start gap-3 text-slate-600">
+                                            <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <MapPin className="w-3.5 h-3.5 text-orange-500" />
+                                            </div>
+                                            <span className="text-xs font-bold line-clamp-2 leading-relaxed">{merchant.address}</span>
                                         </div>
                                     )}
                                 </div>
-                                {merchant.address && (
-                                    <div className="flex items-center gap-2 text-slate-600 pl-6 border-t pt-1 mt-1">
-                                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                        <span className="truncate">{merchant.address}</span>
-                                    </div>
-                                )}
                             </div>
 
-                            {/* Actions */}
-                            <div className="p-3 flex gap-2">
-                                <button
-                                    onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
-                                    disabled={actionLoading === merchant.id}
-                                    className={`flex-1 py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-1 ${merchant.isVerified
-                                        ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                        }`}
-                                >
-                                    {actionLoading === merchant.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4" />
-                                            {merchant.isVerified ? "Verificado" : "Verificar"}
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => toggleActive(merchant.id, merchant.isActive)}
-                                    disabled={actionLoading === merchant.id}
-                                    className={`flex-1 py-2 text-sm rounded-lg font-medium transition flex items-center justify-center gap-1 ${merchant.isActive
-                                        ? "bg-green-50 text-green-600 hover:bg-green-100"
-                                        : "bg-red-50 text-red-600 hover:bg-red-100"
-                                        }`}
-                                >
-                                    {merchant.isActive ? (
-                                        <>
-                                            <Eye className="w-4 h-4" />
-                                            Activo
-                                        </>
-                                    ) : (
-                                        <>
-                                            <XCircle className="w-4 h-4" />
-                                            Inactivo
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                            {/* View Detail Link */}
-                            <div className="px-3 pb-3">
+                            {/* Footer Actions */}
+                            <div className="p-5 pt-0 mt-auto">
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <button
+                                        onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
+                                        disabled={actionLoading === merchant.id}
+                                        className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isVerified
+                                                ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
+                                                : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"
+                                            }`}
+                                    >
+                                        {actionLoading === merchant.id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                        ) : merchant.isVerified ? "Verificado" : "Verificar"}
+                                    </button>
+                                    <button
+                                        onClick={() => toggleActive(merchant.id, merchant.isActive)}
+                                        disabled={actionLoading === merchant.id}
+                                        className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isActive
+                                                ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
+                                                : "bg-red-50 text-red-500 border-red-100 hover:bg-red-100"
+                                            }`}
+                                    >
+                                        {actionLoading === merchant.id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                        ) : merchant.isActive ? "Activo" : "Inactivo"}
+                                    </button>
+                                </div>
                                 <Link
                                     href={`/ops/comercios/${merchant.id}`}
-                                    className="block w-full text-center py-2 text-sm rounded-lg font-medium bg-[#e60012] text-white hover:bg-[#c5000f] transition"
+                                    className="block w-full text-center py-3 bg-navy text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-navy/10 active:scale-95"
                                 >
-                                    Ver Perfil Completo
+                                    Abrir Panel
                                 </Link>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
-                <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-                    <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-600 mb-2">No hay comercios</h3>
-                    <p className="text-slate-500">No se encontraron comercios con los filtros aplicados</p>
+                <div className="bg-white rounded-3xl p-20 text-center shadow-sm border border-slate-100">
+                    <Building2 className="w-20 h-20 text-slate-100 mx-auto mb-4" />
+                    <h3 className="text-xl font-black text-navy mb-2">Sin resultados</h3>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Prueba ajustando los filtros de búsqueda</p>
                 </div>
             )}
         </div>
