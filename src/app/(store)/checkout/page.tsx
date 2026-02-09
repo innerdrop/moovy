@@ -56,6 +56,8 @@ export default function CheckoutPage() {
 
     const [deliveryResult, setDeliveryResult] = useState<DeliveryResult | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
+    const [deliveryMethod, setDeliveryMethod] = useState<"home" | "pickup">("home");
+    const [hasDrivers, setHasDrivers] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,7 +80,8 @@ export default function CheckoutPage() {
     const [earnedPoints, setEarnedPoints] = useState(0);
 
     const subtotal = getTotalPrice();
-    const deliveryCost = deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery ? deliveryResult.totalCost : 0;
+    const isPickup = deliveryMethod === "pickup";
+    const deliveryCost = (!isPickup && deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery) ? deliveryResult.totalCost : 0;
     const finalTotal = Math.max(0, subtotal + deliveryCost - discountAmount);
 
     // Redirect if cart is empty
@@ -94,6 +97,19 @@ export default function CheckoutPage() {
             router.push("/login?redirect=/checkout");
         }
     }, [status, router]);
+
+    // Fetch driver availability
+    useEffect(() => {
+        fetch("/api/delivery/availability")
+            .then(res => res.json())
+            .then(data => {
+                setHasDrivers(data.hasDrivers);
+                if (!data.hasDrivers) {
+                    setDeliveryMethod("pickup");
+                }
+            })
+            .catch(err => console.error("Error checking driver availability", err));
+    }, []);
 
     // Fetch saved addresses
     useEffect(() => {
@@ -257,8 +273,9 @@ export default function CheckoutPage() {
                         longitude: address.longitude,
                     } : undefined,
                     paymentMethod,
-                    deliveryFee: deliveryResult.isFreeDelivery ? 0 : deliveryResult.totalCost,
-                    distanceKm: deliveryResult.distanceKm,
+                    deliveryFee: isPickup ? 0 : (deliveryResult?.isFreeDelivery ? 0 : deliveryResult?.totalCost),
+                    distanceKm: isPickup ? null : deliveryResult?.distanceKm,
+                    isPickup,
                     deliveryNotes: address.notes || null,
                     // Points data
                     pointsUsed,
@@ -347,7 +364,7 @@ export default function CheckoutPage() {
                                 }`}
                         >
                             <span className="font-semibold">
-                                {s === 1 ? "Dirección" : s === 2 ? "Envío" : "Pago"}
+                                {s === 1 ? "Método" : s === 2 ? (deliveryMethod === "home" ? "Envío" : "Confirmar") : "Pago"}
                             </span>
                         </div>
                     ))}
@@ -356,159 +373,216 @@ export default function CheckoutPage() {
                 <div className="grid lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Step 1: Address */}
+                        {/* Step 1: Delivery Method & Address */}
                         {step === 1 && (
-                            <div className="bg-white rounded-xl p-6 shadow-sm">
-                                <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-moovy" />
-                                    Dirección de Entrega
-                                </h2>
-
-                                {/* Saved Addresses List */}
-                                {!loadingAddresses && savedAddresses.length > 0 && (
-                                    <div className="mb-6 space-y-3">
-                                        <p className="text-sm font-medium text-gray-700">Mis direcciones guardadas:</p>
-                                        <div className="grid gap-3 sm:grid-cols-2">
-                                            {savedAddresses.map((addr: any) => (
-                                                <button
-                                                    key={addr.id}
-                                                    onClick={() => selectAddress(addr)}
-                                                    className={`text-left p-3 rounded-xl border-2 transition relative ${selectedAddressId === addr.id
-                                                        ? "border-moovy bg-moovy-light"
-                                                        : "border-gray-100 hover:border-gray-200"
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-navy text-sm">{addr.label}</span>
-                                                        {selectedAddressId === addr.id && (
-                                                            <CheckCircle className="w-4 h-4 text-moovy absolute top-3 right-3" />
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 line-clamp-1">
-                                                        {addr.street} {addr.number}
-                                                    </p>
-                                                </button>
-                                            ))}
-
-                                            {/* New Address Button in Grid */}
-                                            <button
-                                                onClick={handleNewAddress}
-                                                className={`text-left p-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition ${isNewAddress
-                                                    ? "border-moovy bg-gray-50 text-moovy"
-                                                    : "border-gray-300 text-gray-500 hover:border-gray-400"
-                                                    }`}
-                                            >
-                                                <span className="font-semibold text-sm">+ Nueva Dirección</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Address Form */}
-                                {(isNewAddress || savedAddresses.length === 0) ? (
-                                    <div className="space-y-4 animate-fadeIn">
-                                        <div className="md:col-span-3">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Dirección *
-                                            </label>
-                                            <AddressAutocomplete
-                                                value={address.street && address.number ? `${address.street} ${address.number}` : address.street}
-                                                onChange={(val, lat, lng, street, num) => {
-                                                    setAddress({
-                                                        ...address,
-                                                        street: street || val,
-                                                        number: num || "",
-                                                        latitude: lat,
-                                                        longitude: lng,
-                                                    });
-                                                }}
-                                                placeholder="Buscá tu calle y número..."
-                                            />
-                                        </div>
-
-                                        <div className="grid md:grid-cols-1 gap-4 mt-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Piso/Depto (opcional)
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={address.floor}
-                                                    onChange={(e) => setAddress({ ...address, floor: e.target.value })}
-                                                    placeholder="1°A"
-                                                    className="input"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    // Read-only view of selected address
-                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
-                                        <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                            <div className="space-y-6">
+                                {/* DRIVER AVAILABILITY WARNING */}
+                                {!hasDrivers && (
+                                    <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex items-start gap-4 animate-pulse">
+                                        <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
                                         <div>
-                                            <p className="font-medium text-navy">Vas a recibir en:</p>
-                                            <p className="text-gray-600">
-                                                {address.street} {address.number}
-                                                {address.floor ? ` (${address.floor})` : ""}
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1">{address.city}</p>
+                                            <p className="font-black text-amber-900 uppercase tracking-tight leading-tight">No hay repartidores disponibles</p>
+                                            <p className="text-sm text-amber-700 font-medium">Podés realizar tu compra, pero deberás retirarla personalmente por el local.</p>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Common Note Field */}
-                                <div className="mt-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Notas para el repartidor
-                                    </label>
-                                    <textarea
-                                        value={address.notes}
-                                        onChange={(e) => setAddress({ ...address, notes: e.target.value })}
-                                        placeholder="Ej: Tocar timbre, dejar en portería..."
-                                        className="input resize-none"
-                                        rows={2}
-                                    />
-                                </div>
+                                <div className="bg-white rounded-xl p-6 shadow-sm">
+                                    <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
+                                        <Truck className="w-5 h-5 text-moovy" />
+                                        Método de Entrega
+                                    </h2>
 
-                                {isNewAddress && (
-                                    <div className="mt-6 flex flex-col gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={saveAddress}
-                                                onChange={(e) => setSaveAddress(e.target.checked)}
-                                                className="w-5 h-5 rounded border-gray-300 text-moovy focus:ring-moovy"
-                                            />
-                                            <span className="text-sm font-semibold text-navy">Guardar dirección para futuros pedidos</span>
-                                        </label>
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <button
+                                            onClick={() => setDeliveryMethod("home")}
+                                            disabled={!hasDrivers}
+                                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "home"
+                                                    ? "border-moovy bg-moovy-light"
+                                                    : "border-gray-100 hover:border-gray-200"
+                                                } ${!hasDrivers ? "opacity-30 cursor-not-allowed" : ""}`}
+                                        >
+                                            <Truck className={`w-8 h-8 ${deliveryMethod === "home" ? "text-moovy" : "text-gray-400"}`} />
+                                            <span className="font-black uppercase tracking-widest text-[10px]">Envío a domicilio</span>
+                                        </button>
 
-                                        {saveAddress && (
-                                            <div className="animate-fadeIn pl-8">
-                                                <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wider">
-                                                    Etiqueta (ej: Casa, Trabajo)
+                                        <button
+                                            onClick={() => setDeliveryMethod("pickup")}
+                                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "pickup"
+                                                    ? "border-moovy bg-moovy-light"
+                                                    : "border-gray-100 hover:border-gray-200"
+                                                }`}
+                                        >
+                                            <ShoppingBag className={`w-8 h-8 ${deliveryMethod === "pickup" ? "text-moovy" : "text-gray-400"}`} />
+                                            <span className="font-black uppercase tracking-widest text-[10px]">Retiro en local</span>
+                                        </button>
+                                    </div>
+
+                                    {deliveryMethod === "home" ? (
+                                        <>
+                                            <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
+                                                <MapPin className="w-5 h-5 text-moovy" />
+                                                Dirección de Entrega
+                                            </h2>
+
+                                            {/* Saved Addresses List */}
+                                            {!loadingAddresses && savedAddresses.length > 0 && (
+                                                <div className="mb-6 space-y-3">
+                                                    <p className="text-sm font-medium text-gray-700">Mis direcciones guardadas:</p>
+                                                    <div className="grid gap-3 sm:grid-cols-2">
+                                                        {savedAddresses.map((addr: any) => (
+                                                            <button
+                                                                key={addr.id}
+                                                                onClick={() => selectAddress(addr)}
+                                                                className={`text-left p-3 rounded-xl border-2 transition relative ${selectedAddressId === addr.id
+                                                                    ? "border-moovy bg-moovy-light"
+                                                                    : "border-gray-100 hover:border-gray-200"
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <span className="font-bold text-navy text-sm">{addr.label}</span>
+                                                                    {selectedAddressId === addr.id && (
+                                                                        <CheckCircle className="w-4 h-4 text-moovy absolute top-3 right-3" />
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-sm text-gray-600 line-clamp-1">
+                                                                    {addr.street} {addr.number}
+                                                                </p>
+                                                            </button>
+                                                        ))}
+
+                                                        {/* New Address Button in Grid */}
+                                                        <button
+                                                            onClick={handleNewAddress}
+                                                            className={`text-left p-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition ${isNewAddress
+                                                                ? "border-moovy bg-gray-50 text-moovy"
+                                                                : "border-gray-300 text-gray-500 hover:border-gray-400"
+                                                                }`}
+                                                        >
+                                                            <span className="font-semibold text-sm">+ Nueva Dirección</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Address Form */}
+                                            {(isNewAddress || savedAddresses.length === 0) ? (
+                                                <div className="space-y-4 animate-fadeIn">
+                                                    <div className="md:col-span-3">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Dirección *
+                                                        </label>
+                                                        <AddressAutocomplete
+                                                            value={address.street && address.number ? `${address.street} ${address.number}` : address.street}
+                                                            onChange={(val, lat, lng, street, num) => {
+                                                                setAddress({
+                                                                    ...address,
+                                                                    street: street || val,
+                                                                    number: num || "",
+                                                                    latitude: lat,
+                                                                    longitude: lng,
+                                                                });
+                                                            }}
+                                                            placeholder="Buscá tu calle y número..."
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid md:grid-cols-1 gap-4 mt-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Piso/Depto (opcional)
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={address.floor}
+                                                                onChange={(e) => setAddress({ ...address, floor: e.target.value })}
+                                                                placeholder="1°A"
+                                                                className="input"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                // Read-only view of selected address
+                                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-3">
+                                                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                                                    <div>
+                                                        <p className="font-medium text-navy">Vas a recibir en:</p>
+                                                        <p className="text-gray-600">
+                                                            {address.street} {address.number}
+                                                            {address.floor ? ` (${address.floor})` : ""}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400 mt-1">{address.city}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Common Note Field */}
+                                            <div className="mt-4">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Notas para el repartidor
                                                 </label>
-                                                <input
-                                                    type="text"
-                                                    value={addressLabel}
-                                                    onChange={(e) => setAddressLabel(e.target.value)}
-                                                    className="w-full max-w-xs px-3 py-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-moovy bg-white"
-                                                    placeholder="Nombre de la ubicación..."
+                                                <textarea
+                                                    value={address.notes}
+                                                    onChange={(e) => setAddress({ ...address, notes: e.target.value })}
+                                                    placeholder="Ej: Tocar timbre, dejar en portería..."
+                                                    className="input resize-none"
+                                                    rows={2}
                                                 />
                                             </div>
-                                        )}
-                                    </div>
-                                )}
 
-                                <button
-                                    onClick={() => {
-                                        calculateDelivery();
-                                        setStep(2);
-                                    }}
-                                    disabled={!address.street || !address.number}
-                                    className="btn-primary w-full py-3 mt-4"
-                                >
-                                    Continuar
-                                </button>
+                                            {isNewAddress && (
+                                                <div className="mt-6 flex flex-col gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                                    <label className="flex items-center gap-3 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={saveAddress}
+                                                            onChange={(e) => setSaveAddress(e.target.checked)}
+                                                            className="w-5 h-5 rounded border-gray-300 text-moovy focus:ring-moovy"
+                                                        />
+                                                        <span className="text-sm font-semibold text-navy">Guardar dirección para futuros pedidos</span>
+                                                    </label>
+
+                                                    {saveAddress && (
+                                                        <div className="animate-fadeIn pl-8">
+                                                            <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wider">
+                                                                Etiqueta (ej: Casa, Trabajo)
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={addressLabel}
+                                                                onChange={(e) => setAddressLabel(e.target.value)}
+                                                                className="w-full max-w-xs px-3 py-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-moovy bg-white"
+                                                                placeholder="Nombre de la ubicación..."
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 text-center space-y-3">
+                                            <ShoppingBag className="w-12 h-12 text-blue-500 mx-auto" />
+                                            <h3 className="font-black text-blue-900 uppercase">Retiro por el local</h3>
+                                            <p className="text-sm text-blue-700 font-medium">Una vez confirmado el pedido, podrás pasar a retirarlo cuando esté listo. Te avisaremos por la App.</p>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={() => {
+                                            if (deliveryMethod === "home") {
+                                                calculateDelivery();
+                                                setStep(2);
+                                            } else {
+                                                setStep(3);
+                                            }
+                                        }}
+                                        disabled={deliveryMethod === "home" && (!address.street || !address.number)}
+                                        className="btn-primary w-full py-3 mt-4"
+                                    >
+                                        Continuar
+                                    </button>
+                                </div>
                             </div>
                         )}
 

@@ -191,6 +191,7 @@ model Order {
   deliveryFee         Float       @default(0)
   discount            Float       @default(0)
   total               Float
+  isPickup            Boolean     @default(false)
   distanceKm          Float?
   deliveryNotes       String?
   estimatedTime       Int?

@@ -19,6 +19,13 @@ interface RiderMiniMapProps {
     navigationMode?: boolean; // Enable navigation mode with auto-centering
     orderStatus?: string; // Track order status for route transitions
     onRouteTransition?: () => void; // Callback when route changes
+    mapRef?: React.MutableRefObject<google.maps.Map | null>;
+    recenterTrigger?: boolean;
+    onRecenterRequested?: () => void;
+}
+
+export interface RiderMiniMapRef {
+    recenter: () => void;
 }
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
@@ -51,9 +58,12 @@ function RiderMiniMapComponent({
     height = "250px",
     navigationMode = false,
     orderStatus,
-    onRouteTransition
+    onRouteTransition,
+    recenterTrigger,
+    onRecenterRequested
 }: RiderMiniMapProps) {
     const mapRef = useRef<google.maps.Map | null>(null);
+    const hasInitialCentered = useRef(false);
     const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
     const [remainingPath, setRemainingPath] = useState<google.maps.LatLngLiteral[]>([]);
     const [animatedPath, setAnimatedPath] = useState<google.maps.LatLngLiteral[]>([]); // For drawing animation
@@ -85,7 +95,8 @@ function RiderMiniMapComponent({
         // Stage-based destination logic: 
         // If not picked up yet, destination is Merchant. 
         // Once picked up, destination is Customer.
-        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(orderStatus || "");
+        const normalizedStatus = orderStatus?.toUpperCase() || "";
+        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(normalizedStatus);
 
         const destination = isPickedUp
             ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
@@ -135,47 +146,16 @@ function RiderMiniMapComponent({
                     });
 
                     // Check if this is a route transition (status changed)
+                    const normalizedStatus = orderStatus?.toUpperCase() || "";
                     const isTransition = prevOrderStatusRef.current !== undefined &&
                         prevOrderStatusRef.current !== orderStatus &&
-                        (orderStatus === "PICKED_UP" || orderStatus === "IN_DELIVERY" || orderStatus === "ON_THE_WAY");
+                        (normalizedStatus === "PICKED_UP" || normalizedStatus === "IN_DELIVERY" || normalizedStatus === "ON_THE_WAY");
 
                     // Immediate update of primary state
                     setRoutePath(path);
-
-                    if (isTransition) {
-                        // Trigger animated route drawing
-                        setIsAnimating(true);
-                        setAnimatedPath([]);
-                        onRouteTransition?.();
-
-                        // Animate the route drawing progressively
-                        let currentIndex = 0;
-                        const animateStep = () => {
-                            if (currentIndex < path.length) {
-                                setAnimatedPath(path.slice(0, currentIndex + 1));
-                                currentIndex += Math.max(1, Math.floor(path.length / 30)); // Faster feel
-                                animationFrameRef.current = requestAnimationFrame(animateStep);
-                            } else {
-                                setAnimatedPath(path);
-                                setRemainingPath(path);
-                                setIsAnimating(false);
-                                animationFrameRef.current = null;
-
-                                // Fit map to new route after animation
-                                if (mapRef.current && customerLat && customerLng && driverLat && driverLng) {
-                                    const bounds = new google.maps.LatLngBounds();
-                                    bounds.extend({ lat: driverLat, lng: driverLng });
-                                    bounds.extend({ lat: customerLat, lng: customerLng });
-                                    mapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 150, left: 50 });
-                                }
-                            }
-                        };
-                        animationFrameRef.current = requestAnimationFrame(animateStep);
-                    } else {
-                        setRemainingPath(path);
-                        setAnimatedPath(path);
-                        setIsAnimating(false);
-                    }
+                    setRemainingPath(path);
+                    setAnimatedPath(path);
+                    setIsAnimating(false);
 
                     prevOrderStatusRef.current = orderStatus;
                 } else {
@@ -257,15 +237,10 @@ function RiderMiniMapComponent({
         setRemainingPath(routePath.slice(closestIndex));
     }, [navigationMode, driverLat, driverLng, routePath]);
 
-    // Auto-center on driver in navigation mode (respects user interaction)
-    useEffect(() => {
-        if (!navigationMode || !mapRef.current || !driverLat || !driverLng) return;
-
-        // Only auto-center if user hasn't interacted recently
-        if (!userInteracted) {
-            mapRef.current.panTo({ lat: driverLat, lng: driverLng });
-        }
-    }, [navigationMode, driverLat, driverLng, userInteracted]);
+    // Auto-centering is DISABLED to allow free pan/zoom
+    // User can manually recenter using the Centrar button
+    // Old behavior was: if (!userInteracted) panTo driver position
+    // Now: no automatic panning, user has full control
 
     // Handle user interaction - pause auto-centering for 10 seconds
     const handleUserInteraction = useCallback(() => {
@@ -282,17 +257,41 @@ function RiderMiniMapComponent({
         }, 10000);
     }, []);
 
-    // Re-center button handler
+    // Re-center button handler - fits driver + destination in view
     const handleRecenter = useCallback(() => {
         if (mapRef.current && driverLat && driverLng) {
-            mapRef.current.panTo({ lat: driverLat, lng: driverLng });
-            mapRef.current.setZoom(17);
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend({ lat: driverLat, lng: driverLng });
+
+            const normalizedStatus = orderStatus?.toUpperCase() || "";
+            // Include destination in bounds
+            if (normalizedStatus && ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'].includes(normalizedStatus)) {
+                // Going to customer
+                if (customerLat && customerLng) {
+                    bounds.extend({ lat: customerLat, lng: customerLng });
+                }
+            } else {
+                // Going to merchant
+                if (merchantLat && merchantLng) {
+                    bounds.extend({ lat: merchantLat, lng: merchantLng });
+                }
+            }
+
+            mapRef.current.fitBounds(bounds, 60); // 60px padding
             setUserInteracted(false);
             if (recenterTimeoutRef.current) {
                 clearTimeout(recenterTimeoutRef.current);
             }
         }
-    }, [driverLat, driverLng]);
+    }, [driverLat, driverLng, customerLat, customerLng, merchantLat, merchantLng, orderStatus]);
+
+    // Expose recenter functionality via prop effect
+    useEffect(() => {
+        if (recenterTrigger) {
+            handleRecenter();
+            onRecenterRequested?.();
+        }
+    }, [recenterTrigger, handleRecenter, onRecenterRequested]);
 
     // Cleanup timeout and animation on unmount
     useEffect(() => {
@@ -316,34 +315,18 @@ function RiderMiniMapComponent({
         return defaultCenter;
     }, [driverLat, driverLng, merchantLat, merchantLng]);
 
-    // Fit bounds to show both driver/merchant and destination
+    // Initial center effect: Only once when we first get coordinates
     useEffect(() => {
-        if (!mapRef.current || !isLoaded || navigationMode) return;
-
-        const bounds = new google.maps.LatLngBounds();
-        let pointsCovered = 0;
-
-        if (driverLat && driverLng) {
-            bounds.extend({ lat: driverLat, lng: driverLng });
-            pointsCovered++;
-        } else if (merchantLat && merchantLng) {
-            bounds.extend({ lat: merchantLat, lng: merchantLng });
-            pointsCovered++;
+        if (!hasInitialCentered.current && mapRef.current && (driverLat || merchantLat)) {
+            const target = driverLat ? { lat: driverLat, lng: driverLng! } : { lat: merchantLat!, lng: merchantLng! };
+            mapRef.current.panTo(target);
+            mapRef.current.setZoom(navigationMode ? 17 : 14);
+            hasInitialCentered.current = true;
         }
+    }, [driverLat, driverLng, merchantLat, merchantLng, navigationMode]);
 
-        if (customerLat && customerLng) {
-            bounds.extend({ lat: customerLat, lng: customerLng });
-            pointsCovered++;
-        } else if (merchantLat && merchantLng && driverLat) {
-            // If going to merchant
-            bounds.extend({ lat: merchantLat, lng: merchantLng });
-            pointsCovered++;
-        }
-
-        if (pointsCovered >= 2) {
-            mapRef.current.fitBounds(bounds, 50);
-        }
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, navigationMode]);
+    // Automatic fitBounds is REMOVED to allow manual control as requested.
+    // Use the manual "Centrar" button in the dashboard to trigger handleRecenter.
 
     // Create arrow icon for driver in navigation mode
     const driverIcon = useMemo(() => {
@@ -390,27 +373,11 @@ function RiderMiniMapComponent({
                 </div>
             )}
 
-            {/* Re-center button when user has interacted */}
-            {navigationMode && userInteracted && (
-                <button
-                    onClick={handleRecenter}
-                    className="absolute bottom-4 right-4 z-10 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 transition-all"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
-                    </svg>
-                    Centrar
-                </button>
-            )}
+            {/* Re-center button - REMOVED from here, handled in dashboard UI */}
 
             <GoogleMap
                 mapContainerStyle={containerStyle}
-                center={center}
-                zoom={navigationMode ? 17 : 14}
                 onLoad={onMapLoad}
-                onDragStart={handleUserInteraction}
-                onZoomChanged={handleUserInteraction}
                 options={{
                     disableDefaultUI: false,
                     zoomControl: true,
@@ -429,7 +396,7 @@ function RiderMiniMapComponent({
                         options={{
                             strokeColor: isAnimating ? "#22c55e" : "#4285F4", // Green during animation
                             strokeWeight: isAnimating ? 8 : 6,
-                            strokeOpacity: isAnimating ? 0.9 : 0, // Hide main path when flow is shown
+                            strokeOpacity: isAnimating ? 0.9 : 0.4, // Visible base path
                             icons: isAnimating ? [] : [{
                                 icon: {
                                     path: 'M 0,-1.5 L 0,1.5',
@@ -463,7 +430,7 @@ function RiderMiniMapComponent({
                                     icons[0].offset = (count / 2) + '%';
                                     polyline.set('icons', icons);
                                 }
-                            }, 50);
+                            }, 100); // 50% slower as requested (100ms instead of 50ms)
                             (polyline as any)._animationInterval = interval;
                         }}
                         onUnmount={(polyline) => {

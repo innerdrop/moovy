@@ -22,6 +22,7 @@ import {
     CreditCard,
     Truck
 } from "lucide-react";
+import { useCartStore } from "@/store/cart";
 
 interface OrderDetail {
     id: string;
@@ -104,23 +105,35 @@ export default function OrderDetailPage() {
         setIsReordering(true);
 
         try {
-            // Add items to cart via API or redirect to merchant
             const res = await fetch("/api/cart/reorder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ orderId: order.id })
             });
 
+            const data = await res.json();
+
             if (res.ok) {
+                // UPDATE FRONTEND STORE
+                useCartStore.setState({
+                    items: data.items,
+                    merchantId: data.merchantId
+                });
+
                 router.push("/carrito");
             } else {
-                // Fallback: redirect to merchant page
-                if (order.merchant?.id) {
+                // Show specific error from server (e.g. unavailable products)
+                alert(data.error || "No se pudo repetir el pedido");
+
+                // If it's not a business logic error (like unavailable items), 
+                // but something else, optional redirect as secondary fallback
+                if (res.status !== 400 && order.merchant?.id) {
                     router.push(`/comercio/${order.merchant.id}`);
                 }
             }
-        } catch {
-            // Fallback: redirect to merchant
+        } catch (err) {
+            console.error("[Reorder Front] Error:", err);
+            alert("Ocurrió un error al intentar repetir el pedido");
             if (order?.merchant?.id) {
                 router.push(`/comercio/${order.merchant.id}`);
             }

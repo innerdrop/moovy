@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
+import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import {
     Package,
     Clock,
@@ -18,7 +19,9 @@ import {
     ExternalLink,
     ChevronRight,
     ArrowLeft,
-    Phone
+    Phone,
+    Wifi,
+    WifiOff
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -75,19 +78,9 @@ export default function MisPedidosPage() {
     const [filter, setFilter] = useState<"all" | "active" | "completed">("active");
 
     const isAuthenticated = authStatus === "authenticated";
+    const userId = session?.user?.id;
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            if (authStatus !== "loading") setLoading(false);
-            return;
-        }
-
-        loadOrders();
-        const intervalId = setInterval(() => loadOrders(true), 10000);
-        return () => clearInterval(intervalId);
-    }, [isAuthenticated, authStatus]);
-
-    async function loadOrders(silent = false) {
+    const loadOrders = useCallback(async (silent = false) => {
         try {
             const res = await fetch("/api/orders");
             if (res.ok) setOrders(await res.json());
@@ -96,8 +89,43 @@ export default function MisPedidosPage() {
         } finally {
             if (!silent) setLoading(false);
         }
-    }
+    }, []);
 
+    // Real-time order updates via WebSocket
+    const { isConnected } = useRealtimeOrders({
+        role: "customer",
+        userId: userId || undefined,
+        enabled: isAuthenticated && !!userId,
+        onStatusChange: (orderId, status) => {
+            // Update order status in real-time
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status } : o
+            ));
+        },
+        onOrderCancelled: (orderId) => {
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: "CANCELLED" } : o
+            ));
+        },
+        onDriverAssigned: (orderId) => {
+            // Reload to get driver details
+            loadOrders(true);
+        },
+    });
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            if (authStatus !== "loading") setLoading(false);
+            return;
+        }
+
+        loadOrders();
+        // Fallback polling every 30 seconds (reduced from 10s since we have real-time)
+        const intervalId = setInterval(() => loadOrders(true), 30000);
+        return () => clearInterval(intervalId);
+    }, [isAuthenticated, authStatus, loadOrders]);
+
+    // Unified list filtering logic
     const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"];
 
     const activeOrders = useMemo(() => orders.filter(o => activeStatuses.includes(o.status)), [orders]);
@@ -108,16 +136,6 @@ export default function MisPedidosPage() {
         if (filter === "completed") return completedOrders;
         return orders;
     }, [filter, orders, activeOrders, completedOrders]);
-
-    // Trackable order for the top map - only after rider picks up
-    const trackableOrder = useMemo(() => {
-        return activeOrders.find(o => ["PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"].includes(o.status));
-    }, [activeOrders]);
-
-    // Order being prepared (rider assigned but not picked up yet) - show info panel
-    const preparingOrder = useMemo(() => {
-        return activeOrders.find(o => ["DRIVER_ASSIGNED", "PREPARING", "READY"].includes(o.status));
-    }, [activeOrders]);
 
     if (authStatus === "loading" || loading) {
         return <div className="h-screen flex items-center justify-center bg-white"><Loader2 className="w-10 h-10 animate-spin text-[#e60012]" /></div>;
@@ -146,83 +164,8 @@ export default function MisPedidosPage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 overflow-hidden">
-            {/* STICKY MAP SECTION (If active order tracking) */}
-            {trackableOrder && (
-                <div className="h-[45vh] relative flex-shrink-0 z-10 shadow-lg">
-                    <OrderTrackingMiniMap
-                        orderId={trackableOrder.id}
-                        orderStatus={trackableOrder.status}
-                        merchantLat={trackableOrder.merchant?.latitude}
-                        merchantLng={trackableOrder.merchant?.longitude}
-                        merchantName={trackableOrder.merchant?.name}
-                        customerLat={trackableOrder.address.latitude}
-                        customerLng={trackableOrder.address.longitude}
-                        customerAddress={`${trackableOrder.address.street} ${trackableOrder.address.number}`}
-                        initialDriverLat={trackableOrder.driver?.latitude}
-                        initialDriverLng={trackableOrder.driver?.longitude}
-                        height="100%"
-                        showEta={true}
-                    />
-                    {/* Map Info Overlay */}
-                    <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
-                        <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white/50 pointer-events-auto">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-[#e60012]">Tracking En Vivo</p>
-                            <p className="text-sm font-bold text-gray-900 leading-none">#{trackableOrder.orderNumber}</p>
-                        </div>
-                        <Link
-                            href={`/seguimiento/${trackableOrder.id}`}
-                            className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-white/50 flex items-center justify-center pointer-events-auto hover:bg-white transition"
-                        >
-                            <ExternalLink className="w-5 h-5 text-gray-700" />
-                        </Link>
-                    </div>
-                </div>
-            )}
-
-            {/* PREPARATION INFO PANEL (Before rider picks up) */}
-            {!trackableOrder && preparingOrder && (
-                <div className="h-[35vh] relative flex-shrink-0 z-10 shadow-lg bg-gradient-to-b from-orange-50 via-white to-orange-50/30 flex flex-col items-center justify-center px-6">
-                    <div className="absolute top-4 left-4 right-4 flex justify-between">
-                        <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white/50">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">Preparando</p>
-                            <p className="text-sm font-bold text-gray-900 leading-none">#{preparingOrder.orderNumber}</p>
-                        </div>
-                    </div>
-
-                    <div className="relative mb-4">
-                        <div className="w-20 h-20 bg-orange-100 rounded-[28px] flex items-center justify-center animate-pulse">
-                            <Package className="w-10 h-10 text-orange-500" />
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-200">
-                            <Loader2 className="w-3 h-3 text-orange-500 animate-spin" />
-                        </div>
-                    </div>
-
-                    <h3 className="text-lg font-black italic tracking-tight text-gray-900 uppercase text-center">
-                        {preparingOrder.status === "DRIVER_ASSIGNED" ? "Repartidor en camino al comercio" : "Preparando tu pedido"}
-                    </h3>
-                    <p className="text-gray-500 text-sm text-center mt-1 max-w-xs">
-                        {preparingOrder.status === "DRIVER_ASSIGNED"
-                            ? "El mapa se activará cuando recoja tu pedido"
-                            : "Te notificaremos cuando esté listo"}
-                    </p>
-
-                    {preparingOrder.merchant && (
-                        <div className="mt-4 bg-white rounded-2xl p-3 shadow-md border border-orange-100 flex items-center gap-3 w-full max-w-xs">
-                            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <MapPin className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="font-bold text-gray-900 text-sm truncate">{preparingOrder.merchant.name}</p>
-                                <p className="text-xs text-gray-500 truncate">Comercio asignado</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
             {/* CONTENT SECTION */}
-            <div className={`flex-1 flex flex-col bg-white overflow-hidden ${(trackableOrder || preparingOrder) ? "rounded-t-[32px] -mt-8 relative z-20 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]" : ""}`}>
+            <div className={`flex-1 flex flex-col bg-white overflow-hidden`}>
                 {/* Header / Tabs */}
                 <div className="flex-shrink-0 border-b bg-white/80 backdrop-blur-md sticky top-0 z-30">
                     <div className="p-4 flex items-center justify-between">
@@ -257,20 +200,19 @@ export default function MisPedidosPage() {
                         filteredOrders.map((order) => {
                             const status = statusConfig[order.status] || statusConfig.PENDING;
                             const isActive = activeStatuses.includes(order.status);
-                            const isBeingTracked = trackableOrder?.id === order.id;
 
                             return (
                                 <div
                                     key={order.id}
                                     className={`group bg-white border-2 rounded-2xl transition-all duration-300 ${isActive
-                                        ? isBeingTracked ? "border-[#e60012]" : "border-gray-900"
+                                        ? "border-gray-900"
                                         : "border-gray-100 hover:border-gray-200"
                                         }`}
                                 >
                                     <div className={`px-4 py-2 flex items-center justify-between border-b ${isActive ? "bg-gray-50" : ""}`}>
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${isActive ? "bg-[#e60012] animate-pulse" : "bg-gray-300"}`} />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{status.label}</span>
+                                            <div className={`w-2.5 h-2.5 rounded-full ${isActive ? "bg-[#e60012] animate-pulse" : "bg-gray-300"}`} />
+                                            <span className="text-xs font-black uppercase tracking-widest text-gray-900">{status.label}</span>
                                         </div>
                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
                                             {new Date(order.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "long" })}
@@ -279,32 +221,43 @@ export default function MisPedidosPage() {
 
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-4">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-black text-xl italic tracking-tighter text-gray-900 uppercase leading-none">
-                                                        #{order.orderNumber}
+                                            <div className="flex-1 min-w-0">
+                                                {order.merchant && (
+                                                    <h3 className="font-black text-lg italic tracking-tighter text-gray-900 uppercase leading-none mb-1 truncate">
+                                                        {order.merchant.name}
                                                     </h3>
-                                                    {order.merchant && (
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">
-                                                            {order.merchant.name}
+                                                )}
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">
+                                                        Pedido #{order.orderNumber}
+                                                    </span>
+                                                    {(order as any).isPickup && (
+                                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider h-fit">
+                                                            Retiro en Local
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-wrap gap-1">
+                                                <div className="flex flex-wrap gap-1.5">
                                                     {order.items.slice(0, 3).map((item) => (
-                                                        <span key={item.id} className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">{item.quantity}x {item.name}</span>
+                                                        <span key={item.id} className="text-sm font-black text-gray-900 bg-yellow-400/20 border border-yellow-400/30 px-3 py-1 rounded-xl">
+                                                            {item.quantity}x {item.name}
+                                                        </span>
                                                     ))}
-                                                    {order.items.length > 3 && <span className="text-[10px] font-bold text-gray-400 px-2 py-0.5">+{order.items.length - 3}</span>}
+                                                    {order.items.length > 3 && (
+                                                        <span className="text-xs font-bold text-gray-400 px-2 py-1">
+                                                            +{order.items.length - 3} más
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-right ml-4">
                                                 <p className="text-xl font-black text-[#e60012] leading-none mb-1">{formatPrice(order.total)}</p>
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase">{order.items.length} {order.items.length === 1 ? "Producto" : "Productos"}</p>
                                             </div>
                                         </div>
 
-                                        {/* Status progress for non-tracked active orders */}
-                                        {isActive && !isBeingTracked && (
+                                        {/* Status progress for active orders */}
+                                        {isActive && (
                                             <div className="mt-4 pt-4 border-t border-gray-50">
                                                 <div className="flex items-center gap-1.5 h-1.5">
                                                     {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step, idx) => {
@@ -321,7 +274,7 @@ export default function MisPedidosPage() {
                                         <div className="mt-4 flex gap-2">
                                             <Link
                                                 href={isActive ? `/seguimiento/${order.id}` : `/mis-pedidos/${order.id}`}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isActive
+                                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isActive
                                                     ? "bg-gray-900 text-white shadow-md active:scale-95"
                                                     : "bg-gray-50 text-gray-500 hover:bg-gray-100"
                                                     }`}

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
+import { formatDate, formatTime } from "@/lib/timezone";
 import {
     ChevronLeft,
     Package,
@@ -195,7 +196,7 @@ export default function AdminOrderDetailPage() {
                             Pedido #{order.orderNumber}
                         </h1>
                         <p className="text-gray-500">
-                            {createdAt.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })} - {createdAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}
+                            {formatDate(createdAt)} - {formatTime(createdAt)}
                         </p>
                     </div>
                 </div>

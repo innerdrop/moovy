@@ -509,7 +509,7 @@ CREATE TABLE public."StoreSettings" (
     email text,
     schedule text,
     "updatedAt" timestamp(3) without time zone NOT NULL,
-    "promoPopupButtonText" text DEFAULT 'Ver mÃ¡s'::text,
+    "promoPopupButtonText" text DEFAULT 'Ver m??s'::text,
     "promoPopupDismissable" boolean DEFAULT true NOT NULL,
     "promoPopupEnabled" boolean DEFAULT false NOT NULL,
     "promoPopupImage" text,
@@ -678,7 +678,7 @@ cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t
 COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradient, image, "isActive", "order", "createdAt", "updatedAt") FROM stdin;
 cmldvcnti0000do9zm126edud	Orgullo Fueguino	Tienda online desde el fin del mundo	Conocenos	/nosotros	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770562753927-3c2v3.jpg	t	1	2026-02-08 14:59:18.293	2026-02-08 14:59:18.293
 cmldvmkbo0000c61suezudlsa	Variedad Total	Todo lo que busc??s en un solo lugar!	Ver productos	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563218118-gcx6pl.png	t	2	2026-02-08 15:07:00.324	2026-02-08 15:07:00.324
-cmldvnqa80001c61s2jjg4049	Delivery R????pido	Llevamos tu antojo donde est????s	Ver mÃ¡s??s	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-08 15:07:54.704
+cmldvnqa80001c61s2jjg4049	Delivery R????pido	Llevamos tu antojo donde est????s	Ver m??s??s	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-08 15:07:54.704
 \.
 
 
@@ -848,7 +848,7 @@ cml0zowjo0039ygioqg9zzfwy	INMORTAL	inmortal-23xop	2 Fernet 750ml + 4 Coca-Colca 
 cml0zow4q0002ygio1z3yvt0a	COMBO CAMPARI	combo-campari-u5htv	INCLUYE: 1 Campari 1lt. + 2 Jugos Citric 1L + 1 Hielo 2Kg	\N	23900	0	0	5	t	f	2026-01-30 14:39:47.113	2026-02-02 04:46:05.46
 cml0zowle003eygio2lvjmvh5	Cepita Naranja 1.5L	cepita-naranja-1-5l-r21co	Tamao: 1.5L - Sabor: Naranja	\N	0	0	0	5	t	f	2026-01-30 14:39:47.715	2026-02-05 15:19:54.638
 cml0zox4n008eygioznyef44n	Grolsch 473	grolsch-473-3p50o	Tamao: 473ml	\N	2600	0	0	5	t	f	2026-01-30 14:39:48.407	2026-02-05 15:23:43.406
-cmkvbvo6w001or0gkh6my0iu3	Roll Salmn	comercio-3-roll-salmÃ¡s??sn	\N	cmkvbvo6k001gr0gknt85jfb9	5500	3300	100	5	t	f	2026-01-26 15:34:21.752	2026-02-04 16:09:55.035
+cmkvbvo6w001or0gkh6my0iu3	Roll Salmn	comercio-3-roll-salm??s??sn	\N	cmkvbvo6k001gr0gknt85jfb9	5500	3300	100	5	t	f	2026-01-26 15:34:21.752	2026-02-04 16:09:55.035
 cml4byqzb000o7c7e8hie5vrz	Santa Julia Tardo 	santa-julia-tard-o-ymuzp-cmkvb	Vino dulce natural de cosecha tarda. Presenta aromas intensos a miel, flores blancas y frutas tropicales maduras. En boca es untuoso, con buena acidez que equilibra su dulzura, ideal para acompaar postres, quesos azules o disfrutar solo como vino de sobremesa. / 500ml	cmkvbvo5b000ur0gk0eib5xpt	7000	0	100	5	t	f	2026-02-01 22:46:40.919	2026-02-04 16:09:55.053
 cml4byrgf00117c7e9qixucyd	PRIME x3 - Super Fino	prime-x3-super-fino-elo3i-cmkvb	Sensacin natural, casi como no sentir nada.	cmkvbvo3z0008r0gkc7qfxplz	2700	0	100	5	t	f	2026-02-01 22:46:41.535	2026-02-04 16:09:55.057
 cml4byrgm00147c7e88j2quw8	PRIME x3 - Ultra Fino	prime-x3-ultra-fino-1qxtg-cmkvb	Diseado para mxima sensibilidad sin perder proteccin.	cmkvbvo3z0008r0gkc7qfxplz	2700	0	100	5	t	f	2026-02-01 22:46:41.543	2026-02-04 16:09:55.066
@@ -1129,7 +1129,7 @@ cmkvbvo5j000yr0gkdnm4pds1	cmkvbvo5f000wr0gkwdsxy501	https://images.unsplash.com/
 cmkvbvo5x0014r0gkezdjzc28	cmkvbvo5s0012r0gknilcgfre	https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400	Pizza Pepperoni	0
 cmkvbvo68001ar0gkrvepubof	cmkvbvo650018r0gkp96zwmxm	https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400	Pizza 4 Quesos	0
 cmkvbvo6q001kr0gk3t9shxed	cmkvbvo6n001ir0gkd49h1c39	https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400	Roll California	0
-cmkvbvo70001qr0gkoy36b1tu	cmkvbvo6w001or0gkh6my0iu3	https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400	Roll SalmÃ¡s??sn	0
+cmkvbvo70001qr0gkoy36b1tu	cmkvbvo6w001or0gkh6my0iu3	https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400	Roll Salm??s??sn	0
 cmkvbvo7a001wr0gkgtk8ta04	cmkvbvo76001ur0gk6sv6o03m	https://images.unsplash.com/photo-1553621042-f6e147245754?w=400	Combo 30 piezas	0
 cml4bpilf000i7c7e3ok5m1v2	cml4bpile000h7c7e66as2x35	/uploads/products/1769985460341-IMG_5353.jpg	Apple iPhone 17 Pro Max (256 GB) - Naranja c??smico	0
 cml9lcue0000dpwgoshscyu0f	cml0zoxcy00blygio420b0myj	/uploads/products/1770304101427-798464-800-600.webp	\N	0

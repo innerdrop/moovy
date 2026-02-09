@@ -34,6 +34,7 @@ export async function POST(request: Request) {
             paymentMethod,
             deliveryFee,
             distanceKm,
+            isPickup,
             deliveryNotes,
             customerNotes,
             pointsUsed,
@@ -136,10 +137,11 @@ export async function POST(request: Request) {
                     paymentStatus: "PENDING",
                     paymentMethod: paymentMethod || "cash",
                     subtotal,
-                    deliveryFee: deliveryFee || 0,
+                    deliveryFee: isPickup ? 0 : (deliveryFee || 0),
                     discount: validDiscount,
-                    total: finalTotal,
-                    distanceKm: distanceKm || null,
+                    total: isPickup ? Math.max(0, subtotal - validDiscount) : finalTotal,
+                    isPickup: isPickup || false,
+                    distanceKm: isPickup ? null : (distanceKm || null),
                     deliveryNotes: deliveryNotes || null,
                     customerNotes: customerNotes || null,
                     moovyCommission,
@@ -190,6 +192,52 @@ export async function POST(request: Request) {
         } catch (pointsError) {
             console.error("Error processing points for order:", order.id, pointsError);
             // Don't fail the order if points fail, but log it
+        }
+
+        // --- REAL-TIME: Notify merchant and admin about new order ---
+        if (merchantId) {
+            try {
+                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+
+                // Notify merchant
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event: "new_order",
+                        room: `merchant:${merchantId}`,
+                        data: {
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            status: order.status,
+                            userId: session.user.id,
+                        }
+                    })
+                });
+
+                // Notify admin
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        event: "new_order",
+                        room: "admin:orders",
+                        data: {
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            status: order.status,
+                            merchantId,
+                            userId: session.user.id,
+                        }
+                    })
+                });
+
+                console.log(`[Socket-Emit] New order ${order.orderNumber} notified to merchant and admin`);
+            } catch (e) {
+                console.error("[Socket-Emit] Failed to notify new order:", e);
+            }
         }
 
         return NextResponse.json({

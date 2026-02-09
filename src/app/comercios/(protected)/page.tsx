@@ -2,6 +2,7 @@
 import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle, LayoutDashboard, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { formatTime } from "@/lib/timezone";
 import { prisma } from "@/lib/prisma";
 
 export default async function ComerciosDashboardPage() {
@@ -183,7 +184,7 @@ export default async function ComerciosDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm text-gray-900">{order.user?.name || "Cliente"}</p>
-                                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })}hs</p>
+                                            <p className="text-xs text-gray-500">{formatTime(order.createdAt)}hs</p>
                                         </div>
                                     </div>
                                     <div className="text-right">

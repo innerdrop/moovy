@@ -103,7 +103,8 @@ export default function RiderDashboard() {
     const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed } = usePushNotifications();
 
     // Track bottom sheet state to adjust map size
-    const [sheetState, setSheetState] = useState<"expanded" | "minimized" | "hidden">("expanded");
+    const [sheetState, setSheetState] = useState<"fullscreen" | "expanded" | "minimized" | "hidden">("expanded");
+    const [recenterToggle, setRecenterToggle] = useState(false);
 
     // Fetch dashboard data
     const fetchDashboard = useCallback(async (silent = false) => {
@@ -268,9 +269,10 @@ export default function RiderDashboard() {
     const pedidoActivo = pedidosActivos[0];
 
     // Calculate map height based on sheet state
-    const mapHeight = sheetState === "expanded" ? "55vh"
-        : sheetState === "minimized" ? "calc(100vh - 100px)"
-            : "100vh";
+    const mapHeight = sheetState === "fullscreen" ? "0vh"
+        : sheetState === "expanded" ? "55vh"
+            : sheetState === "minimized" ? "calc(100vh - 100px)"
+                : "100vh"; // hidden state = full map
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden font-sans">
@@ -283,8 +285,8 @@ export default function RiderDashboard() {
                     driverLat={location?.latitude}
                     driverLng={location?.longitude}
                     driverHeading={heading || 0}
-                    merchantLat={["picked_up", "on_the_way", "in_delivery"].includes(pedidoActivo?.estado.toLowerCase()) ? undefined : pedidoActivo?.merchantLat}
-                    merchantLng={["picked_up", "on_the_way", "in_delivery"].includes(pedidoActivo?.estado.toLowerCase()) ? undefined : pedidoActivo?.merchantLng}
+                    merchantLat={["picked_up", "on_the_way", "in_delivery"].includes(pedidoActivo?.estado?.toLowerCase() || "") ? undefined : pedidoActivo?.merchantLat}
+                    merchantLng={["picked_up", "on_the_way", "in_delivery"].includes(pedidoActivo?.estado?.toLowerCase() || "") ? undefined : pedidoActivo?.merchantLng}
                     merchantName={pedidoActivo?.comercio}
                     customerLat={pedidoActivo?.customerLat}
                     customerLng={pedidoActivo?.customerLng}
@@ -293,6 +295,10 @@ export default function RiderDashboard() {
                     height="100%"
                     navigationMode={!!pedidoActivo}
                     orderStatus={pedidoActivo?.estado?.toUpperCase()}
+                    recenterTrigger={recenterToggle}
+                    onRecenterRequested={() => {
+                        setRecenterToggle(false);
+                    }}
                 />
 
                 {/* Floating Map UI */}
@@ -311,15 +317,24 @@ export default function RiderDashboard() {
                         </div>
 
                         {pedidoActivo && (
-                            <a
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${pedidoActivo.navLat},${pedidoActivo.navLng}&travelmode=driving`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#4285F4] hover:bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-xl pointer-events-auto flex items-center gap-3 active:scale-95 transition-all font-bold uppercase tracking-wider text-xs border-2 border-white"
-                            >
-                                <Navigation className="w-5 h-5" />
-                                IR A MAPS
-                            </a>
+                            <div className="flex flex-col gap-2 pointer-events-auto">
+                                <a
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${pedidoActivo.navLat},${pedidoActivo.navLng}&travelmode=driving`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-[#4285F4] hover:bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 active:scale-95 transition-all font-bold uppercase tracking-wider text-xs border-2 border-white"
+                                >
+                                    <Navigation className="w-5 h-5" />
+                                    IR A MAPS
+                                </a>
+                                <button
+                                    onClick={() => setRecenterToggle(true)}
+                                    className="bg-white hover:bg-gray-50 text-gray-900 px-5 py-2.5 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all font-bold uppercase tracking-wider text-[10px] border-2 border-white"
+                                >
+                                    <MapPin className="w-4 h-4 text-green-600" />
+                                    Centrar
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>

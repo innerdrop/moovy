@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
             include: {
                 items: {
                     include: {
-                        product: true
+                        product: {
+                            include: {
+                                images: true
+                            }
+                        }
                     }
                 },
                 merchant: true
@@ -38,6 +42,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
+        // --- NEW: Check if all products are still available ---
+        const unavailableItems = originalOrder.items.filter(item => !item.product || !item.product.isActive);
+
+        if (unavailableItems.length > 0) {
+            const itemNames = unavailableItems.map(item => item.name).join(", ");
+            return NextResponse.json({
+                error: `No se puede repetir el pedido porque los siguientes productos ya no están disponibles: ${itemNames}`,
+                unavailableItems: unavailableItems.map(i => i.name)
+            }, { status: 400 });
+        }
+        // -----------------------------------------------------
+
         // Prepare items for the cart based on the store's CartItem interface
         const newCartItems = originalOrder.items.map(item => ({
             id: `${item.productId}-default-${Date.now()}`,
@@ -46,7 +62,8 @@ export async function POST(request: NextRequest) {
             price: item.price,
             quantity: item.quantity,
             variantName: item.variantName || undefined,
-            merchantId: originalOrder.merchantId || undefined
+            merchantId: originalOrder.merchantId || undefined,
+            image: item.product?.images?.[0]?.url || undefined
         }));
 
         // Upsert the saved cart
@@ -66,6 +83,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: "Productos agregados al carrito",
+            items: newCartItems,
             merchantId: originalOrder.merchantId,
             merchantName: originalOrder.merchant?.name
         });

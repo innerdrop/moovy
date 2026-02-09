@@ -12,7 +12,7 @@ const httpServer = createServer();
 
 const io = new Server(httpServer, {
     cors: {
-        origin: [NEXT_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+        origin: true, // Allow all origins for local network testing
         methods: ["GET", "POST"],
         credentials: true,
     },
@@ -121,6 +121,31 @@ logistica.on("connection", (socket) => {
         if (socket.data.driverId) {
             driverSockets.delete(socket.data.driverId);
         }
+    });
+
+    // --- NEW ROOM JOIN EVENTS FOR REAL-TIME ORDER UPDATES ---
+
+    // Merchant joins their orders room
+    socket.on("join_merchant_room", (merchantId: string) => {
+        console.log(`[Socket] Merchant ${merchantId} joined their room`);
+        socket.join(`merchant:${merchantId}`);
+        socket.data.merchantId = merchantId;
+        socket.data.role = "merchant";
+    });
+
+    // Customer joins their orders room
+    socket.on("join_customer_room", (userId: string) => {
+        console.log(`[Socket] Customer ${userId} joined their room`);
+        socket.join(`customer:${userId}`);
+        socket.data.userId = userId;
+        socket.data.role = "customer";
+    });
+
+    // Admin joins orders tracking room
+    socket.on("join_admin_orders", () => {
+        console.log(`[Socket] Admin joined orders room`);
+        socket.join("admin:orders");
+        socket.data.role = "admin";
     });
 });
 
