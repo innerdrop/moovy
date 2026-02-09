@@ -16,6 +16,7 @@ export const ORDER_STATUSES = {
     IN_DELIVERY: 'IN_DELIVERY',
     ON_THE_WAY: 'ON_THE_WAY',  // Alias for IN_DELIVERY
     DELIVERED: 'DELIVERED',
+    COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED',
 } as const;
 
@@ -32,6 +33,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
     IN_DELIVERY: 'En camino',
     ON_THE_WAY: 'En camino',
     DELIVERED: 'Entregado',
+    COMPLETED: 'Finalizado',
     CANCELLED: 'Cancelado',
 };
 
@@ -46,6 +48,7 @@ export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = 
     IN_DELIVERY: { bg: 'bg-orange-100', text: 'text-orange-700' },
     ON_THE_WAY: { bg: 'bg-orange-100', text: 'text-orange-700' },
     DELIVERED: { bg: 'bg-green-100', text: 'text-green-700' },
+    COMPLETED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
     CANCELLED: { bg: 'bg-red-100', text: 'text-red-700' },
 };
 
@@ -56,7 +59,7 @@ export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = 
  */
 export function getRouteDestination(status: string): 'MERCHANT' | 'CUSTOMER' | null {
     const toMerchant = ['DRIVER_ASSIGNED', 'READY', 'CONFIRMED', 'PREPARING'];
-    const toCustomer = ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'];
+    const toCustomer = ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY', 'DELIVERED'];
 
     if (toMerchant.includes(status)) return 'MERCHANT';
     if (toCustomer.includes(status)) return 'CUSTOMER';
@@ -73,6 +76,7 @@ export function isCustomerNotifiableStatus(status: string): boolean {
         'DRIVER_ASSIGNED',  // "Rider en camino al comercio"
         'PICKED_UP',        // "Rider en camino hacia ti"
         'IN_DELIVERY',      // Alias for pickup confirmation
+        'DELIVERED',        // "Tu pedido fue entregado"
     ];
     return notifiable.includes(status);
 }
@@ -85,6 +89,7 @@ export const CUSTOMER_NOTIFICATION_MESSAGES: Record<string, string> = {
     DRIVER_ASSIGNED: '🏍️ Un repartidor va en camino al comercio',
     PICKED_UP: '📦 Tu pedido fue retirado, viene en camino',
     IN_DELIVERY: '🚀 Tu pedido viene en camino hacia ti',
+    DELIVERED: '✅ Tu pedido fue entregado, ¡disfrútalo!',
 };
 
 /**
@@ -93,7 +98,7 @@ export const CUSTOMER_NOTIFICATION_MESSAGES: Record<string, string> = {
 export function isActiveOrder(status: string): boolean {
     const activeStatuses = [
         'PENDING', 'CONFIRMED', 'PREPARING', 'READY',
-        'DRIVER_ASSIGNED', 'PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'
+        'DRIVER_ASSIGNED', 'PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY', 'DELIVERED'
     ];
     return activeStatuses.includes(status);
 }
@@ -102,7 +107,7 @@ export function isActiveOrder(status: string): boolean {
  * Check if the order is completed (delivered or cancelled)
  */
 export function isCompletedOrder(status: string): boolean {
-    return status === 'DELIVERED' || status === 'CANCELLED';
+    return status === 'DELIVERED' || status === 'COMPLETED' || status === 'CANCELLED';
 }
 
 /**

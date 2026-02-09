@@ -54,13 +54,14 @@ export async function POST(
             return NextResponse.json({ error: "Este pedido no tiene repartidor asignado" }, { status: 400 });
         }
 
-        // Update order with rating
+        // Update order with rating and mark as COMPLETED
         await prisma.order.update({
             where: { id: orderId },
             data: {
                 driverRating: rating,
                 ratingComment: comment || null,
-                ratedAt: new Date()
+                ratedAt: new Date(),
+                status: "COMPLETED"
             }
         });
 

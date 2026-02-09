@@ -120,7 +120,7 @@ export default function TrackingPage() {
                 const data = await res.json();
                 setOrder(data);
 
-                if (data.status === "DELIVERED") {
+                if (["DELIVERED", "COMPLETED"].includes(data.status)) {
                     setDelivered(true);
                 }
 
@@ -307,8 +307,9 @@ export default function TrackingPage() {
         socket.on("order_status_changed", (data: { orderId: string, status: string }) => {
             console.log("[Tracking] Status changed via socket:", data.status);
             if (data.orderId === orderId) {
-                setOrder(prev => prev ? { ...prev, status: data.status } : prev);
-                if (data.status === "DELIVERED") {
+                const newStatus = data.status.toUpperCase();
+                setOrder(prev => prev ? { ...prev, status: newStatus } : prev);
+                if (["DELIVERED", "COMPLETED"].includes(newStatus)) {
                     setDelivered(true);
                 }
             }
@@ -326,6 +327,36 @@ export default function TrackingPage() {
             socket.disconnect();
         };
     }, [orderId, order?.id, order?.status]);
+
+    // --- FALLBACK POLLING ---
+    // If socket fails or as a safety measure, poll the order status every 5s
+    useEffect(() => {
+        if (!orderId || delivered) return;
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/orders/${orderId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const status = data.status?.toUpperCase();
+
+                    // If terminal status reached, finalize
+                    if (["DELIVERED", "COMPLETED", "CANCELLED"].includes(status)) {
+                        console.log("[Tracking] Final status detected via polling:", status);
+                        setOrder(data);
+                        setDelivered(true);
+                        clearInterval(pollInterval);
+                    } else if (data.status !== order?.status) {
+                        setOrder(data);
+                    }
+                }
+            } catch (e) {
+                console.error("[Tracking] Polling failed:", e);
+            }
+        }, 5000); // 5 seconds
+
+        return () => clearInterval(pollInterval);
+    }, [orderId, delivered, order?.status]);
 
     // Fit map bounds to show all relevant points
     useEffect(() => {
@@ -401,17 +432,25 @@ export default function TrackingPage() {
     };
 
     const getStatusStep = () => {
-        switch (order?.status) {
+        const status = order?.status?.toUpperCase() || "PENDING";
+        switch (status) {
             case "PENDING":
             case "CONFIRMED":
             case "PREPARING":
-            case "READY": return 0;
-            case "DRIVER_ASSIGNED": return 1;
+                return 0;
+            case "READY":
+            case "DRIVER_ASSIGNED":
+            case "DRIVER_ARRIVED":
+                return 1;
             case "PICKED_UP":
             case "IN_DELIVERY":
-            case "ON_THE_WAY": return 2;
-            case "DELIVERED": return 3;
-            default: return 0;
+            case "ON_THE_WAY":
+                return 2;
+            case "DELIVERED":
+            case "COMPLETED":
+                return 3;
+            default:
+                return 0;
         }
     };
 
@@ -500,10 +539,17 @@ export default function TrackingPage() {
                 </div>
             )}
 
-            {/* Check if order is picked up (rider has the package) */}
+            {/* Check if order is picked up or terminal */}
             {(() => {
                 const status = order?.status?.toUpperCase() || "PENDING";
                 const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status);
+                const isTerminal = ["DELIVERED", "COMPLETED", "CANCELLED"].includes(status);
+
+                // If delivered/completed, we unmount EVERYTHING related to the map/prep flow
+                // The rating overlay (rendered above) will be the primary UI
+                if (isTerminal || delivered) {
+                    return null;
+                }
 
                 if (!isPickedUp) {
                     // PREPARATION UI - Before pickup
@@ -769,7 +815,7 @@ export default function TrackingPage() {
                             {order?.status?.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
                             {order?.status?.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
                             {["IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
-                            {order?.status?.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
+                            {["DELIVERED", "COMPLETED"].includes(order?.status?.toUpperCase() || "") && "¡DISFRUTA TU PEDIDO!"}
                             {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order?.status?.toUpperCase() || "") && "PREPARANDO TU PEDIDO"}
                         </h1>
                     </div>
@@ -782,12 +828,7 @@ export default function TrackingPage() {
                             { icon: <Rocket className="w-4 h-4" />, label: "En Viaje" },
                             { icon: <CheckCircle className="w-4 h-4" />, label: "Recibido" }
                         ].map((step, idx) => {
-                            const status = order?.status?.toUpperCase() || "PENDING";
-                            const activeIdx = idx <= (
-                                status === "DELIVERED" ? 3 :
-                                    ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status) ? 2 :
-                                        ["CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(status) ? 1 : 0
-                            );
+                            const activeIdx = idx <= statusStep;
                             return (
                                 <div key={idx} className="flex flex-col items-center gap-2 flex-1 relative">
                                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${activeIdx ? "bg-gray-900 text-white scale-110 shadow-lg" : "bg-gray-50 text-gray-300"}`}>

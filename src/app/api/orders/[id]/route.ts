@@ -127,12 +127,14 @@ export async function PATCH(
         // Handle delivered status
         if (data.status === "DELIVERED" || data.deliveryStatus === "DELIVERED") {
             updateData.deliveredAt = new Date();
+            // Automatically mark deliveryStatus as DELIVERED if status is DELIVERED
+            updateData.deliveryStatus = "DELIVERED";
         }
 
         // Get current order to check status change AND get merchantId/userId for socket rooms
         const existingOrder = await prisma.order.findUnique({
             where: { id },
-            select: { status: true, merchantId: true, userId: true },
+            select: { status: true, merchantId: true, userId: true, driverId: true, orderNumber: true },
         });
 
         const order = await prisma.order.update({
@@ -158,7 +160,7 @@ export async function PATCH(
                     existingOrder?.merchantId ? `merchant:${existingOrder.merchantId}` : null,
                     existingOrder?.userId ? `customer:${existingOrder.userId}` : null,
                     "admin:orders"
-                ].filter(Boolean);
+                ].filter(Boolean) as string[];
 
                 // Emit to each room
                 for (const room of rooms) {
@@ -185,6 +187,19 @@ export async function PATCH(
                     });
                 }
                 console.log(`[Socket-Emit] Status ${data.status} broadcasted to ${rooms.length} rooms`);
+
+                // Special event for the tracking page UI to show rating
+                if (data.status === "DELIVERED") {
+                    await fetch(`${socketUrl}/emit`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            event: "pedido_entregado",
+                            room: `order:${id}`,
+                            data: { orderId: id }
+                        })
+                    });
+                }
             } catch (e) {
                 console.error("[Socket-Emit] Failed to broadcast status change:", e);
             }
@@ -208,30 +223,22 @@ export async function PATCH(
             }
         }
 
-        if (data.status === "DELIVERED") {
+        // --- RESOURCE MANAGEMENT: Free driver and update stats ---
+        if (data.status === "DELIVERED" && existingOrder?.status !== "DELIVERED") {
             try {
-                // Notify socket server to show rating popup to customer
-                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
-                await fetch(`${socketUrl}/emit`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        event: "pedido_entregado",
-                        room: `order:${id}`,
-                        data: { orderId: id }
-                    })
-                });
-
-                // FREE THE DRIVER
-                if (order.driverId) {
+                const driverId = existingOrder?.driverId || order.driverId;
+                if (driverId) {
                     await prisma.driver.update({
-                        where: { id: order.driverId },
-                        data: { availabilityStatus: "DISPONIBLE" }
+                        where: { id: driverId },
+                        data: {
+                            availabilityStatus: "DISPONIBLE",
+                            totalDeliveries: { increment: 1 }
+                        }
                     });
-                    console.log(`[Order] Driver ${order.driverId} freed after delivery of ${order.orderNumber}`);
+                    console.log(`[Order] Driver ${driverId} freed and stats updated after delivery of ${order.orderNumber}`);
                 }
             } catch (e) {
-                console.error("[Socket-Emit] Failed to notify delivery or free driver:", e);
+                console.error("[Logistics] Failed to free driver or update stats:", e);
             }
         }
 

@@ -82,60 +82,50 @@ function RiderMiniMapComponent({
         region: 'AR'
     });
 
-    // Calculate route path
+    // Unified Route Management & Cleanup
     useEffect(() => {
         if (!isLoaded || !driverLat || !driverLng) return;
 
-        // Cancel any existing animation
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
-
-        // Stage-based destination logic: 
-        // If not picked up yet, destination is Merchant. 
-        // Once picked up, destination is Customer.
         const normalizedStatus = orderStatus?.toUpperCase() || "";
-        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(normalizedStatus);
-
+        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY", "DELIVERED"].includes(normalizedStatus);
         const destination = isPickedUp
             ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
             : (merchantLat && merchantLng ? { lat: merchantLat, lng: merchantLng } : null);
 
-        if (!destination) {
+        // --- HARD CLEANUP FUNCTION ---
+        const hardResetMap = () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
             setRoutePath([]);
             setRemainingPath([]);
             setAnimatedPath([]);
             setIsAnimating(false);
+            prevOrderStatusRef.current = undefined;
+        };
+
+        // If no active navigation or no destination, kill everything
+        if (!navigationMode || !orderStatus || !destination) {
+            hardResetMap();
             return;
         }
 
+        // --- ROUTE CALCULATION ---
         const directionsService = new google.maps.DirectionsService();
         const origin = { lat: driverLat, lng: driverLng };
 
-        // We use staged navigation, so no waypoints needed. 
-        // This prevents the route from going "through" the merchant to the customer prematurely.
-        const waypoints: google.maps.DirectionsWaypoint[] = [];
-
-        if (navigationMode) {
-            console.log("[RiderMap] Updating route...", {
-                driver: { lat: driverLat, lng: driverLng },
-                dest: destination,
-                stage: isPickedUp ? "CUSTOMER" : "MERCHANT",
-                status: orderStatus
-            });
-        }
+        // Logic to detect if we switched targets (e.g. from merchant to customer)
+        const isTargetSwitch = prevOrderStatusRef.current !== orderStatus && !!prevOrderStatusRef.current;
 
         directionsService.route(
             {
                 origin,
                 destination,
-                waypoints,
                 travelMode: google.maps.TravelMode.DRIVING,
             },
             (result, status) => {
                 if (status === google.maps.DirectionsStatus.OK && result) {
-                    // Extract path from all route legs
                     const path: google.maps.LatLngLiteral[] = [];
                     result.routes[0].legs.forEach(leg => {
                         leg.steps.forEach(step => {
@@ -145,24 +135,40 @@ function RiderMiniMapComponent({
                         });
                     });
 
-                    // Check if this is a route transition (status changed)
-                    const normalizedStatus = orderStatus?.toUpperCase() || "";
-                    const isTransition = prevOrderStatusRef.current !== undefined &&
-                        prevOrderStatusRef.current !== orderStatus &&
-                        (normalizedStatus === "PICKED_UP" || normalizedStatus === "IN_DELIVERY" || normalizedStatus === "ON_THE_WAY");
-
-                    // Immediate update of primary state
+                    // Update primary path states
                     setRoutePath(path);
                     setRemainingPath(path);
-                    setAnimatedPath(path);
-                    setIsAnimating(false);
+
+                    // If switching stages (e.g. just confirmed pickup), trigger animated unroll
+                    if (isTargetSwitch && path.length > 0) {
+                        // CRITICAL: Reset animated path immediately to clear the OLD route 
+                        // before the first frame of the new animation starts
+                        setAnimatedPath([]);
+                        setIsAnimating(true);
+
+                        let currentStep = 0;
+                        const totalSteps = path.length;
+                        const animate = () => {
+                            currentStep += Math.max(1, Math.floor(totalSteps / 40));
+                            if (currentStep >= totalSteps) {
+                                setAnimatedPath(path);
+                                setIsAnimating(false);
+                                animationFrameRef.current = null;
+                            } else {
+                                setAnimatedPath(path.slice(0, currentStep));
+                                animationFrameRef.current = requestAnimationFrame(animate);
+                            }
+                        };
+                        animationFrameRef.current = requestAnimationFrame(animate);
+                    } else if (!isAnimating) {
+                        // Static update if not in a switch transition
+                        setAnimatedPath(path);
+                    }
 
                     prevOrderStatusRef.current = orderStatus;
                 } else {
                     console.error("[RiderMap] Route failed:", status);
-                    // Clear if failed
-                    setRoutePath([]);
-                    setRemainingPath([]);
+                    hardResetMap();
                 }
             }
         );
@@ -172,17 +178,14 @@ function RiderMiniMapComponent({
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, onRouteTransition, navigationMode]);
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode]);
 
-    // Immediately clear route when orderStatus changes OR becomes null (finished)
-    const prevMerchantLatRef = useRef<number | undefined>(merchantLat);
+    // --- INSTANT CLEANUP ON STATUS CHANGE ---
+    // This runs when orderStatus changes, ensuring we don't wait for 
+    // the Directions API to return to clear the old route from the map.
     useEffect(() => {
-        const orderFinished = prevOrderStatusRef.current && !orderStatus;
-        const statusChanged = orderStatus && prevOrderStatusRef.current && orderStatus !== prevOrderStatusRef.current;
-        const merchantCleared = prevMerchantLatRef.current !== undefined && merchantLat === undefined;
-
-        if (orderFinished || statusChanged || merchantCleared) {
-            // Status changed or merchant cleared (picked up) - immediately clear old route
+        if (prevOrderStatusRef.current && prevOrderStatusRef.current !== orderStatus) {
+            console.log("[RiderMap] Status changed, clearing old routes instantly");
             setRoutePath([]);
             setRemainingPath([]);
             setAnimatedPath([]);
@@ -191,34 +194,14 @@ function RiderMiniMapComponent({
                 cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
             }
-
-            // If it was finished, reset the ref so it can detect new orders
-            if (orderFinished) {
-                prevOrderStatusRef.current = undefined;
-            }
         }
+    }, [orderStatus]);
 
-        prevMerchantLatRef.current = merchantLat;
-    }, [orderStatus, merchantLat]);
-
-    // Clear route when delivery is completed (navigationMode becomes false)
+    // Secondary Cleanup: Handle movements and path erasing
     useEffect(() => {
-        if (!navigationMode) {
-            setRoutePath([]);
-            setRemainingPath([]);
-            setAnimatedPath([]);
-            setIsAnimating(false);
-            prevOrderStatusRef.current = undefined;
-        }
-    }, [navigationMode]);
-
-    // Update remaining path as driver moves (erase path behind driver)
-    useEffect(() => {
-        if (!navigationMode || !driverLat || !driverLng || routePath.length === 0) return;
+        if (!navigationMode || !driverLat || !driverLng || routePath.length === 0 || isAnimating) return;
 
         const driverPos = { lat: driverLat, lng: driverLng };
-
-        // Find the closest point on the path to the driver
         let closestIndex = 0;
         let closestDistance = Infinity;
 
@@ -233,9 +216,8 @@ function RiderMiniMapComponent({
             }
         });
 
-        // Only show path from current position forward
         setRemainingPath(routePath.slice(closestIndex));
-    }, [navigationMode, driverLat, driverLng, routePath]);
+    }, [navigationMode, driverLat, driverLng, routePath, isAnimating]);
 
     // Auto-centering is DISABLED to allow free pan/zoom
     // User can manually recenter using the Centrar button
@@ -376,6 +358,7 @@ function RiderMiniMapComponent({
             {/* Re-center button - REMOVED from here, handled in dashboard UI */}
 
             <GoogleMap
+                key={`map-${["picked_up", "on_the_way", "in_delivery"].includes(orderStatus?.toLowerCase() || "") ? 'delivery' : 'pickup'}`}
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
                 options={{
