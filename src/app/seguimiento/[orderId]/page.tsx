@@ -24,6 +24,12 @@ import {
     X
 } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
+    ssr: false,
+    loading: () => <div className="h-[45vh] bg-white rounded-t-[32px] animate-pulse" />
+});
 
 interface OrderData {
     id: string;
@@ -92,6 +98,7 @@ export default function TrackingPage() {
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasRated, setHasRated] = useState(false);
+    const [sheetState, setSheetState] = useState<"fullscreen" | "expanded" | "minimized" | "hidden">("expanded");
 
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
@@ -154,8 +161,8 @@ export default function TrackingPage() {
             let destLng = addr?.longitude;
 
             // FALLBACK: If DB has no coordinates, try geocoding the address string
-            if (!destLat && addr?.street) {
-                console.log("[Tracking] Address has no coordinates, geocoding...", addr.street);
+            if ((!destLat || !destLng) && addr?.street) {
+                console.log("[Tracking] Coordinates missing, attempting geocode for:", addr.street);
                 const geocoder = new google.maps.Geocoder();
                 try {
                     const result = await geocoder.geocode({
@@ -166,8 +173,8 @@ export default function TrackingPage() {
                         destLng = result.results[0].geometry.location.lng();
                         console.log("[Tracking] Geocoding success:", { destLat, destLng });
                     }
-                } catch (e) {
-                    console.error("[Tracking] Geocoding failed:", e);
+                } catch (e: any) {
+                    console.error("[Tracking] Geocoding failed. TIP: If you see 'REQUEST_DENIED', enable 'Geocoding API' in Google Cloud Console for your API Key.", e);
                 }
             }
 
@@ -179,8 +186,8 @@ export default function TrackingPage() {
             const directionsService = new google.maps.DirectionsService();
 
             const destination: google.maps.LatLngLiteral = {
-                lat: typeof destLat === 'string' ? parseFloat(destLat) : destLat,
-                lng: typeof destLng === 'string' ? parseFloat(destLng) : (destLng || 0)
+                lat: typeof destLat === 'string' ? parseFloat(destLat) : Number(destLat),
+                lng: typeof destLng === 'string' ? parseFloat(destLng) : Number(destLng || 0)
             };
 
             let origin: google.maps.LatLngLiteral;
@@ -234,7 +241,7 @@ export default function TrackingPage() {
                             });
                         }
                     } else {
-                        console.error("[Tracking] Directions request failed due to " + status);
+                        console.error(`[Tracking] Directions request failed due to ${status}. TIP: You MUST also enable "Directions API" in Google Cloud Console.`);
                     }
                 }
             );
@@ -254,7 +261,13 @@ export default function TrackingPage() {
             return;
         }
 
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+        const envSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+        const isLocalHostEnv = envSocketUrl.includes("localhost") || envSocketUrl.includes("127.0.0.1");
+
+        const socketUrl = (isLocalHostEnv && typeof window !== 'undefined' && !window.location.hostname.includes("localhost"))
+            ? `${window.location.protocol}//${window.location.hostname}:3001`
+            : envSocketUrl;
+
         console.log("[Tracking] Connecting to socket:", socketUrl);
 
         const socket = io(`${socketUrl}/logistica`, {
@@ -286,7 +299,19 @@ export default function TrackingPage() {
         });
 
         socket.on("pedido_entregado", () => {
+            console.log("[Tracking] Order delivered event received!");
             setDelivered(true);
+            setOrder(prev => prev ? { ...prev, status: "DELIVERED" } : prev);
+        });
+
+        socket.on("order_status_changed", (data: { orderId: string, status: string }) => {
+            console.log("[Tracking] Status changed via socket:", data.status);
+            if (data.orderId === orderId) {
+                setOrder(prev => prev ? { ...prev, status: data.status } : prev);
+                if (data.status === "DELIVERED") {
+                    setDelivered(true);
+                }
+            }
         });
 
         socket.on("order_status_update", (data: { orderId: string; status: string }) => {
@@ -310,7 +335,10 @@ export default function TrackingPage() {
         let hasPoints = false;
 
         const currentDriverPos = driverPosition
-            || (order?.driver?.latitude && order?.driver?.longitude ? { lat: order.driver.latitude, lng: order.driver.longitude } : null);
+            || (order?.driver?.latitude && order?.driver?.longitude ? {
+                lat: Number(order.driver.latitude),
+                lng: Number(order.driver.longitude)
+            } : null);
 
         if (currentDriverPos) {
             bounds.extend(currentDriverPos);
@@ -318,7 +346,10 @@ export default function TrackingPage() {
         }
 
         if (order?.merchant?.latitude) {
-            bounds.extend({ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 });
+            bounds.extend({
+                lat: Number(order.merchant.latitude),
+                lng: Number(order.merchant.longitude || 0)
+            });
             hasPoints = true;
         }
 
@@ -334,7 +365,10 @@ export default function TrackingPage() {
         }
 
         if (order?.address.latitude) {
-            bounds.extend({ lat: order.address.latitude, lng: order.address.longitude || 0 });
+            bounds.extend({
+                lat: Number(order.address.latitude),
+                lng: Number(order.address.longitude || 0)
+            });
             hasPoints = true;
         } else if (directions && directions.routes[0]?.legs[0]?.end_location) {
             // Fallback to directions end_location if DB has no coords
@@ -468,12 +502,21 @@ export default function TrackingPage() {
 
             {/* Check if order is picked up (rider has the package) */}
             {(() => {
-                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase());
+                const status = order?.status?.toUpperCase() || "PENDING";
+                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status);
 
                 if (!isPickedUp) {
                     // PREPARATION UI - Before pickup
+                    const prepHeight = sheetState === "fullscreen" ? "0vh"
+                        : sheetState === "expanded" ? "55vh"
+                            : sheetState === "minimized" ? "calc(100vh - 100px)"
+                                : "100vh";
+
                     return (
-                        <div className="relative h-[55vh] flex-shrink-0 z-10 shadow-lg bg-gradient-to-b from-orange-50 via-white to-orange-50/30 flex flex-col items-center justify-center px-6">
+                        <div
+                            className="relative flex-shrink-0 z-10 shadow-lg bg-gradient-to-b from-orange-50 via-white to-orange-50/30 flex flex-col items-center justify-center px-6 transition-all duration-300 ease-out"
+                            style={{ height: prepHeight }}
+                        >
                             <button
                                 onClick={() => router.back()}
                                 className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
@@ -539,8 +582,16 @@ export default function TrackingPage() {
                 }
 
                 // MAP SECTION - After pickup (rider has the package)
+                const mapHeight = sheetState === "fullscreen" ? "0vh"
+                    : sheetState === "expanded" ? "55vh"
+                        : sheetState === "minimized" ? "calc(100vh - 100px)"
+                            : "100vh";
+
                 return (
-                    <div className="relative h-[55vh] flex-shrink-0 z-10 shadow-lg">
+                    <div
+                        className="relative flex-shrink-0 z-10 shadow-lg transition-all duration-300 ease-out"
+                        style={{ height: mapHeight }}
+                    >
                         <button
                             onClick={() => router.back()}
                             className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
@@ -575,7 +626,7 @@ export default function TrackingPage() {
                                     path={directions.routes[0].overview_path}
                                     options={{
                                         strokeColor: "#4285F4",
-                                        strokeOpacity: 0,
+                                        strokeOpacity: 0.4, // Base line visible
                                         strokeWeight: 6,
                                         icons: [{
                                             icon: {
@@ -608,7 +659,7 @@ export default function TrackingPage() {
                                                 icons[0].offset = (count / 2) + '%';
                                                 polyline.set('icons', icons);
                                             }
-                                        }, 50);
+                                        }, 100); // 50% slower as requested (100ms instead of 50ms)
                                         (polyline as any)._animationInterval = interval;
                                     }}
                                     onUnmount={(polyline) => {
@@ -703,20 +754,23 @@ export default function TrackingPage() {
                 );
             })()}
 
-            {/* BOTTOM PANEL */}
-            <div className="flex-1 bg-white rounded-t-[36px] -mt-10 relative z-20 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col">
-                <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto my-4 flex-shrink-0" />
-
-                <div className="flex-1 overflow-y-auto px-6 pb-10 space-y-6">
+            {/* BOTTOM PANEL - Collapsible */}
+            <BottomSheet
+                initialState="expanded"
+                expandedHeight="50vh"
+                minimizedHeight="100px"
+                onStateChange={setSheetState}
+            >
+                <div className="px-6 pb-10 space-y-6">
                     {/* Status Message */}
-                    <div className="text-center">
+                    <div className="text-center pt-2">
                         <p className="text-[10px] font-black text-[#e60012] uppercase tracking-[4px] mb-2 px-6 py-1 bg-red-50 rounded-full w-fit mx-auto">Estado del Pedido</p>
                         <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase">
-                            {order.status.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
-                            {order.status.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
-                            {["IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && "TU PEDIDO ESTÁ LLEGANDO"}
-                            {order.status.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
-                            {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order.status.toUpperCase()) && "PREPARANDO TU PEDIDO"}
+                            {order?.status?.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
+                            {order?.status?.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
+                            {["IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
+                            {order?.status?.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
+                            {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order?.status?.toUpperCase() || "") && "PREPARANDO TU PEDIDO"}
                         </h1>
                     </div>
 
@@ -728,7 +782,7 @@ export default function TrackingPage() {
                             { icon: <Rocket className="w-4 h-4" />, label: "En Viaje" },
                             { icon: <CheckCircle className="w-4 h-4" />, label: "Recibido" }
                         ].map((step, idx) => {
-                            const status = order.status.toUpperCase();
+                            const status = order?.status?.toUpperCase() || "PENDING";
                             const activeIdx = idx <= (
                                 status === "DELIVERED" ? 3 :
                                     ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status) ? 2 :
@@ -749,7 +803,7 @@ export default function TrackingPage() {
                     </div>
 
                     {/* ETA Card */}
-                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && (
+                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && (
                         <div className="bg-gray-900 rounded-[28px] p-6 text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
                             <div className="flex flex-col gap-1">
@@ -767,7 +821,7 @@ export default function TrackingPage() {
                     )}
 
                     {/* Driver Card */}
-                    <div className="bg-gray-50 rounded-[32px] p-5 flex items-center gap-4 border border-gray-100">
+                    <div className="bg-gray-50 rounded-[32px] p-5 flex items-center gap-4 border border-gray-100 font-sans">
                         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 relative">
                             <User className="w-8 h-8 text-gray-400" />
                             {connected && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />}
@@ -790,7 +844,7 @@ export default function TrackingPage() {
                     </div>
 
                     {/* Addresses */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 font-sans">
                         <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                 <MapPin className="w-5 h-5 text-[#e60012]" />
@@ -823,7 +877,7 @@ export default function TrackingPage() {
                         <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 transition" />
                     </Link>
                 </div>
-            </div>
+            </BottomSheet>
 
             <style jsx global>{`
                 @keyframes zoomIn {
@@ -831,7 +885,7 @@ export default function TrackingPage() {
                     to { transform: scale(1); opacity: 1; }
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
 

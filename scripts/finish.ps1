@@ -9,6 +9,10 @@ param(
 Write-Host ""
 Write-Host "[FINISH] FINALIZANDO CAMBIOS" -ForegroundColor Cyan
 Write-Host "============================" -ForegroundColor Cyan
+
+# Colector de errores
+$errorSummary = @()
+function Add-Error { param($msg) $script:errorSummary += $msg }
 Write-Host ""
 
 # 1. Verificar rama actual
@@ -29,6 +33,7 @@ Write-Host "[GIT] Guardando cambios en $currentBranch..." -ForegroundColor Yello
 git add .
 git commit -m $Message
 git push origin $currentBranch
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir cambios a $currentBranch" }
 
 # 4. Cambiar a develop y actualizar
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
@@ -38,16 +43,28 @@ git pull origin develop
 # 5. Mergear la rama de trabajo
 Write-Host "[GIT] Mergeando $currentBranch a develop..." -ForegroundColor Yellow
 git merge $currentBranch --no-edit
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Conflictos al mergear $currentBranch en develop" }
 
 # 6. Subir develop
 Write-Host "[GIT] Subiendo develop..." -ForegroundColor Yellow
 git push origin develop
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir develop" }
 
-Write-Host ""
-Write-Host "[OK] CAMBIOS FINALIZADOS Y PUBLICADOS" -ForegroundColor Green
-Write-Host "[INFO] La rama $currentBranch fue mergeada a develop" -ForegroundColor Cyan
-Write-Host "[INFO] Tu companero puede ejecutar: .\scripts\sync.ps1" -ForegroundColor Cyan
-Write-Host ""
+if ($errorSummary.Count -gt 0) {
+    Write-Host "`n--------------------------------------" -ForegroundColor Red
+    Write-Host "[REPORTE DE ERRORES]" -ForegroundColor Red
+    foreach ($err in $errorSummary) {
+        Write-Host " - $err" -ForegroundColor Red
+    }
+    Write-Host "--------------------------------------" -ForegroundColor Red
+    Write-Host "`nPor favor, resolvélos antes de continuar." -ForegroundColor Yellow
+} else {
+    Write-Host ""
+    Write-Host "[OK] CAMBIOS FINALIZADOS Y PUBLICADOS" -ForegroundColor Green
+    Write-Host "[INFO] La rama $currentBranch fue mergeada a develop" -ForegroundColor Cyan
+    Write-Host "[INFO] Tu companero puede ejecutar: .\scripts\sync.ps1" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 # 7. Preguntar si eliminar la rama
 $delete = Read-Host "Eliminar la rama $currentBranch? (s/n)"

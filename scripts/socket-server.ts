@@ -12,7 +12,7 @@ const httpServer = createServer();
 
 const io = new Server(httpServer, {
     cors: {
-        origin: [NEXT_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+        origin: true, // Allow all origins for local network testing
         methods: ["GET", "POST"],
         credentials: true,
     },

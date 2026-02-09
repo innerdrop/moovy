@@ -4,12 +4,17 @@
 Write-Host ""
 Write-Host "[START] INICIAR NUEVOS CAMBIOS" -ForegroundColor Cyan
 Write-Host "===============================" -ForegroundColor Cyan
+
+# Colector de errores
+$errorSummary = @()
+function Add-Error { param($msg) $script:errorSummary += $msg }
 Write-Host ""
 
 # 1. Sincronizar develop primero
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
-git checkout develop
+git checkout develop 2>$null
 git pull origin develop
+if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al sincronizar develop" }
 
 # 2. Seleccionar tipo de rama
 Write-Host ""
@@ -49,8 +54,17 @@ Write-Host ""
 Write-Host "[GIT] Creando rama: $branchName" -ForegroundColor Yellow
 git checkout -b $branchName
 
-Write-Host ""
-Write-Host "[OK] RAMA CREADA EXITOSAMENTE" -ForegroundColor Green
-Write-Host "[INFO] Ahora estas en: $branchName" -ForegroundColor Cyan
-Write-Host "[INFO] Cuando termines, ejecuta: .\scripts\finish.ps1" -ForegroundColor Cyan
-Write-Host ""
+if ($errorSummary.Count -gt 0) {
+    Write-Host "`n--------------------------------------" -ForegroundColor Red
+    Write-Host "[REPORTE DE ERRORES]" -ForegroundColor Red
+    foreach ($err in $errorSummary) {
+        Write-Host " - $err" -ForegroundColor Red
+    }
+    Write-Host "--------------------------------------" -ForegroundColor Red
+} else {
+    Write-Host ""
+    Write-Host "[OK] RAMA CREADA EXITOSAMENTE" -ForegroundColor Green
+    Write-Host "[INFO] Ahora estas en: $branchName" -ForegroundColor Cyan
+    Write-Host "[INFO] Cuando termines, ejecuta: .\scripts\finish.ps1" -ForegroundColor Cyan
+    Write-Host ""
+}
