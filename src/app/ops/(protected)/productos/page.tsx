@@ -185,7 +185,7 @@ export default function ProductsPage() {
             ) : products.length > 0 ? (
                 <>
                     {/* Desktop Table */}
-                    <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-slate-50 border-b border-slate-200">
@@ -204,10 +204,10 @@ export default function ProductsPage() {
                                         const image = product.images[0]?.url;
 
                                         return (
-                                            <tr key={product.id} className="hover:bg-slate-50 transition">
+                                            <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm flex-shrink-0">
                                                             {image ? (
                                                                 <Image src={image} alt={product.name} width={48} height={48} className="object-cover" />
                                                             ) : (
@@ -215,8 +215,10 @@ export default function ProductsPage() {
                                                             )}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="font-medium text-slate-900 truncate">{product.name}</p>
-                                                            <p className="text-xs text-slate-500 truncate">{product.categories.map(c => c.category.name).join(", ") || "Sin categoría"}</p>
+                                                            <p className="font-semibold text-navy truncate">{product.name}</p>
+                                                            <p className="text-xs text-slate-500 truncate">
+                                                                {product.categories.map(c => c.category.name).join(", ") || "Sin categoría"}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -227,54 +229,57 @@ export default function ProductsPage() {
                                                             <span className="text-sm text-slate-700">{product.merchant.name}</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-sm text-slate-400">MOOVY</span>
+                                                        <span className="text-sm font-medium text-moovy">MOOVY</span>
                                                     )}
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <span className="font-bold text-red-600">{formatPrice(product.price)}</span>
                                                 </td>
                                                 <td className="p-4 text-center">
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isLowStock ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${isLowStock ? "bg-red-100 text-red-700 border border-red-200" : "bg-green-100 text-green-700 border border-green-200"
                                                         }`}>
                                                         {isLowStock && <AlertTriangle className="w-3 h-3" />}
                                                         {product.stock}
                                                     </span>
                                                 </td>
                                                 <td className="p-4 text-center">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                                                        }`}>
+                                                    <button
+                                                        onClick={() => toggleActive(product.id)}
+                                                        className={`px-3 py-1 rounded-full text-xs font-semibold transition ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+                                                            }`}
+                                                    >
                                                         {product.isActive ? "Activo" : "Inactivo"}
-                                                    </span>
+                                                    </button>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Link
                                                             href={`/ops/productos/${product.id}/editar`}
-                                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                                            className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-moovy"
                                                             title="Editar"
                                                         >
-                                                            <Edit className="w-4 h-4 text-slate-600" />
+                                                            <Edit className="w-4 h-4" />
                                                         </Link>
                                                         <button
                                                             onClick={() => toggleActive(product.id)}
                                                             disabled={actionLoading === product.id}
-                                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                                            className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-green-600"
                                                             title={product.isActive ? "Desactivar" : "Activar"}
                                                         >
                                                             {actionLoading === product.id ? (
                                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                                             ) : product.isActive ? (
-                                                                <EyeOff className="w-4 h-4 text-slate-600" />
+                                                                <EyeOff className="w-4 h-4" />
                                                             ) : (
                                                                 <Eye className="w-4 h-4 text-green-600" />
                                                             )}
                                                         </button>
                                                         <button
                                                             onClick={() => setDeleteModal(product)}
-                                                            className="p-2 hover:bg-red-50 rounded-lg transition"
+                                                            className="p-2 hover:bg-red-50 rounded-lg transition text-slate-500 hover:text-red-500"
                                                             title="Eliminar"
                                                         >
-                                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </td>
@@ -286,71 +291,91 @@ export default function ProductsPage() {
                         </div>
                     </div>
 
-                    {/* Mobile Cards */}
-                    <div className="md:hidden space-y-3">
+                    {/* Mobile Cards: Premium Design (Matching Slides) */}
+                    <div className="md:hidden space-y-4">
                         {products.map((product) => {
                             const isLowStock = product.stock <= product.minStock;
                             const image = product.images[0]?.url;
 
                             return (
-                                <div key={product.id} className="bg-white rounded-xl p-4 shadow-sm">
-                                    <div className="flex gap-3">
-                                        <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div key={product.id} className={`bg-white rounded-2xl p-4 shadow-sm border ${product.isActive ? "border-slate-100" : "border-slate-300 opacity-70"}`}>
+                                    <div className="flex gap-4">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 shadow-sm flex-shrink-0">
                                             {image ? (
-                                                <Image src={image} alt={product.name} width={64} height={64} className="object-cover" />
+                                                <Image src={image} alt={product.name} width={80} height={80} className="object-cover" />
                                             ) : (
-                                                <Package className="w-6 h-6 text-slate-400" />
+                                                <Package className="w-8 h-8 text-slate-300" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-slate-900 truncate">{product.name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{product.merchant?.name || "MOOVY"}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="font-bold text-red-600 text-sm">{formatPrice(product.price)}</span>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isLowStock ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                                                    }`}>
-                                                    {isLowStock && <AlertTriangle className="w-3 h-3" />}
-                                                    {product.stock}
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="font-bold text-navy text-lg line-clamp-1 leading-tight">{product.name}</h3>
+                                                <span className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                                                    {product.isActive ? "Active" : "Off"}
                                                 </span>
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                                                    }`}>
-                                                    {product.isActive ? "Activo" : "Inactivo"}
-                                                </span>
+                                            </div>
+                                            <p className="text-xs font-medium text-slate-400 mt-0.5 flex items-center gap-1">
+                                                <Building2 className="w-3 h-3" />
+                                                {product.merchant?.name || "MOOVY SYSTEM"}
+                                            </p>
+
+                                            <div className="flex items-center gap-3 mt-3">
+                                                <span className="font-extrabold text-moovy text-lg">{formatPrice(product.price)}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${isLowStock ? "bg-red-50 text-red-600 ring-1 ring-red-100" : "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"}`}>
+                                                        <Package className="w-3 h-3" />
+                                                        {product.stock}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t">
-                                        <Link
-                                            href={`/ops/productos/${product.id}/editar`}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
-                                        >
-                                            <Edit className="w-5 h-5 text-slate-600" />
-                                        </Link>
-                                        <button
-                                            onClick={() => toggleActive(product.id)}
-                                            disabled={actionLoading === product.id}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition"
-                                        >
-                                            {actionLoading === product.id ? (
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                            ) : product.isActive ? (
-                                                <EyeOff className="w-5 h-5 text-slate-600" />
-                                            ) : (
-                                                <Eye className="w-5 h-5 text-green-600" />
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteModal(product)}
-                                            className="p-2 hover:bg-red-50 rounded-lg transition"
-                                        >
-                                            <Trash2 className="w-5 h-5 text-red-500" />
-                                        </button>
+
+                                    {/* Action Row - Mobile */}
+                                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50">
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => toggleActive(product.id)}
+                                                disabled={actionLoading === product.id}
+                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${product.isActive ? "bg-slate-50 text-slate-600 hover:bg-slate-100" : "bg-green-50 text-green-700 hover:bg-green-100"}`}
+                                            >
+                                                {actionLoading === product.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-moovy" />
+                                                ) : product.isActive ? (
+                                                    <>
+                                                        <EyeOff className="w-4 h-4" />
+                                                        Disimular
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Eye className="w-4 h-4" />
+                                                        Publicar
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <Link
+                                                href={`/ops/productos/${product.id}/editar`}
+                                                className="p-2.5 bg-slate-50 text-slate-600 hover:text-moovy hover:bg-red-50 rounded-xl transition-all border border-slate-100"
+                                            >
+                                                <Edit className="w-5 h-5" />
+                                            </Link>
+                                            <button
+                                                onClick={() => setDeleteModal(product)}
+                                                className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-red-100"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
                 </>
+
             ) : (
                 <div className="bg-white rounded-xl p-12 text-center shadow-sm">
                     <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />

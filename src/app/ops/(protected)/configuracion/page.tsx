@@ -1,4 +1,4 @@
-// Admin Configuration Page - Configuración de la Tienda
+// Admin Configuration Page - Configuración de la Tienda (Premium Dashboard Design)
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/delivery";
 import {
@@ -37,517 +37,513 @@ export default async function ConfigurationPage() {
     return (
         <ConfigForm initialSettings={settings}>
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-navy flex items-center gap-2">
-                    <Settings className="w-6 h-6" />
-                    Configuración
-                </h1>
-                <p className="text-gray-600">Configurá los parámetros de tu tienda</p>
-            </div>
-
-            {/* Maintenance Mode Card */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-orange-200">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    🚧 Modo Mantenimiento (Landing)
-                </h2>
-
-                <div className="space-y-4">
-                    {/* Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Página en Mantenimiento</h3>
-                            <p className="text-sm text-gray-600">
-                                Cuando está activo, la landing mostrará "Volvemos Pronto"
-                            </p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-3xl font-black text-navy flex items-center gap-3 italic">
+                        <div className="w-12 h-12 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20 not-italic">
+                            <Settings className="w-7 h-7 text-white" />
                         </div>
-                        <Switch
-                            name="isMaintenanceMode"
-                            defaultChecked={settings?.isMaintenanceMode ?? false}
-                            activeColor="bg-orange-500"
-                        />
-                    </div>
-
-                    {/* Tienda Maintenance Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy text-red-700">Mantenimiento Catálogo (/tienda)</h3>
-                            <p className="text-sm text-gray-600">
-                                Cuando está activo, la ruta /tienda mostrará su mensaje de mantenimiento
-                            </p>
-                        </div>
-                        <Switch
-                            name="tiendaMaintenance"
-                            defaultChecked={settings?.tiendaMaintenance ?? false}
-                            activeColor="bg-red-500"
-                        />
-                    </div>
-
-                    {/* Maintenance Message */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Mensaje de mantenimiento
-                        </label>
-                        <textarea
-                            defaultValue={settings?.maintenanceMessage || ""}
-                            className="input resize-none"
-                            rows={2}
-                            placeholder="¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia."
-                            name="maintenanceMessage"
-                        />
-                    </div>
+                        Configuración
+                    </h1>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2 ml-1">Panel de control global del sistema</p>
                 </div>
             </div>
 
-            {/* Promo Popup Card */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-purple-200">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    <span className="text-2xl">🎉</span>
-                    Popup Promocional
-                </h2>
+            {/* Configuration Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column: Maintenance & Visibility */}
+                <div className="space-y-8">
+                    {/* Maintenance Mode Section */}
+                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
-                <div className="space-y-4">
-                    {/* Enable Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Activar Popup</h3>
-                            <p className="text-sm text-gray-600">
-                                Se mostrará al ingresar a la tienda (una vez por sesión)
-                            </p>
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
+                                <span className="text-2xl">🚧</span>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-navy leading-none">Mantenimiento</h2>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Control de acceso global</p>
+                            </div>
                         </div>
-                        <Switch
-                            name="promoPopupEnabled"
-                            defaultChecked={settings?.promoPopupEnabled ?? false}
-                            activeColor="bg-purple-500"
-                        />
+
+                        <div className="space-y-6">
+                            {/* Toggle Landing */}
+                            <div className="flex items-center justify-between p-5 bg-orange-50/50 rounded-2xl border border-orange-100/50">
+                                <div className="max-w-[70%]">
+                                    <h3 className="font-extrabold text-navy text-sm">Modo Landing</h3>
+                                    <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                                        Muestra "Volvemos Pronto" en la página principal.
+                                    </p>
+                                </div>
+                                <Switch
+                                    name="isMaintenanceMode"
+                                    defaultChecked={settings?.isMaintenanceMode ?? false}
+                                    activeColor="bg-orange-500"
+                                />
+                            </div>
+
+                            {/* Toggle Tienda */}
+                            <div className="flex items-center justify-between p-5 bg-red-50/50 rounded-2xl border border-red-100/50">
+                                <div className="max-w-[70%]">
+                                    <h3 className="font-extrabold text-red-700 text-sm">Modo Catálogo</h3>
+                                    <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                                        Bloquea la navegación por productos y compras.
+                                    </p>
+                                </div>
+                                <Switch
+                                    name="tiendaMaintenance"
+                                    defaultChecked={settings?.tiendaMaintenance ?? false}
+                                    activeColor="bg-red-500"
+                                />
+                            </div>
+
+                            {/* Maintenance Message */}
+                            <div className="pt-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
+                                    Mensaje al usuario
+                                </label>
+                                <textarea
+                                    defaultValue={settings?.maintenanceMessage || ""}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-navy focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all resize-none"
+                                    rows={2}
+                                    placeholder="¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia."
+                                    name="maintenanceMessage"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Título
-                            </label>
-                            <input
-                                type="text"
-                                defaultValue={settings?.promoPopupTitle || ""}
-                                className="input"
-                                placeholder="¡Super Oferta!"
-                                name="promoPopupTitle"
-                            />
+                    {/* Visibility Section */}
+                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
+
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                                <span className="text-2xl">🎯</span>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-navy leading-none">Visibilidad</h2>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Landing y Sliders</p>
+                            </div>
                         </div>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Mensaje
-                            </label>
-                            <textarea
-                                defaultValue={settings?.promoPopupMessage || ""}
-                                className="input resize-none"
-                                rows={2}
-                                placeholder="Aprovecha 20% OFF en tu primera compra con el cupón BIENVENIDA"
-                                name="promoPopupMessage"
-                            />
-                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-5 bg-blue-50/30 rounded-2xl border border-blue-50">
+                                <div>
+                                    <h3 className="font-extrabold text-navy text-sm">Registro Repartidores</h3>
+                                    <p className="text-[10px] text-slate-400 font-medium">Mostrar tarjeta en landing</p>
+                                </div>
+                                <Switch
+                                    name="showRepartidoresCard"
+                                    defaultChecked={settings?.showRepartidoresCard ?? true}
+                                    activeColor="bg-blue-500"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                URL Imagen (Opcional)
-                            </label>
-                            <input
-                                type="text"
-                                defaultValue={settings?.promoPopupImage || ""}
-                                className="input"
-                                placeholder="https://..."
-                                name="promoPopupImage"
-                            />
-                        </div>
+                            <div className="flex items-center justify-between p-5 bg-blue-50/30 rounded-2xl border border-blue-50">
+                                <div>
+                                    <h3 className="font-extrabold text-navy text-sm">Registro Comercios</h3>
+                                    <p className="text-[10px] text-slate-400 font-medium">Mostrar tarjeta en landing</p>
+                                </div>
+                                <Switch
+                                    name="showComerciosCard"
+                                    defaultChecked={settings?.showComerciosCard ?? true}
+                                    activeColor="bg-blue-500"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Link de Destino (Opcional)
-                            </label>
-                            <input
-                                type="text"
-                                defaultValue={settings?.promoPopupLink || ""}
-                                className="input"
-                                placeholder="/comercios/ejemplo"
-                                name="promoPopupLink"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Texto del Botón
-                            </label>
-                            <input
-                                type="text"
-                                defaultValue={settings?.promoPopupButtonText || "Ver más"}
-                                className="input"
-                                placeholder="Ir a la oferta"
-                                name="promoPopupButtonText"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-3 mt-4">
-                            <input
-                                type="checkbox"
-                                defaultChecked={settings?.promoPopupDismissable ?? true}
-                                className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                                name="promoPopupDismissable"
-                                id="promoPopupDismissable"
-                            />
-                            <label htmlFor="promoPopupDismissable" className="text-sm text-gray-700 select-none">
-                                Permitir cerrar (Cruz visible)
-                            </label>
+                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                        Categorías/Slider
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="50"
+                                        defaultValue={settings?.maxCategoriesHome ?? 6}
+                                        className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 font-black text-navy focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        name="maxCategoriesHome"
+                                    />
+                                </div>
+                                <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                                    <label className="block text-[9px] font-black text-purple-400 uppercase tracking-widest mb-2">
+                                        Intervalo Slider
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="30"
+                                            step="1"
+                                            defaultValue={Math.round((settings?.heroSliderInterval ?? 5000) / 1000)}
+                                            className="w-full bg-white border border-purple-100 rounded-xl px-3 py-2 font-black text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                            name="heroSliderInterval"
+                                        />
+                                        <span className="text-[10px] font-black text-purple-400">SEG</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Landing Cards Visibility */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-blue-200">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    🎯 Tarjetas del Landing (Comunidad)
-                </h2>
+                {/* Right Column: Promos & Branding */}
+                <div className="space-y-8">
+                    {/* Promo Popup Section */}
+                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
-                <div className="space-y-4">
-                    {/* Repartidores Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Mostrar Tarjeta Repartidores</h3>
-                            <p className="text-sm text-gray-600">
-                                Activa/desactiva la tarjeta de registro de repartidores en la landing
-                            </p>
-                        </div>
-                        <Switch
-                            name="showRepartidoresCard"
-                            defaultChecked={settings?.showRepartidoresCard ?? true}
-                            activeColor="bg-blue-500"
-                        />
-                    </div>
-
-                    {/* Comercios Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Mostrar Tarjeta Comercios</h3>
-                            <p className="text-sm text-gray-600">
-                                Activa/desactiva la tarjeta de registro de comercios en la landing
-                            </p>
-                        </div>
-                        <Switch
-                            name="showComerciosCard"
-                            defaultChecked={settings?.showComerciosCard ?? true}
-                            activeColor="bg-blue-500"
-                        />
-                    </div>
-
-                    {/* Max Categories */}
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                        <label className="block text-sm font-medium text-navy mb-1 uppercase tracking-wider font-bold">
-                            Cantidad de Categorías en Sliders
-                        </label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="50"
-                            defaultValue={settings?.maxCategoriesHome ?? 6}
-                            className="input w-32"
-                            name="maxCategoriesHome"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">
-                            Define cuántas categorías se mostrarán en los sliders de Home y /tienda antes de repetir el ciclo.
-                        </p>
-                    </div>
-
-                    {/* Hero Slider Interval */}
-                    <div className="p-4 bg-purple-50 rounded-lg">
-                        <label className="block text-sm font-medium text-navy mb-1 uppercase tracking-wider font-bold">
-                            ⏱️ Intervalo del Hero Slider (segundos)
-                        </label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="30"
-                            step="1"
-                            defaultValue={Math.round((settings?.heroSliderInterval ?? 5000) / 1000)}
-                            className="input w-32"
-                            name="heroSliderInterval"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">
-                            Define cada cuántos segundos cambia automáticamente el slide del carrusel principal.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Slide Publicitario Card */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-pink-200">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    🎯 Slide Publicitario
-                </h2>
-                <p className="text-sm text-gray-600 mb-4">
-                    Configurá el banner promocional que aparece en /tienda debajo de las categorías.
-                </p>
-
-                <div className="space-y-4">
-                    {/* Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-pink-50 rounded-lg">
-                        <div>
-                            <h3 className="font-semibold text-navy">Mostrar Banner</h3>
-                            <p className="text-sm text-gray-600">
-                                Activa o desactiva el banner promocional
-                            </p>
-                        </div>
-                        <Switch
-                            name="promoBannerEnabled"
-                            defaultChecked={(settings as any)?.promoBannerEnabled ?? true}
-                            activeColor="bg-pink-500"
-                        />
-                    </div>
-
-                    {/* Title */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Título (usa \n para salto de línea)
-                        </label>
-                        <input
-                            type="text"
-                            defaultValue={(settings as any)?.promoBannerTitle ?? "Noches de\nPizza & Pelis"}
-                            className="input"
-                            name="promoBannerTitle"
-                            placeholder="Noches de\nPizza & Pelis"
-                        />
-                    </div>
-
-                    {/* Subtitle */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Subtítulo / Descripción
-                        </label>
-                        <input
-                            type="text"
-                            defaultValue={(settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs."}
-                            className="input"
-                            name="promoBannerSubtitle"
-                            placeholder="2x1 en locales seleccionados..."
-                        />
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                        {/* Button Text */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Texto del Botón
-                            </label>
-                            <input
-                                type="text"
-                                defaultValue={(settings as any)?.promoBannerButtonText ?? "Ver locales"}
-                                className="input"
-                                name="promoBannerButtonText"
-                                placeholder="Ver locales"
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
+                                    <span className="text-2xl">🎉</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-navy leading-none">Popup Promo</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Ventana emergente</p>
+                                </div>
+                            </div>
+                            <Switch
+                                name="promoPopupEnabled"
+                                defaultChecked={settings?.promoPopupEnabled ?? false}
+                                activeColor="bg-purple-500"
                             />
                         </div>
 
-                        {/* Button Link */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Link del Botón
-                            </label>
-                            <input
-                                type="text"
-                                defaultValue={(settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas"}
-                                className="input"
-                                name="promoBannerButtonLink"
-                                placeholder="/productos?categoria=pizzas"
-                            />
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Título</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={settings?.promoPopupTitle || ""}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="¡Super Oferta!"
+                                        name="promoPopupTitle"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Mensaje</label>
+                                    <textarea
+                                        defaultValue={settings?.promoPopupMessage || ""}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none"
+                                        rows={2}
+                                        placeholder="Aprovecha 20% OFF..."
+                                        name="promoPopupMessage"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Botón</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={settings?.promoPopupButtonText || "Ver más"}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        name="promoPopupButtonText"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Link</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={settings?.promoPopupLink || ""}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="/tienda"
+                                        name="promoPopupLink"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-4 bg-purple-50/50 rounded-2xl border border-purple-100/50">
+                                <input
+                                    type="checkbox"
+                                    defaultChecked={settings?.promoPopupDismissable ?? true}
+                                    className="w-5 h-5 text-purple-600 rounded-lg border-purple-200 focus:ring-purple-500"
+                                    name="promoPopupDismissable"
+                                    id="promoPopupDismissable"
+                                />
+                                <label htmlFor="promoPopupDismissable" className="text-xs font-bold text-navy select-none">
+                                    Permitir cerrar (Cruz visible)
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Image Upload */}
-                    <PromoBannerImageUpload
-                        currentImage={(settings as any)?.promoBannerImage}
-                        name="promoBannerImage"
-                    />
-                </div>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-moovy" />
-                    Configuración de Delivery
-                </h2>
+                    {/* Banner Card Section */}
+                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                    {/* Fuel Price */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            💰 Precio de Nafta por Litro
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                            <input
-                                type="number"
-                                defaultValue={settings?.fuelPricePerLiter || 1200}
-                                className="input !pl-10"
-                                name="fuelPricePerLiter"
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center">
+                                    <span className="text-2xl">⚡</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-navy leading-none">Banner /Tienda</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Banner horizontal</p>
+                                </div>
+                            </div>
+                            <Switch
+                                name="promoBannerEnabled"
+                                defaultChecked={(settings as any)?.promoBannerEnabled ?? true}
+                                activeColor="bg-pink-500"
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Actualizá este valor cuando cambie el precio de la nafta
-                        </p>
-                    </div>
 
-                    {/* Fuel Consumption */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            ⛽ Consumo por Km (L/km)
-                        </label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            defaultValue={settings?.fuelConsumptionPerKm || 0.06}
-                            className="input"
-                            name="fuelConsumptionPerKm"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Moto: ~0.06 L/km | Auto: ~0.10 L/km
-                        </p>
-                    </div>
-
-                    {/* Base Fee */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            🏠 Costo Base de Envío
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                            <input
-                                type="number"
-                                defaultValue={settings?.baseDeliveryFee || 500}
-                                className="input !pl-10"
-                                name="baseDeliveryFee"
-                            />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Mínimo que se cobra por viaje
-                        </p>
-                    </div>
-
-                    {/* Maintenance Factor */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            🔧 Factor de Mantenimiento
-                        </label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            defaultValue={settings?.maintenanceFactor || 1.35}
-                            className="input"
-                            name="maintenanceFactor"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            1.35 = 35% extra para cubiertas, service, contingencias y ganancia
-                        </p>
-                    </div>
-
-                    {/* Max Distance */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            📍 Distancia Máxima de Delivery (km)
-                        </label>
-                        <input
-                            type="number"
-                            defaultValue={settings?.maxDeliveryDistance || 15}
-                            className="input"
-                            name="maxDeliveryDistance"
-                        />
-                    </div>
-
-                    {/* Free Delivery Minimum */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            🆓 Envío Gratis desde ($ mínimo)
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                            <input
-                                type="number"
-                                defaultValue={settings?.freeDeliveryMinimum || ""}
-                                className="input !pl-10"
-                                placeholder="Dejá vacío para desactivar"
-                                name="freeDeliveryMinimum"
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Título (con \n)</label>
+                                <input
+                                    type="text"
+                                    defaultValue={(settings as any)?.promoBannerTitle ?? "Noches de\nPizza & Pelis"}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                    name="promoBannerTitle"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Subtítulo</label>
+                                <input
+                                    type="text"
+                                    defaultValue={(settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs."}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                    name="promoBannerSubtitle"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Texto Botón</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={(settings as any)?.promoBannerButtonText ?? "Ver locales"}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                        name="promoBannerButtonText"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Link Botón</label>
+                                    <input
+                                        type="text"
+                                        defaultValue={(settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas"}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                        name="promoBannerButtonLink"
+                                    />
+                                </div>
+                            </div>
+                            <PromoBannerImageUpload
+                                currentImage={(settings as any)?.promoBannerImage}
+                                name="promoBannerImage"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Cost Preview */}
-                <div className="mt-6 p-4 bg-moovy-light rounded-lg">
-                    <h3 className="font-semibold text-navy mb-2">
-                        📊 Ejemplo de Cálculo (5 km)
-                    </h3>
-                    <div className="text-sm space-y-1">
-                        <p>Ida y vuelta: 10 km</p>
-                        <p>Nafta: 10 × 0.06 × ${settings?.fuelPricePerLiter || 1200} = ${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200))}</p>
-                        <p>Base: ${settings?.baseDeliveryFee || 500}</p>
-                        <p>Subtotal: ${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)}</p>
-                        <p className="font-bold text-moovy">
-                            Total (×{settings?.maintenanceFactor || 1.35}): $
-                            {Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35))}
-                        </p>
+                {/* Full Width: Delivery Tools */}
+                <div className="lg:col-span-2">
+                    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-32 bg-navy/[0.02] -mt-16 rounded-[100%] group-hover:h-40 transition-all duration-500" />
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                            <div className="flex items-center gap-5">
+                                <div className="w-14 h-14 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20">
+                                    <Truck className="w-8 h-8 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-navy leading-none italic">Logística de Delivery</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 bg-moovy rounded-full" />
+                                        Cálculo inteligente de tarifas
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Fast Action Cost Preview */}
+                            <div className="bg-slate-50 border border-slate-100 rounded-2xl px-6 py-3 flex items-center gap-4">
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Costo base hoy</p>
+                                    <p className="text-xl font-black text-navy leading-none">
+                                        ${settings?.baseDeliveryFee || 500}
+                                    </p>
+                                </div>
+                                <div className="w-px h-8 bg-slate-200" />
+                                <div className="text-right">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Envío Gratis desde</p>
+                                    <p className="text-xl font-black text-moovy leading-none">
+                                        {settings?.freeDeliveryMinimum ? `$${settings.freeDeliveryMinimum}` : "Desactivado"}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
+                                    <DollarSign className="w-3 h-3" />
+                                    Precio Nafta (L)
+                                </label>
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-black">$</span>
+                                    <input
+                                        type="number"
+                                        defaultValue={settings?.fuelPricePerLiter || 1200}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
+                                        name="fuelPricePerLiter"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
+                                    <Store className="w-3 h-3" />
+                                    Consumo L/KM
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={settings?.fuelConsumptionPerKm || 0.06}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
+                                    name="fuelConsumptionPerKm"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
+                                    <Settings className="w-3 h-3" />
+                                    Factor Mantenimiento
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={settings?.maintenanceFactor || 1.35}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
+                                    name="maintenanceFactor"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
+                                    <MapPin className="w-3 h-3" />
+                                    Distancia Máx (KM)
+                                </label>
+                                <input
+                                    type="number"
+                                    defaultValue={settings?.maxDeliveryDistance || 15}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
+                                    name="maxDeliveryDistance"
+                                />
+                            </div>
+
+                            <div className="space-y-2 lg:col-span-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
+                                    <DollarSign className="w-3 h-3" />
+                                    Configurador Envío Gratis
+                                </label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="relative group">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-black">$</span>
+                                        <input
+                                            type="number"
+                                            defaultValue={settings?.baseDeliveryFee || 500}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
+                                            name="baseDeliveryFee"
+                                            placeholder="Base"
+                                        />
+                                    </div>
+                                    <div className="relative group">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-moovy/30 font-black">$</span>
+                                        <input
+                                            type="number"
+                                            defaultValue={settings?.freeDeliveryMinimum || ""}
+                                            className="w-full bg-moovy/5 border border-moovy/10 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-moovy focus:ring-2 focus:ring-moovy focus:outline-none transition-all group-hover:bg-white"
+                                            placeholder="Umbral"
+                                            name="freeDeliveryMinimum"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-10 p-6 bg-navy text-white rounded-[2rem] shadow-xl shadow-navy/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 -mr-24 -mt-24 rounded-full" />
+                            <h3 className="text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-3">
+                                <span className="w-2 h-2 bg-moovy rounded-full animate-pulse" />
+                                Simulador de Costos
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                                <div>
+                                    <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Distancia</p>
+                                    <p className="text-xl font-black">5 KM <span className="text-xs font-normal opacity-40">(10km I/V)</span></p>
+                                </div>
+                                <div className="border-l border-white/10 pl-6">
+                                    <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Nafta Estimada</p>
+                                    <p className="text-xl font-black">${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200))}</p>
+                                </div>
+                                <div className="border-l border-white/10 pl-6">
+                                    <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Costo Operativo</p>
+                                    <p className="text-xl font-black">${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)}</p>
+                                </div>
+                                <div className="border-l border-white/10 pl-6">
+                                    <p className="text-[10px] font-black text-moovy uppercase tracking-widest mb-1">Costo Final Sugerido</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-3xl font-black text-moovy">
+                                            ${Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35))}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
+                {/* Contact Card */}
+                <div className="lg:col-span-2">
+                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 group">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
+                                <Phone className="w-6 h-6 text-green-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-navy leading-none">Canales de Contacto</h2>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Soporte y Atención</p>
+                            </div>
+                        </div>
 
-
-            {/* Contact */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                    <Phone className="w-5 h-5 text-moovy" />
-                    Contacto
-                </h2>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            WhatsApp
-                        </label>
-                        <input
-                            type="tel"
-                            defaultValue={settings?.whatsappNumber || ""}
-                            className="input"
-                            placeholder="+54 264 555 5555"
-                            name="whatsappNumber"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Teléfono
-                        </label>
-                        <input
-                            type="tel"
-                            defaultValue={settings?.phone || ""}
-                            className="input"
-                            placeholder="+54 264 555 5555"
-                            name="phone"
-                        />
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            defaultValue={settings?.email || ""}
-                            className="input"
-                            placeholder="contacto@Moovysanjuan.com"
-                            name="email"
-                        />
+                        <div className="grid md:grid-cols-3 gap-6">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 italic">WhatsApp</label>
+                                <input
+                                    type="tel"
+                                    defaultValue={settings?.whatsappNumber || ""}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                    placeholder="+54 264 555 5555"
+                                    name="whatsappNumber"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 italic">Teléfono</label>
+                                <input
+                                    type="tel"
+                                    defaultValue={settings?.phone || ""}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    placeholder="+54 264 555 5555"
+                                    name="phone"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 italic">Email</label>
+                                <input
+                                    type="email"
+                                    defaultValue={settings?.email || ""}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                    placeholder="contacto@Moovysanjuan.com"
+                                    name="email"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </ConfigForm>
     );
 }
-
