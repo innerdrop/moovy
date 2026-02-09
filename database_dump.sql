@@ -626,6 +626,8 @@ cmkx4m5kg00055jchyl2qklvb	cmkvbvo87002br0gkyyz8i0cs	Entrega	Kuanip	190	\N	\N	Ush
 cmlcf8agf0004n1z3kfbpgcs6	cmlbofjvu0002mqdpmdns2wmk	Prueba3	Kuanip	490	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.81706399999999	-68.32997759999999	t	2026-02-07 14:40:14.319	2026-02-07 14:40:14.319	\N
 cmlcf8anz0006n1z3ggxt13zo	cmlbofjvu0002mqdpmdns2wmk	Entrega	Kuanip	490	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-07 14:40:14.591	2026-02-07 14:40:14.591	\N
 cmlehunug0003hsibquex9up7	cmlbofjvu0002mqdpmdns2wmk	Entrega	Alfonsina Storni	2067	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-09 01:29:09.688	2026-02-09 01:29:09.688	\N
+cmlej4c490003wel8hzk2lxwe	cmlbofjvu0002mqdpmdns2wmk	Mau	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-02-09 02:04:40.666	2026-02-09 02:04:40.666	\N
+cmlej4cd90005wel8530ngbox	cmlbofjvu0002mqdpmdns2wmk	Entrega	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-09 02:04:40.989	2026-02-09 02:04:40.989	\N
 \.
 
 
@@ -642,21 +644,21 @@ COPY public."CartItem" (id, "userId", "productId", quantity, "variantId", "creat
 --
 
 COPY public."Category" (id, name, slug, description, image, "isActive", "order", "createdAt", "updatedAt", "allowIndividualPurchase", price, "parentId", icon) FROM stdin;
-cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-05 15:11:49.689	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	t	3	2026-01-26 15:34:21.563	2026-02-05 15:11:49.693	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	2	2026-01-26 15:34:21.563	2026-02-05 15:11:49.698	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow3e0000ygiogdypolr3	Combos	combos	\N	\N	t	0	2026-01-30 14:39:47.065	2026-02-05 15:11:49.701	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow6h000fygio11bf03c6	Gaseosas	gaseosas	\N	\N	t	0	2026-01-30 14:39:47.178	2026-02-05 15:11:49.704	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow6y000kygio98l495ny	Hielo & Otros	hielo-otros	\N	\N	t	0	2026-01-30 14:39:47.195	2026-02-05 15:11:49.708	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow7d000pygioyc93s0na	Aperitivos	aperitivos	\N	\N	t	0	2026-01-30 14:39:47.209	2026-02-05 15:11:49.713	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow7t000uygio3e9l5uwk	Snacks	snacks	\N	\N	t	0	2026-01-30 14:39:47.225	2026-02-05 15:11:49.716	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow88000zygioaxhmxkcx	Aguas & Jugos	aguas-jugos	\N	\N	t	0	2026-01-30 14:39:47.24	2026-02-05 15:11:49.72	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	0	2026-01-30 14:39:47.297	2026-02-05 15:11:49.724	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	t	0	2026-01-30 14:39:47.514	2026-02-05 15:11:49.729	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	0	2026-01-30 14:39:48.683	2026-02-05 15:11:49.733	t	0	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			t	0	2026-01-30 14:39:48.329	2026-02-05 15:11:49.739	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
-cml0zoxi500dhygioxr9f0loc	Juegos	juegos	\N		t	0	2026-01-30 14:39:48.893	2026-02-08 23:46:48.48	t	0	cml9lh7l90000qxvofmv8r1i7	juegos
-cml9lh7l90000qxvofmv8r1i7	Kioscos	kioscos	Paquete completo para kioscos y almacenes. Incluye todas las subcategor????as de productos.		t	0	2026-02-05 15:11:49.678	2026-02-09 01:38:38.214	t	50000	\N	kiosko
+cml0zowft0028ygioo962wjej	Golosinas	golosinas	\N	\N	f	0	2026-01-30 14:39:47.514	2026-02-09 02:01:10.535	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo1n0002r0gklrqbox7o	Hamburguesas	hamburguesas	\N	\N	t	1	2026-01-26 15:34:21.563	2026-02-09 02:01:10.536	t	0	cml9lh7l90000qxvofmv8r1i7	hamburguesas
+cml9lh7l90000qxvofmv8r1i7	Kioscos	kioscos	Paquete completo para kioscos y almacenes. Incluye todas las subcategor????as de productos.		t	2	2026-02-05 15:11:49.678	2026-02-09 02:01:10.536	t	50000	\N	kiosko
+cml0zow6h000fygio11bf03c6	Gaseosas	gaseosas	\N	\N	t	3	2026-01-30 14:39:47.178	2026-02-09 02:01:10.537	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow9t0019ygioovj10h90	Cervezas	cervezas	\N	\N	t	4	2026-01-30 14:39:47.297	2026-02-09 02:01:10.538	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zoxcb00beygiop03ia9ox	Vinos	vinos	\N	\N	t	6	2026-01-30 14:39:48.683	2026-02-09 02:01:10.539	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zoxi500dhygioxr9f0loc	Juegos	juegos	\N		t	7	2026-01-30 14:39:48.893	2026-02-09 02:01:10.539	t	0	cml9lh7l90000qxvofmv8r1i7	juegos
+cml0zox2g007iygioza8q1bmh	Escenciales	escenciales			f	8	2026-01-30 14:39:48.329	2026-02-09 02:01:10.54	t	5000	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow3e0000ygiogdypolr3	Combos	combos	\N	\N	f	9	2026-01-30 14:39:47.065	2026-02-09 02:01:10.541	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow6y000kygio98l495ny	Hielo & Otros	hielo-otros	\N	\N	f	10	2026-01-30 14:39:47.195	2026-02-09 02:01:10.541	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow7d000pygioyc93s0na	Aperitivos	aperitivos	\N	\N	f	11	2026-01-30 14:39:47.209	2026-02-09 02:01:10.542	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow88000zygioaxhmxkcx	Aguas & Jugos	aguas-jugos	\N	\N	f	12	2026-01-30 14:39:47.24	2026-02-09 02:01:10.543	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	f	14	2026-01-26 15:34:21.563	2026-02-09 02:01:10.543	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cmkvbvo3k0004r0gkby3xi0g4	Pizzas	pizzas	\N	\N	t	13	2026-01-26 15:34:21.563	2026-02-09 02:01:10.543	t	0	cml9lh7l90000qxvofmv8r1i7	\N
+cml0zow7t000uygio3e9l5uwk	Snacks	snacks	\N	\N	t	5	2026-01-30 14:39:47.225	2026-02-09 02:01:27.203	t	0	cml9lh7l90000qxvofmv8r1i7	snacks
 \.
 
 
@@ -665,9 +667,9 @@ cml9lh7l90000qxvofmv8r1i7	Kioscos	kioscos	Paquete completo para kioscos y almace
 --
 
 COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, ubicacion) FROM stdin;
-cmkvbvo7w0026r0gkcidihjmf	cmkvbvo7s0023r0gk3wyvfr2v	BICICLETA	\N	\N	\N	\N	\N	t	f	0	\N	2026-01-26 15:34:21.789	2026-01-26 15:34:21.789	FUERA_DE_SERVICIO	\N	\N	\N	\N
 cmkvbvo83002ar0gkqelv54hh	cmkvbvo800027r0gksb401d3p	AUTO	\N	\N	\N	\N	XYZ 999	t	f	0	\N	2026-01-26 15:34:21.795	2026-01-26 15:34:21.795	FUERA_DE_SERVICIO	\N	\N	\N	\N
-cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t	0	\N	2026-01-26 15:34:21.779	2026-02-09 01:32:26.957	DISPONIBLE	2026-02-09 01:38:11.16	-54.82819341081571	-68.34975268370941	0101000020E6100000178E1459621651C0AB1BDF3D026A4BC0
+cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t	0	\N	2026-01-26 15:34:21.779	2026-02-09 02:14:33.714	DISPONIBLE	2026-02-09 02:15:06.239	-54.83007956934652	-68.3276219481711	0101000020E610000030360CC2F71451C0E6B51D0C406A4BC0
+cmkvbvo7w0026r0gkcidihjmf	cmkvbvo7s0023r0gk3wyvfr2v	BICICLETA	\N	\N	\N	\N	\N	t	t	0	\N	2026-01-26 15:34:21.789	2026-02-09 02:15:50.798	DISPONIBLE	2026-02-09 02:18:12.259	-54.83007393154857	-68.32761803748615	0101000020E61000004B25A5B1F71451C0B2A1D2DC3F6A4BC0
 \.
 
 
@@ -677,8 +679,8 @@ cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t
 
 COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradient, image, "isActive", "order", "createdAt", "updatedAt") FROM stdin;
 cmldvcnti0000do9zm126edud	Orgullo Fueguino	Tienda online desde el fin del mundo	Conocenos	/nosotros	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770562753927-3c2v3.jpg	t	1	2026-02-08 14:59:18.293	2026-02-08 14:59:18.293
-cmldvmkbo0000c61suezudlsa	Variedad Total	Todo lo que busc??s en un solo lugar!	Ver productos	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563218118-gcx6pl.png	t	2	2026-02-08 15:07:00.324	2026-02-08 15:07:00.324
-cmldvnqa80001c61s2jjg4049	Delivery R????pido	Llevamos tu antojo donde est????s	Ver m??s??s	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-08 15:07:54.704
+cmldvmkbo0000c61suezudlsa	Variedad Total	Todo lo que buscas en un solo lugar!	Ver productos	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563218118-gcx6pl.png	t	2	2026-02-08 15:07:00.324	2026-02-09 15:07:07.473
+cmldvnqa80001c61s2jjg4049	Delivery R?pido 	Llevamos tu antojo donde est?s	Ver m?s 	/productos	from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]	/uploads/slides/slide-1770563272473-sewh8n.png	t	3	2026-02-08 15:07:54.704	2026-02-09 15:07:33.703
 \.
 
 
@@ -745,6 +747,7 @@ cmldauwau000lqasd5dxxpzsa	MOV-QNDZ	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kf
 cmldakmjh000cqasdpdwddd1e	MOV-B6ZS	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5500	735	0	6235	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-08 05:21:48.217	\N	\N	\N	2026-02-08 05:17:37.947	2026-02-08 05:21:48.227	\N	f	\N	5060	440	\N	\N	1	\N	\N	2026-02-08 05:18:05.749	\N	f
 cmldbgdlc000cml0qmqqa4slj	MOV-3L7Y	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5500	735	0	6235	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-08 05:44:49.222	\N	\N	\N	2026-02-08 05:42:19.343	2026-02-08 05:44:49.23	\N	f	\N	5060	440	\N	\N	1	\N	\N	2026-02-08 05:43:19.041	\N	f
 cmlehunul0006hsibtxg3pui8	MOV-FE39	cmlbofjvu0002mqdpmdns2wmk	cmlehunug0003hsibquex9up7	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5000	774	0	5774	0.5071897927985234	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-09 01:32:26.905	\N	\N	\N	2026-02-09 01:29:09.694	2026-02-09 01:32:26.91	\N	f	\N	4600	400	\N	\N	1	\N	\N	2026-02-09 01:30:24.773	\N	f
+cmlej4cde0008wel8fmvtwfo1	MOV-U4GK	cmlbofjvu0002mqdpmdns2wmk	cmlej4cd90005wel8530ngbox	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5000	1075	0	6075	2.05617032868614	\N	\N	cmkvbvo7w0026r0gkcidihjmf	ASSIGNED	2026-02-09 02:15:50.709	\N	\N	\N	2026-02-09 02:04:40.994	2026-02-09 02:15:50.715	\N	f	\N	4600	400	\N	\N	1	\N	\N	2026-02-09 02:05:30.957	\N	f
 \.
 
 
@@ -782,6 +785,7 @@ cmldauwba000nqasdemc37oma	cmldauwau000lqasd5dxxpzsa	cmkvbvo4s000mr0gkm6bpedcj	Ha
 cmldb3gsz0005ml0qu6qs1njy	cmldb3gsm0003ml0q488oj7xk	cmkvbvo47000ar0gk4zi9lpbi	Hamburguesa Clsica	5500	1	\N	5500
 cmldbgdlp000eml0qcuq5kr0y	cmldbgdlc000cml0qmqqa4slj	cmkvbvo47000ar0gk4zi9lpbi	Hamburguesa Clsica	5500	1	\N	5500
 cmlehunun0008hsibeyj0psky	cmlehunul0006hsibtxg3pui8	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlej4cdg000awel89m23ojnq	cmlej4cde0008wel8fmvtwfo1	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
 \.
 
 
@@ -829,6 +833,7 @@ cmldauwct000qqasd6gosqrq1	cmlbofjvu0002mqdpmdns2wmk	cmldauwau000lqasd5dxxpzsa	EA
 cmldb3gu70008ml0qk4fo61th	cmlbofjvu0002mqdpmdns2wmk	cmldb3gsm0003ml0q488oj7xk	EARN	5500	80250	Ganaste 5500 puntos por tu compra	2026-02-08 05:32:17.024
 cmldbgdmv000hml0qi19elm9t	cmlbofjvu0002mqdpmdns2wmk	cmldbgdlc000cml0qmqqa4slj	EARN	5500	85750	Ganaste 5500 puntos por tu compra	2026-02-08 05:42:19.399
 cmlehunuw000bhsib3cpi27ho	cmlbofjvu0002mqdpmdns2wmk	cmlehunul0006hsibtxg3pui8	EARN	5000	90750	Ganaste 5000 puntos por tu compra	2026-02-09 01:29:09.704
+cmlej4cdt000dwel8cax5rwte	cmlbofjvu0002mqdpmdns2wmk	cmlej4cde0008wel8fmvtwfo1	EARN	5000	95750	Ganaste 5000 puntos por tu compra	2026-02-09 02:04:41.009
 \.
 
 
@@ -848,7 +853,7 @@ cml0zowjo0039ygioqg9zzfwy	INMORTAL	inmortal-23xop	2 Fernet 750ml + 4 Coca-Colca 
 cml0zow4q0002ygio1z3yvt0a	COMBO CAMPARI	combo-campari-u5htv	INCLUYE: 1 Campari 1lt. + 2 Jugos Citric 1L + 1 Hielo 2Kg	\N	23900	0	0	5	t	f	2026-01-30 14:39:47.113	2026-02-02 04:46:05.46
 cml0zowle003eygio2lvjmvh5	Cepita Naranja 1.5L	cepita-naranja-1-5l-r21co	Tamao: 1.5L - Sabor: Naranja	\N	0	0	0	5	t	f	2026-01-30 14:39:47.715	2026-02-05 15:19:54.638
 cml0zox4n008eygioznyef44n	Grolsch 473	grolsch-473-3p50o	Tamao: 473ml	\N	2600	0	0	5	t	f	2026-01-30 14:39:48.407	2026-02-05 15:23:43.406
-cmkvbvo6w001or0gkh6my0iu3	Roll Salmn	comercio-3-roll-salm??s??sn	\N	cmkvbvo6k001gr0gknt85jfb9	5500	3300	100	5	t	f	2026-01-26 15:34:21.752	2026-02-04 16:09:55.035
+cmkvbvo6w001or0gkh6my0iu3	Roll Salmn	comercio-3-roll-salm??ss??sn	\N	cmkvbvo6k001gr0gknt85jfb9	5500	3300	100	5	t	f	2026-01-26 15:34:21.752	2026-02-04 16:09:55.035
 cml4byqzb000o7c7e8hie5vrz	Santa Julia Tardo 	santa-julia-tard-o-ymuzp-cmkvb	Vino dulce natural de cosecha tarda. Presenta aromas intensos a miel, flores blancas y frutas tropicales maduras. En boca es untuoso, con buena acidez que equilibra su dulzura, ideal para acompaar postres, quesos azules o disfrutar solo como vino de sobremesa. / 500ml	cmkvbvo5b000ur0gk0eib5xpt	7000	0	100	5	t	f	2026-02-01 22:46:40.919	2026-02-04 16:09:55.053
 cml4byrgf00117c7e9qixucyd	PRIME x3 - Super Fino	prime-x3-super-fino-elo3i-cmkvb	Sensacin natural, casi como no sentir nada.	cmkvbvo3z0008r0gkc7qfxplz	2700	0	100	5	t	f	2026-02-01 22:46:41.535	2026-02-04 16:09:55.057
 cml4byrgm00147c7e88j2quw8	PRIME x3 - Ultra Fino	prime-x3-ultra-fino-1qxtg-cmkvb	Diseado para mxima sensibilidad sin perder proteccin.	cmkvbvo3z0008r0gkc7qfxplz	2700	0	100	5	t	f	2026-02-01 22:46:41.543	2026-02-04 16:09:55.066
@@ -971,7 +976,7 @@ cmla0qhvu000p3ivoez0th7no	Patagonia Vera IPA	patagonia-vera-ipa-6uha3-cmkvb	New 
 cmlbnnt2b000210ncti5soy3s	Beldent	beldent-a1y54-cmkvb	Tipo: Chicle Sabor: Menta	cmkvbvo5b000ur0gk0eib5xpt	800	0	100	5	t	f	2026-02-07 01:48:29.026	2026-02-07 01:48:29.026
 cmlbnu9v5000910ncd7gj7dmy	Snickers	snickers-ipbq6-cmkvb	Peso: 48gr	cmkvbvo5b000ur0gk0eib5xpt	2700	0	100	5	t	f	2026-02-07 01:53:30.735	2026-02-07 01:53:30.735
 cml4pai4d0004g0s232dhvgsh	Jenga de Madera	jenga-de-madera-oxm01-cmkvb	Clsico juego de destreza y equilibrio con bloques de madera. Ideal para jugar en grupo, poner a prueba la paciencia y la precisin, diversin asegurada en cada movimiento!	cmkvbvo5b000ur0gk0eib5xpt	9900	0	100	5	t	f	2026-02-02 04:59:44.317	2026-02-07 01:56:19.017
-cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	comercio-1-hamburguesa-veggie	\N	cmkvbvo3z0008r0gkc7qfxplz	5000	3000	87	5	t	f	2026-01-26 15:34:21.676	2026-02-09 01:29:09.697
+cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	comercio-1-hamburguesa-veggie	\N	cmkvbvo3z0008r0gkc7qfxplz	5000	3000	86	5	t	f	2026-01-26 15:34:21.676	2026-02-09 02:04:40.999
 \.
 
 
@@ -1129,7 +1134,7 @@ cmkvbvo5j000yr0gkdnm4pds1	cmkvbvo5f000wr0gkwdsxy501	https://images.unsplash.com/
 cmkvbvo5x0014r0gkezdjzc28	cmkvbvo5s0012r0gknilcgfre	https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400	Pizza Pepperoni	0
 cmkvbvo68001ar0gkrvepubof	cmkvbvo650018r0gkp96zwmxm	https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400	Pizza 4 Quesos	0
 cmkvbvo6q001kr0gk3t9shxed	cmkvbvo6n001ir0gkd49h1c39	https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400	Roll California	0
-cmkvbvo70001qr0gkoy36b1tu	cmkvbvo6w001or0gkh6my0iu3	https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400	Roll Salm??s??sn	0
+cmkvbvo70001qr0gkoy36b1tu	cmkvbvo6w001or0gkh6my0iu3	https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400	Roll Salm??ss??sn	0
 cmkvbvo7a001wr0gkgtk8ta04	cmkvbvo76001ur0gk6sv6o03m	https://images.unsplash.com/photo-1553621042-f6e147245754?w=400	Combo 30 piezas	0
 cml4bpilf000i7c7e3ok5m1v2	cml4bpile000h7c7e66as2x35	/uploads/products/1769985460341-IMG_5353.jpg	Apple iPhone 17 Pro Max (256 GB) - Naranja c??smico	0
 cml9lcue0000dpwgoshscyu0f	cml0zoxcy00blygio420b0myj	/uploads/products/1770304101427-798464-800-600.webp	\N	0
@@ -1239,16 +1244,16 @@ cml4bel44000d7c7ez1scpq8s	cml4bel44000b7c7ees7j69cp	cmkvbvo57000rr0gkp7ff55ji	Er
 
 COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "resetToken", "resetTokenExpiry", "deletedAt") FROM stdin;
 cmkvbvo6g001dr0gkkc3uxs3s	comercio3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 3	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo6g001er0gksdi7wmsv	\N	2026-01-26 15:34:21.736	2026-01-26 15:34:21.736	\N	\N	\N
-cmkvbvo7s0023r0gk3wyvfr2v	rider2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 2	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7s0024r0gkvoz8se8y	\N	2026-01-26 15:34:21.784	2026-01-26 15:34:21.784	\N	\N	\N
 cmkvbvo800027r0gksb401d3p	rider3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 3	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo800028r0gk3g91rt9h	\N	2026-01-26 15:34:21.792	2026-01-26 15:34:21.792	\N	\N	\N
 cmkvbvo8f002fr0gks60vb2et	cliente3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 3	\N	\N	\N	CLIENT	\N	\N	0	0	f	cmkvbvo8f002gr0gkxvsgolli	\N	2026-01-26 15:34:21.808	2026-01-26 15:34:21.808	\N	\N	\N
 cmkvbvo8c002dr0gk22kda2cw	cliente2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 2	\N	\N	\N	CLIENT	\N	\N	5000	0	f	cmkvbvo8c002er0gk53tvzvvh	\N	2026-01-26 15:34:21.804	2026-02-01 22:21:09.161	\N	\N	\N
 cmkvbvo87002br0gkyyz8i0cs	cliente1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 1	\N	\N	\N	CLIENT	\N	\N	52900	0	t	cmkvbvo87002cr0gkde84ikuu	\N	2026-01-26 15:34:21.799	2026-02-05 21:51:19.353	\N	\N	\N
 cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	 				MERCHANT	\N	\N	0	0	f	cmkvbvo57000sr0gkah2nixeg	\N	2026-01-26 15:34:21.692	2026-02-07 01:55:59.576	\N	\N	\N
-cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-09 01:26:01.896	\N	\N	\N
-cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	90750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-09 01:29:09.702	\N	\N	\N
-cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-09 01:30:09.135	\N	\N	\N
-cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-09 01:38:45.716	\N	\N	\N
+cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	95750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-09 02:04:41.006	\N	\N	\N
+cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-09 02:05:18.646	\N	\N	\N
+cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-09 02:14:02.083	\N	\N	\N
+cmkvbvo7s0023r0gk3wyvfr2v	rider2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 2	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7s0024r0gkvoz8se8y	\N	2026-01-26 15:34:21.784	2026-02-09 02:15:18.932	\N	\N	\N
+cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-09 15:04:37.044	\N	\N	\N
 \.
 
 
