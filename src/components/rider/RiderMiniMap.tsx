@@ -358,7 +358,6 @@ function RiderMiniMapComponent({
             {/* Re-center button - REMOVED from here, handled in dashboard UI */}
 
             <GoogleMap
-                key={`map-${["picked_up", "on_the_way", "in_delivery"].includes(orderStatus?.toLowerCase() || "") ? 'delivery' : 'pickup'}`}
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
                 options={{
@@ -467,7 +466,7 @@ function RiderMiniMapComponent({
                                 strokeWeight: 3,
                                 scale: navigationMode ? 12 : 7,
                             }}
-                            title={customerName || customerAddress}
+                            title={customerName?.split(' ')[0] || customerAddress}
                             onClick={() => setShowCustomerInfo(true)}
                         />
 
@@ -483,7 +482,7 @@ function RiderMiniMapComponent({
                             >
                                 <div className="px-2 py-1 text-center">
                                     <p className="font-bold text-gray-900 text-sm">
-                                        {customerName || "Cliente"}
+                                        {customerName?.split(' ')[0] || "Cliente"}
                                     </p>
                                     {customerAddress && (
                                         <p className="text-xs text-gray-500 max-w-[150px] truncate">

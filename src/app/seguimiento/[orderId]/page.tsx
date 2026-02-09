@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
 import { io, Socket } from "socket.io-client";
 import {
     ArrowLeft,
@@ -57,6 +57,12 @@ interface OrderData {
         latitude?: number;
         longitude?: number;
         address?: string;
+    };
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        phone?: string;
     };
 }
 
@@ -353,7 +359,7 @@ export default function TrackingPage() {
             } catch (e) {
                 console.error("[Tracking] Polling failed:", e);
             }
-        }, 5000); // 5 seconds
+        }, 2000); // 2 seconds
 
         return () => clearInterval(pollInterval);
     }, [orderId, delivered, order?.status]);
@@ -793,7 +799,20 @@ export default function TrackingPage() {
                                         scaledSize: new google.maps.Size(36, 46),
                                         anchor: new google.maps.Point(18, 46)
                                     }}
-                                />
+                                >
+                                    <InfoWindow
+                                        options={{
+                                            pixelOffset: new google.maps.Size(0, -35),
+                                            disableAutoPan: true,
+                                        }}
+                                    >
+                                        <div className="px-1 py-0.5">
+                                            <p className="text-[10px] font-bold text-gray-900">
+                                                {order.user.name.split(' ')[0]}
+                                            </p>
+                                        </div>
+                                    </InfoWindow>
+                                </Marker>
                             )}
                         </GoogleMap>
                     </div>
