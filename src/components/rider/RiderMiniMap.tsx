@@ -176,7 +176,7 @@ function RiderMiniMapComponent({
                         setAnimatedPath(path);
                     }
                 } else {
-                    console.error("[RiderMap] Route failed:", status);
+                    console.error("[RiderMap-V10] Route failed:", status);
                     hardResetMap();
                 }
             }
@@ -194,11 +194,11 @@ function RiderMiniMapComponent({
         const normalizedPrev = prevOrderStatusRef.current;
         const normalizedCurr = orderStatus;
 
-        console.log(`[RiderMap] Effect Sync: Prev=${normalizedPrev}, Curr=${normalizedCurr}, Nav=${navigationMode}`);
+        console.log(`[RiderMap-V10] Effect Sync: Prev=${normalizedPrev}, Curr=${normalizedCurr}, Nav=${navigationMode}`);
 
         // Ensure cleanup if navigation mode is disabled or order ended
         if (!navigationMode || !normalizedCurr) {
-            console.log("[RiderMap] CLEANUP TRIGGERED: Navigation disabled or no status.");
+            console.log("[RiderMap-V10] CLEANUP TRIGGERED: Navigation disabled or no status.");
             hardResetMap();
             hasInitialCentered.current = false;
 
@@ -212,7 +212,7 @@ function RiderMiniMapComponent({
 
         // Case B: Status changed (e.g., Merchant -> Customer)
         if (normalizedCurr && normalizedPrev && normalizedPrev !== normalizedCurr) {
-            console.log("[RiderMap] STATUS SWITCH: ", normalizedPrev, "->", normalizedCurr);
+            console.log(`[RiderMap-V10] STATUS SWITCH: ${normalizedPrev} -> ${normalizedCurr}`);
             setRoutePath([]);
             setRemainingPath([]);
             setAnimatedPath([]);
@@ -382,7 +382,7 @@ function RiderMiniMapComponent({
     }
 
     const onUnmountMap = (map: google.maps.Map) => {
-        console.log("[RiderMap] Global Map Instance Unmounting");
+        console.log("[RiderMap-V10] Global Map Instance Unmounting");
     };
 
     return (
