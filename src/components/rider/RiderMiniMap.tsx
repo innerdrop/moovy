@@ -74,6 +74,21 @@ function RiderMiniMapComponent({
     const prevOrderStatusRef = useRef<string | undefined>(undefined);
     const [showCustomerInfo, setShowCustomerInfo] = useState(false);
 
+    // --- HARD CLEANUP FUNCTION ---
+    const hardResetMap = useCallback(() => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        setRoutePath([]);
+        setRemainingPath([]);
+        setAnimatedPath([]);
+        setIsAnimating(false);
+        setShowCustomerInfo(false);
+        setUserInteracted(false);
+        prevOrderStatusRef.current = undefined;
+    }, []);
+
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -91,19 +106,6 @@ function RiderMiniMapComponent({
         const destination = isPickedUp
             ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
             : (merchantLat && merchantLng ? { lat: merchantLat, lng: merchantLng } : null);
-
-        // --- HARD CLEANUP FUNCTION ---
-        const hardResetMap = () => {
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
-                animationFrameRef.current = null;
-            }
-            setRoutePath([]);
-            setRemainingPath([]);
-            setAnimatedPath([]);
-            setIsAnimating(false);
-            prevOrderStatusRef.current = undefined;
-        };
 
         // If no active navigation or no destination, kill everything
         if (!navigationMode || !orderStatus || !destination) {
@@ -178,24 +180,36 @@ function RiderMiniMapComponent({
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode]);
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode, hardResetMap]);
 
     // --- INSTANT CLEANUP ON STATUS CHANGE ---
     // This runs when orderStatus changes, ensuring we don't wait for 
     // the Directions API to return to clear the old route from the map.
     useEffect(() => {
+        if (prevOrderStatusRef.current && !orderStatus) {
+            console.log("[RiderMap] Order ended, hard resetting map view");
+            hardResetMap();
+            hasInitialCentered.current = false; // Allow re-centering for next offer
+            if (mapRef.current && driverLat && driverLng) {
+                mapRef.current.panTo({ lat: driverLat, lng: driverLng });
+                mapRef.current.setZoom(14);
+            }
+            return;
+        }
+
         if (prevOrderStatusRef.current && prevOrderStatusRef.current !== orderStatus) {
             console.log("[RiderMap] Status changed, clearing old routes instantly");
             setRoutePath([]);
             setRemainingPath([]);
             setAnimatedPath([]);
             setIsAnimating(false);
+            setShowCustomerInfo(false);
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
             }
         }
-    }, [orderStatus]);
+    }, [orderStatus, driverLat, driverLng, hardResetMap]);
 
     // Secondary Cleanup: Handle movements and path erasing
     useEffect(() => {
@@ -470,25 +484,22 @@ function RiderMiniMapComponent({
                             onClick={() => setShowCustomerInfo(true)}
                         />
 
-                        {/* Customer name InfoWindow - always shown in navigation mode */}
+                        {/* Customer name modern pill - always shown in navigation mode */}
                         {(navigationMode || showCustomerInfo) && (
                             <InfoWindow
                                 position={{ lat: customerLat, lng: customerLng }}
                                 onCloseClick={() => setShowCustomerInfo(false)}
                                 options={{
-                                    pixelOffset: new google.maps.Size(0, -15),
+                                    pixelOffset: new google.maps.Size(0, -20),
                                     disableAutoPan: true,
+                                    maxWidth: 120,
                                 }}
                             >
-                                <div className="px-2 py-1 text-center">
-                                    <p className="font-bold text-gray-900 text-sm">
+                                <div className="bg-gray-900 -m-1.5 px-3 py-1.5 rounded-full shadow-2xl border border-white/10 flex items-center gap-1.5">
+                                    <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                                    <p className="text-[8px] font-black italic uppercase tracking-[1.5px] text-white leading-none">
                                         {customerName?.split(' ')[0] || "Cliente"}
                                     </p>
-                                    {customerAddress && (
-                                        <p className="text-xs text-gray-500 max-w-[150px] truncate">
-                                            {customerAddress}
-                                        </p>
-                                    )}
                                 </div>
                             </InfoWindow>
                         )}

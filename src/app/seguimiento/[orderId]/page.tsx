@@ -147,6 +147,12 @@ export default function TrackingPage() {
         if (orderId) fetchOrder();
     }, [orderId]);
 
+    // Clear routes instantly on status change to avoid "ghost" routes
+    useEffect(() => {
+        setDirections(null);
+        setRouteInfo(null);
+    }, [order?.status]);
+
     // Directions logic
     useEffect(() => {
         const addr = order?.address;
@@ -364,6 +370,15 @@ export default function TrackingPage() {
         return () => clearInterval(pollInterval);
     }, [orderId, delivered, order?.status]);
 
+    // --- INSTANT CLEANUP ON STATUS CHANGE ---
+    useEffect(() => {
+        if (order?.status) {
+            console.log("[Tracking] Status change detected, clearing routes");
+            setDirections(null);
+            setRouteInfo(null);
+        }
+    }, [order?.status]);
+
     // Fit map bounds to show all relevant points
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return;
@@ -548,14 +563,15 @@ export default function TrackingPage() {
             {/* Check if order is picked up or terminal */}
             {(() => {
                 const status = order?.status?.toUpperCase() || "PENDING";
-                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status);
                 const isTerminal = ["DELIVERED", "COMPLETED", "CANCELLED"].includes(status);
 
                 // If delivered/completed, we unmount EVERYTHING related to the map/prep flow
-                // The rating overlay (rendered above) will be the primary UI
                 if (isTerminal || delivered) {
+                    console.log("[Tracking] Terminal state reached, hiding map");
                     return null;
                 }
+
+                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status);
 
                 if (!isPickedUp) {
                     // PREPARATION UI - Before pickup
@@ -783,37 +799,31 @@ export default function TrackingPage() {
                             )}
 
                             {/* Destination Marker */}
-                            {(order.address.latitude || (directions && directions.routes[0]?.legs[0]?.end_location)) && (
-                                <Marker
-                                    position={order.address.latitude
-                                        ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
-                                        : directions!.routes[0].legs[0].end_location
-                                    }
-                                    icon={{
-                                        url: "data:image/svg+xml," + encodeURIComponent(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
-                                        <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
-                                        <circle cx="18" cy="18" r="7" fill="white"/>
-                                    </svg>
-                                `),
-                                        scaledSize: new google.maps.Size(36, 46),
-                                        anchor: new google.maps.Point(18, 46)
-                                    }}
-                                >
-                                    <InfoWindow
-                                        options={{
-                                            pixelOffset: new google.maps.Size(0, -35),
-                                            disableAutoPan: true,
-                                        }}
-                                    >
-                                        <div className="px-1 py-0.5">
-                                            <p className="text-[10px] font-bold text-gray-900">
-                                                {order.user.name.split(' ')[0]}
-                                            </p>
-                                        </div>
-                                    </InfoWindow>
-                                </Marker>
-                            )}
+                            {(() => {
+                                const destPos = order.address.latitude
+                                    ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
+                                    : directions?.routes[0]?.legs[0]?.end_location;
+
+                                if (!destPos) return null;
+
+                                return (
+                                    <>
+                                        <Marker
+                                            position={destPos}
+                                            icon={{
+                                                url: "data:image/svg+xml," + encodeURIComponent(`
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
+                                                        <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
+                                                        <circle cx="18" cy="18" r="7" fill="white"/>
+                                                    </svg>
+                                                `),
+                                                scaledSize: new google.maps.Size(36, 46),
+                                                anchor: new google.maps.Point(18, 46)
+                                            }}
+                                        />
+                                    </>
+                                );
+                            })()}
                         </GoogleMap>
                     </div>
                 );

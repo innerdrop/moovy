@@ -667,7 +667,7 @@ cml9lh7l90000qxvofmv8r1i7	Kioscos	kioscos	Paquete completo para kioscos y almace
 COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, ubicacion) FROM stdin;
 cmkvbvo7w0026r0gkcidihjmf	cmkvbvo7s0023r0gk3wyvfr2v	BICICLETA	\N	\N	\N	\N	\N	t	f	0	\N	2026-01-26 15:34:21.789	2026-01-26 15:34:21.789	FUERA_DE_SERVICIO	\N	\N	\N	\N
 cmkvbvo83002ar0gkqelv54hh	cmkvbvo800027r0gksb401d3p	AUTO	\N	\N	\N	\N	XYZ 999	t	f	0	\N	2026-01-26 15:34:21.795	2026-01-26 15:34:21.795	FUERA_DE_SERVICIO	\N	\N	\N	\N
-cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t	3	1	2026-01-26 15:34:21.779	2026-02-09 16:08:28.194	DISPONIBLE	2026-02-09 16:17:57.852	-54.81535886703012	-68.32486541424016	0101000020E6100000D5704E98CA1451C0F132EAAD5D684BC0
+cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t	6	1	2026-01-26 15:34:21.779	2026-02-09 16:43:27.575	DISPONIBLE	2026-02-09 16:47:24.416	-54.81538393254284	-68.32479053395842	0101000020E6100000B7593C5EC91451C049FA2D805E684BC0
 \.
 
 
@@ -745,9 +745,12 @@ cmldauwau000lqasd5dxxpzsa	MOV-QNDZ	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kf
 cmldakmjh000cqasdpdwddd1e	MOV-B6ZS	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5500	735	0	6235	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-08 05:21:48.217	\N	\N	\N	2026-02-08 05:17:37.947	2026-02-08 05:21:48.227	\N	f	\N	5060	440	\N	\N	1	\N	\N	2026-02-08 05:18:05.749	\N	f
 cmldbgdlc000cml0qmqqa4slj	MOV-3L7Y	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5500	735	0	6235	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-08 05:44:49.222	\N	\N	\N	2026-02-08 05:42:19.343	2026-02-08 05:44:49.23	\N	f	\N	5060	440	\N	\N	1	\N	\N	2026-02-08 05:43:19.041	\N	f
 cmlehunul0006hsibtxg3pui8	MOV-FE39	cmlbofjvu0002mqdpmdns2wmk	cmlehunug0003hsibquex9up7	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5000	774	0	5774	0.5071897927985234	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-09 01:32:26.905	\N	\N	\N	2026-02-09 01:29:09.694	2026-02-09 01:32:26.91	\N	f	\N	4600	400	\N	\N	1	\N	\N	2026-02-09 01:30:24.773	\N	f
+cmlfe9tit0004rgv330lbcit0	MOV-U5LE	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	COMPLETED	\N	PENDING	cash	5000	735	0	5735	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	DELIVERED	2026-02-09 16:39:04.742	\N	\N	\N	2026-02-09 16:36:44.597	2026-02-09 16:41:03.814	\N	f	1	4600	400	2026-02-09 16:41:03.811	\N	1	\N	\N	2026-02-09 16:37:23.298	\N	f
 cmlfd4hyn0004bzgx2seqwvq7	MOV-M6TJ	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	COMPLETED	\N	PENDING	cash	5000	735	0	5735	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	DELIVERED	2026-02-09 16:08:04.721	\N	\N	\N	2026-02-09 16:04:36.714	2026-02-09 16:08:14.057	\N	f	1	4600	400	2026-02-09 16:08:14.054	\N	1	\N	\N	2026-02-09 16:04:56.826	\N	f
 cmlfa5lty00034ylfdt2hy3k5	MOV-W635	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	COMPLETED	\N	PENDING	cash	5000	735	0	5735	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	DELIVERED	2026-02-09 15:33:32.634	\N	\N	\N	2026-02-09 14:41:29.539	2026-02-09 15:44:31.145	\N	f	1	4600	400	2026-02-09 15:44:31.144	\N	1	\N	\N	2026-02-09 14:42:43.749	\N	f
 cmlfcf9810004h84vjcs9rv76	MOV-SP53	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5000	735	0	5735	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	DELIVERED	2026-02-09 15:48:06.701	\N	\N	\N	2026-02-09 15:44:58.992	2026-02-09 15:48:06.712	\N	f	\N	4600	400	\N	\N	1	\N	\N	2026-02-09 15:46:22.814	\N	f
+cmlfduztd0004llyia8wewi65	MOV-TQDC	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	COMPLETED	\N	PENDING	cash	5000	735	0	5735	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	DELIVERED	2026-02-09 16:31:54.843	\N	\N	\N	2026-02-09 16:25:12.913	2026-02-09 16:32:02.868	\N	f	1	4600	400	2026-02-09 16:32:02.865	\N	1	\N	\N	2026-02-09 16:26:00.175	\N	f
+cmlfeg4tf000ergv33riyvght	MOV-XU53	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	COMPLETED	\N	PENDING	cash	5000	735	0	5735	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	DELIVERED	2026-02-09 16:43:01.732	\N	\N	\N	2026-02-09 16:41:39.145	2026-02-09 16:43:27.458	\N	f	1	4600	400	2026-02-09 16:43:27.451	\N	1	\N	\N	2026-02-09 16:41:59.174	\N	f
 \.
 
 
@@ -788,6 +791,9 @@ cmlehunun0008hsibeyj0psky	cmlehunul0006hsibtxg3pui8	cmkvbvo4s000mr0gkm6bpedcj	Ha
 cmlfa5lzd00054ylf5lj422bo	cmlfa5lty00034ylfdt2hy3k5	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
 cmlfcf98g0006h84vrgr8w7sv	cmlfcf9810004h84vjcs9rv76	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
 cmlfd4hz20006bzgxd4u4lo0l	cmlfd4hyn0004bzgx2seqwvq7	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlfduzty0006llyicu5l7aj9	cmlfduztd0004llyia8wewi65	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlfe9tjg0006rgv35kezm4s9	cmlfe9tit0004rgv330lbcit0	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlfeg4yn000grgv35klz4h5w	cmlfeg4tf000ergv33riyvght	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
 \.
 
 
@@ -838,6 +844,9 @@ cmlehunuw000bhsib3cpi27ho	cmlbofjvu0002mqdpmdns2wmk	cmlehunul0006hsibtxg3pui8	EA
 cmlfa5m1v00084ylfxuv58gaz	cmlbofjvu0002mqdpmdns2wmk	cmlfa5lty00034ylfdt2hy3k5	EARN	5000	95750	Ganaste 5000 puntos por tu compra	2026-02-09 14:41:29.827
 cmlfcf99h0009h84v084oonvs	cmlbofjvu0002mqdpmdns2wmk	cmlfcf9810004h84vjcs9rv76	EARN	5000	100750	Ganaste 5000 puntos por tu compra	2026-02-09 15:44:59.045
 cmlfd4i090009bzgx5qfuqhmq	cmlbofjvu0002mqdpmdns2wmk	cmlfd4hyn0004bzgx2seqwvq7	EARN	5000	105750	Ganaste 5000 puntos por tu compra	2026-02-09 16:04:36.777
+cmlfduzwn0009llyio5fmwguv	cmlbofjvu0002mqdpmdns2wmk	cmlfduztd0004llyia8wewi65	EARN	5000	110750	Ganaste 5000 puntos por tu compra	2026-02-09 16:25:13.032
+cmlfe9tlo0009rgv3uwzb1b05	cmlbofjvu0002mqdpmdns2wmk	cmlfe9tit0004rgv330lbcit0	EARN	5000	115750	Ganaste 5000 puntos por tu compra	2026-02-09 16:36:44.7
+cmlfeg564000jrgv3y6ytkdcc	cmlbofjvu0002mqdpmdns2wmk	cmlfeg4tf000ergv33riyvght	EARN	5000	120750	Ganaste 5000 puntos por tu compra	2026-02-09 16:41:39.628
 \.
 
 
@@ -980,7 +989,7 @@ cmla0qhvu000p3ivoez0th7no	Patagonia Vera IPA	patagonia-vera-ipa-6uha3-cmkvb	New 
 cmlbnnt2b000210ncti5soy3s	Beldent	beldent-a1y54-cmkvb	Tipo: Chicle Sabor: Menta	cmkvbvo5b000ur0gk0eib5xpt	800	0	100	5	t	f	2026-02-07 01:48:29.026	2026-02-07 01:48:29.026
 cmlbnu9v5000910ncd7gj7dmy	Snickers	snickers-ipbq6-cmkvb	Peso: 48gr	cmkvbvo5b000ur0gk0eib5xpt	2700	0	100	5	t	f	2026-02-07 01:53:30.735	2026-02-07 01:53:30.735
 cml4pai4d0004g0s232dhvgsh	Jenga de Madera	jenga-de-madera-oxm01-cmkvb	Clsico juego de destreza y equilibrio con bloques de madera. Ideal para jugar en grupo, poner a prueba la paciencia y la precisin, diversin asegurada en cada movimiento!	cmkvbvo5b000ur0gk0eib5xpt	9900	0	100	5	t	f	2026-02-02 04:59:44.317	2026-02-07 01:56:19.017
-cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	comercio-1-hamburguesa-veggie	\N	cmkvbvo3z0008r0gkc7qfxplz	5000	3000	84	5	t	f	2026-01-26 15:34:21.676	2026-02-09 16:04:36.742
+cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	comercio-1-hamburguesa-veggie	\N	cmkvbvo3z0008r0gkc7qfxplz	5000	3000	81	5	t	f	2026-01-26 15:34:21.676	2026-02-09 16:41:39.377
 \.
 
 
@@ -1257,7 +1266,7 @@ cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1Me
 cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-09 01:38:45.716	\N	\N	\N
 cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-09 14:38:39.777	\N	\N	\N
 cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-09 15:46:11.583	\N	\N	\N
-cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	105750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-09 16:04:36.77	\N	\N	\N
+cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	120750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-09 16:41:39.596	\N	\N	\N
 \.
 
 
