@@ -2,6 +2,7 @@
 // Run with: npx tsx scripts/socket-server.ts
 // This runs alongside Next.js on port 3001
 
+import "dotenv/config";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import crypto from "crypto";
@@ -276,6 +277,29 @@ httpServer.listen(PORT, () => {
 ║  CORS: ${NEXT_URL.padEnd(48)}║
 ╚═══════════════════════════════════════════════════════════╝
   `);
+
+    // ─── Periodic Timeout Processor ──────────────────────────────────────
+    // Process expired assignment offers every 15 seconds
+    // This replaces the need for an external cron job
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${NEXT_URL}/api/logistics/timeout`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${CRON_SECRET}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.processed > 0) {
+                    console.log(`[Cron] Processed ${data.processed} expired assignment(s)`);
+                }
+            }
+        } catch (e) {
+            // Silent - Next.js might not be ready yet
+        }
+    }, 15_000);
 });
 
 export { io, logistica };

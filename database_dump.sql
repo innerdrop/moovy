@@ -16,103 +16,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_referredById_fkey";
-ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_senderId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_chatId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SupportChat" DROP CONSTRAINT IF EXISTS "SupportChat_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_referrerId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_refereeId_fkey";
-ALTER TABLE IF EXISTS ONLY public."PushSubscription" DROP CONSTRAINT IF EXISTS "PushSubscription_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Product" DROP CONSTRAINT IF EXISTS "Product_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductImage" DROP CONSTRAINT IF EXISTS "ProductImage_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_categoryId_fkey";
-ALTER TABLE IF EXISTS ONLY public."PointsTransaction" DROP CONSTRAINT IF EXISTS "PointsTransaction_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_driverId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_addressId_fkey";
-ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_orderId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_ownerId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_categoryId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_parentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Address" DROP CONSTRAINT IF EXISTS "Address_userId_fkey";
-DROP INDEX IF EXISTS public."User_referralCode_key";
-DROP INDEX IF EXISTS public."User_email_key";
-DROP INDEX IF EXISTS public."SavedCart_userId_key";
-DROP INDEX IF EXISTS public."Referral_refereeId_key";
-DROP INDEX IF EXISTS public."PushSubscription_userId_idx";
-DROP INDEX IF EXISTS public."PushSubscription_endpoint_key";
-DROP INDEX IF EXISTS public."Product_slug_key";
-DROP INDEX IF EXISTS public."ProductCategory_productId_categoryId_key";
-DROP INDEX IF EXISTS public."Order_orderNumber_key";
-DROP INDEX IF EXISTS public."Merchant_slug_key";
-DROP INDEX IF EXISTS public."MerchantCategory_merchantId_categoryId_key";
-DROP INDEX IF EXISTS public."MerchantAcquiredProduct_merchantId_productId_key";
-DROP INDEX IF EXISTS public."Driver_userId_key";
-DROP INDEX IF EXISTS public."Category_slug_key";
-DROP INDEX IF EXISTS public."Category_name_key";
-DROP INDEX IF EXISTS public."CartItem_userId_productId_variantId_key";
-ALTER TABLE IF EXISTS ONLY public._prisma_migrations DROP CONSTRAINT IF EXISTS _prisma_migrations_pkey;
-ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
-ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_pkey";
-ALTER TABLE IF EXISTS ONLY public."SupportChat" DROP CONSTRAINT IF EXISTS "SupportChat_pkey";
-ALTER TABLE IF EXISTS ONLY public."StoreSettings" DROP CONSTRAINT IF EXISTS "StoreSettings_pkey";
-ALTER TABLE IF EXISTS ONLY public."SavedCart" DROP CONSTRAINT IF EXISTS "SavedCart_pkey";
-ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_pkey";
-ALTER TABLE IF EXISTS ONLY public."PushSubscription" DROP CONSTRAINT IF EXISTS "PushSubscription_pkey";
-ALTER TABLE IF EXISTS ONLY public."Product" DROP CONSTRAINT IF EXISTS "Product_pkey";
-ALTER TABLE IF EXISTS ONLY public."ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_pkey";
-ALTER TABLE IF EXISTS ONLY public."ProductImage" DROP CONSTRAINT IF EXISTS "ProductImage_pkey";
-ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_pkey";
-ALTER TABLE IF EXISTS ONLY public."PointsTransaction" DROP CONSTRAINT IF EXISTS "PointsTransaction_pkey";
-ALTER TABLE IF EXISTS ONLY public."PointsConfig" DROP CONSTRAINT IF EXISTS "PointsConfig_pkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_pkey";
-ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_pkey";
-ALTER TABLE IF EXISTS ONLY public."OrderBackup" DROP CONSTRAINT IF EXISTS "OrderBackup_pkey";
-ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_pkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_pkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_pkey";
-ALTER TABLE IF EXISTS ONLY public."HeroSlide" DROP CONSTRAINT IF EXISTS "HeroSlide_pkey";
-ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_pkey";
-ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_pkey";
-ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_pkey";
-ALTER TABLE IF EXISTS ONLY public."Address" DROP CONSTRAINT IF EXISTS "Address_pkey";
-DROP TABLE IF EXISTS public._prisma_migrations;
-DROP TABLE IF EXISTS public."User";
-DROP TABLE IF EXISTS public."SupportMessage";
-DROP TABLE IF EXISTS public."SupportChat";
-DROP TABLE IF EXISTS public."StoreSettings";
-DROP TABLE IF EXISTS public."SavedCart";
-DROP TABLE IF EXISTS public."Referral";
-DROP TABLE IF EXISTS public."PushSubscription";
-DROP TABLE IF EXISTS public."ProductVariant";
-DROP TABLE IF EXISTS public."ProductImage";
-DROP TABLE IF EXISTS public."ProductCategory";
-DROP TABLE IF EXISTS public."Product";
-DROP TABLE IF EXISTS public."PointsTransaction";
-DROP TABLE IF EXISTS public."PointsConfig";
-DROP TABLE IF EXISTS public."OrderItem";
-DROP TABLE IF EXISTS public."OrderBackup";
-DROP TABLE IF EXISTS public."Order";
-DROP TABLE IF EXISTS public."MerchantCategory";
-DROP TABLE IF EXISTS public."MerchantAcquiredProduct";
-DROP TABLE IF EXISTS public."Merchant";
-DROP TABLE IF EXISTS public."HeroSlide";
-DROP TABLE IF EXISTS public."Driver";
-DROP TABLE IF EXISTS public."Category";
-DROP TABLE IF EXISTS public."CartItem";
-DROP TABLE IF EXISTS public."Address";
-DROP EXTENSION IF EXISTS postgis;
--- *not* dropping schema, since initdb creates it
 --
 -- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
 --
@@ -727,6 +630,8 @@ cmkx4m5kg00055jchyl2qklvb	cmkvbvo87002br0gkyyz8i0cs	Entrega	Kuanip	190	\N	\N	Ush
 cmkx4m5bu00035jchkrxfk4cy	cmkvbvo87002br0gkyyz8i0cs	CasaEjemplo	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.816358	-68.3253491	f	2026-01-27 21:46:32.441	2026-02-10 18:19:23.14	2026-02-10 18:19:23.139
 cmlgxg5y70003jitzc6n7c58k	cmkvbvo8c002dr0gk22kda2cw	Mi Casa	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.816358	-68.3253491	t	2026-02-10 18:21:19.52	2026-02-10 18:21:19.52	\N
 cmlgy31wz000212bbnnivbgw2	cmkvbvo87002br0gkyyz8i0cs	Mi Casa	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	t	2026-02-10 18:39:07.38	2026-02-10 18:39:07.38	\N
+cmlh7mcz2000357g2et4e1hgx	cmlbofjvu0002mqdpmdns2wmk	Trabajo	Avenida Leandro Alem	629	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.7993321	-68.31213869999999	f	2026-02-10 23:06:04.718	2026-02-10 23:06:04.718	\N
+cmlh7md6n000557g2s4glzzdi	cmlbofjvu0002mqdpmdns2wmk	Entrega	Avenida Leandro Alem	629	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-10 23:06:04.991	2026-02-10 23:06:04.991	\N
 \.
 
 
@@ -768,7 +673,7 @@ cmkvbvo3b0003r0gk2uttx4lq	Sushi	sushi	\N	\N	f	14	2026-01-26 15:34:21.563	2026-02
 COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, ubicacion) FROM stdin;
 cmkvbvo83002ar0gkqelv54hh	cmkvbvo800027r0gksb401d3p	AUTO	\N	\N	\N	\N	XYZ 999	t	f	0	\N	2026-01-26 15:34:21.795	2026-01-26 15:34:21.795	FUERA_DE_SERVICIO	\N	\N	\N	\N
 cmkvbvo7w0026r0gkcidihjmf	cmkvbvo7s0023r0gk3wyvfr2v	BICICLETA	\N	\N	\N	\N	\N	t	t	0	\N	2026-01-26 15:34:21.789	2026-02-09 02:15:50.798	DISPONIBLE	2026-02-09 02:18:12.259	-54.83007393154857	-68.32761803748615	0101000020E61000004B25A5B1F71451C0B2A1D2DC3F6A4BC0
-cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t	0	\N	2026-01-26 15:34:21.779	2026-02-09 02:14:33.714	DISPONIBLE	2026-02-10 16:40:05.214	-54.83131570625812	-68.35030068902647	0101000020E6100000A3C894536B1651C0CF83958D686A4BC0
+cmkvbvo7n0022r0gkuu9g9uab	cmkvbvo7j001zr0gkayjq633k	MOTO	\N	\N	\N	\N	ABC 001	t	t	0	\N	2026-01-26 15:34:21.779	2026-02-09 02:14:33.714	DISPONIBLE	2026-02-10 23:50:51.583	-54.8315385569594	-68.35033210552614	0101000020E61000004FFE59D76B1651C078C0FDDA6F6A4BC0
 \.
 
 
@@ -847,6 +752,13 @@ cmldakmjh000cqasdpdwddd1e	MOV-B6ZS	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kf
 cmldbgdlc000cml0qmqqa4slj	MOV-3L7Y	cmlbofjvu0002mqdpmdns2wmk	cmlcf8agf0004n1z3kfbpgcs6	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5500	735	0	6235	0.3067622966847363	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-08 05:44:49.222	\N	\N	\N	2026-02-08 05:42:19.343	2026-02-08 05:44:49.23	\N	f	\N	5060	440	\N	\N	1	\N	2026-02-08 05:43:19.041	\N	f	\N
 cmlehunul0006hsibtxg3pui8	MOV-FE39	cmlbofjvu0002mqdpmdns2wmk	cmlehunug0003hsibquex9up7	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5000	774	0	5774	0.5071897927985234	\N	\N	cmkvbvo7n0022r0gkuu9g9uab	ASSIGNED	2026-02-09 01:32:26.905	\N	\N	\N	2026-02-09 01:29:09.694	2026-02-09 01:32:26.91	\N	f	\N	4600	400	\N	\N	1	\N	2026-02-09 01:30:24.773	\N	f	\N
 cmlej4cde0008wel8fmvtwfo1	MOV-U4GK	cmlbofjvu0002mqdpmdns2wmk	cmlej4cd90005wel8530ngbox	cmkvbvo3z0008r0gkc7qfxplz	DELIVERED	\N	PENDING	cash	5000	1075	0	6075	2.05617032868614	\N	\N	cmkvbvo7w0026r0gkcidihjmf	ASSIGNED	2026-02-09 02:15:50.709	\N	\N	\N	2026-02-09 02:04:40.994	2026-02-09 02:15:50.715	\N	f	\N	4600	400	\N	\N	1	\N	2026-02-09 02:05:30.957	\N	f	\N
+cmlh7md9u000857g29h19vi7g	MOV-FDFD	cmlbofjvu0002mqdpmdns2wmk	cmlh7md6n000557g2s4glzzdi	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:06:05.107	2026-02-10 23:07:43.686	Solicitud del cliente	f	\N	4600	400	\N	\N	0	\N	\N	\N	f	\N
+cmlh7p3la000i57g28ij29w1u	MOV-N3VZ	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:08:12.526	2026-02-10 23:09:49.14	Solicitud del cliente	f	\N	4600	400	\N	\N	1	2026-02-10 23:13:47.145	2026-02-10 23:08:47.145	cmkvbvo7w0026r0gkcidihjmf	f	\N
+cmlh80fw20004ljt24xvjrupg	MOV-FMZR	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:17:01.681	2026-02-10 23:26:47.182	Error en el pedido	f	\N	4600	400	\N	\N	1	\N	2026-02-10 23:17:43.194	\N	f	\N
+cmlh7ro8y0004h90l1z1568vl	MOV-GSTY	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:10:12.61	2026-02-10 23:12:12.595	Solicitud del cliente	f	\N	4600	400	\N	\N	1	2026-02-10 23:15:31.572	2026-02-10 23:10:31.573	cmkvbvo7w0026r0gkcidihjmf	f	\N
+cmlh8dvr30004118zljbhq35i	MOV-T4SD	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:27:28.767	2026-02-10 23:32:03.074	Solicitud del cliente	f	\N	4600	400	\N	\N	1	2026-02-10 23:33:21.475	2026-02-10 23:28:21.475	cmkvbvo7w0026r0gkcidihjmf	f	\N
+cmlh8lqcu000d118z52zga4uw	MOV-FMQE	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	7500	1079	0	8579	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:33:35.022	2026-02-10 23:46:25.412	Solicitud del cliente	f	\N	6900	600	\N	\N	3	\N	2026-02-10 23:44:20.062	\N	f	["cmkvbvo7w0026r0gkcidihjmf", "cmkvbvo7n0022r0gkuu9g9uab"]
+cmlh976u1000n118zi5vy0czv	MOV-KCMH	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	PREPARING	\N	PENDING	cash	7500	1079	0	8579	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:50:16.153	2026-02-10 23:50:42.287	\N	f	\N	6900	600	\N	\N	1	2026-02-10 23:55:42.285	2026-02-10 23:50:42.285	cmkvbvo7w0026r0gkcidihjmf	f	\N
 \.
 
 
@@ -885,6 +797,13 @@ cmldb3gsz0005ml0qu6qs1njy	cmldb3gsm0003ml0q488oj7xk	cmkvbvo47000ar0gk4zi9lpbi	Ha
 cmldbgdlp000eml0qcuq5kr0y	cmldbgdlc000cml0qmqqa4slj	cmkvbvo47000ar0gk4zi9lpbi	Hamburguesa Clsica	5500	1	\N	5500
 cmlehunun0008hsibeyj0psky	cmlehunul0006hsibtxg3pui8	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
 cmlej4cdg000awel89m23ojnq	cmlej4cde0008wel8fmvtwfo1	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlh7mda7000a57g2rwacl9gu	cmlh7md9u000857g29h19vi7g	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlh7p3mr000k57g21kzcxwgn	cmlh7p3la000i57g28ij29w1u	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlh7ro930006h90l7rkpmyhz	cmlh7ro8y0004h90l1z1568vl	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlh80fwa0006ljt2oakyt5ni	cmlh80fw20004ljt24xvjrupg	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlh8dvr80006118zrak23r52	cmlh8dvr30004118zljbhq35i	cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	5000	1	\N	5000
+cmlh8lqcz000f118zz8dfy20w	cmlh8lqcu000d118z52zga4uw	cmkvbvo4j000gr0gkdnii5wl3	Hamburguesa Doble	7500	1	\N	7500
+cmlh976u5000p118zyig1qeoo	cmlh976u1000n118zi5vy0czv	cmkvbvo4j000gr0gkdnii5wl3	Hamburguesa Doble	7500	1	\N	7500
 \.
 
 
@@ -933,6 +852,13 @@ cmldb3gu70008ml0qk4fo61th	cmlbofjvu0002mqdpmdns2wmk	cmldb3gsm0003ml0q488oj7xk	EA
 cmldbgdmv000hml0qi19elm9t	cmlbofjvu0002mqdpmdns2wmk	cmldbgdlc000cml0qmqqa4slj	EARN	5500	85750	Ganaste 5500 puntos por tu compra	2026-02-08 05:42:19.399
 cmlehunuw000bhsib3cpi27ho	cmlbofjvu0002mqdpmdns2wmk	cmlehunul0006hsibtxg3pui8	EARN	5000	90750	Ganaste 5000 puntos por tu compra	2026-02-09 01:29:09.704
 cmlej4cdt000dwel8cax5rwte	cmlbofjvu0002mqdpmdns2wmk	cmlej4cde0008wel8fmvtwfo1	EARN	5000	95750	Ganaste 5000 puntos por tu compra	2026-02-09 02:04:41.009
+cmlh7mday000d57g203tqvz0y	cmlbofjvu0002mqdpmdns2wmk	cmlh7md9u000857g29h19vi7g	EARN	5000	100750	Ganaste 5000 puntos por tu compra	2026-02-10 23:06:05.146
+cmlh7p3y8000n57g2c0n0zvjt	cmlbofjvu0002mqdpmdns2wmk	cmlh7p3la000i57g28ij29w1u	EARN	5000	105750	Ganaste 5000 puntos por tu compra	2026-02-10 23:08:12.992
+cmlh7ro9u0009h90lx8irue0f	cmlbofjvu0002mqdpmdns2wmk	cmlh7ro8y0004h90l1z1568vl	EARN	5000	110750	Ganaste 5000 puntos por tu compra	2026-02-10 23:10:12.642
+cmlh80fwx0009ljt270mygz2a	cmlbofjvu0002mqdpmdns2wmk	cmlh80fw20004ljt24xvjrupg	EARN	5000	115750	Ganaste 5000 puntos por tu compra	2026-02-10 23:17:01.713
+cmlh8dvrp0009118zmo9b49qu	cmlbofjvu0002mqdpmdns2wmk	cmlh8dvr30004118zljbhq35i	EARN	5000	120750	Ganaste 5000 puntos por tu compra	2026-02-10 23:27:28.789
+cmlh8lqdr000i118zljwj7jz8	cmlbofjvu0002mqdpmdns2wmk	cmlh8lqcu000d118z52zga4uw	EARN	7500	128250	Ganaste 7500 puntos por tu compra	2026-02-10 23:33:35.056
+cmlh976uv000s118z2u2pbl9x	cmlbofjvu0002mqdpmdns2wmk	cmlh976u1000n118zi5vy0czv	EARN	7500	135750	Ganaste 7500 puntos por tu compra	2026-02-10 23:50:16.184
 \.
 
 
@@ -941,7 +867,6 @@ cmlej4cdt000dwel8cax5rwte	cmlbofjvu0002mqdpmdns2wmk	cmlej4cde0008wel8fmvtwfo1	EA
 --
 
 COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "createdAt", "updatedAt") FROM stdin;
-cmkvbvo4j000gr0gkdnii5wl3	Hamburguesa Doble	comercio-1-hamburguesa-doble	\N	cmkvbvo3z0008r0gkc7qfxplz	7500	4500	100	5	t	f	2026-01-26 15:34:21.668	2026-01-26 15:34:21.668
 cmkvbvo5s0012r0gknilcgfre	Pizza Pepperoni	comercio-2-pizza-pepperoni	\N	cmkvbvo5b000ur0gk0eib5xpt	7000	4200	100	5	t	f	2026-01-26 15:34:21.712	2026-01-26 15:34:21.712
 cmkvbvo650018r0gkp96zwmxm	Pizza 4 Quesos	comercio-2-pizza-4-quesos	\N	cmkvbvo5b000ur0gk0eib5xpt	7500	4500	100	5	t	f	2026-01-26 15:34:21.725	2026-01-26 15:34:21.725
 cmkvbvo6n001ir0gkd49h1c39	Roll California	comercio-3-roll-california	\N	cmkvbvo6k001gr0gknt85jfb9	4500	2700	100	5	t	f	2026-01-26 15:34:21.743	2026-01-26 15:34:21.743
@@ -1075,7 +1000,8 @@ cmla0qhvu000p3ivoez0th7no	Patagonia Vera IPA	patagonia-vera-ipa-6uha3-cmkvb	New 
 cmlbnnt2b000210ncti5soy3s	Beldent	beldent-a1y54-cmkvb	Tipo: Chicle Sabor: Menta	cmkvbvo5b000ur0gk0eib5xpt	800	0	100	5	t	f	2026-02-07 01:48:29.026	2026-02-07 01:48:29.026
 cmlbnu9v5000910ncd7gj7dmy	Snickers	snickers-ipbq6-cmkvb	Peso: 48gr	cmkvbvo5b000ur0gk0eib5xpt	2700	0	100	5	t	f	2026-02-07 01:53:30.735	2026-02-07 01:53:30.735
 cml4pai4d0004g0s232dhvgsh	Jenga de Madera	jenga-de-madera-oxm01-cmkvb	Clsico juego de destreza y equilibrio con bloques de madera. Ideal para jugar en grupo, poner a prueba la paciencia y la precisin, diversin asegurada en cada movimiento!	cmkvbvo5b000ur0gk0eib5xpt	9900	0	100	5	t	f	2026-02-02 04:59:44.317	2026-02-07 01:56:19.017
-cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	comercio-1-hamburguesa-veggie	\N	cmkvbvo3z0008r0gkc7qfxplz	5000	3000	86	5	t	f	2026-01-26 15:34:21.676	2026-02-09 02:04:40.999
+cmkvbvo4s000mr0gkm6bpedcj	Hamburguesa Veggie	comercio-1-hamburguesa-veggie	\N	cmkvbvo3z0008r0gkc7qfxplz	5000	3000	81	5	t	f	2026-01-26 15:34:21.676	2026-02-10 23:27:28.775
+cmkvbvo4j000gr0gkdnii5wl3	Hamburguesa Doble	comercio-1-hamburguesa-doble	\N	cmkvbvo3z0008r0gkc7qfxplz	7500	4500	98	5	t	f	2026-01-26 15:34:21.668	2026-02-10 23:50:16.165
 \.
 
 
@@ -1346,14 +1272,14 @@ COPY public."User" (id, email, password, name, "firstName", "lastName", phone, r
 cmkvbvo6g001dr0gkkc3uxs3s	comercio3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 3	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo6g001er0gksdi7wmsv	\N	2026-01-26 15:34:21.736	2026-01-26 15:34:21.736	\N	\N	\N
 cmkvbvo800027r0gksb401d3p	rider3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 3	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo800028r0gk3g91rt9h	\N	2026-01-26 15:34:21.792	2026-01-26 15:34:21.792	\N	\N	\N
 cmkvbvo8f002fr0gks60vb2et	cliente3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 3	\N	\N	\N	CLIENT	\N	\N	0	0	f	cmkvbvo8f002gr0gkxvsgolli	\N	2026-01-26 15:34:21.808	2026-01-26 15:34:21.808	\N	\N	\N
-cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	95750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-09 02:04:41.006	\N	\N	\N
-cmkvbvo7s0023r0gk3wyvfr2v	rider2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 2	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7s0024r0gkvoz8se8y	\N	2026-01-26 15:34:21.784	2026-02-09 02:15:18.932	\N	\N	\N
 cmkvbvo87002br0gkyyz8i0cs	cliente1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 1	\N	\N	\N	CLIENT	\N	\N	52900	0	t	cmkvbvo87002cr0gkde84ikuu	\N	2026-01-26 15:34:21.799	2026-02-10 18:38:14.707	\N	\N	\N
-cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-10 18:43:55.878	\N	\N	\N
-cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-10 18:49:24.294	\N	\N	\N
+cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-10 23:07:30.633	\N	\N	\N
 cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	 COMERCIO 2				MERCHANT	\N	\N	0	0	f	cmkvbvo57000sr0gkah2nixeg	\N	2026-01-26 15:34:21.692	2026-02-10 16:16:55.73	\N	\N	\N
 cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-10 16:32:12.615	\N	\N	\N
+cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-10 23:31:52.786	\N	\N	\N
 cmkvbvo8c002dr0gk22kda2cw	cliente2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 2	\N	\N	\N	CLIENT	\N	\N	5000	0	f	cmkvbvo8c002er0gk53tvzvvh	\N	2026-01-26 15:34:21.804	2026-02-10 18:18:49.622	\N	\N	\N
+cmkvbvo7s0023r0gk3wyvfr2v	rider2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 2	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7s0024r0gkvoz8se8y	\N	2026-01-26 15:34:21.784	2026-02-10 23:49:04.56	\N	\N	\N
+cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	135750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-10 23:50:16.178	\N	\N	\N
 \.
 
 
