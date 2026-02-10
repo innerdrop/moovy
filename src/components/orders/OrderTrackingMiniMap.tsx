@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
 import { Loader2, Clock, Navigation } from "lucide-react";
 import { io, Socket } from "socket.io-client";
+import { useSocketAuth } from "@/hooks/useSocketAuth";
 
 interface OrderTrackingMiniMapProps {
     orderId: string;
@@ -77,9 +78,14 @@ function OrderTrackingMiniMap({
         region: 'AR'
     });
 
+    // Get socket auth token
+    const { token: socketToken } = useSocketAuth(
+        ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(orderStatus)
+    );
+
     // Handle Socket Connection
     useEffect(() => {
-        if (!orderId) return;
+        if (!orderId || !socketToken) return;
 
         const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
         if (!trackableStatuses.includes(orderStatus)) return;
@@ -87,6 +93,7 @@ function OrderTrackingMiniMap({
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "https://somosmoovy.com";
         const socket = io(`${socketUrl}/logistica`, {
             transports: ["websocket", "polling"],
+            auth: { token: socketToken },
         });
 
         socketRef.current = socket;
@@ -102,7 +109,7 @@ function OrderTrackingMiniMap({
         return () => {
             socket.disconnect();
         };
-    }, [orderId, orderStatus]);
+    }, [orderId, orderStatus, socketToken]);
 
     // Request directions and calculate ETA
     useEffect(() => {

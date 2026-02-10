@@ -106,7 +106,7 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                     if (role === "ADMIN") {
                         router.push("/ops");
                     } else if (role === "DRIVER") {
-                        router.push("/repartidor");
+                        router.push("/repartidor/dashboard");
                     } else if (role === "MERCHANT") {
                         router.push("/comercios");
                     } else {

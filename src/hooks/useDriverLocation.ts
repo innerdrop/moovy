@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { calculateDistance } from "@/lib/geo";
 
 interface LocationState {
     latitude: number | null;
@@ -21,6 +22,8 @@ interface UseDriverLocationOptions {
     currentOrderId?: string | null;
     enabled?: boolean;
     updateThresholdMeters?: number;
+    /** Socket auth token from useSocketAuth hook */
+    socketToken?: string | null;
 }
 
 export function useDriverLocation({
@@ -28,6 +31,7 @@ export function useDriverLocation({
     currentOrderId,
     enabled = true,
     updateThresholdMeters = 50,
+    socketToken,
 }: UseDriverLocationOptions) {
     const [location, setLocation] = useState<LocationState>({
         latitude: null,
@@ -44,21 +48,6 @@ export function useDriverLocation({
     const watchIdRef = useRef<number | null>(null);
     const lastSentRef = useRef<{ lat: number; lng: number } | null>(null);
 
-    // Calculate distance between two points (Haversine)
-    const calculateDistance = useCallback((lat1: number, lng1: number, lat2: number, lng2: number) => {
-        const R = 6371000; // Earth's radius in meters
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLng = ((lng2 - lng1) * Math.PI) / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos((lat1 * Math.PI) / 180) *
-            Math.cos((lat2 * Math.PI) / 180) *
-            Math.sin(dLng / 2) *
-            Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }, []);
-
     // Send location update to server
     const sendLocationUpdate = useCallback(
         async (lat: number, lng: number, heading?: number, speed?: number) => {
@@ -68,7 +57,8 @@ export function useDriverLocation({
                     lastSentRef.current.lat,
                     lastSentRef.current.lng,
                     lat,
-                    lng
+                    lng,
+                    "m"
                 );
                 if (distance < updateThresholdMeters) {
                     return; // Didn't move enough
@@ -100,7 +90,7 @@ export function useDriverLocation({
                 });
             }
         },
-        [driverId, currentOrderId, calculateDistance, updateThresholdMeters]
+        [driverId, currentOrderId, updateThresholdMeters]
     );
 
     // Start geolocation tracking
@@ -180,7 +170,7 @@ export function useDriverLocation({
 
     // Connect to Socket.io
     useEffect(() => {
-        if (!enabled || !driverId) return;
+        if (!enabled || !driverId || !socketToken) return;
 
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
 
@@ -188,14 +178,20 @@ export function useDriverLocation({
             transports: ["websocket", "polling"],
             reconnection: true,
             reconnectionAttempts: 5,
+            auth: { token: socketToken },
         });
 
         socketRef.current = socket;
 
         socket.on("connect", () => {
-            console.log("[Driver] Connected to socket server");
+            console.log("[Driver] Connected to socket server (authenticated)");
             setConnected(true);
             socket.emit("driver_online", driverId);
+        });
+
+        socket.on("connect_error", (error) => {
+            console.error("[Driver] Socket auth error:", error.message);
+            setConnected(false);
         });
 
         socket.on("disconnect", () => {
@@ -212,7 +208,7 @@ export function useDriverLocation({
         return () => {
             socket.disconnect();
         };
-    }, [enabled, driverId]);
+    }, [enabled, driverId, socketToken]);
 
     // Start/stop tracking when currentOrderId changes
     useEffect(() => {

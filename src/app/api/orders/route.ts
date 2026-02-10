@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig } from "@/lib/points";
+import { CreateOrderSchema, validateInput } from "@/lib/validations";
 
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
@@ -26,7 +27,18 @@ export async function POST(request: Request) {
             );
         }
 
-        const data = await request.json();
+        const rawData = await request.json();
+
+        // Validate input with Zod
+        const validation = validateInput(CreateOrderSchema, rawData);
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: validation.error },
+                { status: 400 }
+            );
+        }
+
+        const data = validation.data!;
         const {
             items,
             addressId,
@@ -41,13 +53,6 @@ export async function POST(request: Request) {
             discountAmount,
             merchantId
         } = data;
-
-        if (!items || items.length === 0) {
-            return NextResponse.json(
-                { error: "El carrito está vacío" },
-                { status: 400 }
-            );
-        }
 
         // Calculate subtotal
         const subtotal = items.reduce(
@@ -202,7 +207,7 @@ export async function POST(request: Request) {
                 // Notify merchant
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
                     body: JSON.stringify({
                         event: "new_order",
                         room: `merchant:${merchantId}`,
@@ -219,7 +224,7 @@ export async function POST(request: Request) {
                 // Notify admin
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
                     body: JSON.stringify({
                         event: "new_order",
                         room: "admin:orders",
