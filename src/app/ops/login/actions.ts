@@ -11,7 +11,7 @@ export async function loginAction(formData: FormData) {
         await signIn("credentials", {
             email: email.toLowerCase().trim(),
             password,
-            redirectTo: "/ops",
+            redirect: false,
         });
 
         return { success: true };

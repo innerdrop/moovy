@@ -1,7 +1,7 @@
 "use client";
 
-// Admin Categories Page - Gestión de Categorías (Apple Style Redesign - Refined Typography - Smaller Cards)
-import { useState, useEffect } from "react";
+// Admin Categories Page - Gestión de Categorías (Drag & Drop Reorder - Optimized Fluidity)
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
     Plus,
@@ -14,13 +14,30 @@ import {
     GripVertical,
     Package,
     Search,
-    ArrowUp,
-    ArrowDown,
-    LayoutGrid,
-    List,
-    Clock
+    LayoutList
 } from "lucide-react";
 import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/icons";
+
+// DnD Kit Imports
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragMoveEvent
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Category {
     id: string;
@@ -34,6 +51,114 @@ interface Category {
     _count?: { products: number };
 }
 
+// --- Sortable Item Component ---
+function SortableCategoryItem({
+    category,
+    toggleActive,
+    startEdit,
+    handleDelete
+}: {
+    category: Category;
+    toggleActive: (c: Category) => void;
+    startEdit: (c: Category) => void;
+    handleDelete: (id: string, name: string) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: category.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : "auto",
+        position: isDragging ? "relative" as const : "static" as const,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`group bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-100 flex items-center gap-2 sm:gap-4 relative overflow-hidden ${isDragging ? "shadow-2xl scale-[1.02] ring-2 ring-moovy z-50 opacity-95" : "hover:shadow-md hover:border-moovy/20"} ${!category.isActive ? "opacity-60 grayscale-[0.5]" : ""}`}
+        >
+            {/* Drag Handle - ONLY this element triggers drag */}
+            <div
+                {...attributes}
+                {...listeners}
+                className="text-slate-300 cursor-grab active:cursor-grabbing hover:text-moovy p-2 -m-2 rounded-xl hover:bg-slate-50 transition-colors select-none"
+                style={{ touchAction: "none", userSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
+            >
+                <GripVertical className="w-5 h-5" />
+            </div>
+
+            {/* Icon */}
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110 ${category.isActive ? "bg-moovy-light/20 text-moovy" : "bg-slate-100 text-slate-400"}`}>
+                {category.icon ? (
+                    <div className="w-6 h-6 drop-shadow-sm">
+                        {getCategoryIcon(category.icon)}
+                    </div>
+                ) : (
+                    <Tag className="w-6 h-6" />
+                )}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-sm sm:text-base font-bold text-navy truncate leading-tight">
+                        {category.name}
+                    </h3>
+                    {!category.isActive && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500 uppercase tracking-wide">
+                            Inactiva
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
+                    <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                        <Package className="w-3 h-3" />
+                        {category._count?.products || 0}
+                    </span>
+                    <span className="hidden sm:inline-block truncate max-w-[200px]">
+                        {category.description || "Sin descripción"}
+                    </span>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                    onClick={() => toggleActive(category)}
+                    className={`p-2 rounded-xl transition-colors ${category.isActive
+                        ? "bg-green-50 text-green-600 hover:bg-green-100"
+                        : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                        }`}
+                    title={category.isActive ? "Desactivar" : "Activar"}
+                >
+                    <Check className={`w-4 h-4 ${category.isActive ? "opacity-100" : "opacity-0"}`} />
+                </button>
+                <button
+                    onClick={() => startEdit(category)}
+                    className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
+                >
+                    <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => handleDelete(category.id, category.name)}
+                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// --- Main Page Component ---
 export default function AdminCategoriasPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,6 +173,82 @@ export default function AdminCategoriasPage() {
     const [showIconSelector, setShowIconSelector] = useState(false);
     const [formIsActive, setFormIsActive] = useState(true);
     const [error, setError] = useState("");
+
+    // DnD Sensors - Desktop + Mobile
+    // PointerSensor handles mouse/trackpad, TouchSensor handles iOS/Android touch
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: 150,
+                tolerance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 200, // Hold-to-drag on mobile
+                tolerance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    // Custom auto-scroll during drag for native-like experience
+    const scrollAnimationRef = useRef<number | null>(null);
+
+    const handleDragMove = useCallback((event: DragMoveEvent) => {
+        // Cancel any existing animation frame
+        if (scrollAnimationRef.current) {
+            cancelAnimationFrame(scrollAnimationRef.current);
+        }
+
+        const { activatorEvent } = event;
+        if (!activatorEvent) return;
+
+        // Get touch/pointer position
+        let clientY: number;
+        if ('touches' in activatorEvent && (activatorEvent as TouchEvent).touches.length > 0) {
+            clientY = (activatorEvent as TouchEvent).touches[0].clientY;
+        } else if ('clientY' in activatorEvent) {
+            clientY = (activatorEvent as PointerEvent).clientY;
+        } else {
+            return;
+        }
+
+        const viewportHeight = window.innerHeight;
+        const scrollSpeed = 12; // pixels per frame
+
+        // Scroll zone: top 25% scrolls up, bottom 40% scrolls down
+        const topThreshold = viewportHeight * 0.25;
+        const bottomThreshold = viewportHeight * 0.60;
+
+        const scroll = () => {
+            if (clientY < topThreshold) {
+                // Scroll up - faster when closer to edge
+                const intensity = 1 - (clientY / topThreshold);
+                window.scrollBy(0, -scrollSpeed * intensity * 2);
+            } else if (clientY > bottomThreshold) {
+                // Scroll down - faster when closer to edge
+                const intensity = (clientY - bottomThreshold) / (viewportHeight - bottomThreshold);
+                window.scrollBy(0, scrollSpeed * intensity * 2);
+            }
+
+            scrollAnimationRef.current = requestAnimationFrame(scroll);
+        };
+
+        scroll();
+    }, []);
+
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
+        // Stop scrolling
+        if (scrollAnimationRef.current) {
+            cancelAnimationFrame(scrollAnimationRef.current);
+            scrollAnimationRef.current = null;
+        }
+
+        handleDragEndInternal(event);
+    }, []);
 
     // Load categories
     useEffect(() => {
@@ -65,6 +266,40 @@ export default function AdminCategoriasPage() {
             console.error("Error loading categories:", error);
         } finally {
             setLoading(false);
+        }
+    }
+
+    // DnD Handler (internal)
+    async function handleDragEndInternal(event: DragEndEvent) {
+        const { active, over } = event;
+
+        if (active.id !== over?.id) {
+            setCategories((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id);
+                const newIndex = items.findIndex((item) => item.id === over?.id);
+
+                const newItems = arrayMove(items, oldIndex, newIndex);
+
+                // Save new order to server
+                // We do this after state update for instant feedback (optimistic UI)
+                saveOrder(newItems);
+
+                return newItems;
+            });
+        }
+    }
+
+    async function saveOrder(items: Category[]) {
+        try {
+            const categoryIds = items.map(c => c.id);
+            await fetch("/api/admin/categories/reorder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categoryIds }),
+            });
+        } catch (error) {
+            console.error("Error reordering categories:", error);
+            // Ideally revert state here on error
         }
     }
 
@@ -161,6 +396,8 @@ export default function AdminCategoriasPage() {
 
     async function toggleActive(category: Category) {
         try {
+            const isDeactivating = category.isActive; // true means we're about to deactivate
+
             const res = await fetch(`/api/admin/categories/${category.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -168,36 +405,34 @@ export default function AdminCategoriasPage() {
             });
 
             if (res.ok) {
-                await loadCategories();
+                if (isDeactivating) {
+                    // Move to end of list when deactivating
+                    setCategories((items) => {
+                        const index = items.findIndex((item) => item.id === category.id);
+                        if (index === -1) return items;
+
+                        const newItems = [...items];
+                        const [removed] = newItems.splice(index, 1);
+                        removed.isActive = false; // Update local state
+                        newItems.push(removed); // Add to end
+
+                        // Update order in backend
+                        const newOrder = newItems.map((c, i) => ({ id: c.id, order: i }));
+                        fetch("/api/admin/categories/reorder", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ categories: newOrder }),
+                        });
+
+                        return newItems;
+                    });
+                } else {
+                    // Just reload when activating
+                    await loadCategories();
+                }
             }
         } catch (error) {
             console.error("Error toggling category:", error);
-        }
-    }
-
-    async function moveCategory(index: number, direction: "up" | "down") {
-        const newIndex = direction === "up" ? index - 1 : index + 1;
-        if (newIndex < 0 || newIndex >= categories.length) return;
-
-        // Swap categories in the array
-        const newCategories = [...categories];
-        [newCategories[index], newCategories[newIndex]] = [newCategories[newIndex], newCategories[index]];
-
-        // Update local state immediately for responsive UI
-        setCategories(newCategories);
-
-        // Save new order to server
-        try {
-            const categoryIds = newCategories.map(c => c.id);
-            await fetch("/api/admin/categories/reorder", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ categoryIds }),
-            });
-        } catch (error) {
-            console.error("Error reordering categories:", error);
-            // Reload original order on error
-            await loadCategories();
         }
     }
 
@@ -210,28 +445,33 @@ export default function AdminCategoriasPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-6 animate-fadeIn pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sticky top-0 bg-white/95 backdrop-blur-md z-30 py-4 px-4 md:static md:bg-transparent md:p-0">
                 <div>
                     <h1 className="text-2xl font-bold text-navy flex items-center gap-3 tracking-tight">
                         <div className="w-10 h-10 rounded-xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20">
-                            <Tag className="w-5 h-5 text-white" />
+                            <LayoutList className="w-5 h-5 text-white" />
                         </div>
                         Categorías
                     </h1>
-                    <p className="text-slate-500 font-medium text-xs mt-1 ml-1">Gestioná las colecciones de tu tienda</p>
+                    <p className="text-slate-500 font-medium text-xs mt-1 ml-1 hidden sm:block">Mantén presionado para reordenar</p>
                 </div>
                 <button
                     onClick={startNew}
-                    className="btn-primary flex items-center gap-2 shadow-lg shadow-moovy/20 hover:shadow-moovy/40 transition-shadow rounded-xl px-4 py-2.5 text-sm"
+                    className="btn-primary flex items-center gap-2 shadow-lg shadow-moovy/20 hover:shadow-moovy/40 transition-shadow rounded-xl px-4 py-2.5 text-sm w-full md:w-auto justify-center"
                 >
                     <Plus className="w-4 h-4" />
                     <span className="font-bold">Nueva Categoría</span>
                 </button>
             </div>
 
-            {/* Categories Grid - Smaller Cards Layout */}
+            {/* Hint for mobile (if not in header) */}
+            <div className="sm:hidden text-center text-xs text-slate-400 font-medium bg-white/50 py-2 rounded-lg border border-slate-100">
+                👆 Mantén presionado una tarjeta para moverla
+            </div>
+
+            {/* Draggable List */}
             {categories.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-sm">
                     <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -244,265 +484,162 @@ export default function AdminCategoriasPage() {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {categories.map((category, index) => (
-                        <div
-                            key={category.id}
-                            className={`group bg-white rounded-3xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-100 flex flex-col relative overflow-hidden h-full ${!category.isActive ? "opacity-60 grayscale-[0.5]" : ""}`}
-                        >
-                            {/* Decorative Background */}
-                            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-50 to-transparent -mr-8 -mt-8 rounded-full transition-transform duration-500 group-hover:scale-110 opacity-50`} />
-
-                            <div className="flex items-start justify-between mb-3 relative z-10">
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:-rotate-6 ${category.isActive ? "bg-moovy-light/30 text-moovy" : "bg-slate-100 text-slate-400"}`}>
-                                    {category.icon ? (
-                                        <div className="w-5 h-5 drop-shadow-sm">
-                                            {getCategoryIcon(category.icon)}
-                                        </div>
-                                    ) : (
-                                        <Tag className="w-5 h-5" />
-                                    )}
-                                </div>
-
-                                {/* Order Controls - Compact */}
-                                <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); moveCategory(index, "up"); }}
-                                        disabled={index === 0}
-                                        className={`p-1 rounded transition-colors ${index === 0 ? "text-slate-200 cursor-not-allowed" : "text-slate-300 hover:bg-slate-100 hover:text-moovy"}`}
-                                    >
-                                        <ArrowUp className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); moveCategory(index, "down"); }}
-                                        disabled={index === categories.length - 1}
-                                        className={`p-1 rounded transition-colors ${index === categories.length - 1 ? "text-slate-200 cursor-not-allowed" : "text-slate-300 hover:bg-slate-100 hover:text-moovy"}`}
-                                    >
-                                        <ArrowDown className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="mb-3 flex-1 relative z-10">
-                                <h3 className="text-base font-bold text-navy leading-tight mb-1 group-hover:text-moovy transition-colors tracking-tight line-clamp-1" title={category.name}>
-                                    {category.name}
-                                </h3>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[10px] items-center gap-1 font-semibold px-2 py-0.5 rounded-md bg-slate-50 text-slate-500 inline-flex">
-                                        <Package className="w-3 h-3" />
-                                        {category._count?.products || 0}
-                                    </span>
-                                    {!category.isActive && (
-                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-red-50 text-red-500">
-                                            Inactiva
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-1 pt-3 border-t border-slate-50 relative z-10 mt-auto">
-                                <button
-                                    onClick={() => toggleActive(category)}
-                                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors ${category.isActive
-                                            ? "bg-green-50 text-green-600 hover:bg-green-100"
-                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                                        }`}
-                                >
-                                    {category.isActive ? "Activa" : "Activar"}
-                                </button>
-                                <button
-                                    onClick={() => startEdit(category)}
-                                    className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                    title="Editar"
-                                >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(category.id, category.name)}
-                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Eliminar"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragMove={handleDragMove}
+                    onDragEnd={handleDragEnd}
+                    autoScroll={false}
+                >
+                    <SortableContext
+                        items={categories.map(c => c.id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="flex flex-col gap-3">
+                            {categories.map((category) => (
+                                <SortableCategoryItem
+                                    key={category.id}
+                                    category={category}
+                                    toggleActive={toggleActive}
+                                    startEdit={startEdit}
+                                    handleDelete={handleDelete}
+                                />
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </SortableContext>
+                </DndContext>
             )}
 
-            {/* Modal Form */}
+            {/* Modal Form - Simple like Clientes, Positioned Top */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-slideUp">
-                        <div className="p-6 flex items-center justify-between border-b border-slate-50">
-                            <div>
-                                <h2 className="text-xl font-bold text-navy tracking-tight">
-                                    {editingId ? "Editar Categoría" : "Nueva Categoría"}
-                                </h2>
-                                <p className="text-xs text-slate-500 mt-1">Detalles de la colección</p>
-                            </div>
-                            <button
-                                onClick={cancelForm}
-                                className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-navy transition-colors"
-                            >
-                                <X className="w-4 h-4" />
+                <div className="fixed inset-0 flex items-start justify-center z-50 p-4 pt-10 sm:pt-20 overflow-y-auto" onClick={cancelForm}>
+                    <div
+                        className="bg-white rounded-xl p-6 max-w-sm sm:max-w-md w-full shadow-2xl relative mb-10 mt-safe animate-fadeIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Simple Header */}
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-bold text-xl text-gray-900 tracking-tight">
+                                {editingId ? "Editar Categoría" : "Nueva Categoría"}
+                            </h3>
+                            <button onClick={cancelForm} className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-90">
+                                <X className="w-5 h-5 text-gray-400" />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-5">
-                            {error && (
-                                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                    {error}
-                                </div>
-                            )}
+                        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4 border border-red-100 font-medium">{error}</div>}
 
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                <div>
-                                    <label className="block text-xs font-bold text-navy mb-1.5 pl-1">
-                                        Nombre de la Categoría
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formName}
-                                        onChange={(e) => setFormName(e.target.value)}
-                                        placeholder="Ej: Hamburguesas"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-navy focus:ring-2 focus:ring-moovy focus:outline-none transition-all placeholder:text-slate-400"
-                                        autoFocus
-                                    />
-                                </div>
+                        {/* Form */}
+                        <div className="space-y-5">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Nombre</label>
+                                <input
+                                    type="text"
+                                    value={formName}
+                                    onChange={(e) => setFormName(e.target.value)}
+                                    className="input w-full bg-white border-gray-200 focus:border-moovy focus:ring-4 focus:ring-moovy/5 transition-all"
+                                    placeholder="Ej: Hamburguesas"
+                                    autoFocus
+                                />
+                            </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-navy mb-1.5 pl-1">
-                                        Descripción (Opcional)
-                                    </label>
-                                    <textarea
-                                        value={formDescription}
-                                        onChange={(e) => setFormDescription(e.target.value)}
-                                        placeholder="Breve descripción..."
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-navy focus:ring-2 focus:ring-moovy focus:outline-none transition-all placeholder:text-slate-400 resize-none"
-                                        rows={2}
-                                    />
-                                </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Descripción</label>
+                                <textarea
+                                    value={formDescription}
+                                    onChange={(e) => setFormDescription(e.target.value)}
+                                    className="input w-full resize-none bg-white border-gray-200 focus:border-moovy focus:ring-4 focus:ring-moovy/5 transition-all"
+                                    placeholder="Breve descripción..."
+                                    rows={2}
+                                />
+                            </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-navy mb-1.5 pl-1">
-                                        Icono Representativo
-                                    </label>
-
-                                    <div className="border border-slate-100 rounded-xl p-3 bg-white shadow-sm">
-                                        {formIcon ? (
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-moovy-light/20 rounded-xl flex items-center justify-center border border-moovy/20">
-                                                    <div className="w-6 h-6 text-moovy">
-                                                        {getCategoryIcon(formIcon)}
-                                                    </div>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-bold text-navy capitalize mb-0.5">{formIcon}</p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormIcon("")}
-                                                        className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors"
-                                                    >
-                                                        Eliminar icono
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowIconSelector(true)}
-                                                    className="px-3 py-1.5 bg-slate-50 rounded-lg text-xs font-bold text-navy hover:bg-slate-100 transition-colors"
-                                                >
-                                                    Cambiar
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowIconSelector(true)}
-                                                className="w-full py-4 flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-moovy hover:text-moovy hover:bg-moovy-light/5 transition-all group"
-                                            >
-                                                <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
-                                                    <Plus className="w-5 h-5" />
-                                                </div>
-                                                <span className="text-xs font-bold">Seleccionar Icono</span>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Icon Selector Nested Modal */}
-                                    {showIconSelector && (
-                                        <div className="absolute inset-0 z-[60] bg-white/90 backdrop-blur-xl rounded-3xl flex flex-col animate-fadeIn">
-                                            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white/50">
-                                                <h3 className="font-bold text-navy text-lg">Iconos</h3>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowIconSelector(false)}
-                                                    className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                            <div className="p-5 overflow-y-auto flex-1">
-                                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-                                                    {Object.entries(CATEGORY_ICONS).map(([key, icon]) => (
-                                                        <button
-                                                            key={key}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setFormIcon(key);
-                                                                setShowIconSelector(false);
-                                                            }}
-                                                            className={`aspect-square flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border transition-all duration-300 group ${formIcon === key
-                                                                ? "border-moovy bg-moovy text-white shadow-lg shadow-moovy/30 scale-105"
-                                                                : "border-slate-100 bg-white text-slate-400 hover:border-moovy/30 hover:shadow-md hover:-translate-y-1"
-                                                                }`}
-                                                        >
-                                                            <div className={`w-6 h-6 transition-transform duration-300 ${formIcon !== key ? "group-hover:scale-110" : ""}`}>
-                                                                {icon}
-                                                            </div>
-                                                            <span className="text-[9px] font-semibold uppercase tracking-wide truncate w-full text-center">
-                                                                {key}
-                                                            </span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer" onClick={() => setFormIsActive(!formIsActive)}>
-                                    <div className={`w-10 h-6 rounded-full p-0.5 transition-colors duration-300 flex items-center ${formIsActive ? "bg-green-500" : "bg-slate-300"}`}>
-                                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${formIsActive ? "translate-x-4" : "translate-x-0"}`} />
-                                    </div>
-                                    <span className="text-xs font-bold text-navy select-none">
-                                        Visible en la tienda
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-50">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Icono</label>
+                                {!showIconSelector ? (
                                     <button
                                         type="button"
-                                        onClick={cancelForm}
-                                        className="py-3 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+                                        onClick={() => setShowIconSelector(true)}
+                                        className="w-full flex items-center gap-4 p-3 bg-white border border-gray-200 rounded-lg hover:border-moovy hover:shadow-sm transition-all text-left"
                                     >
-                                        Cancelar
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${formIcon ? 'bg-[#e60012]/10 text-[#e60012]' : 'bg-gray-100 text-gray-400'}`}>
+                                            {formIcon ? (
+                                                <div className="w-6 h-6">{getCategoryIcon(formIcon)}</div>
+                                            ) : (
+                                                <Plus className="w-5 h-5" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-gray-700">
+                                                {formIcon ? formIcon.charAt(0).toUpperCase() + formIcon.slice(1) : 'Seleccionar icono'}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">Toca para cambiar</p>
+                                        </div>
                                     </button>
-                                    <button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="btn-primary py-3 px-4 rounded-xl text-xs font-bold shadow-lg shadow-moovy/20 flex items-center justify-center gap-2 hover:shadow-moovy/40 hover:-translate-y-0.5 transition-all"
-                                    >
-                                        {saving ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Check className="w-4 h-4" />
-                                        )}
-                                        {editingId ? "Guardar" : "Crear"}
-                                    </button>
+                                ) : (
+                                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-inner">
+                                        <div className="flex items-center justify-between mb-3 border-b border-gray-50 pb-2">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Iconos Disponibles</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowIconSelector(false)}
+                                                className="text-xs text-[#e60012] font-bold hover:underline"
+                                            >
+                                                Cerrar
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+                                            {Object.entries(CATEGORY_ICONS).map(([key, icon]) => (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormIcon(key);
+                                                        setShowIconSelector(false);
+                                                    }}
+                                                    className={`aspect-square flex items-center justify-center rounded-xl border transition-all ${formIcon === key
+                                                        ? 'bg-[#e60012] border-[#e60012] text-white shadow-lg scale-110 z-10'
+                                                        : 'bg-white border-gray-100 text-gray-500 hover:border-moovy hover:text-moovy'
+                                                        }`}
+                                                >
+                                                    <div className="w-5 h-5">{icon}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div
+                                className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl cursor-pointer hover:border-gray-200 transition-all active:bg-gray-50"
+                                onClick={() => setFormIsActive(!formIsActive)}
+                            >
+                                <div>
+                                    <p className="text-sm font-bold text-gray-700">Visible en la tienda</p>
+                                    <p className="text-[10px] text-gray-400 font-medium uppercase">Estado de activación</p>
                                 </div>
-                            </form>
+                                <div className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 ${formIsActive ? 'bg-green-500' : 'bg-gray-200'}`}>
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${formIsActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3 pt-6">
+                            <button
+                                onClick={cancelForm}
+                                className="flex-1 py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors active:scale-95"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={saving}
+                                className="flex-1 py-3 bg-[#e60012] text-white rounded-xl font-bold hover:bg-[#c5000f] shadow-xl shadow-moovy/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-95"
+                            >
+                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                                {editingId ? 'Guardar Cambios' : 'Crear Categoría'}
+                            </button>
                         </div>
                     </div>
                 </div>
