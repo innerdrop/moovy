@@ -164,12 +164,13 @@ export async function PATCH(
             try {
                 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
-                // Rooms to notify: order tracking, merchant, customer, admin
+                // Rooms to notify: order tracking, merchant, customer, admin, and drivers for relevant statuses
                 const rooms = [
                     `order:${id}`,
                     existingOrder?.merchantId ? `merchant:${existingOrder.merchantId}` : null,
                     existingOrder?.userId ? `customer:${existingOrder.userId}` : null,
-                    "admin:orders"
+                    "admin:orders",
+                    ["PREPARING", "READY"].includes(data.status) ? "driver:available" : null
                 ].filter(Boolean);
 
                 // Emit to each room
@@ -255,6 +256,17 @@ export async function PATCH(
                     console.log(`[Auto-assign] Order ${order.orderNumber} offered to driver ${result.driverId}`);
                 } else {
                     console.log(`[Auto-assign] Order ${order.orderNumber}: ${result.error}`);
+                }
+            });
+        }
+
+        // Safety net: if order reaches READY without a driver, re-attempt assignment
+        if (data.status === "READY" && existingOrder?.status !== "READY" && !order.driverId && !order.pendingDriverId) {
+            assignOrderToNearestDriver(id).then((result) => {
+                if (result.success) {
+                    console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber} offered to driver ${result.driverId}`);
+                } else {
+                    console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber}: ${result.error}`);
                 }
             });
         }
