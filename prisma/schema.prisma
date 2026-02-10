@@ -212,7 +212,7 @@ model Order {
   ratingComment       String?
   assignmentAttempts  Int         @default(0)
   assignmentExpiresAt DateTime?
-  attemptedDriverIds  String?
+  attemptedDriverIds  Json?
   lastAssignmentAt    DateTime?
   pendingDriverId     String?
   address             Address     @relation(fields: [addressId], references: [id])

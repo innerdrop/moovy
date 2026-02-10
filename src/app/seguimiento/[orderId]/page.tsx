@@ -258,7 +258,7 @@ export default function TrackingPage() {
     useEffect(() => {
         if (!orderId || !order || !socketToken) return;
 
-        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
+        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
         const currentStatus = order.status.toUpperCase();
         if (!trackableStatuses.includes(currentStatus)) {
             console.log("[Tracking] Status not trackable:", currentStatus);
@@ -413,8 +413,7 @@ export default function TrackingPage() {
             case "READY": return 0;
             case "DRIVER_ASSIGNED": return 1;
             case "PICKED_UP":
-            case "IN_DELIVERY":
-            case "ON_THE_WAY": return 2;
+            case "IN_DELIVERY": return 2;
             case "DELIVERED": return 3;
             default: return 0;
         }
@@ -508,7 +507,7 @@ export default function TrackingPage() {
             {/* Check if order is picked up (rider has the package) */}
             {(() => {
                 const status = order?.status?.toUpperCase() || "PENDING";
-                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status);
+                const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(status);
 
                 if (!isPickedUp) {
                     // PREPARATION UI - Before pickup
@@ -676,7 +675,7 @@ export default function TrackingPage() {
                             )}
 
                             {/* Background Route Line (Static) */}
-                            {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
+                            {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
                                 <Polyline
                                     path={directions.routes[0].overview_path}
                                     options={{
@@ -773,7 +772,7 @@ export default function TrackingPage() {
                         <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase">
                             {order?.status?.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
                             {order?.status?.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
-                            {["IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
+                            {["IN_DELIVERY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
                             {order?.status?.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
                             {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order?.status?.toUpperCase() || "") && "PREPARANDO TU PEDIDO"}
                         </h1>
@@ -790,7 +789,7 @@ export default function TrackingPage() {
                             const status = order?.status?.toUpperCase() || "PENDING";
                             const activeIdx = idx <= (
                                 status === "DELIVERED" ? 3 :
-                                    ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status) ? 2 :
+                                    ["PICKED_UP", "IN_DELIVERY"].includes(status) ? 2 :
                                         ["CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(status) ? 1 : 0
                             );
                             return (
@@ -808,7 +807,7 @@ export default function TrackingPage() {
                     </div>
 
                     {/* ETA Card */}
-                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && (
+                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status?.toUpperCase() || "") && (
                         <div className="bg-gray-900 rounded-[28px] p-6 text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
                             <div className="flex flex-col gap-1">

@@ -53,7 +53,7 @@ export async function GET(request: Request) {
                 const rawOrders = await prisma.order.findMany({
                     where: {
                         driverId: driver.id,
-                        status: { in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"] }, // Active statuses
+                        status: { in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"] }, // Active statuses
                     },
                     include: {
                         items: { select: { id: true, name: true, quantity: true } },

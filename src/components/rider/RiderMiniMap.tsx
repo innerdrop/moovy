@@ -96,7 +96,7 @@ function RiderMiniMapComponent({
         // If not picked up yet, destination is Merchant. 
         // Once picked up, destination is Customer.
         const normalizedStatus = orderStatus?.toUpperCase() || "";
-        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(normalizedStatus);
+        const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(normalizedStatus);
 
         const destination = isPickedUp
             ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
@@ -149,7 +149,7 @@ function RiderMiniMapComponent({
                     const normalizedStatus = orderStatus?.toUpperCase() || "";
                     const isTransition = prevOrderStatusRef.current !== undefined &&
                         prevOrderStatusRef.current !== orderStatus &&
-                        (normalizedStatus === "PICKED_UP" || normalizedStatus === "IN_DELIVERY" || normalizedStatus === "ON_THE_WAY");
+                        (normalizedStatus === "PICKED_UP" || normalizedStatus === "IN_DELIVERY");
 
                     // Immediate update of primary state
                     setRoutePath(path);
@@ -265,7 +265,7 @@ function RiderMiniMapComponent({
 
             const normalizedStatus = orderStatus?.toUpperCase() || "";
             // Include destination in bounds
-            if (normalizedStatus && ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'].includes(normalizedStatus)) {
+            if (normalizedStatus && ['PICKED_UP', 'IN_DELIVERY'].includes(normalizedStatus)) {
                 // Going to customer
                 if (customerLat && customerLng) {
                     bounds.extend({ lat: customerLat, lng: customerLng });

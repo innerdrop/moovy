@@ -65,7 +65,6 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
     DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-white", bgColor: "bg-blue-500", icon: <Truck className="w-5 h-5" /> },
     PICKED_UP: { label: "Pedido en camino", color: "text-white", bgColor: "bg-orange-500", icon: <Truck className="w-5 h-5" /> },
-    ON_THE_WAY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     IN_DELIVERY: { label: "En camino", color: "text-white", bgColor: "bg-[#e60012]", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
@@ -126,7 +125,7 @@ export default function MisPedidosPage() {
     }, [isAuthenticated, authStatus, loadOrders]);
 
     // Unified list filtering logic
-    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"];
+    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
 
     const activeOrders = useMemo(() => orders.filter(o => activeStatuses.includes(o.status)), [orders]);
     const completedOrders = useMemo(() => orders.filter(o => !activeStatuses.includes(o.status)), [orders]);

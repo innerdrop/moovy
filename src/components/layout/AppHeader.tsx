@@ -67,7 +67,7 @@ export default function AppHeader({
             CONFIRMED: "Confirmado",
             PREPARING: "Preparando",
             READY: "Listo",
-            ON_THE_WAY: "En camino",
+            IN_DELIVERY: "En camino",
             DELIVERED: "Entregado",
             CANCELLED: "Cancelado"
         };

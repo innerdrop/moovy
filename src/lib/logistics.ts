@@ -121,9 +121,7 @@ export async function assignOrderToNearestDriver(
         }
 
         // Parse excluded drivers from previous attempts
-        const attemptedDriverIds: string[] = order.attemptedDriverIds
-            ? JSON.parse(order.attemptedDriverIds)
-            : [];
+        const attemptedDriverIds: string[] = (order.attemptedDriverIds as string[]) || [];
 
         // Find nearest available driver
         const nearbyDrivers = await findNearestAvailableDrivers(
@@ -200,9 +198,7 @@ export async function processExpiredAssignments(): Promise<number> {
 
     for (const order of expiredOrders) {
         // Add current pending driver to attempted list
-        const attemptedIds: string[] = order.attemptedDriverIds
-            ? JSON.parse(order.attemptedDriverIds)
-            : [];
+        const attemptedIds: string[] = (order.attemptedDriverIds as string[]) || [];
 
         if (order.pendingDriverId) {
             attemptedIds.push(order.pendingDriverId);
@@ -214,7 +210,7 @@ export async function processExpiredAssignments(): Promise<number> {
             data: {
                 pendingDriverId: null,
                 assignmentExpiresAt: null,
-                attemptedDriverIds: JSON.stringify(attemptedIds),
+                attemptedDriverIds: attemptedIds,
             },
         });
 
@@ -313,9 +309,7 @@ export async function driverRejectOrder(
         }
 
         // Add to attempted list and clear pending
-        const attemptedIds: string[] = order.attemptedDriverIds
-            ? JSON.parse(order.attemptedDriverIds)
-            : [];
+        const attemptedIds: string[] = (order.attemptedDriverIds as string[]) || [];
         attemptedIds.push(driverId);
 
         await prisma.order.update({
@@ -323,7 +317,7 @@ export async function driverRejectOrder(
             data: {
                 pendingDriverId: null,
                 assignmentExpiresAt: null,
-                attemptedDriverIds: JSON.stringify(attemptedIds),
+                attemptedDriverIds: attemptedIds,
             },
         });
 

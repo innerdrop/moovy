@@ -14,7 +14,6 @@ export const ORDER_STATUSES = {
     DRIVER_ASSIGNED: 'DRIVER_ASSIGNED',
     PICKED_UP: 'PICKED_UP',
     IN_DELIVERY: 'IN_DELIVERY',
-    ON_THE_WAY: 'ON_THE_WAY',  // Alias for IN_DELIVERY
     DELIVERED: 'DELIVERED',
     CANCELLED: 'CANCELLED',
 } as const;
@@ -30,7 +29,6 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
     DRIVER_ASSIGNED: 'Rider asignado',
     PICKED_UP: 'Retirado',
     IN_DELIVERY: 'En camino',
-    ON_THE_WAY: 'En camino',
     DELIVERED: 'Entregado',
     CANCELLED: 'Cancelado',
 };
@@ -44,7 +42,6 @@ export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = 
     DRIVER_ASSIGNED: { bg: 'bg-cyan-100', text: 'text-cyan-700' },
     PICKED_UP: { bg: 'bg-orange-100', text: 'text-orange-700' },
     IN_DELIVERY: { bg: 'bg-orange-100', text: 'text-orange-700' },
-    ON_THE_WAY: { bg: 'bg-orange-100', text: 'text-orange-700' },
     DELIVERED: { bg: 'bg-green-100', text: 'text-green-700' },
     CANCELLED: { bg: 'bg-red-100', text: 'text-red-700' },
 };
@@ -56,7 +53,7 @@ export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = 
  */
 export function getRouteDestination(status: string): 'MERCHANT' | 'CUSTOMER' | null {
     const toMerchant = ['DRIVER_ASSIGNED', 'READY', 'CONFIRMED', 'PREPARING'];
-    const toCustomer = ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'];
+    const toCustomer = ['PICKED_UP', 'IN_DELIVERY'];
 
     if (toMerchant.includes(status)) return 'MERCHANT';
     if (toCustomer.includes(status)) return 'CUSTOMER';
@@ -93,7 +90,7 @@ export const CUSTOMER_NOTIFICATION_MESSAGES: Record<string, string> = {
 export function isActiveOrder(status: string): boolean {
     const activeStatuses = [
         'PENDING', 'CONFIRMED', 'PREPARING', 'READY',
-        'DRIVER_ASSIGNED', 'PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'
+        'DRIVER_ASSIGNED', 'PICKED_UP', 'IN_DELIVERY'
     ];
     return activeStatuses.includes(status);
 }
@@ -117,7 +114,6 @@ export function getNextStatuses(currentStatus: string): OrderStatus[] {
         DRIVER_ASSIGNED: ['PICKED_UP', 'CANCELLED'],
         PICKED_UP: ['IN_DELIVERY'],
         IN_DELIVERY: ['DELIVERED'],
-        ON_THE_WAY: ['DELIVERED'],
         DELIVERED: [],
         CANCELLED: [],
     };
