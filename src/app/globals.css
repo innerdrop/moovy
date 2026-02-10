@@ -683,3 +683,75 @@ h6 {
 .animate-shimmer {
   animation: shimmer 3s ease-in-out infinite;
 }
+
+/* ===== GOOGLE PLACES AUTOCOMPLETE FIX (MOBILE) ===== */
+/* The .pac-container is injected by Google into <body> */
+/* On mobile it can appear behind sticky/fixed headers or be untappable */
+.pac-container {
+  z-index: 10000 !important;
+  border-radius: 0.75rem;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  margin-top: 4px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  background: var(--white);
+}
+
+.pac-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  border-top: 1px solid var(--gray-100);
+  /* Make items tall enough for touch targets on mobile */
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pac-item:first-child {
+  border-top: none;
+}
+
+.pac-item:hover,
+.pac-item:active {
+  background-color: var(--gray-50);
+}
+
+.pac-item-selected,
+.pac-item-selected:hover {
+  background-color: #fff5f5;
+}
+
+.pac-icon {
+  margin-right: 8px;
+}
+
+.pac-item-query {
+  font-weight: 600;
+  color: var(--gray-900);
+  font-size: 14px;
+}
+
+/* On mobile screens, make dropdown wider and position better */
+@media (max-width: 768px) {
+  .pac-container {
+    left: 8px !important;
+    right: 8px !important;
+    width: calc(100vw - 16px) !important;
+    max-width: none !important;
+    border-radius: 0 0 0.75rem 0.75rem;
+    /* Prevent scroll issues on iOS */
+    -webkit-overflow-scrolling: touch;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .pac-item {
+    padding: 14px 16px;
+    min-height: 52px;
+    font-size: 15px;
+  }
+}

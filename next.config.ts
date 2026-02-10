@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Allow mobile devices on local network to access dev server
+  allowedDevOrigins: ["192.168.68.114"],
+
   // Security Headers
   async headers() {
     return [

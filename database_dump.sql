@@ -621,13 +621,15 @@ ALTER TABLE public._prisma_migrations OWNER TO postgres;
 --
 
 COPY public."Address" (id, "userId", label, street, number, apartment, neighborhood, city, province, "zipCode", latitude, longitude, "isDefault", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-cmkx4m5bu00035jchkrxfk4cy	cmkvbvo87002br0gkyyz8i0cs	CasaEjemplo	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.816358	-68.3253491	t	2026-01-27 21:46:32.441	2026-01-27 21:46:32.441	\N
-cmkx4m5kg00055jchyl2qklvb	cmkvbvo87002br0gkyyz8i0cs	Entrega	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-01-27 21:46:32.752	2026-01-27 21:46:32.752	\N
 cmlcf8agf0004n1z3kfbpgcs6	cmlbofjvu0002mqdpmdns2wmk	Prueba3	Kuanip	490	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.81706399999999	-68.32997759999999	t	2026-02-07 14:40:14.319	2026-02-07 14:40:14.319	\N
 cmlcf8anz0006n1z3ggxt13zo	cmlbofjvu0002mqdpmdns2wmk	Entrega	Kuanip	490	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-07 14:40:14.591	2026-02-07 14:40:14.591	\N
 cmlehunug0003hsibquex9up7	cmlbofjvu0002mqdpmdns2wmk	Entrega	Alfonsina Storni	2067	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-09 01:29:09.688	2026-02-09 01:29:09.688	\N
 cmlej4c490003wel8hzk2lxwe	cmlbofjvu0002mqdpmdns2wmk	Mau	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-02-09 02:04:40.666	2026-02-09 02:04:40.666	\N
 cmlej4cd90005wel8530ngbox	cmlbofjvu0002mqdpmdns2wmk	Entrega	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-02-09 02:04:40.989	2026-02-09 02:04:40.989	\N
+cmkx4m5kg00055jchyl2qklvb	cmkvbvo87002br0gkyyz8i0cs	Entrega	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-01-27 21:46:32.752	2026-02-10 18:10:05.265	2026-02-10 18:10:05.263
+cmkx4m5bu00035jchkrxfk4cy	cmkvbvo87002br0gkyyz8i0cs	CasaEjemplo	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.816358	-68.3253491	f	2026-01-27 21:46:32.441	2026-02-10 18:19:23.14	2026-02-10 18:19:23.139
+cmlgxg5y70003jitzc6n7c58k	cmkvbvo8c002dr0gk22kda2cw	Mi Casa	Kuanip	190	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.816358	-68.3253491	t	2026-02-10 18:21:19.52	2026-02-10 18:21:19.52	\N
+cmlgy31wz000212bbnnivbgw2	cmkvbvo87002br0gkyyz8i0cs	Mi Casa	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	t	2026-02-10 18:39:07.38	2026-02-10 18:39:07.38	\N
 \.
 
 
@@ -1200,6 +1202,7 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 --
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "updatedAt") FROM stdin;
+cmlgy387w000312bbrckew2ol	cmkvbvo87002br0gkyyz8i0cs	[{"id": "cmkvbvo47000ar0gk4zi9lpbi-default-1770748755012", "name": "Hamburguesa Clsica", "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400", "price": 5500, "quantity": 1, "productId": "cmkvbvo47000ar0gk4zi9lpbi", "merchantId": "cmkvbvo3z0008r0gkc7qfxplz"}]	cmkvbvo3z0008r0gkc7qfxplz	2026-02-10 18:39:15.548	2026-02-10 18:40:18.3
 \.
 
 
@@ -1246,14 +1249,14 @@ COPY public."User" (id, email, password, name, "firstName", "lastName", phone, r
 cmkvbvo6g001dr0gkkc3uxs3s	comercio3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 3	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo6g001er0gksdi7wmsv	\N	2026-01-26 15:34:21.736	2026-01-26 15:34:21.736	\N	\N	\N
 cmkvbvo800027r0gksb401d3p	rider3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 3	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo800028r0gk3g91rt9h	\N	2026-01-26 15:34:21.792	2026-01-26 15:34:21.792	\N	\N	\N
 cmkvbvo8f002fr0gks60vb2et	cliente3@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 3	\N	\N	\N	CLIENT	\N	\N	0	0	f	cmkvbvo8f002gr0gkxvsgolli	\N	2026-01-26 15:34:21.808	2026-01-26 15:34:21.808	\N	\N	\N
-cmkvbvo8c002dr0gk22kda2cw	cliente2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 2	\N	\N	\N	CLIENT	\N	\N	5000	0	f	cmkvbvo8c002er0gk53tvzvvh	\N	2026-01-26 15:34:21.804	2026-02-01 22:21:09.161	\N	\N	\N
-cmkvbvo87002br0gkyyz8i0cs	cliente1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 1	\N	\N	\N	CLIENT	\N	\N	52900	0	t	cmkvbvo87002cr0gkde84ikuu	\N	2026-01-26 15:34:21.799	2026-02-05 21:51:19.353	\N	\N	\N
 cmlbofjvu0002mqdpmdns2wmk	ing.iyad@gmail.com	$2b$10$Dh5H4ps/PMUnkYwWTT.Ci.2id/EIt7MG6SZXjdQ9AV3kJjg/VAFw2	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	95750	0	t	MOV-V45Z	\N	2026-02-07 02:10:03.497	2026-02-09 02:04:41.006	\N	\N	\N
-cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-09 02:05:18.646	\N	\N	\N
 cmkvbvo7s0023r0gk3wyvfr2v	rider2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 2	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7s0024r0gkvoz8se8y	\N	2026-01-26 15:34:21.784	2026-02-09 02:15:18.932	\N	\N	\N
+cmkvbvo87002br0gkyyz8i0cs	cliente1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 1	\N	\N	\N	CLIENT	\N	\N	52900	0	t	cmkvbvo87002cr0gkde84ikuu	\N	2026-01-26 15:34:21.799	2026-02-10 18:38:14.707	\N	\N	\N
+cmkvbvo3s0005r0gkpul7pexf	comercio1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	COMERCIO 1	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmkvbvo3s0006r0gkc8178zq4	\N	2026-01-26 15:34:21.64	2026-02-10 18:43:55.878	\N	\N	\N
+cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-10 18:49:24.294	\N	\N	\N
 cmkvbvo57000rr0gkp7ff55ji	comercio2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	 COMERCIO 2				MERCHANT	\N	\N	0	0	f	cmkvbvo57000sr0gkah2nixeg	\N	2026-01-26 15:34:21.692	2026-02-10 16:16:55.73	\N	\N	\N
 cmkvbvo1d0000r0gkyait4f0l	admin@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmkvbvo1e0001r0gk770gtuc2	\N	2026-01-26 15:34:21.552	2026-02-10 16:32:12.615	\N	\N	\N
-cmkvbvo7j001zr0gkayjq633k	rider1@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	RIDER 1	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmkvbvo7j0020r0gkqwydz0pt	\N	2026-01-26 15:34:21.776	2026-02-10 16:39:57.652	\N	\N	\N
+cmkvbvo8c002dr0gk22kda2cw	cliente2@somosmoovy.com	$2b$10$2sRvtyET8wOT/5faJpa1MeOoFi.O9oPS//UPK7L2JU/mWke7OKl9e	CLIENTE 2	\N	\N	\N	CLIENT	\N	\N	5000	0	f	cmkvbvo8c002er0gk53tvzvvh	\N	2026-01-26 15:34:21.804	2026-02-10 18:18:49.622	\N	\N	\N
 \.
 
 
