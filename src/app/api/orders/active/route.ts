@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 // Active order statuses (not completed or cancelled)
-const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "PREPARING", "READY", "ON_THE_WAY"];
+const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY"];
 
 export async function GET() {
     try {

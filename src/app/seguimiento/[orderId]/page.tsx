@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline } from "@react-google-maps/api";
 import { io, Socket } from "socket.io-client";
 import { useSocketAuth } from "@/hooks/useSocketAuth";
 import {
@@ -58,12 +58,6 @@ interface OrderData {
         latitude?: number;
         longitude?: number;
         address?: string;
-    };
-    user: {
-        id: string;
-        name: string;
-        email: string;
-        phone?: string;
     };
 }
 
@@ -127,7 +121,7 @@ export default function TrackingPage() {
                 const data = await res.json();
                 setOrder(data);
 
-                if (["DELIVERED", "COMPLETED"].includes(data.status)) {
+                if (data.status === "DELIVERED") {
                     setDelivered(true);
                 }
 
@@ -147,12 +141,6 @@ export default function TrackingPage() {
 
         if (orderId) fetchOrder();
     }, [orderId]);
-
-    // Clear routes instantly on status change to avoid "ghost" routes
-    useEffect(() => {
-        setDirections(null);
-        setRouteInfo(null);
-    }, [order?.status]);
 
     // Directions logic
     useEffect(() => {
@@ -270,7 +258,7 @@ export default function TrackingPage() {
     useEffect(() => {
         if (!orderId || !order || !socketToken) return;
 
-        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
+        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
         const currentStatus = order.status.toUpperCase();
         if (!trackableStatuses.includes(currentStatus)) {
             console.log("[Tracking] Status not trackable:", currentStatus);
@@ -324,9 +312,8 @@ export default function TrackingPage() {
         socket.on("order_status_changed", (data: { orderId: string, status: string }) => {
             console.log("[Tracking] Status changed via socket:", data.status);
             if (data.orderId === orderId) {
-                const newStatus = data.status.toUpperCase();
-                setOrder(prev => prev ? { ...prev, status: newStatus } : prev);
-                if (["DELIVERED", "COMPLETED"].includes(newStatus)) {
+                setOrder(prev => prev ? { ...prev, status: data.status } : prev);
+                if (data.status === "DELIVERED") {
                     setDelivered(true);
                 }
             }
@@ -344,45 +331,6 @@ export default function TrackingPage() {
             socket.disconnect();
         };
     }, [orderId, order?.id, order?.status, socketToken]);
-
-    // --- FALLBACK POLLING ---
-    // If socket fails or as a safety measure, poll the order status every 5s
-    useEffect(() => {
-        if (!orderId || delivered) return;
-
-        const pollInterval = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/orders/${orderId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    const status = data.status?.toUpperCase();
-
-                    // If terminal status reached, finalize
-                    if (["DELIVERED", "COMPLETED", "CANCELLED"].includes(status)) {
-                        console.log("[Tracking] Final status detected via polling:", status);
-                        setOrder(data);
-                        setDelivered(true);
-                        clearInterval(pollInterval);
-                    } else if (data.status !== order?.status) {
-                        setOrder(data);
-                    }
-                }
-            } catch (e) {
-                console.error("[Tracking] Polling failed:", e);
-            }
-        }, 2000); // 2 seconds
-
-        return () => clearInterval(pollInterval);
-    }, [orderId, delivered, order?.status]);
-
-    // --- INSTANT CLEANUP ON STATUS CHANGE ---
-    useEffect(() => {
-        if (order?.status) {
-            console.log("[Tracking] Status change detected, clearing routes");
-            setDirections(null);
-            setRouteInfo(null);
-        }
-    }, [order?.status]);
 
     // Fit map bounds to show all relevant points
     useEffect(() => {
@@ -458,25 +406,16 @@ export default function TrackingPage() {
     };
 
     const getStatusStep = () => {
-        const status = order?.status?.toUpperCase() || "PENDING";
-        switch (status) {
+        switch (order?.status) {
             case "PENDING":
             case "CONFIRMED":
             case "PREPARING":
-                return 0;
-            case "READY":
-            case "DRIVER_ASSIGNED":
-            case "DRIVER_ARRIVED":
-                return 1;
+            case "READY": return 0;
+            case "DRIVER_ASSIGNED": return 1;
             case "PICKED_UP":
-            case "IN_DELIVERY":
-            case "ON_THE_WAY":
-                return 2;
-            case "DELIVERED":
-            case "COMPLETED":
-                return 3;
-            default:
-                return 0;
+            case "IN_DELIVERY": return 2;
+            case "DELIVERED": return 3;
+            default: return 0;
         }
     };
 
@@ -565,18 +504,10 @@ export default function TrackingPage() {
                 </div>
             )}
 
-            {/* Check if order is picked up or terminal */}
+            {/* Check if order is picked up (rider has the package) */}
             {(() => {
                 const status = order?.status?.toUpperCase() || "PENDING";
-                const isTerminal = ["DELIVERED", "COMPLETED", "CANCELLED"].includes(status);
-
-                // If delivered/completed, we unmount EVERYTHING related to the map/prep flow
-                if (isTerminal || delivered) {
-                    console.log("[Tracking] Terminal state reached, hiding map");
-                    return null;
-                }
-
-                const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(status);
+                const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(status);
 
                 if (!isPickedUp) {
                     // PREPARATION UI - Before pickup
@@ -744,7 +675,7 @@ export default function TrackingPage() {
                             )}
 
                             {/* Background Route Line (Static) */}
-                            {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
+                            {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
                                 <Polyline
                                     path={directions.routes[0].overview_path}
                                     options={{
@@ -804,31 +735,24 @@ export default function TrackingPage() {
                             )}
 
                             {/* Destination Marker */}
-                            {(() => {
-                                const destPos = order.address.latitude
-                                    ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
-                                    : directions?.routes[0]?.legs[0]?.end_location;
-
-                                if (!destPos) return null;
-
-                                return (
-                                    <>
-                                        <Marker
-                                            position={destPos}
-                                            icon={{
-                                                url: "data:image/svg+xml," + encodeURIComponent(`
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
-                                                        <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
-                                                        <circle cx="18" cy="18" r="7" fill="white"/>
-                                                    </svg>
-                                                `),
-                                                scaledSize: new google.maps.Size(36, 46),
-                                                anchor: new google.maps.Point(18, 46)
-                                            }}
-                                        />
-                                    </>
-                                );
-                            })()}
+                            {(order.address.latitude || (directions && directions.routes[0]?.legs[0]?.end_location)) && (
+                                <Marker
+                                    position={order.address.latitude
+                                        ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
+                                        : directions!.routes[0].legs[0].end_location
+                                    }
+                                    icon={{
+                                        url: "data:image/svg+xml," + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
+                                        <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
+                                        <circle cx="18" cy="18" r="7" fill="white"/>
+                                    </svg>
+                                `),
+                                        scaledSize: new google.maps.Size(36, 46),
+                                        anchor: new google.maps.Point(18, 46)
+                                    }}
+                                />
+                            )}
                         </GoogleMap>
                     </div>
                 );
@@ -848,8 +772,8 @@ export default function TrackingPage() {
                         <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase">
                             {order?.status?.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
                             {order?.status?.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
-                            {["IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
-                            {["DELIVERED", "COMPLETED"].includes(order?.status?.toUpperCase() || "") && "¡DISFRUTA TU PEDIDO!"}
+                            {["IN_DELIVERY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
+                            {order?.status?.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
                             {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order?.status?.toUpperCase() || "") && "PREPARANDO TU PEDIDO"}
                         </h1>
                     </div>
@@ -862,7 +786,12 @@ export default function TrackingPage() {
                             { icon: <Rocket className="w-4 h-4" />, label: "En Viaje" },
                             { icon: <CheckCircle className="w-4 h-4" />, label: "Recibido" }
                         ].map((step, idx) => {
-                            const activeIdx = idx <= statusStep;
+                            const status = order?.status?.toUpperCase() || "PENDING";
+                            const activeIdx = idx <= (
+                                status === "DELIVERED" ? 3 :
+                                    ["PICKED_UP", "IN_DELIVERY"].includes(status) ? 2 :
+                                        ["CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(status) ? 1 : 0
+                            );
                             return (
                                 <div key={idx} className="flex flex-col items-center gap-2 flex-1 relative">
                                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${activeIdx ? "bg-gray-900 text-white scale-110 shadow-lg" : "bg-gray-50 text-gray-300"}`}>
@@ -878,7 +807,7 @@ export default function TrackingPage() {
                     </div>
 
                     {/* ETA Card */}
-                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(order?.status?.toUpperCase() || "") && (
+                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status?.toUpperCase() || "") && (
                         <div className="bg-gray-900 rounded-[28px] p-6 text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
                             <div className="flex flex-col gap-1">

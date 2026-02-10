@@ -74,21 +74,6 @@ function RiderMiniMapComponent({
     const prevOrderStatusRef = useRef<string | undefined>(undefined);
     const [showCustomerInfo, setShowCustomerInfo] = useState(false);
 
-    // --- HARD CLEANUP FUNCTION ---
-    const hardResetMap = useCallback(() => {
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
-        setRoutePath([]);
-        setRemainingPath([]);
-        setAnimatedPath([]);
-        setIsAnimating(false);
-        setShowCustomerInfo(false);
-        setUserInteracted(false);
-        prevOrderStatusRef.current = undefined;
-    }, []);
-
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -97,46 +82,60 @@ function RiderMiniMapComponent({
         region: 'AR'
     });
 
-    // Unified Route Management & Cleanup
+    // Calculate route path
     useEffect(() => {
         if (!isLoaded || !driverLat || !driverLng) return;
 
+        // Cancel any existing animation
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+
+        // Stage-based destination logic: 
+        // If not picked up yet, destination is Merchant. 
+        // Once picked up, destination is Customer.
         const normalizedStatus = orderStatus?.toUpperCase() || "";
-        const isPickedUp = ["PICKED_UP", "IN_DELIVERY", "ON_THE_WAY", "DELIVERED"].includes(normalizedStatus);
+        const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(normalizedStatus);
+
         const destination = isPickedUp
             ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
             : (merchantLat && merchantLng ? { lat: merchantLat, lng: merchantLng } : null);
 
-        // If no active navigation or no order, kill everything and return
-        if (!navigationMode || !orderStatus || !destination) {
-            console.log(`[RiderMap-V10] Clean trigger: nav=${navigationMode}, status=${orderStatus}`);
-            hardResetMap();
+        if (!destination) {
+            setRoutePath([]);
+            setRemainingPath([]);
+            setAnimatedPath([]);
+            setIsAnimating(false);
             return;
         }
 
-        // --- INSTANT CLEANUP BEFORE NEW ROUTE ---
-        // If we got here, we have a new destination. 
-        // We MUST clear the old paths immediately to prevent "ghost" traces
-        setRoutePath([]);
-        setRemainingPath([]);
-        setAnimatedPath([]);
-        setIsAnimating(false);
-
-        // --- ROUTE CALCULATION ---
         const directionsService = new google.maps.DirectionsService();
         const origin = { lat: driverLat, lng: driverLng };
 
-        // Logic to detect if we switched targets (e.g. from merchant to customer)
-        const isTargetSwitch = prevOrderStatusRef.current !== orderStatus && !!prevOrderStatusRef.current;
+        // We use staged navigation, so no waypoints needed. 
+        // This prevents the route from going "through" the merchant to the customer prematurely.
+        const waypoints: google.maps.DirectionsWaypoint[] = [];
+
+        if (navigationMode) {
+            console.log("[RiderMap] Updating route...", {
+                driver: { lat: driverLat, lng: driverLng },
+                dest: destination,
+                stage: isPickedUp ? "CUSTOMER" : "MERCHANT",
+                status: orderStatus
+            });
+        }
 
         directionsService.route(
             {
                 origin,
                 destination,
+                waypoints,
                 travelMode: google.maps.TravelMode.DRIVING,
             },
             (result, status) => {
                 if (status === google.maps.DirectionsStatus.OK && result) {
+                    // Extract path from all route legs
                     const path: google.maps.LatLngLiteral[] = [];
                     result.routes[0].legs.forEach(leg => {
                         leg.steps.forEach(step => {
@@ -146,38 +145,24 @@ function RiderMiniMapComponent({
                         });
                     });
 
-                    // Update primary path states
+                    // Check if this is a route transition (status changed)
+                    const normalizedStatus = orderStatus?.toUpperCase() || "";
+                    const isTransition = prevOrderStatusRef.current !== undefined &&
+                        prevOrderStatusRef.current !== orderStatus &&
+                        (normalizedStatus === "PICKED_UP" || normalizedStatus === "IN_DELIVERY");
+
+                    // Immediate update of primary state
                     setRoutePath(path);
                     setRemainingPath(path);
+                    setAnimatedPath(path);
+                    setIsAnimating(false);
 
-                    // If switching stages (e.g. just confirmed pickup), trigger animated unroll
-                    if (isTargetSwitch && path.length > 0) {
-                        // CRITICAL: Reset animated path immediately to clear the OLD route 
-                        // before the first frame of the new animation starts
-                        setAnimatedPath([]);
-                        setIsAnimating(true);
-
-                        let currentStep = 0;
-                        const totalSteps = path.length;
-                        const animate = () => {
-                            currentStep += Math.max(1, Math.floor(totalSteps / 40));
-                            if (currentStep >= totalSteps) {
-                                setAnimatedPath(path);
-                                setIsAnimating(false);
-                                animationFrameRef.current = null;
-                            } else {
-                                setAnimatedPath(path.slice(0, currentStep));
-                                animationFrameRef.current = requestAnimationFrame(animate);
-                            }
-                        };
-                        animationFrameRef.current = requestAnimationFrame(animate);
-                    } else if (!isAnimating) {
-                        // Static update if not in a switch transition
-                        setAnimatedPath(path);
-                    }
+                    prevOrderStatusRef.current = orderStatus;
                 } else {
-                    console.error("[RiderMap-V10] Route failed:", status);
-                    hardResetMap();
+                    console.error("[RiderMap] Route failed:", status);
+                    // Clear if failed
+                    setRoutePath([]);
+                    setRemainingPath([]);
                 }
             }
         );
@@ -187,53 +172,53 @@ function RiderMiniMapComponent({
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode, hardResetMap]);
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, onRouteTransition, navigationMode]);
 
-    // --- AGGRESSIVE CLEANUP ON STATUS CHANGE ---
+    // Immediately clear route when orderStatus changes OR becomes null (finished)
+    const prevMerchantLatRef = useRef<number | undefined>(merchantLat);
     useEffect(() => {
-        const normalizedPrev = prevOrderStatusRef.current;
-        const normalizedCurr = orderStatus;
+        const orderFinished = prevOrderStatusRef.current && !orderStatus;
+        const statusChanged = orderStatus && prevOrderStatusRef.current && orderStatus !== prevOrderStatusRef.current;
+        const merchantCleared = prevMerchantLatRef.current !== undefined && merchantLat === undefined;
 
-        console.log(`[RiderMap-V10] Effect Sync: Prev=${normalizedPrev}, Curr=${normalizedCurr}, Nav=${navigationMode}`);
-
-        // Ensure cleanup if navigation mode is disabled or order ended
-        if (!navigationMode || !normalizedCurr) {
-            console.log("[RiderMap-V10] CLEANUP TRIGGERED: Navigation disabled or no status.");
-            hardResetMap();
-            hasInitialCentered.current = false;
-
-            if (mapRef.current && driverLat && driverLng) {
-                mapRef.current.panTo({ lat: driverLat, lng: driverLng });
-                mapRef.current.setZoom(14);
-            }
-            prevOrderStatusRef.current = undefined;
-            return;
-        }
-
-        // Case B: Status changed (e.g., Merchant -> Customer)
-        if (normalizedCurr && normalizedPrev && normalizedPrev !== normalizedCurr) {
-            console.log(`[RiderMap-V10] STATUS SWITCH: ${normalizedPrev} -> ${normalizedCurr}`);
+        if (orderFinished || statusChanged || merchantCleared) {
+            // Status changed or merchant cleared (picked up) - immediately clear old route
             setRoutePath([]);
             setRemainingPath([]);
             setAnimatedPath([]);
             setIsAnimating(false);
-            setShowCustomerInfo(false);
-
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
             }
+
+            // If it was finished, reset the ref so it can detect new orders
+            if (orderFinished) {
+                prevOrderStatusRef.current = undefined;
+            }
         }
 
-        // Always sync the ref at the end of the effect
-        prevOrderStatusRef.current = normalizedCurr;
-    }, [orderStatus, navigationMode, driverLat, driverLng, hardResetMap]);
+        prevMerchantLatRef.current = merchantLat;
+    }, [orderStatus, merchantLat]);
 
-    // Secondary Cleanup: Handle movements and path erasing
+    // Clear route when delivery is completed (navigationMode becomes false)
     useEffect(() => {
-        if (!navigationMode || !driverLat || !driverLng || routePath.length === 0 || isAnimating) return;
+        if (!navigationMode) {
+            setRoutePath([]);
+            setRemainingPath([]);
+            setAnimatedPath([]);
+            setIsAnimating(false);
+            prevOrderStatusRef.current = undefined;
+        }
+    }, [navigationMode]);
+
+    // Update remaining path as driver moves (erase path behind driver)
+    useEffect(() => {
+        if (!navigationMode || !driverLat || !driverLng || routePath.length === 0) return;
 
         const driverPos = { lat: driverLat, lng: driverLng };
+
+        // Find the closest point on the path to the driver
         let closestIndex = 0;
         let closestDistance = Infinity;
 
@@ -248,8 +233,9 @@ function RiderMiniMapComponent({
             }
         });
 
+        // Only show path from current position forward
         setRemainingPath(routePath.slice(closestIndex));
-    }, [navigationMode, driverLat, driverLng, routePath, isAnimating]);
+    }, [navigationMode, driverLat, driverLng, routePath]);
 
     // Auto-centering is DISABLED to allow free pan/zoom
     // User can manually recenter using the Centrar button
@@ -279,7 +265,7 @@ function RiderMiniMapComponent({
 
             const normalizedStatus = orderStatus?.toUpperCase() || "";
             // Include destination in bounds
-            if (normalizedStatus && ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'].includes(normalizedStatus)) {
+            if (normalizedStatus && ['PICKED_UP', 'IN_DELIVERY'].includes(normalizedStatus)) {
                 // Going to customer
                 if (customerLat && customerLng) {
                     bounds.extend({ lat: customerLat, lng: customerLng });
@@ -309,9 +295,7 @@ function RiderMiniMapComponent({
 
     // Cleanup timeout and animation on unmount
     useEffect(() => {
-        console.log("[RiderMap-V10] Component MOUNTED");
         return () => {
-            console.log("[RiderMap-V10] Component UNMOUNTING");
             if (recenterTimeoutRef.current) {
                 clearTimeout(recenterTimeoutRef.current);
             }
@@ -352,10 +336,10 @@ function RiderMiniMapComponent({
             return {
                 path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillOpacity: 1,
-                fillColor: "#22c55e",
+                fillColor: "#22c55e", // Green
                 strokeColor: "#166534",
                 strokeWeight: 2,
-                scale: 8,
+                scale: 7,
                 rotation: driverHeading,
             };
         }
@@ -366,11 +350,9 @@ function RiderMiniMapComponent({
             fillColor: "#22c55e",
             strokeColor: "white",
             strokeWeight: 2,
-            scale: 9,
+            scale: 8,
         };
     }, [isLoaded, navigationMode, driverHeading]);
-
-    console.log(`[RiderMap-V10] RENDER - Nav: ${navigationMode}, Status: ${orderStatus}`);
 
     if (!isLoaded) {
         return (
@@ -380,10 +362,6 @@ function RiderMiniMapComponent({
             </div>
         );
     }
-
-    const onUnmountMap = (map: google.maps.Map) => {
-        console.log("[RiderMap-V10] Global Map Instance Unmounting");
-    };
 
     return (
         <div style={{ height, width: "100%" }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative">
@@ -398,10 +376,8 @@ function RiderMiniMapComponent({
             {/* Re-center button - REMOVED from here, handled in dashboard UI */}
 
             <GoogleMap
-                key={orderStatus ? `map-nav-${orderStatus}` : 'map-idle'}
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
-                onUnmount={onUnmountMap}
                 options={{
                     disableDefaultUI: false,
                     zoomControl: true,
@@ -410,130 +386,131 @@ function RiderMiniMapComponent({
                     styles: normalMapStyles,
                 }}
             >
-                {/* ALL NAVIGATION OVERLAYS - Wrapped for atomic unmount */}
-                {navigationMode && orderStatus && (
-                    <>
-                        {/* Route path */}
-                        {(isAnimating ? animatedPath : remainingPath).length > 1 && (
-                            <Polyline
-                                key={`route-poly-${orderStatus}-${isAnimating ? 'anim' : 'static'}-${merchantLat || 0}-${customerLat || 0}`}
-                                path={isAnimating ? animatedPath : remainingPath}
-                                visible={navigationMode && orderStatus !== undefined}
-                                options={{
-                                    strokeColor: isAnimating ? "#22c55e" : "#4285F4",
-                                    strokeWeight: isAnimating ? 8 : 6,
-                                    strokeOpacity: isAnimating ? 0.9 : 0.4,
-                                    icons: isAnimating ? [] : [{
-                                        icon: {
-                                            path: 'M 0,-1.5 L 0,1.5',
-                                            strokeOpacity: 1,
-                                            strokeWeight: 4,
-                                            scale: 3,
-                                            strokeColor: "#4285F4",
-                                        },
-                                        offset: '0',
-                                        repeat: '20px'
-                                    }, {
-                                        icon: {
-                                            path: 'M -2,0 L 0,2 L 2,0',
-                                            strokeOpacity: 1,
-                                            strokeWeight: 2,
-                                            scale: 2,
-                                            strokeColor: "#2196F3",
-                                        },
-                                        offset: '50%',
-                                        repeat: '40px'
-                                    }]
-                                }}
-                                onLoad={(polyline) => {
-                                    if (isAnimating) return;
-                                    let count = 0;
-                                    const interval = setInterval(() => {
-                                        count = (count + 1) % 200;
-                                        const icons = polyline.get('icons');
-                                        if (icons && icons[0]) {
-                                            icons[0].offset = (count / 2) + '%';
-                                            polyline.set('icons', icons);
-                                        }
-                                    }, 100);
-                                    (polyline as any)._animationInterval = interval;
-                                }}
-                                onUnmount={(polyline) => {
-                                    console.log("[RiderMap] Polyline unmounting - Cleanup forced");
-                                    const poly = polyline as any;
-                                    if (poly._animationInterval) clearInterval(poly._animationInterval);
-                                    try { polyline.setMap(null); } catch (e) { }
-                                }}
-                            />
-                        )}
-
-                        {/* Merchant marker - Blue */}
-                        {merchantLat && merchantLng && (
-                            <Marker
-                                position={{ lat: merchantLat, lng: merchantLng }}
-                                icon={{
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    fillOpacity: 1,
-                                    fillColor: "#3b82f6",
-                                    strokeColor: "white",
+                {/* Route path - shows remaining route in navigation mode */}
+                {/* Uses animatedPath during animation for drawing effect */}
+                {/* Key forces remount when stage or destination changes to ensure clean state */}
+                {navigationMode && (isAnimating ? animatedPath : remainingPath).length > 0 && (
+                    <Polyline
+                        key={`route-${orderStatus || 'idle'}-${isAnimating ? 'anim' : 'static'}-${merchantLat || 0}-${customerLat || 0}`}
+                        path={isAnimating ? animatedPath : remainingPath}
+                        options={{
+                            strokeColor: isAnimating ? "#22c55e" : "#4285F4", // Green during animation
+                            strokeWeight: isAnimating ? 8 : 6,
+                            strokeOpacity: isAnimating ? 0.9 : 0.4, // Visible base path
+                            icons: isAnimating ? [] : [{
+                                icon: {
+                                    path: 'M 0,-1.5 L 0,1.5',
+                                    strokeOpacity: 1,
+                                    strokeWeight: 4,
+                                    scale: 3,
+                                    strokeColor: "#4285F4",
+                                },
+                                offset: '0',
+                                repeat: '20px'
+                            }, {
+                                icon: {
+                                    path: 'M -2,0 L 0,2 L 2,0',
+                                    strokeOpacity: 1,
                                     strokeWeight: 2,
-                                    scale: 10,
-                                }}
-                                title={merchantName}
-                                label={{ text: "🏪", fontSize: "16px" }}
-                                onUnmount={(marker) => { try { marker.setMap(null); } catch (e) { } }}
-                            />
-                        )}
+                                    scale: 2,
+                                    strokeColor: "#2196F3",
+                                },
+                                offset: '50%',
+                                repeat: '40px'
+                            }]
+                        }}
+                        onLoad={(polyline) => {
+                            if (isAnimating) return;
 
-                        {/* Customer marker - Red */}
-                        {customerLat && customerLng && (
-                            <>
-                                <Marker
-                                    position={{ lat: customerLat, lng: customerLng }}
-                                    icon={{
-                                        path: google.maps.SymbolPath.CIRCLE,
-                                        fillOpacity: 1,
-                                        fillColor: "#ef4444",
-                                        strokeColor: "white",
-                                        strokeWeight: 3,
-                                        scale: 12,
-                                    }}
-                                    title={customerName?.split(' ')[0] || customerAddress}
-                                    onClick={() => setShowCustomerInfo(true)}
-                                    onUnmount={(marker) => { try { marker.setMap(null); } catch (e) { } }}
-                                />
-                                {(navigationMode || showCustomerInfo) && (
-                                    <InfoWindow
-                                        position={{ lat: customerLat, lng: customerLng }}
-                                        onCloseClick={() => setShowCustomerInfo(false)}
-                                        options={{
-                                            pixelOffset: new google.maps.Size(0, -20),
-                                            disableAutoPan: true,
-                                            maxWidth: 120,
-                                        }}
-                                    >
-                                        <div className="bg-gray-900 -m-1.5 px-3 py-1.5 rounded-full shadow-2xl border border-white/10 flex items-center gap-1.5">
-                                            <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
-                                            <p className="text-[8px] font-black italic uppercase tracking-[1.5px] text-white leading-none">
-                                                {customerName?.split(' ')[0] || "Cliente"}
-                                            </p>
-                                        </div>
-                                    </InfoWindow>
-                                )}
-                            </>
-                        )}
-                    </>
+                            let count = 0;
+                            const interval = setInterval(() => {
+                                count = (count + 1) % 200;
+                                const icons = polyline.get('icons');
+                                if (icons && icons[0]) {
+                                    icons[0].offset = (count / 2) + '%';
+                                    polyline.set('icons', icons);
+                                }
+                            }, 100); // 50% slower as requested (100ms instead of 50ms)
+                            (polyline as any)._animationInterval = interval;
+                        }}
+                        onUnmount={(polyline) => {
+                            if ((polyline as any)._animationInterval) {
+                                clearInterval((polyline as any)._animationInterval);
+                            }
+                        }}
+                    />
                 )}
 
-                {/* Always visible driver marker */}
+                {/* Driver marker - arrow in navigation mode */}
                 {driverLat && driverLng && (
                     <Marker
                         position={{ lat: driverLat, lng: driverLng }}
                         icon={driverIcon}
                         title="Tu ubicación"
                         zIndex={1000}
-                        onUnmount={(marker) => { try { marker.setMap(null); } catch (e) { } }}
                     />
+                )}
+
+                {/* Merchant marker - Blue */}
+                {merchantLat && merchantLng && (
+                    <Marker
+                        position={{ lat: merchantLat, lng: merchantLng }}
+                        icon={{
+                            path: google.maps.SymbolPath.CIRCLE,
+                            fillOpacity: 1,
+                            fillColor: "#3b82f6",
+                            strokeColor: "white",
+                            strokeWeight: 2,
+                            scale: navigationMode ? 10 : 7,
+                        }}
+                        title={merchantName}
+                        label={navigationMode ? {
+                            text: "🏪",
+                            fontSize: "16px",
+                        } : undefined}
+                    />
+                )}
+
+                {/* Customer marker - Red with name label */}
+                {customerLat && customerLng && (
+                    <>
+                        <Marker
+                            position={{ lat: customerLat, lng: customerLng }}
+                            icon={{
+                                path: google.maps.SymbolPath.CIRCLE,
+                                fillOpacity: 1,
+                                fillColor: "#ef4444",
+                                strokeColor: "white",
+                                strokeWeight: 3,
+                                scale: navigationMode ? 12 : 7,
+                            }}
+                            title={customerName || customerAddress}
+                            onClick={() => setShowCustomerInfo(true)}
+                        />
+
+                        {/* Customer name InfoWindow - always shown in navigation mode */}
+                        {(navigationMode || showCustomerInfo) && (
+                            <InfoWindow
+                                position={{ lat: customerLat, lng: customerLng }}
+                                onCloseClick={() => setShowCustomerInfo(false)}
+                                options={{
+                                    pixelOffset: new google.maps.Size(0, -15),
+                                    disableAutoPan: true,
+                                }}
+                            >
+                                <div className="px-2 py-1 text-center">
+                                    <p className="font-bold text-gray-900 text-sm">
+                                        {customerName || "Cliente"}
+                                    </p>
+                                    {customerAddress && (
+                                        <p className="text-xs text-gray-500 max-w-[150px] truncate">
+                                            {customerAddress}
+                                        </p>
+                                    )}
+                                </div>
+                            </InfoWindow>
+                        )}
+                    </>
                 )}
             </GoogleMap>
         </div>

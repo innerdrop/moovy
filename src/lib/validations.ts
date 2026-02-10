@@ -38,7 +38,7 @@ export const CreateOrderSchema = z.object({
 export const UpdateOrderSchema = z.object({
     status: z.enum([
         "PENDING", "CONFIRMED", "PREPARING", "READY",
-        "DRIVER_ASSIGNED", "PICKED_UP", "ON_THE_WAY",
+        "DRIVER_ASSIGNED", "PICKED_UP",
         "IN_DELIVERY", "DELIVERED", "CANCELLED"
     ]).optional(),
     paymentStatus: z.enum(["PENDING", "PAID", "REFUNDED"]).optional(),

@@ -61,7 +61,7 @@ export async function GET(request: Request) {
             where: {
                 driverId: driver.id,
                 status: {
-                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "ON_THE_WAY"]
+                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
                 }
             }
         });
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
             where: {
                 driverId: driver.id,
                 status: {
-                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "ON_THE_WAY"]
+                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
                 }
             },
             include: {
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
         const formattedActiveOrders = activeOrders.map(order => {
             // Determine relevant address based on status
             // If picked up, we need to go to customer. Before that, we are going to merchant.
-            const isPickedUp = ["PICKED_UP", "ON_THE_WAY", "IN_DELIVERY"].includes(order.status);
+            const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(order.status);
 
             let displayAddress = order.merchant?.address || "Comercio";
             let displayLabel = "Retirar en";

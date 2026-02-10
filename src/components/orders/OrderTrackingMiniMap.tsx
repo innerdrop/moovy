@@ -80,14 +80,14 @@ function OrderTrackingMiniMap({
 
     // Get socket auth token
     const { token: socketToken } = useSocketAuth(
-        ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"].includes(orderStatus)
+        ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(orderStatus)
     );
 
     // Handle Socket Connection
     useEffect(() => {
         if (!orderId || !socketToken) return;
 
-        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
+        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
         if (!trackableStatuses.includes(orderStatus)) return;
 
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "https://somosmoovy.com";
@@ -168,7 +168,7 @@ function OrderTrackingMiniMap({
         if (!mapRef.current || !isLoaded) return;
 
         // Only trigger once when status changes to PICKED_UP or IN_DELIVERY
-        const isPickedUp = ['PICKED_UP', 'IN_DELIVERY', 'ON_THE_WAY'].includes(orderStatus);
+        const isPickedUp = ['PICKED_UP', 'IN_DELIVERY'].includes(orderStatus);
         if (isPickedUp && !hasPickupCentered && driverPos && customerLat && customerLng) {
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(driverPos);
