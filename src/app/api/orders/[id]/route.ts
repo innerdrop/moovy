@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assignOrderToNearestDriver } from "@/lib/logistics";
+import { UpdateOrderSchema, validateInput } from "@/lib/validations";
 
 // GET - Get single order details
 export async function GET(
@@ -111,7 +112,18 @@ export async function PATCH(
             }
         }
 
-        const data = await request.json();
+        const rawData = await request.json();
+
+        // Validate input with Zod
+        const validation = validateInput(UpdateOrderSchema, rawData);
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: validation.error },
+                { status: 400 }
+            );
+        }
+
+        const data = validation.data!;
         const updateData: any = {};
 
         if (data.status) updateData.status = data.status;
@@ -164,7 +176,7 @@ export async function PATCH(
                 for (const room of rooms) {
                     await fetch(`${socketUrl}/emit`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
                         body: JSON.stringify({
                             event: "order_status_changed",
                             room,
@@ -196,7 +208,7 @@ export async function PATCH(
                 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
                     body: JSON.stringify({
                         event: "order_status_update",
                         room: `order:${id}`,
@@ -214,7 +226,7 @@ export async function PATCH(
                 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
                     body: JSON.stringify({
                         event: "pedido_entregado",
                         room: `order:${id}`,

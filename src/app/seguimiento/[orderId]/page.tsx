@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline } from "@react-google-maps/api";
 import { io, Socket } from "socket.io-client";
+import { useSocketAuth } from "@/hooks/useSocketAuth";
 import {
     ArrowLeft,
     Phone,
@@ -250,9 +251,12 @@ export default function TrackingPage() {
         solveDirections();
     }, [isLoaded, order, driverPosition]);
 
+    // Socket auth
+    const { token: socketToken } = useSocketAuth(!!orderId);
+
     // Socket.io connection
     useEffect(() => {
-        if (!orderId || !order) return;
+        if (!orderId || !order || !socketToken) return;
 
         const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "ON_THE_WAY"];
         const currentStatus = order.status.toUpperCase();
@@ -268,12 +272,13 @@ export default function TrackingPage() {
             ? `${window.location.protocol}//${window.location.hostname}:3001`
             : envSocketUrl;
 
-        console.log("[Tracking] Connecting to socket:", socketUrl);
+        console.log("[Tracking] Connecting to socket (authenticated):", socketUrl);
 
         const socket = io(`${socketUrl}/logistica`, {
             transports: ["websocket", "polling"],
             reconnectionAttempts: 10,
-            reconnectionDelay: 2000
+            reconnectionDelay: 2000,
+            auth: { token: socketToken },
         });
 
         socketRef.current = socket;
@@ -325,7 +330,7 @@ export default function TrackingPage() {
             console.log("[Tracking] Cleaning up socket");
             socket.disconnect();
         };
-    }, [orderId, order?.id, order?.status]);
+    }, [orderId, order?.id, order?.status, socketToken]);
 
     // Fit map bounds to show all relevant points
     useEffect(() => {

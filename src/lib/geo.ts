@@ -2,15 +2,17 @@
 
 /**
  * Calculate distance between two points using Haversine formula
- * @returns distance in kilometers
+ * @param unit - 'km' (default) or 'm' for meters
+ * @returns distance in the specified unit
  */
 export function calculateDistance(
     lat1: number,
     lng1: number,
     lat2: number,
-    lng2: number
+    lng2: number,
+    unit: "km" | "m" = "km"
 ): number {
-    const R = 6371; // Earth's radius in km
+    const R = unit === "m" ? 6371000 : 6371; // Earth's radius
     const dLat = toRad(lat2 - lat1);
     const dLng = toRad(lng2 - lng1);
 

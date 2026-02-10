@@ -34,6 +34,8 @@ interface UseRealtimeOrdersOptions {
     onDriverAssigned?: (orderId: string, driverId: string) => void;
     /** Whether to enable the connection */
     enabled?: boolean;
+    /** Socket auth token from useSocketAuth hook */
+    socketToken?: string | null;
 }
 
 export function useRealtimeOrders({
@@ -45,6 +47,7 @@ export function useRealtimeOrders({
     onOrderCancelled,
     onDriverAssigned,
     enabled = true,
+    socketToken,
 }: UseRealtimeOrdersOptions) {
     const socketRef = useRef<Socket | null>(null);
     const callbacksRef = useRef({
@@ -65,7 +68,7 @@ export function useRealtimeOrders({
     }, [onNewOrder, onStatusChange, onOrderCancelled, onDriverAssigned]);
 
     useEffect(() => {
-        if (!enabled) return;
+        if (!enabled || !socketToken) return;
 
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
 
@@ -74,6 +77,7 @@ export function useRealtimeOrders({
             reconnection: true,
             reconnectionDelay: 1000,
             reconnectionAttempts: 10,
+            auth: { token: socketToken },
         });
 
         socketRef.current = socket;
@@ -138,7 +142,7 @@ export function useRealtimeOrders({
             socket.disconnect();
             socketRef.current = null;
         };
-    }, [enabled, role, merchantId, userId]);
+    }, [enabled, role, merchantId, userId, socketToken]);
 
     // Force reconnect function
     const reconnect = useCallback(() => {

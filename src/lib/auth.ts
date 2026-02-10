@@ -2,6 +2,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { checkRateLimit, resetRateLimit } from "@/lib/security";
 
 
 
@@ -24,8 +25,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     const email = credentials.email as string;
                     const password = credentials.password as string;
 
-                    // Import Prisma Client dynamically to avoid Edge Runtime issues if any (though authorize runs on Node)
-                    // But standard practice in this repo seems to be importing from @/lib/prisma
+                    // Rate limit login attempts per email
+                    const rateLimitKey = `login:${email.toLowerCase()}`;
+                    const rateCheck = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
+                    if (!rateCheck.allowed) {
+                        console.warn(`[Auth] Rate limited: ${email} (reset in ${Math.round(rateCheck.resetIn / 1000)}s)`);
+                        throw new Error("Demasiados intentos. Intentá de nuevo en unos minutos.");
+                    }
+
                     const { prisma } = await import("@/lib/prisma");
 
                     const user = await prisma.user.findUnique({
@@ -57,6 +64,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     }).catch(err => console.error("Failed to update login time", err));
 
                     console.log("[Auth] Login successful for:", user.email, "Role:", user.role);
+
+                    // Reset rate limit on successful login
+                    resetRateLimit(rateLimitKey);
 
                     const merchant = await prisma.merchant.findFirst({
                         where: { ownerId: user.id },

@@ -9,7 +9,9 @@
     "lint": "eslint",
     "seed": "npx tsx prisma/seed.ts",
     "socket": "npx tsx scripts/socket-server.ts",
-    "dev:full": "concurrently \"npm run dev\" \"npm run socket\""
+    "dev:full": "concurrently \"npm run dev\" \"npm run socket\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -18,18 +20,13 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@prisma/adapter-better-sqlite3": "^7.2.0",
-    "@prisma/adapter-libsql": "^7.2.0",
     "@prisma/client": "^5.22.0",
     "@react-google-maps/api": "^2.20.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/nodemailer": "^7.0.5",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.5.0",
-    "dotenv": "^17.2.3",
     "isomorphic-dompurify": "^2.35.0",
     "lucide-react": "^0.562.0",
-    "mongoose": "^9.1.5",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
     "nodemailer": "^7.0.12",
@@ -42,20 +39,22 @@
     "socket.io-client": "^4.8.3",
     "uuid": "^13.0.0",
     "web-push": "^3.6.7",
+    "zod": "^4.3.6",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

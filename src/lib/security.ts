@@ -71,9 +71,34 @@ export function generateSecureToken(length: number = 32): string {
 }
 
 /**
- * Rate limiter store (in-memory for development, use Redis in production)
+ * Rate limiter store (in-memory with auto-cleanup)
+ * For production at scale, migrate to Redis. For single-instance VPS, this is sufficient.
  */
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+interface RateLimitEntry {
+    count: number;
+    resetTime: number;
+    firstAttempt: number;
+}
+
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+// Auto-cleanup expired entries every 60 seconds
+// This prevents unbounded memory growth even without Redis
+if (typeof setInterval !== "undefined") {
+    setInterval(() => {
+        const now = Date.now();
+        let cleaned = 0;
+        for (const [key, entry] of rateLimitStore.entries()) {
+            if (entry.resetTime < now) {
+                rateLimitStore.delete(key);
+                cleaned++;
+            }
+        }
+        if (cleaned > 0) {
+            console.log(`[RateLimit] Cleanup: ${cleaned} expired entries removed. Active: ${rateLimitStore.size}`);
+        }
+    }, 60 * 1000); // Every 60 seconds
+}
 
 /**
  * Check rate limit for an IP/key
@@ -85,22 +110,35 @@ export function checkRateLimit(
     windowMs: number = 15 * 60 * 1000 // 15 minutes
 ): { allowed: boolean; remaining: number; resetIn: number } {
     const now = Date.now();
-    const record = rateLimitStore.get(key);
 
-    // Clean up expired entries periodically
-    if (rateLimitStore.size > 10000) {
+    // Safety valve: if store gets too large (DDoS), force cleanup
+    if (rateLimitStore.size > 5000) {
+        console.warn(`[RateLimit] ⚠️ Store size ${rateLimitStore.size} exceeds threshold. Forcing cleanup.`);
         for (const [k, v] of rateLimitStore.entries()) {
             if (v.resetTime < now) rateLimitStore.delete(k);
         }
+        // If still too large after cleanup, clear oldest 50%
+        if (rateLimitStore.size > 5000) {
+            const entries = [...rateLimitStore.entries()].sort((a, b) => a[1].firstAttempt - b[1].firstAttempt);
+            const toRemove = Math.floor(entries.length / 2);
+            for (let i = 0; i < toRemove; i++) {
+                rateLimitStore.delete(entries[i][0]);
+            }
+            console.warn(`[RateLimit] Emergency cleanup: removed ${toRemove} oldest entries`);
+        }
     }
+
+    const record = rateLimitStore.get(key);
 
     if (!record || record.resetTime < now) {
         // New window
-        rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
+        rateLimitStore.set(key, { count: 1, resetTime: now + windowMs, firstAttempt: now });
         return { allowed: true, remaining: maxAttempts - 1, resetIn: windowMs };
     }
 
     if (record.count >= maxAttempts) {
+        // Log potential attack
+        console.warn(`[RateLimit] 🚫 Blocked: ${key} (${record.count} attempts in ${Math.round((now - record.firstAttempt) / 1000)}s)`);
         return {
             allowed: false,
             remaining: 0,
