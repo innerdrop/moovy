@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import { MapPin, Loader2, X, Search } from "lucide-react";
 
@@ -26,6 +26,7 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
     const [inputValue, setInputValue] = useState(value);
     const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
@@ -35,15 +36,54 @@ export function AddressAutocomplete({
         region: 'AR'
     });
 
-    // Update internal state when prop changes
+    // Update internal state when prop changes (but only if different to avoid cursor jump)
     useEffect(() => {
-        setInputValue(value);
+        if (value !== inputValue) {
+            setInputValue(value);
+            if (inputRef.current && inputRef.current.value !== value) {
+                inputRef.current.value = value;
+            }
+        }
     }, [value]);
 
-    const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    // Fix: Ensure pac-container z-index is always high enough on mobile
+    // Google dynamically creates it, so we need to observe its creation
+    useEffect(() => {
+        if (!isLoaded) return;
+
+        const fixPacContainer = () => {
+            const containers = document.querySelectorAll('.pac-container');
+            containers.forEach((container) => {
+                (container as HTMLElement).style.zIndex = '10000';
+            });
+        };
+
+        // Watch for pac-container being added to DOM
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                for (const node of mutation.addedNodes) {
+                    if (node instanceof HTMLElement && node.classList.contains('pac-container')) {
+                        node.style.zIndex = '10000';
+                        // On mobile, prevent touchmove from dismissing the dropdown
+                        node.addEventListener('touchend', (e) => {
+                            e.stopPropagation();
+                        });
+                    }
+                }
+            }
+        });
+
+        observer.observe(document.body, { childList: true });
+        // Also fix any already existing containers
+        fixPacContainer();
+
+        return () => observer.disconnect();
+    }, [isLoaded]);
+
+    const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
         autocompleteRef.current = autocomplete;
 
-        // Optional: restrict to Ushuaia area (roughly)
+        // Restrict to Ushuaia area
         if (typeof window !== 'undefined' && window.google) {
             const ushuaiaBounds = new google.maps.LatLngBounds(
                 new google.maps.LatLng(-54.85, -68.45), // Southwest
@@ -55,9 +95,9 @@ export function AddressAutocomplete({
                 autocomplete.setComponentRestrictions({ country: "ar" });
             }
         }
-    };
+    }, [restrictToArgentina]);
 
-    const onPlaceChanged = () => {
+    const onPlaceChanged = useCallback(() => {
         if (autocompleteRef.current) {
             const place = autocompleteRef.current.getPlace();
 
@@ -68,9 +108,6 @@ export function AddressAutocomplete({
                 // Extract a cleaner address (street and number)
                 let cleanAddress = place.name || place.formatted_address;
 
-                // If the name is just the street number and it's already in the formatted address, 
-                // formatted_address is usually better.
-                // But often we just want "Street 123" not "Street 123, Ushuaia, Argentina"
                 const addressComponents = place.address_components;
                 const streetNumber = addressComponents?.find(c => c.types.includes("street_number"))?.long_name;
                 const route = addressComponents?.find(c => c.types.includes("route"))?.long_name;
@@ -80,16 +117,22 @@ export function AddressAutocomplete({
                 }
 
                 setInputValue(cleanAddress);
-                // Return original parts too (route and streetNumber) for easier saving to DB
+                if (inputRef.current) {
+                    inputRef.current.value = cleanAddress;
+                }
                 onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber || "");
             }
         }
-    };
+    }, [onChange]);
 
-    const handleClear = () => {
+    const handleClear = useCallback(() => {
         setInputValue("");
+        if (inputRef.current) {
+            inputRef.current.value = "";
+            inputRef.current.focus();
+        }
         onChange("");
-    };
+    }, [onChange]);
 
     if (loadError) {
         return <div className="text-red-500 text-sm">Error cargando Google Maps</div>;
@@ -98,7 +141,7 @@ export function AddressAutocomplete({
     return (
         <div className={`relative ${className}`}>
             <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
 
                 {isLoaded ? (
                     <Autocomplete
@@ -107,18 +150,21 @@ export function AddressAutocomplete({
                         fields={["address_components", "geometry", "formatted_address", "name"]}
                     >
                         <input
+                            ref={inputRef}
                             type="text"
-                            value={inputValue}
+                            defaultValue={inputValue}
                             onChange={(e) => {
                                 setInputValue(e.target.value);
-                                // Don't trigger onChange here to avoid clearing lat/lng prematurely 
-                                // unless you want to force re-selection.
-                                // But usually, if they type, we should clear the coordinates.
+                                // Clear coordinates when user types manually
                                 onChange(e.target.value);
                             }}
                             placeholder={placeholder}
-                            className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                            className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition text-base"
                             autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
+                            enterKeyHint="search"
                             required={required}
                         />
                     </Autocomplete>
@@ -130,18 +176,18 @@ export function AddressAutocomplete({
                 )}
 
                 {/* Clear button */}
-                {inputValue && !(!isLoaded) && (
+                {inputValue && isLoaded && (
                     <button
                         type="button"
                         onClick={handleClear}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 )}
 
                 {!inputValue && isLoaded && (
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 )}
             </div>
         </div>
