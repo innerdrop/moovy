@@ -129,7 +129,7 @@ export default function NewProductPage() {
             if (res.ok) {
                 setSuccess(true);
                 setTimeout(() => {
-                    router.push("/ops/catalogo-paquetes");
+                    router.push("/ops/productos");
                 }, 1500);
             } else {
                 const data = await res.json();
@@ -147,7 +147,7 @@ export default function NewProductPage() {
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
                 <Link
-                    href="/ops/catalogo-paquetes"
+                    href="/ops/productos"
                     className="p-2 hover:bg-gray-100 rounded-lg transition"
                 >
                     <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -388,7 +388,7 @@ export default function NewProductPage() {
                 {/* Submit */}
                 <div className="flex gap-3">
                     <Link
-                        href="/ops/catalogo-paquetes"
+                        href="/ops/productos"
                         className="btn-outline flex-1 text-center"
                     >
                         Cancelar

@@ -3,13 +3,14 @@
 import { Shield, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, Suspense, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { loginAction } from "./actions";
 
 function OpsLoginContent() {
     const [error, setError] = useState("");
     const [isPending, startTransition] = useTransition();
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     useEffect(() => {
         const errorParam = searchParams.get("error");
@@ -26,8 +27,11 @@ function OpsLoginContent() {
             const result = await loginAction(formData);
             if (result && !result.success) {
                 setError(result.error || "Error de autenticación");
+            } else {
+                // Success: Client-side redirect to preserve host/IP (fixes mobile access issue)
+                router.push("/ops");
+                router.refresh();
             }
-            // If success, the server action redirects automatically
         });
     };
 

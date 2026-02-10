@@ -96,8 +96,28 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
             if (result?.error) {
                 setError("Email o contraseña incorrectos");
             } else {
-                router.push(callbackUrl || config.redirectAfterLogin);
-                router.refresh();
+                // Determine redirect path based on user role (client-side check for robust redirection)
+                try {
+                    // Fetch fresh session to get role
+                    const sessionRes = await fetch("/api/auth/session");
+                    const sessionData = await sessionRes.json();
+                    const role = sessionData?.user?.role;
+
+                    if (role === "ADMIN") {
+                        router.push("/ops");
+                    } else if (role === "DRIVER") {
+                        router.push("/repartidor");
+                    } else if (role === "MERCHANT") {
+                        router.push("/comercios");
+                    } else {
+                        router.push(callbackUrl || config.redirectAfterLogin);
+                    }
+                    router.refresh();
+                } catch (e) {
+                    // Fallback to default behavior
+                    router.push(callbackUrl || config.redirectAfterLogin);
+                    router.refresh();
+                }
             }
         } catch (err) {
             setError("Error al iniciar sesión. Intenta de nuevo.");

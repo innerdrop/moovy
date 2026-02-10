@@ -12,7 +12,7 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex">
+        <div className="min-h-screen bg-gray-100 flex overflow-x-hidden">
             {/* Sidebar - handles both desktop and mobile */}
             <OpsSidebar userName={session.user?.name || undefined} />
 
@@ -22,7 +22,7 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
                 <div className="lg:hidden h-16" />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-auto">
+                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-x-hidden overflow-y-auto">
                     {children}
                 </main>
             </div>
