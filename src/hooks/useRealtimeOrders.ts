@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { useSocketAuth } from "./useSocketAuth";
 
 /**
  * Real-time order updates hook
@@ -34,8 +35,6 @@ interface UseRealtimeOrdersOptions {
     onDriverAssigned?: (orderId: string, driverId: string) => void;
     /** Whether to enable the connection */
     enabled?: boolean;
-    /** Socket auth token from useSocketAuth hook */
-    socketToken?: string | null;
 }
 
 export function useRealtimeOrders({
@@ -47,8 +46,9 @@ export function useRealtimeOrders({
     onOrderCancelled,
     onDriverAssigned,
     enabled = true,
-    socketToken,
 }: UseRealtimeOrdersOptions) {
+    // Auto-fetch socket auth token
+    const { token: socketToken } = useSocketAuth(enabled);
     const socketRef = useRef<Socket | null>(null);
     const callbacksRef = useRef({
         onNewOrder,
@@ -70,7 +70,12 @@ export function useRealtimeOrders({
     useEffect(() => {
         if (!enabled || !socketToken) return;
 
-        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+        const envSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+        // Handle mobile LAN access (dev server on LAN IP)
+        const isLocalHostEnv = envSocketUrl.includes("localhost") || envSocketUrl.includes("127.0.0.1");
+        const socketUrl = (isLocalHostEnv && typeof window !== 'undefined' && !window.location.hostname.includes("localhost"))
+            ? `${window.location.protocol}//${window.location.hostname}:3001`
+            : envSocketUrl;
 
         const socket = io(`${socketUrl}/logistica`, {
             transports: ["websocket", "polling"],

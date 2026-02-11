@@ -140,6 +140,12 @@ export default function TrackingPage() {
         }
 
         if (orderId) fetchOrder();
+
+        // Polling fallback every 5s for fast status updates
+        const pollInterval = setInterval(() => {
+            if (orderId) fetchOrder();
+        }, 5000);
+        return () => clearInterval(pollInterval);
     }, [orderId]);
 
     // Directions logic
@@ -258,10 +264,9 @@ export default function TrackingPage() {
     useEffect(() => {
         if (!orderId || !order || !socketToken) return;
 
-        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
-        const currentStatus = order.status.toUpperCase();
-        if (!trackableStatuses.includes(currentStatus)) {
-            console.log("[Tracking] Status not trackable:", currentStatus);
+        // Connect socket for all non-terminal statuses
+        if (["DELIVERED", "CANCELLED"].includes(order.status.toUpperCase())) {
+            console.log("[Tracking] Order in terminal status, skipping socket:", order.status);
             return;
         }
 
@@ -406,12 +411,13 @@ export default function TrackingPage() {
     };
 
     const getStatusStep = () => {
-        switch (order?.status) {
-            case "PENDING":
+        switch (order?.status?.toUpperCase()) {
+            case "PENDING": return 0;
             case "CONFIRMED":
             case "PREPARING":
-            case "READY": return 0;
-            case "DRIVER_ASSIGNED": return 1;
+            case "READY":
+            case "DRIVER_ASSIGNED":
+            case "DRIVER_ARRIVED": return 1;
             case "PICKED_UP":
             case "IN_DELIVERY": return 2;
             case "DELIVERED": return 3;
