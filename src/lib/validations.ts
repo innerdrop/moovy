@@ -18,6 +18,8 @@ export const AddressDataSchema = z.object({
     number: z.string().min(1, "Número requerido"),
     floor: z.string().optional(),
     city: z.string().optional(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
 });
 
 export const CreateOrderSchema = z.object({

@@ -99,6 +99,8 @@ export async function POST(request: Request) {
                     neighborhood: null,
                     city: addressData.city || "Ushuaia",
                     province: "Tierra del Fuego",
+                    latitude: addressData.latitude || null,
+                    longitude: addressData.longitude || null,
                     isDefault: false,
                 },
             });

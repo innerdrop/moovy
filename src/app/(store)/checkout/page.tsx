@@ -225,10 +225,13 @@ export default function CheckoutPage() {
                 return;
             }
 
+            // Track address ID locally (useState won't update synchronously)
+            let orderAddressId: string | null = selectedAddressId;
+
             // If user wants to save the address and it's a new one
             if (isNewAddress && saveAddress) {
                 try {
-                    await fetch("/api/profile/addresses", {
+                    const addrRes = await fetch("/api/profile/addresses", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -239,12 +242,17 @@ export default function CheckoutPage() {
                             city: address.city,
                             latitude: address.latitude,
                             longitude: address.longitude,
-                            isDefault: savedAddresses.length === 0 // Make default if it's the first one
+                            isDefault: savedAddresses.length === 0
                         })
                     });
+                    if (addrRes.ok) {
+                        const savedAddr = await addrRes.json();
+                        // Use saved address ID to avoid duplicate in orders API
+                        orderAddressId = savedAddr.id;
+                        setSelectedAddressId(savedAddr.id);
+                    }
                 } catch (addrErr) {
                     console.error("Error saving address to profile:", addrErr);
-                    // We don't block the order if address saving fails
                 }
             }
 
@@ -261,10 +269,10 @@ export default function CheckoutPage() {
                         variantId: item.variantId,
                         variantName: item.variantName,
                     })),
-                    merchantId: useCartStore.getState().merchantId, // Get current merchant
-                    // Send addressId if selected, otherwise addressData
-                    addressId: selectedAddressId || undefined,
-                    addressData: !selectedAddressId ? {
+                    merchantId: useCartStore.getState().merchantId,
+                    // Send addressId if available, otherwise addressData
+                    addressId: orderAddressId || undefined,
+                    addressData: !orderAddressId ? {
                         street: address.street,
                         number: address.number,
                         floor: address.floor,
@@ -398,8 +406,8 @@ export default function CheckoutPage() {
                                             onClick={() => setDeliveryMethod("home")}
                                             disabled={!hasDrivers}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "home"
-                                                    ? "border-moovy bg-moovy-light"
-                                                    : "border-gray-100 hover:border-gray-200"
+                                                ? "border-moovy bg-moovy-light"
+                                                : "border-gray-100 hover:border-gray-200"
                                                 } ${!hasDrivers ? "opacity-30 cursor-not-allowed" : ""}`}
                                         >
                                             <Truck className={`w-8 h-8 ${deliveryMethod === "home" ? "text-moovy" : "text-gray-400"}`} />
@@ -409,8 +417,8 @@ export default function CheckoutPage() {
                                         <button
                                             onClick={() => setDeliveryMethod("pickup")}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "pickup"
-                                                    ? "border-moovy bg-moovy-light"
-                                                    : "border-gray-100 hover:border-gray-200"
+                                                ? "border-moovy bg-moovy-light"
+                                                : "border-gray-100 hover:border-gray-200"
                                                 }`}
                                         >
                                             <ShoppingBag className={`w-8 h-8 ${deliveryMethod === "pickup" ? "text-moovy" : "text-gray-400"}`} />
