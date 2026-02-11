@@ -259,8 +259,8 @@ export default function MisPedidosPage() {
                                         {isActive && (
                                             <div className="mt-4 pt-4 border-t border-gray-50">
                                                 <div className="flex items-center gap-1.5 h-1.5">
-                                                    {["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"].map((step, idx) => {
-                                                        const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY", "DELIVERED"];
+                                                    {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "DELIVERED"].map((step, idx) => {
+                                                        const stepOrder = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY", "DELIVERED"];
                                                         const currentIdx = stepOrder.indexOf(order.status);
                                                         const stepIdx = stepOrder.indexOf(step);
                                                         const isDone = stepIdx <= currentIdx;
