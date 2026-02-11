@@ -119,8 +119,8 @@ export default function MisPedidosPage() {
         }
 
         loadOrders();
-        // Fallback polling every 30 seconds (reduced from 10s since we have real-time)
-        const intervalId = setInterval(() => loadOrders(true), 30000);
+        // Fallback polling every 10 seconds
+        const intervalId = setInterval(() => loadOrders(true), 10000);
         return () => clearInterval(intervalId);
     }, [isAuthenticated, authStatus, loadOrders]);
 

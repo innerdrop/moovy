@@ -282,6 +282,7 @@ export default function RiderDashboard() {
                 style={{ height: mapHeight }}
             >
                 <RiderMiniMap
+                    key={pedidoActivo?.id || "idle-map"}
                     driverLat={location?.latitude}
                     driverLng={location?.longitude}
                     driverHeading={heading || 0}
