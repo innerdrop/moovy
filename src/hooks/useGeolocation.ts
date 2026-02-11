@@ -42,12 +42,27 @@ export function useGeolocation() {
                 });
             },
             (err) => {
+                // FIX 5: On POSITION_UNAVAILABLE, keep last known position
+                // instead of clearing it. Critical for Ushuaia's intermittent signal.
+                if (err.code === err.POSITION_UNAVAILABLE) {
+                    setState(s => ({
+                        ...s,
+                        error: s.location
+                            ? "Señal GPS débil — usando última ubicación"
+                            : err.message,
+                        loading: false,
+                        // Keep location if we had one
+                    }));
+                    return;
+                }
                 setState(s => ({ ...s, error: err.message, loading: false }));
             },
             {
                 enableHighAccuracy: true,
                 timeout: 15000,
-                maximumAge: 0,
+                // FIX 5: Allow 10s cache to reduce battery drain
+                // (was 0 = forced hardware GPS on every update)
+                maximumAge: 10000,
             }
         );
 

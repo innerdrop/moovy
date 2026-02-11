@@ -66,13 +66,20 @@ function RiderMiniMapComponent({
     const hasInitialCentered = useRef(false);
     const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
     const [remainingPath, setRemainingPath] = useState<google.maps.LatLngLiteral[]>([]);
-    const [animatedPath, setAnimatedPath] = useState<google.maps.LatLngLiteral[]>([]); // For drawing animation
+    const [animatedPath, setAnimatedPath] = useState<google.maps.LatLngLiteral[]>([]);
     const [isAnimating, setIsAnimating] = useState(false);
     const [userInteracted, setUserInteracted] = useState(false);
     const recenterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const animationFrameRef = useRef<number | null>(null);
+    const polylineIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const prevOrderStatusRef = useRef<string | undefined>(undefined);
     const [showCustomerInfo, setShowCustomerInfo] = useState(false);
+
+    // ── FIX 1: Stage tracking to prevent redundant Directions API calls ──
+    // Only call Directions API when the delivery STAGE changes, not on every GPS update.
+    // Stages: null → "MERCHANT" → "CUSTOMER" → null
+    const currentStageRef = useRef<string | null>(null);
+    const hasDriverPositionRef = useRef(false);
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -82,46 +89,67 @@ function RiderMiniMapComponent({
         region: 'AR'
     });
 
-    // Calculate route path
-    useEffect(() => {
-        if (!isLoaded || !driverLat || !driverLng) return;
-
-        // Cancel any existing animation
+    // ── Helper: clear all route state ──
+    const clearRouteState = useCallback(() => {
+        setRoutePath([]);
+        setRemainingPath([]);
+        setAnimatedPath([]);
+        setIsAnimating(false);
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
         }
+        if (polylineIntervalRef.current) {
+            clearInterval(polylineIntervalRef.current);
+            polylineIntervalRef.current = null;
+        }
+    }, []);
 
-        // Stage-based destination logic: 
-        // If not picked up yet, destination is Merchant. 
-        // Once picked up, destination is Customer.
+    // ── FIX 1: Calculate route ONLY on stage transitions ──
+    // Directions API is called exactly ONCE per stage, not on every GPS update.
+    useEffect(() => {
+        if (!isLoaded || !driverLat || !driverLng) return;
+
         const normalizedStatus = orderStatus?.toUpperCase() || "";
         const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(normalizedStatus);
+        const newStage = !orderStatus ? null : (isPickedUp ? "CUSTOMER" : "MERCHANT");
+
+        // Track if we have a driver position (for first-time route calculation)
+        const hadDriverPosition = hasDriverPositionRef.current;
+        hasDriverPositionRef.current = true;
+
+        // GUARD: Only call Directions API if the stage actually changed
+        // OR if it's the first time we have a driver position for this stage
+        if (newStage === currentStageRef.current && hadDriverPosition) {
+            return; // Same stage, don't re-call Directions API
+        }
+
+        // Stage is changing — clear old route first
+        clearRouteState();
+        currentStageRef.current = newStage;
+
+        if (!newStage) {
+            prevOrderStatusRef.current = orderStatus;
+            return;
+        }
 
         const destination = isPickedUp
             ? (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null)
             : (merchantLat && merchantLng ? { lat: merchantLat, lng: merchantLng } : null);
 
         if (!destination) {
-            setRoutePath([]);
-            setRemainingPath([]);
-            setAnimatedPath([]);
-            setIsAnimating(false);
+            prevOrderStatusRef.current = orderStatus;
             return;
         }
 
         const directionsService = new google.maps.DirectionsService();
         const origin = { lat: driverLat, lng: driverLng };
 
-        // We use staged navigation, so no waypoints needed. 
-        // This prevents the route from going "through" the merchant to the customer prematurely.
-        const waypoints: google.maps.DirectionsWaypoint[] = [];
-
         if (navigationMode) {
-            console.log("[RiderMap] Updating route...", {
-                driver: { lat: driverLat, lng: driverLng },
+            console.log("[RiderMap] Fetching route (stage change):", {
+                stage: newStage,
+                origin,
                 dest: destination,
-                stage: isPickedUp ? "CUSTOMER" : "MERCHANT",
                 status: orderStatus
             });
         }
@@ -130,12 +158,10 @@ function RiderMiniMapComponent({
             {
                 origin,
                 destination,
-                waypoints,
                 travelMode: google.maps.TravelMode.DRIVING,
             },
             (result, status) => {
                 if (status === google.maps.DirectionsStatus.OK && result) {
-                    // Extract path from all route legs
                     const path: google.maps.LatLngLiteral[] = [];
                     result.routes[0].legs.forEach(leg => {
                         leg.steps.forEach(step => {
@@ -145,72 +171,29 @@ function RiderMiniMapComponent({
                         });
                     });
 
-                    // Check if this is a route transition (status changed)
-                    const normalizedStatus = orderStatus?.toUpperCase() || "";
-                    const isTransition = prevOrderStatusRef.current !== undefined &&
-                        prevOrderStatusRef.current !== orderStatus &&
-                        (normalizedStatus === "PICKED_UP" || normalizedStatus === "IN_DELIVERY");
-
-                    // Immediate update of primary state
                     setRoutePath(path);
                     setRemainingPath(path);
                     setAnimatedPath(path);
                     setIsAnimating(false);
-
                     prevOrderStatusRef.current = orderStatus;
                 } else {
                     console.error("[RiderMap] Route failed:", status);
-                    // Clear if failed
                     setRoutePath([]);
                     setRemainingPath([]);
                 }
             }
         );
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode, clearRouteState]);
 
-        return () => {
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
-            }
-        };
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, onRouteTransition, navigationMode]);
-
-    // Immediately clear route when orderStatus changes OR becomes null (finished)
-    const prevMerchantLatRef = useRef<number | undefined>(merchantLat);
-    useEffect(() => {
-        const orderFinished = prevOrderStatusRef.current && !orderStatus;
-        const statusChanged = orderStatus && prevOrderStatusRef.current && orderStatus !== prevOrderStatusRef.current;
-        const merchantCleared = prevMerchantLatRef.current !== undefined && merchantLat === undefined;
-
-        if (orderFinished || statusChanged || merchantCleared) {
-            // Status changed or merchant cleared (picked up) - immediately clear old route
-            setRoutePath([]);
-            setRemainingPath([]);
-            setAnimatedPath([]);
-            setIsAnimating(false);
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
-                animationFrameRef.current = null;
-            }
-
-            // If it was finished, reset the ref so it can detect new orders
-            if (orderFinished) {
-                prevOrderStatusRef.current = undefined;
-            }
-        }
-
-        prevMerchantLatRef.current = merchantLat;
-    }, [orderStatus, merchantLat]);
-
-    // Clear route when delivery is completed (navigationMode becomes false)
+    // ── FIX 2: Clean up on delivery completion ──
     useEffect(() => {
         if (!navigationMode) {
-            setRoutePath([]);
-            setRemainingPath([]);
-            setAnimatedPath([]);
-            setIsAnimating(false);
+            clearRouteState();
+            currentStageRef.current = null;
+            hasDriverPositionRef.current = false;
             prevOrderStatusRef.current = undefined;
         }
-    }, [navigationMode]);
+    }, [navigationMode, clearRouteState]);
 
     // Update remaining path as driver moves (erase path behind driver)
     useEffect(() => {
@@ -422,20 +405,25 @@ function RiderMiniMapComponent({
                         onLoad={(polyline) => {
                             if (isAnimating) return;
 
+                            // Clear any previous interval (safe cleanup)
+                            if (polylineIntervalRef.current) {
+                                clearInterval(polylineIntervalRef.current);
+                            }
+
                             let count = 0;
-                            const interval = setInterval(() => {
+                            polylineIntervalRef.current = setInterval(() => {
                                 count = (count + 1) % 200;
                                 const icons = polyline.get('icons');
                                 if (icons && icons[0]) {
                                     icons[0].offset = (count / 2) + '%';
                                     polyline.set('icons', icons);
                                 }
-                            }, 100); // 50% slower as requested (100ms instead of 50ms)
-                            (polyline as any)._animationInterval = interval;
+                            }, 100);
                         }}
-                        onUnmount={(polyline) => {
-                            if ((polyline as any)._animationInterval) {
-                                clearInterval((polyline as any)._animationInterval);
+                        onUnmount={() => {
+                            if (polylineIntervalRef.current) {
+                                clearInterval(polylineIntervalRef.current);
+                                polylineIntervalRef.current = null;
                             }
                         }}
                     />

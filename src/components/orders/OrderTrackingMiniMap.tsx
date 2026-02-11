@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
 import { Loader2, Clock, Navigation } from "lucide-react";
 import { io, Socket } from "socket.io-client";
@@ -38,6 +38,59 @@ const defaultCenter = {
     lng: -68.3030,
 };
 
+// ── FIX 4: Smooth marker interpolation hook ──
+// Prevents the "teleportation" effect by smoothly transitioning the marker
+function useInterpolatedPosition(target: { lat: number; lng: number } | null) {
+    const [current, setCurrent] = useState(target);
+    const animRef = useRef<number | null>(null);
+    const startRef = useRef(target);
+    const startTimeRef = useRef(0);
+    const DURATION = 1000; // 1 second smooth transition
+
+    useEffect(() => {
+        if (!target) {
+            setCurrent(null);
+            return;
+        }
+
+        if (!current) {
+            // First position — set immediately without animation
+            setCurrent(target);
+            startRef.current = target;
+            return;
+        }
+
+        // Start interpolation from current position to target
+        startRef.current = { ...current };
+        startTimeRef.current = performance.now();
+
+        const animate = (now: number) => {
+            const elapsed = now - startTimeRef.current;
+            const t = Math.min(elapsed / DURATION, 1);
+            // Ease-out cubic for smooth deceleration
+            const ease = 1 - Math.pow(1 - t, 3);
+
+            setCurrent({
+                lat: startRef.current!.lat + (target.lat - startRef.current!.lat) * ease,
+                lng: startRef.current!.lng + (target.lng - startRef.current!.lng) * ease,
+            });
+
+            if (t < 1) {
+                animRef.current = requestAnimationFrame(animate);
+            }
+        };
+
+        animRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            if (animRef.current) cancelAnimationFrame(animRef.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [target?.lat, target?.lng]);
+
+    return current;
+}
+
 
 function OrderTrackingMiniMap({
     orderId,
@@ -62,6 +115,12 @@ function OrderTrackingMiniMap({
     const [hasPickupCentered, setHasPickupCentered] = useState(false);
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
+
+    // ── FIX 1: Stage tracking to prevent redundant Directions API calls ──
+    const currentStageRef = useRef<string | null>(null);
+
+    // ── FIX 4: Smooth interpolation of driver marker ──
+    const interpolatedDriverPos = useInterpolatedPosition(driverPos);
 
     // Sync driver pos with props if they update
     useEffect(() => {
@@ -103,6 +162,7 @@ function OrderTrackingMiniMap({
         });
 
         socket.on("posicion_repartidor", (data: { lat: number, lng: number }) => {
+            // FIX 4: driverPos is set here, useInterpolatedPosition handles smooth transition
             setDriverPos({ lat: data.lat, lng: data.lng });
         });
 
@@ -111,9 +171,18 @@ function OrderTrackingMiniMap({
         };
     }, [orderId, orderStatus, socketToken]);
 
-    // Request directions and calculate ETA
+    // ── FIX 1: Request directions ONLY on stage transitions ──
+    // Directions API is called exactly ONCE per stage, not on every GPS update.
     useEffect(() => {
         if (!isLoaded || !customerLat || !customerLng) return;
+
+        // Determine current stage based on order status
+        const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(orderStatus);
+        const newStage = isPickedUp ? "DELIVERING" : "PICKING_UP";
+
+        // GUARD: Only call Directions API if the stage actually changed
+        if (newStage === currentStageRef.current) return;
+        currentStageRef.current = newStage;
 
         // Origin is driver if available, otherwise merchant
         const origin = driverPos
@@ -125,10 +194,17 @@ function OrderTrackingMiniMap({
         const directionsService = new google.maps.DirectionsService();
         const destination = { lat: customerLat, lng: customerLng };
 
-        // Waypoints only if we have merchant and haven't picked up yet
-        const waypoints = (driverPos && orderStatus === "DRIVER_ASSIGNED" && merchantLat && merchantLng)
+        // Waypoints only if going to merchant first (pre-pickup)
+        const waypoints = (!isPickedUp && driverPos && merchantLat && merchantLng)
             ? [{ location: { lat: merchantLat, lng: merchantLng }, stopover: true }]
             : [];
+
+        console.log("[TrackingMap] Fetching route (stage change):", {
+            stage: newStage,
+            origin,
+            destination,
+            waypoints: waypoints.length
+        });
 
         directionsService.route(
             {
@@ -227,6 +303,10 @@ function OrderTrackingMiniMap({
         return defaultCenter;
     }, [driverPos, merchantLat, merchantLng]);
 
+    // ── FIX 3: Conditional driver visibility ──
+    // Customer should only see the driver marker AFTER pickup (PICKED_UP or IN_DELIVERY)
+    const showDriverMarker = interpolatedDriverPos && ['PICKED_UP', 'IN_DELIVERY'].includes(orderStatus);
+
     if (!isLoaded) {
         return (
             <div style={{ height }} className="animate-pulse bg-gray-100 rounded-xl flex items-center justify-center">
@@ -286,10 +366,11 @@ function OrderTrackingMiniMap({
                     />
                 )}
 
-                {/* Driver Marker */}
-                {driverPos && (
+                {/* Driver Marker — FIX 3: Only visible after pickup */}
+                {/* FIX 4: Uses interpolated position for smooth movement */}
+                {showDriverMarker && (
                     <Marker
-                        position={driverPos}
+                        position={interpolatedDriverPos!}
                         icon={{
                             url: "data:image/svg+xml," + encodeURIComponent(`
                                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
@@ -299,7 +380,6 @@ function OrderTrackingMiniMap({
                             `),
                             scaledSize: new google.maps.Size(40, 40),
                             anchor: new google.maps.Point(20, 20),
-                            rotation: (directions?.routes[0]?.legs[0]?.steps[0] as any)?.start_location ? 0 : 0 // Default to 0 for now as heading isn't in socket yet
                         }}
                     />
                 )}

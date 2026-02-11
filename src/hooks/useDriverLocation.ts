@@ -30,7 +30,8 @@ export function useDriverLocation({
     driverId,
     currentOrderId,
     enabled = true,
-    updateThresholdMeters = 50,
+    // FIX 6: Reduced from 50m to 15m for Ushuaia's short streets
+    updateThresholdMeters = 15,
     socketToken,
 }: UseDriverLocationOptions) {
     const [location, setLocation] = useState<LocationState>({
@@ -143,8 +144,16 @@ export function useDriverLocation({
                         errorMessage = "Permiso de ubicación denegado";
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        errorMessage = "Ubicación no disponible";
-                        break;
+                        // FIX 5: Maintain last known position on signal loss
+                        // Critical for Ushuaia's intermittent connectivity
+                        setLocation((prev) => ({
+                            ...prev,
+                            error: prev.latitude
+                                ? "Señal GPS débil — usando última ubicación"
+                                : "Ubicación no disponible",
+                            // Keep isTracking true and retain last coordinates
+                        }));
+                        return;
                     case error.TIMEOUT:
                         errorMessage = "Tiempo de espera agotado";
                         break;
@@ -154,7 +163,8 @@ export function useDriverLocation({
             {
                 enableHighAccuracy: true,
                 timeout: 10000,
-                maximumAge: 5000,
+                // FIX 5: Allow 10s cache to reduce battery drain
+                maximumAge: 10000,
             }
         );
     }, [sendLocationUpdate]);

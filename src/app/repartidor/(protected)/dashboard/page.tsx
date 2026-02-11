@@ -128,7 +128,8 @@ export default function RiderDashboard() {
     // Initial load and periodic refresh
     useEffect(() => {
         fetchDashboard();
-        const interval = setInterval(() => fetchDashboard(true), 3000);
+        // FIX 6: Reduced from 3s to 15s — Socket.IO handles real-time, this is fallback
+        const interval = setInterval(() => fetchDashboard(true), 15000);
         return () => clearInterval(interval);
     }, [fetchDashboard]);
 
