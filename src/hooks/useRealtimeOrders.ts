@@ -35,8 +35,6 @@ interface UseRealtimeOrdersOptions {
     onDriverAssigned?: (orderId: string, driverId: string) => void;
     /** Whether to enable the connection */
     enabled?: boolean;
-    /** Socket auth token from useSocketAuth hook */
-    socketToken?: string | null;
 }
 
 export function useRealtimeOrders({
@@ -48,7 +46,6 @@ export function useRealtimeOrders({
     onOrderCancelled,
     onDriverAssigned,
     enabled = true,
-    socketToken,
 }: UseRealtimeOrdersOptions) {
     // Auto-fetch socket auth token
     const { token: socketToken } = useSocketAuth(enabled);
