@@ -126,10 +126,10 @@ export default function RiderDashboard() {
     }, [location]);
 
     // Initial load and periodic refresh
+    // Note: orders arrive ONLY through this polling — socket orden_pendiente isn't wired up yet
     useEffect(() => {
         fetchDashboard();
-        // FIX 6: Reduced from 3s to 15s — Socket.IO handles real-time, this is fallback
-        const interval = setInterval(() => fetchDashboard(true), 15000);
+        const interval = setInterval(() => fetchDashboard(true), 5000);
         return () => clearInterval(interval);
     }, [fetchDashboard]);
 
