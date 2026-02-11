@@ -16,103 +16,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_referredById_fkey";
-ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_senderId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_chatId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SupportChat" DROP CONSTRAINT IF EXISTS "SupportChat_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_referrerId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_refereeId_fkey";
-ALTER TABLE IF EXISTS ONLY public."PushSubscription" DROP CONSTRAINT IF EXISTS "PushSubscription_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Product" DROP CONSTRAINT IF EXISTS "Product_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductImage" DROP CONSTRAINT IF EXISTS "ProductImage_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_categoryId_fkey";
-ALTER TABLE IF EXISTS ONLY public."PointsTransaction" DROP CONSTRAINT IF EXISTS "PointsTransaction_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_driverId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_addressId_fkey";
-ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_orderId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_ownerId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_categoryId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_merchantId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_parentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_productId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Address" DROP CONSTRAINT IF EXISTS "Address_userId_fkey";
-DROP INDEX IF EXISTS public."User_referralCode_key";
-DROP INDEX IF EXISTS public."User_email_key";
-DROP INDEX IF EXISTS public."SavedCart_userId_key";
-DROP INDEX IF EXISTS public."Referral_refereeId_key";
-DROP INDEX IF EXISTS public."PushSubscription_userId_idx";
-DROP INDEX IF EXISTS public."PushSubscription_endpoint_key";
-DROP INDEX IF EXISTS public."Product_slug_key";
-DROP INDEX IF EXISTS public."ProductCategory_productId_categoryId_key";
-DROP INDEX IF EXISTS public."Order_orderNumber_key";
-DROP INDEX IF EXISTS public."Merchant_slug_key";
-DROP INDEX IF EXISTS public."MerchantCategory_merchantId_categoryId_key";
-DROP INDEX IF EXISTS public."MerchantAcquiredProduct_merchantId_productId_key";
-DROP INDEX IF EXISTS public."Driver_userId_key";
-DROP INDEX IF EXISTS public."Category_slug_key";
-DROP INDEX IF EXISTS public."Category_name_key";
-DROP INDEX IF EXISTS public."CartItem_userId_productId_variantId_key";
-ALTER TABLE IF EXISTS ONLY public._prisma_migrations DROP CONSTRAINT IF EXISTS _prisma_migrations_pkey;
-ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
-ALTER TABLE IF EXISTS ONLY public."SupportMessage" DROP CONSTRAINT IF EXISTS "SupportMessage_pkey";
-ALTER TABLE IF EXISTS ONLY public."SupportChat" DROP CONSTRAINT IF EXISTS "SupportChat_pkey";
-ALTER TABLE IF EXISTS ONLY public."StoreSettings" DROP CONSTRAINT IF EXISTS "StoreSettings_pkey";
-ALTER TABLE IF EXISTS ONLY public."SavedCart" DROP CONSTRAINT IF EXISTS "SavedCart_pkey";
-ALTER TABLE IF EXISTS ONLY public."Referral" DROP CONSTRAINT IF EXISTS "Referral_pkey";
-ALTER TABLE IF EXISTS ONLY public."PushSubscription" DROP CONSTRAINT IF EXISTS "PushSubscription_pkey";
-ALTER TABLE IF EXISTS ONLY public."Product" DROP CONSTRAINT IF EXISTS "Product_pkey";
-ALTER TABLE IF EXISTS ONLY public."ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_pkey";
-ALTER TABLE IF EXISTS ONLY public."ProductImage" DROP CONSTRAINT IF EXISTS "ProductImage_pkey";
-ALTER TABLE IF EXISTS ONLY public."ProductCategory" DROP CONSTRAINT IF EXISTS "ProductCategory_pkey";
-ALTER TABLE IF EXISTS ONLY public."PointsTransaction" DROP CONSTRAINT IF EXISTS "PointsTransaction_pkey";
-ALTER TABLE IF EXISTS ONLY public."PointsConfig" DROP CONSTRAINT IF EXISTS "PointsConfig_pkey";
-ALTER TABLE IF EXISTS ONLY public."Order" DROP CONSTRAINT IF EXISTS "Order_pkey";
-ALTER TABLE IF EXISTS ONLY public."OrderItem" DROP CONSTRAINT IF EXISTS "OrderItem_pkey";
-ALTER TABLE IF EXISTS ONLY public."OrderBackup" DROP CONSTRAINT IF EXISTS "OrderBackup_pkey";
-ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_pkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_pkey";
-ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_pkey";
-ALTER TABLE IF EXISTS ONLY public."HeroSlide" DROP CONSTRAINT IF EXISTS "HeroSlide_pkey";
-ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_pkey";
-ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_pkey";
-ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_pkey";
-ALTER TABLE IF EXISTS ONLY public."Address" DROP CONSTRAINT IF EXISTS "Address_pkey";
-DROP TABLE IF EXISTS public._prisma_migrations;
-DROP TABLE IF EXISTS public."User";
-DROP TABLE IF EXISTS public."SupportMessage";
-DROP TABLE IF EXISTS public."SupportChat";
-DROP TABLE IF EXISTS public."StoreSettings";
-DROP TABLE IF EXISTS public."SavedCart";
-DROP TABLE IF EXISTS public."Referral";
-DROP TABLE IF EXISTS public."PushSubscription";
-DROP TABLE IF EXISTS public."ProductVariant";
-DROP TABLE IF EXISTS public."ProductImage";
-DROP TABLE IF EXISTS public."ProductCategory";
-DROP TABLE IF EXISTS public."Product";
-DROP TABLE IF EXISTS public."PointsTransaction";
-DROP TABLE IF EXISTS public."PointsConfig";
-DROP TABLE IF EXISTS public."OrderItem";
-DROP TABLE IF EXISTS public."OrderBackup";
-DROP TABLE IF EXISTS public."Order";
-DROP TABLE IF EXISTS public."MerchantCategory";
-DROP TABLE IF EXISTS public."MerchantAcquiredProduct";
-DROP TABLE IF EXISTS public."Merchant";
-DROP TABLE IF EXISTS public."HeroSlide";
-DROP TABLE IF EXISTS public."Driver";
-DROP TABLE IF EXISTS public."Category";
-DROP TABLE IF EXISTS public."CartItem";
-DROP TABLE IF EXISTS public."Address";
-DROP EXTENSION IF EXISTS postgis;
--- *not* dropping schema, since initdb creates it
 --
 -- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
 --
@@ -855,7 +758,7 @@ cmlh80fw20004ljt24xvjrupg	MOV-FMZR	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et
 cmlh7ro8y0004h90l1z1568vl	MOV-GSTY	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:10:12.61	2026-02-10 23:12:12.595	Solicitud del cliente	f	\N	4600	400	\N	\N	1	2026-02-10 23:15:31.572	2026-02-10 23:10:31.573	cmkvbvo7w0026r0gkcidihjmf	f	\N
 cmlh8dvr30004118zljbhq35i	MOV-T4SD	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	5000	1079	0	6079	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:27:28.767	2026-02-10 23:32:03.074	Solicitud del cliente	f	\N	4600	400	\N	\N	1	2026-02-10 23:33:21.475	2026-02-10 23:28:21.475	cmkvbvo7w0026r0gkcidihjmf	f	\N
 cmlh8lqcu000d118z52zga4uw	MOV-FMQE	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	7500	1079	0	8579	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:33:35.022	2026-02-10 23:46:25.412	Solicitud del cliente	f	\N	6900	600	\N	\N	3	\N	2026-02-10 23:44:20.062	\N	f	["cmkvbvo7w0026r0gkcidihjmf", "cmkvbvo7n0022r0gkuu9g9uab"]
-cmlh976u1000n118zi5vy0czv	MOV-KCMH	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	PREPARING	\N	PENDING	cash	7500	1079	0	8579	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:50:16.153	2026-02-10 23:50:42.287	\N	f	\N	6900	600	\N	\N	1	2026-02-10 23:55:42.285	2026-02-10 23:50:42.285	cmkvbvo7w0026r0gkcidihjmf	f	\N
+cmlh976u1000n118zi5vy0czv	MOV-KCMH	cmlbofjvu0002mqdpmdns2wmk	cmlh7mcz2000357g2et4e1hgx	cmkvbvo3z0008r0gkc7qfxplz	CANCELLED	\N	PENDING	cash	7500	1079	0	8579	2.073853894658736	\N	\N	\N	\N	\N	\N	\N	\N	2026-02-10 23:50:16.153	2026-02-11 20:27:20.318	Pedido de prueba - limpieza	f	\N	6900	600	\N	\N	1	2026-02-10 23:55:42.285	2026-02-10 23:50:42.285	cmkvbvo7w0026r0gkcidihjmf	f	\N
 \.
 
 
