@@ -110,7 +110,7 @@ cd /var/www/moovy
 nano .env
 
 # 4. Agregar la variable nueva (ejemplo):
-#    NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID="ceeb1fa42528305a58f58ca1"
+#    NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID="cxxxxxxxxx8ca1" 
 
 # 5. Guardar: Ctrl+O → Enter → Ctrl+X
 
