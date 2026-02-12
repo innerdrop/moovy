@@ -27,12 +27,13 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Dynamic imports for heavy components
 const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
     ssr: false,
-    loading: () => <div className="h-full w-full bg-gray-100 animate-pulse flex items-center justify-center text-gray-400">Preparando mapa...</div>
+    loading: () => <MapSkeleton />
 });
 
 const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
