@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -29,7 +29,7 @@ import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
-// Dynamics imports for heavy components
+// Dynamic imports for heavy components
 const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
     ssr: false,
     loading: () => <div className="h-full w-full bg-gray-100 animate-pulse flex items-center justify-center text-gray-400">Preparando mapa...</div>
@@ -37,7 +37,7 @@ const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
 
 const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
     ssr: false,
-    loading: () => <div className="h-[45vh] bg-white rounded-t-[32px] animate-pulse" />
+    loading: () => <div className="fixed bottom-0 left-0 right-0 h-[160px] bg-white rounded-t-3xl animate-pulse" />
 });
 
 interface DashboardStats {
@@ -102,8 +102,6 @@ export default function RiderDashboard() {
     // Push notifications
     const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed } = usePushNotifications();
 
-    // Track bottom sheet state to adjust map size
-    const [sheetState, setSheetState] = useState<"fullscreen" | "expanded" | "minimized" | "hidden">("expanded");
     const [recenterToggle, setRecenterToggle] = useState(false);
 
     // Fetch dashboard data
@@ -125,18 +123,16 @@ export default function RiderDashboard() {
         }
     }, [location]);
 
-    // Initial load and periodic refresh
-    // Note: orders arrive ONLY through this polling — socket orden_pendiente isn't wired up yet
+    // Initial load and periodic refresh (orders arrive via polling)
     useEffect(() => {
         fetchDashboard();
         const interval = setInterval(() => fetchDashboard(true), 5000);
         return () => clearInterval(interval);
     }, [fetchDashboard]);
 
-    // Show notification prompt when rider lands on dashboard
+    // Notification prompt
     useEffect(() => {
         if (pushSupported && pushPermission === 'default' && !isSubscribed) {
-            // Show prompt after a short delay
             const timer = setTimeout(() => setShowNotificationPrompt(true), 2000);
             return () => clearTimeout(timer);
         }
@@ -145,20 +141,15 @@ export default function RiderDashboard() {
         }
     }, [isOnline, pushSupported, pushPermission, isSubscribed]);
 
-    // Handle notification permission request
     const handleEnableNotifications = async () => {
         const success = await requestPermission();
-        if (success) {
-            setShowNotificationPrompt(false);
-        }
+        if (success) setShowNotificationPrompt(false);
     };
 
-    // Handle online/offline toggle
+    // Toggle online/offline
     const toggleOnline = async () => {
-        // Prevent going online without location
         if (!isOnline && !location) {
             alert("No podemos activarte sin acceso a tu ubicación GPS.");
-            // Try to trigger geolocation again if possible
             if (typeof window !== "undefined" && navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(() => { }, () => { });
             }
@@ -185,9 +176,10 @@ export default function RiderDashboard() {
         }
     };
 
+    // ── Loading state ──
     if (isLoading && !dashboardData) {
         return (
-            <div className="h-screen flex flex-col items-center justify-center bg-white">
+            <div className="h-dvh flex flex-col items-center justify-center bg-white">
                 <div className="relative">
                     <Bike className="w-12 h-12 text-[#e60012] animate-bounce" />
                     <Loader2 className="w-20 h-20 text-gray-100 animate-spin absolute -top-4 -left-4 -z-10" />
@@ -197,15 +189,12 @@ export default function RiderDashboard() {
         );
     }
 
-    // --- Permissions / Empty States ---
-
-    // 1. Check for location permission or actual errors (crucial for riders)
-    // We show this if location is missing, even if not online, to ensure they are ready
+    // ── GPS permission required ──
     if ((!location || locationHookError) && !isLoading) {
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
         return (
-            <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-center animate-in fade-in duration-500 overflow-y-auto">
+            <div className="h-dvh flex flex-col items-center justify-center bg-white p-8 text-center animate-in fade-in duration-500 overflow-y-auto">
                 <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6 flex-shrink-0">
                     <MapPin className="w-12 h-12 text-[#e60012] animate-pulse" />
                 </div>
@@ -252,7 +241,7 @@ export default function RiderDashboard() {
                             </li>
                             <li className="flex gap-2">
                                 <span className="bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 text-[8px] font-bold">2</span>
-                                <span>Asegúrate de que tu <b>Navegador</b> esté en <b>"Al usar la app"</b>.</span>
+                                <span>Asegúrate de que tu <b>Navegador</b> esté en <b>&quot;Al usar la app&quot;</b>.</span>
                             </li>
                         </ul>
                     </div>
@@ -269,19 +258,13 @@ export default function RiderDashboard() {
 
     const pedidoActivo = pedidosActivos[0];
 
-    // Calculate map height based on sheet state
-    const mapHeight = sheetState === "fullscreen" ? "0vh"
-        : sheetState === "expanded" ? "55vh"
-            : sheetState === "minimized" ? "calc(100vh - 100px)"
-                : "100vh"; // hidden state = full map
-
     return (
-        <div className="h-screen flex flex-col bg-gray-50 overflow-hidden font-sans">
-            {/* STICKY MAP SECTION - expands when sheet collapses */}
-            <div
-                className="relative flex-shrink-0 z-10 shadow-lg transition-all duration-300 ease-out"
-                style={{ height: mapHeight }}
-            >
+        <div className="h-dvh w-screen overflow-hidden relative bg-gray-100">
+
+            {/* ═══════════════════════════════════════════════
+                LEVEL 0 — FULLSCREEN MAP (always 100%)
+            ═══════════════════════════════════════════════ */}
+            <div className="absolute inset-0 z-0">
                 <RiderMiniMap
                     key={pedidoActivo?.id || "idle-map"}
                     driverLat={location?.latitude}
@@ -298,40 +281,46 @@ export default function RiderDashboard() {
                     navigationMode={!!pedidoActivo}
                     orderStatus={pedidoActivo?.estado?.toUpperCase()}
                     recenterTrigger={recenterToggle}
-                    onRecenterRequested={() => {
-                        setRecenterToggle(false);
-                    }}
+                    onRecenterRequested={() => setRecenterToggle(false)}
                 />
+            </div>
 
-                {/* Floating Map UI */}
-                <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
+            {/* ═══════════════════════════════════════════════
+                LEVEL 10 — FLOATING TOP BAR (glassmorphism)
+            ═══════════════════════════════════════════════ */}
+            <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+                <div className="flex justify-between items-start px-4 pt-2">
+                    {/* Menu button — 48px touch target */}
                     <button
                         onClick={() => setIsMenuOpen(true)}
-                        className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center pointer-events-auto active:scale-95 transition-all border border-white"
+                        className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center pointer-events-auto active:scale-95 transition-all border border-white/50"
                     >
                         <Menu className="w-6 h-6 text-gray-800" />
                     </button>
 
-                    <div className="flex flex-col items-end gap-2">
-                        <div className={`px-4 py-2 rounded-full shadow-xl pointer-events-auto backdrop-blur-md flex items-center gap-2 border border-white ${isOnline ? 'bg-green-500/90 text-white' : 'bg-white/90 text-gray-600'}`}>
+                    {/* Right side controls */}
+                    <div className="flex flex-col items-end gap-2 pointer-events-auto">
+                        {/* Online status pill */}
+                        <div className={`px-4 py-2.5 rounded-full shadow-xl backdrop-blur-md flex items-center gap-2 border border-white/50 ${isOnline ? 'bg-green-500/90 text-white' : 'bg-white/90 text-gray-600'}`}>
                             <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
-                            <span className="text-xs font-black uppercase tracking-widest">{isOnline ? 'Conectado' : 'Fuera de línea'}</span>
+                            <span className="text-xs font-black uppercase tracking-widest">{isOnline ? 'Conectado' : 'Offline'}</span>
                         </div>
 
+                        {/* Navigation shortcuts (only with active order) */}
                         {pedidoActivo && (
-                            <div className="flex flex-col gap-2 pointer-events-auto">
+                            <div className="flex flex-col gap-2">
                                 <a
                                     href={`https://www.google.com/maps/dir/?api=1&destination=${pedidoActivo.navLat},${pedidoActivo.navLng}&travelmode=driving`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-[#4285F4] hover:bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 active:scale-95 transition-all font-bold uppercase tracking-wider text-xs border-2 border-white"
+                                    className="h-12 bg-[#4285F4] hover:bg-blue-600 text-white px-5 rounded-2xl shadow-xl flex items-center gap-3 active:scale-95 transition-all font-bold uppercase tracking-wider text-xs border-2 border-white/30"
                                 >
                                     <Navigation className="w-5 h-5" />
-                                    IR A MAPS
+                                    MAPS
                                 </a>
                                 <button
                                     onClick={() => setRecenterToggle(true)}
-                                    className="bg-white hover:bg-gray-50 text-gray-900 px-5 py-2.5 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all font-bold uppercase tracking-wider text-[10px] border-2 border-white"
+                                    className="h-12 bg-white/90 backdrop-blur-md text-gray-900 px-5 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all font-bold uppercase tracking-wider text-[10px] border border-white/50"
                                 >
                                     <MapPin className="w-4 h-4 text-green-600" />
                                     Centrar
@@ -340,60 +329,19 @@ export default function RiderDashboard() {
                         )}
                     </div>
                 </div>
-
-                {/* Support Float Button */}
-                <Link href="/repartidor/soporte" className="absolute bottom-6 right-4 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center pointer-events-auto active:scale-95 hover:bg-white transition border border-white">
-                    <HelpCircle className="w-6 h-6 text-gray-700" />
-                </Link>
             </div>
 
-            {/* Notification Permission Banner */}
-            {showNotificationPrompt && (
-                <div className="absolute top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-300">
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-4 shadow-xl">
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <span className="text-2xl">🔔</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-white text-sm">¡Activa las notificaciones!</h4>
-                                <p className="text-blue-100 text-xs mt-0.5">Recibe alertas instantáneas cuando haya nuevas ofertas de entrega.</p>
-                            </div>
-                            <button
-                                onClick={() => setShowNotificationPrompt(false)}
-                                className="text-white/60 hover:text-white p-1"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                            <button
-                                onClick={handleEnableNotifications}
-                                className="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 rounded-xl active:scale-98 transition"
-                            >
-                                Activar ahora
-                            </button>
-                            <button
-                                onClick={() => setShowNotificationPrompt(false)}
-                                className="px-4 text-white/80 font-medium text-xs"
-                            >
-                                Ahora no
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* BOTTOM PANEL - Collapsible */}
+            {/* ═══════════════════════════════════════════════
+                LEVEL 20 — BOTTOM SHEET (overlay on map)
+            ═══════════════════════════════════════════════ */}
             <BottomSheet
-                initialState="expanded"
-                expandedHeight="45vh"
-                minimizedHeight="100px"
-                onStateChange={setSheetState}
+                initialState="minimized"
+                onStateChange={() => { /* no longer adjusting map height */ }}
             >
                 <div className="px-6 pb-10">
                     {pedidoActivo ? (
                         <div className="space-y-6">
+                            {/* Order header */}
                             <div className="flex justify-between items-start">
                                 <div>
                                     <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full w-fit mb-2">
@@ -410,6 +358,7 @@ export default function RiderDashboard() {
                                 </div>
                             </div>
 
+                            {/* Origin → Destination route card */}
                             <div className="bg-gray-50 rounded-[24px] p-4 border border-gray-100">
                                 <div className="flex items-start gap-4">
                                     <div className="flex flex-col items-center gap-1 mt-1">
@@ -444,6 +393,7 @@ export default function RiderDashboard() {
                                 </div>
                             </div>
 
+                            {/* Action button — 48px+ height */}
                             <button
                                 onClick={async () => {
                                     const nextStatus = (pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived") ? "PICKED_UP" : "DELIVERED";
@@ -468,6 +418,7 @@ export default function RiderDashboard() {
                             </button>
                         </div>
                     ) : (
+                        /* ── No active order ── */
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -481,7 +432,7 @@ export default function RiderDashboard() {
                                 <button
                                     onClick={toggleOnline}
                                     disabled={isToggling}
-                                    className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-300 shadow-xl ${isOnline
+                                    className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-300 shadow-xl flex-shrink-0 ${isOnline
                                         ? 'bg-green-500 shadow-green-200'
                                         : 'bg-gray-100 text-gray-400'
                                         }`}
@@ -490,6 +441,7 @@ export default function RiderDashboard() {
                                 </button>
                             </div>
 
+                            {/* Pending order offers */}
                             {pedidosPendientes && pedidosPendientes.length > 0 ? (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -600,6 +552,48 @@ export default function RiderDashboard() {
                 </div>
             </BottomSheet>
 
+            {/* ═══════════════════════════════════════════════
+                LEVEL 30 — NOTIFICATION BANNER
+            ═══════════════════════════════════════════════ */}
+            {showNotificationPrompt && (
+                <div className="absolute top-20 left-4 right-4 z-30 animate-in slide-in-from-top duration-300" style={{ top: 'max(5rem, calc(env(safe-area-inset-top) + 4.5rem))' }}>
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-4 shadow-xl">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span className="text-2xl">🔔</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-white text-sm">¡Activa las notificaciones!</h4>
+                                <p className="text-blue-100 text-xs mt-0.5">Recibe alertas instantáneas cuando haya nuevas ofertas de entrega.</p>
+                            </div>
+                            <button
+                                onClick={() => setShowNotificationPrompt(false)}
+                                className="text-white/60 hover:text-white p-1"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                            <button
+                                onClick={handleEnableNotifications}
+                                className="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 rounded-xl active:scale-98 transition"
+                            >
+                                Activar ahora
+                            </button>
+                            <button
+                                onClick={() => setShowNotificationPrompt(false)}
+                                className="px-4 text-white/80 font-medium text-xs"
+                            >
+                                Ahora no
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+                LEVEL 50 — MENU SIDEBAR
+            ═══════════════════════════════════════════════ */}
             {isMenuOpen && (
                 <div className="fixed inset-0 z-50 flex">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />

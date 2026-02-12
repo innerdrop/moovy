@@ -767,8 +767,6 @@ export default function TrackingPage() {
             {/* BOTTOM PANEL - Collapsible */}
             <BottomSheet
                 initialState="expanded"
-                expandedHeight="50vh"
-                minimizedHeight="100px"
                 onStateChange={setSheetState}
             >
                 <div className="px-6 pb-10 space-y-6">
