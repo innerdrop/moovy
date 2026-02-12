@@ -471,7 +471,7 @@ function RiderMiniMapComponent({
 
     if (!isLoaded) {
         return (
-            <div style={{ height }} className="w-full bg-gray-50 flex flex-col items-center justify-center gap-3 rounded-xl border">
+            <div className="h-full w-full bg-gray-100 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
                 <p className="text-sm text-gray-500 font-medium">Cargando mapa...</p>
             </div>
@@ -479,7 +479,7 @@ function RiderMiniMapComponent({
     }
 
     return (
-        <div style={{ height, width: "100%" }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative">
+        <div className="h-full w-full relative">
             {/* Navigation Mode Badge + 3D Toggle */}
             {navigationMode && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-2">
@@ -681,4 +681,4 @@ function RiderMiniMapComponent({
     );
 }
 
-export default RiderMiniMapComponent;
+export default React.memo(RiderMiniMapComponent);
