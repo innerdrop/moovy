@@ -95,9 +95,37 @@ npm audit
 
 ---
 
+## 🌐 Variables de Entorno en VPS (Producción)
+
+Cuando se agrega una nueva variable de entorno al `.env` local, **también hay que agregarla en el VPS**. Si no, la app en producción no la reconoce.
+
+```bash
+# 1. Conectarte al VPS
+ssh root@<IP_DEL_VPS>
+
+# 2. Ir al proyecto
+cd /var/www/moovy
+
+# 3. Editar el .env
+nano .env
+
+# 4. Agregar la variable nueva (ejemplo):
+#    NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID="ceeb1fa42528305a58f58ca1"
+
+# 5. Guardar: Ctrl+O → Enter → Ctrl+X
+
+# 6. Reiniciar la app
+pm2 restart moovy
+```
+
+> **⚠️ Las variables que empiezan con `NEXT_PUBLIC_` se "bakeean" en el build.** Después de agregarlas, el script `devmain.ps1` ya se encarga de rebuildar, pero si editás el `.env` directo en el VPS, necesitás hacer `npm run build && pm2 restart moovy`.
+
+---
+
 ## ⚠️ Reglas de Oro
 
 1.  **DB PUSH:** Nunca uses `npx prisma db push --force-reset` si tenes datos cargados que queres mantener. Usa los scripts siempre.
 2.  **COMMIT MESSAGES:** Escribi mensajes claros. Malo: `"cambios"`. Bueno: `"feat: agregado upload de imagen en slide publicitario"`.
 3.  **SYNC ANTES DE FINISH:** Si estuviste muchas horas trabajando, corre un `sync.ps1` antes de correr el `finish.ps1` para resolver conflictos en tu rama primero.
 4.  **CONFLICTOS:** Si al ejecutar un script te dice `CONFLICT`, detenete. Es mejor resolverlo con ayuda del editor (VS Code) que forzar el push.
+
