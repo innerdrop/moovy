@@ -1,10 +1,143 @@
-// MOOVY Push Notification Service Worker
-// Handles push notifications even when browser is in background
+// MOOVY Service Worker v2
+// Handles: push notifications + offline caching + offline fallback
 
+const CACHE_NAME = 'moovy-cache-v1';
+const OFFLINE_URL = '/offline.html';
+
+// Resources to pre-cache on install (app shell)
+const PRECACHE_URLS = [
+    OFFLINE_URL,
+    '/icons/icon-192x192.png',
+    '/icons/icon-512x512.png',
+    '/favicon.png',
+];
+
+// ─── INSTALL ──────────────────────────────────────────────
+self.addEventListener('install', function (event) {
+    console.log('[SW] Installing Service Worker v2');
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(function (cache) {
+            console.log('[SW] Pre-caching app shell');
+            return cache.addAll(PRECACHE_URLS);
+        }).then(function () {
+            self.skipWaiting(); // Activate immediately
+        })
+    );
+});
+
+// ─── ACTIVATE ─────────────────────────────────────────────
+self.addEventListener('activate', function (event) {
+    console.log('[SW] Activating Service Worker v2');
+    event.waitUntil(
+        // Clean up old caches
+        caches.keys().then(function (cacheNames) {
+            return Promise.all(
+                cacheNames
+                    .filter(function (name) { return name !== CACHE_NAME; })
+                    .map(function (name) {
+                        console.log('[SW] Deleting old cache:', name);
+                        return caches.delete(name);
+                    })
+            );
+        }).then(function () {
+            return clients.claim(); // Take control of all pages
+        })
+    );
+});
+
+// ─── FETCH ────────────────────────────────────────────────
+self.addEventListener('fetch', function (event) {
+    const request = event.request;
+
+    // Only handle GET requests
+    if (request.method !== 'GET') return;
+
+    // Skip non-http(s) requests (chrome-extension://, etc.)
+    if (!request.url.startsWith('http')) return;
+
+    // Skip API calls and auth routes — always go to network
+    const url = new URL(request.url);
+    if (
+        url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/auth/') ||
+        url.pathname.startsWith('/_next/webpack-hmr')
+    ) {
+        return;
+    }
+
+    // Navigation requests: Network-first with offline fallback
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request)
+                .then(function (response) {
+                    // Cache successful navigation responses
+                    if (response.ok) {
+                        var responseClone = response.clone();
+                        caches.open(CACHE_NAME).then(function (cache) {
+                            cache.put(request, responseClone);
+                        });
+                    }
+                    return response;
+                })
+                .catch(function () {
+                    // Try cache first, then offline fallback
+                    return caches.match(request).then(function (cached) {
+                        return cached || caches.match(OFFLINE_URL);
+                    });
+                })
+        );
+        return;
+    }
+
+    // Static assets: Cache-first strategy
+    if (
+        url.pathname.startsWith('/icons/') ||
+        url.pathname.startsWith('/fonts/') ||
+        url.pathname.startsWith('/images/') ||
+        url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf)$/)
+    ) {
+        event.respondWith(
+            caches.match(request).then(function (cached) {
+                if (cached) return cached;
+                return fetch(request).then(function (response) {
+                    if (response.ok) {
+                        var responseClone = response.clone();
+                        caches.open(CACHE_NAME).then(function (cache) {
+                            cache.put(request, responseClone);
+                        });
+                    }
+                    return response;
+                });
+            })
+        );
+        return;
+    }
+
+    // Next.js static assets (_next/static): Cache-first (immutable, hashed)
+    if (url.pathname.startsWith('/_next/static/')) {
+        event.respondWith(
+            caches.match(request).then(function (cached) {
+                if (cached) return cached;
+                return fetch(request).then(function (response) {
+                    if (response.ok) {
+                        var responseClone = response.clone();
+                        caches.open(CACHE_NAME).then(function (cache) {
+                            cache.put(request, responseClone);
+                        });
+                    }
+                    return response;
+                });
+            })
+        );
+        return;
+    }
+});
+
+// ─── PUSH NOTIFICATIONS ──────────────────────────────────
 self.addEventListener('push', function (event) {
     console.log('[SW] Push notification received:', event);
 
-    let data = { title: 'MOOVY', body: '¡Nueva notificación!' };
+    var data = { title: 'MOOVY', body: '¡Nueva notificación!' };
 
     try {
         if (event.data) {
@@ -14,14 +147,14 @@ self.addEventListener('push', function (event) {
         console.error('[SW] Error parsing push data:', e);
     }
 
-    const options = {
+    var options = {
         body: data.body || '¡Nueva oferta de entrega disponible!',
-        icon: '/icons/moovy-icon-192.png',
-        badge: '/icons/moovy-badge-72.png',
-        vibrate: [200, 100, 200, 100, 200], // Pattern: vibrate, pause, vibrate...
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        vibrate: [200, 100, 200, 100, 200],
         tag: data.tag || 'moovy-notification',
-        requireInteraction: true, // Keep notification until user interacts
-        renotify: true, // Notify even if same tag exists
+        requireInteraction: true,
+        renotify: true,
         data: {
             url: data.url || '/repartidor/dashboard',
             orderId: data.orderId,
@@ -38,7 +171,7 @@ self.addEventListener('push', function (event) {
     );
 });
 
-// Handle notification click
+// ─── NOTIFICATION CLICK ──────────────────────────────────
 self.addEventListener('notificationclick', function (event) {
     console.log('[SW] Notification clicked:', event.action);
     event.notification.close();
@@ -47,19 +180,18 @@ self.addEventListener('notificationclick', function (event) {
         return;
     }
 
-    const urlToOpen = event.notification.data?.url || '/repartidor/dashboard';
+    var urlToOpen = event.notification.data?.url || '/repartidor/dashboard';
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-            // Check if there's already a window/tab with the app
-            for (const client of clientList) {
+            for (var i = 0; i < clientList.length; i++) {
+                var client = clientList[i];
                 if (client.url.includes('/repartidor') && 'focus' in client) {
                     client.focus();
                     client.navigate(urlToOpen);
                     return;
                 }
             }
-            // If no existing window, open new one
             if (clients.openWindow) {
                 return clients.openWindow(urlToOpen);
             }
@@ -67,19 +199,7 @@ self.addEventListener('notificationclick', function (event) {
     );
 });
 
-// Handle notification close
+// ─── NOTIFICATION CLOSE ──────────────────────────────────
 self.addEventListener('notificationclose', function (event) {
     console.log('[SW] Notification closed');
-});
-
-// Service Worker install
-self.addEventListener('install', function (event) {
-    console.log('[SW] Service Worker installed');
-    self.skipWaiting(); // Activate immediately
-});
-
-// Service Worker activate
-self.addEventListener('activate', function (event) {
-    console.log('[SW] Service Worker activated');
-    event.waitUntil(clients.claim()); // Take control of all pages
 });

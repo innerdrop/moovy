@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -66,6 +67,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
       <body className={`${poppins.variable} font-sans antialiased`}>
+        <ServiceWorkerRegistrar />
         <Providers>
           {children}
         </Providers>
