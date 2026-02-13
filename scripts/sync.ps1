@@ -1,9 +1,18 @@
 # Script de Sincronizacion - Moovy
 # Ejecutar: .\scripts\sync.ps1
+#
+# Parametros opcionales:
+#   -SkipServer : No inicia el servidor (util durante el dia)
+#   -ResetDB    : Resetea la DB completa (borra todo)
+#
+# Ejemplos:
+#   .\scripts\sync.ps1                    # Inicio del dia (con servidor)
+#   .\scripts\sync.ps1 -SkipServer        # Solo actualizar (sin servidor)
+#   .\scripts\sync.ps1 -ResetDB           # Reset completo de DB
 
 param(
     [switch]$ResetDB,
-    [switch]$SkipDev
+    [switch]$SkipServer
 )
 
 Write-Host ""
@@ -72,7 +81,7 @@ if ($errorSummary.Count -gt 0) {
 Write-Host ""
 
 # 6. Iniciar servidor de desarrollo
-if (-not $SkipDev) {
+if (-not $SkipServer) {
     Write-Host "[DEV] Iniciando servidor de desarrollo..." -ForegroundColor Cyan
     npm run dev
 }
