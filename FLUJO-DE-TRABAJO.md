@@ -12,8 +12,8 @@ Esta guía detalla cómo trabajar **2 personas al mismo tiempo** en el proyecto 
 | Comando | Cuándo | Desde qué rama |
 |---------|--------|----------------|
 | `.\scripts\sync.ps1` | Al empezar el día | develop o feature/ |
-| `.\scripts\start.ps1 -Feature "nombre"` | Antes de cada tarea | develop |
-| `.\scripts\finish.ps1 -Message "descripción"` | Al terminar tarea | feature/* |
+| `.\scripts\start.ps1` | Antes de cada tarea | develop |
+| `.\scripts\finish.ps1` | Al terminar tarea | feature/* |
 | `.\scripts\sync-now.ps1` | Sincronizar mientras trabajas | feature/* |
 | `.\scripts\devmain.ps1` | Deploy a producción | develop |
 
@@ -47,18 +47,18 @@ Solo avisar el área de trabajo (5 segundos).
 
 ### 1️⃣ Empezar una tarea
 ```powershell
-.\scripts\start.ps1 -Feature "nombre-corto"
+.\scripts\start.ps1
 ```
-**Ejemplo:**
-```powershell
-.\scripts\start.ps1 -Feature "notificaciones"
-```
+
+**El script te preguntará:**
+1. Tipo de cambio (1-4): feature / fix / hotfix / refactor
+2. Nombre corto del cambio (ej: "notificaciones")
 
 **¿Desde qué rama?** `develop` (o cualquiera, el script te cambia automáticamente)
 
 **¿Qué hace automáticamente?**
 - Sincroniza con `develop` (trae cambios del compañero)
-- Crea tu rama `feature/notificaciones`
+- Crea tu rama `feature/notificaciones` (según lo que elijas)
 - Te posiciona en esa rama
 - **Output:** "✅ Listo, pedile a Antigravity lo que necesites"
 
@@ -66,12 +66,11 @@ Solo avisar el área de trabajo (5 segundos).
 
 ### 2️⃣ Terminar una tarea
 ```powershell
-.\scripts\finish.ps1 -Message "descripción breve"
+.\scripts\finish.ps1
 ```
-**Ejemplo:**
-```powershell
-.\scripts\finish.ps1 -Message "sistema de notificaciones push"
-```
+
+**El script te preguntará:**
+- Descripción del cambio (ej: "sistema de notificaciones push")
 
 **¿Desde qué rama?** `feature/*` (tu rama de trabajo)
 
@@ -550,5 +549,6 @@ Una vez completado, estarán listos para trabajar en paralelo sin problemas.
 **Versión:** 3.0  
 **Autores:** Equipo Moovy  
 **Última revisión:** 2026-02-13
+
 
 
