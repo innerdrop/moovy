@@ -22,8 +22,8 @@ ls scripts/quick-*.ps1
 ```
 
 Deberían ver:
-- `quick-start.ps1`
-- `quick-finish.ps1`
+- `start.ps1`
+- `finish.ps1`
 
 ---
 
@@ -35,7 +35,7 @@ Esta prueba simula el caso ideal: ambos trabajan en archivos diferentes.
 
 **Paso 1: Empezar trabajo**
 ```powershell
-.\scripts\quick-start.ps1 -Feature "prueba-dev-a"
+.\scripts\start.ps1 -Feature "prueba-dev-a"
 ```
 
 **✅ Deberías ver:**
@@ -62,7 +62,7 @@ cat test-dev-a.txt
 
 **Paso 3: Terminar trabajo**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "prueba dev A - trabajo en paralelo"
+.\scripts\finish.ps1 -Message "prueba dev A - trabajo en paralelo"
 ```
 
 **✅ Deberías ver:**
@@ -94,7 +94,7 @@ Dev A: "Listo ✅"
 
 **Paso 1: Empezar trabajo** (mientras Dev A trabaja)
 ```powershell
-.\scripts\quick-start.ps1 -Feature "prueba-dev-b"
+.\scripts\start.ps1 -Feature "prueba-dev-b"
 ```
 
 **Paso 2: Crear OTRO archivo**
@@ -115,7 +115,7 @@ Dev B: "OK, ahora termino yo"
 
 **Paso 4: Terminar trabajo**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "prueba dev B - trabajo en paralelo"
+.\scripts\finish.ps1 -Message "prueba dev B - trabajo en paralelo"
 ```
 
 **✅ Deberías ver:**
@@ -156,7 +156,7 @@ Esta prueba simula que Dev B quiere traer cambios de Dev A MIENTRAS trabaja.
 
 **Paso 1: Empezar nueva tarea**
 ```powershell
-.\scripts\quick-start.ps1 -Feature "funcion-importante"
+.\scripts\start.ps1 -Feature "funcion-importante"
 ```
 
 **Paso 2: Crear un archivo importante**
@@ -166,7 +166,7 @@ echo "Función crítica que Dev B necesita" > funcion-critica.txt
 
 **Paso 3: Terminar rápido**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "función crítica lista"
+.\scripts\finish.ps1 -Message "función crítica lista"
 ```
 
 **Paso 4: Avisar**
@@ -181,7 +181,7 @@ Dev A: "Subí función-critica.txt, necesitás eso para tu trabajo ✅"
 **Paso 1: Ya está trabajando en algo**
 ```powershell
 # Supongamos que ya empezaste hace un rato
-.\scripts\quick-start.ps1 -Feature "dashboard"
+.\scripts\start.ps1 -Feature "dashboard"
 
 # Y creaste algo
 echo "Dashboard en progreso..." > dashboard.txt
@@ -227,7 +227,7 @@ funcion-critica.txt    (de Dev A)
 
 **Paso 5: Terminar tu trabajo**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "dashboard completo"
+.\scripts\finish.ps1 -Message "dashboard completo"
 ```
 
 **🎉 ¡ÉXITO!** Sincronizaste sin terminar tu trabajo.
@@ -242,7 +242,7 @@ Esta prueba simula que ambos modifican el MISMO archivo.
 
 **Paso 1: Crear archivo compartido**
 ```powershell
-.\scripts\quick-start.ps1 -Feature "config-shared"
+.\scripts\start.ps1 -Feature "config-shared"
 
 # Crear archivo que ambos van a modificar
 echo "version: 1.0" > config.txt
@@ -250,7 +250,7 @@ echo "version: 1.0" > config.txt
 
 **Paso 2: Terminar**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "config inicial"
+.\scripts\finish.ps1 -Message "config inicial"
 ```
 
 ---
@@ -263,7 +263,7 @@ echo "version: 1.0" > config.txt
 git pull origin develop
 
 # Ahora empezar
-.\scripts\quick-start.ps1 -Feature "config-mejorado"
+.\scripts\start.ps1 -Feature "config-mejorado"
 ```
 
 **Paso 2: Modificar el MISMO archivo**
@@ -289,7 +289,7 @@ database: postgresql
 
 **Paso 1: Hacer otro cambio**
 ```powershell
-.\scripts\quick-start.ps1 -Feature "config-cache"
+.\scripts\start.ps1 -Feature "config-cache"
 
 # Modificar la MISMA línea
 # (Reemplazar todo el archivo)
@@ -299,7 +299,7 @@ echo "cache: redis" >> config.txt
 
 **Paso 2: Terminar primero**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "agregar config de cache"
+.\scripts\finish.ps1 -Message "agregar config de cache"
 ```
 
 ---
@@ -308,7 +308,7 @@ echo "cache: redis" >> config.txt
 
 **Paso 1: Intentar terminar**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "agregar config de database"
+.\scripts\finish.ps1 -Message "agregar config de database"
 ```
 
 **⚠️ Deberías ver:**
@@ -414,3 +414,4 @@ Después de hacer las 3 pruebas, marcar:
 ---
 
 **¿Dudas?** Pregúntenle a Antigravity específicamente sobre el script que tengan duda.
+

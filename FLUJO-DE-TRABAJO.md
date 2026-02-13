@@ -12,8 +12,8 @@ Esta guía detalla cómo trabajar **2 personas al mismo tiempo** en el proyecto 
 | Comando | Cuándo | Desde qué rama |
 |---------|--------|----------------|
 | `.\scripts\sync.ps1` | Al empezar el día | develop o feature/ |
-| `.\scripts\quick-start.ps1 -Feature "nombre"` | Antes de cada tarea | develop |
-| `.\scripts\quick-finish.ps1 -Message "descripción"` | Al terminar tarea | feature/* |
+| `.\scripts\start.ps1 -Feature "nombre"` | Antes de cada tarea | develop |
+| `.\scripts\finish.ps1 -Message "descripción"` | Al terminar tarea | feature/* |
 | `.\scripts\sync-now.ps1` | Sincronizar mientras trabajas | feature/* |
 | `.\scripts\devmain.ps1` | Deploy a producción | develop |
 
@@ -47,11 +47,11 @@ Solo avisar el área de trabajo (5 segundos).
 
 ### 1️⃣ Empezar una tarea
 ```powershell
-.\scripts\quick-start.ps1 -Feature "nombre-corto"
+.\scripts\start.ps1 -Feature "nombre-corto"
 ```
 **Ejemplo:**
 ```powershell
-.\scripts\quick-start.ps1 -Feature "notificaciones"
+.\scripts\start.ps1 -Feature "notificaciones"
 ```
 
 **¿Desde qué rama?** `develop` (o cualquiera, el script te cambia automáticamente)
@@ -66,11 +66,11 @@ Solo avisar el área de trabajo (5 segundos).
 
 ### 2️⃣ Terminar una tarea
 ```powershell
-.\scripts\quick-finish.ps1 -Message "descripción breve"
+.\scripts\finish.ps1 -Message "descripción breve"
 ```
 **Ejemplo:**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "sistema de notificaciones push"
+.\scripts\finish.ps1 -Message "sistema de notificaciones push"
 ```
 
 **¿Desde qué rama?** `feature/*` (tu rama de trabajo)
@@ -125,7 +125,7 @@ Dev B: "OK, yo trabajo en panel de estadísticas"
 
 ```powershell
 # 3. Empezar
-.\scripts\quick-start.ps1 -Feature "notificaciones"
+.\scripts\start.ps1 -Feature "notificaciones"
 ```
 
 #### Developer B (9:05 AM - al mismo tiempo)
@@ -136,7 +136,7 @@ Dev B: "OK, yo trabajo en panel de estadísticas"
 # 2. Ya avisó en el chat
 
 # 3. Empezar
-.\scripts\quick-start.ps1 -Feature "panel-stats"
+.\scripts\start.ps1 -Feature "panel-stats"
 ```
 
 ---
@@ -165,7 +165,7 @@ Debe mostrar ganancias del día, pedidos completados y gráficos."
 
 #### Developer A termina primero (10:30 AM)
 ```powershell
-.\scripts\quick-finish.ps1 -Message "sistema de notificaciones push completo"
+.\scripts\finish.ps1 -Message "sistema de notificaciones push completo"
 ```
 
 **Script automáticamente:**
@@ -186,7 +186,7 @@ Dev B: "OK 👍"
 
 #### Developer B termina después (11:00 AM)
 ```powershell
-.\scripts\quick-finish.ps1 -Message "panel de estadísticas en dashboard"
+.\scripts\finish.ps1 -Message "panel de estadísticas en dashboard"
 ```
 
 **Script automáticamente:**
@@ -207,7 +207,7 @@ Dev B: "OK 👍"
 **Escenario:** Ambos tocaron el mismo archivo sin querer
 
 ```powershell
-.\scripts\quick-finish.ps1 -Message "mi cambio"
+.\scripts\finish.ps1 -Message "mi cambio"
 ```
 
 **Script detecta conflicto:**
@@ -299,7 +299,7 @@ Ahora Dev B sigue trabajando con el código actualizado.
 
 **Solución automática:**
 ```powershell
-.\scripts\quick-finish.ps1 -Message "trabajo en progreso"
+.\scripts\finish.ps1 -Message "trabajo en progreso"
 # Esto guarda todo automáticamente
 ```
 
@@ -321,10 +321,10 @@ Antigravity te guía paso a paso.
 **Solución:**
 ```powershell
 # Terminar el trabajo de ayer
-.\scripts\quick-finish.ps1 -Message "trabajo de ayer"
+.\scripts\finish.ps1 -Message "trabajo de ayer"
 
 # Ahora empezar hoy
-.\scripts\quick-start.ps1 -Feature "nueva-tarea"
+.\scripts\start.ps1 -Feature "nueva-tarea"
 ```
 
 ---
@@ -373,8 +373,8 @@ Solo cuando hacen deploy, la DB local se sube al VPS:
 | Comando | Cuándo usarlo | Qué hace |
 |---------|---------------|----------|
 | `.\scripts\sync.ps1` | **Al empezar el día** | Baja cambios del compañero |
-| `.\scripts\quick-start.ps1` | **Antes de cada tarea** | Crea tu rama automáticamente |
-| `.\scripts\quick-finish.ps1` | **Al terminar tarea** | Auto-merge a develop + push |
+| `.\scripts\start.ps1` | **Antes de cada tarea** | Crea tu rama automáticamente |
+| `.\scripts\finish.ps1` | **Al terminar tarea** | Auto-merge a develop + push |
 | `.\scripts\sync-now.ps1` | **Mientras trabajas** | Trae cambios sin terminar tu tarea |
 | `.\scripts\devmain.ps1` | **Deploy a producción** | Sube todo al VPS (código + DB) |
 | `.\scripts\emergency-reset.ps1` | **Emergencia** | Resetea todo a develop limpio |
@@ -399,10 +399,10 @@ B: "panel stats"
 
 ```powershell
 # Dev A:
-.\scripts\quick-start.ps1 -Feature "notificaciones"
+.\scripts\start.ps1 -Feature "notificaciones"
 
 # Dev B:
-.\scripts\quick-start.ps1 -Feature "panel-stats"
+.\scripts\start.ps1 -Feature "panel-stats"
 ```
 
 #### 9:15 AM - 11:00 AM - Trabajo con Antigravity
@@ -421,7 +421,7 @@ B: "panel stats"
 
 #### 11:00 AM - Dev A termina primero
 ```powershell
-.\scripts\quick-finish.ps1 -Message "notificaciones push"
+.\scripts\finish.ps1 -Message "notificaciones push"
 ```
 **Output:**
 ```
@@ -435,7 +435,7 @@ A: "Listo ✅"
 
 #### 11:30 AM - Dev B termina
 ```powershell
-.\scripts\quick-finish.ps1 -Message "panel stats"
+.\scripts\finish.ps1 -Message "panel stats"
 ```
 **Output:**
 ```
@@ -447,7 +447,7 @@ A: "Listo ✅"
 #### 11:35 AM - Nueva tarea (Dev A)
 ```powershell
 # Inmediatamente puede empezar otra:
-.\scripts\quick-start.ps1 -Feature "dashboard-diseño"
+.\scripts\start.ps1 -Feature "dashboard-diseño"
 ```
 
 **Chat:**
@@ -467,7 +467,7 @@ Toma 5 segundos, evita conflictos.
 Si el script dice que algo se resolvió, confía. No revises código.
 
 ### 3. **NO trabajar en `develop` directamente**
-Siempre usar `quick-start.ps1` para crear una rama.
+Siempre usar `start.ps1` para crear una rama.
 
 ---
 
@@ -520,7 +520,7 @@ En vez de trabajar 8 horas seguidas en una rama:
 1. **Leer el mensaje del script** (siempre dice qué pasó)
 2. **Pedirle ayuda a Antigravity:**
    ```
-   "Antigravity, el script quick-finish.ps1 me dio este error:
+   "Antigravity, el script finish.ps1 me dio este error:
    [pegar el error]
    ¿Qué hago?"
    ```
@@ -538,8 +538,8 @@ Antes de empezar a usar este nuevo sistema:
 - [ ] Leer esta guía completa
 - [ ] Discutirla con el colega
 - [ ] Acordar señal de comunicación (Slack/WhatsApp/Discord)
-- [ ] Probar `quick-start.ps1` con una tarea pequeña
-- [ ] Probar `quick-finish.ps1` con esa tarea
+- [ ] Probar `start.ps1` con una tarea pequeña
+- [ ] Probar `finish.ps1` con esa tarea
 - [ ] Probar trabajo paralelo con tareas separadas
 - [ ] Probar resolución de conflictos (opcional)
 
@@ -550,3 +550,4 @@ Una vez completado, estarán listos para trabajar en paralelo sin problemas.
 **Versión:** 3.0  
 **Autores:** Equipo Moovy  
 **Última revisión:** 2026-02-13
+
