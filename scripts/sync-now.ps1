@@ -2,19 +2,18 @@
 # Uso: .\scripts\sync-now.ps1
 
 Write-Host ''
-Write-Host '🔄 SYNC NOW - Sincronizacion en caliente' -ForegroundColor Cyan
-Write-Host '=========================================' -ForegroundColor Cyan
+Write-Host '--- SYNC NOW - Sincronizacion en caliente ---' -ForegroundColor Cyan
 Write-Host ''
 
 # 1. Verificar rama actual
 $currentBranch = git branch --show-current
 
 if ($currentBranch -eq 'develop' -or $currentBranch -eq 'main') {
-    Write-Host 'ℹ️ No estas en una rama de trabajo (feature/*)' -ForegroundColor Yellow
+    Write-Host 'INFO: No estas en una rama de trabajo (feature/*)' -ForegroundColor Yellow
     exit 0
 }
 
-Write-Host "📍 Rama actual: $currentBranch" -ForegroundColor Gray
+Write-Host "Rama actual: $currentBranch" -ForegroundColor Gray
 
 # 2. Guardar trabajo actual
 Write-Host '[1/4] Guardando tu trabajo actual...' -ForegroundColor Yellow
@@ -38,12 +37,12 @@ $hasConflict = $status -match '^UU'
 
 if ($hasConflict) {
     Write-Host ''
-    Write-Host '⚠️ CONFLICTO DETECTADO' -ForegroundColor Yellow
+    Write-Host 'ALERTA: CONFLICTO DETECTADO' -ForegroundColor Yellow
     Write-Host 'Llama a Antigravity para resolver el conflicto.' -ForegroundColor Cyan
     exit 1
 }
 
 Write-Host ''
-Write-Host '✅ SINCRONIZACION COMPLETA' -ForegroundColor Green
-Write-Host "✅ Estas en: $currentBranch" -ForegroundColor Green
+Write-Host 'OK: SINCRONIZACION COMPLETA' -ForegroundColor Green
+Write-Host "OK: Estas en: $currentBranch" -ForegroundColor Green
 Write-Host ''

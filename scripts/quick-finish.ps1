@@ -1,5 +1,5 @@
 # Script para Finalizar Trabajo con Auto-Merge - Moovy 3.0
-# Uso: .\scripts\quick-finish.ps1 -Message 'descripción de cambios'
+# Uso: .\scripts\quick-finish.ps1 -Message 'descripcion de cambios'
 
 param(
     [Parameter(Mandatory = $true)]
@@ -7,20 +7,19 @@ param(
 )
 
 Write-Host ''
-Write-Host '🏁 QUICK FINISH - Finalizando trabajo' -ForegroundColor Cyan
-Write-Host '======================================' -ForegroundColor Cyan
+Write-Host '--- QUICK FINISH - Finalizando trabajo ---' -ForegroundColor Cyan
 Write-Host ''
 
 # 1. Verificar rama actual
 $currentBranch = git branch --show-current
 
 if ($currentBranch -eq 'develop' -or $currentBranch -eq 'main') {
-    Write-Host "❌ ERROR: Estas en $currentBranch" -ForegroundColor Red
-    Write-Host '   Este script debe ejecutarse desde una rama feature/*' -ForegroundColor Yellow
+    Write-Host "ERROR: Estas en $currentBranch" -ForegroundColor Red
+    Write-Host 'Este script debe ejecutarse desde una rama feature/*' -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "📍 Rama actual: $currentBranch" -ForegroundColor Gray
+Write-Host "Rama actual: $currentBranch" -ForegroundColor Gray
 
 # 2. Guardar todos los cambios
 Write-Host '[1/6] Guardando cambios...' -ForegroundColor Yellow
@@ -42,8 +41,7 @@ $hasConflict = $status -match '^UU'
 
 if ($hasConflict) {
     Write-Host ''
-    Write-Host '⚠️ CONFLICTO DETECTADO' -ForegroundColor Yellow
-    Write-Host '======================================' -ForegroundColor Yellow
+    Write-Host 'ALERTA: CONFLICTO DETECTADO' -ForegroundColor Yellow
     Write-Host 'Pedir ayuda a Antigravity:' -ForegroundColor Cyan
     Write-Host 'Tengo un conflicto de merge. Por favor resuelve manteniendo ambos cambios.' -ForegroundColor White
     exit 1
@@ -54,7 +52,7 @@ Write-Host '[4/6] Subiendo a GitHub...' -ForegroundColor Yellow
 git push origin develop
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host '❌ Error al subir a GitHub' -ForegroundColor Red
+    Write-Host 'Error al subir a GitHub' -ForegroundColor Red
     exit 1
 }
 
@@ -65,6 +63,6 @@ git push origin --delete $currentBranch 2>$null
 
 Write-Host '[6/6] Limpieza completa' -ForegroundColor Green
 Write-Host ''
-Write-Host '✅ FINALIZADO EXITOSAMENTE' -ForegroundColor Green
-Write-Host "✅ Rama $currentBranch mergeada y eliminada" -ForegroundColor Green
+Write-Host 'OK: FINALIZADO EXITOSAMENTE' -ForegroundColor Green
+Write-Host "OK: Rama $currentBranch mergeada y eliminada" -ForegroundColor Green
 Write-Host ''
