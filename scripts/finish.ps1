@@ -2,7 +2,7 @@
 # Ejecutar: .\scripts\finish.ps1
 
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [string]$Message
 )
 
@@ -22,6 +22,17 @@ Write-Host "[INFO] Rama actual: $currentBranch" -ForegroundColor Gray
 if ($currentBranch -eq "main" -or $currentBranch -eq "develop") {
     Write-Host "[ERROR] Debes estar en una rama feature/fix/hotfix, no en $currentBranch" -ForegroundColor Red
     exit 1
+}
+
+# 2. Pedir mensaje de commit si no se proporciono
+if ([string]::IsNullOrWhiteSpace($Message)) {
+    Write-Host ""
+    $Message = Read-Host "Descripcion del cambio (ej: implementar login de comercio)"
+    
+    if ([string]::IsNullOrWhiteSpace($Message)) {
+        Write-Host "[ERROR] El mensaje no puede estar vacio" -ForegroundColor Red
+        exit 1
+    }
 }
 
 # 2. Exportar Base de Datos
