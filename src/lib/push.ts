@@ -114,3 +114,24 @@ export async function sendNewOfferNotification(
         ]
     });
 }
+
+/**
+ * Send push notification when order is ready for pickup
+ */
+export async function sendOrderReadyNotification(
+    driverUserId: string,
+    merchantName: string,
+    orderNumber: string,
+    orderId: string
+): Promise<number> {
+    return sendPushToUser(driverUserId, {
+        title: '📦 ¡Pedido listo para recoger!',
+        body: `${merchantName} tiene listo el pedido #${orderNumber}. ¡Ve a buscarlo!`,
+        url: '/repartidor/dashboard',
+        tag: 'order-ready',
+        orderId,
+        actions: [
+            { action: 'navigate', title: 'Ir al comercio' }
+        ]
+    });
+}

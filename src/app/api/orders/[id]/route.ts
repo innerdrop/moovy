@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assignOrderToNearestDriver } from "@/lib/logistics";
+import { sendOrderReadyNotification } from "@/lib/push";
 import { UpdateOrderSchema, validateInput } from "@/lib/validations";
 
 // GET - Get single order details
@@ -144,7 +145,7 @@ export async function PATCH(
         // Get current order to check status change AND get merchantId/userId for socket rooms
         const existingOrder = await prisma.order.findUnique({
             where: { id },
-            select: { status: true, merchantId: true, userId: true },
+            select: { status: true, merchantId: true, userId: true, driverId: true, orderNumber: true },
         });
 
         const order = await prisma.order.update({
@@ -155,6 +156,7 @@ export async function PATCH(
                 address: true,
                 user: { select: { id: true, name: true, email: true, phone: true } },
                 merchant: { select: { id: true, name: true } },
+                driver: { select: { userId: true } },
             },
         });
 
@@ -269,6 +271,16 @@ export async function PATCH(
                     console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber}: ${result.error}`);
                 }
             });
+        }
+
+        // Push notification: notify assigned driver that order is ready for pickup
+        if (data.status === "READY" && existingOrder?.status !== "READY" && order.driverId && order.driver?.userId) {
+            sendOrderReadyNotification(
+                order.driver.userId,
+                order.merchant?.name || 'Comercio',
+                order.orderNumber,
+                id
+            ).catch(err => console.error('[Push] Order ready notification error:', err));
         }
 
         return NextResponse.json(order);
