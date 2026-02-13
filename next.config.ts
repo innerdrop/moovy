@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' https://api.mercadopago.com https://*.googleapis.com ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self';`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' data: blob: https://api.mercadopago.com https://*.googleapis.com https://*.gstatic.com https://*.google.com ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self';`,
           },
         ],
       },
