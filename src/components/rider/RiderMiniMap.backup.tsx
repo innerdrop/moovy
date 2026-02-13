@@ -41,13 +41,11 @@ const defaultCenter = {
     lng: -68.3030,
 };
 
-// **PERFORMANCE OPTIMIZATION**: Minimal styles to reduce CPU load
 const normalMapStyles = [
-    { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
     { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
 
+// Navigation step info extracted from Directions API
 interface NavStepInfo {
     instruction: string;
     distance: string;
@@ -88,23 +86,17 @@ function RiderMiniMapComponent({
     const prevOrderStatusRef = useRef<string | undefined>(undefined);
     const [showCustomerInfo, setShowCustomerInfo] = useState(false);
 
-    // Stage tracking
+    // ── Stage tracking (from previous fix) ──
     const currentStageRef = useRef<string | null>(null);
     const hasDriverPositionRef = useRef(false);
 
-    // Turn-by-turn navigation state
-    const [isFirstPerson, setIsFirstPerson] = useState(true);
+    // ── TURN-BY-TURN NAVIGATION STATE ──
+    const [isFirstPerson, setIsFirstPerson] = useState(true); // 3D vs 2D toggle
     const [navSteps, setNavSteps] = useState<NavStepInfo[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [totalDistance, setTotalDistance] = useState("");
     const [totalDuration, setTotalDuration] = useState("");
-    const prevHeadingRef = useRef<number>(0);
-
-    // ── PERFORMANCE OPTIMIZATION STATE ──
-    const [isMapWarmedUp, setIsMapWarmedUp] = useState(false);
-    const [tilesLoaded, setTilesLoaded] = useState(false);
-    const [showTransitionSkeleton, setShowTransitionSkeleton] = useState(false);
-    const tilesLoadedListenerRef = useRef<google.maps.MapsEventListener | null>(null);
+    const prevHeadingRef = useRef<number>(0); // Smooth heading transitions
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -114,7 +106,7 @@ function RiderMiniMapComponent({
         region: 'AR'
     });
 
-    // Helper: clear all route state
+    // ── Helper: clear all route state ──
     const clearRouteState = useCallback(() => {
         setRoutePath([]);
         setRemainingPath([]);
@@ -134,80 +126,7 @@ function RiderMiniMapComponent({
         }
     }, []);
 
-    // ── WARM-UP: Pre-render map in background ──
-    useEffect(() => {
-        if (isLoaded && !navigationMode && !isMapWarmedUp) {
-            // Map is rendering with opacity:0 (keeping WebGL context alive)
-            console.log("[MapOptimization] Warming up map...");
-            setIsMapWarmedUp(true);
-        }
-    }, [isLoaded, navigationMode, isMapWarmedUp]);
-
-    // ── DEFERRED 3D TRANSITION: Wait for tilesloaded ──
-    const apply3DTransition = useCallback(() => {
-        if (!mapRef.current || !driverLat || !driverLng) return;
-
-        console.log("[MapOptimization] Applying 3D transition (tiles loaded)");
-
-        mapRef.current.moveCamera({
-            center: { lat: driverLat, lng: driverLng },
-            zoom: 18,
-            heading: driverHeading,
-            tilt: 60,  // 3D tilt
-        });
-
-        // Hide skeleton after transition
-        setTimeout(() => setShowTransitionSkeleton(false), 100);
-    }, [driverLat, driverLng, driverHeading]);
-
-    // Listen for tilesloaded event
-    useEffect(() => {
-        if (!mapRef.current || !navigationMode) return;
-
-        if (tilesLoadedListenerRef.current) {
-            google.maps.event.removeListener(tilesLoadedListenerRef.current);
-        }
-
-        tilesLoadedListenerRef.current = google.maps.event.addListenerOnce(
-            mapRef.current,
-            'tilesloaded',
-            () => {
-                console.log("[MapOptimization] Tiles loaded event fired");
-                setTilesLoaded(true);
-            }
-        );
-
-        return () => {
-            if (tilesLoadedListenerRef.current) {
-                google.maps.event.removeListener(tilesLoadedListenerRef.current);
-            }
-        };
-    }, [navigationMode]);
-
-    // Apply 3D when tiles are ready
-    useEffect(() => {
-        if (tilesLoaded && navigationMode && isFirstPerson && !showTransitionSkeleton) {
-            apply3DTransition();
-        }
-    }, [tilesLoaded, navigationMode, isFirstPerson, showTransitionSkeleton, apply3DTransition]);
-
-    // ── Handle navigation mode toggle with skeleton ──
-    useEffect(() => {
-        if (navigationMode && isFirstPerson) {
-            console.log("[MapOptimization] Showing transition skeleton for 300ms");
-            setShowTransitionSkeleton(true);
-            setTilesLoaded(false);
-
-            // Skeleton timeout (fake fast load)
-            setTimeout(() => {
-                if (tilesLoaded) {
-                    apply3DTransition();
-                }
-            }, 300);
-        }
-    }, [navigationMode, isFirstPerson, tilesLoaded, apply3DTransition]);
-
-    // Calculate route ONLY on stage transitions
+    // ── Calculate route ONLY on stage transitions ──
     useEffect(() => {
         if (!isLoaded || !driverLat || !driverLng) return;
 
@@ -267,10 +186,12 @@ function RiderMiniMapComponent({
                         totalDurValue += leg.duration?.value || 0;
 
                         leg.steps.forEach(step => {
+                            // Extract path points
                             step.path.forEach(point => {
                                 path.push({ lat: point.lat(), lng: point.lng() });
                             });
 
+                            // Extract navigation step info
                             const endLoc = step.end_location;
                             steps.push({
                                 instruction: step.instructions || "Continúe",
@@ -305,20 +226,18 @@ function RiderMiniMapComponent({
         );
     }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode, clearRouteState]);
 
-    // Clean up on delivery completion
+    // ── Clean up on delivery completion ──
     useEffect(() => {
         if (!navigationMode) {
             clearRouteState();
             currentStageRef.current = null;
             hasDriverPositionRef.current = false;
             prevOrderStatusRef.current = undefined;
-            setIsFirstPerson(true);
-            setTilesLoaded(false);
-            setShowTransitionSkeleton(false);
+            setIsFirstPerson(true); // Reset to 3D for next delivery
         }
     }, [navigationMode, clearRouteState]);
 
-    // Update remaining path as driver moves
+    // ── Update remaining path as driver moves ──
     useEffect(() => {
         if (!navigationMode || !driverLat || !driverLng || routePath.length === 0) return;
 
@@ -340,11 +259,13 @@ function RiderMiniMapComponent({
         setRemainingPath(routePath.slice(closestIndex));
     }, [navigationMode, driverLat, driverLng, routePath]);
 
-    // Track current step based on proximity
+    // ── TURN-BY-TURN: Track current step based on proximity ──
     useEffect(() => {
         if (!navigationMode || !driverLat || !driverLng || navSteps.length === 0) return;
 
-        const STEP_ADVANCE_THRESHOLD = 0.0003;
+        // Find which step the driver is closest to completing
+        // (closest to the end_location of each step)
+        const STEP_ADVANCE_THRESHOLD = 0.0003; // ~30 meters in lat/lng
 
         for (let i = currentStepIndex; i < navSteps.length; i++) {
             const step = navSteps[i];
@@ -354,9 +275,11 @@ function RiderMiniMapComponent({
             );
 
             if (distToEnd < STEP_ADVANCE_THRESHOLD && i > currentStepIndex) {
+                // Driver passed this step's endpoint — advance
                 setCurrentStepIndex(i + 1 < navSteps.length ? i + 1 : i);
                 break;
             } else if (distToEnd >= STEP_ADVANCE_THRESHOLD) {
+                // This is the current step (not yet reached its end)
                 if (i !== currentStepIndex) {
                     setCurrentStepIndex(i);
                 }
@@ -365,20 +288,21 @@ function RiderMiniMapComponent({
         }
     }, [navigationMode, driverLat, driverLng, navSteps, currentStepIndex]);
 
-    // FIRST-PERSON CAMERA: Follow driver with tilt + heading
+    // ── FIRST-PERSON CAMERA: Follow driver with tilt + heading ──
     useEffect(() => {
         if (!mapRef.current || !navigationMode || !isFirstPerson) return;
         if (!driverLat || !driverLng) return;
-        if (showTransitionSkeleton) return; // Don't animate during skeleton
 
+        // Smooth heading transition (avoid jumps)
         let targetHeading = driverHeading;
         const prevHeading = prevHeadingRef.current;
 
-        // Handle 360° wraparound
+        // Handle 360° wraparound for smooth rotation
         let diff = targetHeading - prevHeading;
         if (diff > 180) diff -= 360;
         if (diff < -180) diff += 360;
 
+        // Lerp heading (70% toward target for smooth feel)
         const smoothHeading = prevHeading + diff * 0.7;
         prevHeadingRef.current = smoothHeading;
 
@@ -388,11 +312,12 @@ function RiderMiniMapComponent({
             heading: smoothHeading,
             tilt: 60,
         });
-    }, [navigationMode, isFirstPerson, driverLat, driverLng, driverHeading, showTransitionSkeleton]);
+    }, [navigationMode, isFirstPerson, driverLat, driverLng, driverHeading]);
 
-    // Handle user interaction
+    // ── Handle user interaction ──
     const handleUserInteraction = useCallback(() => {
         if (isFirstPerson) {
+            // In first-person mode, interaction temporarily exits auto-follow
             setUserInteracted(true);
 
             if (recenterTimeoutRef.current) {
@@ -401,7 +326,7 @@ function RiderMiniMapComponent({
 
             recenterTimeoutRef.current = setTimeout(() => {
                 setUserInteracted(false);
-            }, 5000);
+            }, 5000); // Resume after 5s in first-person mode
         } else {
             setUserInteracted(true);
 
@@ -415,10 +340,11 @@ function RiderMiniMapComponent({
         }
     }, [isFirstPerson]);
 
-    // Re-center handler
+    // ── Re-center handler ──
     const handleRecenter = useCallback(() => {
         if (mapRef.current && driverLat && driverLng) {
             if (isFirstPerson && navigationMode) {
+                // In first-person, snap back to following
                 mapRef.current.moveCamera({
                     center: { lat: driverLat, lng: driverLng },
                     zoom: 18,
@@ -449,7 +375,7 @@ function RiderMiniMapComponent({
         }
     }, [driverLat, driverLng, driverHeading, customerLat, customerLng, merchantLat, merchantLng, orderStatus, isFirstPerson, navigationMode]);
 
-    // Recenter via prop trigger
+    // ── Recenter via prop trigger ──
     useEffect(() => {
         if (recenterTrigger) {
             handleRecenter();
@@ -457,7 +383,7 @@ function RiderMiniMapComponent({
         }
     }, [recenterTrigger, handleRecenter, onRecenterRequested]);
 
-    // Cleanup on unmount
+    // ── Cleanup on unmount ──
     useEffect(() => {
         return () => {
             if (recenterTimeoutRef.current) clearTimeout(recenterTimeoutRef.current);
@@ -468,7 +394,6 @@ function RiderMiniMapComponent({
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
-        console.log("[MapOptimization] Map loaded, warming up WebGL context");
     }, []);
 
     const center = useMemo(() => {
@@ -477,12 +402,12 @@ function RiderMiniMapComponent({
         return defaultCenter;
     }, [driverLat, driverLng, merchantLat, merchantLng]);
 
-    // Initial center
+    // ── Initial center ──
     useEffect(() => {
         if (!hasInitialCentered.current && mapRef.current && (driverLat || merchantLat)) {
             const target = driverLat ? { lat: driverLat, lng: driverLng! } : { lat: merchantLat!, lng: merchantLng! };
 
-            if (navigationMode && isFirstPerson && tilesLoaded) {
+            if (navigationMode && isFirstPerson) {
                 mapRef.current.moveCamera({
                     center: target,
                     zoom: 18,
@@ -495,9 +420,9 @@ function RiderMiniMapComponent({
             }
             hasInitialCentered.current = true;
         }
-    }, [driverLat, driverLng, merchantLat, merchantLng, navigationMode, isFirstPerson, driverHeading, tilesLoaded]);
+    }, [driverLat, driverLng, merchantLat, merchantLng, navigationMode, isFirstPerson, driverHeading]);
 
-    // Driver icon
+    // ── Driver icon ──
     const driverIcon = useMemo(() => {
         if (!isLoaded) return undefined;
 
@@ -509,7 +434,7 @@ function RiderMiniMapComponent({
                 strokeColor: "#166534",
                 strokeWeight: 2,
                 scale: isFirstPerson ? 9 : 7,
-                rotation: isFirstPerson ? 0 : driverHeading,
+                rotation: isFirstPerson ? 0 : driverHeading, // In first-person, map rotates, not marker
             };
         }
 
@@ -523,38 +448,22 @@ function RiderMiniMapComponent({
         };
     }, [isLoaded, navigationMode, driverHeading, isFirstPerson]);
 
-    // Compute destination name
+    // ── Compute destination name for HUD ──
     const normalizedStatus = orderStatus?.toUpperCase() || "";
     const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(normalizedStatus);
     const destinationName = isPickedUp
         ? (customerName || customerAddress)
         : merchantName;
 
-    // **PERFORMANCE-OPTIMIZED MAP OPTIONS**
+    // ── Map options ──
     const mapOptions = useMemo(() => {
-        const base: google.maps.MapOptions = {
+        const base = {
             disableDefaultUI: true,
             zoomControl: !isFirstPerson || !navigationMode,
             scrollwheel: true,
             gestureHandling: "greedy" as const,
             styles: normalMapStyles,
             mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined,
-
-            // **PERFORMANCE OPTIMIZATIONS**
-            // Limit viewport to reduce tile loading
-            restriction: {
-                latLngBounds: {
-                    north: -40,
-                    south: -56,
-                    west: -80,
-                    east: -50,
-                },
-                strictBounds: false,
-            },
-
-            // Use RASTER rendering for better mobile performance
-            // (Vector is more CPU-intensive on low-end devices)
-            renderingType: google.maps.RenderingType.RASTER,
         };
 
         return base;
@@ -571,16 +480,6 @@ function RiderMiniMapComponent({
 
     return (
         <div className="h-full w-full relative">
-            {/* ── SKELETON LOADER (Fake Fast Load) ── */}
-            {showTransitionSkeleton && (
-                <div className="absolute inset-0 z-50 bg-gray-200 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                        <p className="text-xs text-gray-600">Activando vista 3D...</p>
-                    </div>
-                </div>
-            )}
-
             {/* Navigation Mode Badge + 3D Toggle */}
             {navigationMode && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-2">
@@ -594,18 +493,16 @@ function RiderMiniMapComponent({
                         onClick={() => {
                             setIsFirstPerson(!isFirstPerson);
                             setUserInteracted(false);
-                            setShowTransitionSkeleton(true);
-                            setTilesLoaded(false);
-
                             // Reset camera when toggling
                             if (mapRef.current && driverLat && driverLng) {
                                 if (!isFirstPerson) {
-                                    // Switching TO first-person (3D)
-                                    setTimeout(() => {
-                                        if (tilesLoaded) {
-                                            apply3DTransition();
-                                        }
-                                    }, 300);
+                                    // Switching TO first-person
+                                    mapRef.current.moveCamera({
+                                        center: { lat: driverLat, lng: driverLng },
+                                        zoom: 18,
+                                        heading: driverHeading,
+                                        tilt: 60,
+                                    });
                                 } else {
                                     // Switching TO 2D
                                     mapRef.current.moveCamera({
@@ -614,7 +511,6 @@ function RiderMiniMapComponent({
                                         heading: 0,
                                         tilt: 0,
                                     });
-                                    setShowTransitionSkeleton(false);
                                 }
                             }
                         }}
@@ -635,148 +531,139 @@ function RiderMiniMapComponent({
                 </div>
             )}
 
-            {/* ── MAP CONTAINER (always rendered with opacity trick) ── */}
-            <div
-                className="h-full w-full"
-                style={{
-                    opacity: (!navigationMode && isMapWarmedUp) ? 0 : 1,
-                    pointerEvents: (!navigationMode && isMapWarmedUp) ? 'none' : 'auto'
-                }}
+            <GoogleMap
+                mapContainerStyle={containerStyle}
+                onLoad={onMapLoad}
+                options={mapOptions}
             >
-                <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    onLoad={onMapLoad}
-                    options={mapOptions}
-                >
-                    {/* Route polyline */}
-                    {navigationMode && (isAnimating ? animatedPath : remainingPath).length > 0 && (
-                        <Polyline
-                            key={`route-${orderStatus || 'idle'}-${isAnimating ? 'anim' : 'static'}-${merchantLat || 0}-${customerLat || 0}`}
-                            path={isAnimating ? animatedPath : remainingPath}
-                            options={{
-                                strokeColor: isAnimating ? "#22c55e" : "#4285F4",
-                                strokeWeight: isFirstPerson ? 10 : 6,
-                                strokeOpacity: isAnimating ? 0.9 : 0.8,
-                                icons: isAnimating ? [] : [{
-                                    icon: {
-                                        path: 'M 0,-1.5 L 0,1.5',
-                                        strokeOpacity: 1,
-                                        strokeWeight: 4,
-                                        scale: 3,
-                                        strokeColor: "#4285F4",
-                                    },
-                                    offset: '0',
-                                    repeat: '20px'
-                                }, {
-                                    icon: {
-                                        path: 'M -2,0 L 0,2 L 2,0',
-                                        strokeOpacity: 1,
-                                        strokeWeight: 2,
-                                        scale: 2,
-                                        strokeColor: "#2196F3",
-                                    },
-                                    offset: '50%',
-                                    repeat: '40px'
-                                }]
-                            }}
-                            onLoad={(polyline) => {
-                                if (isAnimating) return;
+                {/* Route polyline */}
+                {navigationMode && (isAnimating ? animatedPath : remainingPath).length > 0 && (
+                    <Polyline
+                        key={`route-${orderStatus || 'idle'}-${isAnimating ? 'anim' : 'static'}-${merchantLat || 0}-${customerLat || 0}`}
+                        path={isAnimating ? animatedPath : remainingPath}
+                        options={{
+                            strokeColor: isAnimating ? "#22c55e" : "#4285F4",
+                            strokeWeight: isFirstPerson ? 10 : 6,
+                            strokeOpacity: isAnimating ? 0.9 : 0.8,
+                            icons: isAnimating ? [] : [{
+                                icon: {
+                                    path: 'M 0,-1.5 L 0,1.5',
+                                    strokeOpacity: 1,
+                                    strokeWeight: 4,
+                                    scale: 3,
+                                    strokeColor: "#4285F4",
+                                },
+                                offset: '0',
+                                repeat: '20px'
+                            }, {
+                                icon: {
+                                    path: 'M -2,0 L 0,2 L 2,0',
+                                    strokeOpacity: 1,
+                                    strokeWeight: 2,
+                                    scale: 2,
+                                    strokeColor: "#2196F3",
+                                },
+                                offset: '50%',
+                                repeat: '40px'
+                            }]
+                        }}
+                        onLoad={(polyline) => {
+                            if (isAnimating) return;
 
-                                if (polylineIntervalRef.current) {
-                                    clearInterval(polylineIntervalRef.current);
+                            if (polylineIntervalRef.current) {
+                                clearInterval(polylineIntervalRef.current);
+                            }
+
+                            let count = 0;
+                            polylineIntervalRef.current = setInterval(() => {
+                                count = (count + 1) % 200;
+                                const icons = polyline.get('icons');
+                                if (icons && icons[0]) {
+                                    icons[0].offset = (count / 2) + '%';
+                                    polyline.set('icons', icons);
                                 }
+                            }, 100);
+                        }}
+                        onUnmount={() => {
+                            if (polylineIntervalRef.current) {
+                                clearInterval(polylineIntervalRef.current);
+                                polylineIntervalRef.current = null;
+                            }
+                        }}
+                    />
+                )}
 
-                                let count = 0;
-                                polylineIntervalRef.current = setInterval(() => {
-                                    count = (count + 1) % 200;
-                                    const icons = polyline.get('icons');
-                                    if (icons && icons[0]) {
-                                        icons[0].offset = (count / 2) + '%';
-                                        polyline.set('icons', icons);
-                                    }
-                                }, 100);
-                            }}
-                            onUnmount={() => {
-                                if (polylineIntervalRef.current) {
-                                    clearInterval(polylineIntervalRef.current);
-                                    polylineIntervalRef.current = null;
-                                }
-                            }}
-                        />
-                    )}
+                {/* Driver marker */}
+                {driverLat && driverLng && (
+                    <Marker
+                        position={{ lat: driverLat, lng: driverLng }}
+                        icon={driverIcon}
+                        title="Tu ubicación"
+                        zIndex={1000}
+                    />
+                )}
 
-                    {/* Driver marker */}
-                    {driverLat && driverLng && (
+                {/* Merchant marker */}
+                {merchantLat && merchantLng && (
+                    <Marker
+                        position={{ lat: merchantLat, lng: merchantLng }}
+                        icon={{
+                            path: google.maps.SymbolPath.CIRCLE,
+                            fillOpacity: 1,
+                            fillColor: "#3b82f6",
+                            strokeColor: "white",
+                            strokeWeight: 2,
+                            scale: navigationMode ? 10 : 7,
+                        }}
+                        title={merchantName}
+                        label={navigationMode ? {
+                            text: "🏪",
+                            fontSize: "16px",
+                        } : undefined}
+                    />
+                )}
+
+                {/* Customer marker */}
+                {customerLat && customerLng && (
+                    <>
                         <Marker
-                            position={{ lat: driverLat, lng: driverLng }}
-                            icon={driverIcon}
-                            title="Tu ubicación"
-                            zIndex={1000}
-                        />
-                    )}
-
-                    {/* Merchant marker */}
-                    {merchantLat && merchantLng && (
-                        <Marker
-                            position={{ lat: merchantLat, lng: merchantLng }}
+                            position={{ lat: customerLat, lng: customerLng }}
                             icon={{
                                 path: google.maps.SymbolPath.CIRCLE,
                                 fillOpacity: 1,
-                                fillColor: "#3b82f6",
+                                fillColor: "#ef4444",
                                 strokeColor: "white",
-                                strokeWeight: 2,
-                                scale: navigationMode ? 10 : 7,
+                                strokeWeight: 3,
+                                scale: navigationMode ? 12 : 7,
                             }}
-                            title={merchantName}
-                            label={navigationMode ? {
-                                text: "🏪",
-                                fontSize: "16px",
-                            } : undefined}
+                            title={customerName || customerAddress}
+                            onClick={() => setShowCustomerInfo(true)}
                         />
-                    )}
 
-                    {/* Customer marker */}
-                    {customerLat && customerLng && (
-                        <>
-                            <Marker
+                        {(navigationMode || showCustomerInfo) && (
+                            <InfoWindow
                                 position={{ lat: customerLat, lng: customerLng }}
-                                icon={{
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    fillOpacity: 1,
-                                    fillColor: "#ef4444",
-                                    strokeColor: "white",
-                                    strokeWeight: 3,
-                                    scale: navigationMode ? 12 : 7,
+                                onCloseClick={() => setShowCustomerInfo(false)}
+                                options={{
+                                    pixelOffset: new google.maps.Size(0, -15),
+                                    disableAutoPan: true,
                                 }}
-                                title={customerName || customerAddress}
-                                onClick={() => setShowCustomerInfo(true)}
-                            />
-
-                            {(navigationMode || showCustomerInfo) && (
-                                <InfoWindow
-                                    position={{ lat: customerLat, lng: customerLng }}
-                                    onCloseClick={() => setShowCustomerInfo(false)}
-                                    options={{
-                                        pixelOffset: new google.maps.Size(0, -15),
-                                        disableAutoPan: true,
-                                    }}
-                                >
-                                    <div className="px-2 py-1 text-center">
-                                        <p className="font-bold text-gray-900 text-sm">
-                                            {customerName || "Cliente"}
+                            >
+                                <div className="px-2 py-1 text-center">
+                                    <p className="font-bold text-gray-900 text-sm">
+                                        {customerName || "Cliente"}
+                                    </p>
+                                    {customerAddress && (
+                                        <p className="text-xs text-gray-500 max-w-[150px] truncate">
+                                            {customerAddress}
                                         </p>
-                                        {customerAddress && (
-                                            <p className="text-xs text-gray-500 max-w-[150px] truncate">
-                                                {customerAddress}
-                                            </p>
-                                        )}
-                                    </div>
-                                </InfoWindow>
-                            )}
-                        </>
-                    )}
-                </GoogleMap>
-            </div>
+                                    )}
+                                </div>
+                            </InfoWindow>
+                        )}
+                    </>
+                )}
+            </GoogleMap>
 
             {/* ── NAVIGATION HUD ── */}
             {navigationMode && navSteps.length > 0 && currentStepIndex < navSteps.length && (
