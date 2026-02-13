@@ -3,7 +3,7 @@
 # Ejecutar desde tu rama feature/* para traer cambios de develop
 
 Write-Host ""
-Write-Host "🔄 SYNC NOW - Sincronización en caliente" -ForegroundColor Cyan
+Write-Host "SYNC NOW - Sincronizacion en caliente" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -11,16 +11,16 @@ Write-Host ""
 $currentBranch = git branch --show-current
 
 if ($currentBranch -eq "develop" -or $currentBranch -eq "main") {
-    Write-Host "ℹ️ Estás en $currentBranch" -ForegroundColor Yellow
+    Write-Host "Estas en $currentBranch" -ForegroundColor Yellow
     Write-Host "   Este script es para sincronizar MIENTRAS trabajas en una feature/*" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "   Si querés sincronizar develop, usa:" -ForegroundColor Cyan
+    Write-Host "   Si quieres sincronizar develop, usa:" -ForegroundColor Cyan
     Write-Host "   .\scripts\sync.ps1" -ForegroundColor White
     Write-Host ""
     exit 0
 }
 
-Write-Host "📍 Rama actual: $currentBranch" -ForegroundColor Gray
+Write-Host "Rama actual: $currentBranch" -ForegroundColor Gray
 Write-Host ""
 
 # 2. Guardar trabajo actual (por si acaso)
@@ -30,13 +30,13 @@ $hasChanges = git status --porcelain
 if ($hasChanges) {
     git add .
     git commit -m "wip: guardar progreso antes de sync" 2>$null
-    Write-Host "   ✅ Cambios guardados temporalmente" -ForegroundColor Green
+    Write-Host "   OK - Cambios guardados temporalmente" -ForegroundColor Green
 } else {
     Write-Host "   No hay cambios sin guardar" -ForegroundColor Gray
 }
 
 # 3. Actualizar develop
-Write-Host "[2/4] Descargando últimos cambios de develop..." -ForegroundColor Yellow
+Write-Host "[2/4] Descargando ultimos cambios de develop..." -ForegroundColor Yellow
 git checkout develop 2>$null
 git pull origin develop --no-edit
 
@@ -54,17 +54,17 @@ $hasConflict = $status -match "^UU"
 
 if ($hasConflict) {
     Write-Host ""
-    Write-Host "⚠️ CONFLICTO DETECTADO" -ForegroundColor Yellow
+    Write-Host "CONFLICTO DETECTADO" -ForegroundColor Yellow
     Write-Host "======================================" -ForegroundColor Yellow
     Write-Host ""
     
-    Write-Host "📄 Archivos en conflicto:" -ForegroundColor Yellow
+    Write-Host "Archivos en conflicto:" -ForegroundColor Yellow
     git diff --name-only --diff-filter=U | ForEach-Object {
         Write-Host "   - $_" -ForegroundColor Red
     }
     
     Write-Host ""
-    Write-Host "🤖 SOLUCIÓN CON ANTIGRAVITY:" -ForegroundColor Cyan
+    Write-Host "SOLUCION CON ANTIGRAVITY:" -ForegroundColor Cyan
     Write-Host "======================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Pedile a Antigravity:" -ForegroundColor White
@@ -76,7 +76,7 @@ if ($hasConflict) {
     }
     Write-Host ""
     Write-Host "Resuelve los conflictos combinando ambos cambios." -ForegroundColor White
-    Write-Host "Después ejecuta:" -ForegroundColor White
+    Write-Host "Despues ejecuta:" -ForegroundColor White
     Write-Host "git add ." -ForegroundColor White
     Write-Host "git commit -m 'fix: resolver conflicto de sync'" -ForegroundColor White
     Write-Host "---" -ForegroundColor DarkGray
@@ -85,10 +85,10 @@ if ($hasConflict) {
 }
 
 Write-Host ""
-Write-Host "✅ SINCRONIZACIÓN COMPLETA" -ForegroundColor Green
+Write-Host "OK - SINCRONIZACION COMPLETA" -ForegroundColor Green
 Write-Host "======================================" -ForegroundColor Green
-Write-Host "✅ Cambios de develop integrados en tu rama" -ForegroundColor Green
-Write-Host "✅ Estás en: $currentBranch" -ForegroundColor Green
+Write-Host "OK - Cambios de develop integrados en tu rama" -ForegroundColor Green
+Write-Host "OK - Estas en: $currentBranch" -ForegroundColor Green
 Write-Host ""
-Write-Host "🚀 Puedes seguir trabajando con Antigravity" -ForegroundColor Cyan
+Write-Host "Puedes seguir trabajando con Antigravity" -ForegroundColor Cyan
 Write-Host ""

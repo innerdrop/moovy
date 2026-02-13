@@ -1,5 +1,5 @@
 # Script para Finalizar Trabajo con Auto-Merge - Moovy 3.0
-# Uso: .\scripts\quick-finish.ps1 -Message "descripción de cambios"
+# Uso: .\scripts\quick-finish.ps1 -Message "descripcion de cambios"
 # Ejemplo: .\scripts\quick-finish.ps1 -Message "sistema de notificaciones push"
 
 param(
@@ -8,7 +8,7 @@ param(
 )
 
 Write-Host ""
-Write-Host "🏁 QUICK FINISH - Finalizando trabajo" -ForegroundColor Cyan
+Write-Host "QUICK FINISH - Finalizando trabajo" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -16,14 +16,14 @@ Write-Host ""
 $currentBranch = git branch --show-current
 
 if ($currentBranch -eq "develop" -or $currentBranch -eq "main") {
-    Write-Host "❌ ERROR: Estás en $currentBranch" -ForegroundColor Red
+    Write-Host "ERROR: Estas en $currentBranch" -ForegroundColor Red
     Write-Host "   Este script debe ejecutarse desde una rama feature/*" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "   Primero ejecuta: .\scripts\quick-start.ps1 -Feature `"nombre`"" -ForegroundColor Cyan
+    Write-Host "   Primero ejecuta: .\scripts\quick-start.ps1 -Feature 'nombre'" -ForegroundColor Cyan
     exit 1
 }
 
-Write-Host "📍 Rama actual: $currentBranch" -ForegroundColor Gray
+Write-Host "Rama actual: $currentBranch" -ForegroundColor Gray
 Write-Host ""
 
 # 2. Guardar todos los cambios
@@ -40,7 +40,7 @@ Write-Host "[2/6] Actualizando develop..." -ForegroundColor Yellow
 git checkout develop
 git pull origin develop --no-edit
 
-# 4. Intentar merge automático
+# 4. Intentar merge automatico
 Write-Host "[3/6] Mergeando $currentBranch a develop..." -ForegroundColor Yellow
 git merge $currentBranch --no-edit 2>&1 | Out-Null
 
@@ -50,18 +50,18 @@ $hasConflict = $status -match "^UU"
 
 if ($hasConflict) {
     Write-Host ""
-    Write-Host "⚠️ CONFLICTO DETECTADO" -ForegroundColor Yellow
+    Write-Host "CONFLICTO DETECTADO" -ForegroundColor Yellow
     Write-Host "======================================" -ForegroundColor Yellow
     Write-Host ""
     
     # Listar archivos en conflicto
-    Write-Host "📄 Archivos en conflicto:" -ForegroundColor Yellow
+    Write-Host "Archivos en conflicto:" -ForegroundColor Yellow
     git diff --name-only --diff-filter=U | ForEach-Object {
         Write-Host "   - $_" -ForegroundColor Red
     }
     
     Write-Host ""
-    Write-Host "🤖 SOLUCIÓN AUTOMÁTICA CON ANTIGRAVITY:" -ForegroundColor Cyan
+    Write-Host "SOLUCION AUTOMATICA CON ANTIGRAVITY:" -ForegroundColor Cyan
     Write-Host "======================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Copia y pega esto a Antigravity:" -ForegroundColor White
@@ -73,13 +73,13 @@ if ($hasConflict) {
     }
     Write-Host ""
     Write-Host "Por favor resuelve el conflicto manteniendo ambos cambios si es posible." -ForegroundColor White
-    Write-Host "Después ejecuta:" -ForegroundColor White
+    Write-Host "Despues ejecuta:" -ForegroundColor White
     Write-Host "git add ." -ForegroundColor White
     Write-Host "git commit -m 'fix: resolver conflicto de merge'" -ForegroundColor White
     Write-Host "git push origin develop" -ForegroundColor White
     Write-Host "---" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "Después de que Antigravity resuelva el conflicto, ejecuta manualmente:" -ForegroundColor Cyan
+    Write-Host "Despues de que Antigravity resuelva el conflicto, ejecuta manualmente:" -ForegroundColor Cyan
     Write-Host "   git branch -d $currentBranch" -ForegroundColor White
     Write-Host ""
     exit 1
@@ -90,8 +90,8 @@ Write-Host "[4/6] Subiendo a GitHub..." -ForegroundColor Yellow
 git push origin develop
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Error al subir a GitHub" -ForegroundColor Red
-    Write-Host "   Verifica tu conexión a internet" -ForegroundColor Yellow
+    Write-Host "Error al subir a GitHub" -ForegroundColor Red
+    Write-Host "   Verifica tu conexion a internet" -ForegroundColor Yellow
     exit 1
 }
 
@@ -104,16 +104,16 @@ git push origin --delete $currentBranch 2>$null
 
 Write-Host "[6/6] Limpieza completa" -ForegroundColor Green
 Write-Host ""
-Write-Host "✅ FINALIZADO EXITOSAMENTE" -ForegroundColor Green
+Write-Host "OK - FINALIZADO EXITOSAMENTE" -ForegroundColor Green
 Write-Host "======================================" -ForegroundColor Green
-Write-Host "✅ Cambios mergeados a develop" -ForegroundColor Green
-Write-Host "✅ Subido a GitHub" -ForegroundColor Green
-Write-Host "✅ Rama $currentBranch eliminada" -ForegroundColor Green
-Write-Host "✅ Ahora estás en develop" -ForegroundColor Green
+Write-Host "OK - Cambios mergeados a develop" -ForegroundColor Green
+Write-Host "OK - Subido a GitHub" -ForegroundColor Green
+Write-Host "OK - Rama $currentBranch eliminada" -ForegroundColor Green
+Write-Host "OK - Ahora estas en develop" -ForegroundColor Green
 Write-Host ""
-Write-Host "💡 Tu compañero puede sincronizar con:" -ForegroundColor Cyan
+Write-Host "Tu companero puede sincronizar con:" -ForegroundColor Cyan
 Write-Host "   .\scripts\sync.ps1" -ForegroundColor White
 Write-Host ""
-Write-Host "🚀 Para empezar otra tarea:" -ForegroundColor Cyan
-Write-Host "   .\scripts\quick-start.ps1 -Feature `"nombre`"" -ForegroundColor White
+Write-Host "Para empezar otra tarea:" -ForegroundColor Cyan
+Write-Host "   .\scripts\quick-start.ps1 -Feature 'nombre'" -ForegroundColor White
 Write-Host ""
