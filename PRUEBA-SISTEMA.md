@@ -196,7 +196,7 @@ Dev B: "OK, lo bajo"
 
 **Paso 3: Sincronizar SIN terminar tu trabajo**
 ```powershell
-.\scripts\sync-now.ps1
+.\scripts\refresh.ps1
 ```
 
 **✅ Deberías ver:**
@@ -414,5 +414,6 @@ Después de hacer las 3 pruebas, marcar:
 ---
 
 **¿Dudas?** Pregúntenle a Antigravity específicamente sobre el script que tengan duda.
+
 
 

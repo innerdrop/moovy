@@ -14,7 +14,7 @@ Esta guía detalla cómo trabajar **2 personas al mismo tiempo** en el proyecto 
 | `.\scripts\sync.ps1` | Al empezar el día | develop o feature/ |
 | `.\scripts\start.ps1` | Antes de cada tarea | develop |
 | `.\scripts\finish.ps1` | Al terminar tarea | feature/* |
-| `.\scripts\sync-now.ps1` | Sincronizar mientras trabajas | feature/* |
+| `.\scripts\refresh.ps1` | Sincronizar mientras trabajas | feature/* |
 | `.\scripts\devmain.ps1` | Deploy a producción | develop |
 
 **💬 Comunicación mínima requerida:**
@@ -87,7 +87,7 @@ Solo avisar el área de trabajo (5 segundos).
 
 ### 3️⃣ Sincronizar (opcional)
 ```powershell
-.\scripts\sync-now.ps1
+.\scripts\refresh.ps1
 ```
 
 **¿Desde qué rama?** `feature/*` (tu rama de trabajo actual)
@@ -276,7 +276,7 @@ Dev B: "OK, lo bajo"
 
 ```powershell
 # Dev B (sin terminar su tarea actual):
-.\scripts\sync-now.ps1
+.\scripts\refresh.ps1
 ```
 
 **Script hace:**
@@ -374,7 +374,7 @@ Solo cuando hacen deploy, la DB local se sube al VPS:
 | `.\scripts\sync.ps1` | **Al empezar el día** | Baja cambios del compañero |
 | `.\scripts\start.ps1` | **Antes de cada tarea** | Crea tu rama automáticamente |
 | `.\scripts\finish.ps1` | **Al terminar tarea** | Auto-merge a develop + push |
-| `.\scripts\sync-now.ps1` | **Mientras trabajas** | Trae cambios sin terminar tu tarea |
+| `.\scripts\refresh.ps1` | **Mientras trabajas** | Trae cambios sin terminar tu tarea |
 | `.\scripts\devmain.ps1` | **Deploy a producción** | Sube todo al VPS (código + DB) |
 | `.\scripts\emergency-reset.ps1` | **Emergencia** | Resetea todo a develop limpio |
 
@@ -499,7 +499,7 @@ En vez de trabajar 8 horas seguidas en una rama:
 ### Tip 2: Sincronizar Antes de Almorzar
 ```powershell
 # Antes de irte a almorzar:
-.\scripts\sync-now.ps1
+.\scripts\refresh.ps1
 # Traes cambios del compañero mientras almorzan
 ```
 
@@ -549,6 +549,7 @@ Una vez completado, estarán listos para trabajar en paralelo sin problemas.
 **Versión:** 3.0  
 **Autores:** Equipo Moovy  
 **Última revisión:** 2026-02-13
+
 
 
 
