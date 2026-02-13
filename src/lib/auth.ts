@@ -132,6 +132,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         updateAge: 24 * 60 * 60, // Update session every 24 hours
     },
 
+    // Allow cookies over HTTP for local network testing (non-localhost IP)
+    useSecureCookies: process.env.NODE_ENV === "production",
+
     // Don't log in production
     debug: process.env.NODE_ENV === "development",
 
