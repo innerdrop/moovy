@@ -45,5 +45,5 @@ Write-Host "✅ Estás en la rama: $branchName" -ForegroundColor Green
 Write-Host "✅ Puedes empezar a trabajar con Antigravity" -ForegroundColor Green
 Write-Host ""
 Write-Host "📝 Cuando termines, ejecuta:" -ForegroundColor Cyan
-Write-Host "   .\scripts\quick-finish.ps1 -Message `"tu descripción`"" -ForegroundColor White
+Write-Host "   .\scripts\quick-finish.ps1 -Message `"tu descripcion`"" -ForegroundColor White
 Write-Host ""
