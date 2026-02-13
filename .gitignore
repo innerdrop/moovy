@@ -44,3 +44,12 @@ next-env.d.ts
 
 # database dumps (compartir fuera de Git)
 database_dump.sql
+
+# load testing results
+/load-testing/results/
+*.json.gz
+k6-results.json
+
+# monitoring volumes (Docker)
+/prometheus-data/
+/grafana-data/
