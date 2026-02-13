@@ -1,8 +1,23 @@
 import type { NextConfig } from "next";
 
+// Helper to get host from URL safely
+const getHost = (url: string | undefined, defaultHost: string) => {
+  if (!url) return defaultHost;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return defaultHost;
+  }
+};
+
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+const appHost = getHost(appUrl, "localhost");
+const socketIp = getHost(socketUrl, "localhost");
+
 const nextConfig: NextConfig = {
   // Allow mobile devices on local network to access dev server
-  allowedDevOrigins: ["192.168.68.114"],
+  allowedDevOrigins: [appHost, "localhost", "127.0.0.1", "192.168.68.114"],
 
   // Security Headers
   async headers() {
@@ -40,7 +55,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' https://api.mercadopago.com https://*.googleapis.com ws://localhost:3001 http://localhost:3001 https://*.somosmoovy.com wss://*.somosmoovy.com; frame-src https://*.google.com; frame-ancestors 'self';",
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' https://api.mercadopago.com https://*.googleapis.com ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self';`,
           },
         ],
       },

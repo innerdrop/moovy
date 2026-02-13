@@ -2,72 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
-
-// Send welcome email function
-async function sendWelcomeEmail(email: string, firstName: string, referralCode: string) {
-    try {
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || "smtp.gmail.com",
-            port: parseInt(process.env.SMTP_PORT || "587"),
-            secure: false,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
-
-        const baseUrl = process.env.NEXTAUTH_URL || "https://somosmoovy.com";
-
-        await transporter.sendMail({
-            from: `"MOOVY" <${process.env.SMTP_USER || "somosmoovy@gmail.com"}>`,
-            to: email,
-            subject: "¡Bienvenido a MOOVY! 🎉",
-            html: `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <img src="https://somosmoovy.com/logo-moovy.png" alt="MOOVY" style="height: 50px; width: auto;" />
-                    </div>
-                    <div style="background-color: #f9fafb; border-radius: 12px; padding: 30px;">
-                        <h2 style="color: #111827; margin-top: 0;">¡Hola ${firstName}! 👋</h2>
-                        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-                            ¡Bienvenido a la comunidad MOOVY! Ya podés empezar a disfrutar de todos los beneficios.
-                        </p>
-                        
-                        <div style="background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); border-radius: 10px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-                            <h3 style="color: #b45309; margin: 0 0 10px 0; font-size: 16px;">⭐ Tu código de referido</h3>
-                            <p style="color: #78350f; font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">${referralCode}</p>
-                            <p style="color: #92400e; font-size: 12px; margin: 8px 0 0 0;">Compartílo y gana puntos MOOVER cuando tus amigos compren</p>
-                        </div>
-
-                        <h3 style="color: #111827; font-size: 16px; margin-top: 25px;">¿Qué podés hacer con MOOVY?</h3>
-                        <ul style="color: #6b7280; font-size: 14px; line-height: 1.8; padding-left: 20px;">
-                            <li>🛍️ <strong>Comprar</strong> en cientos de comercios locales</li>
-                            <li>🚀 <strong>Recibir</strong> tus pedidos en minutos</li>
-                            <li>⭐ <strong>Sumar puntos MOOVER</strong> con cada compra</li>
-                            <li>🎁 <strong>Canjear</strong> tus puntos por descuentos exclusivos</li>
-                            <li>👥 <strong>Referir amigos</strong> y ganar más puntos</li>
-                        </ul>
-
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${baseUrl}/tienda" 
-                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4444); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
-                                Empezar a comprar
-                            </a>
-                        </div>
-                    </div>
-                    <div style="text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;">
-                        <p>© ${new Date().getFullYear()} MOOVY™. Ushuaia, Tierra del Fuego.</p>
-                    </div>
-                </div>
-            `,
-        });
-        console.log("[Register] Welcome email sent to:", email);
-    } catch (error) {
-        console.error("[Register] Error sending welcome email:", error);
-        // Don't throw - email failure shouldn't break registration
-    }
-}
+import { sendWelcomeEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 

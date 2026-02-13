@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig } from "@/lib/points";
 import { CreateOrderSchema, validateInput } from "@/lib/validations";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
@@ -245,6 +246,36 @@ export async function POST(request: Request) {
             } catch (e) {
                 console.error("[Socket-Emit] Failed to notify new order:", e);
             }
+        }
+
+        // --- EMAIL: Send order confirmation to customer ---
+        try {
+            // we need the full address string for the email
+            let addressString = "Dirección no especificada";
+            if (addressId) {
+                const addr = await prisma.address.findUnique({ where: { id: addressId } });
+                if (addr) {
+                    addressString = `${addr.street} ${addr.number}${addr.apartment ? `, ${addr.apartment}` : ''}, ${addr.city}`;
+                }
+            } else if (addressData) {
+                addressString = `${addressData.street} ${addressData.number}${addressData.floor ? `, ${addressData.floor}` : ''}, ${addressData.city || 'Ushuaia'}`;
+            }
+
+            sendOrderConfirmationEmail({
+                email: session.user.email || "",
+                customerName: session.user.name || "Cliente",
+                orderNumber: order.orderNumber,
+                items: items, // use items from request which already has names/prices
+                total: order.total,
+                subtotal: subtotal,
+                deliveryFee: order.deliveryFee,
+                discount: order.discount,
+                paymentMethod: paymentMethod,
+                address: addressString,
+                isPickup: isPickup || false
+            });
+        } catch (emailError) {
+            console.error("[Email] Failed to trigger confirmation email:", emailError);
         }
 
         return NextResponse.json({
