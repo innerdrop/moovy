@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
-import { Loader2, Eye, Map as MapIcon } from "lucide-react";
+import { Loader2, Compass, MapPin as MapPinIcon, Crosshair, Navigation2 } from "lucide-react";
 import NavigationHUD from "./NavigationHUD";
 
 interface RiderMiniMapProps {
@@ -91,7 +91,7 @@ function RiderMiniMapComponent({
     const hasDriverPositionRef = useRef(false);
 
     // ── TURN-BY-TURN NAVIGATION STATE ──
-    const [isFirstPerson, setIsFirstPerson] = useState(true); // 3D vs 2D toggle
+    const [isHeadUp, setIsHeadUp] = useState(true); // Head-Up (rumbo arriba) vs North-Up (norte arriba)
     const [navSteps, setNavSteps] = useState<NavStepInfo[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [totalDistance, setTotalDistance] = useState("");
@@ -233,7 +233,7 @@ function RiderMiniMapComponent({
             currentStageRef.current = null;
             hasDriverPositionRef.current = false;
             prevOrderStatusRef.current = undefined;
-            setIsFirstPerson(true); // Reset to 3D for next delivery
+            setIsHeadUp(true); // Reset to Head-Up for next delivery
         }
     }, [navigationMode, clearRouteState]);
 
@@ -288,9 +288,9 @@ function RiderMiniMapComponent({
         }
     }, [navigationMode, driverLat, driverLng, navSteps, currentStepIndex]);
 
-    // ── FIRST-PERSON CAMERA: Follow driver with tilt + heading ──
+    // ── HEAD-UP CAMERA: Follow driver with heading rotation (2D) ──
     useEffect(() => {
-        if (!mapRef.current || !navigationMode || !isFirstPerson) return;
+        if (!mapRef.current || !navigationMode || !isHeadUp || userInteracted) return;
         if (!driverLat || !driverLng) return;
 
         // Smooth heading transition (avoid jumps)
@@ -308,72 +308,60 @@ function RiderMiniMapComponent({
 
         mapRef.current.moveCamera({
             center: { lat: driverLat, lng: driverLng },
-            zoom: 18,
+            zoom: 17,
             heading: smoothHeading,
-            tilt: 60,
+            tilt: 0,
         });
-    }, [navigationMode, isFirstPerson, driverLat, driverLng, driverHeading]);
+    }, [navigationMode, isHeadUp, userInteracted, driverLat, driverLng, driverHeading]);
 
-    // ── Handle user interaction ──
+    // ── NORTH-UP CAMERA: Follow driver without rotation ──
+    useEffect(() => {
+        if (!mapRef.current || !navigationMode || isHeadUp || userInteracted) return;
+        if (!driverLat || !driverLng) return;
+
+        mapRef.current.panTo({ lat: driverLat, lng: driverLng });
+    }, [navigationMode, isHeadUp, userInteracted, driverLat, driverLng]);
+
+    // ── Handle user interaction (Free Look) ──
     const handleUserInteraction = useCallback(() => {
-        if (isFirstPerson) {
-            // In first-person mode, interaction temporarily exits auto-follow
-            setUserInteracted(true);
-
-            if (recenterTimeoutRef.current) {
-                clearTimeout(recenterTimeoutRef.current);
-            }
-
-            recenterTimeoutRef.current = setTimeout(() => {
-                setUserInteracted(false);
-            }, 5000); // Resume after 5s in first-person mode
-        } else {
-            setUserInteracted(true);
-
-            if (recenterTimeoutRef.current) {
-                clearTimeout(recenterTimeoutRef.current);
-            }
-
-            recenterTimeoutRef.current = setTimeout(() => {
-                setUserInteracted(false);
-            }, 10000);
-        }
-    }, [isFirstPerson]);
+        if (!navigationMode) return; // Only track interactions during navigation
+        setUserInteracted(true);
+        // No auto-timeout — user must tap Recenter to resume tracking
+    }, [navigationMode]);
 
     // ── Re-center handler ──
     const handleRecenter = useCallback(() => {
         if (mapRef.current && driverLat && driverLng) {
-            if (isFirstPerson && navigationMode) {
-                // In first-person, snap back to following
+            if (isHeadUp && navigationMode) {
+                // Head-Up: snap back to driver with heading
                 mapRef.current.moveCamera({
                     center: { lat: driverLat, lng: driverLng },
-                    zoom: 18,
+                    zoom: 17,
                     heading: driverHeading,
-                    tilt: 60,
+                    tilt: 0,
                 });
-            } else {
+            } else if (navigationMode) {
+                // North-Up during navigation: fit driver + destination
                 const bounds = new google.maps.LatLngBounds();
                 bounds.extend({ lat: driverLat, lng: driverLng });
 
-                const normalizedStatus = orderStatus?.toUpperCase() || "";
-                if (['PICKED_UP', 'IN_DELIVERY'].includes(normalizedStatus)) {
-                    if (customerLat && customerLng) {
-                        bounds.extend({ lat: customerLat, lng: customerLng });
-                    }
+                const ns = orderStatus?.toUpperCase() || "";
+                if (['PICKED_UP', 'IN_DELIVERY'].includes(ns)) {
+                    if (customerLat && customerLng) bounds.extend({ lat: customerLat, lng: customerLng });
                 } else {
-                    if (merchantLat && merchantLng) {
-                        bounds.extend({ lat: merchantLat, lng: merchantLng });
-                    }
+                    if (merchantLat && merchantLng) bounds.extend({ lat: merchantLat, lng: merchantLng });
                 }
 
+                mapRef.current.moveCamera({ heading: 0, tilt: 0 });
                 mapRef.current.fitBounds(bounds, 60);
+            } else {
+                // No delivery: center on driver
+                mapRef.current.panTo({ lat: driverLat, lng: driverLng });
+                mapRef.current.setZoom(14);
             }
             setUserInteracted(false);
-            if (recenterTimeoutRef.current) {
-                clearTimeout(recenterTimeoutRef.current);
-            }
         }
-    }, [driverLat, driverLng, driverHeading, customerLat, customerLng, merchantLat, merchantLng, orderStatus, isFirstPerson, navigationMode]);
+    }, [driverLat, driverLng, driverHeading, customerLat, customerLng, merchantLat, merchantLng, orderStatus, isHeadUp, navigationMode]);
 
     // ── Recenter via prop trigger ──
     useEffect(() => {
@@ -407,20 +395,21 @@ function RiderMiniMapComponent({
         if (!hasInitialCentered.current && mapRef.current && (driverLat || merchantLat)) {
             const target = driverLat ? { lat: driverLat, lng: driverLng! } : { lat: merchantLat!, lng: merchantLng! };
 
-            if (navigationMode && isFirstPerson) {
+            if (navigationMode && isHeadUp) {
                 mapRef.current.moveCamera({
                     center: target,
-                    zoom: 18,
+                    zoom: 17,
                     heading: driverHeading,
-                    tilt: 60,
+                    tilt: 0,
                 });
             } else {
                 mapRef.current.panTo(target);
-                mapRef.current.setZoom(navigationMode ? 17 : 14);
+                mapRef.current.setZoom(navigationMode ? 16 : 14);
+                mapRef.current.moveCamera({ heading: 0, tilt: 0 });
             }
             hasInitialCentered.current = true;
         }
-    }, [driverLat, driverLng, merchantLat, merchantLng, navigationMode, isFirstPerson, driverHeading]);
+    }, [driverLat, driverLng, merchantLat, merchantLng, navigationMode, isHeadUp, driverHeading]);
 
     // ── Driver icon ──
     const driverIcon = useMemo(() => {
@@ -433,8 +422,8 @@ function RiderMiniMapComponent({
                 fillColor: "#22c55e",
                 strokeColor: "#166534",
                 strokeWeight: 2,
-                scale: isFirstPerson ? 9 : 7,
-                rotation: isFirstPerson ? 0 : driverHeading, // In first-person, map rotates, not marker
+                scale: 8,
+                rotation: isHeadUp ? 0 : driverHeading, // Head-Up: map rotates. North-Up: marker rotates
             };
         }
 
@@ -446,7 +435,7 @@ function RiderMiniMapComponent({
             strokeWeight: 2,
             scale: 8,
         };
-    }, [isLoaded, navigationMode, driverHeading, isFirstPerson]);
+    }, [isLoaded, navigationMode, driverHeading, isHeadUp]);
 
     // ── Compute destination name for HUD ──
     const normalizedStatus = orderStatus?.toUpperCase() || "";
@@ -456,18 +445,14 @@ function RiderMiniMapComponent({
         : merchantName;
 
     // ── Map options ──
-    const mapOptions = useMemo(() => {
-        const base = {
-            disableDefaultUI: true,
-            zoomControl: !isFirstPerson || !navigationMode,
-            scrollwheel: true,
-            gestureHandling: "greedy" as const,
-            styles: normalMapStyles,
-            mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined,
-        };
-
-        return base;
-    }, [isFirstPerson, navigationMode]);
+    const mapOptions = useMemo(() => ({
+        disableDefaultUI: true,
+        zoomControl: !navigationMode,
+        scrollwheel: true,
+        gestureHandling: "greedy" as const,
+        styles: normalMapStyles,
+        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined,
+    }), [navigationMode]);
 
     if (!isLoaded) {
         return (
@@ -480,7 +465,7 @@ function RiderMiniMapComponent({
 
     return (
         <div className="h-full w-full relative">
-            {/* Navigation Mode Badge + 3D Toggle */}
+            {/* Navigation Mode Badge + View Toggle + Recenter */}
             {navigationMode && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-2">
                     <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
@@ -488,23 +473,23 @@ function RiderMiniMapComponent({
                         NAVEGANDO
                     </div>
 
-                    {/* 3D / 2D Toggle */}
+                    {/* Head-Up / North-Up Toggle */}
                     <button
                         onClick={() => {
-                            setIsFirstPerson(!isFirstPerson);
+                            const newHeadUp = !isHeadUp;
+                            setIsHeadUp(newHeadUp);
                             setUserInteracted(false);
-                            // Reset camera when toggling
                             if (mapRef.current && driverLat && driverLng) {
-                                if (!isFirstPerson) {
-                                    // Switching TO first-person
+                                if (newHeadUp) {
+                                    // Switching TO Head-Up
                                     mapRef.current.moveCamera({
                                         center: { lat: driverLat, lng: driverLng },
-                                        zoom: 18,
+                                        zoom: 17,
                                         heading: driverHeading,
-                                        tilt: 60,
+                                        tilt: 0,
                                     });
                                 } else {
-                                    // Switching TO 2D
+                                    // Switching TO North-Up
                                     mapRef.current.moveCamera({
                                         center: { lat: driverLat, lng: driverLng },
                                         zoom: 16,
@@ -516,24 +501,35 @@ function RiderMiniMapComponent({
                         }}
                         className="bg-white/90 backdrop-blur-md text-gray-800 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 active:scale-95 transition-all border border-white"
                     >
-                        {isFirstPerson ? (
+                        {isHeadUp ? (
                             <>
-                                <Eye className="w-3.5 h-3.5" />
-                                3D
+                                <Compass className="w-3.5 h-3.5" />
+                                Rumbo
                             </>
                         ) : (
                             <>
-                                <MapIcon className="w-3.5 h-3.5" />
-                                2D
+                                <Navigation2 className="w-3.5 h-3.5" />
+                                Norte
                             </>
                         )}
                     </button>
                 </div>
             )}
 
+            {/* Recenter Button (visible during Free Look) */}
+            {navigationMode && userInteracted && (
+                <button
+                    onClick={handleRecenter}
+                    className="absolute top-2 right-2 z-20 w-11 h-11 bg-white/95 backdrop-blur-md rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-all border border-gray-200"
+                >
+                    <Crosshair className="w-5 h-5 text-blue-600" />
+                </button>
+            )}
+
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 onLoad={onMapLoad}
+                onDragStart={handleUserInteraction}
                 options={mapOptions}
             >
                 {/* Route polyline */}
@@ -543,7 +539,7 @@ function RiderMiniMapComponent({
                         path={isAnimating ? animatedPath : remainingPath}
                         options={{
                             strokeColor: isAnimating ? "#22c55e" : "#4285F4",
-                            strokeWeight: isFirstPerson ? 10 : 6,
+                            strokeWeight: 6,
                             strokeOpacity: isAnimating ? 0.9 : 0.8,
                             icons: isAnimating ? [] : [{
                                 icon: {
