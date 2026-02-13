@@ -8,7 +8,7 @@ param(
 )
 
 Write-Host ""
-Write-Host "🚀 QUICK START - Iniciando trabajo" -ForegroundColor Cyan
+Write-Host "QUICK START - Iniciando trabajo" -ForegroundColor Cyan
 Write-Host "====================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -18,7 +18,7 @@ git checkout develop 2>$null
 git pull origin develop --no-edit
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️ Advertencia: No se pudo sincronizar develop completamente" -ForegroundColor Yellow
+    Write-Host "Advertencia: No se pudo sincronizar develop completamente" -ForegroundColor Yellow
 }
 
 # 2. Crear nombre de rama limpio (sin espacios, lowercase)
@@ -36,14 +36,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 4. Sincronizar con develop por si hubo cambios
-Write-Host "[3/4] Verificando últimos cambios..." -ForegroundColor Yellow
+Write-Host "[3/4] Verificando ultimos cambios..." -ForegroundColor Yellow
 git merge develop --no-edit 2>$null
 
 Write-Host "[4/4] Listo!" -ForegroundColor Green
 Write-Host ""
-Write-Host "✅ Estás en la rama: $branchName" -ForegroundColor Green
-Write-Host "✅ Puedes empezar a trabajar con Antigravity" -ForegroundColor Green
+Write-Host "OK - Estas en la rama: $branchName" -ForegroundColor Green
+Write-Host "OK - Puedes empezar a trabajar con Antigravity" -ForegroundColor Green
 Write-Host ""
-Write-Host "📝 Cuando termines, ejecuta:" -ForegroundColor Cyan
-Write-Host "   .\scripts\quick-finish.ps1 -Message `"tu descripcion`"" -ForegroundColor White
+Write-Host "Cuando termines, ejecuta:" -ForegroundColor Cyan
+Write-Host "  .\scripts\quick-finish.ps1 -Message 'tu descripcion'" -ForegroundColor White
 Write-Host ""
