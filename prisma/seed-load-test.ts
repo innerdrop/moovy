@@ -1,5 +1,5 @@
 // Script para generar datos de prueba para load testing
-// Ejecutar: node prisma/seed-load-test.ts
+// Ejecutar: npx tsx prisma/seed-load-test.ts
 
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -10,9 +10,17 @@ async function main() {
     console.log("🗑️ Limpiando datos de prueba anteriores...");
 
     // Limpiar solo datos de test (preservar admin y configuración)
-    await prisma.order.deleteMany({ where: { customerEmail: { contains: "loadtest" } } });
-    await prisma.driver.deleteMany({ where: { user: { email: { contains: "loadtest" } } } });
-    await prisma.user.deleteMany({ where: { email: { contains: "loadtest" } } });
+    const testUsers = await prisma.user.findMany({
+        where: { email: { contains: "loadtest" } },
+        select: { id: true }
+    });
+
+    if (testUsers.length > 0) {
+        const testUserIds = testUsers.map(u => u.id);
+        await prisma.order.deleteMany({ where: { userId: { in: testUserIds } } });
+        await prisma.driver.deleteMany({ where: { userId: { in: testUserIds } } });
+        await prisma.user.deleteMany({ where: { id: { in: testUserIds } } });
+    }
 
     console.log("✅ Limpieza completa\n");
 
