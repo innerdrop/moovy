@@ -11,6 +11,7 @@ interface PushNotificationState {
 }
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+console.log('[Push Hook] VAPID_PUBLIC_KEY loaded:', VAPID_PUBLIC_KEY ? `${VAPID_PUBLIC_KEY.substring(0, 10)}...` : '❌ EMPTY');
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -97,7 +98,8 @@ export function usePushNotifications() {
     // Subscribe to push notifications
     const subscribe = useCallback(async (): Promise<boolean> => {
         if (!state.isSupported || !VAPID_PUBLIC_KEY) {
-            console.error('[Push] Not supported or VAPID key missing');
+            console.error('[Push] Not supported or VAPID key missing. isSupported:', state.isSupported, 'VAPID key:', VAPID_PUBLIC_KEY ? 'present' : '❌ MISSING');
+            setState(prev => ({ ...prev, error: !VAPID_PUBLIC_KEY ? 'VAPID_PUBLIC_KEY no está configurada en .env' : 'Push no soportado en este navegador' }));
             return false;
         }
 
@@ -117,7 +119,7 @@ export function usePushNotifications() {
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any
             });
 
-            console.log('[Push] Subscription created:', subscription.endpoint);
+            console.log('[Push] ✅ Subscription created:', subscription.endpoint.substring(0, 50) + '...');
 
             // Send subscription to server
             const response = await fetch('/api/push/subscribe', {

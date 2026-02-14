@@ -101,7 +101,7 @@ export default function RiderDashboard() {
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
     // Push notifications
-    const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed } = usePushNotifications();
+    const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed, error: pushError } = usePushNotifications();
 
     const [recenterToggle, setRecenterToggle] = useState(false);
 
@@ -143,8 +143,20 @@ export default function RiderDashboard() {
     }, [isOnline, pushSupported, pushPermission, isSubscribed]);
 
     const handleEnableNotifications = async () => {
+        console.log('[Dashboard] Requesting push permission...');
+        console.log('[Dashboard] VAPID key present:', !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
         const success = await requestPermission();
-        if (success) setShowNotificationPrompt(false);
+        console.log('[Dashboard] Permission result:', success);
+        if (success) {
+            setShowNotificationPrompt(false);
+        } else {
+            // Get the latest error from the hook state
+            // Note: We need to use a slightly different approach to get the current state error
+            // but for now, we'll try to rely on the alert showing the state that was just updated.
+            setTimeout(() => {
+                alert(pushError || 'No se pudieron activar las notificaciones. Asegurate de que no las hayas bloqueado en el navegador.');
+            }, 100);
+        }
     };
 
     // Toggle online/offline
