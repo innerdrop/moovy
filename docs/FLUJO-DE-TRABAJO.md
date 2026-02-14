@@ -377,8 +377,40 @@ Solo cuando hacen deploy, la DB local se sube al VPS:
 | `.\scripts\refresh.ps1` | **Mientras trabajas** | Trae cambios sin terminar tu tarea |
 | `.\scripts\devmain.ps1` | **Deploy a producción** | Sube todo al VPS (código + DB) |
 | `.\scripts\emergency-reset.ps1` | **Emergencia** | Resetea todo a develop limpio |
+| `git add -A; git commit -m "msg"` | **Manual** | Hacer un commit manual de todo |
 
 ---
+
+## 📝 Comandos de Commit (Git Manual)
+
+Si necesitás guardar tus cambios manualmente (sin usar `finish.ps1` todavía):
+
+### Opción A: Un solo commit (Todo junto)
+Ideal si hiciste una sola tarea y querés guardarla rápido.
+```powershell
+git add -A
+git commit -m "descripción de lo que hiciste"
+```
+
+### Opción B: Varios commits (Paso a paso)
+Ideal si hiciste varias cosas distintas y querés que queden registradas por separado.
+```powershell
+# 1. Guardar la primera parte
+git add ruta/al/archivo1.ts
+git commit -m "Explicación de la parte 1"
+
+# 2. Guardar la segunda parte
+git add ruta/al/archivo2.ts
+git commit -m "Explicación de la parte 2"
+```
+
+> [!TIP]
+> **¿`finish.ps1` o Manual?**
+> `finish.ps1` es un "atajo": mete **todo** lo que cambiaste en un solo commit y lo sube. Es ideal para tareas rápidas. 
+> El modo **Manual** es mejor si querés dejar un "caminito" de migas de pan (varios commits) para que sea más fácil saber qué hiciste en cada paso.
+
+---
+
 
 ## 🎯 Ejemplo Completo de Día de Trabajo
 
