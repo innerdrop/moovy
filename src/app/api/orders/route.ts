@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig } from "@/lib/points";
 import { CreateOrderSchema, validateInput } from "@/lib/validations";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
 
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
@@ -18,7 +19,10 @@ function generateOrderNumber(): string {
 
 // POST - Create a new order
 export async function POST(request: Request) {
+    const start = Date.now();
+    let status = "201";
     try {
+
         const session = await auth();
 
         if (!session?.user?.id) {
@@ -290,17 +294,31 @@ export async function POST(request: Request) {
         }, { status: 201 });
 
     } catch (error) {
+        status = "500";
         console.error("Error creating order:", error);
         return NextResponse.json(
             { error: "Error al crear el pedido" },
             { status: 500 }
         );
+    } finally {
+        try {
+            const duration = Date.now() - start;
+            httpRequestsTotal.inc({ method: "POST", route: "/api/orders", status });
+            httpRequestDuration.observe({ method: "POST", route: "/api/orders", status }, duration);
+        } catch (e) {
+            console.error("Metrics increment failed:", e);
+        }
     }
 }
 
+
+
 // GET - Get user's orders
 export async function GET(request: Request) {
+    const start = Date.now();
+    let status = "200";
     try {
+
         const session = await auth();
 
         if (!session?.user?.id) {
@@ -344,11 +362,22 @@ export async function GET(request: Request) {
 
         return NextResponse.json(orders);
     } catch (error) {
+        status = "500";
         console.error("Error fetching orders:", error);
         return NextResponse.json(
             { error: "Error al obtener los pedidos" },
             { status: 500 }
         );
+    } finally {
+        try {
+            const duration = Date.now() - start;
+            httpRequestsTotal.inc({ method: "GET", route: "/api/orders", status });
+            httpRequestDuration.observe({ method: "GET", route: "/api/orders", status }, duration);
+        } catch (e) {
+            console.error("Metrics increment failed:", e);
+        }
     }
 }
+
+
 
