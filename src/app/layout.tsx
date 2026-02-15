@@ -59,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" data-scroll-behavior="smooth">
       <head>
         {/* PWA Icons */}
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />

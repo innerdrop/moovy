@@ -445,14 +445,25 @@ function RiderMiniMapComponent({
         : merchantName;
 
     // ── Map options ──
-    const mapOptions = useMemo(() => ({
-        disableDefaultUI: true,
-        zoomControl: !navigationMode,
-        scrollwheel: true,
-        gestureHandling: "greedy" as const,
-        styles: normalMapStyles,
-        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined,
-    }), [navigationMode]);
+    const mapOptions = useMemo(() => {
+        const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
+
+        const options: google.maps.MapOptions = {
+            disableDefaultUI: true,
+            zoomControl: !navigationMode,
+            scrollwheel: true,
+            gestureHandling: "greedy" as const,
+        };
+
+        if (mapId) {
+            options.mapId = mapId;
+            // IMPORTANT: Do NOT set options.styles at all here
+        } else {
+            options.styles = normalMapStyles;
+        }
+
+        return options;
+    }, [navigationMode]);
 
     if (!isLoaded) {
         return (

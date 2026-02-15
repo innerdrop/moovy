@@ -150,12 +150,7 @@ export default function RiderDashboard() {
         if (success) {
             setShowNotificationPrompt(false);
         } else {
-            // Get the latest error from the hook state
-            // Note: We need to use a slightly different approach to get the current state error
-            // but for now, we'll try to rely on the alert showing the state that was just updated.
-            setTimeout(() => {
-                alert(pushError || 'No se pudieron activar las notificaciones. Asegurate de que no las hayas bloqueado en el navegador.');
-            }, 100);
+            console.log('[Dashboard] Notification activation failed or denied.');
         }
     };
 
@@ -600,6 +595,11 @@ export default function RiderDashboard() {
                                 Ahora no
                             </button>
                         </div>
+                        {pushError && (
+                            <p className="mt-2 text-[10px] text-red-100 border-t border-white/10 pt-2 animate-in fade-in duration-300">
+                                ⚠️ {pushError}
+                            </p>
+                        )}
                     </div>
                 </div>
             )}

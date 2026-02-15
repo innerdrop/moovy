@@ -109,7 +109,7 @@ export default function AppHeader({
                             alt="Moovy"
                             width={70}
                             height={22}
-                            style={{ width: 'auto', height: 'auto' }}
+                            className="w-auto h-auto"
                             priority
                         />
                     </Link>
@@ -182,7 +182,7 @@ export default function AppHeader({
                             alt="Moovy"
                             width={110}
                             height={35}
-                            style={{ width: 'auto', height: 'auto' }}
+                            className="w-auto h-auto"
                             priority
                         />
                     </Link>

@@ -88,7 +88,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html {
+/* scroll-behavior removed from html to avoid Next.js warnings. Add data-scroll-behavior="smooth" if needed */
+
+.scroll-smooth {
   scroll-behavior: smooth;
 }
 

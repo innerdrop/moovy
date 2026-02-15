@@ -81,7 +81,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                     <Menu className="w-6 h-6" />
                 </button>
                 <Link href="/ops" className="flex items-center gap-2">
-                    <Image src="/logo-moovy.png" alt="Moovy" width={80} height={26} />
+                    <Image src="/logo-moovy.png" alt="Moovy" width={80} height={26} className="w-auto h-auto" />
                     <span className="text-xs font-medium text-slate-400">Admin</span>
                 </Link>
                 <div className="w-10" /> {/* Spacer for balance */}
@@ -133,7 +133,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                 {/* Header */}
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                     <Link href="/ops" className="flex items-center gap-3" onClick={closeMobileMenu}>
-                        <Image src="/logo-moovy.png" alt="Moovy" width={100} height={32} />
+                        <Image src="/logo-moovy.png" alt="Moovy" width={100} height={32} className="w-auto h-auto" />
                     </Link>
                     <button
                         onClick={closeMobileMenu}

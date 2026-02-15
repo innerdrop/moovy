@@ -139,7 +139,7 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                                 alt="Moovy"
                                 width={140}
                                 height={45}
-                                className="mx-auto"
+                                className="mx-auto w-auto h-auto"
                                 priority
                             />
                         </Link>
