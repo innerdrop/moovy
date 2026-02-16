@@ -30,7 +30,7 @@ async function main() {
     console.log("✅ Base de datos limpia");
 
     // Hash password for all accounts
-    const password = await bcrypt.hash("demo123", 10);
+    const password = await bcrypt.hash("demo2026", 10);
 
     // ==================== ADMIN ====================
     console.log("\n👤 Creando Admin...");
