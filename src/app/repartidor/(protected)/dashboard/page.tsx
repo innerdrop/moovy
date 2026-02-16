@@ -11,12 +11,9 @@ import {
     ChevronRight,
     Power,
     Loader2,
-    Settings,
-    LogOut,
     History,
     DollarSign,
     User,
-    HelpCircle,
     Menu,
     X,
     Navigation,
@@ -30,6 +27,13 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
+// Views
+import HistoryView from "@/components/rider/views/HistoryView";
+import EarningsView from "@/components/rider/views/EarningsView";
+import SupportView from "@/components/rider/views/SupportView";
+import ProfileView from "@/components/rider/views/ProfileView";
+import SettingsView from "@/components/rider/views/SettingsView";
+
 // Dynamic imports for heavy components
 const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
     ssr: false,
@@ -40,6 +44,8 @@ const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
     ssr: false,
     loading: () => <div className="fixed bottom-0 left-0 right-0 h-[160px] bg-white rounded-t-3xl animate-pulse" />
 });
+
+const Sidebar = dynamic(() => import("@/components/rider/Sidebar"), { ssr: false });
 
 interface DashboardStats {
     pedidosHoy: number;
@@ -93,15 +99,20 @@ export default function RiderDashboard() {
         stats: DashboardStats;
         pedidosActivos: Order[];
         pedidosPendientes: PendingOrderOffer[];
+        unreadSupportMessages?: number;
     } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const [pushError, setPushError] = useState<string | null>(null);
+
+    // SPA Navigation State
+    const [activeView, setActiveView] = useState("dashboard");
 
     // Push notifications
-    const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed, error: pushError } = usePushNotifications();
+    const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed, error: hookPushError } = usePushNotifications();
 
     const [recenterToggle, setRecenterToggle] = useState(false);
 
@@ -140,7 +151,10 @@ export default function RiderDashboard() {
         if (pushPermission === 'granted' && isSubscribed) {
             setShowNotificationPrompt(false);
         }
-    }, [isOnline, pushSupported, pushPermission, isSubscribed]);
+        if (hookPushError) {
+            setPushError(hookPushError);
+        }
+    }, [isOnline, pushSupported, pushPermission, isSubscribed, hookPushError]);
 
     const handleEnableNotifications = async () => {
         console.log('[Dashboard] Requesting push permission...');
@@ -270,9 +284,37 @@ export default function RiderDashboard() {
         <div className="h-dvh w-screen overflow-hidden relative bg-gray-100">
 
             {/* ═══════════════════════════════════════════════
+                LEVEL 0 — MAP LOADING SKELETON (shows behind map)
+            ═══════════════════════════════════════════════ */}
+            <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#f8f8f8] to-[#eee]">
+                {/* Animated shimmer overlay */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(230,0,18,0.04)_37%,transparent_63%)] bg-[length:200%_100%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                </div>
+                {/* Fake map grid lines */}
+                <div className="absolute inset-0 opacity-[0.06]" style={{
+                    backgroundImage: `
+                        linear-gradient(rgba(0,0,0,0.15) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,0,0,0.15) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '60px 60px'
+                }} />
+                {/* Loading indicator */}
+                <div className="relative z-10 flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center animate-pulse">
+                        <MapPin className="w-8 h-8 text-[#e60012]" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#e60012]" />
+                        <span className="text-[13px] font-semibold text-[#999] uppercase tracking-[1.5px]">Cargando mapa</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* ═══════════════════════════════════════════════
                 LEVEL 0 — FULLSCREEN MAP (always 100%)
             ═══════════════════════════════════════════════ */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-[1]">
                 <RiderMiniMap
                     key={pedidoActivo?.id || "idle-map"}
                     driverLat={location?.latitude}
@@ -301,17 +343,22 @@ export default function RiderDashboard() {
                     {/* Menu button — 48px touch target */}
                     <button
                         onClick={() => setIsMenuOpen(true)}
-                        className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center pointer-events-auto active:scale-95 transition-all border border-white/50"
+                        className="w-12 h-12 bg-white/95 backdrop-blur-xl rounded-[14px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center pointer-events-auto active:scale-95 transition-all duration-300 border border-gray-200 hover:border-[#e60012] hover:shadow-[0_8px_20px_rgba(230,0,18,0.15)]"
                     >
-                        <Menu className="w-6 h-6 text-gray-800" />
+                        <div className="relative">
+                            <Menu className="w-5 h-5 text-[#1a1a1a]" />
+                            {(dashboardData?.unreadSupportMessages ?? 0) > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#e60012] rounded-full border-2 border-white animate-pulse" />
+                            )}
+                        </div>
                     </button>
 
                     {/* Right side controls */}
                     <div className="flex flex-col items-end gap-2 pointer-events-auto">
                         {/* Online status pill */}
-                        <div className={`px-4 py-2.5 rounded-full shadow-xl backdrop-blur-md flex items-center gap-2 border border-white/50 ${isOnline ? 'bg-green-500/90 text-white' : 'bg-white/90 text-gray-600'}`}>
+                        <div className={`px-5 py-2.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-xl flex items-center gap-2 border transition-all duration-300 ${isOnline ? 'bg-green-500/90 text-white border-green-400/50' : 'bg-white/95 text-[#9ca3af] border-gray-200'}`}>
                             <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
-                            <span className="text-xs font-black uppercase tracking-widest">{isOnline ? 'Conectado' : 'Offline'}</span>
+                            <span className="text-[12px] font-semibold uppercase tracking-[0.8px]">{isOnline ? 'Conectado' : 'Offline'}</span>
                         </div>
 
                         {/* Navigation shortcuts (only with active order) */}
@@ -356,8 +403,8 @@ export default function RiderDashboard() {
                                         <Package className="w-3.5 h-3.5 text-gray-500" />
                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">#{pedidoActivo.orderId}</span>
                                     </div>
-                                    <h2 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase leading-none">
-                                        {pedidoActivo.estado === "picked_up" ? "ENTREGA EN CURSO" : "RECOGER PEDIDO"}
+                                    <h2 className="text-[22px] font-extrabold tracking-tight text-[#1a1a1a] uppercase leading-none">
+                                        {pedidoActivo.estado === "picked_up" ? "Entrega en curso" : "Recoger Pedido"}
                                     </h2>
                                 </div>
                                 <div className="text-right">
@@ -426,26 +473,33 @@ export default function RiderDashboard() {
                             </button>
                         </div>
                     ) : (
-                        /* ── No active order ── */
-                        <div className="space-y-6">
+                        /* ── No active order — New premium design ── */
+                        <div className="space-y-8">
+                            {/* Status + Power — Row layout so button is visible in minimized sheet */}
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase">
-                                        {isOnline ? "Buscando pedidos" : "Estás desconectado"}
+                                    <h2 className={`text-[22px] font-extrabold tracking-tight uppercase leading-tight mb-1 ${isOnline ? 'text-emerald-500' : 'text-[#e60012]'}`}>
+                                        {isOnline ? "Conectado" : "Estás desconectado"}
                                     </h2>
-                                    <p className="text-sm text-gray-400 font-medium">
+                                    <p className="text-[14px] text-[#6b6b6b] font-medium">
                                         {isOnline ? "Espera a que te llegue una oferta" : "Conéctate para empezar a ganar"}
                                     </p>
                                 </div>
+
+                                {/* Round Power Button with spin effect */}
                                 <button
+                                    key={`power-${isOnline}`}
                                     onClick={toggleOnline}
                                     disabled={isToggling}
-                                    className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-300 shadow-xl flex-shrink-0 ${isOnline
-                                        ? 'bg-green-500 shadow-green-200'
-                                        : 'bg-gray-100 text-gray-400'
+                                    className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 active:scale-90 animate-[spin-once_0.5s_ease-out] ${isOnline
+                                        ? 'bg-emerald-50 border-2 border-emerald-400 shadow-[0_4px_16px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)]'
+                                        : 'bg-white border-2 border-gray-200 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:border-[#e60012] hover:shadow-[0_6px_20px_rgba(230,0,18,0.2)]'
                                         }`}
                                 >
-                                    {isToggling ? <Loader2 className="w-8 h-8 animate-spin text-white" /> : <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-gray-300'}`} />}
+                                    {isToggling
+                                        ? <Loader2 className="w-7 h-7 animate-spin text-[#e60012]" />
+                                        : <Power className={`w-7 h-7 transition-colors duration-300 ${isOnline ? 'text-emerald-500' : 'text-gray-400'}`} />
+                                    }
                                 </button>
                             </div>
 
@@ -453,18 +507,18 @@ export default function RiderDashboard() {
                             {pedidosPendientes && pedidosPendientes.length > 0 ? (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-[3px]">Oferta disponible</h3>
+                                        <h3 className="text-[10px] font-extrabold text-orange-500 uppercase tracking-[3px]">Oferta disponible</h3>
                                         <Clock className="w-4 h-4 text-orange-500 animate-pulse" />
                                     </div>
 
                                     {pedidosPendientes.map((pedido) => (
                                         <div key={pedido.id} className="bg-orange-50/50 border-2 border-orange-200 rounded-[28px] p-5 relative overflow-hidden">
                                             <div className="flex justify-between items-center mb-6">
-                                                <div className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-black italic uppercase text-xs shadow-lg shadow-orange-500/20">
+                                                <div className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-extrabold uppercase text-xs shadow-lg shadow-orange-500/20">
                                                     Ganancia: ${pedido.gananciaEstimada}
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">#{pedido.orderNumber}</p>
+                                                    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">#{pedido.orderNumber}</p>
                                                 </div>
                                             </div>
 
@@ -509,7 +563,7 @@ export default function RiderDashboard() {
                                                             if (res.ok) await fetchDashboard(true);
                                                         } catch (e) { console.error(e); }
                                                     }}
-                                                    className="flex-[2.5] py-4 bg-orange-500 text-white font-black rounded-[22px] shadow-xl shadow-orange-500/30 flex items-center justify-center gap-2 text-xs uppercase tracking-widest italic"
+                                                    className="flex-[2.5] py-4 bg-orange-500 text-white font-extrabold rounded-[22px] shadow-xl shadow-orange-500/30 flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
                                                 >
                                                     ¡ACEPTAR!
                                                     <ArrowRight className="w-4 h-4" />
@@ -519,41 +573,58 @@ export default function RiderDashboard() {
                                     ))}
                                 </div>
                             ) : isOnline ? (
-                                <div className="py-20 text-center space-y-4">
+                                <div className="py-16 text-center space-y-4">
                                     <div className="w-32 h-32 bg-gray-50 rounded-full mx-auto flex items-center justify-center relative">
                                         <div className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-full animate-spin-slow" />
                                         <Navigation className="w-10 h-10 text-gray-200 absolute" />
                                     </div>
-                                    <p className="text-xs font-black text-gray-300 uppercase tracking-[4px]">Esperando ofertas</p>
+                                    <p className="text-xs font-extrabold text-gray-300 uppercase tracking-[4px]">Esperando ofertas</p>
                                 </div>
                             ) : (
+                                /* ── Stats Grid — 2x2 with Moovy-red hover ── */
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white border-2 border-gray-100 rounded-[24px] p-5">
-                                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-3">
-                                            <Wallet className="w-5 h-5 text-blue-500" />
+                                    <div className="bg-white border-2 border-gray-100 rounded-[24px] p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#e60012] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_rgba(230,0,18,0.15)] group cursor-pointer relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#e60012] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="w-[52px] h-[52px] bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[14px] flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-[5deg]">
+                                            <Wallet className="w-[26px] h-[26px] text-[#e60012]" />
                                         </div>
-                                        <p className="text-2xl font-black text-gray-900 italic leading-none">${stats.gananciasHoy}</p>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Hoy</p>
+                                        <p className="text-4xl font-extrabold text-[#1a1a1a] leading-none tracking-tight mb-1.5">${stats.gananciasHoy}</p>
+                                        <p className="text-[12px] text-[#6b6b6b] uppercase tracking-[1.2px] font-semibold">Hoy</p>
                                     </div>
-                                    <div className="bg-white border-2 border-gray-100 rounded-[24px] p-5">
-                                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-3">
-                                            <CheckCircle className="w-5 h-5 text-green-500" />
+
+                                    <div className="bg-white border-2 border-gray-100 rounded-[24px] p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#e60012] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_rgba(230,0,18,0.15)] group cursor-pointer relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#e60012] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="w-[52px] h-[52px] bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[14px] flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-[5deg]">
+                                            <CheckCircle className="w-[26px] h-[26px] text-[#e60012]" />
                                         </div>
-                                        <p className="text-2xl font-black text-gray-900 italic leading-none">{stats.completados}</p>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Completados</p>
+                                        <p className="text-4xl font-extrabold text-[#1a1a1a] leading-none tracking-tight mb-1.5">{stats.completados}</p>
+                                        <p className="text-[12px] text-[#6b6b6b] uppercase tracking-[1.2px] font-semibold">Completados</p>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="flex gap-4 pt-4 border-t border-gray-50">
-                                <Link href="/repartidor/historial" className="flex-1 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-[20px]">
-                                    <History className="w-6 h-6 text-gray-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Historial</span>
-                                </Link>
-                                <Link href="/repartidor/ganancias" className="flex-1 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-[20px]">
-                                    <DollarSign className="w-6 h-6 text-gray-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Resumen</span>
-                                </Link>
+                            {/* Action Buttons — Historial & Resumen */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => setActiveView("history")}
+                                    className="bg-white border-2 border-gray-100 rounded-[24px] py-8 flex flex-col items-center gap-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#e60012] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_rgba(230,0,18,0.15)] group cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,240,241,0.6),transparent)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="w-16 h-16 bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[18px] flex items-center justify-center transition-all duration-300 group-hover:rotate-[10deg] group-hover:scale-110 relative z-10">
+                                        <History className="w-[30px] h-[30px] text-[#e60012]" />
+                                    </div>
+                                    <span className="text-[14px] text-[#6b6b6b] uppercase tracking-[1.2px] font-semibold relative z-10">Historial</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveView("earnings")}
+                                    className="bg-white border-2 border-gray-100 rounded-[24px] py-8 flex flex-col items-center gap-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#e60012] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_rgba(230,0,18,0.15)] group cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,240,241,0.6),transparent)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="w-16 h-16 bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[18px] flex items-center justify-center transition-all duration-300 group-hover:rotate-[10deg] group-hover:scale-110 relative z-10">
+                                        <DollarSign className="w-[30px] h-[30px] text-[#e60012]" />
+                                    </div>
+                                    <span className="text-[14px] text-[#6b6b6b] uppercase tracking-[1.2px] font-semibold relative z-10">Resumen</span>
+                                </button>
                             </div>
                         </div>
                     )}
@@ -607,53 +678,32 @@ export default function RiderDashboard() {
             {/* ═══════════════════════════════════════════════
                 LEVEL 50 — MENU SIDEBAR
             ═══════════════════════════════════════════════ */}
-            {isMenuOpen && (
-                <div className="fixed inset-0 z-50 flex">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-                    <div className="relative w-[80%] max-w-sm bg-white h-full shadow-2xl animate-in slide-in-from-left duration-300 flex flex-col">
-                        <div className="p-8 pb-10 bg-gray-900 text-white rounded-br-[40px]">
-                            <button onClick={() => setIsMenuOpen(false)} className="mb-6"><X className="w-8 h-8" /></button>
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-blue-500 rounded-[20px] flex items-center justify-center flex-shrink-0 border-2 border-white/20">
-                                    <User className="w-8 h-8 text-white" />
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Repartidor</p>
-                                    <h3 className="text-xl font-black italic tracking-tighter uppercase truncate leading-none">{session?.user?.name || "Moover"}</h3>
-                                </div>
-                            </div>
-                        </div>
+            <Sidebar
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                userName={session?.user?.name || "Moover"}
+                signOut={() => signOut()}
+                onNavigate={(view) => setActiveView(view)}
+                notificationCounts={{
+                    support: dashboardData?.unreadSupportMessages || 0
+                }}
+            />
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-2 mt-4">
-                            {[
-                                { icon: <Bike />, label: "Dashboard", href: "/repartidor/dashboard" },
-                                { icon: <History />, label: "Historial", href: "/repartidor/historial" },
-                                { icon: <DollarSign />, label: "Mis ganancias", href: "/repartidor/ganancias" },
-                                { icon: <HelpCircle />, label: "Soporte", href: "/repartidor/soporte" },
-                                { icon: <User />, label: "Mi Perfil", href: "/repartidor/perfil" },
-                                { icon: <Settings />, label: "Configuración", href: "/repartidor/configuracion" }
-                            ].map((item, i) => (
-                                <Link key={i} href={item.href} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition group">
-                                    <div className="text-gray-400 group-hover:text-gray-900 transition">{item.icon}</div>
-                                    <span className="text-sm font-black italic uppercase tracking-widest text-gray-900">{item.label}</span>
-                                </Link>
-                            ))}
-                        </div>
-
-                        <div className="p-6 border-t">
-                            <button onClick={() => signOut()} className="w-full flex items-center justify-center gap-3 p-5 bg-red-50 text-red-600 rounded-[22px] font-black uppercase tracking-widest text-xs italic active:scale-95 transition">
-                                <LogOut className="w-5 h-5" />
-                                Cerrar Sesión
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* ═══════════════════════════════════════════════
+               LEVEL 60 — SPA OVERLAYS
+            ═══════════════════════════════════════════════ */}
+            {activeView === "history" && <HistoryView onBack={() => setActiveView("dashboard")} />}
+            {activeView === "earnings" && <EarningsView onBack={() => setActiveView("dashboard")} />}
+            {activeView === "support" && <SupportView onBack={() => setActiveView("dashboard")} onChatRead={() => fetchDashboard(true)} />}
+            {activeView === "profile" && <ProfileView onBack={() => setActiveView("dashboard")} />}
+            {activeView === "settings" && <SettingsView onBack={() => setActiveView("dashboard")} />}
 
             <style jsx global>{`
                 @keyframes shrink { from { width: 100%; } to { width: 0%; } }
                 .animate-shrink { animation: shrink 15s linear forwards; }
                 .animate-spin-slow { animation: spin 8s linear infinite; }
+                @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
             `}</style>
         </div>
     );

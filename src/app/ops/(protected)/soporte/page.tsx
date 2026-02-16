@@ -64,6 +64,35 @@ export default function AdminSoportePage() {
         scrollToBottom();
     }, [selectedChat?.messages]);
 
+    // Poll active chat for new messages
+    useEffect(() => {
+        if (!selectedChat) return;
+
+        const interval = setInterval(async () => {
+            try {
+                // Don't use openChat to avoid UI flickering/unread count logic loop
+                const res = await fetch(`/api/support/chats/${selectedChat.id}`);
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // Only update if there are new messages (simple length check or last ID)
+                    setSelectedChat(prev => {
+                        if (!prev) return null;
+                        // Determine if we need to update to avoid render loops
+                        if (JSON.stringify(prev.messages) !== JSON.stringify(data.messages)) {
+                            return data;
+                        }
+                        return prev;
+                    });
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [selectedChat?.id]);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };

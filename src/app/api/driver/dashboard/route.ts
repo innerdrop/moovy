@@ -70,6 +70,15 @@ export async function GET(request: Request) {
         // In real app, sum up earnings from Order table or Transaction table
         const earnings = completedToday * 850; // Mock: $850 per delivery
 
+        // --- Unread Support Messages ---
+        const unreadSupportMessages = await prisma.supportMessage.count({
+            where: {
+                chat: { userId },
+                isFromAdmin: true,
+                isRead: false
+            }
+        });
+
         // --- Pedidos Activos (Lista) ---
         // Fetch active orders for this driver
         const activeOrders = await prisma.order.findMany({
@@ -233,7 +242,8 @@ export async function GET(request: Request) {
             availabilityStatus: driver.availabilityStatus,
             pedidosActivos: formattedActiveOrders,
             pedidosDisponibles: availableOrders.map(formatOrderWithLocation),
-            pedidosPendientes: pendingOffers.map(formatOrderWithLocation)
+            pedidosPendientes: pendingOffers.map(formatOrderWithLocation),
+            unreadSupportMessages
         });
 
     } catch (error) {

@@ -22,7 +22,7 @@ export default function BottomSheet({
     const [state, setState] = useState<SheetState>(() => {
         if (typeof window !== "undefined") {
             const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved && ["expanded", "minimized", "hidden"].includes(saved)) {
+            if (saved && ["expanded", "minimized"].includes(saved)) {
                 return saved as SheetState;
             }
         }
@@ -47,6 +47,7 @@ export default function BottomSheet({
         switch (s) {
             case "expanded": return "0%";
             case "minimized": return "calc(100% - 160px)";
+            // Ensure hidden is no longer used or just return 100% as fallback
             case "hidden": return "100%";
         }
     }, []);
@@ -74,7 +75,7 @@ export default function BottomSheet({
             // Swiped DOWN — collapse
             setState(prev => {
                 if (prev === "expanded") return "minimized";
-                if (prev === "minimized") return "hidden";
+                if (prev === "minimized") return "minimized";
                 return prev;
             });
         } else if (dragY < -threshold) {
@@ -109,7 +110,7 @@ export default function BottomSheet({
         if (dragY > threshold) {
             setState(prev => {
                 if (prev === "expanded") return "minimized";
-                if (prev === "minimized") return "hidden";
+                if (prev === "minimized") return "minimized";
                 return prev;
             });
         } else if (dragY < -threshold) {
@@ -148,17 +149,7 @@ export default function BottomSheet({
 
     return (
         <>
-            {/* Re-show button when hidden */}
-            {state === "hidden" && (
-                <button
-                    onClick={expand}
-                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 bg-[#e60012] text-white px-8 py-4 rounded-2xl shadow-[0_10px_40px_rgba(230,0,18,0.5)] flex items-center gap-3 active:scale-95 transition-transform border-2 border-white/20"
-                    style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-                >
-                    <ChevronUp className="w-6 h-6" />
-                    <span className="text-sm font-black uppercase tracking-widest">Info</span>
-                </button>
-            )}
+
 
             {/* Main sheet — fixed at bottom, slides via translateY */}
             <div
