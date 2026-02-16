@@ -56,39 +56,37 @@ export default function Sidebar({ isOpen, onClose, userName, signOut, onNavigate
 
             {/* Sidebar Container */}
             <div
-                className={`fixed inset-y-0 left-0 z-50 w-[320px] max-w-[85vw] bg-[#0a0e1a] shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-r border-white/5 transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed inset-y-0 left-0 z-50 w-[320px] max-w-[85vw] bg-gradient-to-b from-[#e60012] to-[#b8000e] shadow-2xl rounded-r-[24px] transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${isOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
+                {/* Texture Effect */}
+                <div className="absolute top-0 left-0 right-0 h-[200px] bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1)_0%,transparent_70%)] pointer-events-none" />
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-6 left-6 w-9 h-9 flex items-center justify-center bg-[#12182b] border border-white/5 rounded-xl text-gray-400 hover:text-white hover:bg-[#1a2139] hover:border-gray-500 transition-all group z-10"
+                    className="absolute top-6 right-6 w-9 h-9 flex items-center justify-center bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-white transition-all group z-20"
                 >
-                    <X className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                 </button>
 
                 {/* User Section */}
-                <div className="pt-20 px-7 pb-8 bg-gradient-to-b from-[#12182b] to-[#0a0e1a] border-b border-white/5 relative overflow-hidden">
-                    {/* Glow Effect */}
-                    <div className="absolute top-0 left-0 right-0 h-[120px] bg-[radial-gradient(ellipse_at_center_top,rgba(230,0,18,0.15),transparent)] pointer-events-none" />
-
-                    <div className="flex items-center gap-4 relative">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#e60012] to-[#ff1a2e] flex items-center justify-center shadow-[0_8px_24px_rgba(230,0,18,0.3)] relative group cursor-default">
-                            <div className="absolute inset-[-2px] bg-gradient-to-br from-[#e60012] to-[#ff1a2e] rounded-[18px] opacity-0 group-hover:opacity-50 transition-opacity duration-300 -z-10" />
-                            <User className="w-7 h-7 text-white" />
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#10b981] border-[3px] border-[#0a0e1a] rounded-full shadow-[0_0_0_2px_rgba(16,185,129,0.2)]" />
+                <div className="pt-10 px-6 pb-8 relative z-10 flex flex-col items-start text-left">
+                    <span className="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-[20px] text-[10px] font-bold text-white uppercase tracking-[0.5px] mb-4 shadow-sm border border-white/10">
+                        Repartidor
+                    </span>
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-white rounded-[18px] flex items-center justify-center shadow-lg relative">
+                            <User className="w-8 h-8 text-[#e60012]" />
+                            <div className="w-3.5 h-3.5 bg-[#00ff88] border-[2px] border-[#e60012] rounded-full absolute -bottom-1 -right-1 shadow-sm" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-medium text-[#e60012] uppercase tracking-[1px] mb-1 font-mono">Repartidor</p>
-                            <h3 className="text-xl font-semibold text-[#e8eaf0] tracking-tight truncate leading-none font-sans">
-                                {userName || "Moover"}
-                            </h3>
+                        <div className="text-white text-2xl font-bold tracking-tight leading-none">
+                            {userName || "Moover"}
                         </div>
                     </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="p-3 py-4 space-y-1">
+                <nav className="p-4 space-y-1 overflow-y-auto flex-1 relative z-10">
                     {menuItems.map((item, index) => {
                         const isActive = pathname === item.href;
                         return (
@@ -98,29 +96,29 @@ export default function Sidebar({ isOpen, onClose, userName, signOut, onNavigate
                                     onNavigate(item.view);
                                     onClose();
                                 }}
-                                className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-200 group relative overflow-hidden text-left ${isActive
-                                    ? "text-[#e60012]"
-                                    : "text-[#9ca3b8] hover:text-[#e8eaf0] hover:bg-[#1a2139]"
+                                className={`w-full flex items-center gap-4 px-4 py-4 my-1 rounded-[14px] transition-all duration-300 relative overflow-hidden group text-left ${isActive
+                                    ? "bg-white/20 backdrop-blur-md font-semibold text-white shadow-sm"
+                                    : "text-white hover:bg-white/10 font-medium"
                                     }`}
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
-                                {/* Active Background Glow */}
                                 {isActive && (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-[rgba(230,0,18,0.15)] to-[rgba(230,0,18,0.02)] -z-10" />
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-md shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
                                 )}
 
-                                <item.icon
-                                    className={`w-5 h-5 transition-all duration-200 flex-shrink-0 ${isActive ? "text-[#e60012]" : "text-[#9ca3b8] group-hover:text-[#e8eaf0] group-hover:scale-110"
-                                        }`}
-                                />
-                                <span className={`text-[15px] tracking-tight transition-colors duration-200 font-sans ${isActive ? "font-semibold" : "font-medium"
-                                    }`}>
+                                <div className="relative z-10 w-6 h-6 flex items-center justify-center">
+                                    <item.icon
+                                        className={`w-[22px] h-[22px] stroke-[2] transition-transform duration-200 text-white ${isActive ? "" : "group-hover:scale-110"
+                                            }`}
+                                    />
+                                </div>
+                                <span className="relative z-10 text-[15px] tracking-tight transition-colors duration-200">
                                     {item.label}
                                 </span>
 
                                 {/* Notification Badge */}
                                 {notificationCounts[item.view] > 0 && (
-                                    <span className="ml-auto bg-[#e60012] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] h-5 flex items-center justify-center animate-in zoom-in duration-300">
+                                    <span className="ml-auto bg-white text-[#e60012] text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] h-5 flex items-center justify-center animate-in zoom-in duration-300 shadow-sm">
                                         {notificationCounts[item.view]}
                                     </span>
                                 )}
@@ -130,18 +128,18 @@ export default function Sidebar({ isOpen, onClose, userName, signOut, onNavigate
                 </nav>
 
                 {/* Footer Section */}
-                <div className="p-3 pt-6 mt-auto border-t border-white/5 absolute bottom-0 left-0 right-0 bg-[#0a0e1a]">
+                <div className="p-6 mt-auto border-t border-white/10 relative z-10">
                     <button
                         onClick={() => {
                             onClose();
                             signOut();
                         }}
-                        className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-[rgba(230,0,18,0.08)] border border-[rgba(230,0,18,0.1)] text-[#e60012] hover:bg-[rgba(230,0,18,0.15)] hover:border-[rgba(230,0,18,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 group"
+                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-black/20 text-white hover:bg-black/30 hover:translate-x-1 transition-all duration-300 group font-semibold text-[15px]"
                     >
-                        <LogOut className="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" />
-                        <span className="text-[15px] font-semibold tracking-tight font-sans">Cerrar Sesión</span>
+                        <LogOut className="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 text-white stroke-[2]" />
+                        <span>Cerrar Sesión</span>
                     </button>
-                    <p className="text-center text-[10px] text-gray-600 mt-4 font-mono uppercase tracking-widest opacity-40">
+                    <p className="text-center text-[10px] text-white/40 mt-4 font-mono uppercase tracking-widest">
                         v2.4.0 • Moovy Driver
                     </p>
                 </div>
