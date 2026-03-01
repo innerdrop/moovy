@@ -37,6 +37,12 @@ export async function GET(request: Request) {
             `;
         }
 
+        // --- Fetch Store Settings (for rider commission %) ---
+        const storeSettings = await prisma.storeSettings.findUnique({
+            where: { id: "settings" }
+        });
+        const riderPercent = (storeSettings as any)?.riderCommissionPercent ?? 80;
+
         // --- Stats ---
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -45,7 +51,7 @@ export async function GET(request: Request) {
         endOfDay.setHours(23, 59, 59, 999);
 
         // Pedidos Completados Hoy
-        const completedToday = await prisma.order.count({
+        const completedOrders = await prisma.order.findMany({
             where: {
                 driverId: driver.id,
                 status: "DELIVERED",
@@ -53,8 +59,10 @@ export async function GET(request: Request) {
                     gte: startOfDay,
                     lte: endOfDay
                 }
-            }
+            },
+            select: { deliveryFee: true }
         });
+        const completedToday = completedOrders.length;
 
         // Pedidos En Camino (Asignados al driver y no entregados)
         const enCamino = await prisma.order.count({
@@ -66,9 +74,10 @@ export async function GET(request: Request) {
             }
         });
 
-        // Ganancias Hoy (Mock simple calculation)
-        // In real app, sum up earnings from Order table or Transaction table
-        const earnings = completedToday * 850; // Mock: $850 per delivery
+        // Ganancias Hoy — real sum of deliveryFee × rider commission %
+        const earnings = Math.round(
+            completedOrders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0) * riderPercent / 100
+        );
 
         // --- Unread Support Messages ---
         const unreadSupportMessages = await prisma.supportMessage.count({
@@ -154,7 +163,7 @@ export async function GET(request: Request) {
                     merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
                     address: { select: { street: true, number: true, city: true, latitude: true, longitude: true } }
                 },
-                orderBy: { createdAt: "desc" }
+                orderBy: { createdAt: "desc" },
             });
 
             // 2. Then, find general available orders (if they haven't seen them yet)
@@ -192,25 +201,29 @@ export async function GET(request: Request) {
             const activeLng = hasDriverLocation ? driverLng : (driver.longitude || 0);
             const canCalc = activeLat !== 0 && activeLng !== 0;
 
+            // --- ETA to merchant (dynamic, informational only) ---
             let distToMerchant = 0;
-            let distToCustomer = 0;
             let timeToMerchant = 0;
-            let timeToCustomer = 0;
 
             if (canCalc && merchantLat && merchantLng) {
                 distToMerchant = calculateDistance(activeLat, activeLng, merchantLat, merchantLng);
                 timeToMerchant = estimateTravelTime(distToMerchant, driver.vehicleType || "MOTO");
             }
 
+            // --- Merchant→Customer distance (for ETA display only) ---
+            let distToCustomer = 0;
+            let timeToCustomer = 0;
+
             if (merchantLat && merchantLng && customerLat && customerLng) {
                 distToCustomer = calculateDistance(merchantLat, merchantLng, customerLat, customerLng);
                 timeToCustomer = estimateTravelTime(distToCustomer, driver.vehicleType || "MOTO");
             }
 
-            const totalDist = distToMerchant + distToCustomer;
-            const gananciaBase = 500;
-            const gananciaKm = 300;
-            const gananciaEstimada = Math.round(gananciaBase + (totalDist * gananciaKm));
+            // --- FROZEN earnings: use order's deliveryFee × rider commission % ---
+            const gananciaEstimada = Math.round((order.deliveryFee || 0) * riderPercent / 100);
+
+            // --- FROZEN distance: use order's distanceKm, fallback to calculated ---
+            const frozenDistKm = order.distanceKm || distToCustomer;
 
             return {
                 id: order.id,
@@ -226,7 +239,7 @@ export async function GET(request: Request) {
                 customerLng,
                 tiempoAlComercio: timeToMerchant,
                 tiempoAlCliente: timeToCustomer,
-                distanciaTotal: formatDistance(totalDist),
+                distanciaTotal: formatDistance(frozenDistKm),
                 gananciaEstimada
             };
         };

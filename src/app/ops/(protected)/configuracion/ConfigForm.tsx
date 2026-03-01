@@ -37,6 +37,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             maintenanceFactor: formData.get("maintenanceFactor"),
             freeDeliveryMinimum: formData.get("freeDeliveryMinimum"),
             maxDeliveryDistance: formData.get("maxDeliveryDistance"),
+            riderCommissionPercent: formData.get("riderCommissionPercent"),
 
             // Contact
             whatsappNumber: formData.get("whatsappNumber"),

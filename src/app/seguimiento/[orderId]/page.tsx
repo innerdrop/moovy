@@ -99,7 +99,7 @@ export default function TrackingPage() {
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasRated, setHasRated] = useState(false);
-    const [sheetState, setSheetState] = useState<"fullscreen" | "expanded" | "minimized" | "hidden">("expanded");
+    const [sheetState, setSheetState] = useState<"fullscreen" | "expanded" | "mid" | "minimized" | "hidden">("expanded");
 
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);

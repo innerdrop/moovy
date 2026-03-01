@@ -26,6 +26,7 @@ import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import type { NavUpdateData } from "@/components/rider/RiderMiniMap";
 
 // Views
 import HistoryView from "@/components/rider/views/HistoryView";
@@ -116,6 +117,12 @@ export default function RiderDashboard() {
 
     const [recenterToggle, setRecenterToggle] = useState(false);
     const [dismissedOfferIds, setDismissedOfferIds] = useState<Set<string>>(new Set());
+
+    // Navigation data from RiderMiniMap → BottomSheet
+    const [navData, setNavData] = useState<NavUpdateData | null>(null);
+    const handleNavUpdate = useCallback((data: NavUpdateData) => {
+        setNavData(data);
+    }, []);
 
     // Fetch dashboard data
     const fetchDashboard = useCallback(async (silent = false) => {
@@ -333,6 +340,7 @@ export default function RiderDashboard() {
                     orderStatus={pedidoActivo?.estado?.toUpperCase()}
                     recenterTrigger={recenterToggle}
                     onRecenterRequested={() => setRecenterToggle(false)}
+                    onNavUpdate={handleNavUpdate}
                 />
             </div>
 
@@ -488,8 +496,16 @@ export default function RiderDashboard() {
             <BottomSheet
                 initialState="minimized"
                 onStateChange={() => { /* no longer adjusting map height */ }}
+                navCurrentStep={navData?.currentStep}
+                navNextStep={navData?.nextStep}
+                navTotalDistance={navData?.totalDistance}
+                navTotalDuration={navData?.totalDuration}
+                navStepsRemaining={navData?.stepsRemaining}
+                navDestinationName={navData?.destinationName}
+                navIsPickedUp={navData?.isPickedUp}
+                navIsNavigating={navData?.isNavigating}
             >
-                <div className="px-6 pb-10">
+                <div className="pb-10">
                     {pedidoActivo ? (
                         <div className="space-y-6">
                             {/* Order header */}

@@ -139,9 +139,7 @@ export default function Sidebar({ isOpen, onClose, userName, signOut, onNavigate
                         <LogOut className="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 text-white stroke-[2]" />
                         <span>Cerrar Sesión</span>
                     </button>
-                    <p className="text-center text-[10px] text-white/40 mt-4 font-mono uppercase tracking-widest">
-                        v2.4.0 • Moovy Driver
-                    </p>
+
                 </div>
             </div>
         </>

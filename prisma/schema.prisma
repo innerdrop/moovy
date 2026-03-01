@@ -346,6 +346,7 @@ model StoreSettings {
   promoBannerImage      String?
   promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
   promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
+  riderCommissionPercent Float   @default(80)
 }
 
 model PointsConfig {

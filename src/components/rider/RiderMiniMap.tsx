@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
 import { Loader2, Compass, MapPin as MapPinIcon, Crosshair, Navigation2 } from "lucide-react";
-import NavigationHUD from "./NavigationHUD";
+
+export interface NavUpdateData {
+    currentStep: { instruction: string; distance: string; duration: string; maneuver?: string } | null;
+    nextStep: { instruction: string; distance: string; duration: string; maneuver?: string } | null;
+    totalDistance: string;
+    totalDuration: string;
+    stepsRemaining: number;
+    destinationName: string;
+    isPickedUp: boolean;
+    isNavigating: boolean;
+}
 
 interface RiderMiniMapProps {
     driverLat?: number;
@@ -23,6 +33,7 @@ interface RiderMiniMapProps {
     mapRef?: React.MutableRefObject<google.maps.Map | null>;
     recenterTrigger?: boolean;
     onRecenterRequested?: () => void;
+    onNavUpdate?: (data: NavUpdateData) => void;
 }
 
 export interface RiderMiniMapRef {
@@ -71,7 +82,8 @@ function RiderMiniMapComponent({
     orderStatus,
     onRouteTransition,
     recenterTrigger,
-    onRecenterRequested
+    onRecenterRequested,
+    onNavUpdate
 }: RiderMiniMapProps) {
     const mapRef = useRef<google.maps.Map | null>(null);
     const hasInitialCentered = useRef(false);
@@ -444,6 +456,24 @@ function RiderMiniMapComponent({
         ? (customerName || customerAddress)
         : merchantName;
 
+    // ── Emit nav data to parent (for unified BottomSheet) ──
+    const onNavUpdateRef = useRef(onNavUpdate);
+    onNavUpdateRef.current = onNavUpdate;
+
+    useEffect(() => {
+        const isNavigating = navigationMode && navSteps.length > 0 && currentStepIndex < navSteps.length;
+        onNavUpdateRef.current?.({
+            currentStep: isNavigating ? (navSteps[currentStepIndex] || null) : null,
+            nextStep: isNavigating && currentStepIndex + 1 < navSteps.length ? navSteps[currentStepIndex + 1] : null,
+            totalDistance,
+            totalDuration,
+            stepsRemaining: navSteps.length - currentStepIndex,
+            destinationName,
+            isPickedUp,
+            isNavigating: !!isNavigating,
+        });
+    }, [navigationMode, navSteps, currentStepIndex, totalDistance, totalDuration, destinationName, isPickedUp]);
+
     // ── Map options ──
     const mapOptions = useMemo(() => {
         const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
@@ -478,12 +508,7 @@ function RiderMiniMapComponent({
         <div className="h-full w-full relative">
             {/* Navigation Mode Badge + View Toggle + Recenter */}
             {navigationMode && (
-                <div className="absolute top-2 left-2 z-20 flex items-center gap-2">
-                    <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
-                        <span className="w-2 h-2 bg-white rounded-full"></span>
-                        NAVEGANDO
-                    </div>
-
+                <div className="absolute top-16 left-2 z-20 flex flex-col items-start gap-2">
                     {/* Head-Up / North-Up Toggle */}
                     <button
                         onClick={() => {
@@ -672,18 +697,7 @@ function RiderMiniMapComponent({
                 )}
             </GoogleMap>
 
-            {/* ── NAVIGATION HUD ── */}
-            {navigationMode && navSteps.length > 0 && currentStepIndex < navSteps.length && (
-                <NavigationHUD
-                    currentStep={navSteps[currentStepIndex] || null}
-                    nextStep={currentStepIndex + 1 < navSteps.length ? navSteps[currentStepIndex + 1] : null}
-                    totalDistance={totalDistance}
-                    totalDuration={totalDuration}
-                    stepsRemaining={navSteps.length - currentStepIndex}
-                    destinationName={destinationName}
-                    isPickedUp={isPickedUp}
-                />
-            )}
+            {/* NavigationHUD removed — now rendered inside unified BottomSheet */}
         </div>
     );
 }

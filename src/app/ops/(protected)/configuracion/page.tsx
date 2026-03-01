@@ -464,13 +464,60 @@ export default async function ConfigurationPage() {
                             </div>
                         </div>
 
+                        {/* Rider Commission Section */}
+                        <div className="mt-8 p-6 bg-green-50 border border-green-100 rounded-[2rem] relative overflow-hidden">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                                    <span className="text-xl">🏍️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-navy leading-none">Ganancia del Rider</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Porcentaje del envío que cobra el repartidor</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-green-700 uppercase tracking-widest mb-1.5 pl-1">
+                                        Comisión Rider (%)
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            defaultValue={(settings as any)?.riderCommissionPercent ?? 80}
+                                            className="w-full bg-white border border-green-200 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-green-500 focus:outline-none transition-all group-hover:bg-green-50/50"
+                                            name="riderCommissionPercent"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-black">%</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-white rounded-2xl border border-green-100 flex flex-col justify-center">
+                                    <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Rider gana</p>
+                                    <p className="text-xl font-black text-green-700">
+                                        {(settings as any)?.riderCommissionPercent ?? 80}% del envío
+                                    </p>
+                                </div>
+
+                                <div className="p-4 bg-white rounded-2xl border border-green-100 flex flex-col justify-center">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Moovy retiene</p>
+                                    <p className="text-xl font-black text-navy">
+                                        {100 - ((settings as any)?.riderCommissionPercent ?? 80)}% del envío
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="mt-10 p-6 bg-navy text-white rounded-[2rem] shadow-xl shadow-navy/20 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 -mr-24 -mt-24 rounded-full" />
                             <h3 className="text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-3">
                                 <span className="w-2 h-2 bg-moovy rounded-full animate-pulse" />
-                                Simulador de Costos
+                                Simulador de Costos (Envío 5 KM)
                             </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                                 <div>
                                     <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Distancia</p>
                                     <p className="text-xl font-black">5 KM <span className="text-xs font-normal opacity-40">(10km I/V)</span></p>
@@ -480,16 +527,22 @@ export default async function ConfigurationPage() {
                                     <p className="text-xl font-black">${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200))}</p>
                                 </div>
                                 <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Costo Operativo</p>
-                                    <p className="text-xl font-black">${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)}</p>
+                                    <p className="text-[10px] font-black text-moovy uppercase tracking-widest mb-1">Cliente paga</p>
+                                    <p className="text-2xl font-black text-moovy">
+                                        ${Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35))}
+                                    </p>
                                 </div>
                                 <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-black text-moovy uppercase tracking-widest mb-1">Costo Final Sugerido</p>
-                                    <div className="flex items-baseline gap-2">
-                                        <p className="text-3xl font-black text-moovy">
-                                            ${Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35))}
-                                        </p>
-                                    </div>
+                                    <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Rider gana</p>
+                                    <p className="text-2xl font-black text-green-400">
+                                        ${Math.round(Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35)) * ((settings as any)?.riderCommissionPercent ?? 80) / 100)}
+                                    </p>
+                                </div>
+                                <div className="border-l border-white/10 pl-6">
+                                    <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">Moovy gana</p>
+                                    <p className="text-2xl font-black text-yellow-400">
+                                        ${Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35)) - Math.round(Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35)) * ((settings as any)?.riderCommissionPercent ?? 80) / 100)}
+                                    </p>
                                 </div>
                             </div>
                         </div>

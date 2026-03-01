@@ -1,28 +1,89 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
-import { ChevronUp } from "lucide-react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import {
+    ChevronDown,
+    ChevronUp,
+    ArrowUp,
+    ArrowUpRight,
+    ArrowRight,
+    ArrowUpLeft,
+    ArrowLeft,
+    RotateCcw,
+    Navigation,
+    MapPin,
+    Clock,
+    Flag,
+} from "lucide-react";
 
-// 3 states: expanded -> minimized -> hidden
-type SheetState = "expanded" | "minimized" | "hidden";
+// ── Types ──
+
+type SheetState = "expanded" | "mid" | "minimized" | "hidden";
 
 const STORAGE_KEY = "moovy-rider-bottomsheet-state";
+
+interface NavigationStep {
+    instruction: string;
+    distance: string;
+    duration: string;
+    maneuver?: string;
+}
 
 interface BottomSheetProps {
     children: React.ReactNode;
     initialState?: SheetState;
     onStateChange?: (state: SheetState) => void;
+    // Nav strip data (from unified NavigationHUD)
+    navCurrentStep?: NavigationStep | null;
+    navNextStep?: NavigationStep | null;
+    navTotalDistance?: string;
+    navTotalDuration?: string;
+    navStepsRemaining?: number;
+    navDestinationName?: string;
+    navIsPickedUp?: boolean;
+    navIsNavigating?: boolean;
 }
+
+// ── Helpers (moved from NavigationHUD) ──
+
+function getManeuverIcon(maneuver?: string, className = "w-7 h-7") {
+    if (!maneuver) return <ArrowUp className={className} />;
+    if (maneuver.includes("left") && maneuver.includes("sharp"))
+        return <ArrowLeft className={className} />;
+    if (maneuver.includes("left"))
+        return <ArrowUpLeft className={className} />;
+    if (maneuver.includes("right") && maneuver.includes("sharp"))
+        return <ArrowRight className={className} />;
+    if (maneuver.includes("right"))
+        return <ArrowUpRight className={className} />;
+    if (maneuver.includes("uturn") || maneuver.includes("u-turn"))
+        return <RotateCcw className={className} />;
+    return <ArrowUp className={className} />;
+}
+
+function stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ");
+}
+
+// ── Component ──
 
 export default function BottomSheet({
     children,
     initialState = "minimized",
-    onStateChange
+    onStateChange,
+    navCurrentStep,
+    navNextStep,
+    navTotalDistance,
+    navTotalDuration,
+    navStepsRemaining = 0,
+    navDestinationName,
+    navIsPickedUp,
+    navIsNavigating,
 }: BottomSheetProps) {
     const [state, setState] = useState<SheetState>(() => {
         if (typeof window !== "undefined") {
             const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved && ["expanded", "minimized"].includes(saved)) {
+            if (saved && ["expanded", "mid", "minimized"].includes(saved)) {
                 return saved as SheetState;
             }
         }
@@ -33,7 +94,6 @@ export default function BottomSheet({
     const containerRef = useRef<HTMLDivElement>(null);
     const startYRef = useRef(0);
 
-    // Persist + notify parent
     useEffect(() => {
         onStateChange?.(state);
         if (typeof window !== "undefined") {
@@ -41,13 +101,11 @@ export default function BottomSheet({
         }
     }, [state, onStateChange]);
 
-    // ── Translate values for each state ──
-    // expanded = 0 (show full), minimized = partial, hidden = off-screen
     const getTranslateY = useCallback((s: SheetState): string => {
         switch (s) {
             case "expanded": return "0%";
-            case "minimized": return "calc(100% - 160px)";
-            // Ensure hidden is no longer used or just return 100% as fallback
+            case "mid": return "calc(100% - 230px)";
+            case "minimized": return "calc(100% - 100px)";
             case "hidden": return "100%";
         }
     }, []);
@@ -61,36 +119,24 @@ export default function BottomSheet({
 
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
         if (!isDragging) return;
-        const deltaY = e.touches[0].clientY - startYRef.current;
-        setDragY(deltaY);
+        setDragY(e.touches[0].clientY - startYRef.current);
     }, [isDragging]);
 
     const handleTouchEnd = useCallback(() => {
         if (!isDragging) return;
         setIsDragging(false);
-
-        const threshold = 60;
-
+        const threshold = 50;
         if (dragY > threshold) {
-            // Swiped DOWN — collapse
-            setState(prev => {
-                if (prev === "expanded") return "minimized";
-                if (prev === "minimized") return "minimized";
-                return prev;
-            });
+            // Swipe down: expanded→mid→minimized
+            setState(prev => prev === "expanded" ? "mid" : prev === "mid" ? "minimized" : prev);
         } else if (dragY < -threshold) {
-            // Swiped UP — expand
-            setState(prev => {
-                if (prev === "hidden") return "minimized";
-                if (prev === "minimized") return "expanded";
-                return prev;
-            });
+            // Swipe up: minimized→mid→expanded
+            setState(prev => prev === "minimized" ? "mid" : prev === "mid" ? "expanded" : prev === "hidden" ? "minimized" : prev);
         }
-
         setDragY(0);
     }, [isDragging, dragY]);
 
-    // ── Mouse handlers (desktop dev) ──
+    // ── Mouse handlers (desktop) ──
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         startYRef.current = e.clientY;
         setIsDragging(true);
@@ -105,20 +151,11 @@ export default function BottomSheet({
     const handleMouseUp = useCallback(() => {
         if (!isDragging) return;
         setIsDragging(false);
-
-        const threshold = 60;
+        const threshold = 50;
         if (dragY > threshold) {
-            setState(prev => {
-                if (prev === "expanded") return "minimized";
-                if (prev === "minimized") return "minimized";
-                return prev;
-            });
+            setState(prev => prev === "expanded" ? "mid" : prev === "mid" ? "minimized" : prev);
         } else if (dragY < -threshold) {
-            setState(prev => {
-                if (prev === "hidden") return "minimized";
-                if (prev === "minimized") return "expanded";
-                return prev;
-            });
+            setState(prev => prev === "minimized" ? "mid" : prev === "mid" ? "expanded" : prev === "hidden" ? "minimized" : prev);
         }
         setDragY(0);
     }, [isDragging, dragY]);
@@ -136,58 +173,265 @@ export default function BottomSheet({
 
     const cycleState = useCallback(() => {
         setState(prev => {
-            if (prev === "expanded") return "minimized";
-            if (prev === "minimized") return "expanded";
+            if (prev === "minimized") return "mid";
+            if (prev === "mid") return "expanded";
             return "minimized";
         });
     }, []);
 
-    const expand = useCallback(() => setState("minimized"), []);
-
-    // Drag offset (only allow dragging down from expanded, or up from minimized)
     const clampedDrag = isDragging ? dragY : 0;
+    const hasNav = navIsNavigating && navCurrentStep;
 
-    return (
-        <>
-
-
-            {/* Main sheet — fixed at bottom, slides via translateY */}
+    // Memoize the nav strip so map re-renders from parent don't re-render it
+    const navStrip = useMemo(() => {
+        if (!hasNav || !navCurrentStep) return null;
+        return (
             <div
-                ref={containerRef}
-                className={`fixed bottom-0 left-0 right-0 z-20 bg-white flex flex-col ${state === "hidden" ? "pointer-events-none" : ""}`}
+                className="flex items-center gap-3"
+                style={{ padding: "0 16px 14px", position: "relative", zIndex: 1 }}
+            >
+                {/* Maneuver icon — white box */}
+                <div
+                    className="flex-shrink-0 flex items-center justify-center"
+                    style={{
+                        width: 52, height: 52, borderRadius: 16,
+                        background: "#fff",
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                    }}
+                >
+                    <span style={{ color: "#e60012" }}>
+                        {getManeuverIcon(navCurrentStep.maneuver, "w-7 h-7 stroke-[2.5]")}
+                    </span>
+                </div>
+
+                {/* Instruction text */}
+                <div className="flex-1 min-w-0">
+                    <p
+                        className="font-extrabold leading-tight tracking-tight"
+                        style={{ color: "#fff", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
+                        {stripHtml(navCurrentStep.instruction)}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span
+                            className="font-black tracking-tight"
+                            style={{ color: "rgba(255,255,255,0.95)", fontSize: 20, lineHeight: 1 }}
+                        >
+                            {navCurrentStep.distance}
+                        </span>
+                        <span
+                            className="font-bold uppercase tracking-wider"
+                            style={{
+                                color: "rgba(255,255,255,0.55)", fontSize: 8,
+                                background: "rgba(0,0,0,0.15)",
+                                padding: "2px 7px", borderRadius: 5,
+                            }}
+                        >
+                            Distancia
+                        </span>
+                    </div>
+                </div>
+
+                {/* Expand / collapse toggle */}
+                <button
+                    onClick={cycleState}
+                    className="flex-shrink-0 flex items-center justify-center"
+                    style={{
+                        width: 32, height: 32, borderRadius: 999,
+                        background: "rgba(255,255,255,0.2)",
+                        border: "none",
+                    }}
+                >
+                    {state === "expanded" ? (
+                        <ChevronDown className="w-4 h-4" style={{ color: "#fff" }} />
+                    ) : (
+                        <ChevronUp className="w-4 h-4" style={{ color: "#fff" }} />
+                    )}
+                </button>
+            </div>
+        );
+    }, [hasNav, navCurrentStep, state, cycleState]);
+
+    // Stats bar for the expanded state (only when navigating)
+    const statsBar = useMemo(() => {
+        if (!hasNav) return null;
+        return (
+            <div
                 style={{
-                    height: "70vh",
-                    borderRadius: "24px 24px 0 0",
-                    boxShadow: state !== "hidden" ? "0 -8px 30px rgba(0,0,0,0.12)" : "none",
-                    transform: `translateY(${getTranslateY(state)}) translateY(${Math.max(0, clampedDrag)}px)`,
-                    transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-                    opacity: state === "hidden" ? 0 : 1,
-                    paddingBottom: 'env(safe-area-inset-bottom)',
+                    display: "grid", gridTemplateColumns: "1fr 1fr",
+                    background: "#fff", borderRadius: 16, overflow: "hidden",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
                 }}
             >
-                {/* Drag Handle — 48px tall for touch */}
+                <div className="flex items-center gap-2.5" style={{ padding: "12px 16px", borderRight: "1px solid #f1f1f1" }}>
+                    <div style={{
+                        width: 30, height: 30, borderRadius: 10,
+                        background: "rgba(230,0,18,0.08)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                        <Clock className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#111", lineHeight: 1.1 }}>{navTotalDuration}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tiempo est.</div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2.5" style={{ padding: "12px 16px" }}>
+                    <div style={{
+                        width: 30, height: 30, borderRadius: 10,
+                        background: "rgba(230,0,18,0.08)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                        <Navigation className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#111", lineHeight: 1.1 }}>{navTotalDistance}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }, [hasNav, navTotalDuration, navTotalDistance]);
+
+    // Destination + next step bar (only when navigating)
+    const destBar = useMemo(() => {
+        if (!hasNav) return null;
+        return (
+            <div
+                className="flex items-center justify-between"
+                style={{
+                    background: "#fff", borderRadius: 14, padding: "12px 16px",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                }}
+            >
+                <div className="flex items-center gap-2.5">
+                    <div style={{
+                        width: 30, height: 30, borderRadius: 999,
+                        background: "rgba(230,0,18,0.08)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                        {navIsPickedUp ? (
+                            <Flag className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
+                        ) : (
+                            <MapPin className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
+                        )}
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#111", maxWidth: 120 }} className="truncate">
+                        {navDestinationName}
+                    </span>
+                </div>
+
+                {navNextStep && navStepsRemaining > 1 && (
+                    <div className="flex items-center gap-1.5" style={{ maxWidth: 150 }}>
+                        <span style={{ color: "#ccc" }}>
+                            {getManeuverIcon(navNextStep.maneuver, "w-3 h-3")}
+                        </span>
+                        <p className="truncate" style={{ fontSize: 10, fontWeight: 500, color: "#9ca3af" }}>
+                            Luego: <span style={{ color: "#6b7280" }}>{stripHtml(navNextStep.instruction)}</span>
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    }, [hasNav, navIsPickedUp, navDestinationName, navNextStep, navStepsRemaining]);
+
+    return (
+        <div
+            ref={containerRef}
+            className={`fixed bottom-0 left-0 right-0 z-20 flex flex-col ${state === "hidden" ? "pointer-events-none" : ""}`}
+            style={{
+                height: "70vh",
+                borderRadius: "28px 28px 0 0",
+                overflow: "hidden",
+                boxShadow: state !== "hidden" ? "0 -12px 50px rgba(0,0,0,0.18)" : "none",
+                transform: `translateY(${getTranslateY(state)}) translateY(${Math.max(0, clampedDrag)}px)`,
+                transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                willChange: "transform",
+                opacity: state === "hidden" ? 0 : 1,
+                paddingBottom: "env(safe-area-inset-bottom)",
+                fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
+            }}
+        >
+            {/* ── Red branded header / Nav strip ── */}
+            <div
+                style={{
+                    background: "linear-gradient(135deg, #e60012 0%, #b8000e 100%)",
+                    position: "relative",
+                    flexShrink: 0,
+                }}
+            >
+                {/* Radial highlight */}
+                <div style={{
+                    position: "absolute", inset: 0,
+                    background: "radial-gradient(circle at 15% 40%, rgba(255,255,255,0.15) 0%, transparent 55%)",
+                    pointerEvents: "none",
+                }} />
+
+                {/* Drag handle */}
                 <div
-                    className="flex-shrink-0 pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none"
+                    className="flex flex-col items-center cursor-grab active:cursor-grabbing touch-none select-none"
+                    style={{ padding: "10px 0 6px", position: "relative", zIndex: 1, minHeight: 36 }}
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     onMouseDown={handleMouseDown}
                     onClick={cycleState}
-                    style={{ minHeight: "48px" }}
                 >
-                    {/* Visual handle bar */}
-                    <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto" />
-
-                    <div className="flex justify-center mt-1.5">
-                        <ChevronUp className={`w-4 h-4 text-gray-300 transition-transform duration-200 ${state === "expanded" ? "rotate-180" : ""}`} />
-                    </div>
+                    <div style={{
+                        width: 36, height: 4, borderRadius: 99,
+                        background: "rgba(255,255,255,0.3)",
+                    }} />
                 </div>
 
-                {/* Scrollable content */}
-                <div className={`flex-1 overflow-hidden ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}>
+                {/* Nav instruction strip (when navigating) */}
+                {navStrip}
+
+                {/* Simple chevron when NOT navigating */}
+                {!hasNav && (
+                    <div
+                        className="flex justify-center pb-2"
+                        style={{ position: "relative", zIndex: 1 }}
+                    >
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${state === "expanded" ? "rotate-180" : ""}`}
+                            style={{ color: "rgba(255,255,255,0.5)" }}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* ── Mid section: stats + dest (visible at mid & expanded) ── */}
+            <div
+                style={{
+                    background: "#f8f9fb",
+                    overflow: "hidden",
+                    maxHeight: state === "minimized" || state === "hidden" ? 0 : 200,
+                    opacity: state === "minimized" || state === "hidden" ? 0 : 1,
+                    transition: "max-height 0.3s ease, opacity 0.25s ease",
+                }}
+            >
+                {hasNav && (
+                    <div style={{ padding: "12px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+                        {statsBar}
+                        {destBar}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Scrollable body (only in expanded) ── */}
+            <div
+                className={`flex-1 ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}
+                style={{
+                    background: "#f8f9fb",
+                    opacity: state === "expanded" ? 1 : 0,
+                    transition: "opacity 0.25s ease",
+                    pointerEvents: state === "expanded" ? "auto" : "none",
+                }}
+            >
+                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     {children}
                 </div>
             </div>
-        </>
+        </div>
     );
 }

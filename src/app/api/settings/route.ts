@@ -78,6 +78,7 @@ export async function PUT(request: Request) {
         if (data.baseDeliveryFee) updateData.baseDeliveryFee = parseFloat(data.baseDeliveryFee);
         if (data.maintenanceFactor) updateData.maintenanceFactor = parseFloat(data.maintenanceFactor);
         if (data.maxDeliveryDistance) updateData.maxDeliveryDistance = parseFloat(data.maxDeliveryDistance);
+        if (data.riderCommissionPercent) updateData.riderCommissionPercent = parseFloat(data.riderCommissionPercent);
 
 
         // Integers

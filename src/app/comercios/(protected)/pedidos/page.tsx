@@ -39,6 +39,8 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
     PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-5 h-5" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
+    DRIVER_ASSIGNED: { label: "Rider asignado", color: "text-cyan-600", bgColor: "bg-cyan-100", icon: <Truck className="w-5 h-5" /> },
+    PICKED_UP: { label: "Recogido", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
     IN_DELIVERY: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
@@ -188,7 +190,7 @@ export default function ComercioPedidosPage() {
         closeCancelModal();
     };
 
-    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY"];
+    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
     const filteredOrders = orders.filter(order => {
         if (filter === "active") return activeStatuses.includes(order.status);
         if (filter === "completed") return !activeStatuses.includes(order.status);
@@ -358,6 +360,17 @@ export default function ComercioPedidosPage() {
                                             >
                                                 {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                                                 Listo para Retirar
+                                            </button>
+                                        )}
+
+                                        {order.status === "DRIVER_ASSIGNED" && (
+                                            <button
+                                                onClick={() => updateOrderStatus(order.id, "READY")}
+                                                disabled={isUpdating}
+                                                className="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+                                            >
+                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                                Marcar como Listo
                                             </button>
                                         )}
 
