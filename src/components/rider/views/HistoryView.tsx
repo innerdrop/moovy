@@ -85,7 +85,7 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-6 max-w-4xl mx-auto w-full space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 py-6 pb-24 max-w-4xl mx-auto w-full space-y-4">
                 {/* Filters */}
                 <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                     {[

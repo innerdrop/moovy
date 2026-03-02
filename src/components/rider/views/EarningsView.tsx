@@ -75,7 +75,7 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-6 max-w-4xl mx-auto w-full space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 py-6 pb-24 max-w-4xl mx-auto w-full space-y-6">
                 {/* Main Stats */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="text-center mb-6">

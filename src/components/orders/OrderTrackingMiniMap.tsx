@@ -330,7 +330,18 @@ function OrderTrackingMiniMap({
                     scrollwheel: true,
                     gestureHandling: "greedy",
                     styles: [
-                        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+                        { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                        { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ color: "#444444" }] },
+                        { featureType: "landscape", elementType: "all", stylers: [{ color: "#f5f5f5" }] },
+                        { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
+                        { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+                        { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
+                        { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f8c967" }] },
+                        { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#e9bc62" }] },
+                        { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+                        { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+                        { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] },
+                        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] }
                     ],
                 }}
             >

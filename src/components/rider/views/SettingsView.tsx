@@ -20,7 +20,7 @@ export default function SettingsView({ onBack }: SettingsViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 p-8 text-center text-gray-500">
+            <div className="flex-1 p-8 pb-24 text-center text-gray-500">
                 <p>Próximamente: Ajustes de la aplicación</p>
             </div>
         </div>

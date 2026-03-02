@@ -108,7 +108,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 -mt-14 max-w-4xl mx-auto w-full space-y-4 pb-8">
+            <div className="flex-1 overflow-y-auto px-4 -mt-14 max-w-4xl mx-auto w-full space-y-4 pb-24">
                 {/* Profile Card */}
                 <div className="bg-white rounded-xl p-6 shadow-sm text-center">
                     {editMode ? (

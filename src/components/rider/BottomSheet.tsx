@@ -103,9 +103,9 @@ export default function BottomSheet({
 
     const getTranslateY = useCallback((s: SheetState): string => {
         switch (s) {
-            case "expanded": return "0%";
-            case "mid": return "calc(100% - 230px)";
-            case "minimized": return "calc(100% - 100px)";
+            case "expanded": return "15%";
+            case "mid": return "calc(100% - 320px)";
+            case "minimized": return "calc(100% - 160px)";
             case "hidden": return "100%";
         }
     }, []);
@@ -343,6 +343,7 @@ export default function BottomSheet({
                 height: "70vh",
                 borderRadius: "28px 28px 0 0",
                 overflow: "hidden",
+                background: "#f8f9fb",
                 boxShadow: state !== "hidden" ? "0 -12px 50px rgba(0,0,0,0.18)" : "none",
                 transform: `translateY(${getTranslateY(state)}) translateY(${Math.max(0, clampedDrag)}px)`,
                 transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -418,17 +419,16 @@ export default function BottomSheet({
                 )}
             </div>
 
-            {/* ── Scrollable body (only in expanded) ── */}
+            {/* ── Scrollable body (visible unless hidden) ── */}
             <div
                 className={`flex-1 ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}
                 style={{
-                    background: "#f8f9fb",
-                    opacity: state === "expanded" ? 1 : 0,
+                    opacity: state === "hidden" ? 0 : 1,
                     transition: "opacity 0.25s ease",
-                    pointerEvents: state === "expanded" ? "auto" : "none",
+                    pointerEvents: state === "hidden" ? "none" : "auto",
                 }}
             >
-                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ padding: "16px 16px 80px", display: "flex", flexDirection: "column", gap: 12 }}>
                     {children}
                 </div>
             </div>

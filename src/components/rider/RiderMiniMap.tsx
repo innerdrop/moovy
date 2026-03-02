@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Polyline, InfoWindow } from "@react-google-maps/api";
 import { Loader2, Compass, MapPin as MapPinIcon, Crosshair, Navigation2 } from "lucide-react";
 
 export interface NavUpdateData {
@@ -40,7 +40,85 @@ export interface RiderMiniMapRef {
     recenter: () => void;
 }
 
-const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+const libraries: ("places" | "geometry" | "marker")[] = ["places", "geometry", "marker"];
+
+// ── Custom hook for AdvancedMarkerElement (replaces deprecated Marker) ──
+function useAdvancedMarker({
+    map,
+    position,
+    title,
+    zIndex,
+    buildContent,
+    onClick,
+}: {
+    map: google.maps.Map | null;
+    position: { lat: number; lng: number } | null;
+    title?: string;
+    zIndex?: number;
+    buildContent?: () => HTMLElement | null;
+    onClick?: () => void;
+}) {
+    const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+    const clickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
+
+    useEffect(() => {
+        if (!map || !position) {
+            // Clean up if position becomes null
+            if (markerRef.current) {
+                markerRef.current.map = null;
+                markerRef.current = null;
+            }
+            return;
+        }
+
+        const content = buildContent ? buildContent() : undefined;
+
+        if (!markerRef.current) {
+            // Create new marker
+            markerRef.current = new google.maps.marker.AdvancedMarkerElement({
+                map,
+                position,
+                title: title || "",
+                zIndex: zIndex || 0,
+                content: content || undefined,
+            });
+        } else {
+            // Update existing marker
+            markerRef.current.position = position;
+            if (title !== undefined) markerRef.current.title = title;
+            if (zIndex !== undefined) markerRef.current.zIndex = zIndex;
+            if (content) markerRef.current.content = content;
+        }
+
+        // Manage click listener
+        if (clickListenerRef.current) {
+            clickListenerRef.current.remove();
+            clickListenerRef.current = null;
+        }
+        if (onClick && markerRef.current) {
+            clickListenerRef.current = markerRef.current.addListener("click", onClick);
+        }
+
+        return () => {
+            // Only clean up listener on effect re-run, NOT the marker itself
+        };
+    }, [map, position?.lat, position?.lng, title, zIndex, buildContent, onClick]);
+
+    // Full cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (clickListenerRef.current) {
+                clickListenerRef.current.remove();
+            }
+            if (markerRef.current) {
+                markerRef.current.map = null;
+                markerRef.current = null;
+            }
+        };
+    }, []);
+
+    return markerRef;
+}
 
 const containerStyle = {
     width: "100%",
@@ -53,7 +131,18 @@ const defaultCenter = {
 };
 
 const normalMapStyles = [
-    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+    { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ color: "#444444" }] },
+    { featureType: "landscape", elementType: "all", stylers: [{ color: "#f5f5f5" }] },
+    { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+    { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
+    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f8c967" }] },
+    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#e9bc62" }] },
+    { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+    { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] },
+    { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] }
 ];
 
 // Navigation step info extracted from Directions API
@@ -86,6 +175,7 @@ function RiderMiniMapComponent({
     onNavUpdate
 }: RiderMiniMapProps) {
     const mapRef = useRef<google.maps.Map | null>(null);
+    const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
     const hasInitialCentered = useRef(false);
     const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
     const [remainingPath, setRemainingPath] = useState<google.maps.LatLngLiteral[]>([]);
@@ -394,6 +484,7 @@ function RiderMiniMapComponent({
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
+        setMapInstance(map);
     }, []);
 
     const center = useMemo(() => {
@@ -424,30 +515,89 @@ function RiderMiniMapComponent({
     }, [driverLat, driverLng, merchantLat, merchantLng, navigationMode, isHeadUp, driverHeading]);
 
     // ── Driver icon ──
-    const driverIcon = useMemo(() => {
-        if (!isLoaded) return undefined;
+    // ── Build SVG content for markers ──
+    const buildDriverContent = useCallback(() => {
+        if (!isLoaded) return null;
+        const div = document.createElement("div");
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
 
         if (navigationMode) {
-            return {
-                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                fillOpacity: 1,
-                fillColor: "#22c55e",
-                strokeColor: "#166534",
-                strokeWeight: 2,
-                scale: 8,
-                rotation: isHeadUp ? 0 : driverHeading, // Head-Up: map rotates. North-Up: marker rotates
-            };
+            const rotation = isHeadUp ? 0 : driverHeading;
+            div.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" style="transform: rotate(${rotation}deg)">
+                <path d="M12 2 L20 20 L12 16 L4 20 Z" fill="#22c55e" stroke="#166534" stroke-width="1.5"/>
+            </svg>`;
+        } else {
+            div.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="8" fill="#22c55e" stroke="white" stroke-width="2"/>
+            </svg>`;
         }
-
-        return {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillOpacity: 1,
-            fillColor: "#22c55e",
-            strokeColor: "white",
-            strokeWeight: 2,
-            scale: 8,
-        };
+        return div;
     }, [isLoaded, navigationMode, driverHeading, isHeadUp]);
+
+    const buildMerchantContent = useCallback(() => {
+        if (!isLoaded) return null;
+        const div = document.createElement("div");
+        const size = navigationMode ? 24 : 18;
+        div.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="${navigationMode ? 9 : 7}" fill="#3b82f6" stroke="white" stroke-width="2"/>
+        </svg>`;
+        if (navigationMode) {
+            div.innerHTML += `<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px">🏪</span>`;
+            div.style.position = "relative";
+        }
+        return div;
+    }, [isLoaded, navigationMode]);
+
+    const buildCustomerContent = useCallback(() => {
+        if (!isLoaded) return null;
+        const div = document.createElement("div");
+        const size = navigationMode ? 28 : 18;
+        div.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="${navigationMode ? 9 : 7}" fill="#ef4444" stroke="white" stroke-width="2.5"/>
+        </svg>`;
+        return div;
+    }, [isLoaded, navigationMode]);
+
+    // ── AdvancedMarker hook calls ──
+    const driverPosition = useMemo(
+        () => (driverLat && driverLng ? { lat: driverLat, lng: driverLng } : null),
+        [driverLat, driverLng]
+    );
+    const merchantPosition = useMemo(
+        () => (merchantLat && merchantLng ? { lat: merchantLat, lng: merchantLng } : null),
+        [merchantLat, merchantLng]
+    );
+    const customerPosition = useMemo(
+        () => (customerLat && customerLng ? { lat: customerLat, lng: customerLng } : null),
+        [customerLat, customerLng]
+    );
+
+    const handleCustomerClick = useCallback(() => setShowCustomerInfo(true), []);
+
+    useAdvancedMarker({
+        map: mapInstance,
+        position: driverPosition,
+        title: "Tu ubicación",
+        zIndex: 1000,
+        buildContent: buildDriverContent,
+    });
+
+    useAdvancedMarker({
+        map: mapInstance,
+        position: merchantPosition,
+        title: merchantName,
+        buildContent: buildMerchantContent,
+    });
+
+    useAdvancedMarker({
+        map: mapInstance,
+        position: customerPosition,
+        title: customerName || customerAddress,
+        buildContent: buildCustomerContent,
+        onClick: handleCustomerClick,
+    });
 
     // ── Compute destination name for HUD ──
     const normalizedStatus = orderStatus?.toUpperCase() || "";
@@ -625,75 +775,29 @@ function RiderMiniMapComponent({
                     />
                 )}
 
-                {/* Driver marker */}
-                {driverLat && driverLng && (
-                    <Marker
-                        position={{ lat: driverLat, lng: driverLng }}
-                        icon={driverIcon}
-                        title="Tu ubicación"
-                        zIndex={1000}
-                    />
-                )}
+                {/* Markers are rendered via useAdvancedMarker hooks outside JSX */}
 
-                {/* Merchant marker */}
-                {merchantLat && merchantLng && (
-                    <Marker
-                        position={{ lat: merchantLat, lng: merchantLng }}
-                        icon={{
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillOpacity: 1,
-                            fillColor: "#3b82f6",
-                            strokeColor: "white",
-                            strokeWeight: 2,
-                            scale: navigationMode ? 10 : 7,
+                {/* Customer InfoWindow (still uses react-google-maps InfoWindow) */}
+                {customerLat && customerLng && (navigationMode || showCustomerInfo) && (
+                    <InfoWindow
+                        position={{ lat: customerLat, lng: customerLng }}
+                        onCloseClick={() => setShowCustomerInfo(false)}
+                        options={{
+                            pixelOffset: new google.maps.Size(0, -15),
+                            disableAutoPan: true,
                         }}
-                        title={merchantName}
-                        label={navigationMode ? {
-                            text: "🏪",
-                            fontSize: "16px",
-                        } : undefined}
-                    />
-                )}
-
-                {/* Customer marker */}
-                {customerLat && customerLng && (
-                    <>
-                        <Marker
-                            position={{ lat: customerLat, lng: customerLng }}
-                            icon={{
-                                path: google.maps.SymbolPath.CIRCLE,
-                                fillOpacity: 1,
-                                fillColor: "#ef4444",
-                                strokeColor: "white",
-                                strokeWeight: 3,
-                                scale: navigationMode ? 12 : 7,
-                            }}
-                            title={customerName || customerAddress}
-                            onClick={() => setShowCustomerInfo(true)}
-                        />
-
-                        {(navigationMode || showCustomerInfo) && (
-                            <InfoWindow
-                                position={{ lat: customerLat, lng: customerLng }}
-                                onCloseClick={() => setShowCustomerInfo(false)}
-                                options={{
-                                    pixelOffset: new google.maps.Size(0, -15),
-                                    disableAutoPan: true,
-                                }}
-                            >
-                                <div className="px-2 py-1 text-center">
-                                    <p className="font-bold text-gray-900 text-sm">
-                                        {customerName || "Cliente"}
-                                    </p>
-                                    {customerAddress && (
-                                        <p className="text-xs text-gray-500 max-w-[150px] truncate">
-                                            {customerAddress}
-                                        </p>
-                                    )}
-                                </div>
-                            </InfoWindow>
-                        )}
-                    </>
+                    >
+                        <div className="px-2 py-1 text-center">
+                            <p className="font-bold text-gray-900 text-sm">
+                                {customerName || "Cliente"}
+                            </p>
+                            {customerAddress && (
+                                <p className="text-xs text-gray-500 max-w-[150px] truncate">
+                                    {customerAddress}
+                                </p>
+                            )}
+                        </div>
+                    </InfoWindow>
                 )}
             </GoogleMap>
 

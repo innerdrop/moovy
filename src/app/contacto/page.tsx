@@ -131,10 +131,10 @@ export default function ContactoPage() {
                                     Si tenés un comercio o querés ser repartidor, también podés contactarnos.
                                 </p>
                                 <div className="flex gap-3">
-                                    <Link href="/socios/registro" className="flex-1 py-2 bg-white text-[#e60012] font-semibold rounded-lg text-center text-sm">
+                                    <Link href="/comercio/registro" className="flex-1 py-2 bg-white text-[#e60012] font-semibold rounded-lg text-center text-sm">
                                         Soy Comercio
                                     </Link>
-                                    <Link href="/riders/registro" className="flex-1 py-2 bg-white/20 text-white font-semibold rounded-lg text-center text-sm">
+                                    <Link href="/repartidor/registro" className="flex-1 py-2 bg-white/20 text-white font-semibold rounded-lg text-center text-sm">
                                         Soy Repartidor
                                     </Link>
                                 </div>
