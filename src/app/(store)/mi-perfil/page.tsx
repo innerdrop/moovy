@@ -21,7 +21,8 @@ import {
     Award,
     Gift,
     X,
-    Calendar
+    Calendar,
+    ShoppingBag
 } from "lucide-react";
 import { useUserPoints } from "@/hooks/useUserPoints";
 
@@ -33,6 +34,67 @@ export default function ProfilePage() {
     const [loadingRedemptions, setLoadingRedemptions] = useState(false);
 
     const firstName = session?.user?.name?.split(" ")[0] || "Usuario";
+
+    // Role activation state
+    const [sellerStatus, setSellerStatus] = useState<string | null>(null);
+    const [driverStatus, setDriverStatus] = useState<string | null>(null);
+    const [activatingRole, setActivatingRole] = useState<string | null>(null);
+
+    // Fetch user roles on mount
+    useEffect(() => {
+        if (session?.user) {
+            const roles = (session.user as any).roles || [(session.user as any).role];
+            if (roles.includes("SELLER")) setSellerStatus("ACTIVE");
+            // Check driver status
+            fetch("/api/driver/profile")
+                .then(res => {
+                    if (res.ok) return res.json();
+                    return null;
+                })
+                .then(data => {
+                    if (data) {
+                        setDriverStatus(data.isActive ? "ACTIVE" : "PENDING_VERIFICATION");
+                    }
+                })
+                .catch(() => { });
+        }
+    }, [session]);
+
+    const handleActivateSeller = async () => {
+        setActivatingRole("seller");
+        try {
+            const res = await fetch("/api/auth/activate-seller", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) {
+                setSellerStatus("ACTIVE");
+            } else {
+                if (res.status === 409) setSellerStatus("ACTIVE");
+                alert(data.error || "Error al activar vendedor");
+            }
+        } catch {
+            alert("Error de conexión");
+        } finally {
+            setActivatingRole(null);
+        }
+    };
+
+    const handleActivateDriver = async () => {
+        setActivatingRole("driver");
+        try {
+            const res = await fetch("/api/auth/activate-driver", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) {
+                setDriverStatus("PENDING_VERIFICATION");
+            } else {
+                if (data.status) setDriverStatus(data.status);
+                alert(data.error || "Error al solicitar repartidor");
+            }
+        } catch {
+            alert("Error de conexión");
+        } finally {
+            setActivatingRole(null);
+        }
+    };
 
     // Calculate progress to next level
     const progress = Math.min(100, (points / nextLevelPoints) * 100);
@@ -132,6 +194,7 @@ export default function ProfilePage() {
                 <section>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Oportunidades MOOVY</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        {/* Comercio - se mantiene como link (onboarding separado) */}
                         <Link href="/comercio/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
@@ -144,7 +207,37 @@ export default function ProfilePage() {
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-300" />
                         </Link>
-                        <Link href="/repartidor/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
+
+                        {/* Seller - botón de activación */}
+                        <button
+                            onClick={handleActivateSeller}
+                            disabled={sellerStatus === "ACTIVE" || activatingRole !== null}
+                            className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left disabled:opacity-70"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                                    <ShoppingBag className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-medium text-gray-900 block">Quiero vender</span>
+                                    <span className="text-[10px] text-gray-400">Vendé objetos, productos caseros o servicios</span>
+                                </div>
+                            </div>
+                            {activatingRole === "seller" ? (
+                                <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                            ) : sellerStatus === "ACTIVE" ? (
+                                <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">✅ Activo</span>
+                            ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                            )}
+                        </button>
+
+                        {/* Driver - botón de activación */}
+                        <button
+                            onClick={handleActivateDriver}
+                            disabled={driverStatus === "ACTIVE" || driverStatus === "PENDING_VERIFICATION" || activatingRole !== null}
+                            className="flex items-center justify-between p-4 hover:bg-gray-50 transition group w-full text-left disabled:opacity-70"
+                        >
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
                                     <Car className="w-4 h-4" />
@@ -154,8 +247,16 @@ export default function ProfilePage() {
                                     <span className="text-[10px] text-gray-400">Generá ingresos con tu vehículo</span>
                                 </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-gray-300" />
-                        </Link>
+                            {activatingRole === "driver" ? (
+                                <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                            ) : driverStatus === "ACTIVE" ? (
+                                <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">✅ Activo</span>
+                            ) : driverStatus === "PENDING_VERIFICATION" ? (
+                                <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-medium">⏳ Pendiente</span>
+                            ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                            )}
+                        </button>
                     </div>
                 </section>
 

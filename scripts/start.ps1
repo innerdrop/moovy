@@ -19,16 +19,16 @@ if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al sincronizar develop" }
 # 2. Seleccionar tipo de rama
 Write-Host ""
 Write-Host "Selecciona el tipo de cambio:" -ForegroundColor Cyan
-Write-Host "  1. feature  - Nueva funcionalidad"
-Write-Host "  2. fix      - Correccion de bug"
-Write-Host "  3. hotfix   - Correccion urgente"
+Write-Host "  1. feat  - Nueva funcionalidad"
+Write-Host "  2. fix   - Correccion de bug"
+Write-Host "  3. hotfix - Correccion urgente"
 Write-Host "  4. refactor - Mejora de codigo"
 Write-Host ""
 
 $option = Read-Host "Opcion (1-4)"
 
 switch ($option) {
-    "1" { $prefix = "feature" }
+    "1" { $prefix = "feat" }
     "2" { $prefix = "fix" }
     "3" { $prefix = "hotfix" }
     "4" { $prefix = "refactor" }

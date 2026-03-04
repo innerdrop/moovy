@@ -5,6 +5,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { signIn } from "next-auth/react";
 import {
     User,
     Mail,
@@ -57,10 +58,7 @@ function RegistrationForm() {
             return;
         }
 
-        if (!phone || phone.length < 8) {
-            setError("Por favor ingresá un número de teléfono válido");
-            return;
-        }
+
 
         setIsLoading(true);
 
@@ -82,9 +80,17 @@ function RegistrationForm() {
 
             if (res.ok) {
                 setSuccess(true);
-                setTimeout(() => {
+                // Auto-login and redirect to store
+                const signInResult = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                });
+                if (signInResult?.ok) {
+                    router.push("/");
+                } else {
                     router.push("/login?registered=true");
-                }, 2000);
+                }
             } else {
                 setError(data.error || "Error al registrar usuario");
             }
@@ -112,7 +118,7 @@ function RegistrationForm() {
                         </div>
                         <div>
                             <p className="font-bold text-green-800 text-lg">¡Cuenta creada con éxito!</p>
-                            <p className="text-green-700">Te estamos redirigiendo para iniciar sesión...</p>
+                            <p className="text-green-700">Iniciando sesión...</p>
                         </div>
                     </div>
                 )}
@@ -193,7 +199,7 @@ function RegistrationForm() {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Teléfono / Celular
-                                <InfoTooltip text="Necesario para que el repartidor te contacte." />
+                                <InfoTooltip text="Opcional, para que el repartidor te contacte." />
                             </label>
                             <PhoneInput
                                 value={phone}

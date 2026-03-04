@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Validate required fields
-        if (!data.firstName || !data.lastName || !data.email || !data.password || !data.phone) {
+        if (!data.firstName || !data.lastName || !data.email || !data.password) {
             return NextResponse.json(
                 { error: "Todos los campos obligatorios deben ser completados." },
                 { status: 400 }
@@ -90,8 +90,11 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(data.password, 10);
         const newUserReferralCode = generateReferralCode();
 
-        // Pending signup bonus (activates after first qualifying purchase)
-        const pendingBonus = 250;
+        // Get signup bonus from config
+        const pointsConfig = await prisma.pointsConfig.findUnique({
+            where: { id: "points_config" }
+        });
+        const pendingBonus = pointsConfig?.signupBonus ?? 100;
 
         // Use a transaction to ensure everything is created or nothing is
         const result = await prisma.$transaction(async (tx) => {
@@ -103,13 +106,22 @@ export async function POST(request: NextRequest) {
                     name: fullName,
                     firstName: data.firstName,
                     lastName: data.lastName,
-                    phone: data.phone,
+                    phone: data.phone || null,
                     role: 'USER',
                     pointsBalance: 0,  // Start with 0, bonus is pending
                     pendingBonusPoints: pendingBonus,  // Pending until first purchase
                     bonusActivated: false,  // Not yet activated
                     referralCode: newUserReferralCode,
                     referredById: referrerId
+                }
+            });
+
+            // Create UserRole entry
+            await tx.userRole.create({
+                data: {
+                    userId: newUser.id,
+                    role: 'USER',
+                    isActive: true,
                 }
             });
 
@@ -138,6 +150,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
+            user: { id: result.id, email: result.email, name: result.name },
             message: referrerId
                 ? "¡Registro exitoso! Tus puntos se activarán con tu primera compra 🎉"
                 : "¡Bienvenido! Tus puntos de bienvenida se activarán con tu primera compra",

@@ -226,3 +226,85 @@ export async function sendPasswordResetEmail(email: string, resetLink: string) {
         console.error("[Email] Error sending password reset email:", error);
     }
 }
+
+/**
+ * Send notification to admin about a new driver request
+ */
+export async function sendDriverRequestNotification(
+    driverName: string | null,
+    driverEmail: string | null
+) {
+    try {
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || "somosmoovy@gmail.com";
+        await transporter.sendMail({
+            from: `"MOOVY" <${process.env.SMTP_USER || "somosmoovy@gmail.com"}>`,
+            to: adminEmail,
+            subject: "🚗 Nueva solicitud de repartidor",
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <img src="${companyLogo}" alt="MOOVY" style="height: 50px; width: auto;" />
+                    </div>
+                    <div style="background-color: #f9fafb; border-radius: 12px; padding: 30px;">
+                        <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de repartidor</h2>
+                        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                            Un usuario quiere ser repartidor en MOOVY:
+                        </p>
+                        <div style="background-color: white; border-radius: 10px; padding: 20px; margin: 20px 0; border: 1px solid #edf2f7;">
+                            <p style="margin: 5px 0; color: #4a5568;"><strong>Nombre:</strong> ${driverName || "No especificado"}</p>
+                            <p style="margin: 5px 0; color: #4a5568;"><strong>Email:</strong> ${driverEmail || "No especificado"}</p>
+                        </div>
+                        <p style="color: #6b7280; font-size: 14px;">
+                            Revisá la solicitud desde el panel de administración en <strong>Operaciones → Repartidores</strong>.
+                        </p>
+                    </div>
+                </div>
+            `,
+        });
+        console.log("[Email] Driver request notification sent to admin");
+    } catch (error) {
+        console.error("[Email] Error sending driver request notification:", error);
+    }
+}
+
+/**
+ * Send approval email to a newly approved driver
+ */
+export async function sendDriverApprovalEmail(email: string, firstName: string) {
+    try {
+        await transporter.sendMail({
+            from: `"MOOVY" <${process.env.SMTP_USER || "somosmoovy@gmail.com"}>`,
+            to: email,
+            subject: "🎉 ¡Tu solicitud de repartidor fue aprobada!",
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <img src="${companyLogo}" alt="MOOVY" style="height: 50px; width: auto;" />
+                    </div>
+                    <div style="background-color: #f9fafb; border-radius: 12px; padding: 30px;">
+                        <h2 style="color: #111827; margin-top: 0;">¡Bienvenido al equipo, ${firstName}! 🚗</h2>
+                        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                            Tu solicitud para ser repartidor MOOVY fue <strong style="color: #059669;">aprobada</strong>. 
+                            Ya podés empezar a recibir pedidos y generar ingresos.
+                        </p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${baseUrl}/rider" 
+                               style="display: inline-block; background: linear-gradient(to right, #059669, #10b981); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                Ir al panel de repartidor
+                            </a>
+                        </div>
+                        <p style="color: #9ca3af; font-size: 14px; text-align: center;">
+                            Si tenés dudas, escribinos por WhatsApp al soporte.
+                        </p>
+                    </div>
+                    <div style="text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;">
+                        <p>© ${new Date().getFullYear()} MOOVY™. Ushuaia, Tierra del Fuego.</p>
+                    </div>
+                </div>
+            `,
+        });
+        console.log("[Email] Driver approval email sent to:", email);
+    } catch (error) {
+        console.error("[Email] Error sending driver approval email:", error);
+    }
+}
