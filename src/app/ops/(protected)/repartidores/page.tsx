@@ -18,7 +18,8 @@ import {
     Award,
     Calendar,
     TrendingUp,
-    Home
+    Home,
+    ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 
@@ -43,6 +44,10 @@ export default function AdminRepartidoresPage() {
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Approve driver state
+    const [approvingId, setApprovingId] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // Form state
     const [showForm, setShowForm] = useState(false);
@@ -145,6 +150,33 @@ export default function AdminRepartidoresPage() {
         }
     }
 
+    async function handleApprove(driverId: string) {
+        setApprovingId(driverId);
+        try {
+            const res = await fetch(`/api/admin/drivers/${driverId}/approve`, {
+                method: "PUT",
+            });
+            if (res.ok) {
+                // Update local state immediately
+                setDrivers(prev => prev.map(d =>
+                    d.id === driverId ? { ...d, isActive: true } : d
+                ));
+                setSuccessMessage("✅ Repartidor aprobado exitosamente");
+                setTimeout(() => setSuccessMessage(null), 3000);
+            } else {
+                const data = await res.json();
+                setError(data.error || "Error al aprobar repartidor");
+                setTimeout(() => setError(""), 3000);
+            }
+        } catch (err) {
+            console.error("Error approving driver:", err);
+            setError("Error de conexión al aprobar");
+            setTimeout(() => setError(""), 3000);
+        } finally {
+            setApprovingId(null);
+        }
+    }
+
     function requestToggleActive(driver: Driver) {
         setPendingAction({ driverId: driver.id, action: "toggle", driverName: driver.user.name });
         setShowConfirm(true);
@@ -236,7 +268,23 @@ export default function AdminRepartidoresPage() {
                         {drivers.reduce((sum, d) => sum + (d._count?.orders || 0), 0)}
                     </p>
                 </div>
+                {drivers.filter(d => !d.isActive).length > 0 && (
+                    <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                        <p className="text-sm text-amber-800">Pendientes de aprobación</p>
+                        <p className="text-2xl font-bold text-amber-900">
+                            {drivers.filter(d => !d.isActive).length}
+                        </p>
+                    </div>
+                )}
             </div>
+
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fadeIn">
+                    <ShieldCheck className="w-5 h-5" />
+                    {successMessage}
+                </div>
+            )}
 
             {/* Confirmation Modal */}
             {showConfirm && pendingAction && (
@@ -484,8 +532,8 @@ export default function AdminRepartidoresPage() {
                                                 <button
                                                     onClick={() => requestToggleActive(driver)}
                                                     className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${driver.isActive
-                                                            ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                                                         }`}
                                                 >
                                                     {driver.isActive ? "Activo" : "Inactivo"}
@@ -500,6 +548,20 @@ export default function AdminRepartidoresPage() {
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
+                                                {!driver.isActive && (
+                                                    <button
+                                                        onClick={() => handleApprove(driver.id)}
+                                                        disabled={approvingId === driver.id}
+                                                        className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold border border-green-200 disabled:opacity-50"
+                                                    >
+                                                        {approvingId === driver.id ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <ShieldCheck className="w-3.5 h-3.5" />
+                                                        )}
+                                                        Aprobar
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => setViewDriver(driver)}
                                                     className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
@@ -587,6 +649,20 @@ export default function AdminRepartidoresPage() {
                                     >
                                         Ver Perfil
                                     </button>
+                                    {!driver.isActive && (
+                                        <button
+                                            onClick={() => handleApprove(driver.id)}
+                                            disabled={approvingId === driver.id}
+                                            className="flex-1 py-2.5 bg-green-50 text-green-700 font-bold text-xs rounded-xl hover:bg-green-100 transition-all border border-green-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                        >
+                                            {approvingId === driver.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <ShieldCheck className="w-4 h-4" />
+                                            )}
+                                            Aprobar
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => requestDelete(driver)}
                                         className="w-12 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-all border border-red-100"
