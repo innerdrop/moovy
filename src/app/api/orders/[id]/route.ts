@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assignOrderToNearestDriver } from "@/lib/logistics";
 import { sendOrderReadyNotification } from "@/lib/push";
+import { notifyBuyer } from "@/lib/notifications";
 import { UpdateOrderSchema, validateInput } from "@/lib/validations";
 
 // GET - Get single order details
@@ -203,6 +204,12 @@ export async function PATCH(
             } catch (e) {
                 console.error("[Socket-Emit] Failed to broadcast status change:", e);
             }
+
+            // Push notification to buyer (fire-and-forget)
+            if (existingOrder?.userId) {
+                notifyBuyer(existingOrder.userId, data.status, existingOrder.orderNumber || '')
+                    .catch(err => console.error('[Push] Buyer notification error:', err));
+            }
         }
 
         // Legacy: Notify when order is picked up (keep for backwards compatibility)
@@ -352,6 +359,12 @@ export async function DELETE(
             // Note: If they were just "pending offer", they aren't marked as BUSY yet, 
             // but we clear the relationship in the order anyway.
         });
+
+        // Push notification to buyer about cancellation (fire-and-forget)
+        if (order.userId) {
+            notifyBuyer(order.userId, 'CANCELLED', order.orderNumber)
+                .catch(err => console.error('[Push] Buyer cancel notification error:', err));
+        }
 
         return NextResponse.json({ success: true, message: "Pedido cancelado" });
     } catch (error) {
