@@ -6,19 +6,21 @@ declare module "next-auth" {
     interface Session {
         user: {
             id: string;
-            role: "USER" | "ADMIN" | "DRIVER";
+            role: string;      // Legacy single role (kept for compatibility)
+            roles: string[];   // All active roles from UserRole table
         } & DefaultSession["user"];
     }
 
     interface User extends DefaultUser {
-        role: "USER" | "ADMIN" | "DRIVER";
+        role: string;
+        roles: string[];
     }
 }
 
 declare module "next-auth/jwt" {
     interface JWT {
         id: string;
-        role: "USER" | "ADMIN" | "DRIVER";
+        role: string;
+        roles: string[];
     }
 }
-

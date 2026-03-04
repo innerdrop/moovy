@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 
 type PortalType = 'client' | 'comercio' | 'conductor' | 'ops';
 
@@ -29,6 +30,7 @@ export default auth(async (request) => {
     // Get session from Auth.js v5
     const session = request.auth;
     const userRole = session?.user?.role as string | undefined;
+    const userRoles: string[] = (session?.user as any)?.roles || (userRole ? [userRole] : []);
 
     // === MAINTENANCE MODE CHECK (DISABLED TEMPORARILY TO FIX TIMEOUT) ===
     /*
@@ -81,7 +83,7 @@ export default auth(async (request) => {
         if (!session) {
             return NextResponse.redirect(new URL('/comercios/login', request.url));
         }
-        if (!['MERCHANT', 'ADMIN'].includes(userRole || '')) {
+        if (!hasAnyRole(session, ['MERCHANT', 'COMERCIO', 'ADMIN'])) {
             return NextResponse.redirect(new URL('/', request.url));
         }
     }
@@ -91,7 +93,7 @@ export default auth(async (request) => {
         if (!session) {
             return NextResponse.redirect(new URL('/repartidor/login', request.url));
         }
-        if (!['DRIVER', 'ADMIN'].includes(userRole || '')) {
+        if (!hasAnyRole(session, ['DRIVER', 'ADMIN'])) {
             return NextResponse.redirect(new URL('/', request.url));
         }
     }
@@ -101,7 +103,7 @@ export default auth(async (request) => {
         if (!session) {
             return NextResponse.redirect(new URL('/ops/login', request.url));
         }
-        if (userRole !== 'ADMIN') {
+        if (!hasAnyRole(session, ['ADMIN'])) {
             return NextResponse.redirect(new URL('/ops/login?error=Unauthorized', request.url));
         }
     }
@@ -113,19 +115,22 @@ export default auth(async (request) => {
     }
 
     // STRICT PORTAL SEPARATION
+    // Multi-role users (e.g. ADMIN+DRIVER) can access multiple portals
     if (session) {
         if (pathname.startsWith('/api')) {
             return NextResponse.next();
         }
 
-        if (userRole === 'MERCHANT' && !pathname.startsWith('/comercios') && pathname !== '/logout') {
-            return NextResponse.redirect(new URL('/comercios', request.url));
-        }
-        if (userRole === 'DRIVER' && !pathname.startsWith('/repartidor') && pathname !== '/logout') {
-            return NextResponse.redirect(new URL('/repartidor', request.url));
-        }
-        if (userRole === 'ADMIN' && !pathname.startsWith('/ops') && pathname !== '/logout') {
-            return NextResponse.redirect(new URL('/ops', request.url));
+        const isAdmin = userRoles.includes('ADMIN');
+
+        // Only force portal redirect for single-role users
+        if (!isAdmin) {
+            if ((userRoles.includes('MERCHANT') || userRoles.includes('COMERCIO')) && !pathname.startsWith('/comercios') && pathname !== '/logout') {
+                return NextResponse.redirect(new URL('/comercios', request.url));
+            }
+            if (userRoles.includes('DRIVER') && !pathname.startsWith('/repartidor') && pathname !== '/logout') {
+                return NextResponse.redirect(new URL('/repartidor', request.url));
+            }
         }
     }
 
