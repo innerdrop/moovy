@@ -1,3 +1,6 @@
+-- Enable PostGIS extension (required for geography columns)
+CREATE EXTENSION IF NOT EXISTS postgis;
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,

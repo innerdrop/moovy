@@ -3,8 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum UserRoleType {
+  USER
+  ADMIN
+  COMERCIO
+  DRIVER
+  SELLER
 }
 
 model User {
@@ -41,6 +50,19 @@ model User {
   sentSupportMsgs    SupportMessage[]    @relation("SupportMessageSender")
   referredBy         User?               @relation("UserReferrals", fields: [referredById], references: [id])
   referredUsers      User[]              @relation("UserReferrals")
+  roles              UserRole[]
+}
+
+model UserRole {
+  id          String       @id @default(cuid())
+  userId      String
+  role        UserRoleType
+  isActive    Boolean      @default(true)
+  activatedAt DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([userId])
 }
 
 model PushSubscription {
