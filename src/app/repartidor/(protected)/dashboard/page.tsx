@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import "./gps-error.css";
 import {
     Bike,
     MapPin,
@@ -227,23 +228,42 @@ export default function RiderDashboard() {
 
     // ── GPS permission required ──
     if ((!location || locationHookError) && !isLoading) {
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
         return (
-            <div className="h-dvh flex flex-col items-center justify-center bg-white p-8 text-center animate-in fade-in duration-500 overflow-y-auto">
-                <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6 flex-shrink-0">
-                    <MapPin className="w-12 h-12 text-[#e60012] animate-pulse" />
-                </div>
+            <div className="gps-error-screen">
+                {/* Background blobs */}
+                <div className="gps-blob gps-blob-1"></div>
+                <div className="gps-blob gps-blob-2"></div>
 
-                <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase leading-none mb-2">GPS No Disponible</h1>
+                <div className="gps-card">
+                    {/* Icon */}
+                    <div className="gps-icon-wrap">
+                        <div className="gps-pin-ring">
+                            <svg className="gps-pin-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 3C13.925 3 9 7.925 9 14c0 8.25 11 23 11 23s11-14.75 11-23c0-6.075-4.925-11-11-11z" fill="#E8192C" />
+                                <circle cx="20" cy="14" r="4" fill="white" />
+                                <path d="M26.5 7a10.5 10.5 0 0 1 0 14" stroke="#E8192C" strokeWidth="2" strokeLinecap="round" opacity="0.35" />
+                                <path d="M28.8 4.5a14 14 0 0 1 0 19" stroke="#E8192C" strokeWidth="1.5" strokeLinecap="round" opacity="0.18" />
+                            </svg>
+                        </div>
+                    </div>
 
-                <p className="text-gray-500 text-sm mb-6 leading-tight max-w-xs">
-                    {locationHookError?.includes("denied")
-                        ? "Has denegado el acceso al GPS. Los repartidores necesitan seguimiento activo para trabajar."
-                        : "Necesitamos tu ubicación para mostrarte las mejores ofertas cerca de ti."}
-                </p>
+                    {/* Badge */}
+                    <div style={{ textAlign: 'center' }}>
+                        <span className="gps-badge">
+                            <span className="gps-badge-dot"></span>
+                            Sin señal
+                        </span>
+                    </div>
 
-                <div className="space-y-4 w-full max-w-xs mb-8">
+                    {/* Title */}
+                    <div style={{ textAlign: 'center' }}>
+                        <h1 className="gps-title">GPS <span>no</span><br />disponible</h1>
+                        <p className="gps-subtitle">Necesitamos tu ubicación para<br />mostrarte las mejores ofertas cerca de ti.</p>
+                    </div>
+
+                    <div className="gps-divider"></div>
+
+                    {/* CTA Buttons */}
                     <button
                         onClick={() => {
                             if (navigator.geolocation) {
@@ -253,35 +273,50 @@ export default function RiderDashboard() {
                                 );
                             }
                         }}
-                        className="w-full py-5 bg-[#e60012] text-white font-black rounded-2xl italic uppercase tracking-widest transition active:scale-95 shadow-xl shadow-red-100 flex items-center justify-center gap-3"
+                        className="gps-btn-primary"
                     >
-                        <Navigation className="w-5 h-5" />
-                        Compartir Ubicación
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="7.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+                            <circle cx="9" cy="9" r="3" fill="white" />
+                            <line x1="9" y1="1" x2="9" y2="3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                            <line x1="9" y1="14.5" x2="9" y2="17" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                            <line x1="1" y1="9" x2="3.5" y2="9" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                            <line x1="14.5" y1="9" x2="17" y2="9" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                        Compartir ubicación
                     </button>
 
                     <button
                         onClick={() => window.location.reload()}
-                        className="w-full py-4 bg-gray-100 text-gray-600 font-black rounded-2xl italic uppercase tracking-widest transition active:scale-95"
+                        className="gps-btn-secondary"
                     >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                            <path d="M8 1v3.5L10 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                         Refrescar
                     </button>
-                </div>
 
-                {isIOS && (
-                    <div className="bg-gray-50 rounded-2xl p-4 text-left w-full border border-gray-100">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Si el botón no funciona:</p>
-                        <ul className="text-[11px] space-y-2 text-gray-600 font-medium">
-                            <li className="flex gap-2">
-                                <span className="bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 text-[8px] font-bold">1</span>
-                                <span>Ve a <b>Ajustes</b> &gt; <b>Privacidad</b> &gt; <b>Localización</b>.</span>
+                    {/* Tips */}
+                    <div className="gps-tips">
+                        <p className="gps-tips-label">Si el botón no funciona:</p>
+                        <ul className="gps-tips-list">
+                            <li>
+                                <span className="gps-tip-num">1</span>
+                                <span>Ve a <b>Ajustes → Privacidad → Localización</b></span>
                             </li>
-                            <li className="flex gap-2">
-                                <span className="bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 text-[8px] font-bold">2</span>
-                                <span>Asegúrate de que tu <b>Navegador</b> esté en <b>&quot;Al usar la app&quot;</b>.</span>
+                            <li>
+                                <span className="gps-tip-num">2</span>
+                                <span>Asegúrate que el Navegador esté en <b>&quot;Al usar la app&quot;</b></span>
                             </li>
                         </ul>
                     </div>
-                )}
+
+                    {/* Brand */}
+                    <div className="gps-brand">
+                        <img src="/logo-moovy.png" alt="Moovy" style={{ height: '28px', objectFit: 'contain' }} />
+                    </div>
+                </div>
             </div>
         );
     }
