@@ -23,7 +23,9 @@ import {
     Building2,
     MessageCircle,
     DollarSign,
-    Image as ImageIcon
+    Image as ImageIcon,
+    UserCheck,
+    Shield
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -38,6 +40,8 @@ const navItems = [
     { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
     { href: "/ops/comercios", icon: Building2, label: "Comercios" },
     { href: "/ops/repartidores", icon: Truck, label: "Repartidores" },
+    { href: "/ops/vendedores", icon: UserCheck, label: "Vendedores" },
+    { href: "/ops/moderacion", icon: Shield, label: "Moderación" },
     { href: "/ops/clientes", icon: Users, label: "Clientes" },
     { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
     { href: "/ops/categorias", icon: Tag, label: "Categorías" },

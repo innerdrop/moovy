@@ -86,6 +86,7 @@ export default function ProductDetailPage() {
             quantity: quantity,
             image: product.images[0]?.url || undefined,
             merchantId: product.merchantId,
+            type: "product",
         });
 
         setAddedToCart(true);

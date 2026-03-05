@@ -117,7 +117,6 @@ export default function OrderDetailPage() {
                 // UPDATE FRONTEND STORE
                 useCartStore.setState({
                     items: data.items,
-                    merchantId: data.merchantId
                 });
 
                 router.push("/carrito");
