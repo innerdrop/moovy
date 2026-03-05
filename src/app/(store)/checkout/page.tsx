@@ -17,7 +17,9 @@ import {
     ChevronLeft,
     Loader2,
     CheckCircle,
-    AlertCircle
+    AlertCircle,
+    Store,
+    User
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
@@ -36,7 +38,9 @@ export default function CheckoutPage() {
     const showCelebration = usePointsCelebration((state) => state.showCelebration);
     const items = useCartStore((state) => state.items);
     const getTotalPrice = useCartStore((state) => state.getTotalPrice);
+    const groupByVendor = useCartStore((state) => state.groupByVendor);
     const clearCart = useCartStore((state) => state.clearCart);
+    const groups = groupByVendor();
 
     const [step, setStep] = useState(1);
     const [address, setAddress] = useState({
@@ -61,15 +65,8 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Get merchantId from store or from first item (fallback for older cart instances)
-    const storeMerchantId = useCartStore((state) => state.merchantId);
-    const merchantId = storeMerchantId || items[0]?.merchantId;
-
-    useEffect(() => {
-        // Log for debugging
-        console.log("[Checkout] Current Cart Items:", items);
-        console.log("[Checkout] Resolved MerchantID:", merchantId);
-    }, [items, merchantId]);
+    // Get primary merchantId for delivery calc (first merchant group, if any)
+    const primaryMerchantId = groups.find(g => g.vendorType === "merchant")?.vendorId.replace("merchant_", "") || null;
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [saveAddress, setSaveAddress] = useState(false);
     const [addressLabel, setAddressLabel] = useState("Casa");
@@ -176,7 +173,7 @@ export default function CheckoutPage() {
 
         setIsCalculating(true);
         console.log("[Checkout] Calculating delivery for:", address.street, address.number);
-        console.log("[Checkout] Using MerchantID:", merchantId);
+        console.log("[Checkout] Using MerchantID:", primaryMerchantId);
 
         try {
             // Send address to server - server handles geocoding
@@ -191,7 +188,7 @@ export default function CheckoutPage() {
                         latitude: address.latitude,
                         longitude: address.longitude,
                     },
-                    merchantId,
+                    merchantId: primaryMerchantId || undefined,
                     orderTotal: subtotal,
                 }),
             });
@@ -216,11 +213,11 @@ export default function CheckoutPage() {
         if (!deliveryResult?.isWithinRange) return;
 
         setIsSubmitting(true);
-        console.log("[Checkout] Submitting order for MerchantID:", merchantId);
+        console.log("[Checkout] Submitting order for groups:", groups.length);
 
         try {
-            if (!merchantId) {
-                alert("Error: No se identificó el comercio. Por favor vaciá el carrito e intentá de nuevo.");
+            if (groups.length === 0) {
+                alert("Error: No se identificaron vendedores. Por favor vaciá el carrito e intentá de nuevo.");
                 setIsSubmitting(false);
                 return;
             }
@@ -268,8 +265,22 @@ export default function CheckoutPage() {
                         quantity: item.quantity,
                         variantId: item.variantId,
                         variantName: item.variantName,
+                        type: item.type || "product",
                     })),
-                    merchantId: useCartStore.getState().merchantId,
+                    groups: groups.map(g => ({
+                        merchantId: g.vendorType === "merchant" ? g.vendorId.replace("merchant_", "") : undefined,
+                        sellerId: g.vendorType === "seller" ? g.vendorId.replace("seller_", "") : undefined,
+                        vendorName: g.vendorName,
+                        items: g.items.map(item => ({
+                            productId: item.productId,
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity,
+                            variantName: item.variantName,
+                            type: item.type || "product",
+                        })),
+                    })),
+                    merchantId: primaryMerchantId || undefined,
                     // Send addressId if available, otherwise addressData
                     addressId: orderAddressId || undefined,
                     addressData: !orderAddressId ? {
@@ -766,17 +777,29 @@ export default function CheckoutPage() {
                                 Tu Pedido
                             </h3>
 
-                            <ul className="divide-y mb-4">
-                                {items.map((item) => (
-                                    <li key={item.id} className="py-3 flex justify-between">
-                                        <div>
-                                            <p className="font-medium text-sm">{item.name}</p>
-                                            <p className="text-xs text-gray-500">x{item.quantity}</p>
-                                        </div>
-                                        <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
-                                    </li>
-                                ))}
-                            </ul>
+                            {groups.map((group) => (
+                                <div key={group.vendorId} className="mb-3">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        {group.vendorType === "seller" ? (
+                                            <User className="w-3.5 h-3.5 text-emerald-600" />
+                                        ) : (
+                                            <Store className="w-3.5 h-3.5 text-[#e60012]" />
+                                        )}
+                                        <span className="text-xs font-semibold text-gray-500">{group.vendorName}</span>
+                                    </div>
+                                    <ul className="divide-y">
+                                        {group.items.map((item) => (
+                                            <li key={item.id} className="py-2 flex justify-between">
+                                                <div>
+                                                    <p className="font-medium text-sm">{item.name}</p>
+                                                    <p className="text-xs text-gray-500">x{item.quantity}</p>
+                                                </div>
+                                                <p className="font-medium text-sm">{formatPrice(item.price * item.quantity)}</p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
 
                             <div className="border-t pt-4 space-y-2">
                                 <div className="flex justify-between text-sm">

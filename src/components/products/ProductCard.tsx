@@ -2,7 +2,7 @@
 
 // Product Card Component - Tarjeta de producto con botón Agregar funcional
 import Link from "next/link";
-import { Package, ShoppingCart, AlertCircle, Store } from "lucide-react";
+import { Package, ShoppingCart, Store } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
@@ -25,56 +25,33 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const { addItem, forceAddItem } = useCartStore();
-    const [showConflict, setShowConflict] = useState(false);
+    const addItem = useCartStore((s) => s.addItem);
     const [added, setAdded] = useState(false);
 
     const isClosed = product.merchant && product.merchant.isOpen === false;
     const isDisabled = product.stock <= 0 || isClosed;
 
     const handleAddToCart = (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent Link navigation
+        e.preventDefault();
         e.stopPropagation();
 
         if (isDisabled) return;
-
-        const item = {
-            productId: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: 1,
-            image: product.image || undefined,
-            merchantId: product.merchantId,
-        };
 
         if (!product.merchantId) {
             alert("Error: Este producto no tiene comercio asociado.");
             return;
         }
 
-        const success = addItem(item);
-
-        if (!success) {
-            // Merchant conflict - show warning
-            setShowConflict(true);
-        } else {
-            // Show added feedback
-            setAdded(true);
-            setTimeout(() => setAdded(false), 1500);
-        }
-    };
-
-    const handleForceAdd = () => {
-        const item = {
+        addItem({
             productId: product.id,
             name: product.name,
             price: product.price,
             quantity: 1,
             image: product.image || undefined,
-            merchantId: product.merchantId || "default",
-        };
-        forceAddItem(item);
-        setShowConflict(false);
+            merchantId: product.merchantId,
+            type: "product",
+        });
+
         setAdded(true);
         setTimeout(() => setAdded(false), 1500);
     };
@@ -159,40 +136,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </button>
                 </div>
             </Link>
-
-            {/* Merchant Conflict Modal */}
-            {showConflict && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-yellow-600" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-gray-900">¿Cambiar de comercio?</h3>
-                                <p className="text-sm text-gray-500">Tu carrito tiene productos de otro comercio</p>
-                            </div>
-                        </div>
-                        <p className="text-gray-600 text-sm mb-6">
-                            Si agregás este producto, se vaciará tu carrito actual.
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowConflict(false)}
-                                className="flex-1 py-2 px-4 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-50"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleForceAdd}
-                                className="flex-1 py-2 px-4 bg-[#e60012] text-white rounded-lg font-medium hover:bg-red-700"
-                            >
-                                Sí, cambiar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

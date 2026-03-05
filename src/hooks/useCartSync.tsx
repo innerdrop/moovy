@@ -8,7 +8,6 @@ import { useCartStore, CartItem } from "@/store/cart";
 export function useCartSync() {
     const { data: session, status } = useSession();
     const items = useCartStore((state) => state.items);
-    const merchantId = useCartStore((state) => state.merchantId);
     const hasLoadedFromServer = useRef(false);
     const lastSavedItems = useRef<string>("");
 
@@ -31,7 +30,6 @@ export function useCartSync() {
                     // Server has cart, local is empty - load server cart
                     useCartStore.setState({
                         items: serverItems,
-                        merchantId: data.merchantId
                     });
                 } else if (serverItems.length > 0 && currentItems.length > 0) {
                     // Both have items - keep local (user's current session), sync later
@@ -65,12 +63,12 @@ export function useCartSync() {
             await fetch("/api/cart", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ items, merchantId })
+                body: JSON.stringify({ items })
             });
         } catch (error) {
             console.error("[CartSync] Error saving cart:", error);
         }
-    }, [status, session?.user?.id, items, merchantId]);
+    }, [status, session?.user?.id, items]);
 
     // Load cart on login
     useEffect(() => {
@@ -93,7 +91,7 @@ export function useCartSync() {
         }, 1000); // Debounce 1 second
 
         return () => clearTimeout(timeoutId);
-    }, [items, merchantId, status, saveCartToServer]);
+    }, [items, status, saveCartToServer]);
 
     return null;
 }

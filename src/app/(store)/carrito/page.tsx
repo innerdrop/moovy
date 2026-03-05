@@ -1,21 +1,21 @@
 "use client";
 
-// Cart Page - Carrito (Simplified - BottomNav from layout)
+// Cart Page - Carrito Multi-vendor
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
-import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, Package, ChevronLeft } from "lucide-react";
+import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, Package, ChevronLeft, Store, User } from "lucide-react";
 
 export default function CarritoPage() {
-    const { items, getTotalItems, getTotalPrice, updateQuantity, removeItem, clearCart } = useCartStore();
+    const { items, getTotalItems, getTotalPrice, updateQuantity, removeItem, clearCart, groupByVendor } = useCartStore();
     const cartCount = getTotalItems();
     const total = getTotalPrice();
+    const groups = groupByVendor();
 
     if (items.length === 0) {
         return (
             <>
-                {/* Simple Header */}
                 <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 flex items-center gap-3">
                     <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
                         <ChevronLeft className="w-5 h-5 text-gray-600" />
@@ -38,7 +38,7 @@ export default function CarritoPage() {
 
     return (
         <>
-            {/* Simple Header with clear button */}
+            {/* Header */}
             <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
@@ -51,38 +51,63 @@ export default function CarritoPage() {
                 </button>
             </header>
 
-            {/* Items with extra padding for checkout bar */}
-            <div className="p-4 pb-40 space-y-3">
-                {items.map((item) => (
-                    <div key={`${item.productId}-${item.variantId || "default"}`} className="bg-white rounded-xl p-4 flex gap-4">
-                        <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                            {item.image ? (
-                                <Image src={item.image} alt={item.name} width={80} height={80} className="w-full h-full object-cover" />
+            {/* Items grouped by vendor */}
+            <div className="p-4 pb-40 space-y-4">
+                {groups.length > 1 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2 text-sm text-blue-800">
+                        <Store className="w-4 h-4 flex-shrink-0" />
+                        <span>Tu pedido incluye {groups.length} vendedores distintos</span>
+                    </div>
+                )}
+
+                {groups.map((group) => (
+                    <div key={group.vendorId} className="space-y-3">
+                        {/* Vendor Header */}
+                        <div className="flex items-center gap-2 px-1">
+                            {group.vendorType === "seller" ? (
+                                <User className="w-4 h-4 text-emerald-600" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center"><Package className="w-8 h-8 text-gray-300" /></div>
+                                <Store className="w-4 h-4 text-[#e60012]" />
                             )}
+                            <span className="font-semibold text-sm text-gray-700">{group.vendorName}</span>
+                            <span className="text-xs text-gray-400 ml-auto">
+                                {formatPrice(group.subtotal)}
+                            </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-navy truncate">{item.name}</h3>
-                            {item.variantName && <p className="text-xs text-gray-500">{item.variantName}</p>}
-                            <p className="text-moovy font-bold mt-1">{formatPrice(item.price)}</p>
-                            <div className="flex items-center justify-between mt-2">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => {
-                                        if (item.quantity <= 1) removeItem(item.productId, item.variantId);
-                                        else updateQuantity(item.productId, item.quantity - 1, item.variantId);
-                                    }} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
-                                        {item.quantity <= 1 ? <Trash2 className="w-4 h-4 text-red-500" /> : <Minus className="w-4 h-4" />}
-                                    </button>
-                                    <span className="w-8 text-center font-bold text-navy">{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
-                                        className="w-8 h-8 rounded-full bg-moovy text-white flex items-center justify-center">
-                                        <Plus className="w-4 h-4" />
-                                    </button>
+
+                        {/* Items */}
+                        {group.items.map((item) => (
+                            <div key={`${item.productId}-${item.variantId || "default"}`} className="bg-white rounded-xl p-4 flex gap-4">
+                                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                    {item.image ? (
+                                        <Image src={item.image} alt={item.name} width={80} height={80} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center"><Package className="w-8 h-8 text-gray-300" /></div>
+                                    )}
                                 </div>
-                                <p className="font-bold text-navy">{formatPrice(item.price * item.quantity)}</p>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-navy truncate">{item.name}</h3>
+                                    {item.variantName && <p className="text-xs text-gray-500">{item.variantName}</p>}
+                                    <p className="text-moovy font-bold mt-1">{formatPrice(item.price)}</p>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => {
+                                                if (item.quantity <= 1) removeItem(item.productId, item.variantId);
+                                                else updateQuantity(item.productId, item.quantity - 1, item.variantId);
+                                            }} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                                                {item.quantity <= 1 ? <Trash2 className="w-4 h-4 text-red-500" /> : <Minus className="w-4 h-4" />}
+                                            </button>
+                                            <span className="w-8 text-center font-bold text-navy">{item.quantity}</span>
+                                            <button onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
+                                                className="w-8 h-8 rounded-full bg-moovy text-white flex items-center justify-center">
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <p className="font-bold text-navy">{formatPrice(item.price * item.quantity)}</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        ))}
                     </div>
                 ))}
             </div>

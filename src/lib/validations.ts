@@ -11,6 +11,7 @@ export const OrderItemSchema = z.object({
     price: z.number().positive("El precio debe ser positivo"),
     quantity: z.number().int().min(1, "Cantidad mínima: 1"),
     variantName: z.string().nullish(),
+    type: z.enum(["product", "listing"]).default("product"),
 });
 
 export const AddressDataSchema = z.object({
@@ -22,8 +23,16 @@ export const AddressDataSchema = z.object({
     longitude: z.number().optional(),
 });
 
+export const OrderGroupSchema = z.object({
+    merchantId: z.string().optional(),
+    sellerId: z.string().optional(),
+    vendorName: z.string().optional(),
+    items: z.array(OrderItemSchema).min(1),
+});
+
 export const CreateOrderSchema = z.object({
     items: z.array(OrderItemSchema).min(1, "El carrito está vacío"),
+    groups: z.array(OrderGroupSchema).optional(),
     addressId: z.string().optional(),
     addressData: AddressDataSchema.optional(),
     paymentMethod: z.enum(["cash", "transfer", "card"]).default("cash"),
@@ -34,7 +43,7 @@ export const CreateOrderSchema = z.object({
     customerNotes: z.string().max(500).nullish(),
     pointsUsed: z.number().int().min(0).default(0),
     discountAmount: z.number().min(0).default(0),
-    merchantId: z.string().min(1, "Comercio requerido"),
+    merchantId: z.string().optional(),
 });
 
 export const UpdateOrderSchema = z.object({

@@ -1,4 +1,4 @@
-// Zustand Store for Shopping Cart
+// Zustand Store for Shopping Cart - Multi-vendor support
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -11,25 +11,36 @@ export interface CartItem {
     image?: string;
     variantId?: string;
     variantName?: string;
-    merchantId?: string; // Optional for single-merchant stores
+    merchantId?: string;
+    merchantName?: string;
+    sellerId?: string;
+    sellerName?: string;
+    type: "product" | "listing";
+}
+
+export interface VendorGroup {
+    vendorId: string;
+    vendorName: string;
+    vendorType: "merchant" | "seller";
+    items: CartItem[];
+    subtotal: number;
 }
 
 interface CartStore {
     items: CartItem[];
-    merchantId: string | null; // Current merchant in cart
     isOpen: boolean;
 
     // Actions
-    // addItem returns true if added, false if merchant mismatch
-    addItem: (item: Omit<CartItem, "id">) => boolean;
-    // forceAddItem clears cart and adds item (used after confirmation)
-    forceAddItem: (item: Omit<CartItem, "id">) => void;
+    addItem: (item: Omit<CartItem, "id">) => void;
     removeItem: (productId: string, variantId?: string) => void;
     updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
     clearCart: () => void;
     toggleCart: () => void;
     openCart: () => void;
     closeCart: () => void;
+
+    // Multi-vendor
+    groupByVendor: () => VendorGroup[];
 
     // Computed
     getTotalItems: () => number;
@@ -40,16 +51,10 @@ export const useCartStore = create<CartStore>()(
     persist(
         (set, get) => ({
             items: [],
-            merchantId: null,
             isOpen: false,
 
             addItem: (item) => {
-                const { items, merchantId } = get();
-
-                // Check for merchant mismatch
-                if (items.length > 0 && merchantId && merchantId !== item.merchantId) {
-                    return false; // Conflict detected
-                }
+                const { items } = get();
 
                 const existingIndex = items.findIndex(
                     (i) => i.productId === item.productId && i.variantId === item.variantId
@@ -61,27 +66,16 @@ export const useCartStore = create<CartStore>()(
                     newItems[existingIndex].quantity += item.quantity;
                     set({ items: newItems });
                 } else {
-                    // Add new item
+                    // Add new item with type defaulting to 'product'
                     const newItem: CartItem = {
                         ...item,
+                        type: item.type || "product",
                         id: `${item.productId}-${item.variantId || "default"}-${Date.now()}`,
                     };
-                    set({ items: [...items, newItem], merchantId: item.merchantId });
+                    set({ items: [...items, newItem] });
                 }
 
-                // Ensure cart is open when adding? Maybe let UI decide
                 set({ isOpen: true });
-                return true;
-            },
-
-            forceAddItem: (item) => {
-                set({ items: [], merchantId: null }); // Clear first
-
-                const newItem: CartItem = {
-                    ...item,
-                    id: `${item.productId}-${item.variantId || "default"}-${Date.now()}`,
-                };
-                set({ items: [newItem], merchantId: item.merchantId, isOpen: true });
             },
 
             removeItem: (productId, variantId) => {
@@ -89,13 +83,7 @@ export const useCartStore = create<CartStore>()(
                 const newItems = items.filter(
                     (i) => !(i.productId === productId && i.variantId === variantId)
                 );
-
-                // If cart becomes empty, reset merchantId
-                if (newItems.length === 0) {
-                    set({ items: [], merchantId: null });
-                } else {
-                    set({ items: newItems });
-                }
+                set({ items: newItems });
             },
 
             updateQuantity: (productId, quantity, variantId) => {
@@ -113,10 +101,47 @@ export const useCartStore = create<CartStore>()(
                 });
             },
 
-            clearCart: () => set({ items: [], merchantId: null }),
+            clearCart: () => set({ items: [] }),
             toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
             openCart: () => set({ isOpen: true }),
             closeCart: () => set({ isOpen: false }),
+
+            groupByVendor: () => {
+                const { items } = get();
+                const groups = new Map<string, VendorGroup>();
+
+                for (const item of items) {
+                    let vendorId: string;
+                    let vendorName: string;
+                    let vendorType: "merchant" | "seller";
+
+                    if (item.type === "listing" && item.sellerId) {
+                        vendorId = `seller_${item.sellerId}`;
+                        vendorName = item.sellerName || "Vendedor";
+                        vendorType = "seller";
+                    } else {
+                        vendorId = `merchant_${item.merchantId || "unknown"}`;
+                        vendorName = item.merchantName || "Comercio";
+                        vendorType = "merchant";
+                    }
+
+                    if (!groups.has(vendorId)) {
+                        groups.set(vendorId, {
+                            vendorId,
+                            vendorName,
+                            vendorType,
+                            items: [],
+                            subtotal: 0,
+                        });
+                    }
+
+                    const group = groups.get(vendorId)!;
+                    group.items.push(item);
+                    group.subtotal += item.price * item.quantity;
+                }
+
+                return Array.from(groups.values());
+            },
 
             getTotalItems: () => {
                 return get().items.reduce((sum, item) => sum + item.quantity, 0);
@@ -131,8 +156,7 @@ export const useCartStore = create<CartStore>()(
         }),
         {
             name: "Moovy-cart",
-            partialize: (state) => ({ items: state.items, merchantId: state.merchantId }),
+            partialize: (state) => ({ items: state.items }),
         }
     )
 );
-

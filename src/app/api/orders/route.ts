@@ -46,6 +46,7 @@ export async function POST(request: Request) {
         const data = validation.data!;
         const {
             items,
+            groups,
             addressId,
             addressData,
             paymentMethod,
@@ -58,6 +59,8 @@ export async function POST(request: Request) {
             discountAmount,
             merchantId
         } = data;
+
+        const isMultiVendor = (groups && groups.length > 1) || false;
 
         // Calculate subtotal
         const subtotal = items.reduce(
@@ -159,6 +162,7 @@ export async function POST(request: Request) {
                     moovyCommission,
                     merchantPayout,
                     commissionPaid: false,
+                    isMultiVendor,
                 },
             });
 
@@ -176,13 +180,75 @@ export async function POST(request: Request) {
                     },
                 });
 
-                // Update product stock
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: {
-                        stock: { decrement: item.quantity },
-                    },
-                });
+                // Update stock (products only - listings managed separately)
+                if (!item.type || item.type === "product") {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stock: { decrement: item.quantity },
+                        },
+                    });
+                } else if (item.type === "listing") {
+                    await tx.listing.update({
+                        where: { id: item.productId },
+                        data: {
+                            stock: { decrement: item.quantity },
+                        },
+                    });
+                }
+            }
+
+            // Create SubOrders if multi-vendor or if groups are provided
+            if (groups && groups.length > 0) {
+                for (const group of groups) {
+                    const groupSubtotal = group.items.reduce(
+                        (sum: number, gi: { price: number; quantity: number }) => sum + gi.price * gi.quantity,
+                        0
+                    );
+
+                    let groupCommission = 0;
+                    let groupPayout = 0;
+
+                    // Calculate commission for merchant groups
+                    if (group.merchantId) {
+                        const gMerchant = await tx.merchant.findUnique({
+                            where: { id: group.merchantId },
+                            select: { commissionRate: true },
+                        });
+                        const rate = gMerchant?.commissionRate || 8.0;
+                        groupCommission = groupSubtotal * (rate / 100);
+                        groupPayout = groupSubtotal - groupCommission;
+                    } else if (group.sellerId) {
+                        // Seller commission: use default 10%
+                        groupCommission = groupSubtotal * 0.10;
+                        groupPayout = groupSubtotal - groupCommission;
+                    }
+
+                    const subOrder = await tx.subOrder.create({
+                        data: {
+                            orderId: newOrder.id,
+                            merchantId: group.merchantId || null,
+                            sellerId: group.sellerId || null,
+                            status: "PENDING",
+                            subtotal: groupSubtotal,
+                            total: groupSubtotal,
+                            moovyCommission: groupCommission,
+                            sellerPayout: groupPayout,
+                        },
+                    });
+
+                    // Link OrderItems to this SubOrder
+                    for (const gi of group.items) {
+                        await tx.orderItem.updateMany({
+                            where: {
+                                orderId: newOrder.id,
+                                productId: gi.productId,
+                                subOrderId: null,
+                            },
+                            data: { subOrderId: subOrder.id },
+                        });
+                    }
+                }
             }
 
             return newOrder;
@@ -206,12 +272,32 @@ export async function POST(request: Request) {
             // Don't fail the order if points fail, but log it
         }
 
-        // --- REAL-TIME: Notify merchant and admin about new order ---
-        if (merchantId) {
-            try {
-                const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+        // --- REAL-TIME: Notify merchants/sellers and admin about new order ---
+        try {
+            const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
-                // Notify merchant
+            // Notify each vendor group
+            if (groups && groups.length > 0) {
+                for (const group of groups) {
+                    if (group.merchantId) {
+                        await fetch(`${socketUrl}/emit`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                            body: JSON.stringify({
+                                event: "new_order",
+                                room: `merchant:${group.merchantId}`,
+                                data: {
+                                    orderId: order.id,
+                                    orderNumber: order.orderNumber,
+                                    total: order.total,
+                                    status: order.status,
+                                    userId: session.user.id,
+                                }
+                            })
+                        });
+                    }
+                }
+            } else if (merchantId) {
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
@@ -227,29 +313,30 @@ export async function POST(request: Request) {
                         }
                     })
                 });
-
-                // Notify admin
-                await fetch(`${socketUrl}/emit`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
-                    body: JSON.stringify({
-                        event: "new_order",
-                        room: "admin:orders",
-                        data: {
-                            orderId: order.id,
-                            orderNumber: order.orderNumber,
-                            total: order.total,
-                            status: order.status,
-                            merchantId,
-                            userId: session.user.id,
-                        }
-                    })
-                });
-
-                console.log(`[Socket-Emit] New order ${order.orderNumber} notified to merchant and admin`);
-            } catch (e) {
-                console.error("[Socket-Emit] Failed to notify new order:", e);
             }
+
+            // Always notify admin
+            await fetch(`${socketUrl}/emit`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                body: JSON.stringify({
+                    event: "new_order",
+                    room: "admin:orders",
+                    data: {
+                        orderId: order.id,
+                        orderNumber: order.orderNumber,
+                        total: order.total,
+                        status: order.status,
+                        merchantId,
+                        isMultiVendor,
+                        userId: session.user.id,
+                    }
+                })
+            });
+
+            console.log(`[Socket-Emit] New order ${order.orderNumber} notified`);
+        } catch (e) {
+            console.error("[Socket-Emit] Failed to notify new order:", e);
         }
 
         // --- EMAIL: Send order confirmation to customer ---
