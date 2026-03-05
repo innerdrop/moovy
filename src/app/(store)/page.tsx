@@ -15,6 +15,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import HeroSliderNew from "@/components/home/HeroSliderNew";
 import MerchantCard from "@/components/store/MerchantCard";
+import ListingCard from "@/components/store/ListingCard";
 
 // Configuration
 // In Production: true (Shows "Volvemos Pronto")
@@ -91,6 +92,26 @@ async function getFeaturedProducts() {
     }
 }
 
+async function getRecentListings() {
+    try {
+        const listings = await prisma.listing.findMany({
+            where: { isActive: true },
+            include: {
+                seller: {
+                    select: { displayName: true, rating: true, avatar: true },
+                },
+                images: { orderBy: { order: "asc" }, take: 1 },
+                category: { select: { id: true, name: true, slug: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 4,
+        });
+        return listings;
+    } catch (error) {
+        return [];
+    }
+}
+
 function MaintenanceView() {
     return (
         <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
@@ -120,6 +141,7 @@ async function LiveStoreView() {
     const categories = await getCategories(settings?.maxCategoriesHome ?? 6);
     const merchants = await getFeaturedMerchants();
     const featuredProducts = await getFeaturedProducts();
+    const recentListings = await getRecentListings();
     const slides = await getHeroSlides();
     const slideInterval = settings?.heroSliderInterval ?? 5000;
 
@@ -308,6 +330,28 @@ async function LiveStoreView() {
                 </div>
             </section>
 
+            {/* Marketplace Section */}
+            {recentListings.length > 0 && (
+                <section className="py-12 lg:py-16 bg-gray-50 border-t border-gray-100">
+                    <div className="container mx-auto px-4">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                                <span className="text-[#e60012]">Marketplace</span>
+                            </h2>
+                            <Link href="/marketplace" className="text-[#e60012] font-semibold hover:underline flex items-center gap-1">
+                                Ver todo <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                            {recentListings.map((listing) => (
+                                <ListingCard key={listing.id} listing={listing} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             <section className="py-16 bg-gray-50 border-t border-gray-100">
                 <div className="container mx-auto px-4 text-center">
                     <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -345,6 +389,7 @@ async function LiveStoreView() {
                             <h4 className="font-bold text-white mb-4">Enlaces</h4>
                             <ul className="space-y-2 text-sm">
                                 <li><Link href="/productos" className="hover:text-[#e60012] transition">Productos</Link></li>
+                                <li><Link href="/marketplace" className="hover:text-[#e60012] transition">Marketplace</Link></li>
                                 <li><Link href="/puntos" className="hover:text-[#e60012] transition">Programa MOOVER</Link></li>
                                 <li><Link href="/contacto" className="hover:text-[#e60012] transition">Contacto</Link></li>
                             </ul>
