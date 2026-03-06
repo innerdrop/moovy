@@ -2,6 +2,7 @@
 // Allows a driver to update the delivery status of their order
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
@@ -14,8 +15,7 @@ export async function PATCH(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (!["DRIVER", "ADMIN"].includes(role)) {
+        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
@@ -40,7 +40,7 @@ export async function PATCH(
             return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
         }
 
-        if (order.driverId !== driver.id && role !== "ADMIN") {
+        if (order.driverId !== driver.id && !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "Este pedido no está asignado a vos" }, { status: 403 });
         }
 

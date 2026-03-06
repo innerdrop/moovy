@@ -1,71 +1,106 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        const merchantId = (session?.user as any)?.merchantId;
+        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
 
-        if (!session || !merchantId) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        const merchantId = (session?.user as any)?.merchantId;
+        if (!merchantId) {
+            return NextResponse.json({ error: "Merchant no asociado" }, { status: 401 });
         }
 
         const { productIds, categoryId } = await request.json();
 
+        // Determine which master product IDs to import
+        let targetIds: string[] = [];
+
         if (categoryId) {
-            // Record category purchase/acquisition
-            await prisma.merchantCategory.upsert({
+            // Find all master products in this category
+            const masterProducts = await prisma.product.findMany({
                 where: {
-                    merchantId_categoryId: {
-                        merchantId: merchantId,
-                        categoryId: categoryId
-                    }
+                    merchantId: null,
+                    categories: { some: { categoryId } },
                 },
-                update: {},
-                create: {
-                    merchantId: merchantId,
-                    categoryId: categoryId
-                }
+                select: { id: true },
             });
-
-            return NextResponse.json({
-                message: "Paquete adquirido con éxito",
-                success: true
-            });
+            targetIds = masterProducts.map(p => p.id);
+        } else if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+            targetIds = productIds;
+        } else {
+            return NextResponse.json({ error: "categoryId o productIds requeridos" }, { status: 400 });
         }
 
-        if (!productIds || !Array.isArray(productIds)) {
-            return NextResponse.json({ error: "IDs de productos o Categoría requeridos" }, { status: 400 });
+        if (targetIds.length === 0) {
+            return NextResponse.json({ success: true, imported: 0 });
         }
 
-        // For individual products, we only record the acquisition
-        // The merchant will then "import" them manually from the NewProductForm
+        // Fetch master products with their images and categories
+        const masterProducts = await prisma.product.findMany({
+            where: {
+                id: { in: targetIds },
+                merchantId: null,
+            },
+            include: {
+                categories: true,
+                images: true,
+            },
+        });
+
+        if (masterProducts.length === 0) {
+            return NextResponse.json({ success: true, imported: 0 });
+        }
+
+        let count = 0;
         await prisma.$transaction(async (tx) => {
-            for (const id of productIds) {
-                await tx.merchantAcquiredProduct.upsert({
+            for (const master of masterProducts) {
+                const newSlug = `${master.slug}-${merchantId.substring(0, 5)}`;
+
+                // Skip if already imported
+                const existing = await tx.product.findFirst({
                     where: {
-                        merchantId_productId: {
-                            merchantId: merchantId,
-                            productId: id
-                        }
+                        OR: [
+                            { slug: newSlug },
+                            { name: master.name, merchantId },
+                        ],
                     },
-                    update: {},
-                    create: {
-                        merchantId: merchantId,
-                        productId: id
-                    }
                 });
+                if (existing) continue;
+
+                await tx.product.create({
+                    data: {
+                        name: master.name,
+                        slug: newSlug,
+                        description: master.description,
+                        price: master.price,
+                        costPrice: master.costPrice,
+                        stock: 100,
+                        isActive: true,
+                        merchantId,
+                        images: {
+                            create: master.images.map(img => ({
+                                url: img.url,
+                                alt: img.alt,
+                                order: img.order,
+                            })),
+                        },
+                        categories: {
+                            create: master.categories.map(cat => ({
+                                categoryId: cat.categoryId,
+                            })),
+                        },
+                    },
+                });
+                count++;
             }
         });
 
-        return NextResponse.json({
-            message: "Derechos de productos adquiridos con éxito",
-            count: productIds.length,
-            success: true
-        });
-
-
+        return NextResponse.json({ success: true, imported: count });
     } catch (error) {
         console.error("Error importing products:", error);
         return NextResponse.json({ error: "Error interno al importar" }, { status: 500 });

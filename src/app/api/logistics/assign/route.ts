@@ -2,6 +2,7 @@
 // POST /api/logistics/assign { orderId }
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { assignOrderToNearestDriver } from "@/lib/logistics";
 
 export async function POST(request: Request) {
@@ -11,10 +12,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-
-        // Only ADMIN or MERCHANT can trigger assignment
-        if (!["ADMIN", "MERCHANT"].includes(role)) {
+        if (!hasAnyRole(session, ["ADMIN", "MERCHANT"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 

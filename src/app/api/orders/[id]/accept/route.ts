@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
@@ -12,8 +13,7 @@ export async function POST(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "DRIVER" && role !== "ADMIN") {
+        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
             return NextResponse.json({ error: "Only drivers can accept orders" }, { status: 403 });
         }
 

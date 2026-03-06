@@ -2,6 +2,7 @@
 // Returns available orders (READY, no driver) and driver's current deliveries
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-
-        // Security: Only DRIVER or ADMIN can access this
-        if (!["DRIVER", "ADMIN"].includes(role)) {
+        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 

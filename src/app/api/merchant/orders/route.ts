@@ -2,6 +2,7 @@
 // Returns orders for the merchant's store(s)
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,7 @@ export async function GET() {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-
-        // Security: Only MERCHANT or ADMIN can access this
-        if (!["MERCHANT", "ADMIN"].includes(role)) {
+        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
@@ -29,7 +27,7 @@ export async function GET() {
         const merchantIds = merchants.map(m => m.id);
 
         // If ADMIN, show all orders. If MERCHANT, filter by their stores.
-        const where = role === "ADMIN"
+        const where = hasAnyRole(session, ["ADMIN"])
             ? {}
             : { merchantId: { in: merchantIds.length > 0 ? merchantIds : ["NONE"] } };
 

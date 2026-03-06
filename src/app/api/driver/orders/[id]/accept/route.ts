@@ -2,6 +2,7 @@
 // POST /api/driver/orders/[id]/accept
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { driverAcceptOrder } from "@/lib/logistics";
 
@@ -15,8 +16,7 @@ export async function POST(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "DRIVER") {
+        if (!hasAnyRole(session, ["DRIVER"])) {
             return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
         }
 

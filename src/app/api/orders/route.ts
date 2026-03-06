@@ -296,6 +296,23 @@ export async function POST(request: Request) {
                             })
                         });
                     }
+                    if (group.sellerId) {
+                        await fetch(`${socketUrl}/emit`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
+                            body: JSON.stringify({
+                                event: "new_order",
+                                room: `seller:${group.sellerId}`,
+                                data: {
+                                    orderId: order.id,
+                                    orderNumber: order.orderNumber,
+                                    total: order.total,
+                                    status: order.status,
+                                    userId: session.user.id,
+                                }
+                            })
+                        });
+                    }
                 }
             } else if (merchantId) {
                 await fetch(`${socketUrl}/emit`, {

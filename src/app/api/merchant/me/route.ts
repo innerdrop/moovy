@@ -1,6 +1,7 @@
 // API Route: Get current merchant info
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -11,8 +12,7 @@ export async function GET() {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "MERCHANT" && role !== "ADMIN") {
+        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 

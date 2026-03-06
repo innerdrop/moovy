@@ -2,6 +2,7 @@
 // Allows a driver to claim an available order
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
@@ -14,8 +15,7 @@ export async function POST(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (!["DRIVER", "ADMIN"].includes(role)) {
+        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 

@@ -1,6 +1,7 @@
 // API Route: Single Order Operations
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { assignOrderToNearestDriver } from "@/lib/logistics";
 import { sendOrderReadyNotification } from "@/lib/push";
@@ -19,7 +20,7 @@ export async function GET(
         }
 
         const { id } = await context.params;
-        const isAdmin = (session.user as any).role === "ADMIN";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         const order = await prisma.order.findUnique({
             where: { id },
@@ -60,11 +61,9 @@ export async function PATCH(
         }
 
         const { id } = await context.params;
-        const role = (session.user as any).role;
-        const isAdmin = role === "ADMIN";
-        const isMerchant = role === "MERCHANT";
-
-        const isDriver = role === "DRIVER";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
+        const isMerchant = hasAnyRole(session, ["MERCHANT"]);
+        const isDriver = hasAnyRole(session, ["DRIVER"]);
 
         // Check authorization
         if (!isAdmin && !isMerchant && !isDriver) {
@@ -309,7 +308,7 @@ export async function DELETE(
         }
 
         const { id } = await context.params;
-        const isAdmin = (session.user as any).role === "ADMIN";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         const order = await prisma.order.findUnique({ where: { id } });
 
