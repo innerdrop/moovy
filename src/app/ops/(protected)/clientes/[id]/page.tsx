@@ -105,7 +105,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">Usuario no encontrado.</p>
-                <Link href="/admin/clientes" className="text-[#e60012] hover:underline mt-2 inline-block">
+                <Link href="/ops/clientes" className="text-[#e60012] hover:underline mt-2 inline-block">
                     Volver al listado
                 </Link>
             </div>
@@ -115,7 +115,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
     return (
         <div className="max-w-4xl mx-auto">
             <Link
-                href="/admin/clientes"
+                href="/ops/clientes"
                 className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-6 transition"
             >
                 <ChevronLeft className="w-4 h-4 mr-1" />

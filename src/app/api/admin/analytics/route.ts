@@ -1,12 +1,13 @@
 // API: Admin Analytics
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session?.user || (session.user as any).role !== "ADMIN") {
+        if (!hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
         // Users stats
         const [totalUsers, clients, merchants, drivers] = await Promise.all([
             prisma.user.count(),
-            prisma.user.count({ where: { role: "CLIENT" } }),
+            prisma.userRole.count({ where: { role: "USER", isActive: true } }),
             prisma.merchant.count({ where: { isActive: true } }),
             prisma.driver.count({ where: { isActive: true } })
         ]);

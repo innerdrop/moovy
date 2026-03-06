@@ -69,28 +69,28 @@ export default async function AdminDashboard() {
             value: stats.totalProducts,
             icon: Package,
             color: "bg-blue-500",
-            href: "/admin/productos",
+            href: "/ops/productos",
         },
         {
             title: "Pedidos Pendientes",
             value: stats.pendingOrders,
             icon: Clock,
             color: "bg-yellow-500",
-            href: "/admin/pedidos?estado=pendiente",
+            href: "/ops/pedidos?estado=pendiente",
         },
         {
             title: "Total Pedidos",
             value: stats.totalOrders,
             icon: ShoppingCart,
             color: "bg-green-500",
-            href: "/admin/pedidos",
+            href: "/ops/pedidos",
         },
         {
             title: "Clientes",
             value: stats.totalUsers,
             icon: Users,
             color: "bg-purple-500",
-            href: "/admin/clientes",
+            href: "/ops/clientes",
         },
     ];
 
@@ -130,7 +130,7 @@ export default async function AdminDashboard() {
             <div className="bg-white rounded-xl shadow-sm">
                 <div className="p-6 border-b flex items-center justify-between">
                     <h2 className="text-lg font-bold text-navy">Pedidos Recientes</h2>
-                    <Link href="/admin/pedidos" className="text-moovy text-sm hover:underline">
+                    <Link href="/ops/pedidos" className="text-moovy text-sm hover:underline">
                         Ver todos →
                     </Link>
                 </div>
