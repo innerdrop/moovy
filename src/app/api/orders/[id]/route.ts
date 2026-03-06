@@ -180,7 +180,7 @@ export async function PATCH(
                 for (const room of rooms) {
                     await fetch(`${socketUrl}/emit`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
                         body: JSON.stringify({
                             event: "order_status_changed",
                             room,
@@ -218,7 +218,7 @@ export async function PATCH(
                 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
                     body: JSON.stringify({
                         event: "order_status_update",
                         room: `order:${id}`,
@@ -236,7 +236,7 @@ export async function PATCH(
                 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
                     body: JSON.stringify({
                         event: "pedido_entregado",
                         room: `order:${id}`,

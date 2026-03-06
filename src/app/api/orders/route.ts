@@ -282,7 +282,7 @@ export async function POST(request: Request) {
                     if (group.merchantId) {
                         await fetch(`${socketUrl}/emit`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
                             body: JSON.stringify({
                                 event: "new_order",
                                 room: `merchant:${group.merchantId}`,
@@ -300,7 +300,7 @@ export async function POST(request: Request) {
             } else if (merchantId) {
                 await fetch(`${socketUrl}/emit`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
                     body: JSON.stringify({
                         event: "new_order",
                         room: `merchant:${merchantId}`,
@@ -318,7 +318,7 @@ export async function POST(request: Request) {
             // Always notify admin
             await fetch(`${socketUrl}/emit`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET || "moovy-cron-secret-change-in-production"}` },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` },
                 body: JSON.stringify({
                     event: "new_order",
                     room: "admin:orders",

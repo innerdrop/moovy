@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { processExpiredAssignments } from "@/lib/logistics";
 
 // Secret key to prevent unauthorized calls (set in .env)
-const CRON_SECRET = process.env.CRON_SECRET || "moovy-cron-secret-change-in-production";
+const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function POST(request: Request) {
     try {
