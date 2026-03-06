@@ -114,26 +114,6 @@ export default auth(async (request) => {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // STRICT PORTAL SEPARATION
-    // Multi-role users (e.g. ADMIN+DRIVER) can access multiple portals
-    if (session) {
-        if (pathname.startsWith('/api')) {
-            return NextResponse.next();
-        }
-
-        const isAdmin = userRoles.includes('ADMIN');
-
-        // Only force portal redirect for single-role users
-        if (!isAdmin) {
-            if ((userRoles.includes('MERCHANT') || userRoles.includes('COMERCIO')) && !pathname.startsWith('/comercios') && pathname !== '/logout') {
-                return NextResponse.redirect(new URL('/comercios', request.url));
-            }
-            if (userRoles.includes('DRIVER') && !pathname.startsWith('/repartidor') && pathname !== '/logout') {
-                return NextResponse.redirect(new URL('/repartidor', request.url));
-            }
-        }
-    }
-
     return NextResponse.next();
 });
 
