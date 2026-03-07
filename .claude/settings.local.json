@@ -3,7 +3,9 @@
     "allow": [
       "Bash(xargs grep -l \"mercado\\\\|MercadoPago\")",
       "Bash(npx prisma generate)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(wc -l \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(store\\)\\\\checkout\\\\page.tsx\")",
+      "Bash(npm install mercadopago)"
     ]
   }
 }
