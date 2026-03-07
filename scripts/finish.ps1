@@ -46,17 +46,29 @@ git commit -m $Message
 git push origin $currentBranch
 if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir cambios a $currentBranch" }
 
-# 4. Cambiar a develop y actualizar
+# 4. Limpiar index.lock residual si existe
+$lockFile = Join-Path (git rev-parse --git-dir) "index.lock"
+if (Test-Path $lockFile) {
+    Write-Host "[GIT] Eliminando index.lock residual..." -ForegroundColor Yellow
+    Remove-Item -Force $lockFile
+}
+
+# 5. Cambiar a develop y actualizar
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
 git checkout develop
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] No se pudo cambiar a develop. Abortando merge." -ForegroundColor Red
+    Write-Host "[INFO] Tus cambios ya fueron pusheados a $currentBranch" -ForegroundColor Cyan
+    exit 1
+}
 git pull origin develop
 
-# 5. Mergear la rama de trabajo
+# 6. Mergear la rama de trabajo
 Write-Host "[GIT] Mergeando $currentBranch a develop..." -ForegroundColor Yellow
 git merge $currentBranch --no-edit
 if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Conflictos al mergear $currentBranch en develop" }
 
-# 6. Subir develop
+# 7. Subir develop
 Write-Host "[GIT] Subiendo develop..." -ForegroundColor Yellow
 git push origin develop
 if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir develop" }
@@ -68,7 +80,7 @@ if ($errorSummary.Count -gt 0) {
         Write-Host " - $err" -ForegroundColor Red
     }
     Write-Host "--------------------------------------" -ForegroundColor Red
-    Write-Host "`nPor favor, resolvélos antes de continuar." -ForegroundColor Yellow
+    Write-Host "`nPor favor, resolvelos antes de continuar." -ForegroundColor Yellow
 } else {
     Write-Host ""
     Write-Host "[OK] CAMBIOS FINALIZADOS Y PUBLICADOS" -ForegroundColor Green
@@ -77,10 +89,14 @@ if ($errorSummary.Count -gt 0) {
     Write-Host ""
 }
 
-# 7. Preguntar si eliminar la rama
+# 8. Preguntar si eliminar la rama
 $delete = Read-Host "Eliminar la rama $currentBranch? (s/n)"
 if ($delete -eq "s") {
-    git branch -d $currentBranch
-    git push origin --delete $currentBranch 2>$null
-    Write-Host "[OK] Rama eliminada" -ForegroundColor Green
+    git branch -d $currentBranch 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] No se pudo eliminar la rama local (puede que aun estes en ella)" -ForegroundColor Red
+    } else {
+        git push origin --delete $currentBranch 2>$null
+        Write-Host "[OK] Rama eliminada" -ForegroundColor Green
+    }
 }
