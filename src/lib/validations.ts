@@ -35,7 +35,7 @@ export const CreateOrderSchema = z.object({
     groups: z.array(OrderGroupSchema).optional(),
     addressId: z.string().optional(),
     addressData: AddressDataSchema.optional(),
-    paymentMethod: z.enum(["cash", "transfer", "card"]).default("cash"),
+    paymentMethod: z.enum(["cash", "transfer", "card", "mercadopago"]).default("cash"),
     deliveryFee: z.number().min(0).default(0),
     distanceKm: z.number().min(0).optional(),
     isPickup: z.boolean().default(false),
@@ -48,11 +48,11 @@ export const CreateOrderSchema = z.object({
 
 export const UpdateOrderSchema = z.object({
     status: z.enum([
-        "PENDING", "CONFIRMED", "PREPARING", "READY",
+        "PENDING", "AWAITING_PAYMENT", "CONFIRMED", "PREPARING", "READY",
         "DRIVER_ASSIGNED", "PICKED_UP",
         "IN_DELIVERY", "DELIVERED", "CANCELLED"
     ]).optional(),
-    paymentStatus: z.enum(["PENDING", "PAID", "REFUNDED"]).optional(),
+    paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]).optional(),
     driverId: z.string().optional(),
     deliveryStatus: z.string().optional(),
     adminNotes: z.string().max(1000).optional(),

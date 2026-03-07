@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"mercado\\\\|MercadoPago\")",
+      "Bash(npx prisma generate)",
+      "Bash(npx tsc --noEmit)"
+    ]
+  }
+}

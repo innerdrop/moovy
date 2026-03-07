@@ -243,8 +243,14 @@ model Order {
   driver              Driver?     @relation(fields: [driverId], references: [id])
   merchant            Merchant?   @relation(fields: [merchantId], references: [id])
   user                User        @relation(fields: [userId], references: [id])
+  mpPreferenceId      String?
+  mpPaymentId         String?
+  mpMerchantOrderId   String?
+  mpStatus            String?
+  paidAt              DateTime?
   items               OrderItem[]
   subOrders           SubOrder[]
+  payments            Payment[]
   isMultiVendor       Boolean     @default(false)
 }
 
@@ -291,6 +297,9 @@ model SubOrder {
   merchant            Merchant?      @relation(fields: [merchantId], references: [id])
   seller              SellerProfile? @relation(fields: [sellerId], references: [id])
   driver              Driver?        @relation(fields: [driverId], references: [id])
+  mpTransferId        String?
+  payoutStatus        String         @default("PENDING")
+  paidOutAt           DateTime?
   items               OrderItem[]
 }
 
@@ -334,6 +343,11 @@ model Merchant {
   premiumUntil     DateTime?
   startedAt        DateTime?
   whatsappNumber   String?
+  mpAccessToken    String?
+  mpRefreshToken   String?
+  mpUserId         String?                   @unique
+  mpEmail          String?
+  mpLinkedAt       DateTime?
   ubicacion        Unsupported("geography")?
   owner            User                      @relation(fields: [ownerId], references: [id])
   acquiredProducts MerchantAcquiredProduct[]
@@ -381,6 +395,11 @@ model SellerProfile {
   totalSales     Int       @default(0)
   rating         Float?
   commissionRate Float     @default(12)
+  mpAccessToken  String?
+  mpRefreshToken String?
+  mpUserId       String?   @unique
+  mpEmail        String?
+  mpLinkedAt     DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   user           User      @relation(fields: [userId], references: [id])
@@ -569,4 +588,35 @@ model MerchantAcquiredProduct {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([merchantId, productId])
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  orderId        String
+  mpPaymentId    String   @unique
+  mpStatus       String
+  mpStatusDetail String?
+  amount         Float
+  currency       String   @default("ARS")
+  payerEmail     String?
+  paymentMethod  String?
+  rawPayload     Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([mpPaymentId])
+}
+
+model MpWebhookLog {
+  id         String   @id @default(cuid())
+  eventId    String   @unique
+  eventType  String
+  resourceId String
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([resourceId])
 }

@@ -8,6 +8,7 @@
 // Order status constants - use these instead of hardcoded strings
 export const ORDER_STATUSES = {
     PENDING: 'PENDING',
+    AWAITING_PAYMENT: 'AWAITING_PAYMENT',
     CONFIRMED: 'CONFIRMED',
     PREPARING: 'PREPARING',
     READY: 'READY',
@@ -23,6 +24,7 @@ export type OrderStatus = typeof ORDER_STATUSES[keyof typeof ORDER_STATUSES];
 // Status display labels in Spanish
 export const STATUS_LABELS: Record<OrderStatus, string> = {
     PENDING: 'Pendiente',
+    AWAITING_PAYMENT: 'Esperando pago',
     CONFIRMED: 'Confirmado',
     PREPARING: 'Preparando',
     READY: 'Listo para retiro',
@@ -36,6 +38,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
 // Status colors for UI
 export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = {
     PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    AWAITING_PAYMENT: { bg: 'bg-amber-100', text: 'text-amber-700' },
     CONFIRMED: { bg: 'bg-blue-100', text: 'text-blue-700' },
     PREPARING: { bg: 'bg-purple-100', text: 'text-purple-700' },
     READY: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
@@ -108,6 +111,7 @@ export function isCompletedOrder(status: string): boolean {
 export function getNextStatuses(currentStatus: string): OrderStatus[] {
     const transitions: Record<string, OrderStatus[]> = {
         PENDING: ['CONFIRMED', 'CANCELLED'],
+        AWAITING_PAYMENT: ['CONFIRMED', 'CANCELLED'],
         CONFIRMED: ['PREPARING', 'CANCELLED'],
         PREPARING: ['READY', 'CANCELLED'],
         READY: ['DRIVER_ASSIGNED', 'CANCELLED'],
