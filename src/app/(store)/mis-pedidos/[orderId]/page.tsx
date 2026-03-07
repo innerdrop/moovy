@@ -365,9 +365,10 @@ export default function OrderDetailPage() {
                         <div className="flex-1">
                             <p className="text-xs text-gray-400">Método de pago</p>
                             <p className="font-bold text-gray-900">
-                                {order.paymentMethod === "CASH" ? "Efectivo" :
-                                    order.paymentMethod === "CARD" ? "Tarjeta" :
-                                        order.paymentMethod === "TRANSFER" ? "Transferencia" : order.paymentMethod || "No especificado"}
+                                {order.paymentMethod === "CASH" || order.paymentMethod === "cash" ? "Efectivo" :
+                                    order.paymentMethod === "CARD" || order.paymentMethod === "card" ? "Tarjeta" :
+                                        order.paymentMethod === "TRANSFER" || order.paymentMethod === "transfer" ? "Transferencia" :
+                                            order.paymentMethod === "mercadopago" ? "Mercado Pago" : order.paymentMethod || "No especificado"}
                             </p>
                         </div>
                     </div>

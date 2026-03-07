@@ -307,14 +307,21 @@ export default function CheckoutPage() {
                 throw new Error(error.error || "Error al crear el pedido");
             }
 
-            // Clear cart and redirect to orders page
+            // Clear cart and handle redirect
             clearCart();
             const result = await response.json();
+
+            // MercadoPago: redirect to MP checkout
+            if (result.initPoint) {
+                window.location.href = result.initPoint;
+                return;
+            }
+
+            // Cash: show points celebration and redirect to orders
             if (result.points?.earned) {
                 setEarnedPoints(result.points.earned);
                 showCelebration(result.points.earned);
             }
-            // Redirect to "Mis Pedidos" so user can track their order immediately
             router.push("/mis-pedidos");
         } catch (error) {
             console.error("Error submitting order:", error);
@@ -722,7 +729,7 @@ export default function CheckoutPage() {
                                             </div>
                                         </label>
 
-                                        <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition opacity-50 ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
+                                        <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
                                             }`}>
                                             <input
                                                 type="radio"
@@ -731,11 +738,10 @@ export default function CheckoutPage() {
                                                 checked={paymentMethod === "mercadopago"}
                                                 onChange={() => setPaymentMethod("mercadopago")}
                                                 className="sr-only"
-                                                disabled
                                             />
                                             <div className="flex-1">
                                                 <span className="font-semibold">💳 Mercado Pago</span>
-                                                <p className="text-sm text-gray-600">Próximamente...</p>
+                                                <p className="text-sm text-gray-600">Tarjeta, débito, MP wallet y más</p>
                                             </div>
                                         </label>
                                     </div>

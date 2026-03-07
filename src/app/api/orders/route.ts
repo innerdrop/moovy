@@ -6,6 +6,7 @@ import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, g
 import { CreateOrderSchema, validateInput } from "@/lib/validations";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
+import { preferenceApi, buildPreferenceBody } from "@/lib/mercadopago";
 
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
@@ -270,6 +271,76 @@ export async function POST(request: Request) {
         } catch (pointsError) {
             console.error("Error processing points for order:", order.id, pointsError);
             // Don't fail the order if points fail, but log it
+        }
+
+        // --- MERCADOPAGO: Create preference and return early ---
+        if (paymentMethod === "mercadopago") {
+            try {
+                const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+
+                // Fetch order with relations needed for preference
+                const orderForPref = await prisma.order.findUnique({
+                    where: { id: order.id },
+                    include: {
+                        items: { select: { id: true, name: true, price: true, quantity: true } },
+                        subOrders: { select: { moovyCommission: true } },
+                        user: { select: { name: true, email: true } },
+                    },
+                });
+
+                if (!orderForPref) throw new Error("Order not found after creation");
+
+                const prefBody = buildPreferenceBody(orderForPref, baseUrl);
+                const preference = await preferenceApi.create({ body: prefBody });
+
+                // Update order with preference ID and AWAITING_PAYMENT status
+                await prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        mpPreferenceId: preference.id || null,
+                        status: "AWAITING_PAYMENT",
+                    },
+                });
+
+                // Notify vendors via socket (same as cash flow below)
+                try {
+                    const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+                    const socketHeaders = { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.CRON_SECRET}` };
+                    const socketData = { orderId: order.id, orderNumber: order.orderNumber, total: order.total, status: "AWAITING_PAYMENT", userId: session.user.id };
+
+                    if (groups && groups.length > 0) {
+                        for (const group of groups) {
+                            if (group.merchantId) {
+                                await fetch(`${socketUrl}/emit`, { method: "POST", headers: socketHeaders, body: JSON.stringify({ event: "new_order", room: `merchant:${group.merchantId}`, data: socketData }) });
+                            }
+                            if (group.sellerId) {
+                                await fetch(`${socketUrl}/emit`, { method: "POST", headers: socketHeaders, body: JSON.stringify({ event: "new_order", room: `seller:${group.sellerId}`, data: socketData }) });
+                            }
+                        }
+                    } else if (merchantId) {
+                        await fetch(`${socketUrl}/emit`, { method: "POST", headers: socketHeaders, body: JSON.stringify({ event: "new_order", room: `merchant:${merchantId}`, data: socketData }) });
+                    }
+                    await fetch(`${socketUrl}/emit`, { method: "POST", headers: socketHeaders, body: JSON.stringify({ event: "new_order", room: "admin:orders", data: { ...socketData, merchantId, isMultiVendor } }) });
+                } catch (e) {
+                    console.error("[Socket-Emit] Failed to notify new MP order:", e);
+                }
+
+                // NO email — will be sent by webhook when payment is confirmed
+                return NextResponse.json({
+                    success: true,
+                    order: { id: order.id, orderNumber: order.orderNumber, total: order.total, status: "AWAITING_PAYMENT" },
+                    points: pointsResult,
+                    preferenceId: preference.id,
+                    initPoint: preference.init_point,
+                    sandboxInitPoint: preference.sandbox_init_point,
+                }, { status: 201 });
+
+            } catch (mpError) {
+                console.error("[MP] Error creating preference:", mpError);
+                // Cancel the order since payment can't proceed
+                await prisma.order.update({ where: { id: order.id }, data: { status: "CANCELLED", cancelReason: "Error al crear preferencia de pago" } });
+                return NextResponse.json({ error: "Error al iniciar el pago con MercadoPago" }, { status: 500 });
+            }
         }
 
         // --- REAL-TIME: Notify merchants/sellers and admin about new order ---
