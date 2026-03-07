@@ -1,5 +1,6 @@
 // MercadoPago SDK Singleton + Helpers
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
+import crypto from "crypto";
 
 const globalForMp = global as unknown as { mpClient: MercadoPagoConfig };
 
@@ -84,4 +85,45 @@ export function buildPreferenceBody(order: OrderForPreference, baseUrl: string) 
             email: order.user.email || undefined,
         },
     };
+}
+
+// ─── Webhook HMAC Verification ───────────────────────────────────────────────
+
+/**
+ * Verify MercadoPago webhook signature.
+ * MP sends x-signature header with format: "ts=TIMESTAMP,v1=HASH"
+ * Template: "id:{dataId};request-id:{xRequestId};ts:{ts};"
+ */
+export function verifyWebhookSignature(
+    xSignature: string,
+    xRequestId: string,
+    dataId: string
+): boolean {
+    const secret = process.env.MP_WEBHOOK_SECRET;
+    if (!secret) return false;
+
+    // Parse ts and v1 from x-signature
+    const parts: Record<string, string> = {};
+    for (const part of xSignature.split(",")) {
+        const [key, ...rest] = part.split("=");
+        parts[key.trim()] = rest.join("=").trim();
+    }
+
+    const ts = parts["ts"];
+    const v1 = parts["v1"];
+    if (!ts || !v1) return false;
+
+    // Build template and compute HMAC
+    const template = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+    const hmac = crypto
+        .createHmac("sha256", secret)
+        .update(template)
+        .digest("hex");
+
+    // Timing-safe comparison
+    try {
+        return crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(hmac));
+    } catch {
+        return false;
+    }
 }
