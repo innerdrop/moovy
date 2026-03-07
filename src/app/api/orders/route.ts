@@ -6,7 +6,7 @@ import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, g
 import { CreateOrderSchema, validateInput } from "@/lib/validations";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
-import { preferenceApi, buildPreferenceBody } from "@/lib/mercadopago";
+import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/lib/mercadopago";
 
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
@@ -283,7 +283,7 @@ export async function POST(request: Request) {
                     where: { id: order.id },
                     include: {
                         items: { select: { id: true, name: true, price: true, quantity: true } },
-                        subOrders: { select: { moovyCommission: true } },
+                        subOrders: { select: { moovyCommission: true, merchantId: true, sellerId: true } },
                         user: { select: { name: true, email: true } },
                     },
                 });
@@ -291,7 +291,38 @@ export async function POST(request: Request) {
                 if (!orderForPref) throw new Error("Order not found after creation");
 
                 const prefBody = buildPreferenceBody(orderForPref, baseUrl);
-                const preference = await preferenceApi.create({ body: prefBody });
+
+                // Split payment: use vendor's access token if single-vendor with MP linked
+                let vendorAccessToken: string | null = null;
+                if (!isMultiVendor) {
+                    if (orderForPref.subOrders.length === 1) {
+                        const sub = orderForPref.subOrders[0];
+                        if (sub.merchantId) {
+                            const m = await prisma.merchant.findUnique({
+                                where: { id: sub.merchantId },
+                                select: { mpAccessToken: true },
+                            });
+                            vendorAccessToken = m?.mpAccessToken || null;
+                        } else if (sub.sellerId) {
+                            const s = await prisma.sellerProfile.findUnique({
+                                where: { id: sub.sellerId },
+                                select: { mpAccessToken: true },
+                            });
+                            vendorAccessToken = s?.mpAccessToken || null;
+                        }
+                    } else if (merchantId && orderForPref.subOrders.length === 0) {
+                        // Single merchant order without subOrders
+                        const m = await prisma.merchant.findUnique({
+                            where: { id: merchantId },
+                            select: { mpAccessToken: true },
+                        });
+                        vendorAccessToken = m?.mpAccessToken || null;
+                    }
+                }
+
+                const preference = vendorAccessToken
+                    ? await createVendorPreference(vendorAccessToken, prefBody)
+                    : await preferenceApi.create({ body: prefBody });
 
                 // Update order with preference ID and AWAITING_PAYMENT status
                 await prisma.order.update({

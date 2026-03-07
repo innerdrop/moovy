@@ -5,7 +5,8 @@
       "Bash(npx prisma generate)",
       "Bash(npx tsc --noEmit)",
       "Bash(wc -l \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(store\\)\\\\checkout\\\\page.tsx\")",
-      "Bash(npm install mercadopago)"
+      "Bash(npm install mercadopago)",
+      "Bash(xargs grep -l \"oauth\\\\|OAuth\\\\|clientId\")"
     ]
   }
 }

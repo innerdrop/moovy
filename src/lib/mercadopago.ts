@@ -127,3 +127,134 @@ export function verifyWebhookSignature(
         return false;
     }
 }
+
+// ─── OAuth Helpers ───────────────────────────────────────────────────────────
+
+const MP_OAUTH_BASE = "https://auth.mercadopago.com";
+const MP_API_BASE = "https://api.mercadopago.com";
+
+/**
+ * Build the OAuth authorization URL for vendor linking.
+ */
+export function getOAuthAuthorizeUrl(state: string, redirectUri: string): string {
+    const params = new URLSearchParams({
+        client_id: process.env.MP_APP_ID!,
+        response_type: "code",
+        platform_id: "mp",
+        state,
+        redirect_uri: redirectUri,
+    });
+    return `${MP_OAUTH_BASE}/authorization?${params.toString()}`;
+}
+
+/**
+ * Sign an OAuth state string with HMAC to prevent CSRF.
+ */
+export function signOAuthState(payload: Record<string, string>): string {
+    const data = JSON.stringify(payload);
+    const base64 = Buffer.from(data).toString("base64url");
+    const sig = crypto
+        .createHmac("sha256", process.env.MP_ACCESS_TOKEN!)
+        .update(base64)
+        .digest("hex")
+        .slice(0, 16);
+    return `${base64}.${sig}`;
+}
+
+/**
+ * Verify and decode a signed OAuth state.
+ */
+export function verifyOAuthState(state: string): Record<string, string> | null {
+    const [base64, sig] = state.split(".");
+    if (!base64 || !sig) return null;
+
+    const expectedSig = crypto
+        .createHmac("sha256", process.env.MP_ACCESS_TOKEN!)
+        .update(base64)
+        .digest("hex")
+        .slice(0, 16);
+
+    if (sig !== expectedSig) return null;
+
+    try {
+        return JSON.parse(Buffer.from(base64, "base64url").toString());
+    } catch {
+        return null;
+    }
+}
+
+interface OAuthTokenResponse {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+    scope: string;
+    user_id: number;
+    refresh_token: string;
+    public_key: string;
+    live_mode: boolean;
+}
+
+/**
+ * Exchange an authorization code for vendor tokens.
+ */
+export async function exchangeOAuthCode(
+    code: string,
+    redirectUri: string
+): Promise<OAuthTokenResponse> {
+    const res = await fetch(`${MP_API_BASE}/oauth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            client_id: process.env.MP_APP_ID,
+            client_secret: process.env.MP_ACCESS_TOKEN,
+            code,
+            redirect_uri: redirectUri,
+            grant_type: "authorization_code",
+        }),
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`MP OAuth token exchange failed: ${res.status} ${err}`);
+    }
+
+    return res.json();
+}
+
+/**
+ * Refresh a vendor's access token using their refresh token.
+ */
+export async function refreshOAuthToken(
+    refreshToken: string
+): Promise<OAuthTokenResponse> {
+    const res = await fetch(`${MP_API_BASE}/oauth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            client_id: process.env.MP_APP_ID,
+            client_secret: process.env.MP_ACCESS_TOKEN,
+            refresh_token: refreshToken,
+            grant_type: "refresh_token",
+        }),
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`MP OAuth token refresh failed: ${res.status} ${err}`);
+    }
+
+    return res.json();
+}
+
+/**
+ * Create a Preference using a vendor's access token (for split payments).
+ * Payment goes to the vendor's account, marketplace_fee goes to Moovy.
+ */
+export async function createVendorPreference(
+    vendorAccessToken: string,
+    body: ReturnType<typeof buildPreferenceBody>
+) {
+    const vendorConfig = new MercadoPagoConfig({ accessToken: vendorAccessToken });
+    const vendorPref = new Preference(vendorConfig);
+    return vendorPref.create({ body });
+}

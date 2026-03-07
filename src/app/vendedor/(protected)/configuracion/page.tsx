@@ -11,6 +11,9 @@ import {
     CreditCard,
     AlertCircle,
     CheckCircle,
+    Link2,
+    Unlink,
+    AlertTriangle,
 } from "lucide-react";
 
 interface SellerProfile {
@@ -20,6 +23,9 @@ interface SellerProfile {
     avatar: string | null;
     bankAlias: string | null;
     bankCbu: string | null;
+    mpEmail: string | null;
+    mpLinkedAt: string | null;
+    mpUserId: string | null;
 }
 
 export default function VendedorConfiguracionPage() {
@@ -29,6 +35,10 @@ export default function VendedorConfiguracionPage() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [avatar, setAvatar] = useState("");
+
+    const [mpEmail, setMpEmail] = useState<string | null>(null);
+    const [mpLinkedAt, setMpLinkedAt] = useState<string | null>(null);
+    const [mpDisconnecting, setMpDisconnecting] = useState(false);
 
     const [formData, setFormData] = useState({
         displayName: "",
@@ -53,6 +63,8 @@ export default function VendedorConfiguracionPage() {
                     bankCbu: data.bankCbu || "",
                 });
                 setAvatar(data.avatar || "");
+                setMpEmail(data.mpEmail || null);
+                setMpLinkedAt(data.mpLinkedAt || null);
             }
         } catch (error) {
             console.error("Error loading profile:", error);
@@ -94,6 +106,29 @@ export default function VendedorConfiguracionPage() {
             setSaving(false);
         }
     }
+
+    const handleDisconnectMp = async () => {
+        setMpDisconnecting(true);
+        try {
+            const res = await fetch("/api/mp/disconnect", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "seller" }),
+            });
+            if (res.ok) {
+                setMpEmail(null);
+                setMpLinkedAt(null);
+                setSuccess("MercadoPago desvinculado correctamente");
+                setTimeout(() => setSuccess(""), 3000);
+            } else {
+                setError("Error al desvincular MercadoPago");
+            }
+        } catch {
+            setError("Error de conexión");
+        } finally {
+            setMpDisconnecting(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -236,6 +271,57 @@ export default function VendedorConfiguracionPage() {
                     Guardar Cambios
                 </button>
             </form>
+
+            {/* MercadoPago */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Link2 className="w-5 h-5 text-gray-400" />
+                    MercadoPago
+                </h2>
+                <p className="text-sm text-gray-500 mb-4">
+                    Vinculá tu cuenta de MercadoPago para recibir pagos directamente.
+                </p>
+
+                {mpEmail ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg">
+                            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                            <div>
+                                <p className="font-medium">Vinculado como: {mpEmail}</p>
+                                {mpLinkedAt && (
+                                    <p className="text-xs text-green-600">
+                                        Desde: {new Date(mpLinkedAt).toLocaleDateString("es-AR")}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleDisconnectMp}
+                            disabled={mpDisconnecting}
+                            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
+                        >
+                            {mpDisconnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                            Desvincular MercadoPago
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                            <p className="font-medium">No vinculado — los pagos se reciben en la cuenta de Moovy</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => window.location.href = "/api/mp/connect?type=seller"}
+                            className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 font-semibold"
+                        >
+                            <Link2 className="w-5 h-5" />
+                            Vincular MercadoPago
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

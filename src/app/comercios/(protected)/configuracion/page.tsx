@@ -54,6 +54,9 @@ export default async function ConfiguracionPage() {
                     firstName: merchant.owner.firstName || "",
                     lastName: merchant.owner.lastName || "",
                     ownerPhone: merchant.owner.phone || "",
+                    mpEmail: merchant.mpEmail,
+                    mpLinkedAt: merchant.mpLinkedAt?.toISOString() || null,
+                    mpUserId: merchant.mpUserId,
                 }}
             />
         </div>

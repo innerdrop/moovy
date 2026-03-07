@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User } from "lucide-react";
+import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User, Link2, Unlink, AlertTriangle, CheckCircle } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface SettingsFormProps {
@@ -26,6 +26,9 @@ interface SettingsFormProps {
         firstName: string;
         lastName: string;
         ownerPhone: string;
+        mpEmail?: string | null;
+        mpLinkedAt?: string | null;
+        mpUserId?: string | null;
     };
 }
 
@@ -54,6 +57,9 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
     const [address, setAddress] = useState(merchant.address);
     const [lat, setLat] = useState<number | null>(merchant.latitude ?? null);
     const [lng, setLng] = useState<number | null>(merchant.longitude ?? null);
+    const [mpDisconnecting, setMpDisconnecting] = useState(false);
+    const [mpEmail, setMpEmail] = useState(merchant.mpEmail || null);
+    const [mpLinkedAt] = useState(merchant.mpLinkedAt || null);
 
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
@@ -83,6 +89,28 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
             setError(result.error);
         }
         setIsTogglingStore(false);
+    };
+
+    const handleDisconnectMp = async () => {
+        setMpDisconnecting(true);
+        try {
+            const res = await fetch("/api/mp/disconnect", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "merchant" }),
+            });
+            if (res.ok) {
+                setMpEmail(null);
+                setSuccess("MercadoPago desvinculado correctamente");
+                setTimeout(() => setSuccess(""), 3000);
+            } else {
+                setError("Error al desvincular MercadoPago");
+            }
+        } catch {
+            setError("Error de conexión");
+        } finally {
+            setMpDisconnecting(false);
+        }
     };
 
     return (
@@ -393,6 +421,57 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                     </button>
                 </div>
             </form >
+
+            {/* MercadoPago */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Link2 className="w-5 h-5 text-blue-600" />
+                    MercadoPago
+                </h2>
+                <p className="text-sm text-gray-500">
+                    Vinculá tu cuenta de MercadoPago para recibir pagos directamente.
+                </p>
+
+                {mpEmail ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg">
+                            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                            <div>
+                                <p className="font-medium">Vinculado como: {mpEmail}</p>
+                                {mpLinkedAt && (
+                                    <p className="text-xs text-green-600">
+                                        Desde: {new Date(mpLinkedAt).toLocaleDateString("es-AR")}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleDisconnectMp}
+                            disabled={mpDisconnecting}
+                            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
+                        >
+                            {mpDisconnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                            Desvincular MercadoPago
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                            <p className="font-medium">No vinculado — los pagos se reciben en la cuenta de Moovy</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => window.location.href = "/api/mp/connect?type=merchant"}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <Link2 className="w-4 h-4" />
+                            Vincular MercadoPago
+                        </button>
+                    </div>
+                )}
+            </div>
         </div >
     );
 }

@@ -29,7 +29,9 @@ export async function GET() {
             );
         }
 
-        return NextResponse.json(seller);
+        // Strip sensitive tokens before returning to client
+        const { mpAccessToken: _token, mpRefreshToken: _refresh, ...safeProfile } = seller;
+        return NextResponse.json(safeProfile);
     } catch (error) {
         console.error("Error fetching seller profile:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
