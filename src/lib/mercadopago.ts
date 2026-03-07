@@ -37,7 +37,11 @@ interface OrderForPreference {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function buildPreferenceBody(order: OrderForPreference, baseUrl: string) {
+export function buildPreferenceBody(
+    order: OrderForPreference,
+    baseUrl: string,
+    marketplaceFee = 0
+) {
     const items = order.items.map((item) => ({
         id: item.id,
         title: item.name,
@@ -57,17 +61,12 @@ export function buildPreferenceBody(order: OrderForPreference, baseUrl: string) 
         });
     }
 
-    // Moovy's total commission across all SubOrders
-    const marketplaceFee = order.subOrders.reduce(
-        (sum, sub) => sum + (sub.moovyCommission || 0),
-        0
-    );
-
     const returnUrl = `${baseUrl}/checkout/mp-return?orderId=${order.id}`;
 
     return {
         items,
-        marketplace_fee: marketplaceFee,
+        // Only include marketplace_fee for split payments (vendor's token)
+        ...(marketplaceFee > 0 ? { marketplace_fee: marketplaceFee } : {}),
         back_urls: {
             success: returnUrl,
             failure: returnUrl,

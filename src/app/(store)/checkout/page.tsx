@@ -307,17 +307,18 @@ export default function CheckoutPage() {
                 throw new Error(error.error || "Error al crear el pedido");
             }
 
-            // Clear cart and handle redirect
-            clearCart();
+            // Parse response before clearing cart to avoid useEffect race
             const result = await response.json();
 
-            // MercadoPago: redirect to MP checkout
+            // MercadoPago: redirect to MP checkout (clear cart before hard navigation)
             if (result.initPoint) {
+                clearCart();
                 window.location.href = result.initPoint;
                 return;
             }
 
-            // Cash: show points celebration and redirect to orders
+            // Cash: clear cart, then show points celebration and redirect
+            clearCart();
             if (result.points?.earned) {
                 setEarnedPoints(result.points.earned);
                 showCelebration(result.points.earned);

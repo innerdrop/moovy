@@ -290,9 +290,7 @@ export async function POST(request: Request) {
 
                 if (!orderForPref) throw new Error("Order not found after creation");
 
-                const prefBody = buildPreferenceBody(orderForPref, baseUrl);
-
-                // Split payment: use vendor's access token if single-vendor with MP linked
+                // Split payment: resolve vendor access token first (needed to decide marketplace_fee)
                 let vendorAccessToken: string | null = null;
                 if (!isMultiVendor) {
                     if (orderForPref.subOrders.length === 1) {
@@ -311,7 +309,6 @@ export async function POST(request: Request) {
                             vendorAccessToken = s?.mpAccessToken || null;
                         }
                     } else if (merchantId && orderForPref.subOrders.length === 0) {
-                        // Single merchant order without subOrders
                         const m = await prisma.merchant.findUnique({
                             where: { id: merchantId },
                             select: { mpAccessToken: true },
@@ -319,6 +316,13 @@ export async function POST(request: Request) {
                         vendorAccessToken = m?.mpAccessToken || null;
                     }
                 }
+
+                // marketplace_fee only valid for split payments (vendor's token)
+                // Passing it with Moovy's own token causes a 400 from the MP API
+                const marketplaceFee = vendorAccessToken
+                    ? orderForPref.subOrders.reduce((s, sub) => s + (sub.moovyCommission || 0), 0)
+                    : 0;
+                const prefBody = buildPreferenceBody(orderForPref, baseUrl, marketplaceFee);
 
                 const preference = vendorAccessToken
                     ? await createVendorPreference(vendorAccessToken, prefBody)
@@ -356,13 +360,19 @@ export async function POST(request: Request) {
                     console.error("[Socket-Emit] Failed to notify new MP order:", e);
                 }
 
+                // Use sandbox_init_point in non-production so test credentials work correctly
+                const isSandbox = process.env.NODE_ENV !== "production";
+                const initPoint = isSandbox
+                    ? (preference.sandbox_init_point || preference.init_point)
+                    : preference.init_point;
+
                 // NO email — will be sent by webhook when payment is confirmed
                 return NextResponse.json({
                     success: true,
                     order: { id: order.id, orderNumber: order.orderNumber, total: order.total, status: "AWAITING_PAYMENT" },
                     points: pointsResult,
                     preferenceId: preference.id,
-                    initPoint: preference.init_point,
+                    initPoint,
                     sandboxInitPoint: preference.sandbox_init_point,
                 }, { status: 201 });
 
