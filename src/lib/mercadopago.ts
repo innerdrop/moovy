@@ -63,6 +63,11 @@ export function buildPreferenceBody(
 
     const returnUrl = `${baseUrl}/checkout/mp-return?orderId=${order.id}`;
 
+    // MP rejects notification_url that isn't publicly reachable (localhost)
+    const isLocalDev = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
+    const isSandbox = process.env.NODE_ENV !== "production";
+    const notificationUrl = isLocalDev ? undefined : `${baseUrl}/api/webhooks/mercadopago`;
+
     return {
         items,
         // Only include marketplace_fee for split payments (vendor's token)
@@ -72,8 +77,9 @@ export function buildPreferenceBody(
             failure: returnUrl,
             pending: returnUrl,
         },
-        auto_return: "approved" as const,
-        notification_url: `${baseUrl}/api/webhooks/mercadopago`,
+        // auto_return causes redirect loops in MP sandbox; only enable in production
+        ...(!isLocalDev && !isSandbox ? { auto_return: "approved" as const } : {}),
+        ...(notificationUrl ? { notification_url: notificationUrl } : {}),
         external_reference: order.id,
         metadata: {
             order_id: order.id,

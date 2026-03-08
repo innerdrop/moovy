@@ -210,7 +210,7 @@ export default function CheckoutPage() {
     };
 
     const handleSubmitOrder = async () => {
-        if (!deliveryResult?.isWithinRange) return;
+        if (!isPickup && !deliveryResult?.isWithinRange) return;
 
         setIsSubmitting(true);
         console.log("[Checkout] Submitting order for groups:", groups.length);
@@ -283,17 +283,24 @@ export default function CheckoutPage() {
                     merchantId: primaryMerchantId || undefined,
                     // Send addressId if available, otherwise addressData
                     addressId: orderAddressId || undefined,
-                    addressData: !orderAddressId ? {
-                        street: address.street,
-                        number: address.number,
-                        floor: address.floor,
-                        city: address.city,
-                        latitude: address.latitude,
-                        longitude: address.longitude,
-                    } : undefined,
+                    addressData: !orderAddressId ? (
+                        // For pickup without address, send a placeholder so backend can create the Order
+                        isPickup && !address.street ? {
+                            street: "Retiro en local",
+                            number: "S/N",
+                            city: address.city || "Ushuaia",
+                        } : {
+                            street: address.street,
+                            number: address.number,
+                            floor: address.floor,
+                            city: address.city,
+                            latitude: address.latitude,
+                            longitude: address.longitude,
+                        }
+                    ) : undefined,
                     paymentMethod,
                     deliveryFee: isPickup ? 0 : (deliveryResult?.isFreeDelivery ? 0 : deliveryResult?.totalCost),
-                    distanceKm: isPickup ? null : deliveryResult?.distanceKm,
+                    distanceKm: isPickup ? undefined : deliveryResult?.distanceKm,
                     isPickup,
                     deliveryNotes: address.notes || null,
                     // Points data
@@ -749,7 +756,7 @@ export default function CheckoutPage() {
 
                                     <div className="flex gap-4 mt-6">
                                         <button
-                                            onClick={() => setStep(2)}
+                                            onClick={() => setStep(isPickup ? 1 : 2)}
                                             className="btn-outline flex-1"
                                         >
                                             Atrás
