@@ -360,11 +360,9 @@ export async function POST(request: Request) {
                     console.error("[Socket-Emit] Failed to notify new MP order:", e);
                 }
 
-                // Use sandbox_init_point in non-production so test credentials work correctly
-                const isSandbox = process.env.NODE_ENV !== "production";
-                const initPoint = isSandbox
-                    ? (preference.sandbox_init_point || preference.init_point)
-                    : preference.init_point;
+                // Always use init_point — MP auto-redirects to sandbox when using TEST- credentials.
+                // sandbox_init_point causes ERR_TOO_MANY_REDIRECTS with test users.
+                const initPoint = preference.init_point;
 
                 // NO email — will be sent by webhook when payment is confirmed
                 return NextResponse.json({
