@@ -61,7 +61,8 @@ export function buildPreferenceBody(
         });
     }
 
-    const returnUrl = `${baseUrl}/checkout/mp-return?orderId=${order.id}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl;
+    const returnUrl = `${appUrl}/checkout/mp-return`;
 
     // MP rejects notification_url that isn't publicly reachable (localhost)
     const isLocalDev = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");

@@ -16,28 +16,59 @@ interface PaymentStatus {
 
 export default function MpReturnPage() {
     const searchParams = useSearchParams();
-    const orderId = searchParams.get("orderId");
 
+    // MP returns: payment_id, status, preference_id (but NOT orderId)
+    // Legacy flow may still include orderId as query param
+    const directOrderId = searchParams.get("orderId");
+    const preferenceId = searchParams.get("preference_id");
+
+    const [resolvedOrderId, setResolvedOrderId] = useState<string | null>(directOrderId);
     const [status, setStatus] = useState<PaymentStatus | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [timedOut, setTimedOut] = useState(false);
 
+    // Phase 1: Resolve orderId from preference_id if not available directly
+    useEffect(() => {
+        if (resolvedOrderId) return; // Already have it
+
+        if (!preferenceId) {
+            setError("No se encontró el ID de la orden");
+            return;
+        }
+
+        let active = true;
+
+        const resolve = async () => {
+            try {
+                const res = await fetch(
+                    `/api/payments/by-preference?preferenceId=${encodeURIComponent(preferenceId)}`
+                );
+                if (!res.ok) throw new Error("Orden no encontrada");
+                const data = await res.json();
+                if (active) setResolvedOrderId(data.orderId);
+            } catch {
+                if (active) setError("No pudimos encontrar tu orden. Revisá en Mis Pedidos.");
+            }
+        };
+
+        resolve();
+        return () => { active = false; };
+    }, [resolvedOrderId, preferenceId]);
+
+    // Phase 2: Poll payment status once orderId is resolved
     const pollStatus = useCallback(async () => {
-        if (!orderId) return null;
+        if (!resolvedOrderId) return null;
         try {
-            const res = await fetch(`/api/payments/${orderId}/status`);
+            const res = await fetch(`/api/payments/${resolvedOrderId}/status`);
             if (!res.ok) throw new Error("Error consultando estado");
             return (await res.json()) as PaymentStatus;
         } catch {
             return null;
         }
-    }, [orderId]);
+    }, [resolvedOrderId]);
 
     useEffect(() => {
-        if (!orderId) {
-            setError("No se encontró el ID de la orden");
-            return;
-        }
+        if (!resolvedOrderId) return;
 
         let active = true;
         let pollCount = 0;
@@ -73,7 +104,7 @@ export default function MpReturnPage() {
         return () => {
             active = false;
         };
-    }, [orderId, pollStatus]);
+    }, [resolvedOrderId, pollStatus]);
 
     if (error) {
         return (
