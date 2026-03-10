@@ -262,7 +262,8 @@ model Order {
 model OrderItem {
   id          String    @id @default(cuid())
   orderId     String
-  productId   String
+  productId   String?
+  listingId   String?
   name        String
   price       Float
   quantity    Int
@@ -270,8 +271,11 @@ model OrderItem {
   subtotal    Float
   subOrderId  String?
   order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product   @relation(fields: [productId], references: [id])
+  product     Product?  @relation(fields: [productId], references: [id])
+  listing     Listing?  @relation(fields: [listingId], references: [id])
   subOrder    SubOrder? @relation(fields: [subOrderId], references: [id])
+
+  @@index([listingId])
 }
 
 model SubOrder {
@@ -437,6 +441,7 @@ model Listing {
   seller      SellerProfile  @relation(fields: [sellerId], references: [id])
   images      ListingImage[]
   category    Category?      @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
 
   @@index([isActive])
   @@index([sellerId])

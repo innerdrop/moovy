@@ -334,10 +334,17 @@ export async function DELETE(
 
         await prisma.$transaction(async (tx) => {
             for (const item of orderItems) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: { stock: { increment: item.quantity } },
-                });
+                if (item.listingId) {
+                    await tx.listing.update({
+                        where: { id: item.listingId },
+                        data: { stock: { increment: item.quantity } },
+                    });
+                } else if (item.productId) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { stock: { increment: item.quantity } },
+                    });
+                }
             }
 
             await tx.order.update({

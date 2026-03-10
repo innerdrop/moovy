@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             take: 5
         });
 
-        const productIds = topProductsData.map(p => p.productId);
+        const productIds = topProductsData.map(p => p.productId).filter((id): id is string => id !== null);
         const productsInfo = await prisma.product.findMany({
             where: { id: { in: productIds } },
             select: { id: true, name: true }

@@ -16,8 +16,10 @@ interface Listing {
     title: string;
     price: number;
     condition: string;
+    sellerId: string;
     images: { url: string; order: number }[];
     seller: {
+        id: string;
         displayName: string | null;
         rating: number | null;
         avatar: string | null;
@@ -235,7 +237,7 @@ export default function MarketplacePage() {
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                         {listings.map((listing) => (
-                            <ListingCard key={listing.id} listing={listing} />
+                            <ListingCard key={listing.id} listing={listing} showAddButton />
                         ))}
                     </div>
 

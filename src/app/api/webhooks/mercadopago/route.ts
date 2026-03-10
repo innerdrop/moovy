@@ -136,7 +136,7 @@ interface OrderWithRelations {
     status: string;
     paymentMethod: string | null;
     isPickup: boolean;
-    items: Array<{ id: string; productId: string; name: string; price: number; quantity: number }>;
+    items: Array<{ id: string; productId: string | null; listingId?: string | null; name: string; price: number; quantity: number }>;
     subOrders: Array<{ id: string; merchantId: string | null; sellerId: string | null }>;
     user: { name: string | null; email: string | null };
     address: { street: string; number: string; apartment: string | null; city: string | null } | null;
@@ -197,10 +197,17 @@ async function handleRejected(
     // Restore stock and cancel order in transaction
     await prisma.$transaction(async (tx) => {
         for (const item of order.items) {
-            await tx.product.update({
-                where: { id: item.productId },
-                data: { stock: { increment: item.quantity } },
-            });
+            if (item.listingId) {
+                await tx.listing.update({
+                    where: { id: item.listingId },
+                    data: { stock: { increment: item.quantity } },
+                });
+            } else if (item.productId) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { increment: item.quantity } },
+                });
+            }
         }
 
         await tx.order.update({

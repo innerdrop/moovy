@@ -170,10 +170,12 @@ export async function POST(request: Request) {
 
             // Create order items
             for (const item of items) {
+                const isListing = item.type === "listing";
                 await tx.orderItem.create({
                     data: {
                         orderId: newOrder.id,
-                        productId: item.productId,
+                        productId: isListing ? null : item.productId,
+                        listingId: isListing ? item.productId : null,
                         name: item.name,
                         price: item.price,
                         quantity: item.quantity,
