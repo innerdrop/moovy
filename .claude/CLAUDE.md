@@ -79,11 +79,13 @@ DATABASE_URL          # PostgreSQL puerto 5436
 SHADOW_DATABASE_URL   # Shadow DB con PostGIS
 NEXTAUTH_SECRET       # Auth
 CRON_SECRET           # Socket.IO auth — NUNCA usar fallback hardcodeado
+NEXT_PUBLIC_APP_URL   # URL canónica de la app (dev: http://localhost:3000, prod: https://www.somosmoovy.com)
 MP_PUBLIC_KEY         # MercadoPago public key (TEST- en sandbox)
 MP_ACCESS_TOKEN       # MercadoPago access token (TEST- en sandbox)
 MP_WEBHOOK_SECRET     # MercadoPago webhook HMAC secret
 MP_APP_ID             # ID de la app MOOVY en MP
 ```
+Ver `.env.example` en la raíz del proyecto para la lista completa con comentarios.
 
 ## Archivos críticos — leer antes de modificar
 | Archivo | Por qué es crítico |
@@ -94,6 +96,9 @@ MP_APP_ID             # ID de la app MOOVY en MP
 | `prisma/schema.prisma` | Modelos completos incluyendo SubOrder, Payment, MpWebhookLog |
 | `src/app/api/orders/route.ts` | Creación de órdenes con flujo cash y MP |
 | `src/lib/notifications.ts` | notifyBuyer() para push al comprador |
+| `.env.example` | Referencia completa de todas las variables de entorno |
+| `src/app/api/driver/orders/route.ts` | Endpoint de pedidos para repartidores (disponibles/activos/historial) |
+| `src/app/api/orders/[id]/accept/route.ts` | Aceptar pedido como repartidor (socket + push) |
 
 ## Patrones establecidos — seguir estos patrones
 - **Protección de rutas API**: `if (!hasAnyRole(session, ["ROL"])) return 403`
@@ -105,7 +110,7 @@ MP_APP_ID             # ID de la app MOOVY en MP
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
-- Botón "Agregar al carrito" en ListingCard pendiente de implementar
+- Quedan ~8 extracciones de `(session.user as any).role` en support/chats y driver/location (no son comparaciones, son extracciones para lógica condicional)
 
 ## Lo que NO existe todavía
 - Pago con MP en producción (requiere credenciales productivas)

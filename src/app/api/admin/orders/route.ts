@@ -1,13 +1,14 @@
 // API: Admin Orders Management
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - List all orders
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session?.user || (session.user as any).role !== "ADMIN") {
+        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session?.user || (session.user as any).role !== "ADMIN") {
+        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

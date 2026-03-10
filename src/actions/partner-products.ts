@@ -2,13 +2,14 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createProduct(formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "MERCHANT") {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT"])) {
         throw new Error("Unauthorized");
     }
 
@@ -68,7 +69,7 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(id: string, formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "MERCHANT") {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT"])) {
         throw new Error("Unauthorized");
     }
 

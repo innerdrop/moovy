@@ -1,6 +1,7 @@
 // API Route: Products CRUD
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Fetch all products (public)
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
         const featured = searchParams.get("featured");
 
         const session = await auth();
-        const isAdmin = (session?.user as any)?.role === "ADMIN";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         const where: any = {};
 

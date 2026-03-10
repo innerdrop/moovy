@@ -1,6 +1,7 @@
 // API Route: Categories CRUD
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get all categories
@@ -29,7 +30,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -116,7 +117,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

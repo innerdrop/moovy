@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get single product
@@ -10,7 +11,7 @@ export async function GET(
     try {
         const { id } = await context.params;
         const session = await auth();
-        const isAdmin = (session?.user as any)?.role === "ADMIN";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         const product = await prisma.product.findUnique({
             where: { id },
@@ -105,7 +106,7 @@ export async function PUT(
 ) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -127,7 +128,7 @@ export async function PATCH(
 ) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -149,7 +150,7 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

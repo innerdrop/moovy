@@ -1,13 +1,14 @@
 // Ops Layout - Panel de Operaciones Moovy
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import OpsSidebar from "@/components/ops/OpsSidebar";
 
 async function OpsLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
 
     // Redirect if not authenticated or not admin
-    if (!session || (session.user as any)?.role !== "ADMIN") {
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
         redirect("/ops/login");
     }
 

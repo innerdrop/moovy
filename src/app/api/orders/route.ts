@@ -1,6 +1,7 @@
 // API Route: Orders CRUD
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig } from "@/lib/points";
 import { CreateOrderSchema, validateInput } from "@/lib/validations";
@@ -542,7 +543,7 @@ export async function GET(request: Request) {
             );
         }
 
-        const isAdmin = (session.user as any).role === "ADMIN";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status");
 

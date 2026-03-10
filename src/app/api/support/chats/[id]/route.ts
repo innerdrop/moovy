@@ -1,6 +1,7 @@
 // API: Support Chat Messages
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get messages for a specific chat
@@ -135,7 +136,7 @@ export async function PATCH(
 ) {
     try {
         const session = await auth();
-        if (!session?.user || (session.user as any).role !== "ADMIN") {
+        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET single merchant by ID
@@ -8,7 +9,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth();
-    if (!session || (session.user as any)?.role !== "ADMIN") {
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -54,7 +55,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth();
-    if (!session || (session.user as any)?.role !== "ADMIN") {
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

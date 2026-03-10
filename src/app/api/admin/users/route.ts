@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
     try {
         const session = await auth();
         // Check if user is admin - Adjust role check based on your auth implementation
-        const isAdmin = session?.user?.role === "ADMIN" || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        const isAdmin = session?.user?.role === "ADMIN" || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
-        const isAdmin = session?.user?.role === "ADMIN" || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -170,7 +171,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const session = await auth();
-        const isAdmin = session?.user?.role === "ADMIN" || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });

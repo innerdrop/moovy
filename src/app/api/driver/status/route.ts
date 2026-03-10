@@ -2,6 +2,7 @@
 // PUT /api/driver/status { status: "DISPONIBLE" | "OCUPADO" | "FUERA_DE_SERVICIO" }
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 const VALID_STATUSES = ["DISPONIBLE", "OCUPADO", "FUERA_DE_SERVICIO"];
@@ -13,8 +14,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "DRIVER") {
+        if (!hasAnyRole(session, ["DRIVER"])) {
             return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
         }
 

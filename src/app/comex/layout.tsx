@@ -2,6 +2,7 @@
 // Comex Layout - Panel de Comercios
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -18,7 +19,7 @@ async function ComexLayout({ children }: { children: React.ReactNode }) {
     console.log("PartnerLayout Session:", JSON.stringify(session, null, 2));
 
     // Redirect if not authenticated or not merchant
-    if (!session || (session.user as any)?.role !== "MERCHANT") {
+    if (!session || !hasAnyRole(session, ["MERCHANT"])) {
         redirect("/comex/login");
     }
 

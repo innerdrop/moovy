@@ -1,6 +1,7 @@
 // API Route: Drivers CRUD
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -8,7 +9,7 @@ import bcrypt from "bcryptjs";
 export async function GET() {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -40,7 +41,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

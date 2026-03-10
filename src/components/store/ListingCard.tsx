@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { Star, Tag } from "lucide-react";
+import { Star, Tag, Plus, Check } from "lucide-react";
+import { useCartStore } from "@/store/cart";
+import { useState } from "react";
 
 interface ListingCardProps {
     listing: {
@@ -8,13 +12,16 @@ interface ListingCardProps {
         price: number;
         condition: string;
         images: { url: string; order: number }[];
+        sellerId?: string;
         seller: {
+            id?: string;
             displayName: string | null;
             rating: number | null;
             avatar: string | null;
         };
         category?: { name: string } | null;
     };
+    showAddButton?: boolean;
 }
 
 const conditionBadge: Record<string, { text: string; bg: string }> = {
@@ -23,10 +30,34 @@ const conditionBadge: Record<string, { text: string; bg: string }> = {
     REACONDICIONADO: { text: "Reacondi.", bg: "bg-blue-100 text-blue-700" },
 };
 
-export default function ListingCard({ listing }: ListingCardProps) {
+export default function ListingCard({ listing, showAddButton = false }: ListingCardProps) {
+    const addItem = useCartStore((s) => s.addItem);
+    const [added, setAdded] = useState(false);
+
     const cond = conditionBadge[listing.condition] || {
         text: listing.condition,
         bg: "bg-gray-100 text-gray-700",
+    };
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const sellerId = listing.sellerId || listing.seller?.id;
+
+        addItem({
+            productId: listing.id,
+            name: listing.title,
+            price: listing.price,
+            quantity: 1,
+            image: listing.images?.[0]?.url || undefined,
+            sellerId,
+            sellerName: listing.seller?.displayName || undefined,
+            type: "listing",
+        });
+
+        setAdded(true);
+        setTimeout(() => setAdded(false), 1500);
     };
 
     return (
@@ -88,11 +119,23 @@ export default function ListingCard({ listing }: ListingCardProps) {
                     )}
                 </div>
 
-                {/* Price */}
+                {/* Price + Add to cart */}
                 <div className="flex items-center justify-between mt-3">
                     <p className="text-lg font-bold text-[#e60012]">
                         ${listing.price.toLocaleString("es-AR")}
                     </p>
+                    {showAddButton && (
+                        <button
+                            onClick={handleAddToCart}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm ${
+                                added
+                                    ? "bg-green-500 text-white"
+                                    : "bg-gray-100 text-gray-600 hover:bg-[#e60012] hover:text-white"
+                            }`}
+                        >
+                            {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                        </button>
+                    )}
                 </div>
             </div>
         </Link>

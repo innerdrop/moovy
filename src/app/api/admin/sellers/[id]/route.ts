@@ -1,6 +1,7 @@
 // Admin Seller Update API - Verify/Suspend/Reactivate
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 
 export async function PUT(
@@ -8,7 +9,7 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth();
-    if (!session || (session.user as any)?.role !== "ADMIN") {
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 

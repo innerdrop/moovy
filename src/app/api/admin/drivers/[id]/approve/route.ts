@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendDriverApprovalEmail } from "@/lib/email";
 
@@ -15,8 +16,7 @@ export async function PUT(
         }
 
         // Check admin role
-        const userRole = (session.user as any).role;
-        if (userRole !== "ADMIN") {
+        if (!hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
         }
 

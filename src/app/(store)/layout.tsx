@@ -10,6 +10,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 
 const SPLASH_SHOWN_KEY = "moovy_splash_v4";
@@ -46,7 +47,7 @@ export default function StoreLayout({
                 if (!data) return;
 
                 // Check for store (tienda) maintenance
-                const isAdmin = (session?.user as any)?.role === "ADMIN";
+                const isAdmin = hasAnyRole(session, ["ADMIN"]);
                 if (data.tiendaMaintenance && !isAdmin) {
                     window.location.href = "/mantenimiento";
                     return;

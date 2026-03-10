@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowLeft, ShoppingBag, Briefcase, Compass, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Gift, Users, Award, ChevronRight, Bike, Store, Hotel, Map, Send, HelpCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { useEffect, useState, useRef, useCallback } from "react";
 
 // ============================================
@@ -330,7 +331,7 @@ export default function LandingPage() {
     const currentColor = slidesConfig[currentSlide].color;
 
     const { data: session } = useSession();
-    const isAdmin = (session?.user as any)?.role === "ADMIN";
+    const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
     // Fetch site settings for card visibility
     useEffect(() => {

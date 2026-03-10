@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -150,7 +151,7 @@ export async function importCatalogProducts(productIds: string[]) {
 
 export async function createProduct(formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         return { error: "No autorizado" };
     }
 
@@ -217,7 +218,7 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(productId: string, formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         return { error: "No autorizado" };
     }
 
@@ -297,7 +298,7 @@ export async function updateProduct(productId: string, formData: FormData) {
 
 export async function deleteProduct(productId: string) {
     const session = await auth();
-    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         return { error: "No autorizado" };
     }
 
@@ -332,7 +333,7 @@ export async function deleteProduct(productId: string) {
 
 export async function toggleProductActive(productId: string, isActive: boolean) {
     const session = await auth();
-    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         return { error: "No autorizado" };
     }
 
@@ -381,7 +382,7 @@ const merchantSchema = z.object({
 
 export async function updateMerchant(formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         return { error: "No autorizado" };
     }
 
@@ -487,7 +488,7 @@ export async function updateMerchant(formData: FormData) {
 
 export async function toggleMerchantOpen(isOpen: boolean) {
     const session = await auth();
-    if (!session?.user?.id || !["MERCHANT", "ADMIN"].includes((session.user as any).role)) {
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         return { error: "No autorizado" };
     }
 

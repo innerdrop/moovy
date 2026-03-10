@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Fetch all products with filters
 export async function GET(request: Request) {
     try {
         const session = await auth();
-        const userRole = (session?.user as any)?.role;
 
-        if (!session || !["ADMIN", "MERCHANT"].includes(userRole)) {
+        if (!session || !hasAnyRole(session, ["ADMIN", "MERCHANT"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     try {
         const session = await auth();
 
-        if (!session || (session.user as any)?.role !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json(
                 { error: "No autorizado" },
                 { status: 401 }
@@ -132,9 +132,8 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
-        const userRole = (session?.user as any)?.role;
 
-        if (!session || userRole !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
@@ -195,9 +194,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const session = await auth();
-        const userRole = (session?.user as any)?.role;
 
-        if (!session || userRole !== "ADMIN") {
+        if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

@@ -252,6 +252,11 @@ model Order {
   subOrders           SubOrder[]
   payments            Payment[]
   isMultiVendor       Boolean     @default(false)
+
+  @@index([status])
+  @@index([driverId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -301,6 +306,10 @@ model SubOrder {
   payoutStatus        String         @default("PENDING")
   paidOutAt           DateTime?
   items               OrderItem[]
+
+  @@index([status])
+  @@index([sellerId])
+  @@index([merchantId])
 }
 
 model Merchant {
@@ -355,6 +364,9 @@ model Merchant {
   orders           Order[]
   products         Product[]
   subOrders        SubOrder[]
+
+  @@index([isActive])
+  @@index([ownerId])
 }
 
 model Driver {
@@ -380,6 +392,9 @@ model Driver {
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders             Order[]
   subOrders          SubOrder[]
+
+  @@index([isOnline])
+  @@index([isActive])
 }
 
 model SellerProfile {
@@ -422,6 +437,10 @@ model Listing {
   seller      SellerProfile  @relation(fields: [sellerId], references: [id])
   images      ListingImage[]
   category    Category?      @relation(fields: [categoryId], references: [id])
+
+  @@index([isActive])
+  @@index([sellerId])
+  @@index([categoryId])
 }
 
 model ListingImage {

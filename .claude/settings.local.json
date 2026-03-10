@@ -7,7 +7,19 @@
       "Bash(wc -l \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(store\\)\\\\checkout\\\\page.tsx\")",
       "Bash(npm install mercadopago)",
       "Bash(xargs grep -l \"oauth\\\\|OAuth\\\\|clientId\")",
-      "Bash(xargs grep -l \"preference\\\\|payment\")"
+      "Bash(xargs grep -l \"preference\\\\|payment\")",
+      "Bash(wc -l /c/Users/Mauro/Desktop/moovy/src/app/\\\\\\(store\\\\\\)/checkout/page.tsx)",
+      "Bash(ls -la /c/Users/Mauro/Desktop/moovy/src/app/comercios/\\\\\\(protected\\\\\\)/)",
+      "Bash(ls -la \"/c/Users/Mauro/Desktop/moovy/src/app/repartidor/\\(protected\\)/\")",
+      "Bash(cat \"/c/Users/Mauro/Desktop/moovy/src/app/repartidor/\\(protected\\)/pedidos/page.tsx\")",
+      "Bash(ls -la \"/c/Users/Mauro/Desktop/moovy/src/app/ops/\\(protected\\)/\")",
+      "Bash(cat \"/c/Users/Mauro/Desktop/moovy/src/app/ops/\\(protected\\)/page.tsx\")",
+      "Bash(cat \"/c/Users/Mauro/Desktop/moovy/src/app/ops/\\(protected\\)/repartidores/page.tsx\")",
+      "Bash(cat \"/c/Users/Mauro/Desktop/moovy/src/app/ops/\\(protected\\)/pedidos/page.tsx\")",
+      "Bash(xargs grep -l \"mercado\\\\|oauth\\\\|MP_\")",
+      "Bash(cat \"/c/Users/Mauro/Desktop/moovy/src/app/ops/\\(protected\\)/analytics/page.tsx\")",
+      "Bash(ls /c/Users/Mauro/Desktop/moovy/src/app/\\\\\\(store\\\\\\)/ -la)",
+      "Bash(npx prisma db push)"
     ]
   }
 }

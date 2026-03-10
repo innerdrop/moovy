@@ -1,11 +1,12 @@
 // Admin Listings API - List all Listings for moderation
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
     const session = await auth();
-    if (!session || (session.user as any)?.role !== "ADMIN") {
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
