@@ -27,7 +27,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
     // Navegación: Inicio | Buscar | MOOVER (Centro) | Pedidos | Perfil
     const items = [
         { href: "/tienda", icon: Home, label: "Inicio" },
-        { href: "/productos", icon: Search, label: "Buscar" },
+        { href: "/buscar", icon: Search, label: "Buscar" },
         {
             href: "/puntos",
             icon: Star,
