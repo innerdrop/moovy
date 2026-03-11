@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowLeft, ShoppingBag, Briefcase, Compass, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Gift, Users, Award, ChevronRight, Bike, Store, Hotel, Map, Send, HelpCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, ShoppingBag, Briefcase, Compass, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Gift, Users, Award, ChevronRight, Bike, Store, Hotel, Map, Send, HelpCircle, Tag } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -47,6 +47,17 @@ const slidesConfig: SlideConfig[] = [
         icon: <Briefcase className="w-8 h-8" />,
         badge: "Nuevo",
         logo: "/logo-jobs-v3.png",
+    },
+    {
+        id: "marketplace",
+        color: "#7C3AED",
+        title: "Tu estilo",
+        subtitle: "tu precio.",
+        description: "Comprá y vendé productos nuevos y usados en Ushuaia.",
+        cta: "Ir al Marketplace",
+        href: "/marketplace",
+        icon: <Tag className="w-8 h-8" />,
+        badge: "Marketplace",
     },
     {
         id: "x",
@@ -101,6 +112,9 @@ function MobileMenu({ isOpen, onClose, accentColor }: { isOpen: boolean; onClose
                     <Link href="https://jobs.somosmoovy.com" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <Briefcase className="w-5 h-5 text-[#2563eb]" /> Jobs
                         <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Nuevo</span>
+                    </Link>
+                    <Link href="/marketplace" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
+                        <Tag className="w-5 h-5 text-[#7C3AED]" /> Marketplace
                     </Link>
                     <Link href="/moovyx" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <Compass className="w-5 h-5 text-[#00D4AA]" /> MOOVY X
@@ -567,6 +581,66 @@ export default function LandingPage() {
                                             accentColor="#e60012"
                                         />
                                     )}
+                                    {/* Marketplace / Vendedor */}
+                                    <ExpandableCard
+                                        delay={400}
+                                        href="/marketplace"
+                                        loginHref="/vendedor"
+                                        icon={Tag}
+                                        title="Marketplace"
+                                        description="Comprá y vendé en tu ciudad"
+                                        details="Publicá productos nuevos o usados. Comprá a vendedores de Ushuaia de forma segura."
+                                        accentColor="#7C3AED"
+                                        registerText="Explorar"
+                                        loginText="Soy Vendedor"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* MARKETPLACE CONTENT */}
+                        {currentSlide === 2 && (
+                            <>
+                                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-6 sm:p-8 relative overflow-hidden mb-8">
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
+                                                <Tag className="w-7 h-7 text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Marketplace</h2>
+                                                <p className="text-sm text-gray-500">Comprá y vendé entre vecinos</p>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-gray-600 mb-6 max-w-2xl">
+                                            Encontrá productos nuevos, usados y reacondicionados publicados por vendedores de Ushuaia. O activá tu perfil de vendedor y empezá a vender.
+                                        </p>
+
+                                        <div className="grid sm:grid-cols-3 gap-3 mb-6">
+                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
+                                                <Tag className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                                                <span className="text-sm text-gray-700">Publicaciones verificadas</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
+                                                <Star className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                                                <span className="text-sm text-gray-700">Sumá puntos MOOVER</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
+                                                <Users className="w-5 h-5 text-violet-500 flex-shrink-0" />
+                                                <span className="text-sm text-gray-700">Comunidad local</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col sm:flex-row gap-3">
+                                            <Link href="/marketplace" className="inline-flex items-center justify-center gap-2 bg-[#7C3AED] text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-[#6D28D9] transition-colors">
+                                                Explorar Marketplace <ArrowRight className="w-4 h-4" />
+                                            </Link>
+                                            <Link href="/mi-perfil" className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
+                                                Quiero Vender <ChevronRight className="w-4 h-4" />
+                                            </Link>
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -657,7 +731,7 @@ export default function LandingPage() {
                         )}
 
                         {/* MOOVY X CONTENT */}
-                        {currentSlide === 2 && (
+                        {currentSlide === 3 && (
                             <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 rounded-2xl p-6 sm:p-8 text-center">
                                 <div className="mb-4">
                                     <span className="text-3xl sm:text-4xl font-black tracking-tight" style={{ fontFamily: "'Junegull', sans-serif" }}>
@@ -699,6 +773,7 @@ export default function LandingPage() {
                             <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Explorar</h4>
                             <ul className="space-y-2 text-sm">
                                 <li><Link href="/tienda" className="text-white/60 hover:text-white transition-all">Tienda</Link></li>
+                                <li><Link href="/marketplace" className="text-white/60 hover:text-white transition-all">Marketplace</Link></li>
                                 <li><Link href="/moover" className="text-white/60 hover:text-white transition-all">MOOVER</Link></li>
                                 <li><Link href="https://jobs.somosmoovy.com" className="text-white/60 hover:text-white transition-all">Jobs</Link></li>
                             </ul>

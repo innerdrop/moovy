@@ -122,3 +122,4 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 
 ## Archivos agregados recientemente
 - `src/app/(store)/ayuda/page.tsx` — Centro de Ayuda con FAQ acordeón (7 secciones) + contacto rápido
+- `landing/page.tsx` — Marketplace hero slide (index 2, violeta), sección marketplace, card comunidad, links en menú mobile y footer
