@@ -273,6 +273,39 @@ export default function OrderDetailPage() {
                     </div>
                 )}
 
+                {/* Seller Info (Marketplace) */}
+                {order.subOrders?.some(so => so.seller) && (
+                    <div className="bg-white rounded-2xl p-4 border border-gray-100">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                <Star className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vendedor</p>
+                                <p className="font-bold text-gray-900">
+                                    {order.subOrders?.find(so => so.seller)?.seller?.displayName || "Vendedor"}
+                                </p>
+                            </div>
+                            {/* Rate Seller Button */}
+                            {(order.status === "DELIVERED" || order.status === "COMPLETED") && !order.sellerRating && (
+                                <button
+                                    onClick={() => setShowSellerRating(true)}
+                                    className="ml-auto px-3 py-1.5 bg-purple-50 text-purple-600 text-xs font-bold rounded-lg hover:bg-purple-100 transition flex items-center gap-1"
+                                >
+                                    <Star className="w-3.5 h-3.5" />
+                                    Calificar
+                                </button>
+                            )}
+                            {order.sellerRating && (
+                                <div className="ml-auto flex items-center gap-1 bg-purple-50 px-3 py-1.5 rounded-lg">
+                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                    <span className="text-xs font-bold text-gray-700">{order.sellerRating}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Order Items */}
                 <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                     <div className="p-4 border-b border-gray-50 flex items-center gap-3">
