@@ -111,6 +111,7 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
 - Quedan ~8 extracciones de `(session.user as any).role` en support/chats y driver/location (no son comparaciones, son extracciones para lógica condicional)
+- Portal COMEX eliminado (era legacy, apuntaba a rutas `/partner/` inexistentes)
 
 ## Lo que NO existe todavía
 - Pago con MP en producción (requiere credenciales productivas)
@@ -118,3 +119,6 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Múltiples ciudades (hardcodeado Ushuaia)
 - Ratings y reviews
 - App nativa iOS/Android
+
+## Archivos agregados recientemente
+- `src/app/(store)/ayuda/page.tsx` — Centro de Ayuda con FAQ acordeón (7 secciones) + contacto rápido
