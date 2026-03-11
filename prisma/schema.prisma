@@ -234,6 +234,10 @@ model Order {
   moovyCommission     Float?      @default(0)
   ratedAt             DateTime?
   ratingComment       String?
+  merchantRating      Int?
+  merchantRatingComment String?
+  sellerRating        Int?
+  sellerRatingComment String?
   assignmentAttempts  Int         @default(0)
   assignmentExpiresAt DateTime?
   attemptedDriverIds  Json?
@@ -341,6 +345,7 @@ model Merchant {
   ownerId          String
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
+  rating           Float?
   adminNotes       String?
   bankAccount      String?
   businessName     String?

@@ -123,3 +123,8 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 ## Archivos agregados recientemente
 - `src/app/(store)/ayuda/page.tsx` — Centro de Ayuda con FAQ acordeón (7 secciones) + contacto rápido
 - `landing/page.tsx` — Marketplace hero slide (index 2, violeta), sección marketplace, card comunidad, links en menú mobile y footer
+- `components/orders/RateMerchantModal.tsx` — Modal para calificar comercios (1-5 estrellas + comentario)
+- `components/orders/RateSellerModal.tsx` — Modal para calificar vendedores marketplace
+- `api/orders/[id]/rate-merchant/route.ts` — Endpoint POST para calificar comercio + actualizar promedio
+- `api/orders/[id]/rate-seller/route.ts` — Endpoint POST para calificar vendedor + actualizar promedio
+- Schema: `merchantRating`, `merchantRatingComment`, `sellerRating`, `sellerRatingComment` en Order; `rating` en Merchant

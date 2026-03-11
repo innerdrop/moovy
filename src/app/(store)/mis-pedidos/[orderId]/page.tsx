@@ -23,6 +23,8 @@ import {
     Truck
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import RateMerchantModal from "@/components/orders/RateMerchantModal";
+import RateSellerModal from "@/components/orders/RateSellerModal";
 
 interface OrderDetail {
     id: string;
@@ -66,6 +68,18 @@ interface OrderDetail {
     };
     driverRating?: number;
     ratingComment?: string;
+    merchantRating?: number;
+    merchantRatingComment?: string;
+    sellerRating?: number;
+    sellerRatingComment?: string;
+    subOrders?: Array<{
+        id: string;
+        sellerId?: string;
+        seller?: {
+            id: string;
+            displayName?: string;
+        };
+    }>;
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -82,6 +96,8 @@ export default function OrderDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isReordering, setIsReordering] = useState(false);
+    const [showMerchantRating, setShowMerchantRating] = useState(false);
+    const [showSellerRating, setShowSellerRating] = useState(false);
 
     useEffect(() => {
         async function loadOrder() {
@@ -237,6 +253,22 @@ export default function OrderDetailPage() {
                                     <p className="text-xs text-gray-500">{order.merchant.address}</p>
                                 )}
                             </div>
+                            {/* Rate Merchant Button */}
+                            {(order.status === "DELIVERED" || order.status === "COMPLETED") && !order.merchantRating && (
+                                <button
+                                    onClick={() => setShowMerchantRating(true)}
+                                    className="ml-auto px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition flex items-center gap-1"
+                                >
+                                    <Star className="w-3.5 h-3.5" />
+                                    Calificar
+                                </button>
+                            )}
+                            {order.merchantRating && (
+                                <div className="ml-auto flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg">
+                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                    <span className="text-xs font-bold text-gray-700">{order.merchantRating}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -396,6 +428,30 @@ export default function OrderDetailPage() {
                     Ver todos mis pedidos
                 </Link>
             </div>
+
+            {/* Rating Modals */}
+            {showMerchantRating && order.merchant && (
+                <RateMerchantModal
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    merchantName={order.merchant.name}
+                    onClose={() => setShowMerchantRating(false)}
+                    onSuccess={() => {
+                        setOrder(prev => prev ? { ...prev, merchantRating: 5 } : null);
+                    }}
+                />
+            )}
+            {showSellerRating && order.subOrders?.[0]?.seller && (
+                <RateSellerModal
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    sellerName={order.subOrders[0].seller.displayName || "Vendedor"}
+                    onClose={() => setShowSellerRating(false)}
+                    onSuccess={() => {
+                        setOrder(prev => prev ? { ...prev, sellerRating: 5 } : null);
+                    }}
+                />
+            )}
         </div>
     );
 }

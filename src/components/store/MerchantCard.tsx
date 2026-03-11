@@ -9,7 +9,7 @@ interface MerchantCardProps {
         name: string;
         description: string | null;
         image: string | null;
-        rating?: number;
+        rating?: number | null;
         deliveryTimeMin: number;
         deliveryTimeMax: number;
         deliveryFee: number;
@@ -86,7 +86,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                     </div>
                     <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-xs font-semibold">
                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                        <span>4.8</span>
+                        <span>{merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}</span>
                     </div>
                 </div>
 
