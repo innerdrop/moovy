@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { notifyBuyer } from "@/lib/notifications";
 
 export async function POST(
     request: Request,
@@ -63,6 +64,10 @@ export async function POST(
                 deliveryStatus: "ASSIGNED",
             },
         });
+
+        // Notify buyer that order is in delivery
+        notifyBuyer(order.userId, "IN_DELIVERY", order.orderNumber)
+            .catch(err => console.error("[Push] Buyer notification error:", err));
 
         return NextResponse.json({ success: true, message: "Pedido asignado correctamente" });
     } catch (error) {

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Store, Plus, Check, ShoppingCart } from "lucide-react";
+import { Store, Plus, Check } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
+import HeartButton from "@/components/ui/HeartButton";
 
 interface ProductCardProps {
     product: {
@@ -73,6 +74,8 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                             DESTACADO
                         </span>
                     )}
+
+                    <HeartButton type="product" itemId={product.id} className="absolute top-2 right-2" />
                 </div>
 
                 <div className="p-3 flex-1 flex flex-col">

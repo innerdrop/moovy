@@ -99,6 +99,9 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 | `.env.example` | Referencia completa de todas las variables de entorno |
 | `src/app/api/driver/orders/route.ts` | Endpoint de pedidos para repartidores (disponibles/activos/historial) |
 | `src/app/api/orders/[id]/accept/route.ts` | Aceptar pedido como repartidor (socket + push) |
+| `src/lib/moover-level.ts` | Niveles MOOVER compartidos (server + client) |
+| `src/store/favorites.ts` | Zustand store de favoritos con optimistic update |
+| `src/app/api/favorites/route.ts` | API GET/POST/DELETE de favoritos |
 
 ## Patrones establecidos — seguir estos patrones
 - **Protección de rutas API**: `if (!hasAnyRole(session, ["ROL"])) return 403`
@@ -106,6 +109,8 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Socket emit**: fetch a `${socketUrl}/emit` con Bearer CRON_SECRET
 - **Imágenes**: usar `ImageUpload.tsx` existente en `src/components/ui/`
 - **Formularios**: nunca usar `<form>` HTML, usar handlers onClick/onChange
+- **Favoritos**: usar `HeartButton` de `@/components/ui/HeartButton` en cards
+- **Niveles MOOVER**: importar de `@/lib/moover-level` (nunca duplicar constantes)
 
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
@@ -117,7 +122,6 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Pago con MP en producción (requiere credenciales productivas)
 - Split automático entre vendedores (requiere Marketplace API de MP)
 - Múltiples ciudades (hardcodeado Ushuaia)
-- Ratings y reviews
 - App nativa iOS/Android
 
 ## Archivos agregados recientemente
@@ -128,3 +132,12 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `api/orders/[id]/rate-merchant/route.ts` — Endpoint POST para calificar comercio + actualizar promedio
 - `api/orders/[id]/rate-seller/route.ts` — Endpoint POST para calificar vendedor + actualizar promedio
 - Schema: `merchantRating`, `merchantRatingComment`, `sellerRating`, `sellerRatingComment` en Order; `rating` en Merchant
+- `src/lib/moover-level.ts` — Constantes y funciones de nivel MOOVER compartidas (server/client)
+- `src/store/favorites.ts` — Zustand store de favoritos con optimistic toggle
+- `src/components/ui/HeartButton.tsx` — Botón corazón reutilizable para cards
+- `src/app/api/favorites/route.ts` — API GET/POST/DELETE de favoritos (polimórfica: merchant/product/listing)
+- Schema: modelo `Favorite` con FKs a User, Merchant, Product, Listing + unique constraints
+- `src/app/api/points/route.ts` — Ahora retorna `mooverLevel`, `mooverLevelColor`, `nextLevelAt`
+- Push: `notifyBuyer()` conectado en `driver/claim` (IN_DELIVERY) y `driver/status` (DELIVERED)
+- `sw.js` — Fix notificationclick para soportar buyers (antes solo matcheaba `/repartidor`)
+- `mi-perfil/page.tsx` — Toggle de notificaciones push en sección Configuración

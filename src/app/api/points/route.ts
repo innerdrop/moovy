@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserPointsBalance, getPointsHistory, getPointsConfig, calculateMaxPointsDiscount } from "@/lib/points";
+import { getMooverLevel, getNextLevelPoints } from "@/lib/moover-level";
 
 export async function GET(request: Request) {
     try {
@@ -29,10 +30,14 @@ export async function GET(request: Request) {
         });
         const pointsLifetime = lifetimeResult._sum.amount || 0;
 
+        const level = getMooverLevel(pointsLifetime);
         const response: any = {
             balance,
             pointsLifetime,
             formattedBalance: balance.toLocaleString("es-AR"),
+            mooverLevel: level.name,
+            mooverLevelColor: level.color,
+            nextLevelAt: getNextLevelPoints(pointsLifetime),
         };
 
         if (includeHistory) {

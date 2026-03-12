@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { notifyBuyer } from "@/lib/notifications";
 
 export async function PATCH(
     request: Request,
@@ -63,6 +64,12 @@ export async function PATCH(
             where: { id: orderId },
             data: updateData,
         });
+
+        // Notify buyer of status change
+        if (deliveryStatus === "DELIVERED") {
+            notifyBuyer(order.userId, "DELIVERED", order.orderNumber)
+                .catch(err => console.error("[Push] Buyer notification error:", err));
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

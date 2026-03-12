@@ -25,10 +25,12 @@ import {
     ShoppingBag
 } from "lucide-react";
 import { useUserPoints } from "@/hooks/useUserPoints";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export default function ProfilePage() {
     const { data: session } = useSession();
     const { points, level, nextLevelPoints } = useUserPoints();
+    const { isSupported: pushSupported, isSubscribed: pushSubscribed, permission: pushPermission, requestPermission: requestPush, loading: pushLoading } = usePushNotifications();
     const [showRedemptions, setShowRedemptions] = useState(false);
     const [redemptions, setRedemptions] = useState<any[]>([]);
     const [loadingRedemptions, setLoadingRedemptions] = useState(false);
@@ -264,6 +266,29 @@ export default function ProfilePage() {
                 <section>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Configuración y Ayuda</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        {pushSupported && (
+                            <div className="flex items-center justify-between p-4 border-b border-gray-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                        <Bell className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700">Notificaciones Push</span>
+                                </div>
+                                {pushSubscribed ? (
+                                    <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">Activo</span>
+                                ) : pushPermission === "denied" ? (
+                                    <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Bloqueado</span>
+                                ) : (
+                                    <button
+                                        onClick={() => requestPush()}
+                                        disabled={pushLoading}
+                                        className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition disabled:opacity-50"
+                                    >
+                                        {pushLoading ? "..." : "Activar"}
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         <Link href="/ayuda" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">

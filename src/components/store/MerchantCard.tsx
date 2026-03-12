@@ -1,10 +1,13 @@
+"use client";
 
 import Link from "next/link";
 import { Star, MapPin, Clock, BadgeCheck, Sparkles } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
+import HeartButton from "@/components/ui/HeartButton";
 
 interface MerchantCardProps {
     merchant: {
+        id: string;
         slug: string;
         name: string;
         description: string | null;
@@ -70,6 +73,9 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                         Verificado
                     </div>
                 )}
+
+                {/* Favorite Heart */}
+                <HeartButton type="merchant" itemId={merchant.id} className="absolute bottom-3 right-3" />
             </div>
 
             <div className="p-4">

@@ -52,6 +52,7 @@ model User {
   referredUsers      User[]              @relation("UserReferrals")
   roles              UserRole[]
   sellerProfile      SellerProfile?
+  favorites          Favorite[]
 }
 
 model UserRole {
@@ -156,6 +157,7 @@ model Product {
   categories  ProductCategory[]
   images      ProductImage[]
   variants    ProductVariant[]
+  favorites   Favorite[]
 }
 
 model ProductCategory {
@@ -373,6 +375,7 @@ model Merchant {
   orders           Order[]
   products         Product[]
   subOrders        SubOrder[]
+  favorites        Favorite[]
 
   @@index([isActive])
   @@index([ownerId])
@@ -447,6 +450,7 @@ model Listing {
   images      ListingImage[]
   category    Category?      @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
+  favorites   Favorite[]
 
   @@index([isActive])
   @@index([sellerId])
@@ -586,6 +590,25 @@ model OrderBackup {
   deletedBy   String?
   deletedAt   DateTime @default(now())
   createdAt   DateTime @default(now())
+}
+
+model Favorite {
+  id         String    @id @default(cuid())
+  userId     String
+  merchantId String?
+  productId  String?
+  listingId  String?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant   Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product    Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  listing    Listing?  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, merchantId])
+  @@unique([userId, productId])
+  @@unique([userId, listingId])
+  @@index([userId])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

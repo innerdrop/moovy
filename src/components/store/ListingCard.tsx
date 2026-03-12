@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Star, Tag, Plus, Check } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
+import HeartButton from "@/components/ui/HeartButton";
 
 interface ListingCardProps {
     listing: {
@@ -85,6 +86,8 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                 >
                     {cond.text}
                 </span>
+
+                <HeartButton type="listing" itemId={listing.id} className="absolute top-2 right-2" />
             </div>
 
             {/* Info */}

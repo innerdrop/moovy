@@ -184,9 +184,10 @@ self.addEventListener('notificationclick', function (event) {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+            // Try to find any existing app window to reuse
             for (var i = 0; i < clientList.length; i++) {
                 var client = clientList[i];
-                if (client.url.includes('/repartidor') && 'focus' in client) {
+                if ('focus' in client) {
                     client.focus();
                     client.navigate(urlToOpen);
                     return;
