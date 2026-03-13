@@ -49,6 +49,7 @@ const navItems = [
     { href: "/ops/puntos", icon: Gift, label: "Puntos" },
     { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/ops/configuracion", icon: Settings, label: "Config" },
+    { href: "/ops/configuracion-logistica", icon: Truck, label: "Config Logística" },
     { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
 ];
 
