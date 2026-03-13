@@ -38,6 +38,18 @@ export async function GET(request: Request) {
                             displayName: true,
                             rating: true,
                             avatar: true,
+                            user: {
+                                select: {
+                                    sellerAvailability: {
+                                        select: {
+                                            isOnline: true,
+                                            isPaused: true,
+                                            pauseEndsAt: true,
+                                            preparationMinutes: true,
+                                        },
+                                    },
+                                },
+                            },
                         },
                     },
                     images: { orderBy: { order: "asc" } },
@@ -50,7 +62,19 @@ export async function GET(request: Request) {
             prisma.listing.count({ where }),
         ]);
 
-        return NextResponse.json({ listings, total });
+        // Flatten seller.user.sellerAvailability into seller.availability
+        const flatListings = listings.map((listing: any) => {
+            const { user, ...sellerRest } = listing.seller;
+            return {
+                ...listing,
+                seller: {
+                    ...sellerRest,
+                    availability: user?.sellerAvailability || null,
+                },
+            };
+        });
+
+        return NextResponse.json({ listings: flatListings, total });
     } catch (error) {
         console.error("Error fetching listings:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });

@@ -6,6 +6,13 @@ import { useCartStore } from "@/store/cart";
 import { useState } from "react";
 import HeartButton from "@/components/ui/HeartButton";
 
+interface SellerAvailability {
+    isOnline: boolean;
+    isPaused: boolean;
+    pauseEndsAt: string | null;
+    preparationMinutes: number;
+}
+
 interface ListingCardProps {
     listing: {
         id: string;
@@ -19,6 +26,7 @@ interface ListingCardProps {
             displayName: string | null;
             rating: number | null;
             avatar: string | null;
+            availability?: SellerAvailability | null;
         };
         category?: { name: string } | null;
     };
@@ -30,6 +38,33 @@ const conditionBadge: Record<string, { text: string; bg: string }> = {
     USADO: { text: "Usado", bg: "bg-orange-100 text-orange-700" },
     REACONDICIONADO: { text: "Reacondi.", bg: "bg-blue-100 text-blue-700" },
 };
+
+function getAvailabilityBadge(availability?: SellerAvailability | null) {
+    if (!availability) return null;
+
+    if (availability.isOnline && !availability.isPaused) {
+        return {
+            text: `Abierto · ~${availability.preparationMinutes} min`,
+            dot: "bg-green-500",
+            bg: "bg-green-50 text-green-700",
+        };
+    }
+
+    if (availability.isOnline && availability.isPaused && availability.pauseEndsAt) {
+        const remaining = Math.max(0, Math.round((new Date(availability.pauseEndsAt).getTime() - Date.now()) / 60000));
+        return {
+            text: remaining > 0 ? `Vuelve en ${remaining} min` : "Volviendo...",
+            dot: "bg-amber-500",
+            bg: "bg-amber-50 text-amber-700",
+        };
+    }
+
+    return {
+        text: "Cerrado",
+        dot: "bg-red-400",
+        bg: "bg-gray-50 text-gray-500",
+    };
+}
 
 export default function ListingCard({ listing, showAddButton = false }: ListingCardProps) {
     const addItem = useCartStore((s) => s.addItem);
@@ -97,7 +132,7 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                 </h3>
 
                 {/* Seller info */}
-                <div className="flex items-center gap-1.5 mb-auto">
+                <div className="flex items-center gap-1.5">
                     {listing.seller?.avatar ? (
                         <img
                             src={listing.seller.avatar}
@@ -121,6 +156,18 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                         </span>
                     )}
                 </div>
+
+                {/* Availability badge */}
+                {(() => {
+                    const badge = getAvailabilityBadge(listing.seller?.availability);
+                    if (!badge) return null;
+                    return (
+                        <div className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full w-fit mb-auto ${badge.bg}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                            {badge.text}
+                        </div>
+                    );
+                })()}
 
                 {/* Price + Add to cart */}
                 <div className="flex items-center justify-between mt-3">

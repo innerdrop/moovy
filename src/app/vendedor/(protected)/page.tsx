@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import AvailabilityToggle from "@/components/seller/AvailabilityToggle";
 
 export default async function VendedorDashboardPage() {
     const session = await auth();
@@ -107,6 +108,9 @@ export default async function VendedorDashboardPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* Availability Toggle */}
+            <AvailabilityToggle />
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">

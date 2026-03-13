@@ -102,6 +102,8 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 | `src/lib/moover-level.ts` | Niveles MOOVER compartidos (server + client) |
 | `src/store/favorites.ts` | Zustand store de favoritos con optimistic update |
 | `src/app/api/favorites/route.ts` | API GET/POST/DELETE de favoritos |
+| `src/lib/seller-availability.ts` | Funciones de disponibilidad vendedor (online/offline/pause/resume) |
+| `src/lib/assignment-engine.ts` | Motor de asignacion de repartidores con PostGIS y rating |
 
 ## Patrones establecidos — seguir estos patrones
 - **Protección de rutas API**: `if (!hasAnyRole(session, ["ROL"])) return 403`
@@ -141,3 +143,11 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Push: `notifyBuyer()` conectado en `driver/claim` (IN_DELIVERY) y `driver/status` (DELIVERED)
 - `sw.js` — Fix notificationclick para soportar buyers (antes solo matcheaba `/repartidor`)
 - `mi-perfil/page.tsx` — Toggle de notificaciones push en sección Configuración
+- `src/lib/seller-availability.ts` — Funciones: getSellerStatus, setSellerOnline/Offline, pauseSeller, checkAndResumePaused
+- `src/app/api/seller/availability/route.ts` — GET/POST disponibilidad vendedor (protegido SELLER)
+- `src/app/api/cron/seller-resume/route.ts` — Cron para reanudar vendedores pausados (CRON_SECRET)
+- `src/components/seller/AvailabilityToggle.tsx` — Toggle online/offline/pausa con countdown y tiempo de preparacion
+- `src/lib/assignment-engine.ts` — Motor de asignacion: calculateOrderCategory, findNextEligibleDriver, startAssignmentCycle, processExpiredAssignments, driverAcceptOrder/RejectOrder
+- `src/app/api/cron/assignment-tick/route.ts` — Cron para procesar timeouts de asignacion (CRON_SECRET)
+- `src/components/store/ListingCard.tsx` — Ahora muestra badge de disponibilidad del vendedor
+- `src/app/api/listings/route.ts` — Incluye sellerAvailability en respuesta
