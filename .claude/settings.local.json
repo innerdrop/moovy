@@ -25,7 +25,8 @@
       "Bash(\\\\\\(vendedor\\\\\\) \")",
       "Bash(echo \"EXIT_CODE=$?\")",
       "Bash(grep -rn \"scheduled\\\\|SCHEDULED\\\\|programado\" /c/Users/Mauro/Desktop/moovy/src --include=*.ts --include=*.tsx)",
-      "Bash(echo \"EXIT CODE: $?\")"
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Bash(find \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(comercios\\)\" -type f -o -type d)"
     ]
   }
 }

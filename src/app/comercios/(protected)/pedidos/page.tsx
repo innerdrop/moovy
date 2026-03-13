@@ -1,9 +1,8 @@
 "use client";
 
 // Merchant Orders Page - Panel de Pedidos del Comercio
+// Uses dedicated endpoints: confirm, reject, ready (not generic PATCH)
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
 import { formatTime } from "@/lib/timezone";
 import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
@@ -59,8 +58,44 @@ const CANCELLATION_REASONS = [
     "Solicitud del cliente",
 ];
 
+/** Countdown timer showing remaining time before auto-cancel */
+function PendingCountdown({ createdAt }: { createdAt: string }) {
+    const [remaining, setRemaining] = useState("");
+    const [urgent, setUrgent] = useState(false);
+
+    useEffect(() => {
+        // Default 5 min timeout — matches MoovyConfig merchant_confirm_timeout_seconds
+        const TIMEOUT_SECONDS = 300;
+        const created = new Date(createdAt).getTime();
+        const deadline = created + TIMEOUT_SECONDS * 1000;
+
+        function tick() {
+            const diff = deadline - Date.now();
+            if (diff <= 0) {
+                setRemaining("Expirado");
+                setUrgent(true);
+                return;
+            }
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            setRemaining(`${mins}:${secs.toString().padStart(2, "0")}`);
+            setUrgent(diff < 60000); // last minute
+        }
+
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [createdAt]);
+
+    return (
+        <div className={`flex items-center gap-1.5 text-xs font-medium mb-3 ${urgent ? "text-red-600" : "text-yellow-600"}`}>
+            <Clock className="w-3.5 h-3.5" />
+            <span>Tiempo para confirmar: {remaining}</span>
+        </div>
+    );
+}
+
 export default function ComercioPedidosPage() {
-    const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
@@ -136,27 +171,57 @@ export default function ComercioPedidosPage() {
         return () => clearInterval(intervalId);
     }, [loadOrders]);
 
-    const updateOrderStatus = async (orderId: string, newStatus: string, cancelReason?: string) => {
+    // ─── Dedicated endpoint handlers ────────────────────────────────────────
+
+    const confirmOrder = async (orderId: string) => {
         setUpdating(orderId);
         try {
-            const body: any = { status: newStatus };
-            if (cancelReason) {
-                body.cancelReason = cancelReason;
-            }
-
-            const res = await fetch(`/api/orders/${orderId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-            });
+            const res = await fetch(`/api/merchant/orders/${orderId}/confirm`, { method: "POST" });
             if (res.ok) {
-                // Reload orders to reflect change
                 loadOrders(true);
             } else {
-                alert("Error al actualizar el estado");
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || "Error al confirmar el pedido");
             }
-        } catch (error) {
-            console.error("Error updating order:", error);
+        } catch {
+            alert("Error de conexión");
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const rejectOrder = async (orderId: string, reason: string) => {
+        setUpdating(orderId);
+        try {
+            const res = await fetch(`/api/merchant/orders/${orderId}/reject`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason }),
+            });
+            if (res.ok) {
+                loadOrders(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || "Error al rechazar el pedido");
+            }
+        } catch {
+            alert("Error de conexión");
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const markReady = async (orderId: string) => {
+        setUpdating(orderId);
+        try {
+            const res = await fetch(`/api/merchant/orders/${orderId}/ready`, { method: "POST" });
+            if (res.ok) {
+                loadOrders(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || "Error al marcar como listo");
+            }
+        } catch {
             alert("Error de conexión");
         } finally {
             setUpdating(null);
@@ -185,7 +250,7 @@ export default function ComercioPedidosPage() {
         }
 
         setIsCancelling(true);
-        await updateOrderStatus(cancelModal.orderId, "CANCELLED", reason);
+        await rejectOrder(cancelModal.orderId, reason);
         setIsCancelling(false);
         closeCancelModal();
     };
@@ -216,13 +281,20 @@ export default function ComercioPedidosPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
                     <p className="text-gray-500">Gestiona los pedidos de tu comercio</p>
                 </div>
-                <button
-                    onClick={() => loadOrders()}
-                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition text-gray-600"
-                    title="Actualizar"
-                >
-                    <RefreshCw className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Connection indicator */}
+                    <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+                        {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                        {isConnected ? "En vivo" : "Sin conexión"}
+                    </span>
+                    <button
+                        onClick={() => loadOrders()}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition text-gray-600"
+                        title="Actualizar"
+                    >
+                        <RefreshCw className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Pending Orders Alert */}
@@ -328,11 +400,16 @@ export default function ComercioPedidosPage() {
                                         </p>
                                     )}
 
+                                    {/* Timeout countdown for PENDING */}
+                                    {isPending && (
+                                        <PendingCountdown createdAt={order.createdAt} />
+                                    )}
+
                                     {/* Action Buttons */}
                                     <div className="flex gap-2">
                                         {order.status === "PENDING" && (
                                             <button
-                                                onClick={() => updateOrderStatus(order.id, "CONFIRMED")}
+                                                onClick={() => confirmOrder(order.id)}
                                                 disabled={isUpdating}
                                                 className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
                                             >
@@ -341,20 +418,9 @@ export default function ComercioPedidosPage() {
                                             </button>
                                         )}
 
-                                        {order.status === "CONFIRMED" && (
+                                        {(order.status === "PREPARING" || order.status === "DRIVER_ASSIGNED") && (
                                             <button
-                                                onClick={() => updateOrderStatus(order.id, "PREPARING")}
-                                                disabled={isUpdating}
-                                                className="flex-1 py-2 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition flex items-center justify-center gap-2"
-                                            >
-                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
-                                                Empezar
-                                            </button>
-                                        )}
-
-                                        {order.status === "PREPARING" && (
-                                            <button
-                                                onClick={() => updateOrderStatus(order.id, "READY")}
+                                                onClick={() => markReady(order.id)}
                                                 disabled={isUpdating}
                                                 className="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                                             >
@@ -363,24 +429,13 @@ export default function ComercioPedidosPage() {
                                             </button>
                                         )}
 
-                                        {order.status === "DRIVER_ASSIGNED" && (
-                                            <button
-                                                onClick={() => updateOrderStatus(order.id, "READY")}
-                                                disabled={isUpdating}
-                                                className="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2"
-                                            >
-                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                                Marcar como Listo
-                                            </button>
-                                        )}
-
-                                        {/* Cancel Button for active orders */}
-                                        {activeStatuses.includes(order.status) && (
+                                        {/* Reject button for active orders */}
+                                        {["PENDING", "PREPARING"].includes(order.status) && (
                                             <button
                                                 onClick={() => openCancelModal(order.id, order.orderNumber)}
                                                 disabled={isUpdating}
                                                 className="p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
-                                                title="Cancelar Pedido"
+                                                title="Rechazar Pedido"
                                             >
                                                 <XCircle className="w-5 h-5" />
                                             </button>
@@ -392,6 +447,9 @@ export default function ComercioPedidosPage() {
                     })}
                 </div>
             )}
+
+            {/* Hidden audio element for notification sound */}
+            <audio ref={audioRef} src="/sounds/new-order.mp3" preload="auto" />
 
             {/* Cancellation Modal */}
             {cancelModal.open && (
