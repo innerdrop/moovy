@@ -157,8 +157,10 @@ model Product {
   merchant    Merchant?                 @relation(fields: [merchantId], references: [id])
   categories  ProductCategory[]
   images      ProductImage[]
-  variants    ProductVariant[]
-  favorites   Favorite[]
+  variants          ProductVariant[]
+  favorites         Favorite[]
+  packageCategoryId String?
+  packageCategory   PackageCategory? @relation(fields: [packageCategoryId], references: [id])
 }
 
 model ProductCategory {
@@ -279,6 +281,7 @@ model OrderItem {
   variantName String?
   subtotal    Float
   subOrderId  String?
+  packageCategoryName String?
   order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product     Product?  @relation(fields: [productId], references: [id])
   listing     Listing?  @relation(fields: [listingId], references: [id])
@@ -714,6 +717,7 @@ model PackageCategory {
   updatedAt       DateTime @updatedAt
 
   deliveryRate DeliveryRate?
+  products     Product[]
 }
 
 model DeliveryRate {

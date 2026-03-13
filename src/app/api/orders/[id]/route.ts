@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { assignOrderToNearestDriver } from "@/lib/logistics";
+import { startAssignmentCycle } from "@/lib/assignment-engine";
 import { sendOrderReadyNotification } from "@/lib/push";
 import { notifyBuyer } from "@/lib/notifications";
 import { UpdateOrderSchema, validateInput } from "@/lib/validations";
@@ -259,7 +259,7 @@ export async function PATCH(
         // Trigger auto-assignment when status changes to PREPARING
         if (data.status === "PREPARING" && existingOrder?.status !== "PREPARING") {
             // Fire and forget - don't block the response
-            assignOrderToNearestDriver(id).then((result) => {
+            startAssignmentCycle(id).then((result) => {
                 if (result.success) {
                     console.log(`[Auto-assign] Order ${order.orderNumber} offered to driver ${result.driverId}`);
                 } else {
@@ -269,14 +269,18 @@ export async function PATCH(
         }
 
         // Safety net: if order reaches READY without a driver, re-attempt assignment
-        if (data.status === "READY" && existingOrder?.status !== "READY" && !order.driverId && !order.pendingDriverId) {
-            assignOrderToNearestDriver(id).then((result) => {
-                if (result.success) {
-                    console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber} offered to driver ${result.driverId}`);
-                } else {
-                    console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber}: ${result.error}`);
-                }
-            });
+        if (data.status === "READY" && existingOrder?.status !== "READY" && !order.driverId) {
+            // Check if there's already an active PendingAssignment before re-triggering
+            const activePending = await prisma.pendingAssignment.findUnique({ where: { orderId: id } });
+            if (!activePending || activePending.status !== "WAITING") {
+                startAssignmentCycle(id).then((result) => {
+                    if (result.success) {
+                        console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber} offered to driver ${result.driverId}`);
+                    } else {
+                        console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber}: ${result.error}`);
+                    }
+                });
+            }
         }
 
         // Push notification: notify assigned driver that order is ready for pickup
