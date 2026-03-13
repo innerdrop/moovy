@@ -16,6 +16,11 @@ enum UserRoleType {
   SELLER
 }
 
+enum DeliveryType {
+  IMMEDIATE
+  SCHEDULED
+}
+
 model User {
   id                 String              @id @default(cuid())
   email              String              @unique
@@ -263,6 +268,10 @@ model Order {
   assignmentLogs      AssignmentLog[]
   pendingAssignment   PendingAssignment?
   isMultiVendor       Boolean     @default(false)
+  deliveryType        DeliveryType @default(IMMEDIATE)
+  scheduledSlotStart  DateTime?
+  scheduledSlotEnd    DateTime?
+  scheduledConfirmedAt DateTime?
 
   @@index([status])
   @@index([driverId])

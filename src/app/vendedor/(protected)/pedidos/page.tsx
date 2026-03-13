@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     ShoppingCart,
     Loader2,
@@ -10,6 +10,7 @@ import {
     XCircle,
     Truck,
     AlertCircle,
+    Calendar,
 } from "lucide-react";
 
 interface SubOrder {
@@ -22,6 +23,11 @@ interface SubOrder {
     order: {
         orderNumber: string;
         createdAt: string;
+        deliveryType?: string;
+        scheduledSlotStart?: string | null;
+        scheduledSlotEnd?: string | null;
+        scheduledConfirmedAt?: string | null;
+        status?: string;
         user: { name: string | null } | null;
     };
 }
@@ -34,30 +40,68 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     IN_DELIVERY: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-4 h-4" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-4 h-4" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-4 h-4" /> },
+    SCHEDULED: { label: "Programado", color: "text-violet-600", bgColor: "bg-violet-100", icon: <Calendar className="w-4 h-4" /> },
+    SCHEDULED_CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-4 h-4" /> },
 };
 
 const FILTER_TABS = [
     { key: "", label: "Todos" },
     { key: "PENDING", label: "Pendientes" },
+    { key: "SCHEDULED", label: "Programados" },
     { key: "DELIVERED", label: "Entregados" },
     { key: "CANCELLED", label: "Cancelados" },
 ];
+
+function formatSlotTime(isoString: string): string {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function formatSlotDate(isoString: string): string {
+    const d = new Date(isoString);
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const slotDay = new Date(d);
+    slotDay.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((slotDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Hoy";
+    if (diffDays === 1) return "Mañana";
+    return d.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function getCountdown(isoString: string): string {
+    const diff = new Date(isoString).getTime() - Date.now();
+    if (diff <= 0) return "Ahora";
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `En ${hours}h ${minutes}m`;
+    return `En ${minutes}m`;
+}
 
 export default function VendedorPedidosPage() {
     const [orders, setOrders] = useState<SubOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("");
+    const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadOrders();
-    }, [filter]);
-
-    async function loadOrders() {
+    const loadOrders = useCallback(async () => {
         setLoading(true);
         try {
-            const url = filter
-                ? `/api/seller/orders?status=${filter}`
-                : "/api/seller/orders";
+            let url = "/api/seller/orders";
+            const params = new URLSearchParams();
+
+            if (filter === "SCHEDULED") {
+                params.set("deliveryType", "SCHEDULED");
+            } else if (filter) {
+                params.set("status", filter);
+            }
+
+            const qs = params.toString();
+            if (qs) url += `?${qs}`;
+
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
@@ -67,6 +111,31 @@ export default function VendedorPedidosPage() {
             console.error("Error loading orders:", error);
         } finally {
             setLoading(false);
+        }
+    }, [filter]);
+
+    useEffect(() => {
+        loadOrders();
+    }, [loadOrders]);
+
+    async function handleConfirmScheduled(subOrderId: string) {
+        setConfirmingId(subOrderId);
+        try {
+            const res = await fetch(`/api/seller/orders/${subOrderId}/confirm-scheduled`, {
+                method: "POST",
+            });
+            if (res.ok) {
+                // Reload orders to reflect updated status
+                loadOrders();
+            } else {
+                const data = await res.json();
+                alert(data.error || "Error al confirmar el pedido");
+            }
+        } catch (error) {
+            console.error("Error confirming scheduled order:", error);
+            alert("Error al confirmar el pedido");
+        } finally {
+            setConfirmingId(null);
         }
     }
 
@@ -110,12 +179,16 @@ export default function VendedorPedidosPage() {
             ) : (
                 <div className="space-y-3">
                     {orders.map((order) => {
-                        const config = statusConfig[order.status] || {
+                        const orderStatus = order.order.status || order.status;
+                        const config = statusConfig[orderStatus] || statusConfig[order.status] || {
                             label: order.status,
                             color: "text-gray-600",
                             bgColor: "bg-gray-100",
                             icon: <Package className="w-4 h-4" />,
                         };
+
+                        const isScheduled = order.order.deliveryType === "SCHEDULED";
+                        const isUnconfirmed = isScheduled && !order.order.scheduledConfirmedAt && orderStatus !== "CANCELLED";
 
                         return (
                             <div
@@ -139,6 +212,57 @@ export default function VendedorPedidosPage() {
                                         {config.label}
                                     </span>
                                 </div>
+
+                                {/* Scheduled delivery info */}
+                                {isScheduled && order.order.scheduledSlotStart && (
+                                    <div className={`mb-3 p-3 rounded-lg border ${
+                                        isUnconfirmed
+                                            ? "bg-amber-50 border-amber-200"
+                                            : "bg-violet-50 border-violet-200"
+                                    }`}>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Calendar className="w-4 h-4 text-violet-500" />
+                                            <span className="font-semibold text-gray-800">
+                                                {formatSlotDate(order.order.scheduledSlotStart)} {formatSlotTime(order.order.scheduledSlotStart)}
+                                                {order.order.scheduledSlotEnd && ` - ${formatSlotTime(order.order.scheduledSlotEnd)}`}
+                                            </span>
+                                            <span className="text-xs text-gray-500 ml-auto">
+                                                {getCountdown(order.order.scheduledSlotStart)}
+                                            </span>
+                                        </div>
+
+                                        {isUnconfirmed && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleConfirmScheduled(order.id)}
+                                                disabled={confirmingId === order.id}
+                                                className="mt-2 w-full py-2 px-4 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                            >
+                                                {confirmingId === order.id ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        Confirmando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        Confirmar pedido programado
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {order.order.scheduledConfirmedAt && (
+                                            <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3" />
+                                                Confirmado el{" "}
+                                                {new Date(order.order.scheduledConfirmedAt).toLocaleString("es-AR", {
+                                                    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                                                })}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Items */}
                                 <div className="space-y-1 mb-3">

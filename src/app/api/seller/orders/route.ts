@@ -24,13 +24,19 @@ export async function GET(request: Request) {
             );
         }
 
-        // Parse optional status filter
+        // Parse optional filters
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status");
+        const deliveryType = searchParams.get("deliveryType");
 
         const where: any = { sellerId: seller.id };
         if (status) {
             where.status = status;
+        }
+
+        // Filter by delivery type on the parent order
+        if (deliveryType) {
+            where.order = { deliveryType };
         }
 
         const subOrders = await prisma.subOrder.findMany({
@@ -41,6 +47,11 @@ export async function GET(request: Request) {
                     select: {
                         orderNumber: true,
                         createdAt: true,
+                        deliveryType: true,
+                        scheduledSlotStart: true,
+                        scheduledSlotEnd: true,
+                        scheduledConfirmedAt: true,
+                        status: true,
                         user: {
                             select: { name: true },
                         },

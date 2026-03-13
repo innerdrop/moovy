@@ -59,7 +59,10 @@ export async function POST(request: Request) {
             customerNotes,
             pointsUsed,
             discountAmount,
-            merchantId
+            merchantId,
+            deliveryType,
+            scheduledSlotStart,
+            scheduledSlotEnd,
         } = data;
 
         const isMultiVendor = (groups && groups.length > 1) || false;
@@ -144,13 +147,14 @@ export async function POST(request: Request) {
         // Create order with items in a transaction
         const order = await prisma.$transaction(async (tx) => {
             // Create the order
+            const isScheduled = deliveryType === "SCHEDULED";
             const newOrder = await tx.order.create({
                 data: {
                     orderNumber: generateOrderNumber(),
                     userId: session.user.id,
                     addressId: finalAddressId,
                     merchantId: merchantId || null,
-                    status: "PENDING",
+                    status: isScheduled ? "SCHEDULED" : "PENDING",
                     paymentStatus: "PENDING",
                     paymentMethod: paymentMethod || "cash",
                     subtotal,
@@ -165,6 +169,9 @@ export async function POST(request: Request) {
                     merchantPayout,
                     commissionPaid: false,
                     isMultiVendor,
+                    deliveryType: isScheduled ? "SCHEDULED" : "IMMEDIATE",
+                    scheduledSlotStart: scheduledSlotStart ? new Date(scheduledSlotStart) : null,
+                    scheduledSlotEnd: scheduledSlotEnd ? new Date(scheduledSlotEnd) : null,
                 },
             });
 
@@ -332,11 +339,13 @@ export async function POST(request: Request) {
                     : await preferenceApi.create({ body: prefBody });
 
                 // Update order with preference ID and AWAITING_PAYMENT status
+                // Scheduled orders keep their SCHEDULED status — payment is still captured
+                const mpStatus = order.deliveryType === "SCHEDULED" ? "SCHEDULED" : "AWAITING_PAYMENT";
                 await prisma.order.update({
                     where: { id: order.id },
                     data: {
                         mpPreferenceId: preference.id || null,
-                        status: "AWAITING_PAYMENT",
+                        status: mpStatus,
                     },
                 });
 

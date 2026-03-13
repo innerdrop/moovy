@@ -23,7 +23,9 @@
       "Bash(find C:UsersMauroDesktopmoovysrcapp\\\\\\(vendedor\\\\\\) -type f -name *.tsx -o -name *.ts -o -name *.md)",
       "Bash(ls -la \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\"\" | grep -E \"vendedor)",
       "Bash(\\\\\\(vendedor\\\\\\) \")",
-      "Bash(echo \"EXIT_CODE=$?\")"
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(grep -rn \"scheduled\\\\|SCHEDULED\\\\|programado\" /c/Users/Mauro/Desktop/moovy/src --include=*.ts --include=*.tsx)",
+      "Bash(echo \"EXIT CODE: $?\")"
     ]
   }
 }

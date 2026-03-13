@@ -44,13 +44,25 @@ export const CreateOrderSchema = z.object({
     pointsUsed: z.number().int().min(0).default(0),
     discountAmount: z.number().min(0).default(0),
     merchantId: z.string().optional(),
-});
+    deliveryType: z.enum(["IMMEDIATE", "SCHEDULED"]).default("IMMEDIATE"),
+    scheduledSlotStart: z.string().datetime().optional(),
+    scheduledSlotEnd: z.string().datetime().optional(),
+}).refine(
+    (data) => {
+        if (data.deliveryType === "SCHEDULED") {
+            return !!data.scheduledSlotStart && !!data.scheduledSlotEnd;
+        }
+        return true;
+    },
+    { message: "Se requiere horario de entrega para pedidos programados", path: ["scheduledSlotStart"] }
+);
 
 export const UpdateOrderSchema = z.object({
     status: z.enum([
         "PENDING", "AWAITING_PAYMENT", "CONFIRMED", "PREPARING", "READY",
         "DRIVER_ASSIGNED", "PICKED_UP",
-        "IN_DELIVERY", "DELIVERED", "CANCELLED"
+        "IN_DELIVERY", "DELIVERED", "CANCELLED",
+        "SCHEDULED", "SCHEDULED_CONFIRMED"
     ]).optional(),
     paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]).optional(),
     driverId: z.string().optional(),

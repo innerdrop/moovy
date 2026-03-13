@@ -31,6 +31,14 @@ const STATUS_MESSAGES: Record<string, { title: string; body: (orderNumber: strin
         title: '❌ Pedido cancelado',
         body: (n) => `Tu pedido ${n} fue cancelado ❌`,
     },
+    SCHEDULED_CONFIRMED: {
+        title: '📅 Pedido programado confirmado',
+        body: (n) => `Tu pedido programado ${n} fue confirmado por el vendedor 📅`,
+    },
+    SCHEDULED_CANCELLED: {
+        title: '❌ Pedido programado cancelado',
+        body: (n) => `Tu pedido programado ${n} fue cancelado. Te reembolsamos ❌`,
+    },
 };
 
 /**

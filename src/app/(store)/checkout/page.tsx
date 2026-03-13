@@ -19,9 +19,11 @@ import {
     CheckCircle,
     AlertCircle,
     Store,
-    User
+    User,
+    Calendar
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
+import TimeSlotPicker from "@/components/checkout/TimeSlotPicker";
 
 interface DeliveryResult {
     distanceKm: number;
@@ -64,6 +66,9 @@ export default function CheckoutPage() {
     const [hasDrivers, setHasDrivers] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deliveryType, setDeliveryType] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
+    const [scheduledSlotStart, setScheduledSlotStart] = useState<string | undefined>();
+    const [scheduledSlotEnd, setScheduledSlotEnd] = useState<string | undefined>();
 
     // Get primary merchantId for delivery calc (first merchant group, if any)
     const primaryMerchantId = groups.find(g => g.vendorType === "merchant")?.vendorId.replace("merchant_", "") || null;
@@ -306,6 +311,10 @@ export default function CheckoutPage() {
                     // Points data
                     pointsUsed,
                     discountAmount,
+                    // Scheduled delivery
+                    deliveryType,
+                    scheduledSlotStart: deliveryType === "SCHEDULED" ? scheduledSlotStart : undefined,
+                    scheduledSlotEnd: deliveryType === "SCHEDULED" ? scheduledSlotEnd : undefined,
                 }),
             });
 
@@ -720,6 +729,64 @@ export default function CheckoutPage() {
                                         />
                                     </div>
 
+                                    {/* Delivery Type: Immediate vs Scheduled */}
+                                    <div className="mb-6">
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                            <Calendar className="w-4 h-4" />
+                                            Tipo de entrega
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDeliveryType("IMMEDIATE");
+                                                    setScheduledSlotStart(undefined);
+                                                    setScheduledSlotEnd(undefined);
+                                                }}
+                                                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                                                    deliveryType === "IMMEDIATE"
+                                                        ? "border-moovy bg-moovy-light text-moovy"
+                                                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                }`}
+                                            >
+                                                <Truck className="w-4 h-4 mx-auto mb-1" />
+                                                Inmediata
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDeliveryType("SCHEDULED")}
+                                                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                                                    deliveryType === "SCHEDULED"
+                                                        ? "border-moovy bg-moovy-light text-moovy"
+                                                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                }`}
+                                            >
+                                                <Calendar className="w-4 h-4 mx-auto mb-1" />
+                                                Programada
+                                            </button>
+                                        </div>
+
+                                        {deliveryType === "SCHEDULED" && (
+                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                <TimeSlotPicker
+                                                    onSelect={(start, end) => {
+                                                        setScheduledSlotStart(start);
+                                                        setScheduledSlotEnd(end);
+                                                    }}
+                                                    selectedStart={scheduledSlotStart}
+                                                />
+                                                {scheduledSlotStart && (
+                                                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        Entrega programada: {new Date(scheduledSlotStart).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}{" "}
+                                                        {new Date(scheduledSlotStart).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} -{" "}
+                                                        {new Date(scheduledSlotEnd!).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="space-y-3">
                                         <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
                                             }`}>
@@ -763,7 +830,7 @@ export default function CheckoutPage() {
                                         </button>
                                         <button
                                             onClick={handleSubmitOrder}
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || (deliveryType === "SCHEDULED" && !scheduledSlotStart)}
                                             className="btn-primary flex-1 flex items-center justify-center gap-2"
                                         >
                                             <span className="flex items-center gap-2">
