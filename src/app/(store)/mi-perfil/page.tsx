@@ -22,7 +22,10 @@ import {
     Gift,
     X,
     Calendar,
-    ShoppingBag
+    ShoppingBag,
+    ExternalLink,
+    LayoutDashboard,
+    Truck,
 } from "lucide-react";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -42,25 +45,52 @@ export default function ProfilePage() {
     const [driverStatus, setDriverStatus] = useState<string | null>(null);
     const [activatingRole, setActivatingRole] = useState<string | null>(null);
 
+    // Derive all user roles from session (roles[] array preferred, fallback to legacy role)
+    const userRoles: string[] = (() => {
+        if (!session?.user) return [];
+        const u = session.user as any;
+        if (Array.isArray(u.roles) && u.roles.length > 0) return u.roles;
+        return u.role ? [u.role] : [];
+    })();
+
+    const hasSeller = userRoles.includes("SELLER");
+    const hasDriver = userRoles.includes("DRIVER");
+    const hasMerchant = userRoles.includes("MERCHANT") || userRoles.includes("COMERCIO");
+    const hasAdmin = userRoles.includes("ADMIN");
+
     // Fetch user roles on mount
     useEffect(() => {
         if (session?.user) {
-            const roles = (session.user as any).roles || [(session.user as any).role];
-            if (roles.includes("SELLER")) setSellerStatus("ACTIVE");
+            if (hasSeller) setSellerStatus("ACTIVE");
             // Check driver status
-            fetch("/api/driver/profile")
-                .then(res => {
-                    if (res.ok) return res.json();
-                    return null;
-                })
-                .then(data => {
-                    if (data) {
-                        setDriverStatus(data.isActive ? "ACTIVE" : "PENDING_VERIFICATION");
-                    }
-                })
-                .catch(() => { });
+            if (hasDriver) {
+                fetch("/api/driver/profile")
+                    .then(res => {
+                        if (res.ok) return res.json();
+                        return null;
+                    })
+                    .then(data => {
+                        if (data) {
+                            setDriverStatus(data.isActive ? "ACTIVE" : "PENDING_VERIFICATION");
+                        }
+                    })
+                    .catch(() => { });
+            } else {
+                // Also check for users who applied but aren't in roles[] yet
+                fetch("/api/driver/profile")
+                    .then(res => {
+                        if (res.ok) return res.json();
+                        return null;
+                    })
+                    .then(data => {
+                        if (data) {
+                            setDriverStatus(data.isActive ? "ACTIVE" : "PENDING_VERIFICATION");
+                        }
+                    })
+                    .catch(() => { });
+            }
         }
-    }, [session]);
+    }, [session, hasSeller, hasDriver]);
 
     const handleActivateSeller = async () => {
         setActivatingRole("seller");
@@ -192,73 +222,140 @@ export default function ProfilePage() {
                     </div>
                 </section>
 
-                {/* 2. Opportunities Section (Integrated) */}
+                {/* 2. My Portals — links to active role dashboards */}
+                {(hasSeller || driverStatus === "ACTIVE" || hasMerchant || hasAdmin) && (
+                    <section>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mis Portales</h3>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {hasSeller && (
+                                <Link href="/vendedor" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                                            <ShoppingBag className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900 block">Panel de Vendedor</span>
+                                            <span className="text-[10px] text-gray-400">Listings, ventas y ganancias</span>
+                                        </div>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4 text-gray-300" />
+                                </Link>
+                            )}
+                            {driverStatus === "ACTIVE" && (
+                                <Link href="/repartidor" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
+                                            <Truck className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900 block">Panel de Repartidor</span>
+                                            <span className="text-[10px] text-gray-400">Pedidos disponibles y entregas</span>
+                                        </div>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4 text-gray-300" />
+                                </Link>
+                            )}
+                            {hasMerchant && (
+                                <Link href="/comercios" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                            <Store className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900 block">Panel de Comercio</span>
+                                            <span className="text-[10px] text-gray-400">Productos, pedidos y configuración</span>
+                                        </div>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4 text-gray-300" />
+                                </Link>
+                            )}
+                            {hasAdmin && (
+                                <Link href="/ops" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
+                                            <LayoutDashboard className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900 block">Panel de Operaciones</span>
+                                            <span className="text-[10px] text-gray-400">Administración y logística</span>
+                                        </div>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4 text-gray-300" />
+                                </Link>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                {/* 3. Opportunities Section — activate roles you don't have yet */}
                 <section>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Oportunidades MOOVY</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {/* Comercio - se mantiene como link (onboarding separado) */}
-                        <Link href="/comercio/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                                    <Store className="w-4 h-4" />
+                        {!hasMerchant && (
+                            <Link href="/comercio/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                        <Store className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-900 block">Registrar mi Comercio</span>
+                                        <span className="text-[10px] text-gray-400">Vendé tus productos en Moovy</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-900 block">Registrar mi Comercio</span>
-                                    <span className="text-[10px] text-gray-400">Vendé tus productos en Moovy</span>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-300" />
-                        </Link>
-
-                        {/* Seller - botón de activación */}
-                        <button
-                            onClick={handleActivateSeller}
-                            disabled={sellerStatus === "ACTIVE" || activatingRole !== null}
-                            className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left disabled:opacity-70"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-                                    <ShoppingBag className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-900 block">Quiero vender</span>
-                                    <span className="text-[10px] text-gray-400">Vendé objetos, productos caseros o servicios</span>
-                                </div>
-                            </div>
-                            {activatingRole === "seller" ? (
-                                <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                            ) : sellerStatus === "ACTIVE" ? (
-                                <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">✅ Activo</span>
-                            ) : (
                                 <ChevronRight className="w-4 h-4 text-gray-300" />
-                            )}
-                        </button>
+                            </Link>
+                        )}
 
-                        {/* Driver - botón de activación */}
-                        <button
-                            onClick={handleActivateDriver}
-                            disabled={driverStatus === "ACTIVE" || driverStatus === "PENDING_VERIFICATION" || activatingRole !== null}
-                            className="flex items-center justify-between p-4 hover:bg-gray-50 transition group w-full text-left disabled:opacity-70"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                                    <Car className="w-4 h-4" />
+                        {/* Seller - botón de activación (solo si no tiene el rol) */}
+                        {!hasSeller && (
+                            <button
+                                onClick={handleActivateSeller}
+                                disabled={sellerStatus === "ACTIVE" || activatingRole !== null}
+                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left disabled:opacity-70"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                                        <ShoppingBag className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-900 block">Quiero vender</span>
+                                        <span className="text-[10px] text-gray-400">Vendé objetos, productos caseros o servicios</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-900 block">Quiero ser Repartidor</span>
-                                    <span className="text-[10px] text-gray-400">Generá ingresos con tu vehículo</span>
+                                {activatingRole === "seller" ? (
+                                    <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                                )}
+                            </button>
+                        )}
+
+                        {/* Driver - botón de activación (solo si no tiene el rol activo) */}
+                        {driverStatus !== "ACTIVE" && (
+                            <button
+                                onClick={handleActivateDriver}
+                                disabled={driverStatus === "PENDING_VERIFICATION" || activatingRole !== null}
+                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition group w-full text-left disabled:opacity-70"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
+                                        <Car className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-900 block">Quiero ser Repartidor</span>
+                                        <span className="text-[10px] text-gray-400">Generá ingresos con tu vehículo</span>
+                                    </div>
                                 </div>
-                            </div>
-                            {activatingRole === "driver" ? (
-                                <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                            ) : driverStatus === "ACTIVE" ? (
-                                <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">✅ Activo</span>
-                            ) : driverStatus === "PENDING_VERIFICATION" ? (
-                                <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-medium">⏳ Pendiente</span>
-                            ) : (
-                                <ChevronRight className="w-4 h-4 text-gray-300" />
-                            )}
-                        </button>
+                                {activatingRole === "driver" ? (
+                                    <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                                ) : driverStatus === "PENDING_VERIFICATION" ? (
+                                    <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                                )}
+                            </button>
+                        )}
                     </div>
                 </section>
 
