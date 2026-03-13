@@ -52,6 +52,7 @@ model User {
   referredUsers      User[]              @relation("UserReferrals")
   roles              UserRole[]
   sellerProfile      SellerProfile?
+  sellerAvailability SellerAvailability?
   favorites          Favorite[]
 }
 
@@ -257,6 +258,8 @@ model Order {
   items               OrderItem[]
   subOrders           SubOrder[]
   payments            Payment[]
+  assignmentLogs      AssignmentLog[]
+  pendingAssignment   PendingAssignment?
   isMultiVendor       Boolean     @default(false)
 
   @@index([status])
@@ -404,6 +407,7 @@ model Driver {
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders             Order[]
   subOrders          SubOrder[]
+  assignmentLogs     AssignmentLog[]
 
   @@index([isOnline])
   @@index([isActive])
@@ -671,4 +675,112 @@ model MpWebhookLog {
   createdAt  DateTime @default(now())
 
   @@index([resourceId])
+}
+
+// ─── Delivery & Assignment System ─────────────────────────────────────────────
+
+enum VehicleTypeEnum {
+  BIKE
+  MOTO
+  CAR
+  TRUCK
+}
+
+enum AssignmentOutcomeEnum {
+  ACCEPTED
+  REJECTED
+  TIMEOUT
+  SKIPPED
+}
+
+enum PendingAssignmentStatus {
+  WAITING
+  COMPLETED
+  FAILED
+}
+
+model PackageCategory {
+  id              String   @id @default(cuid())
+  name            String   @unique // MICRO, SMALL, MEDIUM, LARGE, XL
+  maxWeightGrams  Int
+  maxLengthCm     Int
+  maxWidthCm      Int
+  maxHeightCm     Int
+  volumeScore     Int      // MICRO=1, SMALL=3, MEDIUM=6, LARGE=10, XL=20
+  allowedVehicles String[] // enum values: BIKE, MOTO, CAR, TRUCK
+  isActive        Boolean  @default(true)
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  deliveryRate DeliveryRate?
+}
+
+model DeliveryRate {
+  id             String          @id @default(cuid())
+  categoryId     String          @unique
+  basePriceArs   Float
+  pricePerKmArs  Float
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  category PackageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model MoovyConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String
+  updatedAt   DateTime @updatedAt
+}
+
+model AssignmentLog {
+  id            String                @id @default(cuid())
+  orderId       String
+  driverId      String
+  attemptNumber Int                   @default(1)
+  notifiedAt    DateTime              @default(now())
+  respondedAt   DateTime?
+  outcome       AssignmentOutcomeEnum @default(ACCEPTED)
+  distanceKm    Float?
+
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([driverId])
+  @@index([notifiedAt])
+}
+
+model PendingAssignment {
+  id              String                  @id @default(cuid())
+  orderId         String                  @unique
+  currentDriverId String?
+  attemptNumber   Int                     @default(1)
+  expiresAt       DateTime
+  status          PendingAssignmentStatus @default(WAITING)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model SellerAvailability {
+  id                  String    @id @default(cuid())
+  sellerId            String    @unique
+  isOnline            Boolean   @default(false)
+  isPaused            Boolean   @default(false)
+  pauseEndsAt         DateTime?
+  preparationMinutes  Int       @default(15)
+  scheduleEnabled     Boolean   @default(false)
+  scheduleJson        String?   // stores recurring schedule as JSON string
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 }
