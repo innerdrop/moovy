@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate legal acceptance
+        if (!data.acceptedTerms || !data.acceptedPrivacy) {
+            return NextResponse.json(
+                { error: "Debés aceptar los Términos para Comercios y la Política de Privacidad" },
+                { status: 400 }
+            );
+        }
+
         // Check if email already exists
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email }
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest) {
                 }
             });
 
-            // 2. Create Merchant
+            // 2. Create Merchant with legal/fiscal data
             await tx.merchant.create({
                 data: {
                     ownerId: newUser.id,
@@ -75,6 +83,12 @@ export async function POST(request: NextRequest) {
                     slug: slug,
                     category: data.businessType,
                     cuit: data.cuit || null,
+                    bankAccount: data.cbu || null,
+                    constanciaAfipUrl: data.constanciaAfipUrl || null,
+                    habilitacionMunicipalUrl: data.habilitacionMunicipalUrl || null,
+                    registroSanitarioUrl: data.registroSanitarioUrl || null,
+                    acceptedTermsAt: data.acceptedTerms ? new Date() : null,
+                    acceptedPrivacyAt: data.acceptedPrivacy ? new Date() : null,
                     email: data.email,
                     phone: data.businessPhone || data.phone,
                     address: data.address,

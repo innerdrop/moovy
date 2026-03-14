@@ -357,8 +357,13 @@ model Merchant {
   deliveryTimeMax  Int                       @default(45)
   deliveryFee      Float                     @default(0)
   minOrderAmount   Float                     @default(0)
-  cuit             String?
-  category         String?                   @default("Otro")
+  cuit                      String?
+  constanciaAfipUrl         String?
+  habilitacionMunicipalUrl  String?
+  registroSanitarioUrl      String?
+  acceptedTermsAt           DateTime?
+  acceptedPrivacyAt         DateTime?
+  category                  String?                   @default("Otro")
   ownerId          String
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt

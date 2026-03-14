@@ -158,3 +158,6 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/devoluciones/page.tsx` — Política de Devoluciones (9 secciones: Ley 24.240, plazos 10 días, proceso, reembolsos MP/MOOVER, no retornables perecederos, garantía legal)
 - `src/app/cancelaciones/page.tsx` — Política de Cancelaciones (8 secciones: comprador antes/después/en camino, vendedor/comercio, automáticas timeout, reembolsos, penalidades)
 - `mi-perfil/page.tsx` — Agregados links a Privacidad, Cookies y Devoluciones en sección Configuración y Ayuda
+- Schema Merchant: nuevos campos `constanciaAfipUrl`, `habilitacionMunicipalUrl`, `registroSanitarioUrl`, `acceptedTermsAt`, `acceptedPrivacyAt`
+- `src/app/comercio/registro/page.tsx` — Reorganizado en 3 pasos: info básica, contacto+contraseña, datos fiscales/legales (CUIT, CBU, uploads docs, checkboxes términos/privacidad)
+- `src/app/api/auth/register/merchant/route.ts` — Recibe y guarda campos fiscales/legales, valida aceptación de términos

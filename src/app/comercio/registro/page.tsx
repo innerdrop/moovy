@@ -20,9 +20,27 @@ import {
     ArrowLeft,
     CheckCircle2,
     Clock,
-    Sparkles
+    Sparkles,
+    Shield,
+    CreditCard,
+    Upload
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
+import ImageUpload from "@/components/ui/ImageUpload";
+
+// Tipos de negocio que requieren registro sanitario (alimentos)
+const FOOD_BUSINESS_TYPES = [
+    "Restaurante",
+    "Pizzería",
+    "Hamburguesería",
+    "Parrilla",
+    "Cafetería",
+    "Heladería",
+    "Panadería/Pastelería",
+    "Sushi",
+    "Comida Saludable",
+    "Bebidas"
+];
 
 function ComercioRegistroContent() {
     const router = useRouter();
@@ -48,6 +66,14 @@ function ComercioRegistroContent() {
         confirmPassword: "",
         latitude: null as number | null,
         longitude: null as number | null,
+        // Paso 3: Datos fiscales y legales
+        cuit: "",
+        cbu: "",
+        constanciaAfipUrl: "",
+        habilitacionMunicipalUrl: "",
+        registroSanitarioUrl: "",
+        acceptedTerms: false,
+        acceptedPrivacy: false,
     });
 
     const businessTypes = [
@@ -67,31 +93,38 @@ function ComercioRegistroContent() {
         "Otro"
     ];
 
+    const isFoodBusiness = FOOD_BUSINESS_TYPES.includes(formData.businessType);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const target = e.target;
+        if (target instanceof HTMLInputElement && target.type === "checkbox") {
+            setFormData({ ...formData, [target.name]: target.checked });
+        } else {
+            setFormData({ ...formData, [target.name]: target.value });
+        }
     };
 
-    const handleStep1Submit = (e: React.FormEvent) => {
-        e.preventDefault();
+    // Validación formato CUIT: XX-XXXXXXXX-X
+    const formatCuit = (value: string) => {
+        const digits = value.replace(/\D/g, "").slice(0, 11);
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
+    };
+
+    const handleCuitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, cuit: formatCuit(e.target.value) });
+    };
+
+    const handleFinalSubmit = async () => {
         setError("");
 
-        // Validate password confirmation
-        if (formData.password !== formData.confirmPassword) {
-            setError("Las contraseñas no coinciden");
+        // Validar checkboxes obligatorios
+        if (!formData.acceptedTerms || !formData.acceptedPrivacy) {
+            setError("Debés aceptar los Términos para Comercios y la Política de Privacidad");
             return;
         }
 
-        if (formData.password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
-            return;
-        }
-
-        setStep(2);
-    };
-
-    const handleFinalSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
         setIsLoading(true);
 
         // Add prefix to phone numbers if they don't have it
@@ -114,7 +147,7 @@ function ComercioRegistroContent() {
                 throw new Error(data.error || "Error al registrar");
             }
 
-            setStep(3); // Success step
+            setStep(4); // Success step
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -140,21 +173,21 @@ function ComercioRegistroContent() {
                 </div>
 
                 {/* Progress Steps */}
-                {step < 3 && (
+                {step < 4 && (
                     <div className="flex items-center justify-center gap-2 mb-6">
-                        {[1, 2].map((s) => (
+                        {[1, 2, 3].map((s) => (
                             <div key={s} className="flex items-center gap-2">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}>
                                     {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
                                 </div>
-                                {s < 2 && <div className={`w-12 h-1 rounded ${step > s ? "bg-blue-600" : "bg-gray-200"}`} />}
+                                {s < 3 && <div className={`w-12 h-1 rounded ${step > s ? "bg-blue-600" : "bg-gray-200"}`} />}
                             </div>
                         ))}
                     </div>
                 )}
 
                 {/* Success Step */}
-                {step === 3 && (
+                {step === 4 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -199,7 +232,7 @@ function ComercioRegistroContent() {
                             </div>
                         )}
 
-                        <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
+                        <form onSubmit={(e) => { e.preventDefault(); setError(""); setStep(2); }} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Nombre del Comercio <span className="text-red-500">*</span>
@@ -287,11 +320,11 @@ function ComercioRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 2: Contact and Address */}
+                {/* Step 2: Contact, Address and Password */}
                 {step === 2 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <button
-                            onClick={() => setStep(1)}
+                            onClick={() => { setError(""); setStep(1); }}
                             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -304,7 +337,7 @@ function ComercioRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Contacto y Dirección</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Completá el registro</p>
+                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Datos de contacto y acceso</p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -314,6 +347,7 @@ function ComercioRegistroContent() {
 
                         <form onSubmit={(e) => {
                             e.preventDefault();
+                            setError("");
                             if (formData.password !== formData.confirmPassword) {
                                 setError("Las contraseñas no coinciden");
                                 return;
@@ -322,7 +356,7 @@ function ComercioRegistroContent() {
                                 setError("La contraseña debe tener al menos 6 caracteres");
                                 return;
                             }
-                            handleFinalSubmit(e);
+                            setStep(3);
                         }} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -461,23 +495,194 @@ function ComercioRegistroContent() {
                                 </div>
                             </div>
 
-                            {/* Benefits */}
+                            <button
+                                type="submit"
+                                className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:opacity-90 transition"
+                            >
+                                Continuar
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {/* Step 3: Fiscal and Legal Data */}
+                {step === 3 && (
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+                        <button
+                            onClick={() => { setError(""); setStep(2); }}
+                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Volver
+                        </button>
+
+                        <div className="flex items-center justify-center mb-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-white" />
+                            </div>
+                        </div>
+                        <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Datos Fiscales y Legales</h2>
+                        <p className="text-sm text-gray-500 text-center mb-6">Paso 3: Documentación para operar</p>
+
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {/* CUIT */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    CUIT <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        name="cuit"
+                                        value={formData.cuit}
+                                        onChange={handleCuitChange}
+                                        placeholder="XX-XXXXXXXX-X"
+                                        maxLength={13}
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                    CUIT de la persona física o jurídica titular del comercio.
+                                </p>
+                            </div>
+
+                            {/* CBU / Alias */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    CBU o Alias bancario <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        name="cbu"
+                                        value={formData.cbu}
+                                        onChange={handleChange}
+                                        placeholder="CBU de 22 dígitos o alias"
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                    Para la recepción de pagos por ventas a través de la plataforma.
+                                </p>
+                            </div>
+
+                            {/* Constancia AFIP */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Constancia de Inscripción AFIP
+                                </label>
+                                <ImageUpload
+                                    value={formData.constanciaAfipUrl}
+                                    onChange={(url) => setFormData(prev => ({ ...prev, constanciaAfipUrl: url }))}
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                    Monotributo o Responsable Inscripto. Formato imagen (JPG, PNG).
+                                </p>
+                            </div>
+
+                            {/* Habilitación Municipal */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Habilitación Municipal
+                                </label>
+                                <ImageUpload
+                                    value={formData.habilitacionMunicipalUrl}
+                                    onChange={(url) => setFormData(prev => ({ ...prev, habilitacionMunicipalUrl: url }))}
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                    Habilitación expedida por la Municipalidad de Ushuaia.
+                                </p>
+                            </div>
+
+                            {/* Registro Sanitario - solo para alimentos */}
+                            {isFoodBusiness && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Registro Sanitario / Habilitación Bromatológica
+                                    </label>
+                                    <ImageUpload
+                                        value={formData.registroSanitarioUrl}
+                                        onChange={(url) => setFormData(prev => ({ ...prev, registroSanitarioUrl: url }))}
+                                    />
+                                    <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                        Requerido para comercios que manipulan alimentos. Expedido por la autoridad sanitaria de Tierra del Fuego.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Info comisiones */}
                             <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Sparkles className="w-5 h-5 text-blue-600" />
-                                    <span className="font-semibold text-blue-900">Beneficios de unirte</span>
+                                    <span className="font-semibold text-blue-900">Comisiones</span>
                                 </div>
-                                <ul className="text-sm text-blue-700 space-y-1">
-                                    <li>✓ Llegá a miles de clientes en tu ciudad</li>
-                                    <li>✓ Panel de gestión fácil de usar</li>
-                                    <li>✓ Sin costo de alta</li>
-                                </ul>
+                                <p className="text-sm text-blue-700">
+                                    MOOVY cobra una comisión por cada venta realizada a través de la plataforma.
+                                    El porcentaje será informado antes de la activación de tu cuenta.
+                                    Consultá los detalles en los{" "}
+                                    <Link href="/terminos-comercio" className="underline font-medium" target="_blank">
+                                        Términos para Comercios
+                                    </Link>.
+                                </p>
                             </div>
 
+                            {/* Checkboxes legales */}
+                            <div className="space-y-3 border-t pt-4">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="acceptedTerms"
+                                        checked={formData.acceptedTerms}
+                                        onChange={handleChange}
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm text-gray-600">
+                                        Acepto los{" "}
+                                        <Link href="/terminos-comercio" className="text-blue-600 underline font-medium" target="_blank">
+                                            Términos y Condiciones para Comercios
+                                        </Link>{" "}
+                                        y los{" "}
+                                        <Link href="/terminos" className="text-blue-600 underline font-medium" target="_blank">
+                                            Términos y Condiciones generales
+                                        </Link>{" "}
+                                        de MOOVY. <span className="text-red-500">*</span>
+                                    </span>
+                                </label>
+
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="acceptedPrivacy"
+                                        checked={formData.acceptedPrivacy}
+                                        onChange={handleChange}
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm text-gray-600">
+                                        Acepto la{" "}
+                                        <Link href="/privacidad" className="text-blue-600 underline font-medium" target="_blank">
+                                            Política de Privacidad
+                                        </Link>{" "}
+                                        y el tratamiento de mis datos personales conforme la Ley 25.326. <span className="text-red-500">*</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Submit */}
                             <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"
+                                type="button"
+                                onClick={handleFinalSubmit}
+                                disabled={isLoading || !formData.acceptedTerms || !formData.acceptedPrivacy}
+                                className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
                                     <>
@@ -491,12 +696,12 @@ function ComercioRegistroContent() {
                                     </>
                                 )}
                             </button>
-                        </form>
+                        </div>
                     </div>
                 )}
 
                 {/* Back Link */}
-                {step < 3 && (
+                {step < 4 && (
                     <Link
                         href={fromProfile ? "/mi-perfil" : "/"}
                         className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700"
