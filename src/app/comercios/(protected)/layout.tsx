@@ -15,6 +15,7 @@ import {
 
 
 import SupportNavBadge, { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
+import ToastWrapper from "./ToastWrapper";
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
@@ -164,6 +165,9 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                 {/* Safe area padding for iPhones with notch */}
                 <div className="h-[env(safe-area-inset-bottom)] bg-white" />
             </nav>
+
+            {/* Toast Notifications */}
+            <ToastWrapper />
         </div>
     );
 }

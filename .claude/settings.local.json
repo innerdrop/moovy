@@ -27,7 +27,8 @@
       "Bash(grep -rn \"scheduled\\\\|SCHEDULED\\\\|programado\" /c/Users/Mauro/Desktop/moovy/src --include=*.ts --include=*.tsx)",
       "Bash(echo \"EXIT CODE: $?\")",
       "Bash(find \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(comercios\\)\" -type f -o -type d)",
-      "Bash(ls -d \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\comercios\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\repartidor\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\vendedor\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\ops\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(store\\)\")"
+      "Bash(ls -d \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\comercios\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\repartidor\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\vendedor\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\ops\\\\\\(protected\\)\" \"C:\\\\Users\\\\Mauro\\\\Desktop\\\\moovy\\\\src\\\\app\\\\\\(store\\)\")",
+      "Bash(node -e \":*)"
     ]
   }
 }

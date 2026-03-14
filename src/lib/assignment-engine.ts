@@ -829,6 +829,17 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
         console.error("[AssignmentEngine] Socket unassignable error:", err)
     );
 
+    // Also notify the merchant
+    const orderForMerchant = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { merchantId: true },
+    });
+    if (orderForMerchant?.merchantId) {
+        emitSocket("order_unassignable", `merchant_${orderForMerchant.merchantId}`, { orderId, orderNumber }).catch((err) =>
+            console.error("[AssignmentEngine] Socket merchant unassignable error:", err)
+        );
+    }
+
     // Notify customer
     notifyBuyer(userId, "CANCELLED", orderNumber, { orderId }).catch((err) =>
         console.error("[AssignmentEngine] Buyer notification error:", err)

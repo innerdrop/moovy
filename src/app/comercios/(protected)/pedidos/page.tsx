@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { formatPrice } from "@/lib/delivery";
 import { formatTime } from "@/lib/timezone";
 import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
+import { toast } from "@/store/toast";
 import {
     ShoppingBag,
     Clock,
@@ -101,6 +102,7 @@ export default function ComercioPedidosPage() {
     const [updating, setUpdating] = useState<string | null>(null);
     const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
     const [merchantId, setMerchantId] = useState<string | null>(null);
+    const [unassignableAlerts, setUnassignableAlerts] = useState<{ orderId: string; orderNumber: string }[]>([]);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Cancellation modal state
@@ -162,6 +164,13 @@ export default function ComercioPedidosPage() {
                 o.id === orderId ? { ...o, status: "CANCELLED" } : o
             ));
         },
+        onOrderUnassignable: (orderId, orderNumber) => {
+            setUnassignableAlerts(prev => {
+                if (prev.some(a => a.orderId === orderId)) return prev;
+                return [...prev, { orderId, orderNumber }];
+            });
+            toast.warning(`No se encontró repartidor para el pedido ${orderNumber}. MOOVY fue notificado.`, 10000);
+        },
     });
 
     useEffect(() => {
@@ -181,10 +190,10 @@ export default function ComercioPedidosPage() {
                 loadOrders(true);
             } else {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || "Error al confirmar el pedido");
+                toast.error(data.error || "Error al confirmar el pedido");
             }
         } catch {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         } finally {
             setUpdating(null);
         }
@@ -202,10 +211,10 @@ export default function ComercioPedidosPage() {
                 loadOrders(true);
             } else {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || "Error al rechazar el pedido");
+                toast.error(data.error || "Error al rechazar el pedido");
             }
         } catch {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         } finally {
             setUpdating(null);
         }
@@ -219,10 +228,10 @@ export default function ComercioPedidosPage() {
                 loadOrders(true);
             } else {
                 const data = await res.json().catch(() => ({}));
-                alert(data.error || "Error al marcar como listo");
+                toast.error(data.error || "Error al marcar como listo");
             }
         } catch {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         } finally {
             setUpdating(null);
         }
@@ -245,7 +254,7 @@ export default function ComercioPedidosPage() {
 
         const reason = selectedReason === "Otro motivo" ? customReason : selectedReason;
         if (!reason.trim()) {
-            alert("Debes seleccionar o escribir un motivo de cancelación");
+            toast.warning("Debes seleccionar o escribir un motivo de cancelación");
             return;
         }
 
@@ -304,6 +313,28 @@ export default function ComercioPedidosPage() {
                     <p className="text-yellow-800 font-medium">
                         ¡Tenés <span className="font-bold">{pendingCount}</span> pedido{pendingCount > 1 ? "s" : ""} nuevo{pendingCount > 1 ? "s" : ""}!
                     </p>
+                </div>
+            )}
+
+            {/* Unassignable Orders Alert */}
+            {unassignableAlerts.length > 0 && (
+                <div className="space-y-2">
+                    {unassignableAlerts.map((alert) => (
+                        <div key={alert.orderId} className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                                <p className="text-orange-800 text-sm font-medium">
+                                    No se encontró repartidor para <span className="font-bold">{alert.orderNumber}</span>. El equipo de MOOVY fue notificado.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setUnassignableAlerts(prev => prev.filter(a => a.orderId !== alert.orderId))}
+                                className="text-orange-400 hover:text-orange-600 ml-2 flex-shrink-0"
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
                 </div>
             )}
 
@@ -449,7 +480,7 @@ export default function ComercioPedidosPage() {
             )}
 
             {/* Hidden audio element for notification sound */}
-            <audio ref={audioRef} src="/sounds/new-order.mp3" preload="auto" />
+            <audio ref={audioRef} src="/sounds/new-order.wav" preload="auto" />
 
             {/* Cancellation Modal */}
             {cancelModal.open && (

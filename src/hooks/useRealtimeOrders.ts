@@ -33,6 +33,8 @@ interface UseRealtimeOrdersOptions {
     onOrderCancelled?: (orderId: string) => void;
     /** Called when a driver is assigned */
     onDriverAssigned?: (orderId: string, driverId: string) => void;
+    /** Called when no driver was found for an order */
+    onOrderUnassignable?: (orderId: string, orderNumber: string) => void;
     /** Whether to enable the connection */
     enabled?: boolean;
 }
@@ -45,6 +47,7 @@ export function useRealtimeOrders({
     onStatusChange,
     onOrderCancelled,
     onDriverAssigned,
+    onOrderUnassignable,
     enabled = true,
 }: UseRealtimeOrdersOptions) {
     // Auto-fetch socket auth token
@@ -55,6 +58,7 @@ export function useRealtimeOrders({
         onStatusChange,
         onOrderCancelled,
         onDriverAssigned,
+        onOrderUnassignable,
     });
 
     // Keep callbacks fresh
@@ -64,8 +68,9 @@ export function useRealtimeOrders({
             onStatusChange,
             onOrderCancelled,
             onDriverAssigned,
+            onOrderUnassignable,
         };
-    }, [onNewOrder, onStatusChange, onOrderCancelled, onDriverAssigned]);
+    }, [onNewOrder, onStatusChange, onOrderCancelled, onDriverAssigned, onOrderUnassignable]);
 
     useEffect(() => {
         if (!enabled || !socketToken) return;
@@ -133,6 +138,12 @@ export function useRealtimeOrders({
         socket.on("driver_assigned", (data: { orderId: string; driverId: string }) => {
             console.log(`[RealtimeOrders] Driver ${data.driverId} assigned to order ${data.orderId}`);
             callbacksRef.current.onDriverAssigned?.(data.orderId, data.driverId);
+        });
+
+        // Listen for unassignable orders (no driver found)
+        socket.on("order_unassignable", (data: { orderId: string; orderNumber: string }) => {
+            console.log(`[RealtimeOrders] Order ${data.orderNumber} is unassignable`);
+            callbacksRef.current.onOrderUnassignable?.(data.orderId, data.orderNumber);
         });
 
         socket.on("disconnect", () => {
