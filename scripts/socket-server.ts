@@ -275,12 +275,16 @@ httpServer.listen(PORT, () => {
 ║  Port: ${PORT.toString().padEnd(50)}║
 ║  Namespace: /logistica                                    ║
 ║  CORS: ${NEXT_URL.padEnd(48)}║
+╠═══════════════════════════════════════════════════════════╣
+║  ⏱  Cron: assignment-timeout    every 15s                ║
+║  ⏱  Cron: merchant-timeout      every 60s                ║
+║  ⏱  Cron: seller-resume         every 5 min              ║
+║  ⏱  Cron: scheduled-notify      every 5 min              ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
 
-    // ─── Periodic Timeout Processor ──────────────────────────────────────
-    // Process expired assignment offers every 15 seconds
-    // This replaces the need for an external cron job
+    // ─── Cron: Assignment Timeout (every 15s) ─────────────────────────────
+    // Process expired assignment offers
     setInterval(async () => {
         try {
             const res = await fetch(`${NEXT_URL}/api/logistics/timeout`, {
@@ -300,6 +304,72 @@ httpServer.listen(PORT, () => {
             // Silent - Next.js might not be ready yet
         }
     }, 15_000);
+
+    // ─── Cron: Merchant Timeout (every 60s) ─────────────────────────────
+    // Auto-cancel PENDING orders not confirmed by merchants
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${NEXT_URL}/api/cron/merchant-timeout`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${CRON_SECRET}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.cancelled > 0) {
+                    console.log(`[Cron] Merchant timeout: cancelled ${data.cancelled} order(s)`);
+                }
+            }
+        } catch (e) {
+            // Silent - Next.js might not be ready yet
+        }
+    }, 60_000);
+
+    // ─── Cron: Seller Resume (every 5 min) ──────────────────────────────
+    // Resume sellers whose pause time has expired
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${NEXT_URL}/api/cron/seller-resume`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${CRON_SECRET}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.resumed > 0) {
+                    console.log(`[Cron] Resumed ${data.resumed} paused seller(s)`);
+                }
+            }
+        } catch (e) {
+            // Silent - Next.js might not be ready yet
+        }
+    }, 300_000);
+
+    // ─── Cron: Scheduled Notify (every 5 min) ───────────────────────────
+    // Notify sellers of upcoming scheduled orders, auto-cancel unconfirmed
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${NEXT_URL}/api/cron/scheduled-notify`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${CRON_SECRET}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.notified > 0 || data.cancelled > 0) {
+                    console.log(`[Cron] Scheduled: notified ${data.notified || 0}, cancelled ${data.cancelled || 0}`);
+                }
+            }
+        } catch (e) {
+            // Silent - Next.js might not be ready yet
+        }
+    }, 300_000);
 });
 
 export { io, logistica };
