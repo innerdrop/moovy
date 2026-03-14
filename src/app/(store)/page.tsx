@@ -17,10 +17,10 @@ import HeroSliderNew from "@/components/home/HeroSliderNew";
 import MerchantCard from "@/components/store/MerchantCard";
 import ListingCard from "@/components/store/ListingCard";
 
-// Configuration
-// In Production: true (Shows "Volvemos Pronto")
-// In Development: false (Shows the App to work)
-const IS_MAINTENANCE_MODE = process.env.NODE_ENV === "production";
+// Configuration — Maintenance mode controlado por env var
+// MAINTENANCE_MODE=true  → muestra "Volvemos Pronto"
+// MAINTENANCE_MODE=false → muestra la app normalmente
+const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
 
 // Category icons mapping
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
