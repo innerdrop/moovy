@@ -1,6 +1,13 @@
 // Tienda Page - Nuevo Diseño Estilo App
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+    title: "Tienda MOOVY — Comercios de Ushuaia",
+    description: "Explorá todos los comercios de Ushuaia en MOOVY. Comida, productos y más con delivery rápido.",
+};
 
 import { Store } from "lucide-react";
 import { prisma } from "@/lib/prisma";

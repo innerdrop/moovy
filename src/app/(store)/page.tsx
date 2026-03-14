@@ -1,6 +1,13 @@
 // Home Page - Página de Inicio
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+    title: "MOOVY — Tu marketplace y delivery en Ushuaia",
+    description: "Comprá productos, comida y más de comercios locales en Ushuaia. Delivery rápido a tu puerta.",
+};
 
 import Link from "next/link";
 import {

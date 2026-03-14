@@ -21,9 +21,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Moovy | Tu Antojo Manda!",
-  description: "Delivery rápido en Ushuaia. Pedí lo que quieras, te lo llevamos.",
-  keywords: "moovy, delivery, comida, ushuaia, rapido, pedidos",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://www.somosmoovy.com"),
+  title: {
+    default: "MOOVY — Tu marketplace y delivery en Ushuaia",
+    template: "%s | MOOVY",
+  },
+  description: "Comprá productos, comida y más de comercios locales en Ushuaia. Delivery rápido a tu puerta. Marketplace entre vecinos.",
+  keywords: "moovy, delivery, ushuaia, marketplace, comida, comercios, tierra del fuego, pedidos, envíos",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.png",
@@ -33,22 +37,23 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Moovy",
+    title: "MOOVY",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
-    title: "Moovy | Tu Antojo Manda!",
-    description: "Delivery rápido en Ushuaia.",
+    title: "MOOVY — Tu marketplace y delivery en Ushuaia",
+    description: "Comprá productos, comida y más de comercios locales en Ushuaia. Delivery rápido a tu puerta.",
     type: "website",
-    siteName: "Moovy",
+    locale: "es_AR",
+    siteName: "MOOVY",
     images: ["/favicon-32x32.png"],
   },
   twitter: {
-    card: "summary",
-    title: "Moovy | Tu Antojo Manda!",
-    description: "Delivery rápido en Ushuaia.",
+    card: "summary_large_image",
+    title: "MOOVY — Tu marketplace y delivery en Ushuaia",
+    description: "Comprá productos, comida y más de comercios locales en Ushuaia. Delivery rápido a tu puerta.",
     images: ["/favicon-32x32.png"],
   },
 };
