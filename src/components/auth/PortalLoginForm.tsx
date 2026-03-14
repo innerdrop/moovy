@@ -259,6 +259,21 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                         </button>
                     </form>
 
+                    {/* Legal notice - only for client portal */}
+                    {portal === "client" && (
+                        <p className="text-xs text-gray-400 text-center mt-4">
+                            Al iniciar sesión aceptás los{" "}
+                            <Link href="/terminos" className="text-gray-500 underline hover:text-gray-700" target="_blank">
+                                Términos y Condiciones
+                            </Link>{" "}
+                            y la{" "}
+                            <Link href="/privacidad" className="text-gray-500 underline hover:text-gray-700" target="_blank">
+                                Política de Privacidad
+                            </Link>
+                            .
+                        </p>
+                    )}
+
                     {/* Register Link */}
                     {config.registerLink && (
                         <div className="mt-6 text-center text-sm text-gray-600">

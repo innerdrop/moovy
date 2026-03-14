@@ -36,6 +36,8 @@ function RegistrationForm() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [referralCode, setReferralCode] = useState("");
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [acceptPrivacy, setAcceptPrivacy] = useState(false);
 
     useEffect(() => {
         const refParam = searchParams.get("ref");
@@ -58,7 +60,10 @@ function RegistrationForm() {
             return;
         }
 
-
+        if (!acceptTerms || !acceptPrivacy) {
+            setError("Debés aceptar los Términos y Condiciones y la Política de Privacidad");
+            return;
+        }
 
         setIsLoading(true);
 
@@ -72,7 +77,9 @@ function RegistrationForm() {
                     email,
                     phone,
                     password,
-                    referralCode: referralCode.trim() || undefined
+                    referralCode: referralCode.trim() || undefined,
+                    acceptTerms: true,
+                    acceptPrivacy: true,
                 }),
             });
 
@@ -286,10 +293,45 @@ function RegistrationForm() {
                             </p>
                         </div>
 
+                        {/* Legal Consent */}
+                        <div className="space-y-3">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={acceptTerms}
+                                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
+                                />
+                                <span className="text-sm text-gray-600">
+                                    Acepto los{" "}
+                                    <Link href="/terminos" className="text-[#e60012] underline font-medium" target="_blank">
+                                        Términos y Condiciones
+                                    </Link>{" "}
+                                    de MOOVY. <span className="text-red-500">*</span>
+                                </span>
+                            </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={acceptPrivacy}
+                                    onChange={(e) => setAcceptPrivacy(e.target.checked)}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
+                                />
+                                <span className="text-sm text-gray-600">
+                                    Acepto la{" "}
+                                    <Link href="/privacidad" className="text-[#e60012] underline font-medium" target="_blank">
+                                        Política de Privacidad
+                                    </Link>{" "}
+                                    y el tratamiento de mis datos personales conforme la Ley 25.326. <span className="text-red-500">*</span>
+                                </span>
+                            </label>
+                        </div>
+
                         {/* Submit */}
                         <button
                             type="submit"
-                            disabled={isLoading || success}
+                            disabled={isLoading || success || !acceptTerms || !acceptPrivacy}
                             className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg mt-4 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-shadow"
                         >
                             {isLoading ? (

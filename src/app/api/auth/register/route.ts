@@ -112,7 +112,9 @@ export async function POST(request: NextRequest) {
                     pendingBonusPoints: pendingBonus,  // Pending until first purchase
                     bonusActivated: false,  // Not yet activated
                     referralCode: newUserReferralCode,
-                    referredById: referrerId
+                    referredById: referrerId,
+                    termsConsentAt: data.acceptTerms ? new Date() : null,
+                    privacyConsentAt: data.acceptPrivacy ? new Date() : null,
                 }
             });
 

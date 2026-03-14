@@ -39,6 +39,8 @@ model User {
   referredById       String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  privacyConsentAt   DateTime?
+  termsConsentAt     DateTime?
   resetToken         String?
   resetTokenExpiry   DateTime?
   deletedAt          DateTime?
