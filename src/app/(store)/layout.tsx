@@ -9,6 +9,7 @@ import WelcomeSplash from "@/components/home/WelcomeSplash";
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
+import ToastContainer from "@/components/ui/Toast";
 import ScrollToTop from "@/components/ScrollToTop";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
@@ -128,6 +129,9 @@ export default function StoreLayout({
 
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}
+
+            {/* Toast Notifications */}
+            <ToastContainer />
         </div>
     );
 }

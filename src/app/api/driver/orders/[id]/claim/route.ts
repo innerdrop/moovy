@@ -66,8 +66,10 @@ export async function POST(
         });
 
         // Notify buyer that order is in delivery
-        notifyBuyer(order.userId, "IN_DELIVERY", order.orderNumber)
-            .catch(err => console.error("[Push] Buyer notification error:", err));
+        notifyBuyer(order.userId, "IN_DELIVERY", order.orderNumber, {
+            total: order.total,
+            orderId: order.id,
+        }).catch(err => console.error("[Push] Buyer notification error:", err));
 
         return NextResponse.json({ success: true, message: "Pedido asignado correctamente" });
     } catch (error) {

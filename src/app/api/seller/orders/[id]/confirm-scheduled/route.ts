@@ -116,7 +116,7 @@ export async function POST(
         });
 
         // Notify buyer
-        notifyBuyer(order.userId, "SCHEDULED_CONFIRMED", order.orderNumber).catch((err) =>
+        notifyBuyer(order.userId, "SCHEDULED_CONFIRMED", order.orderNumber, { orderId: order.id }).catch((err) =>
             console.error("[ConfirmScheduled] Buyer push error:", err)
         );
 

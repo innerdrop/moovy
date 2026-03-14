@@ -549,6 +549,7 @@ export async function driverAcceptOrder(
                         merchantId: true,
                         userId: true,
                         status: true,
+                        total: true,
                     },
                 });
 
@@ -644,7 +645,10 @@ export async function driverAcceptOrder(
         );
 
         if (result.userId) {
-            notifyBuyer(result.userId, "CONFIRMED", result.orderNumber).catch((err) =>
+            notifyBuyer(result.userId, "CONFIRMED", result.orderNumber, {
+                total: result.total,
+                orderId: result.id,
+            }).catch((err) =>
                 console.error("[AssignmentEngine] Push buyer error:", err)
             );
         }
@@ -826,7 +830,7 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
     );
 
     // Notify customer
-    notifyBuyer(userId, "CANCELLED", orderNumber).catch((err) =>
+    notifyBuyer(userId, "CANCELLED", orderNumber, { orderId }).catch((err) =>
         console.error("[AssignmentEngine] Buyer notification error:", err)
     );
 }

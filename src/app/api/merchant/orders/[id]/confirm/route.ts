@@ -53,6 +53,8 @@ export async function POST(
                 merchantId: true,
                 userId: true,
                 orderNumber: true,
+                total: true,
+                merchant: { select: { name: true } },
             },
         });
 
@@ -79,7 +81,11 @@ export async function POST(
         });
 
         // Notify buyer
-        notifyBuyer(order.userId, "PREPARING", order.orderNumber).catch(console.error);
+        notifyBuyer(order.userId, "PREPARING", order.orderNumber, {
+            total: order.total,
+            merchantName: order.merchant?.name,
+            orderId: order.id,
+        }).catch(console.error);
 
         // Start driver assignment cycle
         startAssignmentCycle(orderId).catch((err) =>

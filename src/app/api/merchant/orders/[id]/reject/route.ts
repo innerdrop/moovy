@@ -94,7 +94,7 @@ export async function POST(
         });
 
         // Notify buyer
-        notifyBuyer(order.userId, "CANCELLED", order.orderNumber).catch(console.error);
+        notifyBuyer(order.userId, "CANCELLED", order.orderNumber, { orderId: order.id }).catch(console.error);
 
         // Socket notifications
         const socketData = { orderId, orderNumber: order.orderNumber };

@@ -133,7 +133,7 @@ export async function POST(request: Request) {
             });
 
             // Notify buyer
-            notifyBuyer(order.userId, "SCHEDULED_CANCELLED", order.orderNumber).catch((err) =>
+            notifyBuyer(order.userId, "SCHEDULED_CANCELLED", order.orderNumber, { orderId: order.id }).catch((err) =>
                 console.error("[ScheduledNotify] Buyer push error:", err)
             );
 

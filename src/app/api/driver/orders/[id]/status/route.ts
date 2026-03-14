@@ -67,7 +67,7 @@ export async function PATCH(
 
         // Notify buyer of status change
         if (deliveryStatus === "DELIVERED") {
-            notifyBuyer(order.userId, "DELIVERED", order.orderNumber)
+            notifyBuyer(order.userId, "DELIVERED", order.orderNumber, { orderId: order.id })
                 .catch(err => console.error("[Push] Buyer notification error:", err));
         }
 

@@ -145,7 +145,7 @@ export async function PATCH(
         // Get current order to check status change AND get merchantId/userId for socket rooms
         const existingOrder = await prisma.order.findUnique({
             where: { id },
-            select: { status: true, merchantId: true, userId: true, driverId: true, orderNumber: true },
+            select: { id: true, status: true, merchantId: true, userId: true, driverId: true, orderNumber: true },
         });
 
         const order = await prisma.order.update({
@@ -206,7 +206,7 @@ export async function PATCH(
 
             // Push notification to buyer (fire-and-forget)
             if (existingOrder?.userId) {
-                notifyBuyer(existingOrder.userId, data.status, existingOrder.orderNumber || '')
+                notifyBuyer(existingOrder.userId, data.status, existingOrder.orderNumber || '', { orderId: existingOrder.id })
                     .catch(err => console.error('[Push] Buyer notification error:', err));
             }
         }
@@ -372,7 +372,7 @@ export async function DELETE(
 
         // Push notification to buyer about cancellation (fire-and-forget)
         if (order.userId) {
-            notifyBuyer(order.userId, 'CANCELLED', order.orderNumber)
+            notifyBuyer(order.userId, 'CANCELLED', order.orderNumber, { orderId: order.id })
                 .catch(err => console.error('[Push] Buyer cancel notification error:', err));
         }
 
