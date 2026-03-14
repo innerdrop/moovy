@@ -25,8 +25,19 @@ import {
     Sparkles,
     Shield,
     DollarSign,
-    Zap
+    Zap,
+    Bike,
+    CreditCard
 } from "lucide-react";
+import ImageUpload from "@/components/ui/ImageUpload";
+
+// Tipos de vehículo con sus propiedades
+const VEHICLE_TYPES = [
+    { value: "bicicleta", label: "Bicicleta", icon: "🚲", motorized: false },
+    { value: "moto", label: "Moto", icon: "🏍️", motorized: true },
+    { value: "auto", label: "Auto", icon: "🚗", motorized: true },
+    { value: "camioneta", label: "Camioneta", icon: "🚙", motorized: true },
+];
 
 function RepartidorRegistroContent() {
     const router = useRouter();
@@ -50,18 +61,28 @@ function RepartidorRegistroContent() {
         email: "",
         phone: "",
         dni: "",
+        cuit: "",
         password: "",
         confirmPassword: "",
+        dniFrenteUrl: "",
+        dniDorsoUrl: "",
         // Paso 2: Datos del vehículo
-        vehicleType: "auto",
+        vehicleType: "",
         vehicleBrand: "",
         vehicleModel: "",
         vehicleYear: "",
         vehicleColor: "",
         licensePlate: "",
+        licenciaUrl: "",
+        seguroUrl: "",
+        vtvUrl: "",
+        // Paso 3: Confirmación
         hasLicense: false,
         acceptTerms: false,
+        acceptPrivacy: false,
     });
+
+    const isMotorized = VEHICLE_TYPES.find(v => v.value === formData.vehicleType)?.motorized ?? false;
 
     const vehicleBrands = [
         "Chevrolet",
@@ -95,11 +116,22 @@ function RepartidorRegistroContent() {
         }
     };
 
+    // Validación formato CUIT: XX-XXXXXXXX-X
+    const formatCuit = (value: string) => {
+        const digits = value.replace(/\D/g, "").slice(0, 11);
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
+    };
+
+    const handleCuitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, cuit: formatCuit(e.target.value) });
+    };
+
     const handleStep1Submit = (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        // Validate password confirmation
         if (formData.password !== formData.confirmPassword) {
             setError("Las contraseñas no coinciden");
             return;
@@ -113,24 +145,36 @@ function RepartidorRegistroContent() {
         setStep(2);
     };
 
-    const handleFinalSubmit = async (e: React.FormEvent) => {
+    const handleStep2Submit = (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        // Validate vehicle year
-        const year = parseInt(formData.vehicleYear);
-        if (year < minYear) {
-            setError(`El vehículo debe ser del año ${minYear} o más reciente (máximo 10 años de antigüedad)`);
+        if (!formData.vehicleType) {
+            setError("Seleccioná un tipo de vehículo");
             return;
         }
 
-        if (!formData.hasLicense) {
-            setError("Debés tener licencia de conducir vigente");
+        if (isMotorized) {
+            const year = parseInt(formData.vehicleYear);
+            if (year < minYear) {
+                setError(`El vehículo debe ser del año ${minYear} o más reciente (máximo 10 años de antigüedad)`);
+                return;
+            }
+        }
+
+        setStep(3);
+    };
+
+    const handleFinalSubmit = async () => {
+        setError("");
+
+        if (isMotorized && !formData.hasLicense) {
+            setError("Debés confirmar que tenés licencia de conducir vigente");
             return;
         }
 
-        if (!formData.acceptTerms) {
-            setError("Debés aceptar los términos y condiciones");
+        if (!formData.acceptTerms || !formData.acceptPrivacy) {
+            setError("Debés aceptar los Términos para Repartidores y la Política de Privacidad");
             return;
         }
 
@@ -149,7 +193,7 @@ function RepartidorRegistroContent() {
                 throw new Error(data.error || "Error al registrar");
             }
 
-            setStep(3); // Success step
+            setStep(4); // Success step
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -175,21 +219,21 @@ function RepartidorRegistroContent() {
                 </div>
 
                 {/* Progress Steps */}
-                {step < 3 && (
+                {step < 4 && (
                     <div className="flex items-center justify-center gap-2 mb-6">
-                        {[1, 2].map((s) => (
+                        {[1, 2, 3].map((s) => (
                             <div key={s} className="flex items-center gap-2">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-500"}`}>
                                     {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
                                 </div>
-                                {s < 2 && <div className={`w-12 h-1 rounded ${step > s ? "bg-green-600" : "bg-gray-200"}`} />}
+                                {s < 3 && <div className={`w-12 h-1 rounded ${step > s ? "bg-green-600" : "bg-gray-200"}`} />}
                             </div>
                         ))}
                     </div>
                 )}
 
                 {/* Success Step */}
-                {step === 3 && (
+                {step === 4 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -204,7 +248,7 @@ function RepartidorRegistroContent() {
                                 <Clock className="w-5 h-5 text-green-600" />
                                 <div className="text-left">
                                     <p className="font-medium text-green-900">Próximos pasos</p>
-                                    <p className="text-sm text-green-700">Te enviaremos un email con instrucciones para verificar tu identidad y licencia.</p>
+                                    <p className="text-sm text-green-700">Nuestro equipo revisará tu documentación y te contactaremos en las próximas 24-48 horas.</p>
                                 </div>
                             </div>
                         </div>
@@ -234,7 +278,7 @@ function RepartidorRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 1: Personal Data */}
+                {/* Step 1: Personal Data + CUIT + DNI photos */}
                 {step === 1 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <div className="flex items-center justify-center mb-4">
@@ -254,7 +298,7 @@ function RepartidorRegistroContent() {
                         <form onSubmit={handleStep1Submit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         <input
@@ -269,7 +313,7 @@ function RepartidorRegistroContent() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Apellido <span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
                                         name="lastName"
@@ -283,7 +327,7 @@ function RepartidorRegistroContent() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">DNI <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
@@ -299,7 +343,27 @@ function RepartidorRegistroContent() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">CUIT <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        name="cuit"
+                                        value={formData.cuit}
+                                        onChange={handleCuitChange}
+                                        placeholder="XX-XXXXXXXX-X"
+                                        maxLength={13}
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        required
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                    Necesario para facturar y cobrar como monotributista.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
@@ -315,7 +379,7 @@ function RepartidorRegistroContent() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
@@ -330,51 +394,73 @@ function RepartidorRegistroContent() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        placeholder="Mínimo 6 caracteres"
-                                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        minLength={6}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                    >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="Mínimo 6"
+                                            className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            minLength={6}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            name="confirmPassword"
+                                            value={formData.confirmPassword}
+                                            onChange={handleChange}
+                                            placeholder="Repetí"
+                                            className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            minLength={6}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        name="confirmPassword"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        placeholder="Repetí tu contraseña"
-                                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        minLength={6}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
+                            {/* DNI Photos */}
+                            <div className="border-t pt-4">
+                                <p className="text-sm font-medium text-gray-700 mb-3">Foto de DNI</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Frente</label>
+                                        <ImageUpload
+                                            value={formData.dniFrenteUrl}
+                                            onChange={(url) => setFormData(prev => ({ ...prev, dniFrenteUrl: url }))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Dorso</label>
+                                        <ImageUpload
+                                            value={formData.dniDorsoUrl}
+                                            onChange={(url) => setFormData(prev => ({ ...prev, dniDorsoUrl: url }))}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -392,11 +478,11 @@ function RepartidorRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 2: Vehicle Data */}
+                {/* Step 2: Vehicle Type + Data + Documents */}
                 {step === 2 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <button
-                            onClick={() => setStep(1)}
+                            onClick={() => { setError(""); setStep(1); }}
                             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -409,16 +495,7 @@ function RepartidorRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Tu Vehículo</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Datos del vehículo</p>
-
-                        {/* Vehicle Age Warning */}
-                        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-medium text-amber-800">Requisito de vehículo</p>
-                                <p className="text-xs text-amber-700">Solo aceptamos vehículos con máximo 10 años de antigüedad (del {minYear} en adelante)</p>
-                            </div>
-                        </div>
+                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Tipo de vehículo y documentación</p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -426,116 +503,244 @@ function RepartidorRegistroContent() {
                             </div>
                         )}
 
-                        <form onSubmit={handleFinalSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-                                    <select
-                                        name="vehicleBrand"
-                                        value={formData.vehicleBrand}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-                                        required
-                                    >
-                                        <option value="">Seleccionar</option>
-                                        {vehicleBrands.map((brand) => (
-                                            <option key={brand} value={brand}>{brand}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
-                                    <input
-                                        type="text"
-                                        name="vehicleModel"
-                                        value={formData.vehicleModel}
-                                        onChange={handleChange}
-                                        placeholder="Ej: Gol Trend"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <Calendar className="w-4 h-4 inline mr-1" />
-                                        Año
-                                    </label>
-                                    <select
-                                        name="vehicleYear"
-                                        value={formData.vehicleYear}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-                                        required
-                                    >
-                                        <option value="">Seleccionar</option>
-                                        {yearOptions.map((year) => (
-                                            <option key={year} value={year}>{year}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <Palette className="w-4 h-4 inline mr-1" />
-                                        Color
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="vehicleColor"
-                                        value={formData.vehicleColor}
-                                        onChange={handleChange}
-                                        placeholder="Ej: Blanco"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
+                        <form onSubmit={handleStep2Submit} className="space-y-4">
+                            {/* Vehicle Type Selector */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    <Hash className="w-4 h-4 inline mr-1" />
-                                    Patente
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tipo de vehículo <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    name="licensePlate"
-                                    value={formData.licensePlate}
-                                    onChange={handleChange}
-                                    placeholder="AB 123 CD"
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 uppercase"
-                                    required
-                                />
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {VEHICLE_TYPES.map((vt) => (
+                                        <button
+                                            key={vt.value}
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, vehicleType: vt.value }))}
+                                            className={`p-3 rounded-xl border-2 text-center transition ${
+                                                formData.vehicleType === vt.value
+                                                    ? "border-green-500 bg-green-50"
+                                                    : "border-gray-200 hover:border-green-300"
+                                            }`}
+                                        >
+                                            <span className="text-2xl block mb-1">{vt.icon}</span>
+                                            <span className="text-xs font-medium text-gray-700">{vt.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* Checkboxes */}
-                            <div className="space-y-3">
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="hasLicense"
-                                        checked={formData.hasLicense}
-                                        onChange={handleChange}
-                                        className="mt-1 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                    />
-                                    <span className="text-sm text-gray-600">
-                                        Tengo licencia de conducir vigente y documentación del vehículo al día
-                                    </span>
-                                </label>
+                            {/* Motorized vehicle fields */}
+                            {isMotorized && (
+                                <>
+                                    {/* Vehicle Age Warning */}
+                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-800">Requisito de vehículo</p>
+                                            <p className="text-xs text-amber-700">Solo aceptamos vehículos con máximo 10 años de antigüedad (del {minYear} en adelante)</p>
+                                        </div>
+                                    </div>
 
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="acceptTerms"
-                                        checked={formData.acceptTerms}
-                                        onChange={handleChange}
-                                        className="mt-1 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                    />
-                                    <span className="text-sm text-gray-600">
-                                        Acepto los <Link href="/terminos" className="text-green-600 underline">términos y condiciones</Link> para repartidores
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Marca <span className="text-red-500">*</span></label>
+                                            <select
+                                                name="vehicleBrand"
+                                                value={formData.vehicleBrand}
+                                                onChange={handleChange}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                                                required
+                                            >
+                                                <option value="">Seleccionar</option>
+                                                {vehicleBrands.map((brand) => (
+                                                    <option key={brand} value={brand}>{brand}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Modelo <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                name="vehicleModel"
+                                                value={formData.vehicleModel}
+                                                onChange={handleChange}
+                                                placeholder="Ej: Gol Trend"
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                <Calendar className="w-4 h-4 inline mr-1" />
+                                                Año <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                name="vehicleYear"
+                                                value={formData.vehicleYear}
+                                                onChange={handleChange}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                                                required
+                                            >
+                                                <option value="">Seleccionar</option>
+                                                {yearOptions.map((year) => (
+                                                    <option key={year} value={year}>{year}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                <Palette className="w-4 h-4 inline mr-1" />
+                                                Color <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="vehicleColor"
+                                                value={formData.vehicleColor}
+                                                onChange={handleChange}
+                                                placeholder="Ej: Blanco"
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            <Hash className="w-4 h-4 inline mr-1" />
+                                            Patente <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="licensePlate"
+                                            value={formData.licensePlate}
+                                            onChange={handleChange}
+                                            placeholder="AB 123 CD"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 uppercase"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Document uploads for motorized */}
+                                    <div className="border-t pt-4 space-y-4">
+                                        <p className="text-sm font-medium text-gray-700">Documentación del vehículo</p>
+
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Licencia de Conducir</label>
+                                            <ImageUpload
+                                                value={formData.licenciaUrl}
+                                                onChange={(url) => setFormData(prev => ({ ...prev, licenciaUrl: url }))}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Seguro del Vehículo</label>
+                                            <ImageUpload
+                                                value={formData.seguroUrl}
+                                                onChange={(url) => setFormData(prev => ({ ...prev, seguroUrl: url }))}
+                                            />
+                                            <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                                Obligatorio por Ley 24.449. Cobertura de responsabilidad civil hacia terceros.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">VTV (Verificación Técnica Vehicular)</label>
+                                            <ImageUpload
+                                                value={formData.vtvUrl}
+                                                onChange={(url) => setFormData(prev => ({ ...prev, vtvUrl: url }))}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Bicycle info */}
+                            {formData.vehicleType === "bicicleta" && (
+                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                                    <Bike className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium text-green-800">Bicicleta</p>
+                                        <p className="text-xs text-green-700">No se requiere licencia de conducir, patente ni seguro vehicular. Se recomienda usar casco, luces y reflectantes.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={!formData.vehicleType}
+                                className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Continuar
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {/* Step 3: Confirmation - Checkboxes + Benefits + Submit */}
+                {step === 3 && (
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+                        <button
+                            onClick={() => { setError(""); setStep(2); }}
+                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Volver
+                        </button>
+
+                        <div className="flex items-center justify-center mb-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+                                <Shield className="w-6 h-6 text-white" />
+                            </div>
+                        </div>
+                        <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Confirmación</h2>
+                        <p className="text-sm text-gray-500 text-center mb-6">Paso 3: Revisá y aceptá los términos</p>
+
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {/* Summary */}
+                            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                                <p className="text-sm font-medium text-gray-800">Resumen de tu solicitud:</p>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                    <span className="text-gray-500">Nombre:</span>
+                                    <span className="text-gray-800 font-medium">{formData.firstName} {formData.lastName}</span>
+                                    <span className="text-gray-500">DNI:</span>
+                                    <span className="text-gray-800 font-medium">{formData.dni}</span>
+                                    <span className="text-gray-500">CUIT:</span>
+                                    <span className="text-gray-800 font-medium">{formData.cuit}</span>
+                                    <span className="text-gray-500">Vehículo:</span>
+                                    <span className="text-gray-800 font-medium capitalize">
+                                        {formData.vehicleType}
+                                        {isMotorized && ` ${formData.vehicleBrand} ${formData.vehicleModel}`}
                                     </span>
-                                </label>
+                                    {isMotorized && (
+                                        <>
+                                            <span className="text-gray-500">Patente:</span>
+                                            <span className="text-gray-800 font-medium uppercase">{formData.licensePlate}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Info comisiones */}
+                            <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Sparkles className="w-5 h-5 text-green-600" />
+                                    <span className="font-semibold text-green-900">Comisiones y pagos</span>
+                                </div>
+                                <p className="text-sm text-green-700">
+                                    MOOVY retiene un porcentaje por la gestión de cada entrega.
+                                    Consultá los detalles en los{" "}
+                                    <Link href="/terminos-repartidor" className="underline font-medium" target="_blank">
+                                        Términos para Repartidores
+                                    </Link>.
+                                </p>
                             </div>
 
                             {/* Benefits */}
@@ -554,20 +759,74 @@ function RepartidorRegistroContent() {
                                         Horarios 100% flexibles
                                     </li>
                                     <li className="flex items-center gap-2">
-                                        <Shield className="w-4 h-4" />
-                                        Seguro mientras trabajás
-                                    </li>
-                                    <li className="flex items-center gap-2">
                                         <Zap className="w-4 h-4" />
                                         Pagos rápidos y transparentes
                                     </li>
                                 </ul>
                             </div>
 
+                            {/* Checkboxes */}
+                            <div className="space-y-3 border-t pt-4">
+                                {isMotorized && (
+                                    <label className="flex items-start gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="hasLicense"
+                                            checked={formData.hasLicense}
+                                            onChange={handleChange}
+                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                        />
+                                        <span className="text-sm text-gray-600">
+                                            Tengo licencia de conducir vigente y documentación del vehículo al día. <span className="text-red-500">*</span>
+                                        </span>
+                                    </label>
+                                )}
+
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="acceptTerms"
+                                        checked={formData.acceptTerms}
+                                        onChange={handleChange}
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                    />
+                                    <span className="text-sm text-gray-600">
+                                        Acepto los{" "}
+                                        <Link href="/terminos-repartidor" className="text-green-600 underline font-medium" target="_blank">
+                                            Términos y Condiciones para Repartidores
+                                        </Link>{" "}
+                                        y los{" "}
+                                        <Link href="/terminos" className="text-green-600 underline font-medium" target="_blank">
+                                            Términos y Condiciones generales
+                                        </Link>{" "}
+                                        de MOOVY. <span className="text-red-500">*</span>
+                                    </span>
+                                </label>
+
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="acceptPrivacy"
+                                        checked={formData.acceptPrivacy}
+                                        onChange={handleChange}
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                    />
+                                    <span className="text-sm text-gray-600">
+                                        Acepto la{" "}
+                                        <Link href="/privacidad" className="text-green-600 underline font-medium" target="_blank">
+                                            Política de Privacidad
+                                        </Link>{" "}
+                                        y el tratamiento de mis datos personales conforme la Ley 25.326. <span className="text-red-500">*</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Submit */}
                             <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"
+                                type="button"
+                                onClick={handleFinalSubmit}
+                                disabled={isLoading || !formData.acceptTerms || !formData.acceptPrivacy || (isMotorized && !formData.hasLicense)}
+                                className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
                                     <>
@@ -581,12 +840,12 @@ function RepartidorRegistroContent() {
                                     </>
                                 )}
                             </button>
-                        </form>
+                        </div>
                     </div>
                 )}
 
                 {/* Back Link */}
-                {step < 3 && (
+                {step < 4 && (
                     <Link
                         href={fromProfile ? "/mi-perfil" : "/"}
                         className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700"

@@ -161,3 +161,6 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Schema Merchant: nuevos campos `constanciaAfipUrl`, `habilitacionMunicipalUrl`, `registroSanitarioUrl`, `acceptedTermsAt`, `acceptedPrivacyAt`
 - `src/app/comercio/registro/page.tsx` — Reorganizado en 3 pasos: info básica, contacto+contraseña, datos fiscales/legales (CUIT, CBU, uploads docs, checkboxes términos/privacidad)
 - `src/app/api/auth/register/merchant/route.ts` — Recibe y guarda campos fiscales/legales, valida aceptación de términos
+- Schema Driver: nuevos campos `cuit`, `licenciaUrl`, `seguroUrl`, `vtvUrl`, `dniFrenteUrl`, `dniDorsoUrl`, `acceptedTermsAt`
+- `src/app/repartidor/registro/page.tsx` — Reorganizado en 3 pasos: datos personales+CUIT+DNI fotos, selector vehículo (bici/moto/auto/camioneta)+docs condicionales, confirmación+checkboxes términos
+- `src/app/api/auth/register/driver/route.ts` — Recibe campos legales/docs, distingue bici vs motorizado, valida aceptación de términos

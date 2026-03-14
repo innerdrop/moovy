@@ -11,9 +11,27 @@ export async function POST(request: NextRequest) {
         console.log("[Register Driver] Received:", data.firstName, data.lastName);
 
         // Validate required fields
-        if (!data.email || !data.password || !data.firstName || !data.licensePlate) {
+        if (!data.email || !data.password || !data.firstName || !data.vehicleType) {
             return NextResponse.json(
                 { error: "Faltan datos obligatorios" },
+                { status: 400 }
+            );
+        }
+
+        // Validate motorized vehicle requires license plate
+        const motorizedTypes = ["moto", "auto", "camioneta"];
+        const isMotorized = motorizedTypes.includes(data.vehicleType);
+        if (isMotorized && !data.licensePlate) {
+            return NextResponse.json(
+                { error: "La patente es obligatoria para vehículos motorizados" },
+                { status: 400 }
+            );
+        }
+
+        // Validate legal acceptance
+        if (!data.acceptTerms || !data.acceptPrivacy) {
+            return NextResponse.json(
+                { error: "Debés aceptar los Términos para Repartidores y la Política de Privacidad" },
                 { status: 400 }
             );
         }
@@ -49,16 +67,23 @@ export async function POST(request: NextRequest) {
                 }
             });
 
-            // 2. Create Driver details
+            // 2. Create Driver with legal/document data
             await tx.driver.create({
                 data: {
                     userId: newUser.id,
-                    vehicleType: data.vehicleType || "AUTO",
-                    vehicleBrand: data.vehicleBrand,
-                    vehicleModel: data.vehicleModel,
-                    vehicleYear: data.vehicleYear ? parseInt(data.vehicleYear.toString()) : undefined,
-                    vehicleColor: data.vehicleColor,
-                    licensePlate: data.licensePlate.toUpperCase(),
+                    vehicleType: data.vehicleType.toUpperCase(),
+                    vehicleBrand: isMotorized ? data.vehicleBrand : null,
+                    vehicleModel: isMotorized ? data.vehicleModel : null,
+                    vehicleYear: isMotorized && data.vehicleYear ? parseInt(data.vehicleYear.toString()) : null,
+                    vehicleColor: isMotorized ? data.vehicleColor : null,
+                    licensePlate: isMotorized ? data.licensePlate.toUpperCase() : null,
+                    cuit: data.cuit || null,
+                    dniFrenteUrl: data.dniFrenteUrl || null,
+                    dniDorsoUrl: data.dniDorsoUrl || null,
+                    licenciaUrl: isMotorized ? (data.licenciaUrl || null) : null,
+                    seguroUrl: isMotorized ? (data.seguroUrl || null) : null,
+                    vtvUrl: isMotorized ? (data.vtvUrl || null) : null,
+                    acceptedTermsAt: data.acceptTerms ? new Date() : null,
                     isActive: false, // Pending approval
                 }
             });

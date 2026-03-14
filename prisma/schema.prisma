@@ -410,6 +410,13 @@ model Driver {
   vehicleYear        Int?
   vehicleColor       String?
   licensePlate       String?
+  cuit               String?
+  licenciaUrl        String?
+  seguroUrl          String?
+  vtvUrl             String?
+  dniFrenteUrl       String?
+  dniDorsoUrl        String?
+  acceptedTermsAt    DateTime?
   isActive           Boolean                   @default(true)
   isOnline           Boolean                   @default(false)
   totalDeliveries    Int                       @default(0)
