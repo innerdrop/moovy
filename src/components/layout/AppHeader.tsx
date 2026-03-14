@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Star, User, Package, X, ChevronRight } from "lucide-react";
+import { ShoppingBag, MapPin, Star, User, Package, X, ChevronRight, Bell } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useUserPoints } from "@/hooks/useUserPoints";
 
@@ -126,7 +126,14 @@ export default function AppHeader({
                             </Link>
                         )}
 
-
+                        {isLoggedIn && (
+                            <Link
+                                href="/mis-pedidos"
+                                className="relative p-2 text-gray-600 hover:text-[#e60012] transition"
+                            >
+                                <Bell className="w-5 h-5" />
+                            </Link>
+                        )}
 
                         <button
                             onClick={() => openCart()}
@@ -199,7 +206,14 @@ export default function AppHeader({
                             </Link>
                         )}
 
-
+                        {isLoggedIn && (
+                            <Link
+                                href="/mis-pedidos"
+                                className="relative p-2 text-gray-600 hover:text-[#e60012] transition rounded-full hover:bg-gray-50"
+                            >
+                                <Bell className="w-5 h-5" />
+                            </Link>
+                        )}
 
                         {/* Cart Button */}
                         <button

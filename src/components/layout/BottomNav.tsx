@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     Home,
-    Search,
+    Store,
     Star,
     User,
     Package,
@@ -27,7 +27,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
     // Navegación: Inicio | Buscar | MOOVER (Centro) | Pedidos | Perfil
     const items = [
         { href: "/tienda", icon: Home, label: "Inicio" },
-        { href: "/buscar", icon: Search, label: "Buscar" },
+        { href: "/marketplace", icon: Store, label: "Marketplace" },
         {
             href: "/puntos",
             icon: Star,

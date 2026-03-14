@@ -11,6 +11,7 @@ import {
     Settings,
     Bell,
     Shield,
+    Lock,
     LogOut,
     ChevronRight,
     Store,
@@ -207,6 +208,15 @@ export default function ProfilePage() {
                                     <MapPin className="w-4 h-4" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-700">Mis Direcciones</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </Link>
+                        <Link href="/mi-perfil/cambiar-password" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                    <Lock className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">Cambiar Contraseña</span>
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-300" />
                         </Link>
