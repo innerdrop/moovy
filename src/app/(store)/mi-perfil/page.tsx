@@ -307,12 +307,11 @@ export default function ProfilePage() {
                             </Link>
                         )}
 
-                        {/* Seller - botón de activación (solo si no tiene el rol) */}
+                        {/* Seller - link al onboarding (solo si no tiene el rol) */}
                         {!hasSeller && (
-                            <button
-                                onClick={handleActivateSeller}
-                                disabled={sellerStatus === "ACTIVE" || activatingRole !== null}
-                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left disabled:opacity-70"
+                            <Link
+                                href="/vendedor/registro?from=profile"
+                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
@@ -323,12 +322,8 @@ export default function ProfilePage() {
                                         <span className="text-[10px] text-gray-400">Vendé objetos, productos caseros o servicios</span>
                                     </div>
                                 </div>
-                                {activatingRole === "seller" ? (
-                                    <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <ChevronRight className="w-4 h-4 text-gray-300" />
-                                )}
-                            </button>
+                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                            </Link>
                         )}
 
                         {/* Driver - botón de activación (solo si no tiene el rol activo) */}

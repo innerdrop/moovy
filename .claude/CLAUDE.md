@@ -164,3 +164,7 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Schema Driver: nuevos campos `cuit`, `licenciaUrl`, `seguroUrl`, `vtvUrl`, `dniFrenteUrl`, `dniDorsoUrl`, `acceptedTermsAt`
 - `src/app/repartidor/registro/page.tsx` — Reorganizado en 3 pasos: datos personales+CUIT+DNI fotos, selector vehículo (bici/moto/auto/camioneta)+docs condicionales, confirmación+checkboxes términos
 - `src/app/api/auth/register/driver/route.ts` — Recibe campos legales/docs, distingue bici vs motorizado, valida aceptación de términos
+- Schema SellerProfile: nuevos campos `cuit`, `acceptedTermsAt`
+- `src/app/vendedor/registro/page.tsx` — Wizard onboarding vendedor: paso 1 CUIT+términos, paso 2 displayName+bio, paso 3 confirmación con CTA al panel
+- `src/app/api/auth/activate-seller/route.ts` — Ahora requiere body con CUIT y acceptedTerms, crea SellerProfile en transacción
+- `mi-perfil/page.tsx` — Botón "Quiero vender" cambiado de onClick a Link → `/vendedor/registro?from=profile`

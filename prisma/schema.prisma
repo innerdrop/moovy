@@ -443,6 +443,8 @@ model SellerProfile {
   displayName    String?
   bio            String?
   avatar         String?
+  cuit           String?
+  acceptedTermsAt DateTime?
   bankAlias      String?
   bankCbu        String?
   isActive       Boolean   @default(true)

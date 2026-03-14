@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // POST - Activate SELLER role for authenticated user
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id) {
@@ -11,6 +11,29 @@ export async function POST() {
         }
 
         const userId = (session.user as any).id;
+
+        // Parse body (may be empty for legacy calls)
+        let body: { cuit?: string; acceptedTerms?: boolean } = {};
+        try {
+            body = await request.json();
+        } catch {
+            // Empty body — legacy call without data
+        }
+
+        // Validate required fields
+        if (!body.cuit) {
+            return NextResponse.json(
+                { error: "El CUIT es obligatorio para activar el rol de vendedor" },
+                { status: 400 }
+            );
+        }
+
+        if (!body.acceptedTerms) {
+            return NextResponse.json(
+                { error: "Debés aceptar los Términos para Vendedores" },
+                { status: 400 }
+            );
+        }
 
         // Check if already a seller
         const existingRole = await prisma.userRole.findUnique({
@@ -23,9 +46,36 @@ export async function POST() {
             );
         }
 
-        // Create seller role
-        await prisma.userRole.create({
-            data: { userId, role: "SELLER", isActive: true }
+        // Create seller role + SellerProfile in transaction
+        await prisma.$transaction(async (tx) => {
+            // 1. Create UserRole
+            await tx.userRole.create({
+                data: { userId, role: "SELLER", isActive: true }
+            });
+
+            // 2. Create SellerProfile with CUIT and terms acceptance
+            const existingProfile = await tx.sellerProfile.findUnique({
+                where: { userId }
+            });
+
+            if (!existingProfile) {
+                await tx.sellerProfile.create({
+                    data: {
+                        userId,
+                        cuit: body.cuit || null,
+                        acceptedTermsAt: body.acceptedTerms ? new Date() : null,
+                    }
+                });
+            } else {
+                // Update existing profile with CUIT and terms
+                await tx.sellerProfile.update({
+                    where: { userId },
+                    data: {
+                        cuit: body.cuit || existingProfile.cuit,
+                        acceptedTermsAt: body.acceptedTerms ? new Date() : existingProfile.acceptedTermsAt,
+                    }
+                });
+            }
         });
 
         return NextResponse.json({ success: true, role: "SELLER", status: "ACTIVE" });
