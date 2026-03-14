@@ -1046,9 +1046,9 @@ Al terminar: correr `npx tsc --noEmit` y mostrar lista de archivos modificados.
 
 ---
 
-### Rama B2: `feat/vercel-cron-config`
-**Nombre rama**: `feat/vercel-cron-config`
-**Cerrar con**: `.\scripts\finish.ps1 -Message "feat: configurar cron jobs en vercel.json para ejecución automática"`
+### Rama B2: `feat/vps-cron-config`
+**Nombre rama**: `feat/vps-cron-config`
+**Cerrar con**: `.\scripts\finish.ps1 -Message "feat: configurar cron jobs con crontab para VPS Hostinger"`
 
 **Prompt para Claude**:
 ```
