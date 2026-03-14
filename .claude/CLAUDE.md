@@ -151,3 +151,10 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/api/cron/assignment-tick/route.ts` — Cron para procesar timeouts de asignacion (CRON_SECRET)
 - `src/components/store/ListingCard.tsx` — Ahora muestra badge de disponibilidad del vendedor
 - `src/app/api/listings/route.ts` — Incluye sellerAvailability en respuesta
+- `src/app/cookies/page.tsx` — Política de Cookies (7 secciones: qué son, tipos, terceros, gestión, duración, cambios, contacto)
+- `src/app/terminos-vendedor/page.tsx` — Términos para Vendedores Marketplace (12 secciones: relación, requisitos CUIT, comisiones, obligaciones, prohibiciones, responsabilidad, cancelaciones, suspensión, PI, ley)
+- `src/app/terminos-repartidor/page.tsx` — Términos para Repartidores (11 secciones: relación independiente, requisitos DNI/licencia/seguro, comisiones, responsabilidad, seguro Ley 24.449, conducta, suspensión)
+- `src/app/terminos-comercio/page.tsx` — Términos para Comercios (11 secciones: relación intermediario, requisitos CUIT/habilitación/sanitario, comisiones, SLA timeout, responsabilidad, suspensión)
+- `src/app/devoluciones/page.tsx` — Política de Devoluciones (9 secciones: Ley 24.240, plazos 10 días, proceso, reembolsos MP/MOOVER, no retornables perecederos, garantía legal)
+- `src/app/cancelaciones/page.tsx` — Política de Cancelaciones (8 secciones: comprador antes/después/en camino, vendedor/comercio, automáticas timeout, reembolsos, penalidades)
+- `mi-perfil/page.tsx` — Agregados links a Privacidad, Cookies y Devoluciones en sección Configuración y Ayuda

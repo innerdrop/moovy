@@ -402,6 +402,30 @@ export default function ProfilePage() {
                                 <span className="text-sm font-medium text-gray-700">Términos y Condiciones</span>
                             </div>
                         </Link>
+                        <Link href="/privacidad" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
+                                    <Shield className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">Política de Privacidad</span>
+                            </div>
+                        </Link>
+                        <Link href="/cookies" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">Política de Cookies</span>
+                            </div>
+                        </Link>
+                        <Link href="/devoluciones" className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">Devoluciones y Reembolsos</span>
+                            </div>
+                        </Link>
                     </div>
                 </section>
 
