@@ -1054,7 +1054,7 @@ Al terminar: correr `npx tsc --noEmit` y mostrar lista de archivos modificados.
 ```
 IMPORTANT: Before doing anything else, read CLAUDE.md in the root of the project. Follow every rule defined there without exception.
 
-Tarea: Crear vercel.json con la configuración de cron jobs para que se ejecuten automáticamente en producción.
+Tarea: Configurar cron jobs para ejecución automática en el VPS de Hostinger (Linux). NO usar Vercel ni vercel.json — el proyecto corre en un VPS con acceso SSH y crontab.
 
 MOOVY tiene 4 cron endpoints en `src/app/api/cron/`:
 - `/api/cron/assignment-tick` — Procesa timeouts de asignación de drivers (debe correr cada minuto)
@@ -1065,25 +1065,37 @@ MOOVY tiene 4 cron endpoints en `src/app/api/cron/`:
 Todos están protegidos con CRON_SECRET en Bearer token.
 
 Cambios:
-1. Crear `vercel.json` en la raíz del proyecto:
-```json
-{
-  "crons": [
-    { "path": "/api/cron/assignment-tick", "schedule": "* * * * *" },
-    { "path": "/api/cron/merchant-timeout", "schedule": "* * * * *" },
-    { "path": "/api/cron/scheduled-notify", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/seller-resume", "schedule": "*/5 * * * *" }
-  ]
-}
-```
 
-2. Verificar que cada cron endpoint también acepte el header `Authorization: Bearer ${CRON_SECRET}` que Vercel Cron envía automáticamente. Leer cada archivo en `src/app/api/cron/` para confirmar que usan el pattern correcto.
+1. Leer cada archivo en `src/app/api/cron/` y verificar que validen correctamente el header `Authorization: Bearer ${CRON_SECRET}`. Si alguno no lo hace o usa un patrón diferente, corregirlo para que todos usen el mismo patrón consistente.
 
-Al terminar: mostrar lista de archivos creados/modificados.
-```
+2. Crear `scripts/setup-cron.sh`:
+   - Leer CRON_SECRET y APP_URL desde `.env` o `.env.production` del proyecto
+   - Generar las 4 entradas de crontab con curl:
+     * `* * * * *` para assignment-tick y merchant-timeout
+     * `*/5 * * * *` para scheduled-notify y seller-resume
+   - Cada curl debe enviar el header `Authorization: Bearer $CRON_SECRET`
+   - Redirigir output a `/var/log/moovy-cron.log` con timestamp
+   - El script debe ser IDEMPOTENTE: si se ejecuta dos veces, no duplicar entradas en crontab (usar un marcador como `# MOOVY-CRON` para identificar y reemplazar)
+   - Hacerlo ejecutable con chmod +x
 
-**Archivos que toca**: `vercel.json` (nuevo), posiblemente cron routes si necesitan ajuste de auth
+3. Crear endpoint de health check en `src/app/api/cron/health/route.ts`:
+   - GET que devuelve status 200 con JSON: { status: "ok", timestamp: new Date().toISOString(), server: "vps" }
+   - Protegido con el mismo CRON_SECRET
+   - Sirve para verificar que los cron jobs están llegando correctamente
 
+4. Crear `docs/CRON-SETUP.md` con documentación:
+   - Cómo conectarse por SSH al VPS
+   - Cómo ejecutar `bash scripts/setup-cron.sh` para instalar los cron jobs
+   - Cómo verificar que están corriendo (`crontab -l`)
+   - Cómo revisar los logs (`tail -f /var/log/moovy-cron.log`)
+   - Cómo desactivar los cron jobs (`crontab -e` y borrar líneas con # MOOVY-CRON)
+
+Restricciones:
+- NO crear vercel.json — no usamos Vercel
+- NO instalar dependencias adicionales — usar curl que ya viene en el VPS
+- NO tocar archivos fuera de los mencionados
+
+Al terminar: correr `npx tsc --noEmit` y mostrar lista de archivos creados/modificados.
 ---
 
 ### Rama B3: `feat/error-boundaries`
