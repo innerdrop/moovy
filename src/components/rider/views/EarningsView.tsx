@@ -152,9 +152,14 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="p-8 text-center">
-                                    <Wallet className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                                    <p className="text-gray-400 text-sm">Sin entregas en este periodo</p>
+                                <div className="p-10 text-center space-y-3">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-full mx-auto flex items-center justify-center">
+                                        <Wallet className="w-8 h-8 text-gray-300" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-500">Sin entregas en este periodo</p>
+                                        <p className="text-xs text-gray-400 mt-1">Conectate para empezar a ganar</p>
+                                    </div>
                                 </div>
                             )}
                         </div>

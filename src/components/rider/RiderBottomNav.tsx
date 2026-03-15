@@ -74,7 +74,7 @@ function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: Ride
                                         strokeWidth={isActive ? 2.5 : 1.8}
                                     />
                                     {tab.id === "support" && unreadSupport > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#e60012] rounded-full text-[8px] text-white font-bold flex items-center justify-center animate-pulse">
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#e60012] rounded-full text-[8px] text-white font-bold flex items-center justify-center animate-bounce shadow-lg shadow-red-500/30">
                                             {unreadSupport > 9 ? "9+" : unreadSupport}
                                         </span>
                                     )}

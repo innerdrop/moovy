@@ -169,9 +169,14 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                         ))}
 
                         {filteredDeliveries.length === 0 && (
-                            <div className="bg-white rounded-xl p-8 text-center">
-                                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-500">No hay entregas para mostrar</p>
+                            <div className="bg-white rounded-xl p-10 text-center space-y-3">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full mx-auto flex items-center justify-center">
+                                    <Package className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-500">No hay entregas para mostrar</p>
+                                    <p className="text-xs text-gray-400 mt-1">Tu historial aparecerá aquí</p>
+                                </div>
                             </div>
                         )}
                     </>
