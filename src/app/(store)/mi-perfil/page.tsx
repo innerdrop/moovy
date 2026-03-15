@@ -28,6 +28,7 @@ import {
     ExternalLink,
     LayoutDashboard,
     Truck,
+    UserPlus,
 } from "lucide-react";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -221,12 +222,24 @@ export default function ProfilePage() {
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-300" />
                         </Link>
-                        <Link href="/mi-perfil/favoritos" className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
+                        <Link href="/mi-perfil/favoritos" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-pink-600">
                                     <Heart className="w-4 h-4" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-700">Favoritos</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </Link>
+                        <Link href="/mi-perfil/invitar" className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                                    <UserPlus className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-medium text-gray-700 block">Invitá Amigos</span>
+                                    <span className="text-[10px] text-gray-400">Ganá puntos por cada amigo</span>
+                                </div>
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-300" />
                         </Link>
