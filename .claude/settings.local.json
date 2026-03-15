@@ -43,7 +43,8 @@
       "Bash(xargs grep:*)",
       "Bash(grep -r \"refund\\\\|reembolso\\\\|TODO.*refund\\\\|TODO.*reembolso\" C:UsersMauroDesktopmoovysrc --include=*.ts --include=*.tsx)",
       "Bash(grep -r \"status.*PENDING\\\\|status.*CONFIRMED\\\\|status.*PREPARING\\\\|status.*READY\\\\|status.*IN_DELIVERY\\\\|status.*DELIVERED\\\\|status.*CANCELLED\" C:UsersMauroDesktopmoovysrc --include=*.ts --include=*.tsx)",
-      "Bash(grep -r statusConfig.*= C:UsersMauroDesktopmoovysrc --include=*.ts --include=*.tsx)"
+      "Bash(grep -r statusConfig.*= C:UsersMauroDesktopmoovysrc --include=*.ts --include=*.tsx)",
+      "Bash(git branch:*)"
     ]
   }
 }
