@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/icons";
 import { toast } from "@/store/toast";
+import ImageUpload from "@/components/ui/ImageUpload";
 
 // DnD Kit Imports
 import {
@@ -96,9 +97,11 @@ function SortableCategoryItem({
                 <GripVertical className="w-5 h-5" />
             </div>
 
-            {/* Icon */}
-            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110 ${category.isActive ? "bg-moovy-light/20 text-moovy" : "bg-slate-100 text-slate-400"}`}>
-                {category.icon ? (
+            {/* Icon / Image */}
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex-shrink-0 overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-110 ${!category.image ? (category.isActive ? "bg-moovy-light/20 text-moovy" : "bg-slate-100 text-slate-400") : ""} flex items-center justify-center`}>
+                {category.image ? (
+                    <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+                ) : category.icon ? (
                     <div className="w-6 h-6 drop-shadow-sm">
                         {getCategoryIcon(category.icon)}
                     </div>
@@ -171,6 +174,7 @@ export default function AdminCategoriasPage() {
     const [formName, setFormName] = useState("");
     const [formDescription, setFormDescription] = useState("");
     const [formIcon, setFormIcon] = useState("");
+    const [formImage, setFormImage] = useState("");
     const [showIconSelector, setShowIconSelector] = useState(false);
     const [formIsActive, setFormIsActive] = useState(true);
     const [error, setError] = useState("");
@@ -309,6 +313,7 @@ export default function AdminCategoriasPage() {
         setFormName(category.name);
         setFormDescription(category.description || "");
         setFormIcon(category.icon || "");
+        setFormImage(category.image || "");
         setFormIsActive(category.isActive);
         setShowForm(true);
         setError("");
@@ -320,6 +325,7 @@ export default function AdminCategoriasPage() {
         setFormName("");
         setFormDescription("");
         setFormIcon("");
+        setFormImage("");
         setFormIsActive(true);
         setShowForm(true);
         setError("");
@@ -332,6 +338,7 @@ export default function AdminCategoriasPage() {
         setFormName("");
         setFormDescription("");
         setFormIcon("");
+        setFormImage("");
         setError("");
         setShowIconSelector(false);
     }
@@ -358,6 +365,7 @@ export default function AdminCategoriasPage() {
                     name: formName,
                     description: formDescription || null,
                     icon: formIcon || null,
+                    image: formImage || null,
                     isActive: formIsActive,
                 }),
             });
@@ -556,7 +564,13 @@ export default function AdminCategoriasPage() {
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Icono</label>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Imagen de categoría</label>
+                                <p className="text-[10px] text-gray-400 mb-2 ml-1">Se muestra en la landing de la tienda. Recomendado: cuadrada, mín 200×200px</p>
+                                <ImageUpload value={formImage} onChange={setFormImage} />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Icono (fallback)</label>
                                 {!showIconSelector ? (
                                     <button
                                         type="button"

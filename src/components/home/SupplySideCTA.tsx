@@ -1,25 +1,22 @@
 import Link from "next/link";
-import { ArrowRight, Store, Bike, Tag } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const cards = [
     {
-        icon: Store,
         title: "Registrá tu comercio",
-        desc: "Sumá tu local y llegá a nuevos clientes",
+        desc: "Sumá tu local y llegá a nuevos clientes con delivery propio",
         href: "/comercio/registro",
         emoji: "🏪",
     },
     {
-        icon: Bike,
         title: "Sé repartidor MOOVY",
-        desc: "Generá ingresos con tu tiempo libre",
+        desc: "Generá ingresos con libertad, cuando vos quieras",
         href: "/repartidor/registro",
         emoji: "🚴",
     },
     {
-        icon: Tag,
         title: "Vendé tus cosas",
-        desc: "Publicá gratis en el marketplace",
+        desc: "Publicá gratis en el marketplace de Ushuaia",
         href: "/vendedor/registro",
         emoji: "🏷️",
     },
@@ -40,7 +37,7 @@ export default function SupplySideCTA() {
                     <Link
                         key={card.href}
                         href={card.href}
-                        className="flex-shrink-0 w-[170px] md:w-auto bg-gray-900 rounded-2xl p-5 text-white group hover:bg-gray-800 transition-colors"
+                        className="flex-shrink-0 w-[160px] md:w-auto bg-gray-900 rounded-2xl p-4 md:p-5 text-white group hover:bg-gray-800 transition-colors"
                     >
                         <div className="text-2xl mb-3">{card.emoji}</div>
                         <h4 className="text-sm font-bold mb-1">{card.title}</h4>
