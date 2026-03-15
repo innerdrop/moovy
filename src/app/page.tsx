@@ -1,7 +1,5 @@
-"use client";
-
-import LandingPage from "./landing/page";
+import { redirect } from "next/navigation";
 
 export default function RootPage() {
-    return <LandingPage />;
+    redirect("/tienda");
 }

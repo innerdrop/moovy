@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOOVY — Nueva Landing (Mockup)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --moovy-red: #e60012;
+    --moovy-red-dark: #c4000f;
+    --moovy-red-light: #fff1f2;
+    --glass-bg: rgba(255,255,255,0.75);
+    --glass-border: rgba(255,255,255,0.3);
+    --glacier-blue: #e8f4f8;
+    --glacier-accent: #0ea5e9;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --surface: #f9fafb;
+    --border: #f3f4f6;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+    --shadow-xl: 0 20px 40px -10px rgba(0,0,0,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-primary);
+    background: #fff;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== MOBILE FRAME ===== */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    margin: 40px auto;
+    border-radius: 40px;
+    border: 8px solid #1a1a1a;
+    overflow: hidden;
+    position: relative;
+    background: #fff;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 34px;
+    background: #1a1a1a;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    padding-bottom: 72px;
+  }
+  .phone-screen::-webkit-scrollbar { display: none; }
+
+  /* ===== DESKTOP PREVIEW ===== */
+  .desktop-frame {
+    width: 1200px;
+    max-width: 95vw;
+    margin: 40px auto;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--shadow-xl);
+  }
+  .desktop-bar {
+    height: 36px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .desktop-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #d1d5db;
+  }
+  .desktop-dot:first-child { background: #fca5a5; }
+  .desktop-dot:nth-child(2) { background: #fcd34d; }
+  .desktop-dot:nth-child(3) { background: #86efac; }
+  .desktop-url {
+    flex: 1;
+    margin-left: 12px;
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border: 1px solid #e5e7eb;
+  }
+  .desktop-screen {
+    height: 700px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+  .desktop-screen::-webkit-scrollbar { width: 6px; }
+  .desktop-screen::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+  /* ===== HEADER ===== */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #fff;
+  }
+  .header-accent {
+    height: 3px;
+    background: linear-gradient(90deg, var(--moovy-red), #ff4466, var(--moovy-red));
+  }
+  .header-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 56px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-switcher {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 5px 10px 5px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--moovy-red);
+  }
+  .app-switcher:hover { border-color: var(--moovy-red); background: var(--moovy-red-light); }
+  .app-switcher-grid {
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap: 2px;
+    width: 14px;
+    height: 14px;
+  }
+  .app-switcher-grid span {
+    width: 6px;
+    height: 6px;
+    border-radius: 1.5px;
+    background: var(--moovy-red);
+  }
+  .logo-text {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: 20px;
+    color: var(--moovy-red);
+    letter-spacing: -1px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .header-icon-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: var(--surface); color: var(--moovy-red); }
+  .cart-btn {
+    background: var(--moovy-red);
+    color: #fff;
+    width: auto;
+    padding: 0 14px;
+    gap: 6px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+    height: 36px;
+  }
+  .cart-btn:hover { background: var(--moovy-red-dark); }
+  .cart-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--moovy-red);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+  }
+  .weather-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--glacier-blue);
+    color: var(--glacier-accent);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, var(--moovy-red) 0%, #ff2233 50%, #cc0010 100%);
+    padding: 28px 20px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='3' cy='3' r='2'/%3E%3Ccircle cx='13' cy='13' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-content {
+    position: relative;
+    z-index: 1;
+  }
+  .hero-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .hero h1 {
+    color: #fff;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 span { font-weight: 400; opacity: 0.9; display: block; font-size: 16px; margin-top: 4px; }
+  .hero-search {
+    margin-top: 18px;
+    background: #fff;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    height: 48px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  }
+  .hero-search svg { color: var(--text-muted); flex-shrink: 0; }
+  .hero-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    padding: 0 10px;
+    color: var(--text-primary);
+    background: none;
+  }
+  .hero-search input::placeholder { color: var(--text-muted); }
+
+  /* ===== SOCIAL PROOF ===== */
+  .social-proof {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .proof-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .proof-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .proof-number {
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  /* ===== COMO FUNCIONA ===== */
+  .how-it-works {
+    padding: 20px 16px;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+  }
+  .how-it-works::-webkit-scrollbar { display: none; }
+  .how-step {
+    flex: 0 0 auto;
+    width: 130px;
+    text-align: center;
+    padding: 14px 10px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+  .how-step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-size: 20px;
+  }
+  .how-step-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .how-step-desc { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ===== SECTION TITLES ===== */
+  .section-title {
+    padding: 20px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-title h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+  .section-title a {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--moovy-red);
+    text-decoration: none;
+  }
+
+  /* ===== CATEGORIES ===== */
+  .categories {
+    padding: 0 16px 16px;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+  }
+  .categories::-webkit-scrollbar { display: none; }
+  .cat-item {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 72px;
+  }
+  .cat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: transform 0.2s;
+  }
+  .cat-icon:hover { transform: scale(1.08); }
+  .cat-name { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-align: center; }
+
+  /* ===== MERCHANT CARDS ===== */
+  .merchants-scroll {
+    padding: 0 16px 8px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+  .merchants-scroll::-webkit-scrollbar { display: none; }
+  .merchant-card {
+    flex: 0 0 260px;
+    scroll-snap-align: start;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #fff;
+    transition: all 0.2s;
+  }
+  .merchant-card:hover { box-shadow: var(--shadow-md); }
+  .merchant-img {
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+  }
+  .merchant-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .merchant-badge-open {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(34,197,94,0.9);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+  }
+  .merchant-heart {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: none;
+  }
+  .merchant-heart:hover { transform: scale(1.15); }
+  .merchant-info { padding: 12px; }
+  .merchant-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .merchant-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .merchant-rating {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .merchant-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .merchant-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .merchant-meta span { display: flex; align-items: center; gap: 3px; }
+  .free-delivery { color: #16a34a; font-weight: 700; margin-left: auto; }
+
+  /* ===== PRODUCT CARDS ===== */
+  .products-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 16px 16px;
+  }
+  .product-card {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #fff;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .product-card:hover { box-shadow: var(--shadow-md); }
+  .product-img {
+    height: 130px;
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .product-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .product-add-btn {
+    position: absolute;
+    bottom: -14px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--moovy-red);
+    color: #fff;
+    border: 3px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-md);
+    z-index: 2;
+  }
+  .product-add-btn:hover { transform: scale(1.1); background: var(--moovy-red-dark); }
+  .product-info { padding: 10px 10px 12px; }
+  .product-merchant-name {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .product-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .product-price {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--moovy-red);
+  }
+
+  /* ===== MARKETPLACE ===== */
+  .marketplace-section {
+    margin: 0 16px 16px;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    border: 1px solid #ddd6fe;
+  }
+  .marketplace-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .marketplace-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .marketplace-title { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+  .marketplace-subtitle { font-size: 12px; color: #7c3aed; font-weight: 600; }
+  .marketplace-desc { font-size: 13px; color: var(--text-secondary); margin: 8px 0 14px; line-height: 1.5; }
+  .marketplace-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .marketplace-cta:hover { background: #6d28d9; }
+
+  /* ===== TRUST BAR ===== */
+  .trust-bar {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .trust-text { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .trust-logos {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: 0.5;
+  }
+  .trust-logo {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  /* ===== SUPPLY SIDE ===== */
+  .supply-section {
+    padding: 20px 16px;
+  }
+  .supply-title {
+    font-size: 18px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .supply-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .supply-cards {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+  }
+  .supply-cards::-webkit-scrollbar { display: none; }
+  .supply-card {
+    flex: 0 0 calc(50% - 5px);
+    background: var(--text-primary);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    color: #fff;
+    min-width: 160px;
+  }
+  .supply-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
+  .supply-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .supply-card p { font-size: 11px; opacity: 0.7; line-height: 1.4; margin-bottom: 10px; }
+  .supply-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(255,255,255,0.15);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .supply-card-cta:hover { background: rgba(255,255,255,0.25); }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    background: #111827;
+    color: #fff;
+    padding: 24px 16px 16px;
+  }
+  .footer-logo {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .footer-tagline { font-size: 11px; opacity: 0.4; margin-bottom: 16px; }
+  .footer-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .footer-links h5 { font-size: 12px; font-weight: 700; margin-bottom: 6px; opacity: 0.9; }
+  .footer-links a { display: block; font-size: 11px; opacity: 0.5; text-decoration: none; color: #fff; margin-bottom: 4px; }
+  .footer-links a:hover { opacity: 0.8; }
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 12px;
+    font-size: 10px;
+    opacity: 0.3;
+    text-align: center;
+  }
+  .footer-wa {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37,211,102,0.15);
+    border: 1px solid rgba(37,211,102,0.3);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+  .footer-wa-icon { font-size: 20px; }
+  .footer-wa-text { font-size: 12px; font-weight: 600; color: #25d366; }
+  .footer-wa-num { font-size: 11px; opacity: 0.5; color: #fff; }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 60;
+    padding-bottom: 8px;
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 12px;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+  }
+  .bottom-nav-item.active { color: var(--moovy-red); }
+  .bottom-nav-item.active .nav-icon-wrap {
+    background: var(--moovy-red-light);
+  }
+  .nav-icon-wrap {
+    width: 40px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: all 0.2s;
+  }
+
+  /* ===== APP SWITCHER DROPDOWN ===== */
+  .switcher-dropdown {
+    position: absolute;
+    top: 52px;
+    left: 16px;
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border);
+    padding: 8px;
+    z-index: 70;
+    width: 220px;
+    display: none;
+  }
+  .switcher-dropdown.show { display: block; animation: dropdown-in 0.2s ease-out; }
+  @keyframes dropdown-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .switcher-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .switcher-item:hover { background: var(--surface); }
+  .switcher-item.active-app { background: var(--moovy-red-light); }
+  .switcher-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+  }
+  .switcher-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .switcher-sublabel { font-size: 10px; color: var(--text-secondary); }
+  .switcher-badge {
+    margin-left: auto;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+  }
+
+  /* ===== ANNOTATIONS ===== */
+  .annotation {
+    position: absolute;
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #92400e;
+    z-index: 80;
+    max-width: 160px;
+    line-height: 1.4;
+    box-shadow: var(--shadow-md);
+  }
+  .annotation::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  /* ===== LAYOUT ===== */
+  .preview-wrapper {
+    padding: 20px;
+    background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+    min-height: 100vh;
+  }
+  .preview-title {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .preview-title h1 {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+  .preview-title p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+  .preview-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .preview-tab {
+    padding: 8px 20px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    background: #fff;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .preview-tab.active {
+    background: var(--moovy-red);
+    color: #fff;
+    border-color: var(--moovy-red);
+  }
+  .preview-tab:hover:not(.active) { border-color: var(--moovy-red); color: var(--moovy-red); }
+  .view-mobile { display: block; }
+  .view-desktop { display: none; }
+  .show-desktop .view-mobile { display: none; }
+  .show-desktop .view-desktop { display: block; }
+
+  /* ===== DESKTOP SPECIFIC ===== */
+  .d-header-main {
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 64px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .d-header-left { display: flex; align-items: center; gap: 12px; }
+  .d-header-center {
+    flex: 1;
+    max-width: 500px;
+    margin: 0 32px;
+  }
+  .d-search-bar {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 0 16px;
+    height: 42px;
+    transition: all 0.2s;
+  }
+  .d-search-bar:focus-within { border-color: var(--moovy-red); box-shadow: 0 0 0 3px rgba(230,0,18,0.1); }
+  .d-search-bar input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    padding: 0 10px;
+    background: none;
+  }
+  .d-header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .d-hero {
+    background: linear-gradient(135deg, var(--moovy-red) 0%, #ff2233 50%, #cc0010 100%);
+    padding: 48px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .d-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='3' cy='3' r='2'/%3E%3Ccircle cx='13' cy='13' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .d-hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+  }
+  .d-hero-text { max-width: 500px; }
+  .d-hero-text h1 { color: #fff; font-size: 42px; font-weight: 900; line-height: 1.05; letter-spacing: -1px; }
+  .d-hero-text h1 span { font-weight: 400; font-size: 20px; opacity: 0.9; display: block; margin-top: 8px; }
+  .d-hero-stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+  }
+  .d-hero-stat {
+    text-align: center;
+    color: #fff;
+  }
+  .d-hero-stat-num { font-size: 28px; font-weight: 900; }
+  .d-hero-stat-label { font-size: 11px; opacity: 0.7; font-weight: 500; }
+  .d-hero-visual {
+    width: 320px;
+    height: 200px;
+    background: rgba(255,255,255,0.1);
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .d-hero-visual-text { color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; }
+  .d-sections { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .d-categories {
+    display: flex;
+    gap: 14px;
+    padding: 20px 0;
+    overflow-x: auto;
+  }
+  .d-cat-item {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 80px;
+    cursor: pointer;
+  }
+  .d-merchants-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-bottom: 24px;
+  }
+  .d-products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding-bottom: 24px;
+  }
+  .d-marketplace-banner {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    border: 1px solid #ddd6fe;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .d-trust-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .d-supply-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 24px 0;
+  }
+
+  /* SVG Icons inline */
+  .icon { width: 18px; height: 18px; }
+  .icon-sm { width: 14px; height: 14px; }
+  .icon-xs { width: 12px; height: 12px; }
+  .icon-lg { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<div class="preview-wrapper" id="previewWrapper">
+  <div class="preview-title">
+    <h1>MOOVY — Nueva Landing</h1>
+    <p>Mockup interactivo — scroll para recorrer</p>
+  </div>
+  <div class="preview-tabs">
+    <button class="preview-tab active" onclick="toggleView('mobile')">Mobile</button>
+    <button class="preview-tab" onclick="toggleView('desktop')">Desktop</button>
+  </div>
+
+  <!-- ==================== MOBILE ==================== -->
+  <div class="view-mobile">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+
+        <!-- HEADER -->
+        <div class="header">
+          <div class="header-accent"></div>
+          <div class="header-main" style="position:relative">
+            <div class="header-left">
+              <div class="app-switcher" onclick="toggleSwitcher()">
+                <div class="app-switcher-grid"><span></span><span></span><span></span><span></span></div>
+                Tienda
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <span class="logo-text">MOOVY</span>
+            </div>
+            <div class="header-right">
+              <div class="weather-chip">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><path d="M8 16l-2 4m6-4l-2 4m6-4l-2 4"/></svg>
+                2°C
+              </div>
+              <button class="header-icon-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </button>
+              <button class="header-icon-btn" style="position:relative">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg>
+              </button>
+              <button class="header-icon-btn" style="position:relative">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                <span class="cart-badge">2</span>
+              </button>
+            </div>
+
+            <!-- App Switcher Dropdown -->
+            <div class="switcher-dropdown" id="switcherDropdown">
+              <div class="switcher-item active-app">
+                <div class="switcher-icon" style="background:linear-gradient(135deg,#e60012,#ff4444)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                </div>
+                <div>
+                  <div class="switcher-label">Tienda</div>
+                  <div class="switcher-sublabel">Delivery y comercios</div>
+                </div>
+              </div>
+              <div class="switcher-item">
+                <div class="switcher-icon" style="background:linear-gradient(135deg,#003a9b,#0052cc)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                </div>
+                <div>
+                  <div class="switcher-label">Jobs</div>
+                  <div class="switcher-sublabel">Oportunidades laborales</div>
+                </div>
+                <span class="switcher-badge" style="background:#dbeafe;color:#1d4ed8">Nuevo</span>
+              </div>
+              <div class="switcher-item">
+                <div class="switcher-icon" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </div>
+                <div>
+                  <div class="switcher-label">Marketplace</div>
+                  <div class="switcher-sublabel">Comprá y vendé</div>
+                </div>
+              </div>
+              <div class="switcher-item">
+                <div class="switcher-icon" style="background:linear-gradient(135deg,#00d4aa,#0ea5e9)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                </div>
+                <div>
+                  <div class="switcher-label">MOOVY X</div>
+                  <div class="switcher-sublabel">Turismo y experiencias</div>
+                </div>
+                <span class="switcher-badge" style="background:#ccfbf1;color:#0d9488">Pronto</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HERO -->
+        <div class="hero">
+          <div class="hero-content">
+            <div class="hero-location">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Ushuaia, Tierra del Fuego
+            </div>
+            <h1>
+              Todo Ushuaia en tu puerta
+              <span>Pedidos de comercios locales en minutos</span>
+            </h1>
+            <div class="hero-search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" placeholder="¿Qué querés pedir?" readonly>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOCIAL PROOF -->
+        <div class="social-proof">
+          <div class="proof-item">
+            <div class="proof-dot"></div>
+            <span><span class="proof-number">+1.200</span> pedidos entregados</span>
+          </div>
+          <div class="proof-item">
+            <span><span class="proof-number">24</span> comercios activos</span>
+          </div>
+        </div>
+
+        <!-- COMO FUNCIONA -->
+        <div class="how-it-works">
+          <div class="how-step">
+            <div class="how-step-icon" style="background:#fef2f2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e60012" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+            <div class="how-step-title">Elegí</div>
+            <div class="how-step-desc">Buscá lo que querés</div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-icon" style="background:#f0fdf4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+            </div>
+            <div class="how-step-title">Pagá</div>
+            <div class="how-step-desc">MP o efectivo</div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-icon" style="background:#eff6ff">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="how-step-title">Recibí</div>
+            <div class="how-step-desc">Delivery en minutos</div>
+          </div>
+        </div>
+
+        <!-- CATEGORIAS -->
+        <div class="section-title">
+          <h2>¿Qué querés pedir?</h2>
+        </div>
+        <div class="categories">
+          <div class="cat-item">
+            <div class="cat-icon" style="background:#fef2f2">🍔</div>
+            <span class="cat-name">Comida</span>
+          </div>
+          <div class="cat-item">
+            <div class="cat-icon" style="background:#fefce8">🥐</div>
+            <span class="cat-name">Panadería</span>
+          </div>
+          <div class="cat-item">
+            <div class="cat-icon" style="background:#f0fdf4">🛒</div>
+            <span class="cat-name">Súper</span>
+          </div>
+          <div class="cat-item">
+            <div class="cat-icon" style="background:#eff6ff">💊</div>
+            <span class="cat-name">Farmacia</span>
+          </div>
+          <div class="cat-item">
+            <div class="cat-icon" style="background:#fdf4ff">🍷</div>
+            <span class="cat-name">Bebidas</span>
+          </div>
+          <div class="cat-item">
+            <div class="cat-icon" style="background:#fff7ed">🧁</div>
+            <span class="cat-name">Dulces</span>
+          </div>
+        </div>
+
+        <!-- COMERCIOS -->
+        <div class="section-title">
+          <h2>Comercios en Ushuaia</h2>
+          <a href="#">Ver todos &rarr;</a>
+        </div>
+        <div class="merchants-scroll">
+          <div class="merchant-card">
+            <div class="merchant-img">
+              <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=200&fit=crop" alt="">
+              <span class="merchant-badge-open">ABIERTO</span>
+              <button class="merchant-heart">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e60012" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              </button>
+            </div>
+            <div class="merchant-info">
+              <div class="merchant-name-row">
+                <span class="merchant-name">La Cabaña del Fin</span>
+                <span class="merchant-rating">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  4.7
+                </span>
+              </div>
+              <div class="merchant-desc">Restaurante de cordero y trucha patagónica</div>
+              <div class="merchant-meta">
+                <span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  25-35 min
+                </span>
+                <span class="free-delivery">Envío Gratis</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="merchant-card">
+            <div class="merchant-img">
+              <img src="https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=400&h=200&fit=crop" alt="">
+              <span class="merchant-badge-open">ABIERTO</span>
+              <button class="merchant-heart">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e60012" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              </button>
+            </div>
+            <div class="merchant-info">
+              <div class="merchant-name-row">
+                <span class="merchant-name">Pizzería Don Piero</span>
+                <span class="merchant-rating">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  4.5
+                </span>
+              </div>
+              <div class="merchant-desc">Pizzas, empanadas y fugazzeta</div>
+              <div class="merchant-meta">
+                <span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  20-30 min
+                </span>
+                <span style="margin-left:auto;font-weight:600;color:#111">$800</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRODUCTOS -->
+        <div class="section-title">
+          <h2>Lo más pedido</h2>
+          <a href="#">Ver todos &rarr;</a>
+        </div>
+        <div class="products-grid">
+          <div class="product-card">
+            <div class="product-img">
+              <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=200&fit=crop" alt="">
+              <button class="product-add-btn">+</button>
+            </div>
+            <div class="product-info">
+              <div class="product-merchant-name">La Cabaña del Fin</div>
+              <div class="product-name">Pizza Muzzarella Grande</div>
+              <div class="product-price">$4.500</div>
+            </div>
+          </div>
+          <div class="product-card">
+            <div class="product-img">
+              <img src="https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=300&h=200&fit=crop" alt="">
+              <button class="product-add-btn">+</button>
+            </div>
+            <div class="product-info">
+              <div class="product-merchant-name">Don Piero</div>
+              <div class="product-name">Hamburguesa Completa</div>
+              <div class="product-price">$5.200</div>
+            </div>
+          </div>
+          <div class="product-card">
+            <div class="product-img">
+              <img src="https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=300&h=200&fit=crop" alt="">
+              <button class="product-add-btn">+</button>
+            </div>
+            <div class="product-info">
+              <div class="product-merchant-name">Dulce Patagonia</div>
+              <div class="product-name">Torta de Chocolate</div>
+              <div class="product-price">$8.900</div>
+            </div>
+          </div>
+          <div class="product-card">
+            <div class="product-img">
+              <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop" alt="">
+              <button class="product-add-btn">+</button>
+            </div>
+            <div class="product-info">
+              <div class="product-merchant-name">Café del Fin</div>
+              <div class="product-name">Empanadas x6 Surtidas</div>
+              <div class="product-price">$6.300</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARKETPLACE -->
+        <div class="marketplace-section">
+          <div class="marketplace-header">
+            <div class="marketplace-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </div>
+            <div>
+              <div class="marketplace-title">Marketplace</div>
+              <div class="marketplace-subtitle">Comprá y vendé entre vecinos</div>
+            </div>
+          </div>
+          <div class="marketplace-desc">
+            Productos nuevos y usados de vendedores de Ushuaia. Publicar es gratis.
+          </div>
+          <button class="marketplace-cta">
+            Explorar Marketplace
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- TRUST -->
+        <div class="trust-bar">
+          <div class="trust-text">Pagás seguro con</div>
+          <div class="trust-logos">
+            <span class="trust-logo">MercadoPago</span>
+            <span class="trust-logo">Efectivo</span>
+            <span class="trust-logo">VISA</span>
+          </div>
+        </div>
+
+        <!-- SUPPLY SIDE -->
+        <div class="supply-section">
+          <div class="supply-title">Crecemos juntos</div>
+          <div class="supply-subtitle">Sumate al ecosistema MOOVY en Ushuaia</div>
+          <div class="supply-cards">
+            <div class="supply-card">
+              <div class="supply-card-icon">🏪</div>
+              <h4>Comercios</h4>
+              <p>Sumá tu local y llegá a más clientes</p>
+              <button class="supply-card-cta">
+                Registrarme
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
+            <div class="supply-card">
+              <div class="supply-card-icon">🚴</div>
+              <h4>Repartidores</h4>
+              <p>Generá ingresos con tu tiempo libre</p>
+              <button class="supply-card-cta">
+                Registrarme
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+          <div class="footer-logo">MOOVY</div>
+          <div class="footer-tagline">Hecho con amor en el Fin del Mundo</div>
+          <div class="footer-wa">
+            <span class="footer-wa-icon">💬</span>
+            <div>
+              <div class="footer-wa-text">Soporte por WhatsApp</div>
+              <div class="footer-wa-num">+54 9 2901 XX-XXXX</div>
+            </div>
+          </div>
+          <div class="footer-links">
+            <div>
+              <h5>Explorar</h5>
+              <a href="#">Tienda</a>
+              <a href="#">Marketplace</a>
+              <a href="#">Jobs</a>
+              <a href="#">MOOVER</a>
+            </div>
+            <div>
+              <h5>Legal</h5>
+              <a href="#">Términos</a>
+              <a href="#">Privacidad</a>
+              <a href="#">Devoluciones</a>
+              <a href="#">Ayuda</a>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            &copy; 2026 MOOVY&trade;. Ushuaia, Tierra del Fuego.
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM NAV -->
+      <div class="bottom-nav">
+        <button class="bottom-nav-item active">
+          <div class="nav-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          Inicio
+        </button>
+        <button class="bottom-nav-item">
+          <div class="nav-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          Buscar
+        </button>
+        <button class="bottom-nav-item">
+          <div class="nav-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          Pedidos
+        </button>
+        <button class="bottom-nav-item">
+          <div class="nav-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          Perfil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESKTOP ==================== -->
+  <div class="view-desktop">
+    <div class="desktop-frame">
+      <div class="desktop-bar">
+        <div class="desktop-dot"></div>
+        <div class="desktop-dot"></div>
+        <div class="desktop-dot"></div>
+        <div class="desktop-url">somosmoovy.com</div>
+      </div>
+      <div class="desktop-screen">
+        <!-- Desktop Header -->
+        <div class="header">
+          <div class="header-accent"></div>
+          <div class="d-header-main">
+            <div class="d-header-left">
+              <div class="app-switcher" onclick="toggleSwitcherDesktop()" style="position:relative">
+                <div class="app-switcher-grid"><span></span><span></span><span></span><span></span></div>
+                Tienda
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <span class="logo-text" style="font-size:24px">MOOVY</span>
+              <div class="weather-chip" style="margin-left:8px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><path d="M8 16l-2 4m6-4l-2 4m6-4l-2 4"/></svg>
+                2°C Lluvia &middot; +10 min delivery
+              </div>
+            </div>
+            <div class="d-header-center">
+              <div class="d-search-bar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" placeholder="Buscar productos, comercios..." readonly>
+              </div>
+            </div>
+            <div class="d-header-right">
+              <div style="display:flex;align-items:center;gap:6px;background:linear-gradient(90deg,#fffbeb,#fef9c3);border:1px solid #fde68a;padding:4px 12px;border-radius:9999px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span style="font-size:12px;font-weight:700;color:#92400e">450 pts</span>
+              </div>
+              <button class="header-icon-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg>
+              </button>
+              <button class="cart-btn" style="display:flex;align-items:center;border:none;cursor:pointer;font-family:'Poppins',sans-serif">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                Carrito
+                <span style="background:#fff;color:#e60012;font-size:11px;font-weight:800;padding:1px 7px;border-radius:99px">2</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Hero -->
+        <div class="d-hero">
+          <div class="d-hero-inner">
+            <div class="d-hero-text">
+              <div class="hero-location" style="margin-bottom:16px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Ushuaia, Tierra del Fuego
+              </div>
+              <h1>
+                Todo Ushuaia en tu puerta
+                <span>Pedidos de comercios locales, marketplace entre vecinos y mucho más</span>
+              </h1>
+              <div class="d-hero-stats">
+                <div class="d-hero-stat">
+                  <div class="d-hero-stat-num">+1.200</div>
+                  <div class="d-hero-stat-label">pedidos entregados</div>
+                </div>
+                <div class="d-hero-stat">
+                  <div class="d-hero-stat-num">24</div>
+                  <div class="d-hero-stat-label">comercios activos</div>
+                </div>
+                <div class="d-hero-stat">
+                  <div class="d-hero-stat-num">4.8</div>
+                  <div class="d-hero-stat-label">satisfacción promedio</div>
+                </div>
+              </div>
+            </div>
+            <div class="d-hero-visual">
+              <span class="d-hero-visual-text">Ilustración / Foto Ushuaia</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-sections">
+          <!-- Desktop Categories -->
+          <div class="section-title" style="padding:20px 0 12px">
+            <h2>¿Qué querés pedir?</h2>
+          </div>
+          <div class="d-categories">
+            <div class="d-cat-item"><div class="cat-icon" style="background:#fef2f2;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">🍔</div><span class="cat-name">Comida</span></div>
+            <div class="d-cat-item"><div class="cat-icon" style="background:#fefce8;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">🥐</div><span class="cat-name">Panadería</span></div>
+            <div class="d-cat-item"><div class="cat-icon" style="background:#f0fdf4;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">🛒</div><span class="cat-name">Súper</span></div>
+            <div class="d-cat-item"><div class="cat-icon" style="background:#eff6ff;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">💊</div><span class="cat-name">Farmacia</span></div>
+            <div class="d-cat-item"><div class="cat-icon" style="background:#fdf4ff;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">🍷</div><span class="cat-name">Bebidas</span></div>
+            <div class="d-cat-item"><div class="cat-icon" style="background:#fff7ed;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">🧁</div><span class="cat-name">Dulces</span></div>
+            <div class="d-cat-item"><div class="cat-icon" style="background:#f5f3ff;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">🧊</div><span class="cat-name">Kiosco</span></div>
+          </div>
+
+          <!-- Desktop Merchants -->
+          <div class="section-title" style="padding:12px 0">
+            <h2>Comercios en Ushuaia</h2>
+            <a href="#">Ver todos &rarr;</a>
+          </div>
+          <div class="d-merchants-grid">
+            <div class="merchant-card">
+              <div class="merchant-img"><img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=200&fit=crop" alt=""><span class="merchant-badge-open">ABIERTO</span><button class="merchant-heart"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e60012" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></div>
+              <div class="merchant-info"><div class="merchant-name-row"><span class="merchant-name">La Cabaña del Fin</span><span class="merchant-rating"><svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 4.7</span></div><div class="merchant-desc">Restaurante patagónico</div><div class="merchant-meta"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 25-35 min</span><span class="free-delivery">Envío Gratis</span></div></div>
+            </div>
+            <div class="merchant-card">
+              <div class="merchant-img"><img src="https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=400&h=200&fit=crop" alt=""><span class="merchant-badge-open">ABIERTO</span><button class="merchant-heart"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e60012" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></div>
+              <div class="merchant-info"><div class="merchant-name-row"><span class="merchant-name">Pizzería Don Piero</span><span class="merchant-rating"><svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 4.5</span></div><div class="merchant-desc">Pizzas, empanadas y fugazzeta</div><div class="merchant-meta"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20-30 min</span><span style="margin-left:auto;font-weight:600;color:#111">$800</span></div></div>
+            </div>
+            <div class="merchant-card">
+              <div class="merchant-img"><img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=200&fit=crop" alt=""><span class="merchant-badge-open">ABIERTO</span><button class="merchant-heart"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e60012" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></button></div>
+              <div class="merchant-info"><div class="merchant-name-row"><span class="merchant-name">Farmacia del Sur</span><span class="merchant-rating"><svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 4.9</span></div><div class="merchant-desc">Medicamentos y perfumería</div><div class="merchant-meta"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 15-25 min</span><span class="free-delivery">Envío Gratis</span></div></div>
+            </div>
+          </div>
+
+          <!-- Desktop Products -->
+          <div class="section-title" style="padding:12px 0">
+            <h2>Lo más pedido</h2>
+            <a href="#">Ver todos &rarr;</a>
+          </div>
+          <div class="d-products-grid">
+            <div class="product-card"><div class="product-img"><img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=200&fit=crop" alt=""><button class="product-add-btn">+</button></div><div class="product-info"><div class="product-merchant-name">La Cabaña del Fin</div><div class="product-name">Pizza Muzzarella Grande</div><div class="product-price">$4.500</div></div></div>
+            <div class="product-card"><div class="product-img"><img src="https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=300&h=200&fit=crop" alt=""><button class="product-add-btn">+</button></div><div class="product-info"><div class="product-merchant-name">Don Piero</div><div class="product-name">Hamburguesa Completa</div><div class="product-price">$5.200</div></div></div>
+            <div class="product-card"><div class="product-img"><img src="https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=300&h=200&fit=crop" alt=""><button class="product-add-btn">+</button></div><div class="product-info"><div class="product-merchant-name">Dulce Patagonia</div><div class="product-name">Torta de Chocolate</div><div class="product-price">$8.900</div></div></div>
+            <div class="product-card"><div class="product-img"><img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop" alt=""><button class="product-add-btn">+</button></div><div class="product-info"><div class="product-merchant-name">Café del Fin</div><div class="product-name">Empanadas x6 Surtidas</div><div class="product-price">$6.300</div></div></div>
+          </div>
+
+          <!-- Desktop Marketplace -->
+          <div class="d-marketplace-banner">
+            <div style="max-width:500px">
+              <div class="marketplace-header" style="margin-bottom:8px">
+                <div class="marketplace-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+                <div><div class="marketplace-title">Marketplace</div><div class="marketplace-subtitle">Comprá y vendé entre vecinos</div></div>
+              </div>
+              <div class="marketplace-desc">Productos nuevos y usados de vendedores de Ushuaia. Publicar es gratis.</div>
+              <button class="marketplace-cta">Explorar Marketplace <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+            </div>
+            <div style="width:200px;height:120px;background:rgba(124,58,237,0.1);border-radius:16px;display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:12px;font-weight:600">Ilustración</div>
+          </div>
+
+          <!-- Desktop Trust -->
+          <div class="d-trust-bar">
+            <span style="font-size:13px;font-weight:600;color:#6b7280">Pagás seguro con</span>
+            <span class="trust-logo">MercadoPago</span>
+            <span class="trust-logo">Efectivo</span>
+            <span class="trust-logo">VISA</span>
+            <span class="trust-logo">Mastercard</span>
+          </div>
+
+          <!-- Desktop Supply -->
+          <div style="padding:24px 0">
+            <div class="supply-title">Crecemos juntos en el Fin del Mundo</div>
+            <div class="supply-subtitle" style="margin-bottom:20px">Sumate al ecosistema MOOVY</div>
+            <div class="d-supply-grid">
+              <div class="supply-card"><div class="supply-card-icon">🏪</div><h4>Registrá tu comercio</h4><p>Sumá tu local y llegá a nuevos clientes con delivery propio</p><button class="supply-card-cta">Empezar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></div>
+              <div class="supply-card"><div class="supply-card-icon">🚴</div><h4>Sé repartidor MOOVY</h4><p>Generá ingresos con libertad, cuando vos quieras</p><button class="supply-card-cta">Empezar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></div>
+              <div class="supply-card"><div class="supply-card-icon">🏷️</div><h4>Vendé tus cosas</h4><p>Publicá gratis en el marketplace de Ushuaia</p><button class="supply-card-cta">Empezar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Footer -->
+        <div class="footer" style="padding:32px 24px 20px">
+          <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;margin-bottom:24px">
+            <div>
+              <div class="footer-logo" style="font-size:28px">MOOVY</div>
+              <div class="footer-tagline" style="margin-bottom:12px">Hecho con amor en el Fin del Mundo</div>
+              <div class="footer-wa" style="max-width:260px">
+                <span class="footer-wa-icon">💬</span>
+                <div><div class="footer-wa-text">Soporte por WhatsApp</div><div class="footer-wa-num">+54 9 2901 XX-XXXX</div></div>
+              </div>
+            </div>
+            <div><h5 style="font-size:13px;font-weight:700;margin-bottom:8px;opacity:0.9">Explorar</h5><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Tienda</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Marketplace</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Jobs</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">MOOVER</a></div>
+            <div><h5 style="font-size:13px;font-weight:700;margin-bottom:8px;opacity:0.9">Comunidad</h5><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Repartidores</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Comercios</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Vendedores</a></div>
+            <div><h5 style="font-size:13px;font-weight:700;margin-bottom:8px;opacity:0.9">Legal</h5><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Términos</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Privacidad</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Devoluciones</a><a href="#" style="display:block;font-size:12px;opacity:0.5;color:#fff;text-decoration:none;margin-bottom:6px">Ayuda</a></div>
+          </div>
+          <div class="footer-bottom">&copy; 2026 MOOVY&trade;. Ushuaia, Tierra del Fuego.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleView(view) {
+  const wrapper = document.getElementById('previewWrapper');
+  const tabs = document.querySelectorAll('.preview-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  if (view === 'desktop') {
+    wrapper.classList.add('show-desktop');
+    tabs[1].classList.add('active');
+  } else {
+    wrapper.classList.remove('show-desktop');
+    tabs[0].classList.add('active');
+  }
+}
+
+function toggleSwitcher() {
+  const dd = document.getElementById('switcherDropdown');
+  dd.classList.toggle('show');
+}
+
+// Close switcher on outside click
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('switcherDropdown');
+  if (dd && !e.target.closest('.app-switcher') && !e.target.closest('.switcher-dropdown')) {
+    dd.classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>

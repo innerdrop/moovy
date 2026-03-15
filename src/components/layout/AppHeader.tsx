@@ -4,11 +4,12 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Star, User, Package, X, ChevronRight, Bell, Search, Loader2, Store } from "lucide-react";
+import { ShoppingBag, MapPin, Star, User, Package, X, ChevronRight, Bell, Search, Loader2, Store, CloudRain } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
+import AppSwitcher from "@/components/home/AppSwitcher";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -147,25 +148,22 @@ export default function AppHeader({
 
                 {/* Mobile Header - Single clean row */}
                 <div className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-gray-100">
-                    {/* Left: Greeting (logged in) or Location (not logged in) */}
-                    {isLoggedIn && firstName ? (
-                        <Link href="/mi-perfil" className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                {firstName.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-400 leading-none">Hola,</span>
-                                <span className="text-sm font-semibold text-gray-900">{firstName}</span>
-                            </div>
-                        </Link>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-[#e60012]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                                <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900">Ushuaia</span>
-                        </div>
-                    )}
+                    {/* Left: App Switcher + Greeting or Logo */}
+                    <div className="flex items-center gap-2">
+                        <AppSwitcher />
+                        {isLoggedIn && firstName ? (
+                            <Link href="/mi-perfil" className="flex items-center gap-1.5">
+                                <div className="w-7 h-7 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-[11px]">
+                                    {firstName.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="text-xs font-semibold text-gray-900 hidden xs:inline">{firstName}</span>
+                            </Link>
+                        ) : (
+                            <Link href="/login" className="text-xs font-medium text-gray-500 hover:text-[#e60012] transition">
+                                Ingresar
+                            </Link>
+                        )}
+                    </div>
 
                     {/* Center: Logo */}
                     <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
@@ -223,8 +221,9 @@ export default function AppHeader({
 
                 {/* Desktop Header */}
                 <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto border-b border-gray-100">
-                    {/* Left: Logo + User */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    {/* Left: App Switcher + Logo + User */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                        <AppSwitcher />
                         <Link href="/" className="flex-shrink-0">
                             <Image
                                 src="/logo-moovy.png"
@@ -244,9 +243,9 @@ export default function AppHeader({
                             </Link>
                         ) : (
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin className="w-4 h-4 text-[#e60012]" />
-                                    <span className="text-sm font-semibold text-gray-900">Ushuaia</span>
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+                                    <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
+                                    Ushuaia
                                 </div>
                                 <Link
                                     href="/login"
