@@ -312,15 +312,20 @@ export default function RiderDashboard() {
         }
     };
 
-    // Auto-expand map when active order exists
+    // Auto-expand map when a NEW active order appears (not continuously)
+    const prevActiveOrderId = useRef<string | null>(null);
     useEffect(() => {
         const pedidoActivo = dashboardData?.pedidosActivos?.[0];
-        if (pedidoActivo && !isMapExpanded) {
+        const currentId = pedidoActivo?.id || null;
+        // Only auto-expand when a new order appears (different from previous)
+        if (currentId && currentId !== prevActiveOrderId.current) {
             setIsMapExpanded(true);
         }
-        if (!pedidoActivo && isMapExpanded) {
+        // Auto-collapse when order disappears (delivered/cancelled)
+        if (!currentId && prevActiveOrderId.current) {
             setIsMapExpanded(false);
         }
+        prevActiveOrderId.current = currentId;
     }, [dashboardData?.pedidosActivos]);
 
     // Pull-to-refresh handlers

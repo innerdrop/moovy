@@ -43,7 +43,7 @@ const navSections: NavSection[] = [
     {
         title: "Operaciones",
         items: [
-            { href: "/ops", icon: LayoutDashboard, label: "Dashboard" },
+            { href: "/ops/dashboard", icon: LayoutDashboard, label: "Dashboard" },
             { href: "/ops/live", icon: Activity, label: "En Vivo", badge: "🔴" },
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
@@ -89,7 +89,7 @@ const navSections: NavSection[] = [
 
 // Bottom nav for mobile - most important items
 const mobileNavItems = [
-    { href: "/ops", icon: LayoutDashboard, label: "Inicio" },
+    { href: "/ops/dashboard", icon: LayoutDashboard, label: "Inicio" },
     { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
     { href: "/ops/live", icon: Activity, label: "Live" },
     { href: "/ops/comercios", icon: Building2, label: "Comercios" },
@@ -102,8 +102,8 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
     const closeMobileMenu = () => setIsMobileOpen(false);
 
     const isActive = (href: string) => {
-        if (href === "/ops") {
-            return pathname === "/ops";
+        if (href === "/ops/dashboard") {
+            return pathname === "/ops/dashboard" || pathname === "/ops";
         }
         return pathname.startsWith(href);
     };
@@ -119,7 +119,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                 >
                     <Menu className="w-6 h-6" />
                 </button>
-                <Link href="/ops" className="flex items-center gap-2">
+                <Link href="/ops/dashboard" className="flex items-center gap-2">
                     <Image src="/logo-moovy.png" alt="Moovy" width={80} height={26} className="w-auto h-auto" />
                     <span className="text-xs font-medium text-slate-400">Admin</span>
                 </Link>
@@ -171,7 +171,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
             >
                 {/* Header */}
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                    <Link href="/ops" className="flex items-center gap-3" onClick={closeMobileMenu}>
+                    <Link href="/ops/dashboard" className="flex items-center gap-3" onClick={closeMobileMenu}>
                         <Image src="/logo-moovy.png" alt="Moovy" width={100} height={32} className="w-auto h-auto" />
                     </Link>
                     <button

@@ -54,29 +54,19 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
             .finally(() => setLoading(false));
     }, [isOpen]);
 
-    if (!isOpen) return null;
-
-    const formatTime = (minutes: number) => {
-        if (minutes < 60) return `${minutes} min`;
-        const hrs = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
-    };
-
-    // Animated counter for earnings
+    // Animated counter for earnings — hooks MUST be before any conditional return
     const [displayEarnings, setDisplayEarnings] = useState(0);
     const animFrameRef = useRef<number>(0);
 
     useEffect(() => {
         if (!data || data.totalDeliveries === 0) return;
         const target = data.totalEarnings;
-        const duration = 1200; // ms
+        const duration = 1200;
         const startTime = performance.now();
 
         const animate = (now: number) => {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            // Ease out cubic
             const eased = 1 - Math.pow(1 - progress, 3);
             setDisplayEarnings(Math.round(target * eased));
             if (progress < 1) {
@@ -87,6 +77,15 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
         animFrameRef.current = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animFrameRef.current);
     }, [data]);
+
+    if (!isOpen) return null;
+
+    const formatTime = (minutes: number) => {
+        if (minutes < 60) return `${minutes} min`;
+        const hrs = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+    };
 
     return (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-[fadeIn_0.2s_ease-out]">
