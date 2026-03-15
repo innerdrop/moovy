@@ -21,6 +21,13 @@ enum DeliveryType {
   SCHEDULED
 }
 
+enum DeliveryStatus {
+  DRIVER_ASSIGNED
+  DRIVER_ARRIVED
+  PICKED_UP
+  DELIVERED
+}
+
 model User {
   id                 String              @id @default(cuid())
   email              String              @unique
@@ -232,7 +239,7 @@ model Order {
   deliveryNotes       String?
   estimatedTime       Int?
   driverId            String?
-  deliveryStatus      String?
+  deliveryStatus      DeliveryStatus?
   deliveredAt         DateTime?
   deliveryPhoto       String?
   customerNotes       String?
@@ -315,7 +322,7 @@ model SubOrder {
   moovyCommission     Float?         @default(0)
   sellerPayout        Float?         @default(0)
   paymentStatus       String         @default("PENDING")
-  deliveryStatus      String?
+  deliveryStatus      DeliveryStatus?
   deliveredAt         DateTime?
   deliveryPhoto       String?
   driverRating        Int?

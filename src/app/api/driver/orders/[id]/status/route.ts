@@ -46,6 +46,28 @@ export async function PATCH(
             return NextResponse.json({ error: "Este pedido no está asignado a vos" }, { status: 403 });
         }
 
+        // Validate state transitions for deliveryStatus
+        const validTransitions: Record<string, string[]> = {
+            DRIVER_ASSIGNED: ["DRIVER_ARRIVED", "PICKED_UP"],  // Allow skip for backward compat
+            DRIVER_ARRIVED: ["PICKED_UP"],
+            PICKED_UP: ["DELIVERED"],
+            DELIVERED: [],
+        };
+
+        const currentDeliveryStatus = order.deliveryStatus || "DRIVER_ASSIGNED";
+        const allowedNextStates = validTransitions[currentDeliveryStatus] || [];
+
+        if (!allowedNextStates.includes(deliveryStatus)) {
+            return NextResponse.json(
+                {
+                    error: `Transición inválida: ${currentDeliveryStatus} → ${deliveryStatus}`,
+                    current: currentDeliveryStatus,
+                    allowed: allowedNextStates,
+                },
+                { status: 400 }
+            );
+        }
+
         // Update status
         const updateData: any = { deliveryStatus };
 
@@ -70,6 +92,9 @@ export async function PATCH(
         if (deliveryStatus === "DELIVERED") {
             notifyBuyer(order.userId, "DELIVERED", order.orderNumber, { orderId: order.id })
                 .catch(err => console.error("[Push] Buyer notification error:", err));
+        } else if (deliveryStatus === "DRIVER_ARRIVED") {
+            notifyBuyer(order.userId, "DRIVER_ARRIVED", order.orderNumber, { orderId: order.id })
+                .catch(err => console.error("[Push] Buyer notification error:", err));
         }
 
         // Emit socket events to all interested rooms
@@ -90,6 +115,15 @@ export async function PATCH(
         ];
 
         socketEmitToRooms(rooms, "order_status_changed", eventData).catch(console.error);
+
+        // Emit driver_arrived event to merchant when driver arrives
+        if (deliveryStatus === "DRIVER_ARRIVED" && order.merchantId) {
+            socketEmitToRooms([`merchant:${order.merchantId}`], "driver_arrived", {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                driverId: driver.id,
+            }).catch(console.error);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

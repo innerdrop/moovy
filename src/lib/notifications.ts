@@ -44,6 +44,21 @@ const STATUS_MESSAGES: Record<string, MessageBuilder> = {
                 ? `Tu pedido de ${ctx.merchantName} está listo para retirar 📦`
                 : `Tu pedido ${n} está listo 📦`,
     },
+    DRIVER_ASSIGNED: {
+        title: '🏍️ Repartidor en camino',
+        body: (n, ctx) =>
+            ctx.merchantName
+                ? `Un repartidor va en camino a ${ctx.merchantName}`
+                : `Un repartidor va en camino al comercio 🏍️`,
+    },
+    DRIVER_ARRIVED: {
+        title: '📍 Repartidor en el comercio',
+        body: (n) => `El repartidor llegó al comercio para retirar tu pedido 📍`,
+    },
+    PICKED_UP: {
+        title: '📦 Pedido retirado',
+        body: (n) => `Tu pedido fue retirado y viene en camino 📦`,
+    },
     IN_DELIVERY: {
         title: '🛵 En camino',
         body: (n, ctx) =>

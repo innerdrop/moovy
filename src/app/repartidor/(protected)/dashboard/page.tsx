@@ -48,6 +48,11 @@ const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
 
 const RiderBottomNav = dynamic(() => import("@/components/rider/RiderBottomNav"), { ssr: false });
 
+const ShiftSummaryModal = dynamic(
+    () => import("@/components/rider/ShiftSummaryModal").then(mod => mod.ShiftSummaryModal),
+    { ssr: false }
+);
+
 interface DashboardStats {
     pedidosHoy: number;
     enCamino: number;
@@ -110,6 +115,7 @@ export default function RiderDashboard() {
     const [pushError, setPushError] = useState<string | null>(null);
     const [isMapExpanded, setIsMapExpanded] = useState(false);
     const [advancingStatus, setAdvancingStatus] = useState(false);
+    const [showShiftSummary, setShowShiftSummary] = useState(false);
 
     // SPA Navigation State
     const [activeView, setActiveView] = useState<string>("dashboard");
@@ -209,9 +215,37 @@ export default function RiderDashboard() {
         }
     };
 
-    // Toggle online/offline
+    // Perform the actual disconnect API call
+    const performDisconnect = async () => {
+        try {
+            setIsToggling(true);
+            const res = await fetch("/api/driver/toggle-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isOnline: false })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setIsOnline(data.isOnline);
+                await fetchDashboard(true);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsToggling(false);
+        }
+    };
+
+    // Toggle online/offline — shows shift summary when going offline
     const toggleOnline = async () => {
-        if (!isOnline && !location) {
+        // Going offline → show shift summary first
+        if (isOnline) {
+            setShowShiftSummary(true);
+            return;
+        }
+
+        // Going online → check GPS and connect
+        if (!location) {
             toast.warning("No podemos activarte sin acceso a tu ubicación GPS.");
             if (typeof window !== "undefined" && navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(() => { }, () => { });
@@ -224,7 +258,7 @@ export default function RiderDashboard() {
             const res = await fetch("/api/driver/toggle-status", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isOnline: !isOnline })
+                body: JSON.stringify({ isOnline: true })
             });
 
             if (res.ok) {
@@ -718,7 +752,9 @@ export default function RiderDashboard() {
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">#{pedidoActivo.orderId}</span>
                                                     </div>
                                                     <h2 className="text-[22px] font-extrabold tracking-tight text-[#1a1a1a] uppercase leading-none">
-                                                        {pedidoActivo.estado === "picked_up" ? "Entrega en curso" : "Recoger Pedido"}
+                                                        {pedidoActivo.estado === "picked_up" ? "Entrega en curso"
+                                                            : pedidoActivo.estado === "driver_arrived" ? "Esperando pedido"
+                                                            : "Ir al comercio"}
                                                     </h2>
                                                 </div>
                                                 <div className="text-right">
@@ -731,9 +767,21 @@ export default function RiderDashboard() {
                                             <div className="bg-gray-50 rounded-[24px] p-4 border border-gray-100">
                                                 <div className="flex items-start gap-4">
                                                     <div className="flex flex-col items-center gap-1 mt-1">
-                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${pedidoActivo.estado === "picked_up" ? "bg-gray-300" : "bg-blue-500"}`} />
-                                                        <div className="w-0.5 h-10 border-l-2 border-dashed border-gray-200" />
-                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${pedidoActivo.estado === "picked_up" ? "bg-green-500" : "bg-gray-300"}`} />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+                                                            pedidoActivo.estado === "driver_assigned" ? "bg-blue-500"
+                                                            : pedidoActivo.estado === "driver_arrived" ? "bg-amber-500"
+                                                            : "bg-gray-300"
+                                                        }`} />
+                                                        <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200" />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+                                                            pedidoActivo.estado === "driver_arrived" ? "bg-blue-500"
+                                                            : pedidoActivo.estado === "picked_up" ? "bg-blue-500"
+                                                            : "bg-gray-300"
+                                                        }`} />
+                                                        <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200" />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+                                                            pedidoActivo.estado === "picked_up" ? "bg-green-500" : "bg-gray-300"
+                                                        }`} />
                                                     </div>
                                                     <div className="flex-1 space-y-6">
                                                         <div>
@@ -762,16 +810,22 @@ export default function RiderDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Action button — Large, one-tap, no confirm dialog */}
+                                            {/* Action button — 3 states: arrive → pickup → deliver */}
                                             <button
                                                 onClick={async () => {
                                                     if (advancingStatus) return;
-                                                    const isPrePickup = pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived";
-                                                    const nextStatus = isPrePickup ? "PICKED_UP" : "DELIVERED";
+                                                    const nextStatus =
+                                                        pedidoActivo.estado === "driver_assigned" ? "DRIVER_ARRIVED"
+                                                        : pedidoActivo.estado === "driver_arrived" ? "PICKED_UP"
+                                                        : "DELIVERED";
+
+                                                    const successMsg =
+                                                        nextStatus === "DRIVER_ARRIVED" ? "Llegaste al comercio"
+                                                        : nextStatus === "PICKED_UP" ? "Pedido recogido"
+                                                        : "Entrega completada";
 
                                                     setAdvancingStatus(true);
                                                     try {
-                                                        // Haptic feedback
                                                         if (navigator.vibrate) navigator.vibrate(50);
 
                                                         const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/status`, {
@@ -781,7 +835,7 @@ export default function RiderDashboard() {
                                                         });
 
                                                         if (res.ok) {
-                                                            toast.success(isPrePickup ? "Pedido recogido" : "Entrega completada");
+                                                            toast.success(successMsg);
                                                             if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
                                                             await fetchDashboard(true);
                                                         } else {
@@ -797,7 +851,9 @@ export default function RiderDashboard() {
                                                 }}
                                                 disabled={advancingStatus}
                                                 className={`w-full py-5 text-white font-black text-lg rounded-[22px] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest ${
-                                                    (pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived")
+                                                    pedidoActivo.estado === "driver_assigned"
+                                                        ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
+                                                        : pedidoActivo.estado === "driver_arrived"
                                                         ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/30"
                                                         : "bg-green-600 hover:bg-green-700 shadow-green-500/30"
                                                 } disabled:opacity-50`}
@@ -805,8 +861,10 @@ export default function RiderDashboard() {
                                                 {advancingStatus
                                                     ? <Loader2 className="w-6 h-6 animate-spin" />
                                                     : <>
-                                                        {(pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived")
-                                                            ? "Ya recogi el pedido"
+                                                        {pedidoActivo.estado === "driver_assigned"
+                                                            ? "Llegué al comercio"
+                                                            : pedidoActivo.estado === "driver_arrived"
+                                                            ? "Ya recogí el pedido"
                                                             : "Entrega completada"}
                                                         <ChevronRight className="w-6 h-6" />
                                                     </>
@@ -933,6 +991,18 @@ export default function RiderDashboard() {
             {activeView === "earnings" && <EarningsView onBack={() => setActiveView("dashboard")} />}
             {activeView === "support" && <SupportView onBack={() => setActiveView("dashboard")} onChatRead={() => fetchDashboard(true)} />}
             {activeView === "profile" && <ProfileView onBack={() => setActiveView("dashboard")} />}
+
+            {/* ═══════════════════════════════════════════════
+               LEVEL 65 — SHIFT SUMMARY MODAL
+            ═══════════════════════════════════════════════ */}
+            <ShiftSummaryModal
+                isOpen={showShiftSummary}
+                onClose={() => setShowShiftSummary(false)}
+                onConfirmDisconnect={async () => {
+                    setShowShiftSummary(false);
+                    await performDisconnect();
+                }}
+            />
 
             {/* ═══════════════════════════════════════════════
                LEVEL 70 — BOTTOM NAVIGATION BAR (hidden when map expanded)

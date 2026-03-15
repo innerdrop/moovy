@@ -35,6 +35,14 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
     CANCELLED: 'Cancelado',
 };
 
+// Delivery status labels in Spanish (for deliveryStatus field, separate from order status)
+export const DELIVERY_STATUS_LABELS: Record<string, string> = {
+    DRIVER_ASSIGNED: 'En camino al comercio',
+    DRIVER_ARRIVED: 'Repartidor en el comercio',
+    PICKED_UP: 'Retirado del comercio',
+    DELIVERED: 'Entregado',
+};
+
 // Status colors for UI
 export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = {
     PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
@@ -55,7 +63,7 @@ export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = 
  * Returns 'CUSTOMER' when rider should go to delivery
  */
 export function getRouteDestination(status: string): 'MERCHANT' | 'CUSTOMER' | null {
-    const toMerchant = ['DRIVER_ASSIGNED', 'READY', 'CONFIRMED', 'PREPARING'];
+    const toMerchant = ['DRIVER_ASSIGNED', 'DRIVER_ARRIVED', 'READY', 'CONFIRMED', 'PREPARING'];
     const toCustomer = ['PICKED_UP', 'IN_DELIVERY'];
 
     if (toMerchant.includes(status)) return 'MERCHANT';
@@ -71,6 +79,7 @@ export function isCustomerNotifiableStatus(status: string): boolean {
     const notifiable = [
         'PREPARING',        // "Comercio preparando tu pedido"
         'DRIVER_ASSIGNED',  // "Rider en camino al comercio"
+        'DRIVER_ARRIVED',   // "Repartidor llegó al comercio"
         'PICKED_UP',        // "Rider en camino hacia ti"
         'IN_DELIVERY',      // Alias for pickup confirmation
     ];
@@ -83,6 +92,7 @@ export function isCustomerNotifiableStatus(status: string): boolean {
 export const CUSTOMER_NOTIFICATION_MESSAGES: Record<string, string> = {
     PREPARING: '👨‍🍳 El comercio está preparando tu pedido',
     DRIVER_ASSIGNED: '🏍️ Un repartidor va en camino al comercio',
+    DRIVER_ARRIVED: '📍 El repartidor llegó al comercio',
     PICKED_UP: '📦 Tu pedido fue retirado, viene en camino',
     IN_DELIVERY: '🚀 Tu pedido viene en camino hacia ti',
 };
@@ -115,7 +125,7 @@ export function getNextStatuses(currentStatus: string): OrderStatus[] {
         CONFIRMED: ['PREPARING', 'CANCELLED'],
         PREPARING: ['READY', 'CANCELLED'],
         READY: ['DRIVER_ASSIGNED', 'CANCELLED'],
-        DRIVER_ASSIGNED: ['PICKED_UP', 'CANCELLED'],
+        DRIVER_ASSIGNED: ['PICKED_UP', 'CANCELLED'],  // Note: deliveryStatus also supports DRIVER_ARRIVED intermediate state
         PICKED_UP: ['IN_DELIVERY'],
         IN_DELIVERY: ['DELIVERED'],
         DELIVERED: [],
