@@ -99,6 +99,22 @@ async function getFeaturedProducts() {
     }
 }
 
+async function getTodayStats() {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const count = await prisma.order.count({
+            where: {
+                createdAt: { gte: today },
+                status: { not: "CANCELLED" },
+            },
+        });
+        return count;
+    } catch {
+        return 0;
+    }
+}
+
 async function getRecentListings() {
     try {
         const listings = await prisma.listing.findMany({
@@ -151,11 +167,24 @@ async function LiveStoreView() {
     const recentListings = await getRecentListings();
     const slides = await getHeroSlides();
     const slideInterval = settings?.heroSliderInterval ?? 5000;
+    const todayOrders = await getTodayStats();
 
     return (
         <div className="animate-fadeIn">
 
             <HeroSliderNew slides={slides} slideInterval={slideInterval} />
+
+            {/* Social Proof Banner */}
+            {todayOrders > 0 && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-y border-green-100">
+                    <div className="container mx-auto px-4 py-3 flex items-center justify-center gap-2 text-sm">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <span className="text-green-800 font-medium">
+                            {todayOrders} {todayOrders === 1 ? "pedido" : "pedidos"} hoy en Ushuaia
+                        </span>
+                    </div>
+                </div>
+            )}
             <section className="pt-4 pb-4 lg:pt-6 lg:pb-6 bg-white overflow-hidden">
                 <div className="container mx-auto px-4">
                     <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 text-center">

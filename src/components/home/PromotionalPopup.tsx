@@ -96,8 +96,11 @@ export default function PromotionalPopup() {
                         ¡Tu Primera Compra!
                     </h2>
 
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-gray-600 mb-2">
                         Registrate ahora y recibí un cupón exclusivo de bienvenida.
+                    </p>
+                    <p className="text-sm text-green-600 font-medium mb-4">
+                        Ahorrá hasta $3.000 en tu primer pedido
                     </p>
 
                     {/* Offer Box */}
