@@ -188,9 +188,47 @@ export default function TerminosPage() {
                         </p>
                     </section>
 
-                    {/* 11. Ley Aplicable */}
+                    {/* 11. Condiciones Climáticas */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Ley Aplicable y Jurisdicción</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Condiciones Climáticas y Fuerza Mayor</h2>
+                        <p className="text-gray-600 mb-4">
+                            Debido a la ubicación geográfica de Ushuaia y las condiciones climáticas extremas que pueden presentarse
+                            (nevadas intensas, vientos fuertes, caminos congelados, temperaturas bajo cero), MOOVY se reserva el
+                            derecho de suspender temporal o parcialmente el servicio de delivery cuando las condiciones meteorológicas
+                            representen un riesgo para la seguridad de los repartidores o hagan impracticable la entrega.
+                        </p>
+                        <p className="text-gray-600 mb-4">
+                            En estos casos, los pedidos ya confirmados podrán ser reprogramados o cancelados con reembolso completo.
+                            MOOVY no será responsable por demoras causadas por condiciones climáticas adversas.
+                        </p>
+                        <p className="text-gray-600">
+                            Los tiempos de entrega estimados pueden variar significativamente durante el período invernal
+                            (mayo a septiembre) y en jornadas de alerta meteorológica emitida por el Servicio Meteorológico Nacional.
+                        </p>
+                    </section>
+
+                    {/* 12. Resolución de Disputas */}
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">12. Resolución de Disputas</h2>
+                        <p className="text-gray-600 mb-4">
+                            Ante cualquier inconveniente con un pedido, producto o servicio, el usuario debe comunicarse primero
+                            con el equipo de soporte de MOOVY a través de los canales habilitados (chat de soporte en la app,
+                            email a soporte@somosmoovy.com, o WhatsApp).
+                        </p>
+                        <p className="text-gray-600 mb-4">
+                            MOOVY se compromete a mediar entre las partes (comprador, vendedor/comercio, repartidor) buscando
+                            una solución justa dentro de las 72 horas hábiles siguientes a la recepción del reclamo.
+                        </p>
+                        <p className="text-gray-600">
+                            Si la mediación no resuelve el conflicto, las partes podrán recurrir a la Oficina de Defensa del
+                            Consumidor de Tierra del Fuego o a los tribunales competentes de la ciudad de Ushuaia,
+                            conforme a la Ley 24.240 de Defensa del Consumidor.
+                        </p>
+                    </section>
+
+                    {/* 13. Ley Aplicable */}
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">13. Ley Aplicable y Jurisdicción</h2>
                         <p className="text-gray-600">
                             Estos términos se rigen por las leyes de la República Argentina.
                             Cualquier controversia será sometida a los tribunales ordinarios de la ciudad de Ushuaia,
@@ -199,9 +237,9 @@ export default function TerminosPage() {
                         </p>
                     </section>
 
-                    {/* 12. Contacto */}
+                    {/* 14. Contacto */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">12. Contacto</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">14. Contacto</h2>
                         <p className="text-gray-600">
                             Para consultas sobre estos términos: <br />
                             <strong>Email:</strong> legal@somosmoovy.com <br />

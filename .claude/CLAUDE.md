@@ -213,3 +213,5 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/ops/(protected)/repartidores/page.tsx` — Documentación en modal de detalle (DNI, licencia, seguro, VTV, CUIT)
 - `src/app/api/ops/refund/route.ts` — API de reembolso manual (marca paymentStatus REFUNDED + log en adminNotes)
 - `src/app/ops/(protected)/pedidos/[id]/page.tsx` — Botón "Procesar Reembolso" con modal y motivo
+- `src/app/(store)/page.tsx` — Banner social proof "X pedidos hoy en Ushuaia"
+- `src/app/terminos/page.tsx` — Nuevas secciones: exención climática (s11) y resolución de disputas (s12)
