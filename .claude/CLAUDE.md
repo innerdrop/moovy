@@ -193,3 +193,12 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/components/seller/NewListingForm.tsx` — Campos de peso y dimensiones en formulario
 - `src/app/vendedor/(protected)/pedidos/page.tsx` — Alerta sonora para nuevos pedidos (polling 15s + new-order.wav)
 - `src/components/layout/Footer.tsx` — 6 links legales agregados (cookies, devoluciones, cancelaciones, términos por rol)
+- `src/app/(store)/page.tsx` — Sección "Cómo funciona MOOVY" (3 pasos: Elegí, Pagá, Recibí)
+- `src/app/(store)/productos/[slug]/ProductDetailClient.tsx` — Botón compartir por WhatsApp en detalle de producto
+- `src/app/(store)/marketplace/[id]/page.tsx` — Botón compartir por WhatsApp en detalle de listing
+- `src/app/(store)/productos/loading.tsx` — Loading skeleton para listado de productos
+- `src/app/(store)/marketplace/loading.tsx` — Loading skeleton para marketplace
+- `src/app/(store)/productos/[slug]/loading.tsx` — Loading skeleton para detalle de producto
+- Schema Merchant: nuevos campos `scheduleEnabled`, `scheduleJson` (horarios de atención por día)
+- `src/components/comercios/SettingsForm.tsx` — UI de horarios de atención por día (lun-dom, open/close por día)
+- `src/app/comercios/actions.ts` — Nueva acción `updateMerchantSchedule()`

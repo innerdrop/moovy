@@ -17,7 +17,8 @@ import {
     AlertCircle,
     Loader2,
     X,
-    UserPlus
+    UserPlus,
+    Share2
 } from "lucide-react";
 
 interface Product {
@@ -242,10 +243,25 @@ export default function ProductDetailClient() {
                         {product.name}
                     </h1>
 
-                    {/* Price */}
-                    <p className="text-3xl lg:text-4xl font-bold text-[#e60012] mb-6">
-                        {formatPrice(product.price)}
-                    </p>
+                    {/* Price + Share */}
+                    <div className="flex items-center justify-between mb-6">
+                        <p className="text-3xl lg:text-4xl font-bold text-[#e60012]">
+                            {formatPrice(product.price)}
+                        </p>
+                        <button
+                            onClick={() => {
+                                const url = `${window.location.origin}/productos/${product.slug}`;
+                                const text = `${product.name} — ${formatPrice(product.price)}`;
+                                const waUrl = `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`;
+                                window.open(waUrl, "_blank");
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Compartir por WhatsApp"
+                        >
+                            <Share2 className="w-5 h-5" />
+                            <span className="hidden sm:inline">Compartir</span>
+                        </button>
+                    </div>
 
                     {/* Description */}
                     {product.description && (

@@ -57,6 +57,8 @@ export default async function ConfiguracionPage() {
                     mpEmail: merchant.mpEmail,
                     mpLinkedAt: merchant.mpLinkedAt?.toISOString() || null,
                     mpUserId: merchant.mpUserId,
+                    scheduleEnabled: merchant.scheduleEnabled,
+                    scheduleJson: merchant.scheduleJson,
                 }}
             />
         </div>

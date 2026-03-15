@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Star, Tag, User, ShoppingCart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Star, Tag, User, ShoppingCart, MessageCircle, Share2 } from "lucide-react";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.somosmoovy.com";
 
@@ -227,9 +227,21 @@ export default async function MarketplaceDetailPage({
                             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
                                 {listing.title}
                             </h1>
-                            <p className="text-3xl font-bold text-[#e60012]">
-                                ${listing.price.toLocaleString("es-AR")}
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-3xl font-bold text-[#e60012]">
+                                    ${listing.price.toLocaleString("es-AR")}
+                                </p>
+                                <a
+                                    href={`https://wa.me/?text=${encodeURIComponent(`${listing.title} — $${listing.price.toLocaleString("es-AR")}\n${APP_URL}/marketplace/${listing.id}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                                    title="Compartir por WhatsApp"
+                                >
+                                    <Share2 className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Compartir</span>
+                                </a>
+                            </div>
                         </div>
 
                         {/* Stock */}

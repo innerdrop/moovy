@@ -363,6 +363,36 @@ async function LiveStoreView() {
                 </section>
             )}
 
+            {/* Cómo funciona MOOVY */}
+            <section className="py-12 lg:py-16 bg-white border-t border-gray-100">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 text-center mb-2">
+                        Como funciona <span className="text-[#e60012]">MOOVY</span>
+                    </h2>
+                    <p className="text-gray-500 text-center mb-10 max-w-lg mx-auto">
+                        Comprar en Ushuaia nunca fue tan facil
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                        {[
+                            { step: "1", title: "Elegí", desc: "Explorá comercios y productos cercanos, o comprá en el marketplace de vendedores particulares.", icon: "🛒" },
+                            { step: "2", title: "Pagá", desc: "Pagá con MercadoPago o en efectivo al recibir. Simple y seguro.", icon: "💳" },
+                            { step: "3", title: "Recibí", desc: "Un repartidor MOOVY lo busca y te lo lleva a tu puerta. Seguilo en tiempo real.", icon: "🚀" },
+                        ].map((item) => (
+                            <div key={item.step} className="text-center">
+                                <div className="w-16 h-16 rounded-full bg-[#e60012]/10 mx-auto mb-4 flex items-center justify-center text-3xl">
+                                    {item.icon}
+                                </div>
+                                <div className="inline-flex items-center gap-2 mb-2">
+                                    <span className="w-7 h-7 rounded-full bg-[#e60012] text-white text-sm font-bold flex items-center justify-center">{item.step}</span>
+                                    <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
+                                </div>
+                                <p className="text-sm text-gray-500 max-w-xs mx-auto">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             <section className="py-16 bg-gray-50 border-t border-gray-100">
                 <div className="container mx-auto px-4 text-center">
                     <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">

@@ -348,6 +348,8 @@ model Merchant {
   banner           String?
   isActive         Boolean                   @default(true)
   isOpen           Boolean                   @default(true)
+  scheduleEnabled  Boolean                   @default(false)
+  scheduleJson     String?                   // JSON: { "1": { "open": "09:00", "close": "21:00" }, ... } (1=Mon..7=Sun, null=closed)
   isVerified       Boolean                   @default(false)
   email            String?
   phone            String?

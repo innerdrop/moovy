@@ -486,6 +486,34 @@ export async function updateMerchant(formData: FormData) {
     }
 }
 
+export async function updateMerchantSchedule(scheduleEnabled: boolean, scheduleJson: string | null) {
+    const session = await auth();
+    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+        return { error: "No autorizado" };
+    }
+
+    try {
+        const merchant = await prisma.merchant.findFirst({
+            where: { ownerId: session.user.id },
+        });
+
+        if (!merchant) {
+            return { error: "No se encontró un comercio asociado a tu cuenta." };
+        }
+
+        await prisma.merchant.update({
+            where: { id: merchant.id },
+            data: { scheduleEnabled, scheduleJson },
+        });
+
+        revalidatePath("/comercios/configuracion");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating schedule:", error);
+        return { error: "Error al actualizar los horarios." };
+    }
+}
+
 export async function toggleMerchantOpen(isOpen: boolean) {
     const session = await auth();
     if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
