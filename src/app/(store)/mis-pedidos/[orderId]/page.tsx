@@ -25,6 +25,12 @@ import {
 import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
 import RateSellerModal from "@/components/orders/RateSellerModal";
+import dynamic from "next/dynamic";
+
+const OrderTrackingMiniMap = dynamic(() => import("@/components/orders/OrderTrackingMiniMap"), {
+    ssr: false,
+    loading: () => <div className="h-[220px] bg-gray-100 rounded-xl animate-pulse" />,
+});
 
 interface OrderDetail {
     id: string;
@@ -52,15 +58,21 @@ interface OrderDetail {
         floor?: string;
         apartment?: string;
         notes?: string;
+        latitude?: number;
+        longitude?: number;
     };
     merchant?: {
         id: string;
         name: string;
         address?: string;
         phone?: string;
+        latitude?: number;
+        longitude?: number;
     };
     driver?: {
         id: string;
+        latitude?: number;
+        longitude?: number;
         user: {
             name: string;
             phone?: string;
@@ -83,6 +95,13 @@ interface OrderDetail {
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
+    PENDING: { label: "Pendiente", color: "text-yellow-600", bgColor: "bg-yellow-100", icon: <Clock className="w-5 h-5" /> },
+    CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
+    PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-5 h-5" /> },
+    READY: { label: "Listo para retirar", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
+    DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-cyan-600", bgColor: "bg-cyan-100", icon: <Truck className="w-5 h-5" /> },
+    PICKED_UP: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
+    IN_DELIVERY: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
 };
@@ -115,6 +134,22 @@ export default function OrderDetailPage() {
 
         if (orderId) loadOrder();
     }, [orderId]);
+
+    // Poll for status updates on active orders
+    const isActiveOrder = order && !["DELIVERED", "CANCELLED"].includes(order.status);
+    useEffect(() => {
+        if (!isActiveOrder || !orderId) return;
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/orders/${orderId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setOrder(data);
+                }
+            } catch {}
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [isActiveOrder, orderId]);
 
     const handleReorder = async () => {
         if (!order) return;
@@ -238,6 +273,24 @@ export default function OrderDetailPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Live Tracking Map — show for active orders with driver */}
+                {isActiveOrder && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order.status) && (
+                    <OrderTrackingMiniMap
+                        orderId={order.id}
+                        orderStatus={order.status}
+                        merchantLat={order.merchant?.latitude}
+                        merchantLng={order.merchant?.longitude}
+                        merchantName={order.merchant?.name}
+                        customerLat={order.address?.latitude}
+                        customerLng={order.address?.longitude}
+                        customerAddress={`${order.address.street} ${order.address.number}`}
+                        initialDriverLat={order.driver?.latitude}
+                        initialDriverLng={order.driver?.longitude}
+                        height="220px"
+                        showEta
+                    />
+                )}
 
                 {/* Merchant Info */}
                 {order.merchant && (
