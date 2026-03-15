@@ -17,10 +17,13 @@ interface UserData {
     createdAt: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export default function ClientsPage() {
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
     // Create form state
@@ -57,6 +60,11 @@ export default function ClientsPage() {
         fetchUsers();
     }, []);
 
+    // Reset page to 1 when search changes
+    useEffect(() => {
+        setPage(1);
+    }, [search]);
+
     const fetchUsers = async () => {
         try {
             const res = await fetch("/api/admin/users");
@@ -77,6 +85,9 @@ export default function ClientsPage() {
             user.email.toLowerCase().includes(search.toLowerCase())
         )
     );
+
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    const paginatedUsers = filteredUsers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
     // Create user
     const handleCreate = async (e: React.FormEvent) => {
@@ -184,10 +195,10 @@ export default function ClientsPage() {
     };
 
     const toggleSelectAll = () => {
-        if (selectedUsers.length === filteredUsers.length) {
+        if (selectedUsers.length === paginatedUsers.length) {
             setSelectedUsers([]);
         } else {
-            setSelectedUsers(filteredUsers.map(u => u.id));
+            setSelectedUsers(paginatedUsers.map(u => u.id));
         }
     };
 
@@ -252,7 +263,7 @@ export default function ClientsPage() {
                     <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
                         <input
                             type="checkbox"
-                            checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                            checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
                             onChange={toggleSelectAll}
                             className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy"
                         />
@@ -291,7 +302,7 @@ export default function ClientsPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredUsers.map((user) => (
+                                paginatedUsers.map((user) => (
                                     <tr key={user.id} className={`hover:bg-slate-50/50 transition-colors ${selectedUsers.includes(user.id) ? 'bg-red-50/30' : ''}`}>
                                         <td className="px-4 py-4">
                                             <input
@@ -366,7 +377,7 @@ export default function ClientsPage() {
                             No se encontraron clientes.
                         </div>
                     ) : (
-                        filteredUsers.map((user) => (
+                        paginatedUsers.map((user) => (
                             <div
                                 key={user.id}
                                 className={`bg-white rounded-2xl shadow-sm border p-4 transition-all relative overflow-hidden ${selectedUsers.includes(user.id) ? 'border-moovy ring-1 ring-moovy bg-red-50/30' : 'border-slate-100'}`}
@@ -439,6 +450,34 @@ export default function ClientsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4">
+                    <span className="text-sm text-gray-500">
+                        Mostrando {((page - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(page * ITEMS_PER_PAGE, filteredUsers.length)} de {filteredUsers.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-sm font-medium text-gray-700">
+                            {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Create Modal */}
             {showCreateForm && (

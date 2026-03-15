@@ -115,6 +115,7 @@ export default function ConfigLogisticaPage() {
     const [editedRates, setEditedRates] = useState<Record<string, Partial<DeliveryRateItem>>>({});
     const [loadingRates, setLoadingRates] = useState(true);
     const [savingRates, setSavingRates] = useState(false);
+    const [simDistance, setSimDistance] = useState(5);
 
     // ── Load all data ───────────────────────────────────────────────────────────
     useEffect(() => {
@@ -507,14 +508,14 @@ export default function ConfigLogisticaPage() {
                                         <th className="text-left p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoría</th>
                                         <th className="text-center p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Precio Base (ARS)</th>
                                         <th className="text-center p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Precio/km (ARS)</th>
-                                        <th className="text-center p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Costo 5km</th>
+                                        <th className="text-center p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Costo {simDistance}km</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {rates.map((rate) => {
                                         const base = getRateValue(rate, "basePriceArs");
                                         const perKm = getRateValue(rate, "pricePerKmArs");
-                                        const cost5km = base + perKm * 5;
+                                        const cost = base + perKm * simDistance;
                                         return (
                                             <tr key={rate.id} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="p-3">
@@ -552,7 +553,7 @@ export default function ConfigLogisticaPage() {
                                                 </td>
                                                 <td className="p-3 text-center">
                                                     <span className="font-black text-green-700 text-base">
-                                                        ${cost5km.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                        ${cost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -565,15 +566,29 @@ export default function ConfigLogisticaPage() {
                         {/* Live Preview */}
                         <div className="bg-navy text-white rounded-2xl p-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 -mr-24 -mt-24 rounded-full" />
-                            <div className="flex items-center gap-3 mb-4">
-                                <Calculator className="w-5 h-5 text-green-400" />
-                                <h3 className="text-sm font-black uppercase tracking-widest">Simulador Rápido — 5 KM</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <Calculator className="w-5 h-5 text-green-400" />
+                                    <h3 className="text-sm font-black uppercase tracking-widest">Simulador de Costos</h3>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-bold text-white/60">Distancia:</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={100}
+                                        value={simDistance}
+                                        onChange={(e) => setSimDistance(Math.max(1, parseInt(e.target.value) || 1))}
+                                        className="w-16 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-center font-bold text-white focus:ring-2 focus:ring-green-400 focus:outline-none text-sm"
+                                    />
+                                    <span className="text-xs font-bold text-white/60">km</span>
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                                 {rates.map((rate) => {
                                     const base = getRateValue(rate, "basePriceArs");
                                     const perKm = getRateValue(rate, "pricePerKmArs");
-                                    const cost = base + perKm * 5;
+                                    const cost = base + perKm * simDistance;
                                     return (
                                         <div key={rate.id} className="p-3 bg-white/10 rounded-xl">
                                             <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-1">

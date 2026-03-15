@@ -136,6 +136,14 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Battery monitor**: hook `useBattery()` de `@/hooks/useBattery` muestra banner cuando batería < 20%
 - **Llamar cliente (card mode)**: botón teléfono visible en card de pedido activo (modo home) además del BottomSheet
 
+## Patrones panel OPS (refactor v2)
+- **Paginación server-side**: API retorna `{ items, total, page, limit, totalPages }`, frontend con prev/next
+- **Paginación client-side**: `ITEMS_PER_PAGE = 20`, slice del array filtrado, reset page al cambiar filtros
+- **Filtros fecha OPS**: inputs type="date" con `dateFrom`/`dateTo` como query params
+- **Audit log**: usar `logAudit({ action, entityType, entityId, userId, details })` de `@/lib/audit`
+- **Bulk operations**: checkbox selection + sequential PATCH per item
+- **Quick replies soporte**: array de strings, onClick popula el input (no auto-envía)
+
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
@@ -239,3 +247,21 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/api/health/route.ts` — Health check Next.js: DB connectivity + socket-server status
 - `scripts/socket-server.ts` — Health check `GET /health` con estado de cada cron (consecutiveFailures, lastRunAt, lastSuccessAt)
 - Migrado `session.user.role` → `hasAnyRole()` en: support/chats/route.ts, support/chats/[id]/route.ts, driver/location/route.ts, auth/validate/route.ts
+- Schema: modelo `AuditLog` con action, entityType, entityId, userId, details + índices
+- `src/lib/audit.ts` — Utility `logAudit()` para registrar acciones admin
+- `src/app/api/admin/orders/route.ts` — Paginación server-side (page, limit, dateFrom, dateTo, search)
+- `src/app/api/admin/orders/[id]/reassign/route.ts` — POST reasignación de repartidor en pedido
+- `src/app/api/ops/revenue/route.ts` — Filtros dateFrom/dateTo opcionales
+- `src/app/ops/(protected)/pedidos/page.tsx` — Paginación, filtros fecha, búsqueda
+- `src/app/ops/(protected)/pedidos/[id]/page.tsx` — Modal reasignación driver + info merchant
+- `src/app/ops/(protected)/clientes/page.tsx` — Paginación client-side (20 por página)
+- `src/app/ops/(protected)/clientes/[id]/page.tsx` — Detalle cliente con historial pedidos y stats
+- `src/app/ops/(protected)/comercios/page.tsx` — Paginación + operaciones bulk (verificar/suspender)
+- `src/app/ops/(protected)/vendedores/page.tsx` — Paginación + link "Abrir Panel" a detalle
+- `src/app/ops/(protected)/vendedores/[id]/page.tsx` — Detalle vendedor: perfil, stats, editar bio/comisión, verificar/suspender, listings
+- `src/app/ops/(protected)/revenue/page.tsx` — Export CSV + filtros fecha
+- `src/app/ops/(protected)/soporte/page.tsx` — 5 respuestas rápidas predefinidas
+- `src/app/ops/(protected)/repartidores/page.tsx` — Indicadores de documentación (subido/faltante) en modal
+- `src/app/ops/(protected)/configuracion-logistica/page.tsx` — Simulador de costos con distancia configurable (antes hardcoded 5km)
+- `src/app/ops/(protected)/moderacion/page.tsx` — Modal detalle con galería imágenes + modal rechazo con motivo
+- `src/app/ops/(protected)/comisiones/page.tsx` — Botón "Marcar Pagado", CSV export, KPIs, búsqueda
