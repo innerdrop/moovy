@@ -3,6 +3,7 @@
 // Only updates DB if driver moved significantly (>10 meters)
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance } from "@/lib/geo";
 
@@ -13,8 +14,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "DRIVER") {
+        if (!hasAnyRole(session, ["DRIVER"])) {
             return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
         }
 
@@ -102,13 +102,14 @@ export async function GET() {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (!["DRIVER", "ADMIN"].includes(role)) {
+        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
+        const isDriver = hasAnyRole(session, ["DRIVER"]);
+
         // For drivers, return their own location
-        if (role === "DRIVER") {
+        if (isDriver) {
             const driver = await prisma.driver.findUnique({
                 where: { userId: session.user.id },
                 select: {

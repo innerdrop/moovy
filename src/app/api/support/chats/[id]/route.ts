@@ -17,7 +17,7 @@ export async function GET(
 
         const { id } = await params;
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         // Get chat
         const chat = await prisma.supportChat.findUnique({
@@ -42,12 +42,12 @@ export async function GET(
         }
 
         // Check permission
-        if (role !== "ADMIN" && chat.userId !== userId) {
+        if (!isAdmin && chat.userId !== userId) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
         // Mark messages as read
-        if (role === "ADMIN") {
+        if (isAdmin) {
             // Admin reads user messages
             await prisma.supportMessage.updateMany({
                 where: { chatId: id, isFromAdmin: false },
@@ -81,7 +81,7 @@ export async function POST(
 
         const { id } = await params;
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         // Get chat
         const chat = await prisma.supportChat.findUnique({ where: { id } });
@@ -91,7 +91,7 @@ export async function POST(
         }
 
         // Check permission
-        if (role !== "ADMIN" && chat.userId !== userId) {
+        if (!isAdmin && chat.userId !== userId) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
@@ -107,7 +107,7 @@ export async function POST(
                 chatId: id,
                 senderId: userId,
                 content: content.trim(),
-                isFromAdmin: role === "ADMIN"
+                isFromAdmin: isAdmin
             },
             include: {
                 sender: {

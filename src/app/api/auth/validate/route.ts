@@ -1,6 +1,7 @@
 // API Route: Validate Session and Auth Secret Strength
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole, getUserRoles } from "@/lib/auth-utils";
 
 // Check auth configuration on startup
 function validateAuthConfig() {
@@ -29,14 +30,14 @@ export async function GET() {
         const issues = validateAuthConfig();
 
         // Only show config issues to admins
-        const isAdmin = (session?.user as any)?.role === "ADMIN";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         return NextResponse.json({
             authenticated: !!session,
             user: session ? {
                 name: session.user?.name,
                 email: session.user?.email,
-                role: (session.user as any)?.role,
+                roles: getUserRoles(session),
             } : null,
             configIssues: isAdmin ? issues : undefined,
             securityStatus: issues.length === 0 ? "OK" : "WARNING",

@@ -1,6 +1,7 @@
 // API: Support Chat CRUD
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get user's support chats or all chats for admin
@@ -12,11 +13,11 @@ export async function GET(request: NextRequest) {
         }
 
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         let chats;
 
-        if (role === "ADMIN") {
+        if (isAdmin) {
             // Admin sees all chats
             chats = await prisma.supportChat.findMany({
                 include: {
@@ -90,10 +91,9 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
 
         // Only merchants and drivers can create support chats
-        if (role !== "MERCHANT" && role !== "DRIVER") {
+        if (!hasAnyRole(session, ["MERCHANT", "DRIVER"])) {
             return NextResponse.json({ error: "Solo comercios y repartidores pueden usar el chat de soporte" }, { status: 403 });
         }
 
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
 
         // Get merchant ID if user is a merchant
         let merchantId = null;
-        if (role === "MERCHANT") {
+        if (hasAnyRole(session, ["MERCHANT"])) {
             const merchant = await prisma.merchant.findFirst({
                 where: { ownerId: userId }
             });

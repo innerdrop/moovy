@@ -40,9 +40,70 @@ function verifySocketToken(token: string): { userId: string; role: string } | nu
     }
 }
 
+// ─── Cron Health Tracking ────────────────────────────────────────────────────
+
+interface CronStatus {
+    lastRunAt: string | null;
+    lastSuccessAt: string | null;
+    consecutiveFailures: number;
+    lastError: string | null;
+}
+
+const cronHealth: Record<string, CronStatus> = {
+    "assignment-timeout": { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
+    "merchant-timeout":   { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
+    "seller-resume":      { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
+    "scheduled-notify":   { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
+};
+
+function cronSuccess(name: string) {
+    const now = new Date().toISOString();
+    cronHealth[name].lastRunAt = now;
+    cronHealth[name].lastSuccessAt = now;
+    cronHealth[name].consecutiveFailures = 0;
+    cronHealth[name].lastError = null;
+}
+
+function cronFailure(name: string, error: string) {
+    cronHealth[name].lastRunAt = new Date().toISOString();
+    cronHealth[name].consecutiveFailures++;
+    cronHealth[name].lastError = error;
+    // Log warning if 3+ consecutive failures
+    if (cronHealth[name].consecutiveFailures >= 3) {
+        console.error(`[HEALTH WARNING] Cron "${name}" has ${cronHealth[name].consecutiveFailures} consecutive failures: ${error}`);
+    }
+}
+
+const startedAt = new Date().toISOString();
+
 // ─── HTTP & Socket.IO Server ─────────────────────────────────────────────────
 
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+    // Health check endpoint for external monitoring
+    if (req.method === "GET" && req.url === "/health") {
+        const connectedDrivers = driverSockets.size;
+        const cronStatuses = Object.entries(cronHealth).map(([name, status]) => ({
+            name,
+            ...status,
+            healthy: status.consecutiveFailures < 3,
+        }));
+        const allCronsHealthy = cronStatuses.every(c => c.healthy);
+
+        const body = JSON.stringify({
+            status: allCronsHealthy ? "ok" : "degraded",
+            uptime: startedAt,
+            connectedDrivers,
+            crons: cronStatuses,
+        });
+
+        res.writeHead(allCronsHealthy ? 200 : 503, {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store",
+        });
+        res.end(body);
+        return;
+    }
+});
 
 const io = new Server(httpServer, {
     cors: {
@@ -295,13 +356,16 @@ httpServer.listen(PORT, () => {
                 }
             });
             if (res.ok) {
+                cronSuccess("assignment-timeout");
                 const data = await res.json();
                 if (data.processed > 0) {
                     console.log(`[Cron] Processed ${data.processed} expired assignment(s)`);
                 }
+            } else {
+                cronFailure("assignment-timeout", `HTTP ${res.status}`);
             }
-        } catch (e) {
-            // Silent - Next.js might not be ready yet
+        } catch (e: any) {
+            cronFailure("assignment-timeout", e.message || "fetch error");
         }
     }, 15_000);
 
@@ -317,13 +381,16 @@ httpServer.listen(PORT, () => {
                 }
             });
             if (res.ok) {
+                cronSuccess("merchant-timeout");
                 const data = await res.json();
                 if (data.cancelled > 0) {
                     console.log(`[Cron] Merchant timeout: cancelled ${data.cancelled} order(s)`);
                 }
+            } else {
+                cronFailure("merchant-timeout", `HTTP ${res.status}`);
             }
-        } catch (e) {
-            // Silent - Next.js might not be ready yet
+        } catch (e: any) {
+            cronFailure("merchant-timeout", e.message || "fetch error");
         }
     }, 60_000);
 
@@ -339,13 +406,16 @@ httpServer.listen(PORT, () => {
                 }
             });
             if (res.ok) {
+                cronSuccess("seller-resume");
                 const data = await res.json();
                 if (data.resumed > 0) {
                     console.log(`[Cron] Resumed ${data.resumed} paused seller(s)`);
                 }
+            } else {
+                cronFailure("seller-resume", `HTTP ${res.status}`);
             }
-        } catch (e) {
-            // Silent - Next.js might not be ready yet
+        } catch (e: any) {
+            cronFailure("seller-resume", e.message || "fetch error");
         }
     }, 300_000);
 
@@ -361,13 +431,16 @@ httpServer.listen(PORT, () => {
                 }
             });
             if (res.ok) {
+                cronSuccess("scheduled-notify");
                 const data = await res.json();
                 if (data.notified > 0 || data.cancelled > 0) {
                     console.log(`[Cron] Scheduled: notified ${data.notified || 0}, cancelled ${data.cancelled || 0}`);
                 }
+            } else {
+                cronFailure("scheduled-notify", `HTTP ${res.status}`);
             }
-        } catch (e) {
-            // Silent - Next.js might not be ready yet
+        } catch (e: any) {
+            cronFailure("scheduled-notify", e.message || "fetch error");
         }
     }, 300_000);
 });

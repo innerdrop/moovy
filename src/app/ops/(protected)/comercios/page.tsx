@@ -19,7 +19,8 @@ import {
     Store,
     User,
     Download,
-    Check
+    Check,
+    X
 } from "lucide-react";
 
 interface Merchant {
@@ -47,11 +48,14 @@ interface Merchant {
     } | null;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export default function ComerciosPage() {
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
+    const [page, setPage] = useState(1);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [selectedMerchants, setSelectedMerchants] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
@@ -75,10 +79,14 @@ export default function ComerciosPage() {
 
     useEffect(() => {
         fetchMerchants();
+        setPage(1);
     }, [statusFilter]);
 
     useEffect(() => {
-        const timer = setTimeout(() => fetchMerchants(), 300);
+        const timer = setTimeout(() => {
+            fetchMerchants();
+            setPage(1);
+        }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
@@ -223,8 +231,11 @@ export default function ComerciosPage() {
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sincronizando comercios...</p>
                 </div>
             ) : merchants.length > 0 ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {merchants.map((merchant) => (
+                <>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {merchants
+                            .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+                            .map((merchant) => (
                         <div key={merchant.id} className="group bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col relative">
                             {/* Checkbox */}
                             <div className="absolute top-3 right-3 z-10">
@@ -360,7 +371,32 @@ export default function ComerciosPage() {
                             </div>
                         </div>
                     ))}
-                </div>
+                    </div>
+                    {!loading && merchants.length > 0 && Math.ceil(merchants.length / ITEMS_PER_PAGE) > 1 && (
+                        <div className="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4">
+                            <span className="text-sm text-gray-500">
+                                Mostrando {((page - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(page * ITEMS_PER_PAGE, merchants.length)} de {merchants.length}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Anterior
+                                </button>
+                                <span className="text-sm font-medium text-gray-700">{page} / {Math.ceil(merchants.length / ITEMS_PER_PAGE)}</span>
+                                <button
+                                    onClick={() => setPage(p => Math.min(Math.ceil(merchants.length / ITEMS_PER_PAGE), p + 1))}
+                                    disabled={page === Math.ceil(merchants.length / ITEMS_PER_PAGE)}
+                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             ) : (
                 <div className="bg-white rounded-3xl p-20 text-center shadow-sm border border-slate-100">
                     <Building2 className="w-20 h-20 text-slate-100 mx-auto mb-4" />

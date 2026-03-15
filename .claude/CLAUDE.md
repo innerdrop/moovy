@@ -139,9 +139,9 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
-- Quedan ~8 extracciones de `(session.user as any).role` en support/chats y driver/location (no son comparaciones, son extracciones para lógica condicional)
+- ~~Quedan ~8 extracciones de `(session.user as any).role`~~ **RESUELTO** — migrado a `hasAnyRole()` / `getUserRoles()` (solo quedan 2 en `auth.ts` que son la fuente)
 - Portal COMEX eliminado (era legacy, apuntaba a rutas `/partner/` inexistentes)
-- Crons corren dentro del socket-server (si se cae, todos mueren) — necesita health check independiente
+- ~~Crons sin health check~~ **RESUELTO** — socket-server expone `GET /health` con estado de cada cron + `GET /api/health` en Next.js verifica DB + socket
 
 ## Lo que NO existe todavía
 - Pago con MP en producción (requiere credenciales productivas)
@@ -236,3 +236,6 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/components/rider/SwipeToConfirm.tsx` — Componente slide-to-confirm para avance de estado de pedido (reemplaza botón tap)
 - `src/hooks/useBattery.ts` — Hook Battery Status API: level (0-1), charging, supported. Banner en dashboard < 20%
 - Portal repartidor: botón llamar cliente visible en card pedido activo (modo home), swipe-to-advance, battery warning
+- `src/app/api/health/route.ts` — Health check Next.js: DB connectivity + socket-server status
+- `scripts/socket-server.ts` — Health check `GET /health` con estado de cada cron (consecutiveFailures, lastRunAt, lastSuccessAt)
+- Migrado `session.user.role` → `hasAnyRole()` en: support/chats/route.ts, support/chats/[id]/route.ts, driver/location/route.ts, auth/validate/route.ts
