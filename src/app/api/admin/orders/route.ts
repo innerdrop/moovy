@@ -24,8 +24,9 @@ export async function GET(request: NextRequest) {
         const dateFrom = searchParams.get("dateFrom");
         const dateTo = searchParams.get("dateTo");
         const search = searchParams.get("search");
+        const merchantId = searchParams.get("merchantId");
 
-        const where: any = {};
+        const where: any = { deletedAt: null };
 
         // Status filter
         if (status && status !== "all") {
@@ -41,6 +42,11 @@ export async function GET(request: NextRequest) {
             if (dateTo) {
                 where.createdAt.lte = new Date(dateTo);
             }
+        }
+
+        // Merchant filter
+        if (merchantId) {
+            where.merchantId = merchantId;
         }
 
         // Search filter (orderNumber or user name/email)
@@ -132,9 +138,10 @@ export async function DELETE(request: NextRequest) {
             }
         }
 
-        // Delete orders (cascade will delete items)
-        await prisma.order.deleteMany({
-            where: { id: { in: orderIds } }
+        // Soft delete orders
+        await prisma.order.updateMany({
+            where: { id: { in: orderIds } },
+            data: { deletedAt: new Date() }
         });
 
         return NextResponse.json({

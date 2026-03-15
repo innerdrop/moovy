@@ -26,7 +26,8 @@ import {
     Image as ImageIcon,
     UserCheck,
     Shield,
-    TrendingUp
+    TrendingUp,
+    Archive
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -81,6 +82,7 @@ const navSections: NavSection[] = [
             { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
+            { href: "/ops/backups", icon: Archive, label: "Backups" },
         ],
     },
 ];

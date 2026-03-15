@@ -263,6 +263,7 @@ model Order {
   attemptedDriverIds  Json?
   lastAssignmentAt    DateTime?
   pendingDriverId     String?
+  deletedAt           DateTime?
   address             Address     @relation(fields: [addressId], references: [id])
   driver              Driver?     @relation(fields: [driverId], references: [id])
   merchant            Merchant?   @relation(fields: [merchantId], references: [id])
@@ -287,6 +288,7 @@ model Order {
   @@index([driverId])
   @@index([userId])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model OrderItem {
@@ -636,6 +638,10 @@ model OrderBackup {
   deletedBy   String?
   deletedAt   DateTime @default(now())
   createdAt   DateTime @default(now())
+
+  @@index([backupName])
+  @@index([deletedAt])
+  @@index([orderId])
 }
 
 model Favorite {

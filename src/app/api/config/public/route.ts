@@ -6,6 +6,11 @@ import { prisma } from "@/lib/prisma";
 const PUBLIC_KEYS = new Set([
     "merchant_confirm_timeout_seconds",
     "driver_response_timeout_seconds",
+    "points_per_dollar",
+    "signup_bonus",
+    "referral_bonus",
+    "min_points_to_redeem",
+    "max_discount_percent",
 ]);
 
 export async function GET(request: Request) {

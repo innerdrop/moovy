@@ -146,6 +146,12 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Bulk operations**: checkbox selection + sequential PATCH per item
 - **Quick replies soporte**: array de strings, onClick popula el input (no auto-envía)
 
+## Patrones config dinámica (v3)
+- **Config pública puntos**: GET `/api/config/points` (sin auth) retorna pointsPerDollar, signupBonus, referralBonus, etc.
+- **Config pública niveles**: GET `/api/config/levels` (sin auth) retorna levels con benefits dinámicos
+- **Soft delete**: Orders tienen campo `deletedAt` — `null` = activo, `DateTime` = eliminado
+- **Backup restore**: POST `/api/admin/backups` con `{ backupId }` restaura pedido soft-deleted
+
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
@@ -273,3 +279,27 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/ops/page.tsx` — Redirect root: auth → dashboard, no auth → login
 - `src/components/rider/views/SettingsView.tsx` — Configuración repartidor: tema (auto/light/dark), sonido, vibración, app de mapas (Google/Waze), alerta batería configurable, auto-desconexión
 - Dashboard repartidor rediseñado: layout Status-First, hero connect button, animated earnings counter, auto-expand map con pedido activo, trend card motivacional, searching animation
+- **Block B OPS - Merchant Detail Upgrade (2026-03-15)**:
+  - `src/app/ops/(protected)/comercios/[id]/page.tsx` — REESCRITO: 7 tabs (Info, Fiscal, Pedidos, Productos, Ganancias, Horarios, Notas)
+  - Nuevos tabs: **Pedidos** (tabla historial), **Productos** (grid), **Ganancias** (KPI revenue), **Horarios** (schedule editor)
+  - Nuevos botones header: Toggle Active/Suspended, Toggle Open/Closed
+  - 5º stat card: Rating con star icon
+  - Sidebar additions: Commission rate editor + MercadoPago connection status
+  - Lazy loading: Tabs fetch data on-demand (orders, products, earnings)
+  - Schedule editor: Día-por-día con toggle enable/disable + time inputs open/close
+  - API updates: `/api/admin/merchants/[id]` soporta PATCH para commissionRate, scheduleEnabled, scheduleJson
+  - API updates: `/api/admin/orders` soporte merchantId filter
+  - API updates: `/api/merchant/earnings` soporte merchantId para ADMIN queries
+  - Merchant interface extended: `commissionRate`, `rating`, `scheduleEnabled`, `scheduleJson`, `mpAccessToken`
+- **Block A OPS - Config Dinámica (2026-03-15)**:
+  - `src/app/api/config/points/route.ts` — API pública de config de puntos (lee de PointsConfig DB)
+  - `src/app/api/config/levels/route.ts` — API pública de niveles MOOVER con beneficios dinámicos
+  - `src/app/moover/page.tsx` — REESCRITO: valores dinámicos (pointsPerDollar, signupBonus, referralBonus, etc.)
+  - `src/app/api/config/public/route.ts` — Whitelist expandida (5 keys nuevas de puntos)
+- **Block C OPS - Backups + Soft Delete (2026-03-15)**:
+  - Schema Order: campo `deletedAt` (DateTime?) + índice para soft delete
+  - Schema OrderBackup: índices en backupName, deletedAt, orderId
+  - `src/app/api/admin/orders/route.ts` — DELETE ahora es soft delete (setea deletedAt), GET excluye eliminados
+  - `src/app/api/admin/backups/route.ts` — API para listar backups (paginado, search) y restaurar pedidos
+  - `src/app/ops/(protected)/backups/page.tsx` — Visor de copias de seguridad con detalle y restauración
+  - `src/components/ops/OpsSidebar.tsx` — Link "Backups" en sección Sistema

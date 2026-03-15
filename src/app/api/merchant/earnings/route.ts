@@ -1,21 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAnyRole } from "@/lib/auth-utils";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const merchantId = searchParams.get("merchantId");
         const userId = (session.user as any).id;
 
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: userId },
-            select: { id: true, commissionRate: true },
-        });
+        // If merchantId is provided and user is ADMIN, use it. Otherwise use user's own merchant
+        let merchant;
+        if (merchantId && hasAnyRole(session, ["ADMIN"])) {
+            merchant = await prisma.merchant.findUnique({
+                where: { id: merchantId },
+                select: { id: true, commissionRate: true },
+            });
+        } else {
+            merchant = await prisma.merchant.findFirst({
+                where: { ownerId: userId },
+                select: { id: true, commissionRate: true },
+            });
+        }
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });

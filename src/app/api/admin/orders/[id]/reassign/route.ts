@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -36,8 +36,9 @@ export async function POST(
         }
 
         // Update order with new driver
+        const { id } = await params;
         const updatedOrder = await prisma.order.update({
-            where: { id: params.id },
+            where: { id },
             data: { driverId },
             include: {
                 items: true,

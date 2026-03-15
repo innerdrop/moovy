@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Star, Gift, Users, Award, TrendingUp, Crown, Zap, ChevronRight, CheckCircle2, ArrowRight, Instagram, ShoppingBag } from "lucide-react";
 import { MOOVER_LEVELS } from "@/lib/moover-level";
+import { useEffect, useState } from "react";
 
 // Floating Star Component
 function FloatingStar({ delay, duration, left, top, size = 4 }: { delay: number, duration: number, left: string, top: string, size?: number }) {
@@ -21,19 +22,73 @@ function FloatingStar({ delay, duration, left, top, size = 4 }: { delay: number,
     );
 }
 
-// Extended level data with benefits (UI-specific)
-const LEVEL_BENEFITS: Record<string, string[]> = {
-    Moover: ["1 punto por cada $1 gastado", "Acceso a descuentos base"],
-    Pro: ["Todo lo de Moover", "5% OFF en envíos", "Sorteos exclusivos"],
-    Leyenda: ["Todo lo de Pro", "Envíos gratis > $20k", "Atención prioritaria 24/7"],
-};
+interface PointsConfig {
+    pointsPerDollar: number;
+    signupBonus: number;
+    referralBonus: number;
+    refereeBonus: number;
+    reviewBonus: number;
+    minPointsToRedeem: number;
+    maxDiscountPercent: number;
+    pointsValue: number;
+    pointsExpire: boolean;
+}
 
-const LEVELS = MOOVER_LEVELS.map(l => ({
-    ...l,
-    benefits: LEVEL_BENEFITS[l.name] || [],
-}));
+interface Level {
+    name: string;
+    min: number;
+    max: number;
+    color: string;
+    benefits: string[];
+}
 
 export default function MooverPage() {
+    const [config, setConfig] = useState<PointsConfig | null>(null);
+    const [levels, setLevels] = useState<Level[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchConfigs = async () => {
+            try {
+                const [pointsRes, levelsRes] = await Promise.all([
+                    fetch("/api/config/points"),
+                    fetch("/api/config/levels")
+                ]);
+
+                if (pointsRes.ok) {
+                    const pointsData = await pointsRes.json();
+                    setConfig(pointsData);
+                }
+
+                if (levelsRes.ok) {
+                    const levelsData = await levelsRes.json();
+                    setLevels(levelsData.levels || []);
+                }
+            } catch (error) {
+                console.error("Failed to fetch configs:", error);
+                // Fall back to defaults on error
+                setConfig({
+                    pointsPerDollar: 1,
+                    signupBonus: 250,
+                    referralBonus: 500,
+                    refereeBonus: 250,
+                    reviewBonus: 25,
+                    minPointsToRedeem: 500,
+                    maxDiscountPercent: 15,
+                    pointsValue: 0.015,
+                    pointsExpire: false
+                });
+                setLevels(MOOVER_LEVELS.map(l => ({
+                    ...l,
+                    benefits: []
+                })));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchConfigs();
+    }, []);
     return (
         <div className="min-h-screen bg-white font-sans relative overflow-hidden">
             {/* Background Stars */}
@@ -123,7 +178,7 @@ export default function MooverPage() {
                                     <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-black">2</div>
                                     <h3 className="font-bold text-gray-900 text-lg">Acumulá</h3>
                                 </div>
-                                <p className="text-sm text-gray-500">Ganá 1 punto por cada $1 gastado. También sumás puntos invitando amigos.</p>
+                                <p className="text-sm text-gray-500">Ganá {config?.pointsPerDollar ?? 1} punto{config?.pointsPerDollar !== 1 ? 's' : ''} por cada $1 gastado. También sumás puntos invitando amigos.</p>
                                 <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
                                     <ChevronRight className="w-6 h-6 text-gray-300" />
                                 </div>
@@ -158,8 +213,8 @@ export default function MooverPage() {
                                 <TrendingUp className="w-6 h-6 text-green-600" />
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Comprando</h3>
-                            <p className="text-gray-500 text-sm mb-3">Ganá 1 punto por cada $1 gastado en cualquier pedido.</p>
-                            <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">+1 punto / $1</span>
+                            <p className="text-gray-500 text-sm mb-3">Ganá {config?.pointsPerDollar ?? 1} punto{config?.pointsPerDollar !== 1 ? 's' : ''} por cada $1 gastado en cualquier pedido.</p>
+                            <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">+{config?.pointsPerDollar ?? 1} punto{config?.pointsPerDollar !== 1 ? 's' : ''} / $1</span>
                         </div>
 
                         <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -168,7 +223,7 @@ export default function MooverPage() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Invitando Amigos</h3>
                             <p className="text-gray-500 text-sm mb-3">Cuando tu amigo hace su primera compra, los dos ganan puntos.</p>
-                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">+500 puntos</span>
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">+{config?.referralBonus ?? 500} puntos</span>
                         </div>
 
                         <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -177,7 +232,7 @@ export default function MooverPage() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Bono de Bienvenida</h3>
                             <p className="text-gray-500 text-sm mb-3">Al registrarte y hacer tu primera compra, recibís puntos extra.</p>
-                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">+250 puntos</span>
+                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 250} puntos</span>
                         </div>
                     </div>
                 </div>
@@ -194,7 +249,7 @@ export default function MooverPage() {
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-                        {LEVELS.map((level) => (
+                        {levels.length > 0 ? levels.map((level) => (
                             <div key={level.name} className="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition-shadow">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div
@@ -219,7 +274,27 @@ export default function MooverPage() {
                                     ))}
                                 </ul>
                             </div>
-                        ))}
+                        )) : (
+                            // Fallback to MOOVER_LEVELS while loading
+                            MOOVER_LEVELS.map((level) => (
+                                <div key={level.name} className="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition-shadow">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div
+                                            className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
+                                            style={{ backgroundColor: level.color }}
+                                        >
+                                            <Crown className="w-5 h-5 text-white drop-shadow" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">{level.name}</h3>
+                                            <p className="text-xs text-gray-500">
+                                                {level.max === Infinity ? `${level.min.toLocaleString()}+` : `${level.min.toLocaleString()} - ${level.max.toLocaleString()}`} pts
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </section>
@@ -238,11 +313,11 @@ export default function MooverPage() {
                         <div className="grid sm:grid-cols-2 gap-4">
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                <span className="text-sm text-gray-700">Mínimo 500 puntos para canjear</span>
+                                <span className="text-sm text-gray-700">Mínimo {config?.minPointsToRedeem ?? 500} puntos para canjear</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                <span className="text-sm text-gray-700">Máximo 15% de descuento por pedido</span>
+                                <span className="text-sm text-gray-700">Máximo {config?.maxDiscountPercent ?? 15}% de descuento por pedido</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />

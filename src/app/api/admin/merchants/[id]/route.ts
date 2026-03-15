@@ -38,6 +38,15 @@ export async function GET(
             },
         });
 
+        // Ensure all required fields are present
+        if (merchant) {
+            (merchant as any).commissionRate = merchant.commissionRate || 8;
+            (merchant as any).rating = merchant.rating || null;
+            (merchant as any).scheduleEnabled = merchant.scheduleEnabled || false;
+            (merchant as any).scheduleJson = merchant.scheduleJson || null;
+            (merchant as any).mpAccessToken = merchant.mpAccessToken || null;
+        }
+
         if (!merchant) {
             return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
         }
@@ -116,6 +125,11 @@ export async function PATCH(
         if (body.latitude !== undefined) updateData.latitude = body.latitude !== null ? parseFloat(body.latitude) : null;
         if (body.longitude !== undefined) updateData.longitude = body.longitude !== null ? parseFloat(body.longitude) : null;
 
+        // Schedule and commission updates
+        if (body.commissionRate !== undefined) updateData.commissionRate = parseFloat(body.commissionRate);
+        if (body.scheduleEnabled !== undefined) updateData.scheduleEnabled = body.scheduleEnabled;
+        if (body.scheduleJson !== undefined) updateData.scheduleJson = body.scheduleJson || null;
+
         const merchant = await prisma.merchant.update({
             where: { id },
             data: updateData,
@@ -138,6 +152,13 @@ export async function PATCH(
                 },
             },
         });
+
+        // Ensure all required fields are present
+        (merchant as any).commissionRate = merchant.commissionRate || 8;
+        (merchant as any).rating = merchant.rating || null;
+        (merchant as any).scheduleEnabled = merchant.scheduleEnabled || false;
+        (merchant as any).scheduleJson = merchant.scheduleJson || null;
+        (merchant as any).mpAccessToken = merchant.mpAccessToken || null;
 
         return NextResponse.json(merchant);
     } catch (error) {
