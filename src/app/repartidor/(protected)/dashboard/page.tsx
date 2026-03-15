@@ -48,6 +48,11 @@ const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
 
 const RiderBottomNav = dynamic(() => import("@/components/rider/RiderBottomNav"), { ssr: false });
 
+const ShiftSummaryModal = dynamic(
+    () => import("@/components/rider/ShiftSummaryModal").then(mod => mod.ShiftSummaryModal),
+    { ssr: false }
+);
+
 interface DashboardStats {
     pedidosHoy: number;
     enCamino: number;
@@ -110,6 +115,7 @@ export default function RiderDashboard() {
     const [pushError, setPushError] = useState<string | null>(null);
     const [isMapExpanded, setIsMapExpanded] = useState(false);
     const [advancingStatus, setAdvancingStatus] = useState(false);
+    const [showShiftSummary, setShowShiftSummary] = useState(false);
 
     // SPA Navigation State
     const [activeView, setActiveView] = useState<string>("dashboard");
@@ -209,9 +215,37 @@ export default function RiderDashboard() {
         }
     };
 
-    // Toggle online/offline
+    // Perform the actual disconnect API call
+    const performDisconnect = async () => {
+        try {
+            setIsToggling(true);
+            const res = await fetch("/api/driver/toggle-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isOnline: false })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setIsOnline(data.isOnline);
+                await fetchDashboard(true);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsToggling(false);
+        }
+    };
+
+    // Toggle online/offline — shows shift summary when going offline
     const toggleOnline = async () => {
-        if (!isOnline && !location) {
+        // Going offline → show shift summary first
+        if (isOnline) {
+            setShowShiftSummary(true);
+            return;
+        }
+
+        // Going online → check GPS and connect
+        if (!location) {
             toast.warning("No podemos activarte sin acceso a tu ubicación GPS.");
             if (typeof window !== "undefined" && navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(() => { }, () => { });
@@ -224,7 +258,7 @@ export default function RiderDashboard() {
             const res = await fetch("/api/driver/toggle-status", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isOnline: !isOnline })
+                body: JSON.stringify({ isOnline: true })
             });
 
             if (res.ok) {
@@ -933,6 +967,18 @@ export default function RiderDashboard() {
             {activeView === "earnings" && <EarningsView onBack={() => setActiveView("dashboard")} />}
             {activeView === "support" && <SupportView onBack={() => setActiveView("dashboard")} onChatRead={() => fetchDashboard(true)} />}
             {activeView === "profile" && <ProfileView onBack={() => setActiveView("dashboard")} />}
+
+            {/* ═══════════════════════════════════════════════
+               LEVEL 65 — SHIFT SUMMARY MODAL
+            ═══════════════════════════════════════════════ */}
+            <ShiftSummaryModal
+                isOpen={showShiftSummary}
+                onClose={() => setShowShiftSummary(false)}
+                onConfirmDisconnect={async () => {
+                    setShowShiftSummary(false);
+                    await performDisconnect();
+                }}
+            />
 
             {/* ═══════════════════════════════════════════════
                LEVEL 70 — BOTTOM NAVIGATION BAR (hidden when map expanded)
