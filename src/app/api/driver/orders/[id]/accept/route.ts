@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { driverAcceptOrder } from "@/lib/logistics";
+import { socketEmitToRooms } from "@/lib/socket-emit";
 
 export async function POST(
     request: Request,
@@ -34,6 +35,39 @@ export async function POST(
         const result = await driverAcceptOrder(driver.id, id);
 
         if (result.success) {
+            // Fetch order details for socket notifications
+            const order = await prisma.order.findUnique({
+                where: { id },
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    merchantId: true,
+                    userId: true,
+                    status: true,
+                    deliveryStatus: true,
+                },
+            });
+
+            if (order) {
+                // Notify merchant, customer, and admin rooms
+                const eventData = {
+                    orderId: order.id,
+                    orderNumber: order.orderNumber,
+                    status: order.status,
+                    deliveryStatus: order.deliveryStatus,
+                    driverId: driver.id,
+                };
+
+                const rooms = [
+                    `order:${order.id}`,
+                    ...(order.merchantId ? [`merchant:${order.merchantId}`] : []),
+                    `customer:${order.userId}`,
+                    "admin:orders",
+                ];
+
+                socketEmitToRooms(rooms, "order_status_changed", eventData).catch(console.error);
+            }
+
             return NextResponse.json({
                 success: true,
                 message: "Pedido aceptado",

@@ -24,6 +24,8 @@ import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useSocketAuth } from "@/hooks/useSocketAuth";
+import { useDriverSocket } from "@/hooks/useDriverSocket";
 import type { NavUpdateData } from "@/components/rider/RiderMiniMap";
 import { toast } from "@/store/toast";
 
@@ -95,6 +97,7 @@ export default function RiderDashboard() {
     const { data: session } = useSession();
     const { location, heading, error: locationHookError } = useGeolocation();
     const [dashboardData, setDashboardData] = useState<{
+        driverId?: string;
         stats: DashboardStats;
         pedidosActivos: Order[];
         pedidosPendientes: PendingOrderOffer[];
@@ -113,6 +116,9 @@ export default function RiderDashboard() {
 
     // Push notifications
     const { isSupported: pushSupported, permission: pushPermission, requestPermission, isSubscribed, error: hookPushError } = usePushNotifications();
+
+    // Socket.IO for real-time updates (replaces 5s polling)
+    const { token: socketToken } = useSocketAuth(true);
 
     const [recenterToggle, setRecenterToggle] = useState(false);
     const [dismissedOfferIds, setDismissedOfferIds] = useState<Set<string>>(new Set());
@@ -142,10 +148,38 @@ export default function RiderDashboard() {
         }
     }, [location]);
 
-    // Initial load and periodic refresh (orders arrive via polling)
+    // Socket-driven refresh callback (always silent)
+    const handleSocketRefresh = useCallback(() => {
+        fetchDashboard(true);
+    }, [fetchDashboard]);
+
+    // Handle new order offers from socket (haptic + toast)
+    const handleNewOrder = useCallback((order: any) => {
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+            navigator.vibrate([200, 100, 200]);
+        }
+        toast.info(`Nuevo pedido: ${order?.orderNumber || "pedido disponible"}`);
+    }, []);
+
+    // Handle order cancellation from socket
+    const handleOrderCancelled = useCallback((data: any) => {
+        toast.warning(`Pedido #${data?.orderNumber || ""} cancelado`);
+    }, []);
+
+    // Connect to real-time socket for driver events
+    useDriverSocket({
+        driverId: dashboardData?.driverId || null,
+        socketToken,
+        enabled: isOnline,
+        onRefresh: handleSocketRefresh,
+        onNewOrder: handleNewOrder,
+        onOrderCancelled: handleOrderCancelled,
+    });
+
+    // Initial load + fallback polling every 30s (socket handles real-time)
     useEffect(() => {
         fetchDashboard();
-        const interval = setInterval(() => fetchDashboard(true), 5000);
+        const interval = setInterval(() => fetchDashboard(true), 30000);
         return () => clearInterval(interval);
     }, [fetchDashboard]);
 

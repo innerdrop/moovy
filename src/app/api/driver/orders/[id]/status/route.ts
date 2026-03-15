@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
+import { socketEmitToRooms } from "@/lib/socket-emit";
 
 export async function PATCH(
     request: Request,
@@ -70,6 +71,25 @@ export async function PATCH(
             notifyBuyer(order.userId, "DELIVERED", order.orderNumber, { orderId: order.id })
                 .catch(err => console.error("[Push] Buyer notification error:", err));
         }
+
+        // Emit socket events to all interested rooms
+        const eventData = {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            status: deliveryStatus === "DELIVERED" ? "DELIVERED" : order.status,
+            deliveryStatus,
+            driverId: driver.id,
+        };
+
+        const rooms = [
+            `order:${order.id}`,
+            ...(order.merchantId ? [`merchant:${order.merchantId}`] : []),
+            `customer:${order.userId}`,
+            `driver:${driver.id}`,
+            "admin:orders",
+        ];
+
+        socketEmitToRooms(rooms, "order_status_changed", eventData).catch(console.error);
 
         return NextResponse.json({ success: true });
     } catch (error) {

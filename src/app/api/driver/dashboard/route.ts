@@ -245,6 +245,7 @@ export async function GET(request: Request) {
         };
 
         return NextResponse.json({
+            driverId: driver.id,
             stats: {
                 pedidosHoy: completedToday + enCamino,
                 enCamino: enCamino,
