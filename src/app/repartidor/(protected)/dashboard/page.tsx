@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import "./gps-error.css";
 import {
@@ -52,6 +52,15 @@ const ShiftSummaryModal = dynamic(
     () => import("@/components/rider/ShiftSummaryModal").then(mod => mod.ShiftSummaryModal),
     { ssr: false }
 );
+
+// Haptic feedback patterns
+const haptic = {
+    light: () => navigator?.vibrate?.(10),
+    medium: () => navigator?.vibrate?.(50),
+    success: () => navigator?.vibrate?.([50, 50, 100]),
+    warning: () => navigator?.vibrate?.([100, 50, 100, 50, 100]),
+    newOrder: () => navigator?.vibrate?.([200, 100, 200, 100, 300]),
+};
 
 interface DashboardStats {
     pedidosHoy: number;
@@ -129,6 +138,11 @@ export default function RiderDashboard() {
     const [recenterToggle, setRecenterToggle] = useState(false);
     const [dismissedOfferIds, setDismissedOfferIds] = useState<Set<string>>(new Set());
 
+    // Pull-to-refresh state
+    const [pullDistance, setPullDistance] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const pullStartY = useRef(0);
+
     // Navigation data from RiderMiniMap → BottomSheet
     const [navData, setNavData] = useState<NavUpdateData | null>(null);
     const handleNavUpdate = useCallback((data: NavUpdateData) => {
@@ -161,9 +175,7 @@ export default function RiderDashboard() {
 
     // Handle new order offers from socket (haptic + toast)
     const handleNewOrder = useCallback((order: any) => {
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            navigator.vibrate([200, 100, 200]);
-        }
+        haptic.newOrder();
         toast.info(`Nuevo pedido: ${order?.orderNumber || "pedido disponible"}`);
     }, []);
 
@@ -273,15 +285,70 @@ export default function RiderDashboard() {
         }
     };
 
+    // Pull-to-refresh handlers
+    const handlePullStart = useCallback((e: React.TouchEvent) => {
+        const scrollTop = (e.currentTarget as HTMLElement).scrollTop;
+        if (scrollTop <= 0) {
+            pullStartY.current = e.touches[0].clientY;
+        }
+    }, []);
+
+    const handlePullMove = useCallback((e: React.TouchEvent) => {
+        if (pullStartY.current === 0 || isRefreshing) return;
+        const diff = e.touches[0].clientY - pullStartY.current;
+        if (diff > 0) {
+            setPullDistance(Math.min(diff * 0.4, 80));
+        }
+    }, [isRefreshing]);
+
+    const handlePullEnd = useCallback(async () => {
+        if (pullDistance > 50 && !isRefreshing) {
+            setIsRefreshing(true);
+            haptic.medium();
+            await fetchDashboard(true);
+            setIsRefreshing(false);
+        }
+        setPullDistance(0);
+        pullStartY.current = 0;
+    }, [pullDistance, isRefreshing, fetchDashboard]);
+
     // ── Loading state ──
     if (isLoading && !dashboardData) {
         return (
-            <div className="h-dvh flex flex-col items-center justify-center bg-white dark:bg-[#0f1117]">
-                <div className="relative">
-                    <Bike className="w-12 h-12 text-[#e60012] animate-bounce" />
-                    <Loader2 className="w-20 h-20 text-gray-100 dark:text-gray-800 animate-spin absolute -top-4 -left-4 -z-10" />
+            <div className="h-dvh flex flex-col bg-white dark:bg-[#0f1117]">
+                {/* Map skeleton */}
+                <div className="mx-4 mt-4 h-[220px] rounded-[24px] bg-gray-100 dark:bg-[#1a1d27] animate-pulse" />
+
+                {/* Stats skeleton */}
+                <div className="px-4 pt-6 space-y-6">
+                    {/* Status bar skeleton */}
+                    <div className="flex items-center justify-between bg-white dark:bg-[#1a1d27] p-5 rounded-[24px] border border-gray-100 dark:border-white/10">
+                        <div className="space-y-2">
+                            <div className="h-5 w-40 bg-gray-100 dark:bg-[#22252f] rounded-lg animate-pulse" />
+                            <div className="h-3 w-56 bg-gray-50 dark:bg-[#22252f] rounded-lg animate-pulse" />
+                        </div>
+                        <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-[#22252f] animate-pulse" />
+                    </div>
+
+                    {/* Grid skeleton */}
+                    <div className="grid grid-cols-2 gap-4">
+                        {[0, 1].map(i => (
+                            <div key={i} className="bg-white dark:bg-[#1a1d27] border border-gray-100 dark:border-white/10 rounded-[22px] p-4">
+                                <div className="w-9 h-9 bg-gray-100 dark:bg-[#22252f] rounded-xl mb-2 animate-pulse" />
+                                <div className="h-6 w-20 bg-gray-100 dark:bg-[#22252f] rounded-lg mb-1 animate-pulse" />
+                                <div className="h-3 w-24 bg-gray-50 dark:bg-[#22252f] rounded-lg animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <p className="mt-4 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-xs">Cargando moovy...</p>
+
+                {/* Brand footer */}
+                <div className="flex-1 flex items-end justify-center pb-8">
+                    <div className="flex flex-col items-center gap-2">
+                        <Bike className="w-8 h-8 text-gray-200 dark:text-gray-700" />
+                        <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">Cargando moovy...</p>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -529,7 +596,25 @@ export default function RiderDashboard() {
                 HOME CONTENT — Stats & Actions (below map in card mode)
             ═══════════════════════════════════════════════ */}
                     {!isMapExpanded && !pedidoActivo && (
-                        <div className="px-4 pt-6 pb-24 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div
+                            className="px-4 pt-6 pb-24 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                            onTouchStart={handlePullStart}
+                            onTouchMove={handlePullMove}
+                            onTouchEnd={handlePullEnd}
+                            style={{ transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined, transition: pullDistance === 0 ? 'transform 0.3s ease' : 'none' }}
+                        >
+                            {/* Pull-to-refresh indicator */}
+                            {(pullDistance > 0 || isRefreshing) && (
+                                <div className="flex justify-center -mt-4 mb-2">
+                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 ${isRefreshing ? 'animate-pulse' : ''}`}>
+                                        <Loader2 className={`w-4 h-4 text-[#e60012] ${pullDistance > 50 || isRefreshing ? 'animate-spin' : ''}`} style={{ opacity: Math.min(pullDistance / 50, 1) }} />
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                            {isRefreshing ? 'Actualizando...' : pullDistance > 50 ? 'Soltar para refrescar' : 'Tira para refrescar'}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Status + Power Row */}
                             <div className="flex items-center justify-between bg-white dark:bg-[#1a1d27] p-5 rounded-[24px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-white/10">
                                 <div>
@@ -695,11 +780,11 @@ export default function RiderDashboard() {
                                                     <button
                                                         onClick={async () => {
                                                             try {
-                                                                if (navigator.vibrate) navigator.vibrate(50);
+                                                                haptic.medium();
                                                                 const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
                                                                 if (res.ok) {
                                                                     toast.success("Pedido aceptado");
-                                                                    if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+                                                                    haptic.success();
                                                                     await fetchDashboard(true);
                                                                 } else {
                                                                     const data = await res.json();
@@ -826,7 +911,7 @@ export default function RiderDashboard() {
 
                                                     setAdvancingStatus(true);
                                                     try {
-                                                        if (navigator.vibrate) navigator.vibrate(50);
+                                                        haptic.medium();
 
                                                         const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/status`, {
                                                             method: "PATCH",
@@ -836,7 +921,7 @@ export default function RiderDashboard() {
 
                                                         if (res.ok) {
                                                             toast.success(successMsg);
-                                                            if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+                                                            haptic.success();
                                                             await fetchDashboard(true);
                                                         } else {
                                                             const data = await res.json();

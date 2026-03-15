@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
     Trophy,
     TrendingUp,
@@ -63,6 +63,31 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
         return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
     };
 
+    // Animated counter for earnings
+    const [displayEarnings, setDisplayEarnings] = useState(0);
+    const animFrameRef = useRef<number>(0);
+
+    useEffect(() => {
+        if (!data || data.totalDeliveries === 0) return;
+        const target = data.totalEarnings;
+        const duration = 1200; // ms
+        const startTime = performance.now();
+
+        const animate = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setDisplayEarnings(Math.round(target * eased));
+            if (progress < 1) {
+                animFrameRef.current = requestAnimationFrame(animate);
+            }
+        };
+
+        animFrameRef.current = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animFrameRef.current);
+    }, [data]);
+
     return (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-[fadeIn_0.2s_ease-out]">
             <div className="bg-white dark:bg-[#1a1d27] rounded-t-[28px] sm:rounded-[28px] sm:mx-4 max-w-md w-full p-6 shadow-2xl animate-[slideUp_0.3s_cubic-bezier(0.32,0.72,0,1)]">
@@ -116,7 +141,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                 {/* Main earnings */}
                                 <div className="text-center mb-6">
                                     <p className="text-4xl font-extrabold bg-gradient-to-r from-[#e60012] to-[#b8000e] bg-clip-text text-transparent">
-                                        ${data.totalEarnings.toLocaleString()}
+                                        ${displayEarnings.toLocaleString()}
                                     </p>
                                     <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mt-1">
                                         Ganancia total del turno
@@ -124,7 +149,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                 </div>
 
                                 {/* Stats grid */}
-                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                <div className="grid grid-cols-2 gap-3 mb-6 animate-in fade-in zoom-in-95 duration-500 delay-300">
                                     <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <TrendingUp className="w-4 h-4 text-emerald-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900 dark:text-white">
