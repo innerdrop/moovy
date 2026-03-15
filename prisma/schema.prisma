@@ -474,6 +474,10 @@ model Listing {
   price       Float
   stock       Int            @default(1)
   condition   String         @default("NUEVO")
+  weightKg    Float?
+  lengthCm    Float?
+  widthCm     Float?
+  heightCm    Float?
   isActive    Boolean        @default(true)
   categoryId  String?
   createdAt   DateTime       @default(now())

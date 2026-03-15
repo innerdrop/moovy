@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { title, description, price, stock, condition, categoryId } = body;
+        const { title, description, price, stock, condition, categoryId, weightKg, lengthCm, widthCm, heightCm } = body;
 
         // Validate required fields
         if (!title || price === undefined || price === null) {
@@ -102,6 +102,10 @@ export async function POST(request: Request) {
                 stock: stock ?? 1,
                 condition: condition || "NUEVO",
                 categoryId: categoryId || null,
+                weightKg: typeof weightKg === "number" ? weightKg : null,
+                lengthCm: typeof lengthCm === "number" ? lengthCm : null,
+                widthCm: typeof widthCm === "number" ? widthCm : null,
+                heightCm: typeof heightCm === "number" ? heightCm : null,
             },
             include: {
                 images: true,

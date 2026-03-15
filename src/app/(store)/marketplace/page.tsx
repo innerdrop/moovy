@@ -223,11 +223,11 @@ export default function MarketplacePage() {
             ) : listings.length === 0 ? (
                 <div className="text-center py-20">
                     <Tag className="w-20 h-20 text-gray-200 mx-auto mb-4" />
-                    <p className="text-gray-400 text-lg font-medium">
-                        No se encontraron publicaciones
+                    <p className="text-gray-500 text-lg font-medium">
+                        No encontramos resultados
                     </p>
                     <p className="text-gray-400 text-sm mt-1">
-                        Probá con otros filtros o volvé más tarde
+                        Proba con otra busqueda o explora las categorias
                     </p>
                 </div>
             ) : (

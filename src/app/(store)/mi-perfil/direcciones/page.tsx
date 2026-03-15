@@ -200,9 +200,9 @@ export default function DireccionesPage() {
                                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <MapPin className="w-10 h-10 text-gray-300" />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">Sin direcciones</h3>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Agrega tu primera direccion</h3>
                                 <p className="text-gray-500 mb-8">
-                                    Aún no has guardado ninguna dirección de entrega.
+                                    Guarda tu direccion para recibir pedidos mas rapido.
                                 </p>
                                 <button
                                     onClick={() => setIsAdding(true)}

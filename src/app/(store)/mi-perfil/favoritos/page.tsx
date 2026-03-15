@@ -120,9 +120,9 @@ export default function FavoritosPage() {
                         <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Heart className="w-10 h-10 text-pink-400" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Sin favoritos todavia</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">Todavia no tenes favoritos</h2>
                         <p className="text-gray-500 mb-8">
-                            Guarda tus comercios, productos y publicaciones favoritas tocando el corazon.
+                            Toca el corazon en los productos y comercios que te gusten para guardarlos aca.
                         </p>
                         <Link
                             href="/"

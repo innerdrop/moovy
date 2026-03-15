@@ -191,9 +191,12 @@ export default function MisPedidosPage() {
                 <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-4">
                     {filteredOrders.length === 0 ? (
                         <div className="text-center py-20 flex flex-col items-center">
-                            <ShoppingBag className="w-16 h-16 text-gray-100 mb-4" />
-                            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay pedidos {filter === "active" ? "activos" : "en el historial"}</p>
-                            <Link href="/productos" className="mt-4 px-6 py-3 bg-[#e60012] text-white font-bold rounded-xl text-sm">Hacer un pedido</Link>
+                            <ShoppingBag className="w-16 h-16 text-gray-200 mb-4" />
+                            <p className="text-gray-500 font-semibold text-sm">
+                                {filter === "active" ? "No tenes pedidos en curso" : "Tu historial esta vacio"}
+                            </p>
+                            <p className="text-gray-400 text-xs mt-1">Tu proximo pedido te esta esperando</p>
+                            <Link href="/productos" className="mt-4 px-6 py-3 bg-[#e60012] text-white font-bold rounded-xl text-sm">Explorar productos</Link>
                         </div>
                     ) : (
                         filteredOrders.map((order) => {

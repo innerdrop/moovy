@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     ShoppingCart,
     Loader2,
@@ -86,6 +86,8 @@ export default function VendedorPedidosPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("");
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const prevPendingCountRef = useRef<number>(0);
 
     const loadOrders = useCallback(async () => {
         setLoading(true);
@@ -118,6 +120,31 @@ export default function VendedorPedidosPage() {
         loadOrders();
     }, [loadOrders]);
 
+    // Poll every 15 seconds and play sound on new pending orders
+    useEffect(() => {
+        const poll = async () => {
+            try {
+                const res = await fetch("/api/seller/orders?status=PENDING");
+                if (res.ok) {
+                    const data: SubOrder[] = await res.json();
+                    const pendingCount = data.length;
+                    if (pendingCount > prevPendingCountRef.current && prevPendingCountRef.current >= 0) {
+                        audioRef.current?.play().catch(() => {});
+                        loadOrders();
+                    }
+                    prevPendingCountRef.current = pendingCount;
+                }
+            } catch {}
+        };
+        // Initialize count without sound
+        fetch("/api/seller/orders?status=PENDING")
+            .then(r => r.ok ? r.json() : [])
+            .then((data: SubOrder[]) => { prevPendingCountRef.current = data.length; })
+            .catch(() => {});
+        const id = setInterval(poll, 15000);
+        return () => clearInterval(id);
+    }, [loadOrders]);
+
     async function handleConfirmScheduled(subOrderId: string) {
         setConfirmingId(subOrderId);
         try {
@@ -141,6 +168,7 @@ export default function VendedorPedidosPage() {
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
+            <audio ref={audioRef} src="/sounds/new-order.wav" preload="auto" />
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">

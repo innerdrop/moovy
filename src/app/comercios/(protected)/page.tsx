@@ -201,7 +201,8 @@ export default async function ComerciosDashboardPage() {
                         ) : (
                             <div className="p-12 text-center">
                                 <AlertCircle className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                                <p className="text-gray-400">No hay pedidos registrados aún.</p>
+                                <p className="text-gray-500 font-medium">Todo tranquilo por ahora</p>
+                                <p className="text-gray-400 text-sm mt-1">Cuando llegue un pedido, te avisamos con sonido</p>
                             </div>
                         )}
                     </div>

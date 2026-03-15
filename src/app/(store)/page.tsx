@@ -261,7 +261,8 @@ async function LiveStoreView() {
                         ) : (
                             <div className="col-span-full py-12 text-center text-gray-500">
                                 <Store className="w-16 h-16 mx-auto mb-3 opacity-20" />
-                                <p>No hay comercios disponibles en este momento.</p>
+                                <p className="font-medium text-gray-600">Estamos sumando comercios cada dia</p>
+                                <p className="text-sm mt-1">Pronto vas a encontrar tu favorito</p>
                             </div>
                         )}
                     </div>
@@ -331,7 +332,10 @@ async function LiveStoreView() {
                                 </Link>
                             ))
                         ) : (
-                            <p className="col-span-full text-center text-gray-400">No hay productos destacados.</p>
+                            <div className="col-span-full text-center py-8 text-gray-400">
+                                <p className="font-medium text-gray-600">Estamos preparando ofertas increibles para vos</p>
+                                <p className="text-sm mt-1">Volve pronto</p>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -408,6 +412,9 @@ async function LiveStoreView() {
                             <ul className="space-y-2 text-sm">
                                 <li><Link href="/terminos" className="hover:text-[#e60012] transition">Términos y Condiciones</Link></li>
                                 <li><Link href="/privacidad" className="hover:text-[#e60012] transition">Política de Privacidad</Link></li>
+                                <li><Link href="/cookies" className="hover:text-[#e60012] transition">Cookies</Link></li>
+                                <li><Link href="/devoluciones" className="hover:text-[#e60012] transition">Devoluciones</Link></li>
+                                <li><Link href="/cancelaciones" className="hover:text-[#e60012] transition">Cancelaciones</Link></li>
                             </ul>
                         </div>
                     </div>

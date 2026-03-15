@@ -23,6 +23,10 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
         stock: "1",
         condition: "NUEVO",
         categoryId: "",
+        weightKg: "",
+        lengthCm: "",
+        widthCm: "",
+        heightCm: "",
     });
 
     async function handleSubmit(e: React.FormEvent) {
@@ -53,6 +57,10 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
                     stock: parseInt(formData.stock) || 1,
                     condition: formData.condition,
                     categoryId: formData.categoryId || null,
+                    weightKg: formData.weightKg ? parseFloat(formData.weightKg) : null,
+                    lengthCm: formData.lengthCm ? parseFloat(formData.lengthCm) : null,
+                    widthCm: formData.widthCm ? parseFloat(formData.widthCm) : null,
+                    heightCm: formData.heightCm ? parseFloat(formData.heightCm) : null,
                 }),
             });
 
@@ -195,6 +203,63 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
                             <option value="USADO">🟠 Usado</option>
                             <option value="REACONDICIONADO">🔵 Reacondicionado</option>
                         </select>
+                    </div>
+
+                    {/* Peso y dimensiones */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Peso y dimensiones <span className="text-gray-400 font-normal">(opcional, ayuda al calculo de envio)</span>
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Peso (kg)</label>
+                                <input
+                                    type="number"
+                                    value={formData.weightKg}
+                                    onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="0.5"
+                                    min="0"
+                                    step="0.1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Largo (cm)</label>
+                                <input
+                                    type="number"
+                                    value={formData.lengthCm}
+                                    onChange={(e) => setFormData({ ...formData, lengthCm: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="30"
+                                    min="0"
+                                    step="1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Ancho (cm)</label>
+                                <input
+                                    type="number"
+                                    value={formData.widthCm}
+                                    onChange={(e) => setFormData({ ...formData, widthCm: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="20"
+                                    min="0"
+                                    step="1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Alto (cm)</label>
+                                <input
+                                    type="number"
+                                    value={formData.heightCm}
+                                    onChange={(e) => setFormData({ ...formData, heightCm: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="15"
+                                    min="0"
+                                    step="1"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Categoría */}

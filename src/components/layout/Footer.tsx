@@ -52,6 +52,12 @@ export default function Footer() {
                             <li><FooterLink href="/contacto">Contacto</FooterLink></li>
                             <li><FooterLink href="/terminos">Términos y Condiciones</FooterLink></li>
                             <li><FooterLink href="/privacidad">Política de Privacidad</FooterLink></li>
+                            <li><FooterLink href="/cookies">Política de Cookies</FooterLink></li>
+                            <li><FooterLink href="/devoluciones">Devoluciones</FooterLink></li>
+                            <li><FooterLink href="/cancelaciones">Cancelaciones</FooterLink></li>
+                            <li><FooterLink href="/terminos-vendedor">Términos Vendedores</FooterLink></li>
+                            <li><FooterLink href="/terminos-repartidor">Términos Repartidores</FooterLink></li>
+                            <li><FooterLink href="/terminos-comercio">Términos Comercios</FooterLink></li>
                         </ul>
                     </div>
 
