@@ -18,7 +18,8 @@ import {
     ShoppingCart,
     Store,
     User,
-    Download
+    Download,
+    Check
 } from "lucide-react";
 
 interface Merchant {
@@ -52,6 +53,8 @@ export default function ComerciosPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [selectedMerchants, setSelectedMerchants] = useState<string[]>([]);
+    const [bulkLoading, setBulkLoading] = useState(false);
 
     const fetchMerchants = async () => {
         setLoading(true);
@@ -111,22 +114,81 @@ export default function ComerciosPage() {
         }
     };
 
+    const toggleMerchantSelection = (id: string) => {
+        setSelectedMerchants(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+    };
+
+    const bulkVerify = async () => {
+        setBulkLoading(true);
+        try {
+            for (const id of selectedMerchants) {
+                await fetch("/api/admin/merchants", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id, isVerified: true }),
+                });
+            }
+            setSelectedMerchants([]);
+            fetchMerchants();
+        } catch (error) {
+            console.error("Error:", error);
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const bulkSuspend = async () => {
+        setBulkLoading(true);
+        try {
+            for (const id of selectedMerchants) {
+                await fetch("/api/admin/merchants", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id, isActive: false }),
+                });
+            }
+            setSelectedMerchants([]);
+            fetchMerchants();
+        } catch (error) {
+            console.error("Error:", error);
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Comercios</h1>
                     <p className="text-slate-600">{merchants.length} comercios registrados</p>
                 </div>
-                <a
-                    href="/api/ops/export?type=merchants"
-                    className="btn-secondary flex items-center gap-2"
-                    download
-                >
-                    <Download className="w-4 h-4" />
-                    CSV
-                </a>
+                {selectedMerchants.length > 0 ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-slate-500">{selectedMerchants.length} seleccionados</span>
+                        <button onClick={bulkVerify} disabled={bulkLoading} className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100 hover:bg-blue-100 transition flex items-center gap-2">
+                            {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Verificar todos
+                        </button>
+                        <button onClick={bulkSuspend} disabled={bulkLoading} className="px-3 py-2 bg-red-50 text-red-500 rounded-lg text-xs font-bold border border-red-100 hover:bg-red-100 transition flex items-center gap-2">
+                            {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                            Suspender todos
+                        </button>
+                        <button onClick={() => setSelectedMerchants([])} className="px-3 py-2 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold hover:bg-slate-200 transition">
+                            Cancelar
+                        </button>
+                    </div>
+                ) : (
+                    <a
+                        href="/api/ops/export?type=merchants"
+                        className="btn-secondary flex items-center gap-2"
+                        download
+                    >
+                        <Download className="w-4 h-4" />
+                        CSV
+                    </a>
+                )}
             </div>
 
             {/* Filters */}
@@ -163,7 +225,17 @@ export default function ComerciosPage() {
             ) : merchants.length > 0 ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {merchants.map((merchant) => (
-                        <div key={merchant.id} className="group bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col">
+                        <div key={merchant.id} className="group bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col relative">
+                            {/* Checkbox */}
+                            <div className="absolute top-3 right-3 z-10">
+                                <button
+                                    onClick={() => toggleMerchantSelection(merchant.id)}
+                                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedMerchants.includes(merchant.id) ? "bg-blue-500 border-blue-500" : "border-slate-300 hover:border-blue-400 bg-white"}`}
+                                >
+                                    {selectedMerchants.includes(merchant.id) && <Check className="w-3 h-3 text-white" />}
+                                </button>
+                            </div>
+
                             {/* Header Section */}
                             <div className="p-5 border-b border-slate-50 flex items-start gap-4">
                                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-100 shadow-inner group-hover:scale-105 transition-transform duration-300">

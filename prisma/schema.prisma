@@ -68,6 +68,7 @@ model User {
   sellerProfile      SellerProfile?
   sellerAvailability SellerAvailability?
   favorites          Favorite[]
+  auditLogs          AuditLog[]             @relation("AuditLogs")
 }
 
 model UserRole {
@@ -825,4 +826,20 @@ model SellerAvailability {
   updatedAt           DateTime  @updatedAt
 
   seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // e.g. "ORDER_STATUS_CHANGE", "REFUND", "DRIVER_REASSIGN", "COMMISSION_PAID"
+  entityType String  // e.g. "Order", "Merchant", "Driver", "Listing"
+  entityId  String
+  userId    String   // admin who performed the action
+  details   String?  // JSON string with before/after or extra context
+  createdAt DateTime @default(now())
+
+  user User @relation("AuditLogs", fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
 }

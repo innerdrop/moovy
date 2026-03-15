@@ -20,7 +20,8 @@ import {
     Loader2,
     MessageSquare,
     AlertTriangle,
-    RotateCcw
+    RotateCcw,
+    Repeat
 } from "lucide-react";
 
 interface Order {
@@ -37,6 +38,9 @@ interface Order {
     adminNotes: string | null;
     createdAt: string;
     deliveredAt: string | null;
+    driverId: string | null;
+    driver: { id: string; user: { name: string } } | null;
+    merchant: { id: string; name: string } | null;
     items: Array<{
         id: string;
         name: string;
@@ -85,6 +89,12 @@ export default function AdminOrderDetailPage() {
     const [showRefund, setShowRefund] = useState(false);
     const [refundReason, setRefundReason] = useState("");
     const [refunding, setRefunding] = useState(false);
+
+    // Driver reassignment state
+    const [showReassign, setShowReassign] = useState(false);
+    const [drivers, setDrivers] = useState<Array<{ id: string; user: { name: string }; vehicleType: string; isOnline: boolean }>>([]);
+    const [selectedDriver, setSelectedDriver] = useState("");
+    const [reassigning, setReassigning] = useState(false);
 
     useEffect(() => {
         async function fetchOrder() {
@@ -191,6 +201,43 @@ export default function AdminOrderDetailPage() {
             console.error("Error saving notes:", error);
         } finally {
             setUpdating(false);
+        }
+    };
+
+    const fetchDrivers = async () => {
+        try {
+            const res = await fetch("/api/admin/drivers");
+            if (res.ok) {
+                const data = await res.json();
+                setDrivers(data.filter((d: any) => d.isActive));
+            }
+        } catch (error) {
+            console.error("Error fetching drivers:", error);
+        }
+    };
+
+    const handleReassign = async () => {
+        if (!selectedDriver) return;
+        setReassigning(true);
+        try {
+            const res = await fetch(`/api/admin/orders/${orderId}/reassign`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ driverId: selectedDriver }),
+            });
+            if (res.ok) {
+                const orderRes = await fetch(`/api/orders/${orderId}`);
+                if (orderRes.ok) {
+                    const updated = await orderRes.json();
+                    setOrder(updated);
+                }
+                setShowReassign(false);
+                setSelectedDriver("");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        } finally {
+            setReassigning(false);
         }
     };
 
@@ -410,6 +457,50 @@ export default function AdminOrderDetailPage() {
                         </div>
                     </div>
 
+                    {/* Driver Info */}
+                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <Truck className="w-5 h-5 text-[#e60012]" />
+                            Repartidor
+                        </h2>
+                        {order.driver ? (
+                            <div className="space-y-2">
+                                <p className="font-medium text-gray-900">{order.driver.user.name}</p>
+                                <button
+                                    onClick={() => { fetchDrivers(); setShowReassign(true); }}
+                                    className="w-full mt-2 py-2 text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition flex items-center justify-center gap-2"
+                                >
+                                    <Repeat className="w-4 h-4" />
+                                    Reasignar
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <p className="text-sm text-slate-400">Sin repartidor asignado</p>
+                                <button
+                                    onClick={() => { fetchDrivers(); setShowReassign(true); }}
+                                    className="w-full py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-2"
+                                >
+                                    <Truck className="w-4 h-4" />
+                                    Asignar Repartidor
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Merchant Info */}
+                    {order.merchant && (
+                        <div className="bg-white rounded-xl p-6 shadow-sm">
+                            <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <Package className="w-5 h-5 text-[#e60012]" />
+                                Comercio
+                            </h2>
+                            <Link href={`/ops/comercios/${order.merchant.id}`} className="font-medium text-[#e60012] hover:underline">
+                                {order.merchant.name}
+                            </Link>
+                        </div>
+                    )}
+
                     {/* Delivery Address */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
                         <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -460,6 +551,44 @@ export default function AdminOrderDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Reassign Driver Modal */}
+            {showReassign && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
+                            <Truck className="w-5 h-5 text-orange-500" />
+                            {order?.driver ? "Reasignar Repartidor" : "Asignar Repartidor"}
+                        </h3>
+                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                            {drivers.map((driver) => (
+                                <button
+                                    key={driver.id}
+                                    onClick={() => setSelectedDriver(driver.id)}
+                                    className={`w-full p-3 rounded-lg text-left transition border ${selectedDriver === driver.id ? "border-[#e60012] bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-medium text-gray-900">{driver.user.name}</p>
+                                            <p className="text-xs text-slate-500">{driver.vehicleType}</p>
+                                        </div>
+                                        <span className={`w-2.5 h-2.5 rounded-full ${driver.isOnline ? "bg-green-500" : "bg-slate-300"}`} />
+                                    </div>
+                                </button>
+                            ))}
+                            {drivers.length === 0 && (
+                                <p className="text-center text-slate-400 py-4">No hay repartidores disponibles</p>
+                            )}
+                        </div>
+                        <div className="flex gap-3 mt-4">
+                            <button onClick={() => setShowReassign(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancelar</button>
+                            <button onClick={handleReassign} disabled={!selectedDriver || reassigning} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                {reassigning ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Refund Modal */}
             {showRefund && order && (

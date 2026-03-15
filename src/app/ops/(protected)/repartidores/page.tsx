@@ -21,7 +21,8 @@ import {
     Home,
     ShieldCheck,
     FileText,
-    ExternalLink
+    ExternalLink,
+    AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 
@@ -794,17 +795,25 @@ function DriverDocRow({ label, url }: { label: string; url: string | null }) {
         <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
             <span className="text-gray-500">{label}</span>
             {url ? (
-                <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline font-medium flex items-center gap-1 text-xs"
-                >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Ver
-                </a>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-green-600">
+                        <Check className="w-4 h-4" />
+                        <span className="text-xs font-medium">Subido</span>
+                    </div>
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline font-medium flex items-center gap-1 text-xs"
+                    >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                </div>
             ) : (
-                <span className="text-xs text-gray-400">No presentado</span>
+                <div className="flex items-center gap-1 text-red-500">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-xs font-medium">Faltante</span>
+                </div>
             )}
         </div>
     );

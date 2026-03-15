@@ -18,7 +18,8 @@ import {
     X,
     Download,
     Check,
-    Home
+    Home,
+    Search
 } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 
@@ -55,17 +56,42 @@ export default function AdminPedidosPage() {
     const [createBackup, setCreateBackup] = useState(true);
     const [backupName, setBackupName] = useState("");
     const [deleting, setDeleting] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalOrders, setTotalOrders] = useState(0);
+    const [search, setSearch] = useState("");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
 
     useEffect(() => {
         fetchOrders();
-    }, [filter]);
+    }, [filter, page, dateFrom, dateTo]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPage(1);
+            fetchOrders();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     async function fetchOrders() {
+        setLoading(true);
         try {
-            const res = await fetch(`/api/admin/orders?status=${filter}`);
+            const params = new URLSearchParams();
+            params.set("page", String(page));
+            params.set("limit", "50");
+            if (filter !== "all") params.set("status", filter);
+            if (search) params.set("search", search);
+            if (dateFrom) params.set("dateFrom", dateFrom);
+            if (dateTo) params.set("dateTo", dateTo);
+
+            const res = await fetch(`/api/admin/orders?${params}`);
             if (res.ok) {
                 const data = await res.json();
-                setOrders(data);
+                setOrders(data.orders || []);
+                setTotalPages(data.totalPages || 1);
+                setTotalOrders(data.total || 0);
             }
         } catch (error) {
             console.error("Error:", error);
@@ -137,7 +163,7 @@ export default function AdminPedidosPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
-                    <p className="text-gray-600">Gestiona los pedidos de tus clientes</p>
+                    <p className="text-gray-600">{totalOrders} pedidos en total</p>
                 </div>
                 <div className="flex gap-2">
                     <a
@@ -181,6 +207,42 @@ export default function AdminPedidosPage() {
                 <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
                     <p className="text-sm text-purple-800">Hoy</p>
                     <p className="text-2xl font-bold text-purple-900">{stats.today}</p>
+                </div>
+            </div>
+
+            {/* Search & Date Filters */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por N° pedido, cliente..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                </div>
+                <div className="flex gap-2">
+                    <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                        className="px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                    />
+                    <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                        className="px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                    />
+                    {(dateFrom || dateTo) && (
+                        <button
+                            onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+                            className="px-3 py-2.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 text-sm"
+                        >
+                            Limpiar
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -370,7 +432,7 @@ export default function AdminPedidosPage() {
                                         </div>
                                         <Link
                                             href={`/ops/pedidos/${order.id}`}
-                                            className="flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm"
+                                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm"
                                         >
                                             Ver detalles
                                             <ChevronRight className="w-4 h-4" />
@@ -382,6 +444,31 @@ export default function AdminPedidosPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                    <p className="text-sm text-slate-500">
+                        Mostrando página {page} de {totalPages} ({totalOrders} pedidos)
+                    </p>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page <= 1}
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition"
+                        >
+                            Anterior
+                        </button>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page >= totalPages}
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 transition"
+                        >
+                            Siguiente
+                        </button>
                     </div>
                 </div>
             )}

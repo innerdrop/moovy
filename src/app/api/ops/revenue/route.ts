@@ -1,22 +1,43 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     const session = await auth();
     if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
         return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     try {
+        const { searchParams } = new URL(request.url);
+        const dateFrom = searchParams.get("dateFrom");
+        const dateTo = searchParams.get("dateTo");
+
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        // All delivered orders
+        // Define date range for filtering
+        let filterFrom = new Date(0); // Beginning of time by default
+        let filterTo = new Date(); // Now by default
+
+        if (dateFrom) {
+            filterFrom = new Date(dateFrom);
+        }
+        if (dateTo) {
+            filterTo = new Date(dateTo);
+        }
+
+        // All delivered orders within date range
         const orders = await prisma.order.findMany({
-            where: { status: "DELIVERED" },
+            where: {
+                status: "DELIVERED",
+                createdAt: {
+                    gte: filterFrom,
+                    lte: filterTo
+                }
+            },
             select: {
                 total: true,
                 subtotal: true,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DollarSign, TrendingUp, CreditCard, Banknote, Loader2, ArrowUp, ArrowDown, Home, Store, Users } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Banknote, Loader2, ArrowUp, ArrowDown, Home, Store, Users, Download } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
 
@@ -26,14 +26,47 @@ interface RevenueData {
 export default function RevenuePage() {
     const [data, setData] = useState<RevenueData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
 
-    useEffect(() => {
-        fetch("/api/ops/revenue")
+    const fetchRevenue = () => {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (dateFrom) params.set("dateFrom", dateFrom);
+        if (dateTo) params.set("dateTo", dateTo);
+        fetch(`/api/ops/revenue?${params}`)
             .then((r) => r.json())
             .then(setData)
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => {
+        fetchRevenue();
+    }, [dateFrom, dateTo]);
+
+    const exportCSV = () => {
+        if (!data) return;
+        const rows = [
+            ["Métrica", "Valor"],
+            ["Ventas Totales", data.allTime.totalSales],
+            ["Revenue MOOVY", data.allTime.moovyCommission + data.allTime.sellerCommissions],
+            ["Payouts Comercios", data.allTime.merchantPayouts],
+            ["Payouts Vendedores", data.allTime.sellerPayouts],
+            ["Delivery Fees", data.allTime.deliveryFees],
+            ["Pedidos", data.allTime.orderCount],
+            ["MercadoPago Total", data.byPaymentMethod.mercadopago.total],
+            ["Efectivo Total", data.byPaymentMethod.cash.total],
+        ];
+        const csv = rows.map(r => r.join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `revenue-moovy-${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     if (loading) {
         return (
@@ -61,10 +94,33 @@ export default function RevenuePage() {
                     <h1 className="text-2xl font-bold text-gray-900">Revenue Dashboard</h1>
                     <p className="text-gray-500">Visión general de ingresos y comisiones</p>
                 </div>
-                <Link href="/ops" className="btn-secondary flex items-center gap-2">
-                    <Home className="w-4 h-4" />
-                    Inicio
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link href="/ops" className="btn-secondary flex items-center gap-2">
+                        <Home className="w-4 h-4" />
+                        Inicio
+                    </Link>
+                    <button onClick={exportCSV} disabled={!data} className="btn-secondary flex items-center gap-2 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Download className="w-4 h-4" />
+                        Exportar CSV
+                    </button>
+                </div>
+            </div>
+
+            {/* Date Filters */}
+            <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                    <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
+                </div>
+                {(dateFrom || dateTo) && (
+                    <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="mt-6 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline">
+                        Limpiar filtros
+                    </button>
+                )}
             </div>
 
             {/* Main KPIs */}

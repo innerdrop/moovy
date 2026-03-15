@@ -53,6 +53,14 @@ export default function AdminSoportePage() {
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const quickReplies = [
+        "Tu pedido está en camino, te avisamos cuando llegue.",
+        "Estamos revisando tu caso, te contactamos pronto.",
+        "El comercio confirmó tu pedido, está en preparación.",
+        "Lamentamos el inconveniente. Procesamos tu reembolso.",
+        "¿Podrías darnos más detalles sobre el problema?",
+    ];
+
     useEffect(() => {
         fetchChats();
         // Poll for new messages every 10 seconds
@@ -374,26 +382,39 @@ export default function AdminSoportePage() {
                                     </button>
                                 </div>
                             ) : (
-                                <form onSubmit={sendMessage} className="p-4 border-t bg-white flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        placeholder="Escribí tu respuesta..."
-                                        className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#e60012]"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={sending || !newMessage.trim()}
-                                        className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#c5000f] transition disabled:opacity-50"
-                                    >
-                                        {sending ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            <Send className="w-5 h-5" />
-                                        )}
-                                    </button>
-                                </form>
+                                <div className="border-t bg-white">
+                                    <div className="p-3 flex flex-wrap gap-2">
+                                        {quickReplies.map((reply, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setNewMessage(reply)}
+                                                className="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-gray-700 hover:bg-slate-200 transition"
+                                            >
+                                                {reply}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <form onSubmit={sendMessage} className="p-4 flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            placeholder="Escribí tu respuesta..."
+                                            className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#e60012]"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={sending || !newMessage.trim()}
+                                            className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#c5000f] transition disabled:opacity-50"
+                                        >
+                                            {sending ? (
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                            ) : (
+                                                <Send className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    </form>
+                                </div>
                             )}
                         </>
                     ) : (

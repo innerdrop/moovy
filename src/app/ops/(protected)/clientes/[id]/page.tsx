@@ -2,7 +2,10 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ChevronLeft, Gift, Save, Loader2, AlertCircle, CheckCircle, User, CreditCard } from "lucide-react";
+import {
+    ChevronLeft, Gift, Save, Loader2, AlertCircle, CheckCircle,
+    User, Package, MapPin, Phone, Mail, Calendar, ShoppingBag
+} from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 
 interface UserData {
@@ -15,18 +18,38 @@ interface UserData {
     createdAt: string;
 }
 
+interface OrderSummary {
+    id: string;
+    orderNumber: string;
+    status: string;
+    total: number;
+    createdAt: string;
+    merchant: { name: string } | null;
+}
+
+const statusLabels: Record<string, { label: string; color: string }> = {
+    PENDING: { label: "Pendiente", color: "bg-yellow-100 text-yellow-700" },
+    CONFIRMED: { label: "Confirmado", color: "bg-blue-100 text-blue-700" },
+    PREPARING: { label: "Preparando", color: "bg-purple-100 text-purple-700" },
+    READY: { label: "Listo", color: "bg-indigo-100 text-indigo-700" },
+    IN_DELIVERY: { label: "En camino", color: "bg-orange-100 text-orange-700" },
+    DELIVERED: { label: "Entregado", color: "bg-green-100 text-green-700" },
+    CANCELLED: { label: "Cancelado", color: "bg-red-100 text-red-700" },
+};
+
 export default function ClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    // Unwrap params in Next 15+
     const unwrappedParams = use(params);
     const userId = unwrappedParams.id;
 
     const [user, setUser] = useState<UserData | null>(null);
+    const [orders, setOrders] = useState<OrderSummary[]>([]);
     const [loading, setLoading] = useState(true);
+    const [ordersLoading, setOrdersLoading] = useState(true);
     const [adjustmentAmount, setAdjustmentAmount] = useState("");
     const [adjustmentReason, setAdjustmentReason] = useState("");
     const [adjustmentType, setAdjustmentType] = useState<"ADD" | "SUBTRACT">("ADD");
     const [processing, setProcessing] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     useEffect(() => {
         fetchUser();
@@ -34,21 +57,35 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
 
     const fetchUser = async () => {
         try {
-            // Reusing the users list API but filtering? No, ideally we should have a GET /api/admin/users/[id]
-            // For now, let's just fetch all users and find the one (not optimal but works for MVP since I didn't create the specific endpoint)
-            // Correction: I should probably create a specific endpoint or update users API. 
-            // Let's assume fetching list and filtering for now as I created the list API.
             const res = await fetch("/api/admin/users");
             if (res.ok) {
                 const data = await res.json();
                 const foundUser = data.find((u: UserData) => u.id === userId);
-                if (foundUser) setUser(foundUser);
-                else setMessage({ type: 'error', text: 'Usuario no encontrado' });
+                if (foundUser) {
+                    setUser(foundUser);
+                    fetchOrders(foundUser.email);
+                } else {
+                    setMessage({ type: "error", text: "Usuario no encontrado" });
+                }
             }
         } catch (error) {
             console.error("Error fetching user:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchOrders = async (email: string) => {
+        try {
+            const res = await fetch(`/api/admin/orders?search=${encodeURIComponent(email)}&limit=20`);
+            if (res.ok) {
+                const data = await res.json();
+                setOrders(data.orders || []);
+            }
+        } catch (error) {
+            console.error("Error fetching orders:", error);
+        } finally {
+            setOrdersLoading(false);
         }
     };
 
@@ -59,7 +96,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
 
         const amount = parseInt(adjustmentAmount);
         if (isNaN(amount) || amount <= 0) {
-            setMessage({ type: 'error', text: 'Ingresá un monto válido.' });
+            setMessage({ type: "error", text: "Ingresá un monto válido." });
             setProcessing(false);
             return;
         }
@@ -73,21 +110,20 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
                 body: JSON.stringify({
                     amount: finalAmount,
                     description: adjustmentReason || "Ajuste manual de administrador",
-                    type: "ADJUSTMENT"
+                    type: "ADJUSTMENT",
                 }),
             });
 
             if (res.ok) {
-                setMessage({ type: 'success', text: 'Puntos ajustados correctamente.' });
+                setMessage({ type: "success", text: "Puntos ajustados correctamente." });
                 setAdjustmentAmount("");
                 setAdjustmentReason("");
-                // Refresh use data
                 fetchUser();
             } else {
-                setMessage({ type: 'error', text: 'Error al ajustar puntos.' });
+                setMessage({ type: "error", text: "Error al ajustar puntos." });
             }
         } catch (error) {
-            setMessage({ type: 'error', text: 'Error de conexión.' });
+            setMessage({ type: "error", text: "Error de conexión." });
         } finally {
             setProcessing(false);
         }
@@ -105,150 +141,122 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">Usuario no encontrado.</p>
-                <Link href="/ops/clientes" className="text-[#e60012] hover:underline mt-2 inline-block">
-                    Volver al listado
-                </Link>
+                <Link href="/ops/clientes" className="text-[#e60012] hover:underline mt-2 inline-block">Volver al listado</Link>
             </div>
         );
     }
 
+    const totalSpent = orders.filter(o => o.status === "DELIVERED").reduce((acc, o) => acc + o.total, 0);
+    const totalOrders = orders.length;
+    const deliveredOrders = orders.filter(o => o.status === "DELIVERED").length;
+
     return (
-        <div className="max-w-4xl mx-auto">
-            <Link
-                href="/ops/clientes"
-                className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-6 transition"
-            >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Volver a Clientes
+        <div className="space-y-6">
+            <Link href="/ops/clientes" className="inline-flex items-center text-gray-500 hover:text-gray-900 transition">
+                <ChevronLeft className="w-4 h-4 mr-1" /> Volver a Clientes
             </Link>
 
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        {user.name}
-                        {user.role === 'ADMIN' && (
-                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                                Admin
-                            </span>
-                        )}
-                    </h1>
-                    <p className="text-gray-500">{user.email}</p>
-                </div>
-                <div className="text-right">
-                    <p className="text-sm text-gray-500">Saldo Actual</p>
-                    <p className="text-3xl font-bold text-[#e60012] flex items-center justify-end gap-2">
-                        <Gift className="w-6 h-6" />
-                        {user.pointsBalance}
-                    </p>
+            {/* User Header */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center text-[#e60012] font-black text-2xl border border-red-100">
+                            {(user.name || user.email).charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">{user.name || "Sin nombre"}</h1>
+                            <p className="text-slate-500 flex items-center gap-2"><Mail className="w-4 h-4" /> {user.email}</p>
+                            {user.phone && <p className="text-slate-500 flex items-center gap-2"><Phone className="w-4 h-4" /> {user.phone}</p>}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div className="text-center">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Puntos</p>
+                            <p className="text-2xl font-bold text-[#e60012] flex items-center gap-1"><Gift className="w-5 h-5" /> {user.pointsBalance}</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Miembro desde</p>
+                            <p className="text-sm font-medium text-gray-900">{new Date(user.createdAt).toLocaleDateString("es-AR")}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {message && (
-                <div className={`p-4 rounded-lg mb-6 flex items-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                    }`}>
-                    {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                <div className={`p-4 rounded-lg flex items-center gap-3 ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                    {message.type === "success" ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                     {message.text}
                 </div>
             )}
 
-            <div className="grid lg:grid-cols-2 gap-6">
-                {/* User Info Card */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <User className="w-5 h-5 text-gray-400" />
-                        Información
-                    </h2>
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-sm text-gray-500">ID de Usuario</p>
-                            <p className="font-mono text-xs bg-gray-50 p-2 rounded mt-1">{user.id}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Teléfono</p>
-                            <p className="font-medium">{user.phone || "No registrado"}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Fecha de Registro</p>
-                            <p className="font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
-                        </div>
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pedidos</p>
+                    <p className="text-2xl font-bold text-gray-900">{totalOrders}</p>
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Entregados</p>
+                    <p className="text-2xl font-bold text-green-600">{deliveredOrders}</p>
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Gastado</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatPrice(totalSpent)}</p>
+                </div>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+                {/* Orders History */}
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-100">
+                        <h2 className="font-bold text-gray-900 flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-[#e60012]" /> Historial de Pedidos</h2>
                     </div>
+                    {ordersLoading ? (
+                        <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                    ) : orders.length > 0 ? (
+                        <div className="divide-y divide-slate-50">
+                            {orders.map((order) => {
+                                const st = statusLabels[order.status] || { label: order.status, color: "bg-slate-100 text-slate-600" };
+                                return (
+                                    <Link key={order.id} href={`/ops/pedidos/${order.id}`} className="flex items-center justify-between p-4 hover:bg-slate-50 transition">
+                                        <div>
+                                            <p className="font-bold text-gray-900">#{order.orderNumber}</p>
+                                            <p className="text-xs text-slate-400">{order.merchant?.name || "—"} • {new Date(order.createdAt).toLocaleDateString("es-AR")}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${st.color}`}>{st.label}</span>
+                                            <span className="font-bold text-gray-900">{formatPrice(order.total)}</span>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="p-8 text-center text-slate-400">
+                            <Package className="w-12 h-12 mx-auto mb-2 text-slate-200" />
+                            <p>Este cliente aún no tiene pedidos</p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Adjustment Form */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <Gift className="w-5 h-5 text-[#e60012]" />
-                        Ajustar Puntos
-                    </h2>
-
+                {/* Points Adjustment */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 h-fit">
+                    <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Gift className="w-5 h-5 text-[#e60012]" /> Ajustar Puntos</h2>
                     <form onSubmit={handleAdjustment} className="space-y-4">
                         <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
-                            <button
-                                type="button"
-                                onClick={() => setAdjustmentType("ADD")}
-                                className={`py-2 text-sm font-medium rounded-md transition ${adjustmentType === "ADD"
-                                        ? "bg-white text-green-600 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-700"
-                                    }`}
-                            >
-                                Sumar (+)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setAdjustmentType("SUBTRACT")}
-                                className={`py-2 text-sm font-medium rounded-md transition ${adjustmentType === "SUBTRACT"
-                                        ? "bg-white text-red-600 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-700"
-                                    }`}
-                            >
-                                Restar (-)
-                            </button>
+                            <button type="button" onClick={() => setAdjustmentType("ADD")} className={`py-2 text-sm font-medium rounded-md transition ${adjustmentType === "ADD" ? "bg-white text-green-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Sumar (+)</button>
+                            <button type="button" onClick={() => setAdjustmentType("SUBTRACT")} className={`py-2 text-sm font-medium rounded-md transition ${adjustmentType === "SUBTRACT" ? "bg-white text-red-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Restar (-)</button>
                         </div>
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Cantidad de Puntos
-                            </label>
-                            <input
-                                type="number"
-                                value={adjustmentAmount}
-                                onChange={(e) => setAdjustmentAmount(e.target.value)}
-                                placeholder="0"
-                                className="input"
-                                min="1"
-                                required
-                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                            <input type="number" value={adjustmentAmount} onChange={(e) => setAdjustmentAmount(e.target.value)} placeholder="0" className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" min="1" required />
                         </div>
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Motivo (Opcional)
-                            </label>
-                            <input
-                                type="text"
-                                value={adjustmentReason}
-                                onChange={(e) => setAdjustmentReason(e.target.value)}
-                                placeholder="Ej: Bonificación por error..."
-                                className="input"
-                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+                            <input type="text" value={adjustmentReason} onChange={(e) => setAdjustmentReason(e.target.value)} placeholder="Ej: Bonificación..." className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" />
                         </div>
-
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className={`w-full py-2.5 rounded-lg font-bold text-white transition flex items-center justify-center gap-2 ${adjustmentType === "ADD"
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : "bg-red-600 hover:bg-red-700"
-                                }`}
-                        >
-                            {processing ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <>
-                                    <Save className="w-5 h-5" />
-                                    {adjustmentType === "ADD" ? "Sumar Puntos" : "Restar Puntos"}
-                                </>
-                            )}
+                        <button type="submit" disabled={processing} className={`w-full py-2.5 rounded-lg font-bold text-white transition flex items-center justify-center gap-2 ${adjustmentType === "ADD" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
+                            {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> {adjustmentType === "ADD" ? "Sumar Puntos" : "Restar Puntos"}</>}
                         </button>
                     </form>
                 </div>

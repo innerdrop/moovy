@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
-// GET - List all orders
+// GET - List all orders with pagination and filtering
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
@@ -13,12 +13,48 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
+
+        // Pagination
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+        const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "50", 10)));
+        const skip = (page - 1) * limit;
+
+        // Filters
         const status = searchParams.get("status");
+        const dateFrom = searchParams.get("dateFrom");
+        const dateTo = searchParams.get("dateTo");
+        const search = searchParams.get("search");
 
         const where: any = {};
+
+        // Status filter
         if (status && status !== "all") {
             where.status = status;
         }
+
+        // Date range filter
+        if (dateFrom || dateTo) {
+            where.createdAt = {};
+            if (dateFrom) {
+                where.createdAt.gte = new Date(dateFrom);
+            }
+            if (dateTo) {
+                where.createdAt.lte = new Date(dateTo);
+            }
+        }
+
+        // Search filter (orderNumber or user name/email)
+        if (search) {
+            where.OR = [
+                { orderNumber: { contains: search, mode: "insensitive" } },
+                { user: { name: { contains: search, mode: "insensitive" } } },
+                { user: { email: { contains: search, mode: "insensitive" } } }
+            ];
+        }
+
+        // Fetch total count for pagination
+        const total = await prisma.order.count({ where });
+        const totalPages = Math.ceil(total / limit);
 
         const orders = await prisma.order.findMany({
             where,
@@ -34,10 +70,17 @@ export async function GET(request: NextRequest) {
                 merchant: { select: { id: true, name: true } }
             },
             orderBy: { createdAt: "desc" },
-            take: 100,
+            skip,
+            take: limit,
         });
 
-        return NextResponse.json(orders);
+        return NextResponse.json({
+            orders,
+            total,
+            page,
+            limit,
+            totalPages
+        });
     } catch (error) {
         console.error("Error fetching orders:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
