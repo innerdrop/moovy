@@ -114,11 +114,20 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Favoritos**: usar `HeartButton` de `@/components/ui/HeartButton` en cards
 - **Niveles MOOVER**: importar de `@/lib/moover-level` (nunca duplicar constantes)
 
+## Patrones nuevos (auditoría 2026-03-14)
+- **SEO dinámico**: usar `generateMetadata()` + JSON-LD en páginas de detalle (producto, listing, vendedor)
+- **Config dinámica frontend**: leer MoovyConfig desde `/api/config/public?key=xxx` (whitelisted keys)
+- **Comisiones**: leer `default_merchant_commission_pct` y `default_seller_commission_pct` de MoovyConfig (fallback 8% y 10%)
+- **Buscador global**: AppHeader incluye SearchOverlay mobile y dropdown desktop con debounce 300ms
+- **Tracking mapa buyer**: usar `OrderTrackingMiniMap` con `dynamic()` import (no SSR) en pedidos activos
+- **Filtros API listings**: soporta `sellerId`, `minPrice`, `maxPrice`, `sortBy` (price_asc/price_desc/newest)
+
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
 - Quedan ~8 extracciones de `(session.user as any).role` en support/chats y driver/location (no son comparaciones, son extracciones para lógica condicional)
 - Portal COMEX eliminado (era legacy, apuntaba a rutas `/partner/` inexistentes)
+- Crons corren dentro del socket-server (si se cae, todos mueren) — necesita health check independiente
 
 ## Lo que NO existe todavía
 - Pago con MP en producción (requiere credenciales productivas)
@@ -168,3 +177,19 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/vendedor/registro/page.tsx` — Wizard onboarding vendedor: paso 1 CUIT+términos, paso 2 displayName+bio, paso 3 confirmación con CTA al panel
 - `src/app/api/auth/activate-seller/route.ts` — Ahora requiere body con CUIT y acceptedTerms, crea SellerProfile en transacción
 - `mi-perfil/page.tsx` — Botón "Quiero vender" cambiado de onClick a Link → `/vendedor/registro?from=profile`
+- `src/app/(store)/productos/[slug]/page.tsx` — Convertido a server component con generateMetadata() + JSON-LD
+- `src/app/(store)/productos/[slug]/ProductDetailClient.tsx` — Lógica interactiva extraída del detalle de producto
+- `src/app/(store)/marketplace/[id]/page.tsx` — generateMetadata() + JSON-LD para listings
+- `src/app/(store)/marketplace/vendedor/[id]/page.tsx` — Perfil público de vendedor con listings, rating, bio y generateMetadata
+- `src/components/layout/AppHeader.tsx` — Buscador global: desktop inline con dropdown, mobile overlay, debounce 300ms
+- `src/app/api/config/public/route.ts` — Endpoint público de config (whitelisted keys: merchant_confirm_timeout, driver_response_timeout)
+- `src/app/api/orders/route.ts` — Comisiones leídas de MoovyConfig (configurable desde OPS)
+- `src/app/api/listings/route.ts` — Filtros: sellerId, minPrice, maxPrice, sortBy
+- `src/app/api/merchant/earnings/route.ts` — Resumen de ganancias y comisiones para comercios
+- `src/app/comercios/(protected)/pagos/page.tsx` — Sección de pagos y comisiones con KPIs y transacciones
+- `src/app/comercios/(protected)/layout.tsx` — Agregado link "Pagos" en nav
+- `src/app/(store)/mis-pedidos/[orderId]/page.tsx` — Tracking GPS en tiempo real con OrderTrackingMiniMap + polling 10s
+- Schema Listing: nuevos campos `weightKg`, `lengthCm`, `widthCm`, `heightCm` (Float?)
+- `src/components/seller/NewListingForm.tsx` — Campos de peso y dimensiones en formulario
+- `src/app/vendedor/(protected)/pedidos/page.tsx` — Alerta sonora para nuevos pedidos (polling 15s + new-order.wav)
+- `src/components/layout/Footer.tsx` — 6 links legales agregados (cookies, devoluciones, cancelaciones, términos por rol)
