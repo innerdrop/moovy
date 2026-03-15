@@ -2,6 +2,7 @@
 
 import React, { memo } from "react";
 import { Home, Wallet, History, HeadphonesIcon, User } from "lucide-react";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 type TabId = "dashboard" | "earnings" | "history" | "support" | "profile";
 
@@ -20,6 +21,7 @@ const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: RiderBottomNavProps) {
+    const isDark = useColorScheme() === "dark";
     return (
         <nav
             className="fixed bottom-0 left-0 right-0 z-[70]"
@@ -31,11 +33,11 @@ function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: Ride
             <div
                 className="mx-auto"
                 style={{
-                    background: "rgba(255, 255, 255, 0.92)",
+                    background: isDark ? "rgba(22, 24, 32, 0.92)" : "rgba(255, 255, 255, 0.92)",
                     backdropFilter: "blur(20px) saturate(180%)",
                     WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                    borderTop: "1px solid rgba(0, 0, 0, 0.06)",
-                    boxShadow: "0 -4px 24px rgba(0, 0, 0, 0.06)",
+                    borderTop: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
+                    boxShadow: isDark ? "0 -4px 24px rgba(0, 0, 0, 0.3)" : "0 -4px 24px rgba(0, 0, 0, 0.06)",
                 }}
             >
                 <div className="flex items-center justify-around px-2 py-1">
@@ -69,7 +71,7 @@ function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: Ride
                                     <Icon
                                         className={`w-[22px] h-[22px] transition-colors duration-300 ${isActive
                                             ? "text-[#e60012]"
-                                            : "text-gray-400 group-hover:text-gray-600"
+                                            : "text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300"
                                             }`}
                                         strokeWidth={isActive ? 2.5 : 1.8}
                                     />
@@ -83,7 +85,7 @@ function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: Ride
                                 <span
                                     className={`text-[10px] mt-0.5 font-semibold tracking-wide transition-colors duration-300 ${isActive
                                         ? "text-[#e60012]"
-                                        : "text-gray-400 group-hover:text-gray-600"
+                                        : "text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300"
                                         }`}
                                 >
                                     {tab.label}

@@ -60,7 +60,7 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
     const isPositive = change >= 0;
 
     return (
-        <div className="absolute inset-0 z-50 bg-gray-50 flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="absolute inset-0 z-50 bg-gray-50 dark:bg-[#0f1117] flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#e60012] to-[#b8000e] text-white px-4 py-6 shadow-md">
                 <div className="max-w-4xl mx-auto">
@@ -99,10 +99,10 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                 ) : data ? (
                     <>
                         {/* Main Stats */}
-                        <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-6 shadow-sm">
                             <div className="text-center mb-6">
-                                <p className="text-gray-500 text-sm mb-1">Total ganado</p>
-                                <p className="text-4xl font-bold text-gray-900">${data.totalEarnings.toLocaleString()}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Total ganado</p>
+                                <p className="text-4xl font-bold text-gray-900 dark:text-white">${data.totalEarnings.toLocaleString()}</p>
                                 {data.previousPeriodTotal > 0 && (
                                     <div className={`flex items-center justify-center gap-1 mt-2 text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                                         {isPositive ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -111,49 +111,49 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                            <div className="grid grid-cols-3 gap-4 pt-4 border-t dark:border-white/10">
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">{data.totalDeliveries}</p>
-                                    <p className="text-xs text-gray-500">Entregas</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.totalDeliveries}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Entregas</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">${data.avgPerDelivery}</p>
-                                    <p className="text-xs text-gray-500">Por entrega</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${data.avgPerDelivery}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Por entrega</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">${data.avgPerDay.toLocaleString()}</p>
-                                    <p className="text-xs text-gray-500">Por dia</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${data.avgPerDay.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Por dia</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Daily Breakdown */}
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                            <div className="p-4 border-b">
-                                <h3 className="font-semibold text-gray-900">Desglose por dia</h3>
+                        <div className="bg-white dark:bg-[#1a1d27] rounded-xl shadow-sm overflow-hidden">
+                            <div className="p-4 border-b dark:border-white/10">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">Desglose por dia</h3>
                             </div>
                             {data.dailyBreakdown.length > 0 ? (
-                                <div className="divide-y">
+                                <div className="divide-y dark:divide-white/10">
                                     {data.dailyBreakdown.map((day) => (
                                         <div key={day.date} className="p-4 flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                                                <div className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-lg flex items-center justify-center">
                                                     <Calendar className="w-5 h-5 text-[#e60012]" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium text-gray-900">
+                                                    <p className="font-medium text-gray-900 dark:text-white">
                                                         {new Date(day.date + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric" })}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">{day.deliveries} entrega{day.deliveries !== 1 ? "s" : ""}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{day.deliveries} entrega{day.deliveries !== 1 ? "s" : ""}</p>
                                                 </div>
                                             </div>
-                                            <p className="font-bold text-gray-900">${day.earnings.toLocaleString()}</p>
+                                            <p className="font-bold text-gray-900 dark:text-white">${day.earnings.toLocaleString()}</p>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="p-8 text-center">
-                                    <Wallet className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                                    <Wallet className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                                     <p className="text-gray-400 text-sm">Sin entregas en este periodo</p>
                                 </div>
                             )}

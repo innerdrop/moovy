@@ -66,7 +66,7 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
     });
 
     return (
-        <div className="absolute inset-0 z-50 bg-gray-50 flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="absolute inset-0 z-50 bg-gray-50 dark:bg-[#0f1117] flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#e60012] to-[#b8000e] text-white px-4 py-6 shadow-md">
                 <div className="max-w-4xl mx-auto">
@@ -108,7 +108,7 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                             onClick={() => setFilter(f.value as any)}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${filter === f.value
                                 ? "bg-[#e60012] text-white"
-                                : "bg-white text-gray-700 shadow-sm"
+                                : "bg-white dark:bg-[#1a1d27] text-gray-700 dark:text-gray-300 shadow-sm dark:shadow-none"
                                 }`}
                         >
                             {f.label}
@@ -129,34 +129,34 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                             <div key={date}>
                                 <div className="flex items-center gap-2 mb-2">
                                     <Calendar className="w-4 h-4 text-gray-400" />
-                                    <p className="text-sm font-medium text-gray-600">
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                         {new Date(date + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
                                     </p>
                                 </div>
                                 <div className="space-y-2">
                                     {records.map((delivery) => (
-                                        <div key={delivery.id} className="bg-white rounded-xl p-4 shadow-sm">
+                                        <div key={delivery.id} className="bg-white dark:bg-[#1a1d27] rounded-xl p-4 shadow-sm">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div>
-                                                    <p className="font-semibold text-gray-900">{delivery.comercio}</p>
-                                                    <p className="text-xs text-gray-500">
+                                                    <p className="font-semibold text-gray-900 dark:text-white">{delivery.comercio}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
                                                         #{delivery.orderNumber} • {new Date(delivery.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                                                     </p>
                                                 </div>
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${delivery.estado === "DELIVERED"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-red-100 text-red-700"
+                                                    ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400"
+                                                    : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"
                                                     }`}>
                                                     {delivery.estado === "DELIVERED" ? "Completado" : "Cancelado"}
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
                                                 <MapPin className="w-4 h-4 text-gray-400" />
                                                 {delivery.direccion}
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-2 border-t">
+                                            <div className="flex items-center justify-between pt-2 border-t dark:border-white/10">
                                                 <span className="text-xs text-gray-400">Pedido total</span>
                                                 <p className={`font-bold ${delivery.total > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                                                     {delivery.total > 0 ? `$${delivery.total.toLocaleString()}` : "-"}
@@ -169,9 +169,9 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                         ))}
 
                         {filteredDeliveries.length === 0 && (
-                            <div className="bg-white rounded-xl p-8 text-center">
-                                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-500">No hay entregas para mostrar</p>
+                            <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-8 text-center">
+                                <Package className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                                <p className="text-gray-500 dark:text-gray-400">No hay entregas para mostrar</p>
                             </div>
                         )}
                     </>

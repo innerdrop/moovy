@@ -43,7 +43,7 @@ const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
 
 const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
     ssr: false,
-    loading: () => <div className="fixed bottom-0 left-0 right-0 h-[160px] bg-white rounded-t-3xl animate-pulse" />
+    loading: () => <div className="fixed bottom-0 left-0 right-0 h-[160px] bg-white dark:bg-[#1a1d27] rounded-t-3xl animate-pulse" />
 });
 
 const RiderBottomNav = dynamic(() => import("@/components/rider/RiderBottomNav"), { ssr: false });
@@ -276,12 +276,12 @@ export default function RiderDashboard() {
     // ── Loading state ──
     if (isLoading && !dashboardData) {
         return (
-            <div className="h-dvh flex flex-col items-center justify-center bg-white">
+            <div className="h-dvh flex flex-col items-center justify-center bg-white dark:bg-[#0f1117]">
                 <div className="relative">
                     <Bike className="w-12 h-12 text-[#e60012] animate-bounce" />
-                    <Loader2 className="w-20 h-20 text-gray-100 animate-spin absolute -top-4 -left-4 -z-10" />
+                    <Loader2 className="w-20 h-20 text-gray-100 dark:text-gray-800 animate-spin absolute -top-4 -left-4 -z-10" />
                 </div>
-                <p className="mt-4 font-bold text-gray-500 uppercase tracking-widest text-xs">Cargando moovy...</p>
+                <p className="mt-4 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-xs">Cargando moovy...</p>
             </div>
         );
     }
@@ -390,7 +390,7 @@ export default function RiderDashboard() {
     const pedidoActivo = pedidosActivos[0];
 
     return (
-        <div className={`h-dvh w-screen relative bg-gray-100 ${!isMapExpanded ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}>
+        <div className={`h-dvh w-screen relative bg-gray-100 dark:bg-[#0f1117] ${!isMapExpanded ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}>
 
             {activeView === "dashboard" && (
                 <>
@@ -400,7 +400,7 @@ export default function RiderDashboard() {
                     <div
                         className={`transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${isMapExpanded
                             ? 'absolute inset-0 z-[1] rounded-none'
-                            : 'relative z-[1] mx-4 mt-4 rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-gray-200'
+                            : 'relative z-[1] mx-4 mt-4 rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-gray-200 dark:border-white/10'
                             }`}
                         style={isMapExpanded ? undefined : { height: '220px' }}
                         onClick={() => { if (!isMapExpanded) setIsMapExpanded(true); }}
@@ -471,7 +471,7 @@ export default function RiderDashboard() {
                                 {/* Home button — returns to card view */}
                                 <button
                                     onClick={() => setIsMapExpanded(false)}
-                                    className="w-12 h-12 bg-white/95 backdrop-blur-xl rounded-[14px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center pointer-events-auto active:scale-95 transition-all duration-300 border border-gray-200 hover:border-[#e60012] hover:shadow-[0_8px_20px_rgba(230,0,18,0.15)]"
+                                    className="w-12 h-12 bg-white/95 dark:bg-[#1a1d27]/95 backdrop-blur-xl rounded-[14px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center pointer-events-auto active:scale-95 transition-all duration-300 border border-gray-200 dark:border-white/10 hover:border-[#e60012] hover:shadow-[0_8px_20px_rgba(230,0,18,0.15)]"
                                 >
                                     <Home className="w-5 h-5 text-[#e60012]" />
                                 </button>
@@ -517,7 +517,7 @@ export default function RiderDashboard() {
                         <div className="fixed top-0 left-0 right-0 z-[20] pointer-events-none" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
                             <div className="flex justify-end items-center px-4 pt-1">
                                 {/* Online status pill in card mode */}
-                                <div className={`px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] backdrop-blur-xl flex items-center gap-2 border transition-all duration-300 pointer-events-auto ${isOnline ? 'bg-green-500/90 text-white border-green-400/50' : 'bg-white/95 text-[#9ca3af] border-gray-200'}`}>
+                                <div className={`px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] backdrop-blur-xl flex items-center gap-2 border transition-all duration-300 pointer-events-auto ${isOnline ? 'bg-green-500/90 text-white border-green-400/50' : 'bg-white/95 dark:bg-[#1a1d27]/95 text-[#9ca3af] border-gray-200 dark:border-white/10'}`}>
                                     <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
                                     <span className="text-[11px] font-semibold uppercase tracking-[0.8px]">{isOnline ? 'Conectado' : 'Offline'}</span>
                                 </div>
@@ -531,12 +531,12 @@ export default function RiderDashboard() {
                     {!isMapExpanded && !pedidoActivo && (
                         <div className="px-4 pt-6 pb-24 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* Status + Power Row */}
-                            <div className="flex items-center justify-between bg-white p-5 rounded-[24px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100">
+                            <div className="flex items-center justify-between bg-white dark:bg-[#1a1d27] p-5 rounded-[24px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-white/10">
                                 <div>
                                     <h2 className={`text-[18px] font-extrabold tracking-tight uppercase leading-tight mb-0.5 ${isOnline ? 'text-emerald-500' : 'text-[#e60012]'}`}>
                                         {isOnline ? "Conectado" : "Estas desconectado"}
                                     </h2>
-                                    <p className="text-[12px] text-[#6b6b6b] font-medium">
+                                    <p className="text-[12px] text-[#6b6b6b] dark:text-gray-400 font-medium">
                                         {isOnline ? "Buscando pedidos..." : "Conectate para recibir ordenes"}
                                     </p>
                                 </div>
@@ -557,21 +557,21 @@ export default function RiderDashboard() {
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white border border-gray-100 rounded-[22px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                                    <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                <div className="bg-white dark:bg-[#1a1d27] border border-gray-100 dark:border-white/10 rounded-[22px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                                    <div className="w-9 h-9 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center mb-2">
                                         <Wallet className="w-5 h-5 text-[#e60012]" />
                                     </div>
-                                    <p className="text-xl font-extrabold text-gray-900 leading-none">
+                                    <p className="text-xl font-extrabold text-gray-900 dark:text-white leading-none">
                                         ${stats.gananciasHoy.toLocaleString()}
                                     </p>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Ganancias Hoy</p>
                                 </div>
 
-                                <div className="bg-white border border-gray-100 rounded-[22px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                                    <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                <div className="bg-white dark:bg-[#1a1d27] border border-gray-100 dark:border-white/10 rounded-[22px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                                    <div className="w-9 h-9 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center mb-2">
                                         <CheckCircle className="w-5 h-5 text-[#e60012]" />
                                     </div>
-                                    <p className="text-xl font-extrabold text-gray-900 leading-none">{stats.completados}</p>
+                                    <p className="text-xl font-extrabold text-gray-900 dark:text-white leading-none">{stats.completados}</p>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Completados</p>
                                 </div>
                             </div>
@@ -579,8 +579,8 @@ export default function RiderDashboard() {
                             {/* Waiting animation when online */}
                             {isOnline && (
                                 <div className="py-8 text-center space-y-3">
-                                    <div className="w-20 h-20 bg-gray-50 rounded-full mx-auto flex items-center justify-center relative">
-                                        <div className="w-16 h-16 border-2 border-dashed border-gray-200 rounded-full animate-spin-slow" />
+                                    <div className="w-20 h-20 bg-gray-50 dark:bg-[#1a1d27] rounded-full mx-auto flex items-center justify-center relative">
+                                        <div className="w-16 h-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-full animate-spin-slow" />
                                         <Navigation className="w-8 h-8 text-gray-200 absolute" />
                                     </div>
                                     <p className="text-xs font-extrabold text-gray-300 uppercase tracking-[3px]">Esperando ofertas</p>
@@ -592,14 +592,14 @@ export default function RiderDashboard() {
                     {/* Active order info (short version for card mode) */}
                     {!isMapExpanded && pedidoActivo && (
                         <div className="px-4 pt-6 pb-24 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="bg-white p-5 rounded-[24px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-gray-100">
+                            <div className="bg-white dark:bg-[#1a1d27] p-5 rounded-[24px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-gray-100 dark:border-white/10">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                                         <Package className="w-5 h-5 text-orange-600" />
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Pedido en curso</p>
-                                        <h3 className="font-extrabold text-gray-900 truncate">{pedidoActivo.comercio}</h3>
+                                        <h3 className="font-extrabold text-gray-900 dark:text-white truncate">{pedidoActivo.comercio}</h3>
                                     </div>
                                     <button
                                         onClick={() => setIsMapExpanded(true)}
@@ -608,9 +608,9 @@ export default function RiderDashboard() {
                                         Abrir
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-2 py-3 border-t border-gray-50">
+                                <div className="flex items-center gap-2 py-3 border-t border-gray-50 dark:border-white/5">
                                     <MapPin className="w-4 h-4 text-[#e60012]" />
-                                    <p className="text-xs text-gray-500 font-medium truncate">{pedidoActivo.direccionCliente || "Entrega en camino"}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{pedidoActivo.direccionCliente || "Entrega en camino"}</p>
                                 </div>
                             </div>
                         </div>
@@ -630,7 +630,7 @@ export default function RiderDashboard() {
                                     {/* Popup card — slides up from bottom */}
                                     <div className="relative z-10 w-full max-w-md mx-4 mb-6 animate-[slideUp_0.4s_cubic-bezier(0.32,0.72,0,1)]">
                                         {visibleOffers.map((pedido) => (
-                                            <div key={pedido.id} className="bg-white rounded-[28px] p-6 shadow-2xl relative overflow-hidden">
+                                            <div key={pedido.id} className="bg-white dark:bg-[#1a1d27] rounded-[28px] p-6 shadow-2xl relative overflow-hidden">
                                                 {/* Pulsing top accent */}
                                                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400 animate-pulse" />
 
@@ -665,7 +665,7 @@ export default function RiderDashboard() {
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="mb-5">
-                                                                <p className="text-sm font-bold text-gray-900 leading-tight">{pedido.comercio}</p>
+                                                                <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{pedido.comercio}</p>
                                                                 <p className="text-[11px] text-gray-400 font-medium truncate">{pedido.direccion}</p>
                                                                 <div className="mt-1 flex items-center gap-1.5 text-blue-600 font-bold text-[11px] uppercase">
                                                                     <Navigation className="w-3 h-3" />
@@ -673,7 +673,7 @@ export default function RiderDashboard() {
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-bold text-gray-900 leading-tight">{pedido.direccionCliente || "Entrega al cliente"}</p>
+                                                                <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{pedido.direccionCliente || "Entrega al cliente"}</p>
                                                                 <p className="text-[11px] text-gray-400 font-medium uppercase tracking-tighter">Total: {pedido.distanciaTotal}</p>
                                                                 <div className="mt-1 flex items-center gap-1.5 text-gray-500 font-bold text-[11px] uppercase">
                                                                     <Clock className="w-3 h-3" />
@@ -688,7 +688,7 @@ export default function RiderDashboard() {
                                                 <div className="flex gap-3">
                                                     <button
                                                         onClick={() => setDismissedOfferIds(prev => new Set([...prev, pedido.id]))}
-                                                        className="flex-1 py-4 bg-gray-50 text-gray-500 font-bold rounded-2xl text-[11px] uppercase tracking-widest border border-gray-100 active:scale-95 transition-all"
+                                                        className="flex-1 py-4 bg-gray-50 dark:bg-[#22252f] text-gray-500 dark:text-gray-400 font-bold rounded-2xl text-[11px] uppercase tracking-widest border border-gray-100 dark:border-white/10 active:scale-95 transition-all"
                                                     >
                                                         Rechazar
                                                     </button>
@@ -747,11 +747,11 @@ export default function RiderDashboard() {
                                             {/* Order header */}
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full w-fit mb-2">
+                                                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#22252f] px-3 py-1 rounded-full w-fit mb-2">
                                                         <Package className="w-3.5 h-3.5 text-gray-500" />
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">#{pedidoActivo.orderId}</span>
                                                     </div>
-                                                    <h2 className="text-[22px] font-extrabold tracking-tight text-[#1a1a1a] uppercase leading-none">
+                                                    <h2 className="text-[22px] font-extrabold tracking-tight text-[#1a1a1a] dark:text-white uppercase leading-none">
                                                         {pedidoActivo.estado === "picked_up" ? "Entrega en curso"
                                                             : pedidoActivo.estado === "driver_arrived" ? "Esperando pedido"
                                                             : "Ir al comercio"}
@@ -759,12 +759,12 @@ export default function RiderDashboard() {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Hora inicio</p>
-                                                    <p className="text-lg font-black text-gray-900 leading-none italic">{pedidoActivo.hora}</p>
+                                                    <p className="text-lg font-black text-gray-900 dark:text-white leading-none italic">{pedidoActivo.hora}</p>
                                                 </div>
                                             </div>
 
                                             {/* Origin → Destination route card */}
-                                            <div className="bg-gray-50 rounded-[24px] p-4 border border-gray-100">
+                                            <div className="bg-gray-50 dark:bg-[#22252f] rounded-[24px] p-4 border border-gray-100 dark:border-white/10">
                                                 <div className="flex items-start gap-4">
                                                     <div className="flex flex-col items-center gap-1 mt-1">
                                                         <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${
@@ -786,14 +786,14 @@ export default function RiderDashboard() {
                                                     <div className="flex-1 space-y-6">
                                                         <div>
                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mb-1">Comercio</p>
-                                                            <p className="font-bold text-gray-900 leading-tight">{pedidoActivo.comercio}</p>
+                                                            <p className="font-bold text-gray-900 dark:text-white leading-tight">{pedidoActivo.comercio}</p>
                                                             {pedidoActivo.estado !== "picked_up" && (
-                                                                <p className="text-sm text-gray-500 font-medium">{pedidoActivo.direccion}</p>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{pedidoActivo.direccion}</p>
                                                             )}
                                                         </div>
                                                         <div>
                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mb-1">Destino</p>
-                                                            <p className="font-bold text-gray-900 leading-tight">{pedidoActivo.direccionCliente || "Ubicación del cliente"}</p>
+                                                            <p className="font-bold text-gray-900 dark:text-white leading-tight">{pedidoActivo.direccionCliente || "Ubicación del cliente"}</p>
                                                             {pedidoActivo.estado === "picked_up" && (
                                                                 <div className="flex items-center gap-2 mt-1 py-1 px-3 bg-green-50 text-green-700 rounded-full w-fit">
                                                                     <User className="w-3 h-3" />
@@ -803,7 +803,7 @@ export default function RiderDashboard() {
                                                         </div>
                                                     </div>
                                                     {pedidoActivo.telefonoCliente && (
-                                                        <a href={`tel:${pedidoActivo.telefonoCliente}`} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md active:scale-95 border border-gray-100">
+                                                        <a href={`tel:${pedidoActivo.telefonoCliente}`} className="w-12 h-12 bg-white dark:bg-[#22252f] rounded-2xl flex items-center justify-center shadow-md active:scale-95 border border-gray-100 dark:border-white/10">
                                                             <Phone className="w-5 h-5 text-green-600" />
                                                         </a>
                                                     )}
@@ -880,7 +880,7 @@ export default function RiderDashboard() {
                                                     <h2 className={`text-[22px] font-extrabold tracking-tight uppercase leading-tight mb-1 ${isOnline ? 'text-emerald-500' : 'text-[#e60012]'}`}>
                                                         {isOnline ? "Conectado" : "Estás desconectado"}
                                                     </h2>
-                                                    <p className="text-[14px] text-[#6b6b6b] font-medium">
+                                                    <p className="text-[14px] text-[#6b6b6b] dark:text-gray-400 font-medium">
                                                         {isOnline ? "Espera a que te llegue una oferta" : "Conéctate para empezar a ganar"}
                                                     </p>
                                                 </div>
@@ -892,7 +892,7 @@ export default function RiderDashboard() {
                                                     disabled={isToggling}
                                                     className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 active:scale-90 animate-[spin-once_0.5s_ease-out] ${isOnline
                                                         ? 'bg-emerald-50 border-2 border-emerald-400 shadow-[0_4px_16px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)]'
-                                                        : 'bg-white border-2 border-gray-200 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:border-[#e60012] hover:shadow-[0_6px_20px_rgba(230,0,18,0.2)]'
+                                                        : 'bg-white dark:bg-[#22252f] border-2 border-gray-200 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:border-[#e60012] hover:shadow-[0_6px_20px_rgba(230,0,18,0.2)]'
                                                         }`}
                                                 >
                                                     {isToggling
@@ -913,18 +913,18 @@ export default function RiderDashboard() {
                                                 </div>
                                             ) : (
                                                 <div className="grid grid-cols-2 gap-3 pb-2">
-                                                    <div className="bg-white border border-gray-100 rounded-[20px] p-4">
-                                                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                                    <div className="bg-white dark:bg-[#1a1d27] border border-gray-100 dark:border-white/10 rounded-[20px] p-4">
+                                                        <div className="w-9 h-9 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center mb-2">
                                                             <Wallet className="w-5 h-5 text-[#e60012]" />
                                                         </div>
-                                                        <p className="text-2xl font-extrabold text-gray-900 leading-none">${stats.gananciasHoy.toLocaleString()}</p>
+                                                        <p className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">${stats.gananciasHoy.toLocaleString()}</p>
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Hoy</p>
                                                     </div>
-                                                    <div className="bg-white border border-gray-100 rounded-[20px] p-4">
-                                                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                                    <div className="bg-white dark:bg-[#1a1d27] border border-gray-100 dark:border-white/10 rounded-[20px] p-4">
+                                                        <div className="w-9 h-9 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center mb-2">
                                                             <CheckCircle className="w-5 h-5 text-[#e60012]" />
                                                         </div>
-                                                        <p className="text-2xl font-extrabold text-gray-900 leading-none">{stats.completados}</p>
+                                                        <p className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">{stats.completados}</p>
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Completados</p>
                                                     </div>
                                                 </div>

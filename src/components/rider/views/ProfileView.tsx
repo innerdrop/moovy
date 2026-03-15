@@ -98,7 +98,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
     };
 
     return (
-        <div className="absolute inset-0 z-50 bg-gray-50 flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="absolute inset-0 z-50 bg-gray-50 dark:bg-[#0f1117] flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
             {/* Header */}
             <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-6 pb-20 shadow-md">
                 <div className="max-w-4xl mx-auto">
@@ -116,7 +116,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
 
             <div className="flex-1 overflow-y-auto px-4 -mt-14 max-w-4xl mx-auto w-full space-y-4 pb-24">
                 {/* Profile Card */}
-                <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-6 shadow-sm text-center">
                     {editMode ? (
                         <div className="w-full max-w-[220px] mx-auto mb-6">
                             <ImageUpload
@@ -130,7 +130,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         </div>
                     ) : (
                         <div className="w-24 h-24 mx-auto mb-4 relative">
-                            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-lg relative mx-auto">
+                            <div className="w-24 h-24 bg-green-100 dark:bg-green-500/10 rounded-full flex items-center justify-center overflow-hidden border-4 border-white dark:border-[#1a1d27] shadow-lg relative mx-auto">
                                 {formData.image ? (
                                     <img src={formData.image} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
@@ -140,27 +140,27 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         </div>
                     )}
 
-                    <h2 className="text-xl font-bold text-gray-900">{session?.user?.name || "Repartidor"}</h2>
-                    <p className="text-gray-500 text-sm">Repartidor desde {new Date(driverStats.memberSince).toLocaleDateString("es-AR", { month: "long", year: "numeric" })}</p>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{session?.user?.name || "Repartidor"}</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Repartidor desde {new Date(driverStats.memberSince).toLocaleDateString("es-AR", { month: "long", year: "numeric" })}</p>
 
                     <div className="flex items-center justify-center gap-4 mt-4">
                         <div className="flex items-center gap-1">
                             <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                            <span className="font-bold">{driverStats.rating}</span>
+                            <span className="font-bold dark:text-white">{driverStats.rating}</span>
                         </div>
-                        <div className="h-4 w-px bg-gray-300" />
+                        <div className="h-4 w-px bg-gray-300 dark:bg-white/10" />
                         <div className="flex items-center gap-1">
                             <Package className="w-5 h-5 text-green-500" />
-                            <span className="font-bold">{driverStats.totalDeliveries}</span>
-                            <span className="text-gray-500 text-sm">entregas</span>
+                            <span className="font-bold dark:text-white">{driverStats.totalDeliveries}</span>
+                            <span className="text-gray-500 dark:text-gray-400 text-sm">entregas</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Contact Info */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-4 border-b flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">Información de Contacto</h3>
+                <div className="bg-white dark:bg-[#1a1d27] rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b dark:border-white/10 flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Información de Contacto</h3>
                         {!editMode && (
                             <button
                                 onClick={() => setEditMode(true)}
@@ -174,7 +174,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
 
                     <div className="p-4 space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-[#22252f] rounded-lg flex items-center justify-center flex-shrink-0">
                                 <Mail className="w-5 h-5 text-gray-500" />
                             </div>
                             {editMode ? (
@@ -182,19 +182,19 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="flex-1 min-w-0 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="flex-1 min-w-0 px-3 py-2 border dark:bg-[#22252f] dark:border-white/10 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     placeholder="Email"
                                 />
                             ) : (
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-gray-500">Email</p>
-                                    <p className="text-gray-900 truncate">{formData.email || "No registrado"}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                                    <p className="text-gray-900 dark:text-white truncate">{formData.email || "No registrado"}</p>
                                 </div>
                             )}
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-[#22252f] rounded-lg flex items-center justify-center flex-shrink-0">
                                 <Phone className="w-5 h-5 text-gray-500" />
                             </div>
                             {editMode ? (
@@ -202,13 +202,13 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                     type="tel"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="flex-1 min-w-0 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    className="flex-1 min-w-0 px-3 py-2 border dark:bg-[#22252f] dark:border-white/10 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     placeholder="Teléfono"
                                 />
                             ) : (
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-gray-500">Teléfono</p>
-                                    <p className="text-gray-900 truncate">{formData.phone || "No registrado"}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Teléfono</p>
+                                    <p className="text-gray-900 dark:text-white truncate">{formData.phone || "No registrado"}</p>
                                 </div>
                             )}
                         </div>
@@ -217,7 +217,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                             <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={() => setEditMode(false)}
-                                    className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    className="flex-1 py-2 border border-gray-300 dark:border-white/10 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#22252f]"
                                 >
                                     Cancelar
                                 </button>
@@ -233,13 +233,13 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 </div>
 
                 {/* Vehicle Info */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-4 border-b">
-                        <h3 className="font-semibold text-gray-900">Vehículo</h3>
+                <div className="bg-white dark:bg-[#1a1d27] rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b dark:border-white/10">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Vehículo</h3>
                     </div>
                     <div className="p-4 space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <Bike className="w-5 h-5 text-green-600" />
                             </div>
                             {editMode ? (
@@ -248,7 +248,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                         <select
                                             value={formData.vehicleType}
                                             onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none pr-8 truncate"
+                                            className="w-full px-3 py-2 border dark:bg-[#22252f] dark:border-white/10 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none pr-8 truncate"
                                         >
                                             <option value="MOTO">Moto</option>
                                             <option value="AUTO">Auto</option>
@@ -264,26 +264,26 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                         type="text"
                                         value={formData.vehicleModel}
                                         onChange={(e) => setFormData({ ...formData, vehicleModel: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border dark:bg-[#22252f] dark:border-white/10 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                         placeholder="Modelo (Ej: Honda Wave)"
                                     />
                                     <input
                                         type="text"
                                         value={formData.vehiclePlate}
                                         onChange={(e) => setFormData({ ...formData, vehiclePlate: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border dark:bg-[#22252f] dark:border-white/10 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                         placeholder="Patente (Opcional)"
                                     />
                                 </div>
                             ) : (
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-900 truncate">
+                                    <p className="font-medium text-gray-900 dark:text-white truncate">
                                         {formData.vehicleType === "MOTO" ? "Moto" :
                                             formData.vehicleType === "BICICLETA" ? "Bicicleta" :
                                                 formData.vehicleType === "AUTO" ? "Auto" : formData.vehicleType}
                                         {formData.vehicleModel ? ` - ${formData.vehicleModel}` : ""}
                                     </p>
-                                    <p className="text-xs text-gray-500 truncate">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                         {formData.vehiclePlate ? `Patente: ${formData.vehiclePlate}` : "Tipo de vehículo"}
                                     </p>
                                 </div>
@@ -294,9 +294,9 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
 
                 {/* Reviews */}
                 {driverId && (
-                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                        <div className="p-4 border-b">
-                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <div className="bg-white dark:bg-[#1a1d27] rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-4 border-b dark:border-white/10">
+                            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                 <Star className="w-5 h-5 text-yellow-400" />
                                 Reseñas de Clientes
                             </h3>
@@ -308,25 +308,25 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 )}
 
                 {/* Quick Links */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-4 border-b">
-                        <h3 className="font-semibold text-gray-900">Opciones</h3>
+                <div className="bg-white dark:bg-[#1a1d27] rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b dark:border-white/10">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Opciones</h3>
                     </div>
-                    <div className="divide-y">
+                    <div className="divide-y dark:divide-white/10">
                         <Link
                             href="/"
-                            className="flex items-center gap-3 p-4 hover:bg-gray-50 transition"
+                            className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-[#22252f] transition"
                         >
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-[#22252f] rounded-lg flex items-center justify-center">
                                 <Home className="w-5 h-5 text-gray-500" />
                             </div>
-                            <span className="text-gray-900 font-medium">Ir a la tienda</span>
+                            <span className="text-gray-900 dark:text-white font-medium">Ir a la tienda</span>
                         </Link>
                         <button
                             onClick={() => signOut({ callbackUrl: "/repartidor/login" })}
-                            className="flex items-center gap-3 p-4 w-full text-left hover:bg-red-50 transition"
+                            className="flex items-center gap-3 p-4 w-full text-left hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                         >
-                            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-lg flex items-center justify-center">
                                 <LogOut className="w-5 h-5 text-[#e60012]" />
                             </div>
                             <span className="text-[#e60012] font-medium">Cerrar sesion</span>
@@ -338,13 +338,13 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
             {/* Confirmation Modal */}
             {showConfirm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
-                        <h3 className="font-bold text-lg mb-4">Confirmar Cambios</h3>
-                        <p className="text-gray-600 mb-6">¿Estás seguro de guardar los cambios en tu perfil?</p>
+                    <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                        <h3 className="font-bold text-lg mb-4 dark:text-white">Confirmar Cambios</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">¿Estás seguro de guardar los cambios en tu perfil?</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowConfirm(false)}
-                                className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                className="flex-1 py-2 border border-gray-300 dark:border-white/10 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#22252f]"
                             >
                                 Cancelar
                             </button>

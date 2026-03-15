@@ -15,6 +15,7 @@ import {
     Clock,
     Flag,
 } from "lucide-react";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 // ── Types ──
 
@@ -80,6 +81,7 @@ export default function BottomSheet({
     navIsPickedUp,
     navIsNavigating,
 }: BottomSheetProps) {
+    const isDark = useColorScheme() === "dark";
     const [state, setState] = useState<SheetState>(() => {
         if (typeof window !== "undefined") {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -195,8 +197,8 @@ export default function BottomSheet({
                     className="flex-shrink-0 flex items-center justify-center"
                     style={{
                         width: 52, height: 52, borderRadius: 16,
-                        background: "#fff",
-                        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                        background: isDark ? "#1a1d27" : "#fff",
+                        boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.4)" : "0 4px 16px rgba(0,0,0,0.15)",
                     }}
                 >
                     <span style={{ color: "#e60012" }}>
@@ -259,11 +261,11 @@ export default function BottomSheet({
             <div
                 style={{
                     display: "grid", gridTemplateColumns: "1fr 1fr",
-                    background: "#fff", borderRadius: 16, overflow: "hidden",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                    background: isDark ? "#1a1d27" : "#fff", borderRadius: 16, overflow: "hidden",
+                    boxShadow: isDark ? "0 2px 10px rgba(0,0,0,0.4)" : "0 2px 10px rgba(0,0,0,0.06)",
                 }}
             >
-                <div className="flex items-center gap-2.5" style={{ padding: "12px 16px", borderRight: "1px solid #f1f1f1" }}>
+                <div className="flex items-center gap-2.5" style={{ padding: "12px 16px", borderRight: isDark ? "1px solid #2a2d37" : "1px solid #f1f1f1" }}>
                     <div style={{
                         width: 30, height: 30, borderRadius: 10,
                         background: "rgba(230,0,18,0.08)",
@@ -272,7 +274,7 @@ export default function BottomSheet({
                         <Clock className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
                     </div>
                     <div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#111", lineHeight: 1.1 }}>{navTotalDuration}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: isDark ? "#f1f3f7" : "#111", lineHeight: 1.1 }}>{navTotalDuration}</div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tiempo est.</div>
                     </div>
                 </div>
@@ -285,13 +287,13 @@ export default function BottomSheet({
                         <Navigation className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
                     </div>
                     <div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#111", lineHeight: 1.1 }}>{navTotalDistance}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: isDark ? "#f1f3f7" : "#111", lineHeight: 1.1 }}>{navTotalDistance}</div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</div>
                     </div>
                 </div>
             </div>
         );
-    }, [hasNav, navTotalDuration, navTotalDistance]);
+    }, [hasNav, navTotalDuration, navTotalDistance, isDark]);
 
     // Destination + next step bar (only when navigating)
     const destBar = useMemo(() => {
@@ -300,8 +302,8 @@ export default function BottomSheet({
             <div
                 className="flex items-center justify-between"
                 style={{
-                    background: "#fff", borderRadius: 14, padding: "12px 16px",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                    background: isDark ? "#1a1d27" : "#fff", borderRadius: 14, padding: "12px 16px",
+                    boxShadow: isDark ? "0 2px 10px rgba(0,0,0,0.4)" : "0 2px 10px rgba(0,0,0,0.06)",
                 }}
             >
                 <div className="flex items-center gap-2.5">
@@ -316,24 +318,24 @@ export default function BottomSheet({
                             <MapPin className="w-3.5 h-3.5" style={{ color: "#e60012" }} />
                         )}
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#111", maxWidth: 120 }} className="truncate">
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isDark ? "#f1f3f7" : "#111", maxWidth: 120 }} className="truncate">
                         {navDestinationName}
                     </span>
                 </div>
 
                 {navNextStep && navStepsRemaining > 1 && (
                     <div className="flex items-center gap-1.5" style={{ maxWidth: 150 }}>
-                        <span style={{ color: "#ccc" }}>
+                        <span style={{ color: isDark ? "#666" : "#ccc" }}>
                             {getManeuverIcon(navNextStep.maneuver, "w-3 h-3")}
                         </span>
                         <p className="truncate" style={{ fontSize: 10, fontWeight: 500, color: "#9ca3af" }}>
-                            Luego: <span style={{ color: "#6b7280" }}>{stripHtml(navNextStep.instruction)}</span>
+                            Luego: <span style={{ color: isDark ? "#b0b5be" : "#6b7280" }}>{stripHtml(navNextStep.instruction)}</span>
                         </p>
                     </div>
                 )}
             </div>
         );
-    }, [hasNav, navIsPickedUp, navDestinationName, navNextStep, navStepsRemaining]);
+    }, [hasNav, navIsPickedUp, navDestinationName, navNextStep, navStepsRemaining, isDark]);
 
     return (
         <div
@@ -343,8 +345,8 @@ export default function BottomSheet({
                 height: "70vh",
                 borderRadius: "28px 28px 0 0",
                 overflow: "hidden",
-                background: "#f8f9fb",
-                boxShadow: state !== "hidden" ? "0 -12px 50px rgba(0,0,0,0.18)" : "none",
+                background: isDark ? "#0f1117" : "#f8f9fb",
+                boxShadow: state !== "hidden" ? (isDark ? "0 -12px 50px rgba(0,0,0,0.5)" : "0 -12px 50px rgba(0,0,0,0.18)") : "none",
                 transform: `translateY(${getTranslateY(state)}) translateY(${Math.max(0, clampedDrag)}px)`,
                 transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
                 willChange: "transform",
@@ -404,7 +406,7 @@ export default function BottomSheet({
             {/* ── Mid section: stats + dest (visible at mid & expanded) ── */}
             <div
                 style={{
-                    background: "#f8f9fb",
+                    background: isDark ? "#0f1117" : "#f8f9fb",
                     overflow: "hidden",
                     maxHeight: state === "minimized" || state === "hidden" ? 0 : 200,
                     opacity: state === "minimized" || state === "hidden" ? 0 : 1,

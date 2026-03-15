@@ -65,13 +65,13 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
 
     return (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-[fadeIn_0.2s_ease-out]">
-            <div className="bg-white rounded-t-[28px] sm:rounded-[28px] sm:mx-4 max-w-md w-full p-6 shadow-2xl animate-[slideUp_0.3s_cubic-bezier(0.32,0.72,0,1)]">
+            <div className="bg-white dark:bg-[#1a1d27] rounded-t-[28px] sm:rounded-[28px] sm:mx-4 max-w-md w-full p-6 shadow-2xl animate-[slideUp_0.3s_cubic-bezier(0.32,0.72,0,1)]">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-amber-50 dark:bg-amber-500/10 rounded-full flex items-center justify-center">
                         <Trophy className="w-5 h-5 text-amber-500" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[3px] text-gray-400">
+                    <p className="text-[10px] font-black uppercase tracking-[3px] text-gray-400 dark:text-gray-500">
                         Resumen de tu turno
                     </p>
                 </div>
@@ -80,7 +80,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                 {loading && (
                     <div className="flex flex-col items-center gap-3 py-12">
                         <Loader2 className="w-8 h-8 animate-spin text-[#e60012]" />
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                             Calculando resumen...
                         </p>
                     </div>
@@ -99,14 +99,14 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                         {data.totalDeliveries === 0 ? (
                             /* Empty state */
                             <div className="py-8 text-center space-y-4">
-                                <div className="w-16 h-16 bg-gray-50 rounded-full mx-auto flex items-center justify-center">
-                                    <Bike className="w-8 h-8 text-gray-300" />
+                                <div className="w-16 h-16 bg-gray-50 dark:bg-[#22252f] rounded-full mx-auto flex items-center justify-center">
+                                    <Bike className="w-8 h-8 text-gray-300 dark:text-gray-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-gray-500">
+                                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
                                         No tuviste entregas este turno.
                                     </p>
-                                    <p className="text-xs text-gray-400 mt-1">
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                         ¡La próxima será mejor!
                                     </p>
                                 </div>
@@ -118,46 +118,46 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                     <p className="text-4xl font-extrabold bg-gradient-to-r from-[#e60012] to-[#b8000e] bg-clip-text text-transparent">
                                         ${data.totalEarnings.toLocaleString()}
                                     </p>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mt-1">
                                         Ganancia total del turno
                                     </p>
                                 </div>
 
                                 {/* Stats grid */}
                                 <div className="grid grid-cols-2 gap-3 mb-6">
-                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                    <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <TrendingUp className="w-4 h-4 text-emerald-500 mb-2" />
-                                        <p className="text-xl font-extrabold text-gray-900">
+                                        <p className="text-xl font-extrabold text-gray-900 dark:text-white">
                                             {data.totalDeliveries}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                                             Entregas
                                         </p>
                                     </div>
-                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                    <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <Star className="w-4 h-4 text-blue-500 mb-2" />
-                                        <p className="text-xl font-extrabold text-gray-900">
+                                        <p className="text-xl font-extrabold text-gray-900 dark:text-white">
                                             ${data.avgPerDelivery.toLocaleString()}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                                             Promedio
                                         </p>
                                     </div>
-                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                    <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <Trophy className="w-4 h-4 text-amber-500 mb-2" />
-                                        <p className="text-xl font-extrabold text-gray-900">
+                                        <p className="text-xl font-extrabold text-gray-900 dark:text-white">
                                             ${data.bestDelivery?.earnings.toLocaleString() || "—"}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                                             Mejor entrega
                                         </p>
                                     </div>
-                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                    <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <Clock className="w-4 h-4 text-purple-500 mb-2" />
-                                        <p className="text-xl font-extrabold text-gray-900">
+                                        <p className="text-xl font-extrabold text-gray-900 dark:text-white">
                                             {formatTime(data.totalMinutesOnline)}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                                             Tiempo activo
                                         </p>
                                     </div>
@@ -172,7 +172,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                     <div className="space-y-3 pt-2">
                         <button
                             onClick={onClose}
-                            className="w-full bg-gray-50 text-gray-700 font-bold rounded-2xl py-4 text-[11px] uppercase tracking-widest active:scale-95 transition-all"
+                            className="w-full bg-gray-50 dark:bg-[#22252f] text-gray-700 dark:text-gray-300 font-bold rounded-2xl py-4 text-[11px] uppercase tracking-widest active:scale-95 transition-all"
                         >
                             Seguir conectado
                         </button>
