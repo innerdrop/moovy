@@ -314,7 +314,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                     </div>
                     <div className="divide-y dark:divide-white/10">
                         <Link
-                            href="/"
+                            href="/tienda"
                             className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-[#22252f] transition"
                         >
                             <div className="w-10 h-10 bg-gray-100 dark:bg-[#22252f] rounded-lg flex items-center justify-center">

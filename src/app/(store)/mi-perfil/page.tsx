@@ -266,7 +266,7 @@ export default function ProfilePage() {
                                 </Link>
                             )}
                             {driverStatus === "ACTIVE" && (
-                                <Link href="/repartidor" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                                <Link href="/repartidor/dashboard" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
                                             <Truck className="w-4 h-4" />

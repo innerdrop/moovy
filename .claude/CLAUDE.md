@@ -124,8 +124,10 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Tracking mapa buyer**: usar `OrderTrackingMiniMap` con `dynamic()` import (no SSR) en pedidos activos
 - **Filtros API listings**: soporta `sellerId`, `minPrice`, `maxPrice`, `sortBy` (price_asc/price_desc/newest)
 
-## Patrones portal repartidor (auditoría UX 2026-03-15)
-- **Dark mode automático**: usa `prefers-color-scheme` del OS, sin toggle manual. Variables CSS `--rider-*` en `globals.css` + clases `dark:` en Tailwind v4
+## Patrones portal repartidor (redesign v2 — 2026-03-15)
+- **Dashboard Status-First**: mapa NO aparece en idle; solo con pedido activo (auto-expand). Hero = botón conectar + stats
+- **Dark mode**: `prefers-color-scheme` del OS + override manual desde Settings (auto/light/dark vía `data-theme` + `colorScheme`). Variables CSS `--rider-*` en `globals.css` + clases `dark:` en Tailwind v4
+- **Colores semánticos**: usar `var(--rider-accent)`, `var(--rider-online)`, `var(--rider-offline)` etc. en vez de hardcodear hex
 - **Dark mode inline styles**: para componentes con inline styles (BottomSheet, RiderBottomNav), usar hook `useColorScheme()` de `@/hooks/useColorScheme`
 - **Skeleton loaders**: reemplazar spinners por skeletons con `animate-pulse` + clases `dark:` correspondientes
 - **Pull-to-refresh**: gesto nativo en dashboard repartidor (touchstart/touchmove/touchend → reload)
@@ -265,3 +267,9 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/ops/(protected)/configuracion-logistica/page.tsx` — Simulador de costos con distancia configurable (antes hardcoded 5km)
 - `src/app/ops/(protected)/moderacion/page.tsx` — Modal detalle con galería imágenes + modal rechazo con motivo
 - `src/app/ops/(protected)/comisiones/page.tsx` — Botón "Marcar Pagado", CSV export, KPIs, búsqueda
+- `src/app/repartidor/page.tsx` — Redirect root: auth → dashboard, no auth → login
+- `src/app/vendedor/page.tsx` — Redirect root: auth → dashboard, no auth → registro
+- `src/app/comercios/page.tsx` — Redirect root: auth → dashboard, no auth → login
+- `src/app/ops/page.tsx` — Redirect root: auth → dashboard, no auth → login
+- `src/components/rider/views/SettingsView.tsx` — Configuración repartidor: tema (auto/light/dark), sonido, vibración, app de mapas (Google/Waze), alerta batería configurable, auto-desconexión
+- Dashboard repartidor rediseñado: layout Status-First, hero connect button, animated earnings counter, auto-expand map con pedido activo, trend card motivacional, searching animation
