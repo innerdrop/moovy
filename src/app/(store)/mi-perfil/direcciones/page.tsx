@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Loader2, Plus, Trash2, Home, Briefcase, Map as MapIcon, CheckCircle } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
+import { toast } from "@/store/toast";
 
 export default function DireccionesPage() {
     const [addresses, setAddresses] = useState<any[]>([]);
@@ -85,11 +86,11 @@ export default function DireccionesPage() {
                 setAddresses(addresses.filter(a => a.id !== id));
             } else {
                 const errorData = await res.json();
-                alert(errorData.error || "No se pudo eliminar la dirección. Es posible que esté vinculada a pedidos anteriores.");
+                toast.error(errorData.error || "No se pudo eliminar la dirección.");
             }
         } catch (error) {
             console.error("Error deleting address", error);
-            alert("Error de conexión al intentar eliminar la dirección.");
+            toast.error("Error de conexión al intentar eliminar la dirección.");
         }
     };
 

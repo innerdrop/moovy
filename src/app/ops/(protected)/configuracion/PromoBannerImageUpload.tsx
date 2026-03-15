@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { Upload, X, Loader2, ImageIcon } from "lucide-react";
+import { toast } from "@/store/toast";
 
 interface PromoBannerImageUploadProps {
     currentImage?: string | null;
@@ -31,10 +32,10 @@ export default function PromoBannerImageUpload({ currentImage, name }: PromoBann
             if (res.ok) {
                 setImageUrl(data.url);
             } else {
-                alert(data.error || "Error al subir imagen");
+                toast.error(data.error || "Error al subir imagen");
             }
         } catch (error) {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         } finally {
             setUploading(false);
         }

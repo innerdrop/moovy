@@ -17,6 +17,7 @@ import {
     LayoutList
 } from "lucide-react";
 import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/icons";
+import { toast } from "@/store/toast";
 
 // DnD Kit Imports
 import {
@@ -387,10 +388,10 @@ export default function AdminCategoriasPage() {
                 await loadCategories();
             } else {
                 const data = await res.json();
-                alert(data.error || "Error al eliminar");
+                toast.error(data.error || "Error al eliminar");
             }
         } catch (error) {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         }
     }
 

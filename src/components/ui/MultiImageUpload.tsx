@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { Upload, X, Loader2, Plus } from "lucide-react";
+import { toast } from "@/store/toast";
 
 interface MultiImageUploadProps {
     values: string[];
@@ -53,7 +54,7 @@ export default function MultiImageUpload({
             onChange(newValues);
         } catch (error) {
             console.error("Error uploading image:", error);
-            alert("Error al subir la imagen. Intenta de nuevo.");
+            toast.error("Error al subir la imagen. Intenta de nuevo.");
         } finally {
             setLoadingIndex(null);
             if (fileInputRef.current) {

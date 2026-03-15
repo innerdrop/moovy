@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { Package, Navigation, Clock, CheckCircle2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "@/store/toast";
 
 interface Order {
     id: string;
@@ -56,21 +57,21 @@ export default function PedidosRepartidorPage() {
         if (!confirm) return;
 
         try {
-            const res = await fetch(`/api/orders/${orderId}/accept`, {
+            const res = await fetch(`/api/driver/orders/${orderId}/accept`, {
                 method: "POST",
             });
 
             if (res.ok) {
-                alert("¡Pedido aceptado!");
+                toast.success("¡Pedido aceptado!");
                 setActiveTab("activos"); // Switch to active tab
                 fetchOrders(); // Refresh
             } else {
                 const error = await res.json();
-                alert(error.error || "Error al aceptar el pedido");
+                toast.error(error.error || "Error al aceptar el pedido");
             }
         } catch (error) {
             console.error("Error accepting order:", error);
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         }
     };
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
 import { toggleProductActive } from "@/app/comercios/actions";
 import { useRouter } from "next/navigation";
+import { toast } from "@/store/toast";
 
 interface ProductStatusToggleProps {
     productId: string;
@@ -33,7 +34,7 @@ export default function ProductStatusToggle({
                 // but let's do it to ensure consistency with other parts of the UI
                 router.refresh();
             } else {
-                alert(result.error || "Error al actualizar estado");
+                toast.error(result.error || "Error al actualizar estado");
             }
         } catch (error) {
             console.error("Toggle error:", error);

@@ -31,6 +31,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import type { NavUpdateData } from "@/components/rider/RiderMiniMap";
+import { toast } from "@/store/toast";
 
 // Views
 import HistoryView from "@/components/rider/views/HistoryView";
@@ -186,7 +187,7 @@ export default function RiderDashboard() {
     // Toggle online/offline
     const toggleOnline = async () => {
         if (!isOnline && !location) {
-            alert("No podemos activarte sin acceso a tu ubicación GPS.");
+            toast.warning("No podemos activarte sin acceso a tu ubicación GPS.");
             if (typeof window !== "undefined" && navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(() => { }, () => { });
             }
@@ -269,7 +270,7 @@ export default function RiderDashboard() {
                             if (navigator.geolocation) {
                                 navigator.geolocation.getCurrentPosition(
                                     () => window.location.reload(),
-                                    (err) => alert("Error: " + err.message)
+                                    (err) => toast.error("Error: " + err.message)
                                 );
                             }
                         }}

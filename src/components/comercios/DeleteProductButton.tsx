@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trash2, Loader2 } from "lucide-react";
 import { deleteProduct } from "@/app/comercios/actions";
 import { useRouter } from "next/navigation";
+import { toast } from "@/store/toast";
 
 interface DeleteProductButtonProps {
     productId: string;
@@ -23,14 +24,14 @@ export default function DeleteProductButton({ productId, productName }: DeletePr
         try {
             const result = await deleteProduct(productId);
             if (result.error) {
-                alert(result.error);
+                toast.error(result.error);
             } else {
                 // Success
                 router.refresh();
             }
         } catch (error) {
             console.error("Error deleting product:", error);
-            alert("Ocurrió un error al eliminar el producto.");
+            toast.error("Ocurrió un error al eliminar el producto.");
         } finally {
             setIsDeleting(false);
         }

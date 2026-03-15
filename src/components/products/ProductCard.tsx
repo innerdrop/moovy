@@ -6,6 +6,7 @@ import { Package, ShoppingCart, Store } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
+import { toast } from "@/store/toast";
 
 interface ProductCardProps {
     product: {
@@ -38,7 +39,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         if (isDisabled) return;
 
         if (!product.merchantId) {
-            alert("Error: Este producto no tiene comercio asociado.");
+            toast.error("Este producto no tiene comercio asociado.");
             return;
         }
 

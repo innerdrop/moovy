@@ -12,6 +12,7 @@ import {
     AlertCircle,
     Calendar,
 } from "lucide-react";
+import { toast } from "@/store/toast";
 
 interface SubOrder {
     id: string;
@@ -156,11 +157,11 @@ export default function VendedorPedidosPage() {
                 loadOrders();
             } else {
                 const data = await res.json();
-                alert(data.error || "Error al confirmar el pedido");
+                toast.error(data.error || "Error al confirmar el pedido");
             }
         } catch (error) {
             console.error("Error confirming scheduled order:", error);
-            alert("Error al confirmar el pedido");
+            toast.error("Error al confirmar el pedido");
         } finally {
             setConfirmingId(null);
         }

@@ -4,6 +4,7 @@
 import { SessionProvider } from "next-auth/react";
 import { ReactNode } from "react";
 import PointsCelebration from "@/components/shared/PointsCelebration";
+import ToastContainer from "@/components/ui/Toast";
 import { CartSyncProvider } from "@/hooks/useCartSync";
 
 export default function Providers({ children }: { children: ReactNode }) {
@@ -13,6 +14,7 @@ export default function Providers({ children }: { children: ReactNode }) {
                 {children}
             </CartSyncProvider>
             <PointsCelebration />
+            <ToastContainer />
         </SessionProvider>
     );
 }

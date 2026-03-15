@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { toast } from "@/store/toast";
 
 const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
     ssr: false,
@@ -398,7 +399,7 @@ export default function TrackingPage() {
     }, [isLoaded, directions, driverPosition, order?.id, order?.merchant, order?.address]);
 
     const handleRate = async () => {
-        if (rating === 0) return alert("Selecciona una calificación");
+        if (rating === 0) { toast.warning("Selecciona una calificación"); return; }
         setIsSubmitting(true);
         try {
             const res = await fetch(`/api/orders/${orderId}/rate`, {
@@ -407,7 +408,7 @@ export default function TrackingPage() {
                 body: JSON.stringify({ rating, comment })
             });
             if (res.ok) setHasRated(true);
-        } catch (e) { alert("Error al calificar"); } finally { setIsSubmitting(false); }
+        } catch (e) { toast.error("Error al calificar"); } finally { setIsSubmitting(false); }
     };
 
     const getStatusStep = () => {

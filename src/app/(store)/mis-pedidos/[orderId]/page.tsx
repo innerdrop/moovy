@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
+import { toast } from "@/store/toast";
 import {
     ArrowLeft,
     Package,
@@ -173,9 +174,9 @@ export default function OrderDetailPage() {
                 router.push("/carrito");
             } else {
                 // Show specific error from server (e.g. unavailable products)
-                alert(data.error || "No se pudo repetir el pedido");
+                toast.error(data.error || "No se pudo repetir el pedido");
 
-                // If it's not a business logic error (like unavailable items), 
+                // If it's not a business logic error (like unavailable items),
                 // but something else, optional redirect as secondary fallback
                 if (res.status !== 400 && order.merchant?.id) {
                     router.push(`/comercio/${order.merchant.id}`);
@@ -183,7 +184,7 @@ export default function OrderDetailPage() {
             }
         } catch (err) {
             console.error("[Reorder Front] Error:", err);
-            alert("Ocurrió un error al intentar repetir el pedido");
+            toast.error("Ocurrió un error al intentar repetir el pedido");
             if (order?.merchant?.id) {
                 router.push(`/comercio/${order.merchant.id}`);
             }

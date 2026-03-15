@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "@/store/toast";
 
 interface Product {
     id: string;
@@ -104,7 +105,7 @@ function CheckoutContent() {
             if (res.ok) {
                 setIsSuccess(true);
             } else {
-                alert("Error al activar los productos. Por favor contactá a soporte.");
+                toast.error("Error al activar los productos. Por favor contactá a soporte.");
             }
         } catch (error) {
             console.error("Payment error:", error);

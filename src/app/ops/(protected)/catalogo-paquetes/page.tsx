@@ -29,6 +29,7 @@ import {
     Camera,
     Save
 } from "lucide-react";
+import { toast } from "@/store/toast";
 
 interface Product {
     id: string;
@@ -241,11 +242,11 @@ export default function CatalogPackagesPage() {
                 const data = await res.json();
                 setCategoryForm(prev => ({ ...prev, image: data.url }));
             } else {
-                alert("Error al subir la imagen");
+                toast.error("Error al subir la imagen");
             }
         } catch (error) {
             console.error("Upload error:", error);
-            alert("Error de conexión al subir la imagen");
+            toast.error("Error de conexión al subir la imagen");
         } finally {
             setUploading(false);
         }

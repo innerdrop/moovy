@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { toast } from "@/store/toast";
 
 interface ImageUploadProps {
     value: string;
@@ -40,7 +41,7 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
             onChange(data.url);
         } catch (error) {
             console.error("Error uploading image:", error);
-            alert("Error al subir la imagen. Intenta de nuevo.");
+            toast.error("Error al subir la imagen. Intenta de nuevo.");
         } finally {
             setIsLoading(false);
         }

@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { formatPrice } from "@/lib/delivery";
+import { toast } from "@/store/toast";
 import {
     Gift,
     TrendingUp,
@@ -164,8 +165,8 @@ export default function PuntosPage() {
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error("Failed to copy:", err);
-            // Last resort: show alert with code
-            alert(`Tu código: ${referralCode}`);
+            // Last resort: show toast with code
+            toast.info(`Tu código: ${referralCode}`);
         }
     };
 
@@ -218,12 +219,12 @@ export default function PuntosPage() {
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                 } catch {
-                    alert(`Compartí este mensaje:\n\n${fullText}`);
+                    toast.info("Mensaje copiado al portapapeles");
                 }
                 textArea.remove();
             }
         } catch {
-            alert(`Compartí este mensaje:\n\n${fullText}`);
+            toast.info("Mensaje copiado al portapapeles");
         }
     };
 
@@ -244,7 +245,7 @@ export default function PuntosPage() {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            alert(`Tu código: ${text}`);
+            toast.info(`Tu código: ${text}`);
         }
     };
 

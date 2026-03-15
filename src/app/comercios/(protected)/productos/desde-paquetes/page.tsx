@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { toggleProductActive, importCatalogProducts } from "@/app/comercios/actions";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
+import { toast } from "@/store/toast";
 
 const cleanName = cleanEncoding;
 
@@ -115,7 +116,7 @@ export default function ProductosDesdePaquetesPage() {
                     p.merchantProductId === merchantProductId ? { ...p, isActive: !currentActive } : p
                 ));
             } else {
-                alert(result.error || "Error al actualizar el producto");
+                toast.error(result.error || "Error al actualizar el producto");
             }
         } catch (error) {
             console.error("Error toggling product:", error);
@@ -134,7 +135,7 @@ export default function ProductosDesdePaquetesPage() {
                     await fetchProducts(selectedPackage.id);
                 }
             } else {
-                alert(result.error || "Error al importar el producto");
+                toast.error(result.error || "Error al importar el producto");
             }
         } catch (error) {
             console.error("Error importing product:", error);

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import TimeSlotPicker from "@/components/checkout/TimeSlotPicker";
+import { toast } from "@/store/toast";
 
 interface DeliveryResult {
     distanceKm: number;
@@ -222,7 +223,7 @@ export default function CheckoutPage() {
 
         try {
             if (groups.length === 0) {
-                alert("Error: No se identificaron vendedores. Por favor vaciá el carrito e intentá de nuevo.");
+                toast.error("No se identificaron vendedores. Por favor vaciá el carrito e intentá de nuevo.");
                 setIsSubmitting(false);
                 return;
             }
@@ -342,7 +343,7 @@ export default function CheckoutPage() {
             router.push("/mis-pedidos");
         } catch (error) {
             console.error("Error submitting order:", error);
-            alert(error instanceof Error ? error.message : "Error al procesar el pedido");
+            toast.error(error instanceof Error ? error.message : "Error al procesar el pedido");
         } finally {
             setIsSubmitting(false);
         }

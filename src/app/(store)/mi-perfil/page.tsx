@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "@/store/toast";
 import {
     User,
     MapPin,
@@ -102,10 +103,10 @@ export default function ProfilePage() {
                 setSellerStatus("ACTIVE");
             } else {
                 if (res.status === 409) setSellerStatus("ACTIVE");
-                alert(data.error || "Error al activar vendedor");
+                toast.error(data.error || "Error al activar vendedor");
             }
         } catch {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         } finally {
             setActivatingRole(null);
         }
@@ -120,10 +121,10 @@ export default function ProfilePage() {
                 setDriverStatus("PENDING_VERIFICATION");
             } else {
                 if (data.status) setDriverStatus(data.status);
-                alert(data.error || "Error al solicitar repartidor");
+                toast.error(data.error || "Error al solicitar repartidor");
             }
         } catch {
-            alert("Error de conexión");
+            toast.error("Error de conexión");
         } finally {
             setActivatingRole(null);
         }
