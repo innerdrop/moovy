@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
     Search, User, Gift, Plus, X, Loader2, Check, Trash2, Edit,
-    Home, Eye, Phone, Mail, Calendar, Key
+    Home, Eye, Phone, Mail, Calendar, Key, Download
 } from "lucide-react";
 import Link from "next/link";
 
@@ -200,6 +200,14 @@ export default function ClientsPage() {
                     <p className="text-gray-500">{filteredUsers.length} clientes registrados</p>
                 </div>
                 <div className="flex gap-2">
+                    <a
+                        href="/api/ops/export?type=users"
+                        className="btn-secondary flex items-center gap-2"
+                        download
+                    >
+                        <Download className="w-4 h-4" />
+                        CSV
+                    </a>
                     <Link href="/ops" className="btn-secondary flex items-center gap-2">
                         <Home className="w-4 h-4" />
                         Inicio

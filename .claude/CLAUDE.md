@@ -202,3 +202,10 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Schema Merchant: nuevos campos `scheduleEnabled`, `scheduleJson` (horarios de atención por día)
 - `src/components/comercios/SettingsForm.tsx` — UI de horarios de atención por día (lun-dom, open/close por día)
 - `src/app/comercios/actions.ts` — Nueva acción `updateMerchantSchedule()`
+- `src/app/api/ops/export/route.ts` — Export CSV (orders/users/merchants) protegido ADMIN
+- `src/app/api/reviews/route.ts` — API de reseñas (merchant/seller/driver) para ReviewsList
+- `src/components/ui/ReviewsList.tsx` — Componente reutilizable de reseñas con resumen y listado
+- `src/app/comercios/(protected)/resenas/page.tsx` — Vista de reseñas para comercios
+- `src/app/vendedor/(protected)/resenas/page.tsx` — Vista de reseñas para vendedores
+- `src/app/api/ops/revenue/route.ts` — API de revenue con desglose allTime/mensual/por método de pago
+- `src/app/ops/(protected)/revenue/page.tsx` — Dashboard de revenue OPS con KPIs, comparación mensual, desglose

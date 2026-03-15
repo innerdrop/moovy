@@ -58,6 +58,7 @@ export async function GET() {
             arr.reduce((acc, o) => acc + (o[field] || 0), 0);
 
         const summary = {
+            merchantId: merchant.id,
             commissionRate: merchant.commissionRate,
             thisMonth: {
                 totalSales: sumField(thisMonth, "total"),

@@ -25,7 +25,8 @@ import {
     DollarSign,
     Image as ImageIcon,
     UserCheck,
-    Shield
+    Shield,
+    TrendingUp
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -51,6 +52,7 @@ const navItems = [
     { href: "/ops/configuracion", icon: Settings, label: "Config" },
     { href: "/ops/configuracion-logistica", icon: Truck, label: "Config Logística" },
     { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
+    { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
 ];
 
 // Bottom nav for mobile - most important items

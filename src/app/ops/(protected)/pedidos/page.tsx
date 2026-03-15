@@ -140,6 +140,14 @@ export default function AdminPedidosPage() {
                     <p className="text-gray-600">Gestiona los pedidos de tus clientes</p>
                 </div>
                 <div className="flex gap-2">
+                    <a
+                        href="/api/ops/export?type=orders"
+                        className="btn-secondary flex items-center gap-2"
+                        download
+                    >
+                        <Download className="w-4 h-4" />
+                        CSV
+                    </a>
                     <Link href="/ops" className="btn-secondary flex items-center gap-2">
                         <Home className="w-4 h-4" />
                         Inicio

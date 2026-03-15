@@ -17,7 +17,8 @@ import {
     Package,
     ShoppingCart,
     Store,
-    User
+    User,
+    Download
 } from "lucide-react";
 
 interface Merchant {
@@ -113,9 +114,19 @@ export default function ComerciosPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-slate-900">Comercios</h1>
-                <p className="text-slate-600">{merchants.length} comercios registrados</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Comercios</h1>
+                    <p className="text-slate-600">{merchants.length} comercios registrados</p>
+                </div>
+                <a
+                    href="/api/ops/export?type=merchants"
+                    className="btn-secondary flex items-center gap-2"
+                    download
+                >
+                    <Download className="w-4 h-4" />
+                    CSV
+                </a>
             </div>
 
             {/* Filters */}

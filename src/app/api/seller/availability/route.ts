@@ -25,7 +25,14 @@ export async function GET() {
         }
 
         const status = await getSellerStatus(session.user.id);
-        return NextResponse.json(status);
+
+        // Include sellerProfile id for use by other features (e.g. reviews)
+        const sellerProfile = await (await import("@/lib/prisma")).prisma.sellerProfile.findUnique({
+            where: { userId: session.user.id },
+            select: { id: true },
+        });
+
+        return NextResponse.json({ ...status, sellerId: sellerProfile?.id || null });
     } catch (error) {
         console.error("Error getting seller availability:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });

@@ -15,6 +15,7 @@ import {
     Edit
 } from "lucide-react";
 import ImageUpload from "@/components/ui/ImageUpload";
+import ReviewsList from "@/components/ui/ReviewsList";
 
 interface ProfileViewProps {
     onBack: () => void;
@@ -35,6 +36,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
         vehiclePlate: ""
     });
 
+    const [driverId, setDriverId] = useState<string | null>(null);
     const [driverStats, setDriverStats] = useState({
         totalDeliveries: 0,
         rating: 5.0,
@@ -55,6 +57,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         vehicleModel: data.vehicleModel || "",
                         vehiclePlate: data.vehiclePlate || ""
                     });
+                    setDriverId(data.id || null);
                     setDriverStats({
                         totalDeliveries: data.totalDeliveries || 0,
                         rating: data.rating || 5.0,
@@ -285,6 +288,21 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         </div>
                     </div>
                 </div>
+
+                {/* Reviews */}
+                {driverId && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-4 border-b">
+                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                <Star className="w-5 h-5 text-yellow-400" />
+                                Reseñas de Clientes
+                            </h3>
+                        </div>
+                        <div className="p-4">
+                            <ReviewsList type="driver" entityId={driverId} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Confirmation Modal */}

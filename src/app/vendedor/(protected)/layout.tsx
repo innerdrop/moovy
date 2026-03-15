@@ -11,6 +11,7 @@ import {
     Settings,
     LogOut,
     Store,
+    Star,
 } from "lucide-react";
 
 export default async function VendedorLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,7 @@ export default async function VendedorLayout({ children }: { children: React.Rea
         { href: "/vendedor/listings", icon: Tag, label: "Mis Listings" },
         { href: "/vendedor/pedidos", icon: ShoppingCart, label: "Mis Ventas" },
         { href: "/vendedor/ganancias", icon: DollarSign, label: "Ganancias" },
+        { href: "/vendedor/resenas", icon: Star, label: "Reseñas" },
         { href: "/vendedor/configuracion", icon: Settings, label: "Configuración" },
     ];
 
