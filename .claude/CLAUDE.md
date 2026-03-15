@@ -104,6 +104,8 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 | `src/app/api/favorites/route.ts` | API GET/POST/DELETE de favoritos |
 | `src/lib/seller-availability.ts` | Funciones de disponibilidad vendedor (online/offline/pause/resume) |
 | `src/lib/assignment-engine.ts` | Motor de asignacion de repartidores con PostGIS y rating |
+| `src/hooks/useColorScheme.ts` | Hook dark/light detection — usar en componentes rider con inline styles |
+| `src/app/globals.css` | Variables CSS `--rider-*` para dark mode portal repartidor |
 
 ## Patrones establecidos — seguir estos patrones
 - **Protección de rutas API**: `if (!hasAnyRole(session, ["ROL"])) return 403`
@@ -121,6 +123,18 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Buscador global**: AppHeader incluye SearchOverlay mobile y dropdown desktop con debounce 300ms
 - **Tracking mapa buyer**: usar `OrderTrackingMiniMap` con `dynamic()` import (no SSR) en pedidos activos
 - **Filtros API listings**: soporta `sellerId`, `minPrice`, `maxPrice`, `sortBy` (price_asc/price_desc/newest)
+
+## Patrones portal repartidor (auditoría UX 2026-03-15)
+- **Dark mode automático**: usa `prefers-color-scheme` del OS, sin toggle manual. Variables CSS `--rider-*` en `globals.css` + clases `dark:` en Tailwind v4
+- **Dark mode inline styles**: para componentes con inline styles (BottomSheet, RiderBottomNav), usar hook `useColorScheme()` de `@/hooks/useColorScheme`
+- **Skeleton loaders**: reemplazar spinners por skeletons con `animate-pulse` + clases `dark:` correspondientes
+- **Pull-to-refresh**: gesto nativo en dashboard repartidor (touchstart/touchmove/touchend → reload)
+- **Haptic feedback**: `navigator.vibrate?.(ms)` en acciones clave (aceptar pedido, cambiar estado)
+- **Animated counters**: earnings con `requestAnimationFrame` + ease-out cúbico (1200ms)
+- **Empty states mejorados**: icono circular + texto principal + texto secundario descriptivo
+- **Swipe-to-confirm**: usar `SwipeToConfirm` de `@/components/rider/SwipeToConfirm` para avance de estado (evita toques accidentales)
+- **Battery monitor**: hook `useBattery()` de `@/hooks/useBattery` muestra banner cuando batería < 20%
+- **Llamar cliente (card mode)**: botón teléfono visible en card de pedido activo (modo home) además del BottomSheet
 
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
@@ -215,3 +229,10 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/ops/(protected)/pedidos/[id]/page.tsx` — Botón "Procesar Reembolso" con modal y motivo
 - `src/app/(store)/page.tsx` — Banner social proof "X pedidos hoy en Ushuaia"
 - `src/app/terminos/page.tsx` — Nuevas secciones: exención climática (s11) y resolución de disputas (s12)
+- `src/hooks/useColorScheme.ts` — Hook reactivo que detecta `prefers-color-scheme` del OS (dark/light) con listener en tiempo real
+- `src/app/globals.css` — Variables CSS `--rider-*` (bg, surface, surface-alt, text, glass-bg, glass-border) con overrides en `@media (prefers-color-scheme: dark)`
+- Portal repartidor: dark mode automático en dashboard, BottomSheet, RiderBottomNav, ShiftSummaryModal, EarningsView, HistoryView, ProfileView, SupportView
+- Portal repartidor: skeleton loaders (dashboard), pull-to-refresh, haptic feedback, animated earnings counter, empty states mejorados (EarningsView, HistoryView)
+- `src/components/rider/SwipeToConfirm.tsx` — Componente slide-to-confirm para avance de estado de pedido (reemplaza botón tap)
+- `src/hooks/useBattery.ts` — Hook Battery Status API: level (0-1), charging, supported. Banner en dashboard < 20%
+- Portal repartidor: botón llamar cliente visible en card pedido activo (modo home), swipe-to-advance, battery warning

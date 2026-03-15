@@ -18,7 +18,9 @@ import {
     ArrowRight,
     Wallet,
     CheckCircle,
-    Home
+    Home,
+    BatteryLow,
+    Zap
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -26,6 +28,7 @@ import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useSocketAuth } from "@/hooks/useSocketAuth";
 import { useDriverSocket } from "@/hooks/useDriverSocket";
+import { useBattery } from "@/hooks/useBattery";
 import type { NavUpdateData } from "@/components/rider/RiderMiniMap";
 import { toast } from "@/store/toast";
 
@@ -52,6 +55,8 @@ const ShiftSummaryModal = dynamic(
     () => import("@/components/rider/ShiftSummaryModal").then(mod => mod.ShiftSummaryModal),
     { ssr: false }
 );
+
+const SwipeToConfirm = dynamic(() => import("@/components/rider/SwipeToConfirm"), { ssr: false });
 
 // Haptic feedback patterns
 const haptic = {
@@ -137,6 +142,11 @@ export default function RiderDashboard() {
 
     const [recenterToggle, setRecenterToggle] = useState(false);
     const [dismissedOfferIds, setDismissedOfferIds] = useState<Set<string>>(new Set());
+
+    // Battery monitoring
+    const battery = useBattery();
+    const [batteryDismissed, setBatteryDismissed] = useState(false);
+    const showBatteryWarning = battery.supported && battery.level !== null && battery.level <= 0.20 && !battery.charging && !batteryDismissed;
 
     // Pull-to-refresh state
     const [pullDistance, setPullDistance] = useState(0);
@@ -686,6 +696,16 @@ export default function RiderDashboard() {
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Pedido en curso</p>
                                         <h3 className="font-extrabold text-gray-900 dark:text-white truncate">{pedidoActivo.comercio}</h3>
                                     </div>
+                                    {/* Call customer button — visible in card mode */}
+                                    {pedidoActivo.telefonoCliente && (
+                                        <a
+                                            href={`tel:${pedidoActivo.telefonoCliente}`}
+                                            className="w-10 h-10 bg-green-50 dark:bg-green-500/10 rounded-xl flex items-center justify-center active:scale-95 transition-all border border-green-200 dark:border-green-500/20"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Phone className="w-4 h-4 text-green-600" />
+                                        </a>
+                                    )}
                                     <button
                                         onClick={() => setIsMapExpanded(true)}
                                         className="bg-[#e60012] text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all"
@@ -895,10 +915,31 @@ export default function RiderDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Action button — 3 states: arrive → pickup → deliver */}
-                                            <button
-                                                onClick={async () => {
-                                                    if (advancingStatus) return;
+                                            {/* Swipe-to-advance — 3 states: arrive → pickup → deliver */}
+                                            <SwipeToConfirm
+                                                label={
+                                                    pedidoActivo.estado === "driver_assigned"
+                                                        ? "Deslizá → Llegué"
+                                                        : pedidoActivo.estado === "driver_arrived"
+                                                        ? "Deslizá → Recogí"
+                                                        : "Deslizá → Entregado"
+                                                }
+                                                bgColor={
+                                                    pedidoActivo.estado === "driver_assigned"
+                                                        ? "bg-amber-500"
+                                                        : pedidoActivo.estado === "driver_arrived"
+                                                        ? "bg-blue-600"
+                                                        : "bg-green-600"
+                                                }
+                                                shadowColor={
+                                                    pedidoActivo.estado === "driver_assigned"
+                                                        ? "shadow-amber-500/30"
+                                                        : pedidoActivo.estado === "driver_arrived"
+                                                        ? "shadow-blue-500/30"
+                                                        : "shadow-green-500/30"
+                                                }
+                                                disabled={advancingStatus}
+                                                onConfirm={async () => {
                                                     const nextStatus =
                                                         pedidoActivo.estado === "driver_assigned" ? "DRIVER_ARRIVED"
                                                         : pedidoActivo.estado === "driver_arrived" ? "PICKED_UP"
@@ -911,8 +952,6 @@ export default function RiderDashboard() {
 
                                                     setAdvancingStatus(true);
                                                     try {
-                                                        haptic.medium();
-
                                                         const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/status`, {
                                                             method: "PATCH",
                                                             headers: { "Content-Type": "application/json" },
@@ -934,27 +973,7 @@ export default function RiderDashboard() {
                                                         setAdvancingStatus(false);
                                                     }
                                                 }}
-                                                disabled={advancingStatus}
-                                                className={`w-full py-5 text-white font-black text-lg rounded-[22px] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest ${
-                                                    pedidoActivo.estado === "driver_assigned"
-                                                        ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
-                                                        : pedidoActivo.estado === "driver_arrived"
-                                                        ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/30"
-                                                        : "bg-green-600 hover:bg-green-700 shadow-green-500/30"
-                                                } disabled:opacity-50`}
-                                            >
-                                                {advancingStatus
-                                                    ? <Loader2 className="w-6 h-6 animate-spin" />
-                                                    : <>
-                                                        {pedidoActivo.estado === "driver_assigned"
-                                                            ? "Llegué al comercio"
-                                                            : pedidoActivo.estado === "driver_arrived"
-                                                            ? "Ya recogí el pedido"
-                                                            : "Entrega completada"}
-                                                        <ChevronRight className="w-6 h-6" />
-                                                    </>
-                                                }
-                                            </button>
+                                            />
                                         </div>
                                     ) : (
                                         /* ── No active order — New premium design ── */
@@ -1019,6 +1038,28 @@ export default function RiderDashboard() {
                                 </div>
                             </BottomSheet>
                         )}
+
+                    {/* ═══════════════════════════════════════════════
+                LEVEL 28 — BATTERY LOW BANNER
+            ═══════════════════════════════════════════════ */}
+                    {showBatteryWarning && (
+                        <div className="absolute left-4 right-4 z-30 animate-in slide-in-from-top duration-300" style={{ top: 'max(5rem, calc(env(safe-area-inset-top) + 4.5rem))' }}>
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-3.5 shadow-xl">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <BatteryLow className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-bold text-white text-sm">Bateria baja ({Math.round((battery.level || 0) * 100)}%)</h4>
+                                        <p className="text-white/80 text-[11px]">Conecta el cargador para no perder pedidos.</p>
+                                    </div>
+                                    <button onClick={() => setBatteryDismissed(true)} className="text-white/60 hover:text-white p-1">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ═══════════════════════════════════════════════
                 LEVEL 30 — NOTIFICATION BANNER
