@@ -9,6 +9,12 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
 import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/lib/mercadopago";
 
+// Read a MoovyConfig value with fallback
+async function getConfigValue(key: string, fallback: string): Promise<string> {
+    const config = await prisma.moovyConfig.findUnique({ where: { key } });
+    return config?.value ?? fallback;
+}
+
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Avoid confusing chars like 0/O, 1/I
@@ -127,9 +133,10 @@ export async function POST(request: Request) {
             );
         }
 
-        // Calculate commission
+        // Calculate commission (read default from MoovyConfig)
         let moovyCommission = 0;
         let merchantPayout = 0;
+        const defaultMerchantCommission = parseFloat(await getConfigValue("default_merchant_commission_pct", "8"));
 
         if (merchantId) {
             const merchant = await prisma.merchant.findUnique({
@@ -138,7 +145,7 @@ export async function POST(request: Request) {
             });
 
             if (merchant) {
-                const rate = merchant.commissionRate || 8.0;
+                const rate = merchant.commissionRate || defaultMerchantCommission;
                 moovyCommission = subtotal * (rate / 100);
                 merchantPayout = subtotal - moovyCommission;
             }
@@ -226,12 +233,13 @@ export async function POST(request: Request) {
                             where: { id: group.merchantId },
                             select: { commissionRate: true },
                         });
-                        const rate = gMerchant?.commissionRate || 8.0;
+                        const rate = gMerchant?.commissionRate || defaultMerchantCommission;
                         groupCommission = groupSubtotal * (rate / 100);
                         groupPayout = groupSubtotal - groupCommission;
                     } else if (group.sellerId) {
-                        // Seller commission: use default 10%
-                        groupCommission = groupSubtotal * 0.10;
+                        // Seller commission from config
+                        const sellerRate = parseFloat(await getConfigValue("default_seller_commission_pct", "10"));
+                        groupCommission = groupSubtotal * (sellerRate / 100);
                         groupPayout = groupSubtotal - groupCommission;
                     }
 

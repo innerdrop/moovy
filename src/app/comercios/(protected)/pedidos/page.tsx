@@ -60,15 +60,13 @@ const CANCELLATION_REASONS = [
 ];
 
 /** Countdown timer showing remaining time before auto-cancel */
-function PendingCountdown({ createdAt }: { createdAt: string }) {
+function PendingCountdown({ createdAt, timeoutSeconds = 300 }: { createdAt: string; timeoutSeconds?: number }) {
     const [remaining, setRemaining] = useState("");
     const [urgent, setUrgent] = useState(false);
 
     useEffect(() => {
-        // Default 5 min timeout — matches MoovyConfig merchant_confirm_timeout_seconds
-        const TIMEOUT_SECONDS = 300;
         const created = new Date(createdAt).getTime();
-        const deadline = created + TIMEOUT_SECONDS * 1000;
+        const deadline = created + timeoutSeconds * 1000;
 
         function tick() {
             const diff = deadline - Date.now();
@@ -103,6 +101,7 @@ export default function ComercioPedidosPage() {
     const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
     const [merchantId, setMerchantId] = useState<string | null>(null);
     const [unassignableAlerts, setUnassignableAlerts] = useState<{ orderId: string; orderNumber: string }[]>([]);
+    const [confirmTimeout, setConfirmTimeout] = useState(300);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Cancellation modal state
@@ -115,12 +114,18 @@ export default function ComercioPedidosPage() {
     const [customReason, setCustomReason] = useState("");
     const [isCancelling, setIsCancelling] = useState(false);
 
-    // Fetch merchant ID for socket room
+    // Fetch merchant ID for socket room + confirm timeout from config
     useEffect(() => {
         fetch("/api/merchant/me")
             .then(res => res.ok ? res.json() : null)
             .then(data => {
                 if (data?.id) setMerchantId(data.id);
+            })
+            .catch(() => { });
+        fetch("/api/config/public?key=merchant_confirm_timeout_seconds")
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data?.value) setConfirmTimeout(parseInt(data.value, 10) || 300);
             })
             .catch(() => { });
     }, []);
@@ -433,7 +438,7 @@ export default function ComercioPedidosPage() {
 
                                     {/* Timeout countdown for PENDING */}
                                     {isPending && (
-                                        <PendingCountdown createdAt={order.createdAt} />
+                                        <PendingCountdown createdAt={order.createdAt} timeoutSeconds={confirmTimeout} />
                                     )}
 
                                     {/* Action Buttons */}

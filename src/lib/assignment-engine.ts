@@ -109,6 +109,9 @@ export async function findNextEligibleDriver(
     const ratingRadiusStr = await getConfig("assignment_rating_radius_meters");
     const ratingRadius = parseInt(ratingRadiusStr, 10) || 300;
 
+    const searchRadiusStr = await getConfig("driver_search_radius_meters").catch(() => "50000");
+    const searchRadius = parseInt(searchRadiusStr, 10) || 50000;
+
     // Ensure excludeDriverIds is never empty for SQL ANY() — use a dummy value
     const excludeIds = excludeDriverIds.length > 0 ? excludeDriverIds : ["none"];
 
@@ -134,7 +137,7 @@ export async function findNextEligibleDriver(
                 AND ST_DWithin(
                     d.ubicacion,
                     ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326),
-                    50000
+                    ${searchRadius}
                 )
             ORDER BY
                 CASE WHEN ST_Distance(

@@ -1,379 +1,140 @@
-"use client";
+// Product Detail Page - Server Component with SEO metadata + JSON-LD
+import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
+import ProductDetailClient from "./ProductDetailClient";
 
-// Product Detail Page - Página de Detalle de Producto
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useCartStore } from "@/store/cart";
-import { formatPrice } from "@/lib/delivery";
-import {
-    ChevronLeft,
-    Package,
-    ShoppingCart,
-    Plus,
-    Minus,
-    Check,
-    AlertCircle,
-    Loader2,
-    X,
-    UserPlus
-} from "lucide-react";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.somosmoovy.com";
 
-interface Product {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-    price: number;
-    stock: number;
-    isActive: boolean;
-    isFeatured: boolean;
-    merchantId: string; // Required for cart
-    categories: Array<{ category: { id: string; name: string; slug: string } }>;
-    images: Array<{ id: string; url: string; alt: string | null }>;
+async function getProduct(slug: string) {
+    try {
+        return await prisma.product.findFirst({
+            where: { slug, isActive: true },
+            include: {
+                categories: { include: { category: true } },
+                images: { orderBy: { order: "asc" }, take: 4 },
+                merchant: { select: { name: true, slug: true } },
+            },
+        });
+    } catch {
+        return null;
+    }
 }
 
-export default function ProductDetailPage() {
-    const params = useParams();
-    const router = useRouter();
-    const { status } = useSession();
-    const slug = params.slug as string;
-
-    const [product, setProduct] = useState<Product | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [quantity, setQuantity] = useState(1);
-    const [addedToCart, setAddedToCart] = useState(false);
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-
-    const addItem = useCartStore((state) => state.addItem);
-    const openCart = useCartStore((state) => state.openCart);
-
-    useEffect(() => {
-        async function fetchProduct() {
-            try {
-                const response = await fetch(`/api/products/${slug}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setProduct(data);
-                }
-            } catch (error) {
-                console.error("Error fetching product:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        if (slug) {
-            fetchProduct();
-        }
-    }, [slug]);
-
-    const handleAddToCart = () => {
-        if (!product || product.stock <= 0) return;
-
-        // Check if user is logged in
-        if (status !== "authenticated") {
-            setShowLoginModal(true);
-            return;
-        }
-
-        addItem({
-            productId: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: quantity,
-            image: product.images[0]?.url || undefined,
-            merchantId: product.merchantId,
-            type: "product",
-        });
-
-        setAddedToCart(true);
-        setTimeout(() => setAddedToCart(false), 2000);
-    };
-
-    const handleAddAndGoToCart = () => {
-        if (status !== "authenticated") {
-            setShowLoginModal(true);
-            return;
-        }
-        handleAddToCart();
-        setTimeout(() => openCart(), 300);
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-[#e60012]" />
-            </div>
-        );
-    }
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+    const { slug } = await params;
+    const product = await getProduct(slug);
 
     if (!product) {
-        return (
-            <div className="container mx-auto px-4 py-16 text-center">
-                <Package className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-                <h1 className="text-2xl font-bold text-navy mb-4">Producto no encontrado</h1>
-                <p className="text-gray-600 mb-6">El producto que buscás no existe o fue eliminado.</p>
-                <Link href="/productos" className="btn-primary">
-                    Ver todos los productos
-                </Link>
-            </div>
-        );
+        return {
+            title: "Producto no encontrado — MOOVY",
+            description: "El producto que buscás no está disponible.",
+        };
     }
 
-    const category = product.categories[0]?.category;
-    const inStock = product.stock > 0;
+    const title = `${product.name} — MOOVY Ushuaia`;
+    const description = product.description
+        ? product.description.slice(0, 160)
+        : `Comprá ${product.name} en MOOVY. Delivery en Ushuaia.`;
+    const image = product.images[0]?.url || `${APP_URL}/og-default.png`;
+    const url = `${APP_URL}/productos/${product.slug}`;
+    const price = product.price.toFixed(2);
+    const category = product.categories[0]?.category?.name;
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            url,
+            siteName: "MOOVY",
+            locale: "es_AR",
+            type: "website",
+            images: [
+                {
+                    url: image,
+                    width: 800,
+                    height: 800,
+                    alt: product.name,
+                },
+            ],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: [image],
+        },
+        alternates: {
+            canonical: url,
+        },
+        other: {
+            "product:price:amount": price,
+            "product:price:currency": "ARS",
+            ...(category ? { "product:category": category } : {}),
+            "product:availability": product.stock > 0 ? "in stock" : "out of stock",
+        },
+    };
+}
+
+export default async function ProductDetailPage({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}) {
+    const { slug } = await params;
+    const product = await getProduct(slug);
+
+    // JSON-LD structured data for Google
+    const jsonLd = product
+        ? {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: product.name,
+              description: product.description || undefined,
+              image: product.images.map((img) => img.url),
+              url: `${APP_URL}/productos/${product.slug}`,
+              brand: {
+                  "@type": "Organization",
+                  name: product.merchant?.name || "MOOVY",
+              },
+              offers: {
+                  "@type": "Offer",
+                  price: product.price.toFixed(2),
+                  priceCurrency: "ARS",
+                  availability:
+                      product.stock > 0
+                          ? "https://schema.org/InStock"
+                          : "https://schema.org/OutOfStock",
+                  seller: {
+                      "@type": "Organization",
+                      name: product.merchant?.name || "MOOVY",
+                  },
+                  url: `${APP_URL}/productos/${product.slug}`,
+                  areaServed: {
+                      "@type": "City",
+                      name: "Ushuaia",
+                  },
+              },
+              ...(product.categories[0]?.category?.name
+                  ? { category: product.categories[0].category.name }
+                  : {}),
+          }
+        : null;
 
     return (
-        <div className="container mx-auto px-4 py-6 lg:py-10">
-            {/* Breadcrumb */}
-            <nav className="mb-6">
-                <ol className="flex items-center gap-2 text-sm text-gray-500">
-                    <li>
-                        <Link href="/" className="hover:text-[#e60012] transition">
-                            Inicio
-                        </Link>
-                    </li>
-                    <li>/</li>
-                    <li>
-                        <Link href="/productos" className="hover:text-[#e60012] transition">
-                            Productos
-                        </Link>
-                    </li>
-                    {category && (
-                        <>
-                            <li>/</li>
-                            <li>
-                                <Link
-                                    href={`/productos?categoria=${category.slug}`}
-                                    className="hover:text-[#e60012] transition"
-                                >
-                                    {category.name}
-                                </Link>
-                            </li>
-                        </>
-                    )}
-                    <li>/</li>
-                    <li className="text-navy font-medium truncate max-w-[150px]">
-                        {product.name}
-                    </li>
-                </ol>
-            </nav>
-
-            {/* Back Link (Mobile) */}
-            <Link
-                href="/productos"
-                className="lg:hidden inline-flex items-center text-gray-600 hover:text-[#e60012] mb-4"
-            >
-                <ChevronLeft className="w-5 h-5 mr-1" />
-                Volver
-            </Link>
-
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-                {/* Product Images Gallery */}
-                <div className="space-y-4">
-                    {/* Main Image */}
-                    <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden relative">
-                        {product.images.length > 0 ? (
-                            <img
-                                src={product.images[selectedImageIndex]?.url || product.images[0].url}
-                                alt={product.images[selectedImageIndex]?.alt || product.name}
-                                className="w-full h-full object-cover transition-opacity duration-300"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-24 h-24 text-gray-300" />
-                            </div>
-                        )}
-
-                        {product.isFeatured && (
-                            <span className="absolute top-4 left-4 bg-[#e60012] text-white px-3 py-1 rounded-full text-sm font-medium">
-                                ⭐ Destacado
-                            </span>
-                        )}
-
-                        {!inStock && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <span className="bg-red-500 text-white px-4 py-2 rounded-full font-semibold">
-                                    Sin Stock
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Thumbnails */}
-                    {product.images.length > 1 && (
-                        <div className="flex gap-3 overflow-x-auto pb-2">
-                            {product.images.map((image, index) => (
-                                <button
-                                    key={image.id}
-                                    onClick={() => setSelectedImageIndex(index)}
-                                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
-                                        ? "border-[#e60012] ring-2 ring-[#e60012]/30"
-                                        : "border-gray-200 hover:border-gray-400"
-                                        }`}
-                                >
-                                    <img
-                                        src={image.url}
-                                        alt={image.alt || `Imagen ${index + 1}`}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Product Info */}
-                <div className="flex flex-col">
-                    {/* Category */}
-                    {category && (
-                        <Link
-                            href={`/productos?categoria=${category.slug}`}
-                            className="text-[#e60012] text-sm font-medium hover:underline mb-2"
-                        >
-                            {category.name}
-                        </Link>
-                    )}
-
-                    {/* Name */}
-                    <h1 className="text-3xl lg:text-4xl font-bold text-navy mb-4">
-                        {product.name}
-                    </h1>
-
-                    {/* Price */}
-                    <p className="text-3xl lg:text-4xl font-bold text-[#e60012] mb-6">
-                        {formatPrice(product.price)}
-                    </p>
-
-                    {/* Description */}
-                    {product.description && (
-                        <p className="text-gray-600 mb-6 leading-relaxed">
-                            {product.description}
-                        </p>
-                    )}
-
-                    {/* Stock Status */}
-                    <div className="flex items-center gap-2 mb-6">
-                        {inStock ? (
-                            <>
-                                <Check className="w-5 h-5 text-green-500" />
-                                <span className="text-green-600 font-medium">
-                                    En stock ({product.stock} disponibles)
-                                </span>
-                            </>
-                        ) : (
-                            <>
-                                <AlertCircle className="w-5 h-5 text-red-500" />
-                                <span className="text-red-600 font-medium">
-                                    Sin stock
-                                </span>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Quantity Selector */}
-                    {inStock && (
-                        <div className="flex items-center gap-4 mb-6">
-                            <span className="text-gray-700 font-medium">Cantidad:</span>
-                            <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
-                                <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition"
-                                    disabled={quantity <= 1}
-                                >
-                                    <Minus className="w-4 h-4" />
-                                </button>
-                                <span className="w-12 text-center font-semibold text-lg">
-                                    {quantity}
-                                </span>
-                                <button
-                                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                                    className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition"
-                                    disabled={quantity >= product.stock}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Add to Cart Buttons */}
-                    {inStock && (
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <button
-                                onClick={handleAddToCart}
-                                disabled={addedToCart}
-                                className={`btn-primary flex-1 py-4 flex items-center justify-center gap-2 text-lg ${addedToCart ? "bg-green-500" : ""
-                                    }`}
-                            >
-                                {addedToCart ? (
-                                    <>
-                                        <Check className="w-5 h-5" />
-                                        ¡Agregado!
-                                    </>
-                                ) : (
-                                    <>
-                                        <ShoppingCart className="w-5 h-5" />
-                                        Agregar al Carrito
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={handleAddAndGoToCart}
-                                className="btn-outline flex-1 py-4 text-lg"
-                            >
-                                Comprar Ahora
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Extra Info */}
-                    <div className="mt-8 pt-6 border-t space-y-3 text-sm text-gray-600">
-                        <p>🚚 Envío a todo Ushuaia</p>
-                        <p>💳 Efectivo o Mercado Pago</p>
-                        <p>📞 Consultas por WhatsApp</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Login Required Modal */}
-            {showLoginModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowLoginModal(false)}>
-                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                        <div className="p-6 text-center">
-                            <div className="w-16 h-16 bg-[#e60012]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <UserPlus className="w-8 h-8 text-[#e60012]" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                ¡Registrate para comprar!
-                            </h3>
-                            <p className="text-gray-600 mb-6">
-                                Para agregar productos al carrito y realizar tu primera compra, necesitás crear una cuenta o iniciar sesión.
-                            </p>
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => router.push("/registro")}
-                                    className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#c5000f] transition"
-                                >
-                                    Crear cuenta gratis
-                                </button>
-                                <button
-                                    onClick={() => router.push("/login")}
-                                    className="w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition"
-                                >
-                                    Ya tengo cuenta
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-4">
-                                ¡Ganá 250 puntos MOOVER con tu primera compra! 🎉
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <>
+            {jsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                />
             )}
-        </div>
+            <ProductDetailClient />
+        </>
     );
 }
