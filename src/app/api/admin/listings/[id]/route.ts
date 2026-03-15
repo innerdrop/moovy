@@ -1,4 +1,4 @@
-// Admin Listing Update API - Approve/Pause listing
+// Admin Listing Update API - Approve/Pause/Reject listing
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
@@ -16,7 +16,9 @@ export async function PUT(
     const { id } = await params;
 
     try {
-        const listing = await prisma.listing.findUnique({ where: { id } });
+        const listing = await prisma.listing.findUnique({
+            where: { id },
+        });
         if (!listing) {
             return NextResponse.json({ error: "Listing no encontrada" }, { status: 404 });
         }
@@ -39,6 +41,11 @@ export async function PUT(
                 seller: { select: { displayName: true } },
             },
         });
+
+        // Log rejection reason for audit trail
+        if (body.isActive === false && body.rejectionReason) {
+            console.log(`[MODERATION] Listing "${listing.title}" (${id}) paused by admin. Reason: ${body.rejectionReason}`);
+        }
 
         return NextResponse.json(updated);
     } catch (error) {

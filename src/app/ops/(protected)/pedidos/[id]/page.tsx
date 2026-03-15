@@ -229,7 +229,7 @@ export default function AdminOrderDetailPage() {
                         <ChevronLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-navy">
+                        <h1 className="text-2xl font-bold text-gray-900">
                             Pedido #{order.orderNumber}
                         </h1>
                         <p className="text-gray-500">
@@ -290,7 +290,7 @@ export default function AdminOrderDetailPage() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Status Actions */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4">Actualizar Estado</h2>
+                        <h2 className="font-bold text-gray-900 mb-4">Actualizar Estado</h2>
                         <div className="flex flex-wrap gap-2">
                             {statusOptions.map((status) => (
                                 <button
@@ -310,7 +310,7 @@ export default function AdminOrderDetailPage() {
 
                     {/* Order Items */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Package className="w-5 h-5 text-[#e60012]" />
                             Productos ({order.items.length})
                         </h2>
@@ -318,7 +318,7 @@ export default function AdminOrderDetailPage() {
                             {order.items.map((item) => (
                                 <li key={item.id} className="py-4 flex justify-between">
                                     <div>
-                                        <p className="font-medium text-navy">{item.name}</p>
+                                        <p className="font-medium text-gray-900">{item.name}</p>
                                         <p className="text-sm text-gray-500">
                                             {formatPrice(item.price)} x {item.quantity}
                                         </p>
@@ -348,7 +348,7 @@ export default function AdminOrderDetailPage() {
 
                     {/* Notes */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <MessageSquare className="w-5 h-5 text-[#e60012]" />
                             Notas
                         </h2>
@@ -386,12 +386,12 @@ export default function AdminOrderDetailPage() {
                 <div className="space-y-6">
                     {/* Customer Info */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <User className="w-5 h-5 text-[#e60012]" />
                             Cliente
                         </h2>
                         <div className="space-y-3">
-                            <p className="font-medium text-navy">{order.user.name}</p>
+                            <p className="font-medium text-gray-900">{order.user.name}</p>
                             <p className="text-sm text-gray-600 flex items-center gap-2">
                                 <Mail className="w-4 h-4" />
                                 {order.user.email}
@@ -412,12 +412,12 @@ export default function AdminOrderDetailPage() {
 
                     {/* Delivery Address */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <MapPin className="w-5 h-5 text-[#e60012]" />
                             Dirección de Entrega
                         </h2>
                         <div className="space-y-1">
-                            <p className="font-medium text-navy">
+                            <p className="font-medium text-gray-900">
                                 {order.address.street} {order.address.number}
                             </p>
                             {order.address.apartment && (
@@ -429,7 +429,7 @@ export default function AdminOrderDetailPage() {
 
                     {/* Payment Info */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-[#e60012]" />
                             Pago
                         </h2>
@@ -465,7 +465,7 @@ export default function AdminOrderDetailPage() {
             {showRefund && order && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
-                        <h3 className="font-bold text-lg text-navy mb-4 flex items-center gap-2">
+                        <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
                             <RotateCcw className="w-5 h-5 text-purple-600" />
                             Procesar Reembolso
                         </h3>

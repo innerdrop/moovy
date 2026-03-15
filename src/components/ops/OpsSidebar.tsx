@@ -33,34 +33,64 @@ interface OpsSidebarProps {
     userName?: string;
 }
 
-const navItems = [
-    { href: "/ops", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/ops/live", icon: Activity, label: "En Vivo", badge: "🔴" },
-    { href: "/ops/catalogo-paquetes", icon: Package, label: "Catálogo de Paquetes" },
-    { href: "/ops/productos", icon: Store, label: "Productos Comercios" },
-    { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
-    { href: "/ops/comercios", icon: Building2, label: "Comercios" },
-    { href: "/ops/repartidores", icon: Truck, label: "Repartidores" },
-    { href: "/ops/vendedores", icon: UserCheck, label: "Vendedores" },
-    { href: "/ops/moderacion", icon: Shield, label: "Moderación" },
-    { href: "/ops/clientes", icon: Users, label: "Clientes" },
-    { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
-    { href: "/ops/categorias", icon: Tag, label: "Categorías" },
-    { href: "/ops/slides", icon: ImageIcon, label: "Hero Slider" },
-    { href: "/ops/puntos", icon: Gift, label: "Puntos" },
-    { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
-    { href: "/ops/configuracion", icon: Settings, label: "Config" },
-    { href: "/ops/configuracion-logistica", icon: Truck, label: "Config Logística" },
-    { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
-    { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
+interface NavSection {
+    title: string;
+    items: { href: string; icon: any; label: string; badge?: string }[];
+}
+
+const navSections: NavSection[] = [
+    {
+        title: "Operaciones",
+        items: [
+            { href: "/ops", icon: LayoutDashboard, label: "Dashboard" },
+            { href: "/ops/live", icon: Activity, label: "En Vivo", badge: "🔴" },
+            { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
+            { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
+        ],
+    },
+    {
+        title: "Actores",
+        items: [
+            { href: "/ops/comercios", icon: Building2, label: "Comercios" },
+            { href: "/ops/repartidores", icon: Truck, label: "Repartidores" },
+            { href: "/ops/vendedores", icon: UserCheck, label: "Vendedores" },
+            { href: "/ops/clientes", icon: Users, label: "Clientes" },
+        ],
+    },
+    {
+        title: "Catálogo",
+        items: [
+            { href: "/ops/productos", icon: Store, label: "Productos" },
+            { href: "/ops/moderacion", icon: Shield, label: "Moderación" },
+            { href: "/ops/categorias", icon: Tag, label: "Categorías" },
+            { href: "/ops/catalogo-paquetes", icon: Package, label: "Paquetes" },
+            { href: "/ops/slides", icon: ImageIcon, label: "Hero Slider" },
+        ],
+    },
+    {
+        title: "Finanzas",
+        items: [
+            { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
+            { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
+            { href: "/ops/puntos", icon: Gift, label: "Puntos" },
+        ],
+    },
+    {
+        title: "Sistema",
+        items: [
+            { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
+            { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
+            { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
+        ],
+    },
 ];
 
 // Bottom nav for mobile - most important items
 const mobileNavItems = [
     { href: "/ops", icon: LayoutDashboard, label: "Inicio" },
     { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
-    { href: "/ops/productos", icon: Package, label: "Productos" },
     { href: "/ops/live", icon: Activity, label: "Live" },
+    { href: "/ops/comercios", icon: Building2, label: "Comercios" },
 ];
 
 export default function OpsSidebar({ userName }: OpsSidebarProps) {
@@ -166,29 +196,36 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
 
                 {/* Navigation */}
                 <nav className="flex-1 p-3 overflow-y-auto">
-                    <ul className="space-y-0.5">
-                        {navItems.map((item) => (
-                            <li key={item.href}>
-                                <Link
-                                    href={item.href}
-                                    onClick={closeMobileMenu}
-                                    className={`
-                                        flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm
-                                        ${isActive(item.href)
-                                            ? "bg-red-500/10 text-red-500 font-medium"
-                                            : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                                        }
-                                    `}
-                                >
-                                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                                    <span>{item.label}</span>
-                                    {item.badge && (
-                                        <span className="ml-auto text-xs">{item.badge}</span>
-                                    )}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
+                    {navSections.map((section, sIdx) => (
+                        <div key={section.title} className={sIdx > 0 ? "mt-4" : ""}>
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 mb-1">
+                                {section.title}
+                            </p>
+                            <ul className="space-y-0.5">
+                                {section.items.map((item) => (
+                                    <li key={item.href}>
+                                        <Link
+                                            href={item.href}
+                                            onClick={closeMobileMenu}
+                                            className={`
+                                                flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm
+                                                ${isActive(item.href)
+                                                    ? "bg-red-500/10 text-red-500 font-medium"
+                                                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                                }
+                                            `}
+                                        >
+                                            <item.icon className="w-4 h-4 flex-shrink-0" />
+                                            <span>{item.label}</span>
+                                            {item.badge && (
+                                                <span className="ml-auto text-xs">{item.badge}</span>
+                                            )}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
                 </nav>
 
                 {/* Footer Actions */}

@@ -270,7 +270,7 @@ export default function AdminSlidesPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-navy">Hero Slider</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Hero Slider</h1>
                     <p className="text-gray-600">Administra las diapositivas del carrusel principal</p>
                 </div>
                 <button
@@ -286,7 +286,7 @@ export default function AdminSlidesPage() {
             {showForm && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-moovy">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-navy">
+                        <h2 className="text-lg font-semibold text-gray-900">
                             {editingId ? "Editar Slide" : "Nuevo Slide"}
                         </h2>
                         <button onClick={cancelForm} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -529,7 +529,7 @@ export default function AdminSlidesPage() {
 
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-navy truncate">{slide.title}</h3>
+                                    <h3 className="font-semibold text-gray-900 truncate">{slide.title}</h3>
                                     <p className="text-sm text-gray-500 truncate">{slide.subtitle}</p>
                                     <p className="text-xs text-gray-400 mt-1 hidden md:block">
                                         Botón: {slide.buttonText} → {slide.buttonLink}

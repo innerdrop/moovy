@@ -254,7 +254,7 @@ export default function EditProductPage() {
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-navy">Editar Producto</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">Editar Producto</h1>
                         <p className="text-gray-600">{name}</p>
                     </div>
                 </div>
@@ -295,7 +295,7 @@ export default function EditProductPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Image Upload */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-[#e60012]" />
                         Imagen del Producto
                     </h2>
@@ -346,7 +346,7 @@ export default function EditProductPage() {
 
                 {/* Basic Info */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Package className="w-5 h-5 text-[#e60012]" />
                         Información Básica
                     </h2>
@@ -401,7 +401,7 @@ export default function EditProductPage() {
 
                 {/* Pricing */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <DollarSign className="w-5 h-5 text-[#e60012]" />
                         Precios
                     </h2>
@@ -456,7 +456,7 @@ export default function EditProductPage() {
 
                 {/* Stock */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Box className="w-5 h-5 text-[#e60012]" />
                         Stock
                     </h2>

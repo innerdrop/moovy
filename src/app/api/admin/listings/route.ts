@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
                         user: { select: { email: true } },
                     },
                 },
-                images: { take: 1, select: { url: true } },
+                images: { select: { url: true }, orderBy: { order: "asc" } },
                 category: { select: { name: true } },
             },
             orderBy: { createdAt: "desc" },

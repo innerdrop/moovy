@@ -39,7 +39,7 @@ export default async function ConfigurationPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-navy flex items-center gap-3 italic">
+                    <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
                         <div className="w-12 h-12 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20 not-italic">
                             <Settings className="w-7 h-7 text-white" />
                         </div>
@@ -62,7 +62,7 @@ export default async function ConfigurationPage() {
                                 <span className="text-2xl">🚧</span>
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-navy leading-none">Mantenimiento</h2>
+                                <h2 className="text-xl font-black text-gray-900 leading-none">Mantenimiento</h2>
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Control de acceso global</p>
                             </div>
                         </div>
@@ -71,7 +71,7 @@ export default async function ConfigurationPage() {
                             {/* Toggle Landing */}
                             <div className="flex items-center justify-between p-5 bg-orange-50/50 rounded-2xl border border-orange-100/50">
                                 <div className="max-w-[70%]">
-                                    <h3 className="font-extrabold text-navy text-sm">Modo Landing</h3>
+                                    <h3 className="font-extrabold text-gray-900 text-sm">Modo Landing</h3>
                                     <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
                                         Muestra "Volvemos Pronto" en la página principal.
                                     </p>
@@ -105,7 +105,7 @@ export default async function ConfigurationPage() {
                                 </label>
                                 <textarea
                                     defaultValue={settings?.maintenanceMessage || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-navy focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all resize-none"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all resize-none"
                                     rows={2}
                                     placeholder="¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia."
                                     name="maintenanceMessage"
@@ -123,7 +123,7 @@ export default async function ConfigurationPage() {
                                 <span className="text-2xl">🎯</span>
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-navy leading-none">Visibilidad</h2>
+                                <h2 className="text-xl font-black text-gray-900 leading-none">Visibilidad</h2>
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Landing y Sliders</p>
                             </div>
                         </div>
@@ -131,7 +131,7 @@ export default async function ConfigurationPage() {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between p-5 bg-blue-50/30 rounded-2xl border border-blue-50">
                                 <div>
-                                    <h3 className="font-extrabold text-navy text-sm">Registro Repartidores</h3>
+                                    <h3 className="font-extrabold text-gray-900 text-sm">Registro Repartidores</h3>
                                     <p className="text-[10px] text-slate-400 font-medium">Mostrar tarjeta en landing</p>
                                 </div>
                                 <Switch
@@ -143,7 +143,7 @@ export default async function ConfigurationPage() {
 
                             <div className="flex items-center justify-between p-5 bg-blue-50/30 rounded-2xl border border-blue-50">
                                 <div>
-                                    <h3 className="font-extrabold text-navy text-sm">Registro Comercios</h3>
+                                    <h3 className="font-extrabold text-gray-900 text-sm">Registro Comercios</h3>
                                     <p className="text-[10px] text-slate-400 font-medium">Mostrar tarjeta en landing</p>
                                 </div>
                                 <Switch
@@ -163,7 +163,7 @@ export default async function ConfigurationPage() {
                                         min="1"
                                         max="50"
                                         defaultValue={settings?.maxCategoriesHome ?? 6}
-                                        className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 font-black text-navy focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 font-black text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                         name="maxCategoriesHome"
                                     />
                                 </div>
@@ -178,7 +178,7 @@ export default async function ConfigurationPage() {
                                             max="30"
                                             step="1"
                                             defaultValue={Math.round((settings?.heroSliderInterval ?? 5000) / 1000)}
-                                            className="w-full bg-white border border-purple-100 rounded-xl px-3 py-2 font-black text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                            className="w-full bg-white border border-purple-100 rounded-xl px-3 py-2 font-black text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                             name="heroSliderInterval"
                                         />
                                         <span className="text-[10px] font-black text-purple-400">SEG</span>
@@ -201,7 +201,7 @@ export default async function ConfigurationPage() {
                                     <span className="text-2xl">🎉</span>
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black text-navy leading-none">Popup Promo</h2>
+                                    <h2 className="text-xl font-black text-gray-900 leading-none">Popup Promo</h2>
                                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Ventana emergente</p>
                                 </div>
                             </div>
@@ -219,7 +219,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupTitle || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                         placeholder="¡Super Oferta!"
                                         name="promoPopupTitle"
                                     />
@@ -228,7 +228,7 @@ export default async function ConfigurationPage() {
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Mensaje</label>
                                     <textarea
                                         defaultValue={settings?.promoPopupMessage || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none"
                                         rows={2}
                                         placeholder="Aprovecha 20% OFF..."
                                         name="promoPopupMessage"
@@ -241,7 +241,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupButtonText || "Ver más"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                         name="promoPopupButtonText"
                                     />
                                 </div>
@@ -250,7 +250,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupLink || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                         placeholder="/tienda"
                                         name="promoPopupLink"
                                     />
@@ -264,7 +264,7 @@ export default async function ConfigurationPage() {
                                     name="promoPopupDismissable"
                                     id="promoPopupDismissable"
                                 />
-                                <label htmlFor="promoPopupDismissable" className="text-xs font-bold text-navy select-none">
+                                <label htmlFor="promoPopupDismissable" className="text-xs font-bold text-gray-900 select-none">
                                     Permitir cerrar (Cruz visible)
                                 </label>
                             </div>
@@ -281,7 +281,7 @@ export default async function ConfigurationPage() {
                                     <span className="text-2xl">⚡</span>
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black text-navy leading-none">Banner /Tienda</h2>
+                                    <h2 className="text-xl font-black text-gray-900 leading-none">Banner /Tienda</h2>
                                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Banner horizontal</p>
                                 </div>
                             </div>
@@ -298,7 +298,7 @@ export default async function ConfigurationPage() {
                                 <input
                                     type="text"
                                     defaultValue={(settings as any)?.promoBannerTitle ?? "Noches de\nPizza & Pelis"}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
                                     name="promoBannerTitle"
                                 />
                             </div>
@@ -307,7 +307,7 @@ export default async function ConfigurationPage() {
                                 <input
                                     type="text"
                                     defaultValue={(settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs."}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
                                     name="promoBannerSubtitle"
                                 />
                             </div>
@@ -317,7 +317,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={(settings as any)?.promoBannerButtonText ?? "Ver locales"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
                                         name="promoBannerButtonText"
                                     />
                                 </div>
@@ -326,7 +326,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={(settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
                                         name="promoBannerButtonLink"
                                     />
                                 </div>
@@ -350,7 +350,7 @@ export default async function ConfigurationPage() {
                                     <Truck className="w-8 h-8 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black text-navy leading-none italic">Logística de Delivery</h2>
+                                    <h2 className="text-2xl font-black text-gray-900 leading-none italic">Logística de Delivery</h2>
                                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
                                         <span className="w-1.5 h-1.5 bg-moovy rounded-full" />
                                         Cálculo inteligente de tarifas
@@ -362,7 +362,7 @@ export default async function ConfigurationPage() {
                             <div className="bg-slate-50 border border-slate-100 rounded-2xl px-6 py-3 flex items-center gap-4">
                                 <div>
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Costo base hoy</p>
-                                    <p className="text-xl font-black text-navy leading-none">
+                                    <p className="text-xl font-black text-gray-900 leading-none">
                                         ${settings?.baseDeliveryFee || 500}
                                     </p>
                                 </div>
@@ -387,7 +387,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="number"
                                         defaultValue={settings?.fuelPricePerLiter || 1200}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
                                         name="fuelPricePerLiter"
                                     />
                                 </div>
@@ -402,7 +402,7 @@ export default async function ConfigurationPage() {
                                     type="number"
                                     step="0.01"
                                     defaultValue={settings?.fuelConsumptionPerKm || 0.06}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
                                     name="fuelConsumptionPerKm"
                                 />
                             </div>
@@ -416,7 +416,7 @@ export default async function ConfigurationPage() {
                                     type="number"
                                     step="0.01"
                                     defaultValue={settings?.maintenanceFactor || 1.35}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
                                     name="maintenanceFactor"
                                 />
                             </div>
@@ -429,7 +429,7 @@ export default async function ConfigurationPage() {
                                 <input
                                     type="number"
                                     defaultValue={settings?.maxDeliveryDistance || 15}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
                                     name="maxDeliveryDistance"
                                 />
                             </div>
@@ -445,7 +445,7 @@ export default async function ConfigurationPage() {
                                         <input
                                             type="number"
                                             defaultValue={settings?.baseDeliveryFee || 500}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
                                             name="baseDeliveryFee"
                                             placeholder="Base"
                                         />
@@ -471,7 +471,7 @@ export default async function ConfigurationPage() {
                                     <span className="text-xl">🏍️</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black text-navy leading-none">Ganancia del Rider</h3>
+                                    <h3 className="text-lg font-black text-gray-900 leading-none">Ganancia del Rider</h3>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Porcentaje del envío que cobra el repartidor</p>
                                 </div>
                             </div>
@@ -488,7 +488,7 @@ export default async function ConfigurationPage() {
                                             max="100"
                                             step="1"
                                             defaultValue={(settings as any)?.riderCommissionPercent ?? 80}
-                                            className="w-full bg-white border border-green-200 rounded-2xl px-5 py-4 text-lg font-black text-navy focus:ring-2 focus:ring-green-500 focus:outline-none transition-all group-hover:bg-green-50/50"
+                                            className="w-full bg-white border border-green-200 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all group-hover:bg-green-50/50"
                                             name="riderCommissionPercent"
                                         />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-black">%</span>
@@ -504,7 +504,7 @@ export default async function ConfigurationPage() {
 
                                 <div className="p-4 bg-white rounded-2xl border border-green-100 flex flex-col justify-center">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Moovy retiene</p>
-                                    <p className="text-xl font-black text-navy">
+                                    <p className="text-xl font-black text-gray-900">
                                         {100 - ((settings as any)?.riderCommissionPercent ?? 80)}% del envío
                                     </p>
                                 </div>
@@ -519,11 +519,11 @@ export default async function ConfigurationPage() {
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                                 <div>
-                                    <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Distancia</p>
+                                    <p className="text-[10px] font-bold text-gray-900-light uppercase tracking-widest mb-1 opacity-60">Distancia</p>
                                     <p className="text-xl font-black">5 KM <span className="text-xs font-normal opacity-40">(10km I/V)</span></p>
                                 </div>
                                 <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-bold text-navy-light uppercase tracking-widest mb-1 opacity-60">Nafta Estimada</p>
+                                    <p className="text-[10px] font-bold text-gray-900-light uppercase tracking-widest mb-1 opacity-60">Nafta Estimada</p>
                                     <p className="text-xl font-black">${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200))}</p>
                                 </div>
                                 <div className="border-l border-white/10 pl-6">
@@ -557,7 +557,7 @@ export default async function ConfigurationPage() {
                                 <Phone className="w-6 h-6 text-green-500" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-navy leading-none">Canales de Contacto</h2>
+                                <h2 className="text-xl font-black text-gray-900 leading-none">Canales de Contacto</h2>
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Soporte y Atención</p>
                             </div>
                         </div>
@@ -568,7 +568,7 @@ export default async function ConfigurationPage() {
                                 <input
                                     type="tel"
                                     defaultValue={settings?.whatsappNumber || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none"
                                     placeholder="+54 264 555 5555"
                                     name="whatsappNumber"
                                 />
@@ -578,7 +578,7 @@ export default async function ConfigurationPage() {
                                 <input
                                     type="tel"
                                     defaultValue={settings?.phone || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder="+54 264 555 5555"
                                     name="phone"
                                 />
@@ -588,7 +588,7 @@ export default async function ConfigurationPage() {
                                 <input
                                     type="email"
                                     defaultValue={settings?.email || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-navy focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                     placeholder="contacto@Moovysanjuan.com"
                                     name="email"
                                 />

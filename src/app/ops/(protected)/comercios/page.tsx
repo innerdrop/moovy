@@ -175,7 +175,7 @@ export default function ComerciosPage() {
                                 </div>
                                 <div className="flex-1 min-w-0 pt-1">
                                     <div className="flex items-center gap-1.5 mb-1">
-                                        <h3 className="font-black text-navy text-lg truncate leading-tight">{merchant.name}</h3>
+                                        <h3 className="font-black text-gray-900 text-lg truncate leading-tight">{merchant.name}</h3>
                                         {merchant.isVerified && (
                                             <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0 shadow-sm shadow-blue-200">
                                                 <CheckCircle className="w-3 h-3 text-white fill-current" />
@@ -193,14 +193,14 @@ export default function ComerciosPage() {
                             <div className="grid grid-cols-2 gap-px bg-slate-50 border-b border-slate-50">
                                 <div className="bg-white p-4 text-center group-hover:bg-slate-50/50 transition-colors">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Productos</p>
-                                    <div className="flex items-center justify-center gap-1.5 font-black text-navy text-xl">
+                                    <div className="flex items-center justify-center gap-1.5 font-black text-gray-900 text-xl">
                                         <Package className="w-5 h-5 text-moovy/20" />
                                         {merchant._count.products}
                                     </div>
                                 </div>
                                 <div className="bg-white p-4 text-center group-hover:bg-slate-50/50 transition-colors">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pedidos</p>
-                                    <div className="flex items-center justify-center gap-1.5 font-black text-navy text-xl">
+                                    <div className="flex items-center justify-center gap-1.5 font-black text-gray-900 text-xl">
                                         <ShoppingCart className="w-5 h-5 text-moovy/20" />
                                         {merchant._count.orders}
                                     </div>
@@ -216,8 +216,8 @@ export default function ComerciosPage() {
                                             {merchant.owner.firstName?.charAt(0)}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-black text-navy/40 uppercase tracking-widest leading-none mb-1">Dueño</p>
-                                            <p className="font-bold text-navy text-sm truncate">{merchant.owner.firstName} {merchant.owner.lastName}</p>
+                                            <p className="text-[10px] font-black text-gray-900/40 uppercase tracking-widest leading-none mb-1">Dueño</p>
+                                            <p className="font-bold text-gray-900 text-sm truncate">{merchant.owner.firstName} {merchant.owner.lastName}</p>
                                         </div>
                                     </div>
                                 )}
@@ -292,7 +292,7 @@ export default function ComerciosPage() {
             ) : (
                 <div className="bg-white rounded-3xl p-20 text-center shadow-sm border border-slate-100">
                     <Building2 className="w-20 h-20 text-slate-100 mx-auto mb-4" />
-                    <h3 className="text-xl font-black text-navy mb-2">Sin resultados</h3>
+                    <h3 className="text-xl font-black text-gray-900 mb-2">Sin resultados</h3>
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Prueba ajustando los filtros de búsqueda</p>
                 </div>
             )}

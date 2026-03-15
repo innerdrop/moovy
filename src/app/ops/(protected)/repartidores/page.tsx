@@ -241,7 +241,7 @@ export default function AdminRepartidoresPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-navy">Repartidores</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Repartidores</h1>
                     <p className="text-gray-600">Gestiona el equipo de delivery</p>
                 </div>
                 <button
@@ -257,7 +257,7 @@ export default function AdminRepartidoresPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl p-4 shadow-sm">
                     <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-navy">{drivers.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">{drivers.length}</p>
                 </div>
                 <div className="bg-green-50 rounded-xl p-4 border border-green-200">
                     <p className="text-sm text-green-800">Activos</p>
@@ -334,7 +334,7 @@ export default function AdminRepartidoresPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-lg text-navy">Agregar Nuevo Repartidor</h3>
+                            <h3 className="font-bold text-lg text-gray-900">Agregar Nuevo Repartidor</h3>
                             <button
                                 onClick={resetForm}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition"
@@ -489,11 +489,11 @@ export default function AdminRepartidoresPage() {
                         <table className="w-full">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
-                                    <th className="text-left p-4 font-bold text-navy text-xs uppercase tracking-widest">Repartidor</th>
-                                    <th className="text-center p-4 font-bold text-navy text-xs uppercase tracking-widest">Vehículo</th>
-                                    <th className="text-center p-4 font-bold text-navy text-xs uppercase tracking-widest">Entregas</th>
-                                    <th className="text-center p-4 font-bold text-navy text-xs uppercase tracking-widest">Estado</th>
-                                    <th className="text-right p-4 font-bold text-navy text-xs uppercase tracking-widest">Acciones</th>
+                                    <th className="text-left p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Repartidor</th>
+                                    <th className="text-center p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Vehículo</th>
+                                    <th className="text-center p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Entregas</th>
+                                    <th className="text-center p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Estado</th>
+                                    <th className="text-right p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -506,7 +506,7 @@ export default function AdminRepartidoresPage() {
                                                     {driver.user.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-navy">{driver.user.name}</span>
+                                                    <span className="font-bold text-gray-900">{driver.user.name}</span>
                                                     <span className="text-xs text-slate-400">{driver.user.email}</span>
                                                 </div>
                                             </div>
@@ -527,7 +527,7 @@ export default function AdminRepartidoresPage() {
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex flex-col items-center">
-                                                <span className="font-extrabold text-navy">{driver._count?.orders || 0}</span>
+                                                <span className="font-extrabold text-gray-900">{driver._count?.orders || 0}</span>
                                                 {driver.rating && (
                                                     <div className="flex items-center gap-1 text-xs text-yellow-600 font-bold">
                                                         <Star className="w-3 h-3 fill-current" />
@@ -604,7 +604,7 @@ export default function AdminRepartidoresPage() {
                                         {driver.user.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0 pt-1">
-                                        <h3 className="font-extrabold text-navy text-lg line-height-none truncate">{driver.user.name}</h3>
+                                        <h3 className="font-extrabold text-gray-900 text-lg line-height-none truncate">{driver.user.name}</h3>
                                         <p className="text-xs text-slate-400 truncate mb-2">{driver.user.email}</p>
                                         <div className="flex flex-wrap gap-2">
                                             <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase">
@@ -632,11 +632,11 @@ export default function AdminRepartidoresPage() {
                                 <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-50 mb-4">
                                     <div className="text-center">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Entregas</p>
-                                        <p className="font-black text-navy">{driver._count?.orders || 0}</p>
+                                        <p className="font-black text-gray-900">{driver._count?.orders || 0}</p>
                                     </div>
                                     <div className="text-center border-x border-slate-50">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rating</p>
-                                        <div className="flex items-center justify-center gap-1 font-black text-navy">
+                                        <div className="flex items-center justify-center gap-1 font-black text-gray-900">
                                             {driver.rating ? (
                                                 <>
                                                     <Star className="w-3 h-3 text-yellow-500 fill-current" />
@@ -647,14 +647,14 @@ export default function AdminRepartidoresPage() {
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Vehículo</p>
-                                        <p className="font-black text-navy text-[10px]">{driver.licensePlate || "S/P"}</p>
+                                        <p className="font-black text-gray-900 text-[10px]">{driver.licensePlate || "S/P"}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setViewDriver(driver)}
-                                        className="flex-1 py-2.5 bg-slate-50 text-navy font-bold text-xs rounded-xl hover:bg-slate-100 transition-all border border-slate-100"
+                                        className="flex-1 py-2.5 bg-slate-50 text-gray-900 font-bold text-xs rounded-xl hover:bg-slate-100 transition-all border border-slate-100"
                                     >
                                         Ver Perfil
                                     </button>
@@ -692,7 +692,7 @@ export default function AdminRepartidoresPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-lg text-navy">Detalles del Repartidor</h3>
+                            <h3 className="font-bold text-lg text-gray-900">Detalles del Repartidor</h3>
                             <button onClick={() => setViewDriver(null)} className="p-2 hover:bg-gray-100 rounded-lg">
                                 <X className="w-5 h-5" />
                             </button>

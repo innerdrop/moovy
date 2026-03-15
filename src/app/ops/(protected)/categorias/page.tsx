@@ -110,7 +110,7 @@ function SortableCategoryItem({
             {/* Content */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm sm:text-base font-bold text-navy truncate leading-tight">
+                    <h3 className="text-sm sm:text-base font-bold text-gray-900 truncate leading-tight">
                         {category.name}
                     </h3>
                     {!category.isActive && (
@@ -450,7 +450,7 @@ export default function AdminCategoriasPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sticky top-0 bg-white/95 backdrop-blur-md z-30 py-4 px-4 md:static md:bg-transparent md:p-0">
                 <div>
-                    <h1 className="text-2xl font-bold text-navy flex items-center gap-3 tracking-tight">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3 tracking-tight">
                         <div className="w-10 h-10 rounded-xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20">
                             <LayoutList className="w-5 h-5 text-white" />
                         </div>
@@ -478,7 +478,7 @@ export default function AdminCategoriasPage() {
                     <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Tag className="w-8 h-8 text-slate-300" />
                     </div>
-                    <h3 className="text-base font-bold text-navy mb-2">No hay categorías</h3>
+                    <h3 className="text-base font-bold text-gray-900 mb-2">No hay categorías</h3>
                     <p className="text-slate-400 text-sm mb-6">Comienza creando la primera categoría.</p>
                     <button onClick={startNew} className="btn-primary rounded-xl px-4 py-2 text-sm">
                         Crear Categoría

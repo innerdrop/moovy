@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-navy flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <BarChart3 className="w-7 h-7 text-[#e60012]" />
                         Analytics
                     </h1>
@@ -160,7 +160,7 @@ export default function AnalyticsPage() {
 
             {/* Orders by Status */}
             <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="font-bold text-navy mb-4 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <Package className="w-5 h-5 text-[#e60012]" />
                     Estado de Pedidos
                 </h3>
@@ -188,7 +188,7 @@ export default function AnalyticsPage() {
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Top Merchants */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="font-bold text-navy mb-4 flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <Store className="w-5 h-5 text-[#e60012]" />
                         Top Comercios
                     </h3>
@@ -215,7 +215,7 @@ export default function AnalyticsPage() {
 
                 {/* Top Products */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="font-bold text-navy mb-4 flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-[#e60012]" />
                         Productos Más Vendidos
                     </h3>
@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
 
             {/* Revenue Summary */}
             <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="font-bold text-navy mb-4 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-[#e60012]" />
                     Resumen de Ingresos
                 </h3>

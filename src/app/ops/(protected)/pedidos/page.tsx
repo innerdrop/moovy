@@ -136,7 +136,7 @@ export default function AdminPedidosPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-navy">Pedidos</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
                     <p className="text-gray-600">Gestiona los pedidos de tus clientes</p>
                 </div>
                 <div className="flex gap-2">
@@ -225,7 +225,7 @@ export default function AdminPedidosPage() {
                                 onChange={toggleSelectAll}
                                 className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy transition-all"
                             />
-                            <span className="text-sm font-bold text-navy uppercase tracking-wider">
+                            <span className="text-sm font-bold text-gray-900 uppercase tracking-wider">
                                 {selectedOrders.length > 0
                                     ? `${selectedOrders.length} seleccionado(s)`
                                     : "Seleccionar todos"
@@ -250,10 +250,10 @@ export default function AdminPedidosPage() {
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="p-4 w-12"></th>
-                                    <th className="text-left p-4 font-bold text-navy text-xs uppercase tracking-widest">Pedido</th>
-                                    <th className="text-left p-4 font-bold text-navy text-xs uppercase tracking-widest">Cliente</th>
-                                    <th className="text-center p-4 font-bold text-navy text-xs uppercase tracking-widest">Estado</th>
-                                    <th className="text-right p-4 font-bold text-navy text-xs uppercase tracking-widest">Total</th>
+                                    <th className="text-left p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Pedido</th>
+                                    <th className="text-left p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Cliente</th>
+                                    <th className="text-center p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Estado</th>
+                                    <th className="text-right p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Total</th>
                                     <th className="p-4 w-20"></th>
                                 </tr>
                             </thead>
@@ -274,7 +274,7 @@ export default function AdminPedidosPage() {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex flex-col">
-                                                    <span className="font-extrabold text-navy">#{order.orderNumber}</span>
+                                                    <span className="font-extrabold text-gray-900">#{order.orderNumber}</span>
                                                     <span className="text-[11px] text-slate-400 font-medium">
                                                         {new Date(order.createdAt).toLocaleString("es-AR")}
                                                     </span>
@@ -301,7 +301,7 @@ export default function AdminPedidosPage() {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <span className="font-extrabold text-navy">{formatPrice(order.total)}</span>
+                                                <span className="font-extrabold text-gray-900">{formatPrice(order.total)}</span>
                                             </td>
                                             <td className="p-4 text-right">
                                                 <Link
@@ -340,7 +340,7 @@ export default function AdminPedidosPage() {
                                             />
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID PEDIDO</span>
-                                                <span className="font-extrabold text-navy text-lg line-height-none">#{order.orderNumber}</span>
+                                                <span className="font-extrabold text-gray-900 text-lg line-height-none">#{order.orderNumber}</span>
                                             </div>
                                         </div>
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest ${status.color}`}>
@@ -354,7 +354,7 @@ export default function AdminPedidosPage() {
                                             {(order.user.name || order.user.email).charAt(0).toUpperCase()}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-navy truncate">{order.user.name || order.user.email}</p>
+                                            <p className="font-bold text-gray-900 truncate">{order.user.name || order.user.email}</p>
                                             <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                                                 <MapPin className="w-3 h-3" />
                                                 <span className="truncate">{order.address?.street} {order.address?.number}</span>
@@ -391,7 +391,7 @@ export default function AdminPedidosPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-lg text-navy">Eliminar Pedidos</h3>
+                            <h3 className="font-bold text-lg text-gray-900">Eliminar Pedidos</h3>
                             <button
                                 onClick={() => setShowDeleteModal(false)}
                                 className="p-2 hover:bg-gray-100 rounded-lg"

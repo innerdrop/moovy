@@ -206,7 +206,7 @@ export default function MerchantDetailPage() {
                     </Link>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-navy">{merchant.name}</h1>
+                            <h1 className="text-2xl font-bold text-gray-900">{merchant.name}</h1>
                             {merchant.isVerified && (
                                 <BadgeCheck className="w-6 h-6 text-blue-500" />
                             )}
@@ -241,7 +241,7 @@ export default function MerchantDetailPage() {
                     <div className="flex items-center gap-3">
                         <Package className="w-8 h-8 text-[#e60012]" />
                         <div>
-                            <p className="text-2xl font-bold text-navy">{merchant._count.products}</p>
+                            <p className="text-2xl font-bold text-gray-900">{merchant._count.products}</p>
                             <p className="text-sm text-gray-500">Productos</p>
                         </div>
                     </div>
@@ -250,7 +250,7 @@ export default function MerchantDetailPage() {
                     <div className="flex items-center gap-3">
                         <ShoppingBag className="w-8 h-8 text-green-500" />
                         <div>
-                            <p className="text-2xl font-bold text-navy">{merchant._count.orders}</p>
+                            <p className="text-2xl font-bold text-gray-900">{merchant._count.orders}</p>
                             <p className="text-sm text-gray-500">Pedidos</p>
                         </div>
                     </div>
@@ -263,7 +263,7 @@ export default function MerchantDetailPage() {
                             <XCircle className="w-8 h-8 text-red-500" />
                         )}
                         <div>
-                            <p className="text-lg font-bold text-navy">
+                            <p className="text-lg font-bold text-gray-900">
                                 {merchant.isActive ? "Activo" : "Inactivo"}
                             </p>
                             <p className="text-sm text-gray-500">Estado</p>
@@ -274,7 +274,7 @@ export default function MerchantDetailPage() {
                     <div className="flex items-center gap-3">
                         <Calendar className="w-8 h-8 text-purple-500" />
                         <div>
-                            <p className="text-lg font-bold text-navy">
+                            <p className="text-lg font-bold text-gray-900">
                                 {new Date(merchant.createdAt).toLocaleDateString("es-AR")}
                             </p>
                             <p className="text-sm text-gray-500">Registro</p>
@@ -323,7 +323,7 @@ export default function MerchantDetailPage() {
                                 <div className="space-y-6">
                                     {/* Owner Info Details (Read-only as it belongs to User) */}
                                     <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                        <h3 className="font-bold text-navy flex items-center gap-2 mb-4">
+                                        <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
                                             <User className="w-5 h-5 text-blue-600" />
                                             Datos del Propietario (Usuario)
                                         </h3>
@@ -343,7 +343,7 @@ export default function MerchantDetailPage() {
                                         </div>
                                     </div>
 
-                                    <h3 className="font-bold text-navy mb-4">Datos Adicionales del Comercio</h3>
+                                    <h3 className="font-bold text-gray-900 mb-4">Datos Adicionales del Comercio</h3>
 
                                     <div className="grid sm:grid-cols-2 gap-4">
                                         <div>
@@ -466,7 +466,7 @@ export default function MerchantDetailPage() {
 
                             {activeTab === "legal" && (
                                 <div className="space-y-4">
-                                    <h3 className="font-bold text-navy mb-4">Datos Fiscales y Legales</h3>
+                                    <h3 className="font-bold text-gray-900 mb-4">Datos Fiscales y Legales</h3>
 
                                     <div className="grid sm:grid-cols-2 gap-4">
                                         <div>
@@ -556,7 +556,7 @@ export default function MerchantDetailPage() {
 
                             {activeTab === "notes" && (
                                 <div className="space-y-4">
-                                    <h3 className="font-bold text-navy mb-4">
+                                    <h3 className="font-bold text-gray-900 mb-4">
                                         <FileText className="w-5 h-5 inline mr-2" />
                                         Notas Internas (Solo Admins)
                                     </h3>
@@ -592,7 +592,7 @@ export default function MerchantDetailPage() {
                 <div className="space-y-6">
                     {/* Registration Data */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Store className="w-5 h-5 text-[#e60012]" />
                             Datos de Registro
                         </h2>
@@ -629,7 +629,7 @@ export default function MerchantDetailPage() {
 
                     {/* Owner Info */}
                     <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="font-bold text-navy mb-4 flex items-center gap-2">
+                        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <User className="w-5 h-5 text-[#e60012]" />
                             Dueño Registrado
                         </h2>

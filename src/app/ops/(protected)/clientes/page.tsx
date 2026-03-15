@@ -256,7 +256,7 @@ export default function ClientsPage() {
                             onChange={toggleSelectAll}
                             className="w-5 h-5 rounded border-slate-300 text-moovy focus:ring-moovy"
                         />
-                        <span className="text-sm font-bold text-navy uppercase tracking-wider">
+                        <span className="text-sm font-bold text-gray-900 uppercase tracking-wider">
                             {selectedUsers.length > 0
                                 ? `${selectedUsers.length} seleccionado(s)`
                                 : "Seleccionar todos los clientes"
@@ -307,7 +307,7 @@ export default function ClientsPage() {
                                                     {(user.name || user.email).charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-navy">{user.name || "Sin nombre"}</p>
+                                                    <p className="font-bold text-gray-900">{user.name || "Sin nombre"}</p>
                                                     <p className="text-xs text-slate-400 font-medium">{user.email}</p>
                                                 </div>
                                             </div>
@@ -328,7 +328,7 @@ export default function ClientsPage() {
                                             <div className="flex items-center justify-end gap-1">
                                                 <button
                                                     onClick={() => setViewUser(user)}
-                                                    className="p-2 hover:bg-slate-50 rounded-xl transition-all text-slate-400 hover:text-navy"
+                                                    className="p-2 hover:bg-slate-50 rounded-xl transition-all text-slate-400 hover:text-gray-900"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
@@ -383,7 +383,7 @@ export default function ClientsPage() {
                                             {(user.name || user.email).charAt(0).toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="font-extrabold text-navy truncate">{user.name || "Sin nombre"}</h3>
+                                            <h3 className="font-extrabold text-gray-900 truncate">{user.name || "Sin nombre"}</h3>
                                             <p className="text-xs text-slate-400 font-bold truncate tracking-tight">{user.email}</p>
                                         </div>
                                     </div>
@@ -399,7 +399,7 @@ export default function ClientsPage() {
                                 <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50/50 rounded-xl mb-4 border border-slate-50">
                                     <div className="flex flex-col">
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Teléfono</span>
-                                        <p className="text-xs font-bold text-navy truncate flex items-center gap-1.5">
+                                        <p className="text-xs font-bold text-gray-900 truncate flex items-center gap-1.5">
                                             <Phone className="w-3 h-3 text-slate-400" />
                                             {user.phone || "No registra"}
                                         </p>
@@ -422,7 +422,7 @@ export default function ClientsPage() {
                                     </button>
                                     <button
                                         onClick={() => openEditModal(user)}
-                                        className="flex-1 py-2 bg-white border border-slate-200 text-navy rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 flex items-center justify-center gap-2"
+                                        className="flex-1 py-2 bg-white border border-slate-200 text-gray-900 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 flex items-center justify-center gap-2"
                                     >
                                         <Edit className="w-4 h-4" />
                                         Editar

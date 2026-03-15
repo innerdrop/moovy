@@ -1,56 +1,51 @@
-
-import { NextResponse } from "next/server";
+// Admin Comisiones API - Commission management for merchants
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { hasAnyRole } from "@/lib/auth-utils";
+import prisma from "@/lib/prisma";
 
-export async function GET(request: Request) {
+export async function GET() {
+    const session = await auth();
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     try {
-        const session = await auth();
-        const userRole = (session?.user as any)?.role;
-
-        if (!session || !["ADMIN", "admin"].includes(userRole)) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        // Fetch all merchants first
         const merchants = await prisma.merchant.findMany({
             where: { isActive: true },
-            select: { id: true, name: true, image: true, commissionRate: true }
+            select: { id: true, name: true, image: true, commissionRate: true },
         });
 
-        // Fetch aggregated order data
-        // We want totals regardless of payment status to show history, but maybe focused on what is pending.
-        // Let's get everything for now.
         const orderStats = await prisma.order.groupBy({
-            by: ['merchantId'],
+            by: ["merchantId"],
             _sum: {
                 total: true,
                 moovyCommission: true,
                 merchantPayout: true,
             },
             where: {
-                status: 'DELIVERED', // Only counting delivered orders for commissions
-                merchantId: { not: null }
-            }
+                status: "DELIVERED",
+                merchantId: { not: null },
+            },
         });
 
-        // Fetch pending commissions (commissionPaid = false)
         const pendingStats = await prisma.order.groupBy({
-            by: ['merchantId'],
+            by: ["merchantId"],
             _sum: {
                 moovyCommission: true,
+                merchantPayout: true,
             },
+            _count: true,
             where: {
-                status: 'DELIVERED',
+                status: "DELIVERED",
                 merchantId: { not: null },
-                commissionPaid: false
-            }
+                commissionPaid: false,
+            },
         });
 
-        // Combine data
-        const data = merchants.map(merchant => {
-            const stats = orderStats.find(s => s.merchantId === merchant.id);
-            const pending = pendingStats.find(s => s.merchantId === merchant.id);
+        const data = merchants.map((merchant) => {
+            const stats = orderStats.find((s) => s.merchantId === merchant.id);
+            const pending = pendingStats.find((s) => s.merchantId === merchant.id);
 
             return {
                 id: merchant.id,
@@ -61,19 +56,51 @@ export async function GET(request: Request) {
                 totalCommission: stats?._sum.moovyCommission || 0,
                 totalPayout: stats?._sum.merchantPayout || 0,
                 pendingCommission: pending?._sum.moovyCommission || 0,
+                pendingPayout: pending?._sum.merchantPayout || 0,
+                pendingOrderCount: pending?._count || 0,
             };
         });
 
-        // Sort by pending commission desc
         data.sort((a, b) => b.pendingCommission - a.pendingCommission);
 
         return NextResponse.json(data);
-
     } catch (error) {
         console.error("Error fetching commissions:", error);
-        return NextResponse.json(
-            { error: "Error al obtener comisiones" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Error al obtener comisiones" }, { status: 500 });
+    }
+}
+
+// Mark all pending orders for a merchant as commission paid
+export async function PATCH(req: NextRequest) {
+    const session = await auth();
+    if (!session || !hasAnyRole(session, ["ADMIN"])) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    try {
+        const body = await req.json();
+        const { merchantId } = body;
+
+        if (!merchantId) {
+            return NextResponse.json({ error: "merchantId requerido" }, { status: 400 });
+        }
+
+        const result = await prisma.order.updateMany({
+            where: {
+                merchantId,
+                status: "DELIVERED",
+                commissionPaid: false,
+            },
+            data: {
+                commissionPaid: true,
+            },
+        });
+
+        console.log(`[COMISIONES] Marked ${result.count} orders as paid for merchant ${merchantId} by admin`);
+
+        return NextResponse.json({ updated: result.count });
+    } catch (error) {
+        console.error("Error marking commissions as paid:", error);
+        return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
     }
 }

@@ -215,7 +215,7 @@ export default function ProductsPage() {
                                                             )}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="font-semibold text-navy truncate">{product.name}</p>
+                                                            <p className="font-semibold text-gray-900 truncate">{product.name}</p>
                                                             <p className="text-xs text-slate-500 truncate">
                                                                 {product.categories.map(c => c.category.name).join(", ") || "Sin categoría"}
                                                             </p>
@@ -309,7 +309,7 @@ export default function ProductsPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
-                                                <h3 className="font-bold text-navy text-lg line-clamp-1 leading-tight">{product.name}</h3>
+                                                <h3 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{product.name}</h3>
                                                 <span className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${product.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
                                                     {product.isActive ? "Active" : "Off"}
                                                 </span>

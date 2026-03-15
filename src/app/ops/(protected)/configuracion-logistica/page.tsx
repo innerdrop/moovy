@@ -302,7 +302,7 @@ export default function ConfigLogisticaPage() {
 
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-black text-navy flex items-center gap-3 italic">
+                <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
                     <div className="w-12 h-12 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20 not-italic">
                         <Settings className="w-7 h-7 text-white" />
                     </div>
@@ -325,7 +325,7 @@ export default function ConfigLogisticaPage() {
                             <Globe className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-navy leading-none">Configuración Global</h2>
+                            <h2 className="text-xl font-black text-gray-900 leading-none">Configuración Global</h2>
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Parámetros clave del sistema</p>
                         </div>
                     </div>
@@ -356,7 +356,7 @@ export default function ConfigLogisticaPage() {
                                     onChange={(e) =>
                                         setConfigValues((prev) => ({ ...prev, [field.key]: e.target.value }))
                                     }
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-navy focus:ring-2 focus:ring-blue-500 focus:outline-none pr-14"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none pr-14"
                                 />
                                 {field.unit && (
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300 uppercase">
@@ -381,7 +381,7 @@ export default function ConfigLogisticaPage() {
                             <Package className="w-6 h-6 text-amber-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-navy leading-none">Categorías de Paquete</h2>
+                            <h2 className="text-xl font-black text-gray-900 leading-none">Categorías de Paquete</h2>
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Dimensiones y vehículos permitidos</p>
                         </div>
                     </div>
@@ -415,7 +415,7 @@ export default function ConfigLogisticaPage() {
                                 {categories.map((cat) => (
                                     <tr key={cat.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="p-3">
-                                            <span className="font-black text-navy text-sm px-3 py-1 bg-slate-100 rounded-lg">
+                                            <span className="font-black text-gray-900 text-sm px-3 py-1 bg-slate-100 rounded-lg">
                                                 {cat.name}
                                             </span>
                                         </td>
@@ -427,7 +427,7 @@ export default function ConfigLogisticaPage() {
                                                     required
                                                     value={getCategoryValue(cat, field)}
                                                     onChange={(e) => updateCategory(cat.id, field, parseInt(e.target.value) || 0)}
-                                                    className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-navy focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm"
+                                                    className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none text-sm"
                                                 />
                                             </td>
                                         ))}
@@ -482,7 +482,7 @@ export default function ConfigLogisticaPage() {
                             <Truck className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-navy leading-none">Tarifas de Envío</h2>
+                            <h2 className="text-xl font-black text-gray-900 leading-none">Tarifas de Envío</h2>
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Precio base y por kilómetro</p>
                         </div>
                     </div>
@@ -518,7 +518,7 @@ export default function ConfigLogisticaPage() {
                                         return (
                                             <tr key={rate.id} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="p-3">
-                                                    <span className="font-black text-navy text-sm px-3 py-1 bg-green-50 rounded-lg border border-green-100">
+                                                    <span className="font-black text-gray-900 text-sm px-3 py-1 bg-green-50 rounded-lg border border-green-100">
                                                         {rate.category.name}
                                                     </span>
                                                 </td>
@@ -532,7 +532,7 @@ export default function ConfigLogisticaPage() {
                                                             required
                                                             value={base}
                                                             onChange={(e) => updateRate(rate.id, "basePriceArs", parseFloat(e.target.value) || 0)}
-                                                            className="w-28 bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-center font-bold text-navy focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
+                                                            className="w-28 bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-center font-bold text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
                                                         />
                                                     </div>
                                                 </td>
@@ -546,7 +546,7 @@ export default function ConfigLogisticaPage() {
                                                             required
                                                             value={perKm}
                                                             onChange={(e) => updateRate(rate.id, "pricePerKmArs", parseFloat(e.target.value) || 0)}
-                                                            className="w-28 bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-center font-bold text-navy focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
+                                                            className="w-28 bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-center font-bold text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
                                                         />
                                                     </div>
                                                 </td>
@@ -602,7 +602,7 @@ export default function ConfigLogisticaPage() {
                         <MapPin className="w-6 h-6 text-purple-600" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-navy leading-none">Zonas de Cobertura</h2>
+                        <h2 className="text-xl font-black text-gray-900 leading-none">Zonas de Cobertura</h2>
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Configuración geográfica</p>
                     </div>
                 </div>

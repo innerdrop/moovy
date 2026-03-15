@@ -157,7 +157,7 @@ export default function VendedoresPage() {
                                 </div>
                                 <div className="flex-1 min-w-0 pt-1">
                                     <div className="flex items-center gap-1.5 mb-1">
-                                        <h3 className="font-black text-navy text-lg truncate leading-tight">
+                                        <h3 className="font-black text-gray-900 text-lg truncate leading-tight">
                                             {seller.displayName || seller.user.name || "Sin nombre"}
                                         </h3>
                                         {seller.isVerified && (
@@ -177,21 +177,21 @@ export default function VendedoresPage() {
                             <div className="grid grid-cols-3 gap-px bg-slate-50 border-b border-slate-50">
                                 <div className="bg-white p-3 text-center group-hover:bg-slate-50/50 transition-colors">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Listings</p>
-                                    <div className="flex items-center justify-center gap-1 font-black text-navy text-lg">
+                                    <div className="flex items-center justify-center gap-1 font-black text-gray-900 text-lg">
                                         <Package className="w-4 h-4 text-moovy/20" />
                                         {seller._count.listings}
                                     </div>
                                 </div>
                                 <div className="bg-white p-3 text-center group-hover:bg-slate-50/50 transition-colors">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ventas</p>
-                                    <div className="flex items-center justify-center gap-1 font-black text-navy text-lg">
+                                    <div className="flex items-center justify-center gap-1 font-black text-gray-900 text-lg">
                                         <ShoppingCart className="w-4 h-4 text-moovy/20" />
                                         {seller.totalSales}
                                     </div>
                                 </div>
                                 <div className="bg-white p-3 text-center group-hover:bg-slate-50/50 transition-colors">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rating</p>
-                                    <div className="flex items-center justify-center gap-1 font-black text-navy text-lg">
+                                    <div className="flex items-center justify-center gap-1 font-black text-gray-900 text-lg">
                                         <Star className="w-4 h-4 text-amber-400" />
                                         {seller.rating?.toFixed(1) || "—"}
                                     </div>
@@ -249,7 +249,7 @@ export default function VendedoresPage() {
             ) : (
                 <div className="bg-white rounded-3xl p-20 text-center shadow-sm border border-slate-100">
                     <UserCheck className="w-20 h-20 text-slate-100 mx-auto mb-4" />
-                    <h3 className="text-xl font-black text-navy mb-2">Sin resultados</h3>
+                    <h3 className="text-xl font-black text-gray-900 mb-2">Sin resultados</h3>
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Prueba ajustando los filtros de búsqueda</p>
                 </div>
             )}

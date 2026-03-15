@@ -153,7 +153,7 @@ export default function NewProductPage() {
                     <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-bold text-navy">Nuevo Producto</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Nuevo Producto</h1>
                     <p className="text-gray-600">Completá los datos del producto</p>
                 </div>
             </div>
@@ -180,7 +180,7 @@ export default function NewProductPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Image Upload */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-moovy" />
                         Imagen del Producto
                     </h2>
@@ -231,7 +231,7 @@ export default function NewProductPage() {
 
                 {/* Basic Info */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Package className="w-5 h-5 text-moovy" />
                         Información Básica
                     </h2>
@@ -286,7 +286,7 @@ export default function NewProductPage() {
 
                 {/* Pricing */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <DollarSign className="w-5 h-5 text-moovy" />
                         Precios
                     </h2>
@@ -341,7 +341,7 @@ export default function NewProductPage() {
 
                 {/* Stock */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Box className="w-5 h-5 text-moovy" />
                         Stock
                     </h2>
