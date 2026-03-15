@@ -3,8 +3,13 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { auth } from "@/lib/auth";
 import sharp from "sharp";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+    // Rate limit: max 10 uploads per minute per IP
+    const limited = applyRateLimit(request, "upload", 10, 60_000);
+    if (limited) return limited;
+
     try {
         // Security check
         const session = await auth();

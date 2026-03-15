@@ -8,6 +8,7 @@ import { CreateOrderSchema, validateInput } from "@/lib/validations";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
 import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/lib/mercadopago";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -27,6 +28,10 @@ function generateOrderNumber(): string {
 
 // POST - Create a new order
 export async function POST(request: Request) {
+    // Rate limit: max 10 orders per minute per IP
+    const limited = applyRateLimit(request, "orders:create", 10, 60_000);
+    if (limited) return limited;
+
     const start = Date.now();
     let status = "201";
     try {

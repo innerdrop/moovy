@@ -2,10 +2,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+    // Rate limit: max 5 registrations per 15 minutes per IP
+    const limited = applyRateLimit(request, "auth:register:driver", 5, 15 * 60_000);
+    if (limited) return limited;
+
     try {
         const data = await request.json();
         console.log("[Register Driver] Received:", data.firstName, data.lastName);
