@@ -1,23 +1,25 @@
 "use client";
 
 import React, { memo } from "react";
-import { Home, Wallet, History, User } from "lucide-react";
+import { Home, Wallet, History, HeadphonesIcon, User } from "lucide-react";
 
-type TabId = "dashboard" | "earnings" | "history" | "profile";
+type TabId = "dashboard" | "earnings" | "history" | "support" | "profile";
 
 interface RiderBottomNavProps {
     activeTab: TabId;
     onTabChange: (tab: TabId) => void;
+    unreadSupport?: number;
 }
 
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: "dashboard", label: "Inicio", icon: Home },
     { id: "earnings", label: "Ganancias", icon: Wallet },
     { id: "history", label: "Historial", icon: History },
+    { id: "support", label: "Soporte", icon: HeadphonesIcon },
     { id: "profile", label: "Perfil", icon: User },
 ];
 
-function RiderBottomNavInner({ activeTab, onTabChange }: RiderBottomNavProps) {
+function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: RiderBottomNavProps) {
     return (
         <nav
             className="fixed bottom-0 left-0 right-0 z-[70]"
@@ -59,7 +61,7 @@ function RiderBottomNavInner({ activeTab, onTabChange }: RiderBottomNavProps) {
                                 )}
 
                                 <div
-                                    className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ${isActive
+                                    className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 relative ${isActive
                                         ? "scale-110"
                                         : "group-active:scale-90"
                                         }`}
@@ -71,6 +73,11 @@ function RiderBottomNavInner({ activeTab, onTabChange }: RiderBottomNavProps) {
                                             }`}
                                         strokeWidth={isActive ? 2.5 : 1.8}
                                     />
+                                    {tab.id === "support" && unreadSupport > 0 && (
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#e60012] rounded-full text-[8px] text-white font-bold flex items-center justify-center animate-pulse">
+                                            {unreadSupport > 9 ? "9+" : unreadSupport}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <span

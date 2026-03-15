@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import {
     ChevronLeft,
     User,
@@ -12,10 +12,13 @@ import {
     Package,
     Loader2,
     Check,
-    Edit
+    Edit,
+    LogOut,
+    Home
 } from "lucide-react";
 import ImageUpload from "@/components/ui/ImageUpload";
 import ReviewsList from "@/components/ui/ReviewsList";
+import Link from "next/link";
 
 interface ProfileViewProps {
     onBack: () => void;
@@ -303,6 +306,33 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         </div>
                     </div>
                 )}
+
+                {/* Quick Links */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b">
+                        <h3 className="font-semibold text-gray-900">Opciones</h3>
+                    </div>
+                    <div className="divide-y">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-3 p-4 hover:bg-gray-50 transition"
+                        >
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <Home className="w-5 h-5 text-gray-500" />
+                            </div>
+                            <span className="text-gray-900 font-medium">Ir a la tienda</span>
+                        </Link>
+                        <button
+                            onClick={() => signOut({ callbackUrl: "/repartidor/login" })}
+                            className="flex items-center gap-3 p-4 w-full text-left hover:bg-red-50 transition"
+                        >
+                            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                                <LogOut className="w-5 h-5 text-[#e60012]" />
+                            </div>
+                            <span className="text-[#e60012] font-medium">Cerrar sesion</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Confirmation Modal */}

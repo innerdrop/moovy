@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
-import Link from "next/link";
 import "./gps-error.css";
 import {
     Bike,
@@ -12,18 +11,13 @@ import {
     ChevronRight,
     Power,
     Loader2,
-    History,
-    DollarSign,
     User,
-    Menu,
     X,
     Navigation,
     Phone,
     ArrowRight,
     Wallet,
     CheckCircle,
-    Eye,
-    EyeOff,
     Home
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -38,7 +32,6 @@ import HistoryView from "@/components/rider/views/HistoryView";
 import EarningsView from "@/components/rider/views/EarningsView";
 import SupportView from "@/components/rider/views/SupportView";
 import ProfileView from "@/components/rider/views/ProfileView";
-import SettingsView from "@/components/rider/views/SettingsView";
 
 // Dynamic imports for heavy components
 const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
@@ -51,7 +44,6 @@ const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
     loading: () => <div className="fixed bottom-0 left-0 right-0 h-[160px] bg-white rounded-t-3xl animate-pulse" />
 });
 
-const Sidebar = dynamic(() => import("@/components/rider/Sidebar"), { ssr: false });
 const RiderBottomNav = dynamic(() => import("@/components/rider/RiderBottomNav"), { ssr: false });
 
 interface DashboardStats {
@@ -109,13 +101,12 @@ export default function RiderDashboard() {
         unreadSupportMessages?: number;
     } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
     const [pushError, setPushError] = useState<string | null>(null);
-    const [showEarnings, setShowEarnings] = useState(true);
     const [isMapExpanded, setIsMapExpanded] = useState(false);
+    const [advancingStatus, setAdvancingStatus] = useState(false);
 
     // SPA Navigation State
     const [activeView, setActiveView] = useState<string>("dashboard");
@@ -452,22 +443,11 @@ export default function RiderDashboard() {
                     )}
 
                     {/* ═══════════════════════════════════════════════
-                HOME VIEW TOP BAR — Menu button (only in card mode)
+                HOME VIEW TOP BAR — Status only (card mode)
             ═══════════════════════════════════════════════ */}
                     {!isMapExpanded && (
                         <div className="fixed top-0 left-0 right-0 z-[20] pointer-events-none" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
-                            <div className="flex justify-between items-center px-4 pt-1">
-                                <button
-                                    onClick={() => setIsMenuOpen(true)}
-                                    className="w-10 h-10 bg-white/95 backdrop-blur-xl rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] flex items-center justify-center pointer-events-auto active:scale-95 transition-all duration-300 border border-gray-200"
-                                >
-                                    <div className="relative">
-                                        <Menu className="w-5 h-5 text-[#1a1a1a]" />
-                                        {(dashboardData?.unreadSupportMessages ?? 0) > 0 && (
-                                            <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#e60012] rounded-full border-2 border-white animate-pulse" />
-                                        )}
-                                    </div>
-                                </button>
+                            <div className="flex justify-end items-center px-4 pt-1">
                                 {/* Online status pill in card mode */}
                                 <div className={`px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] backdrop-blur-xl flex items-center gap-2 border transition-all duration-300 pointer-events-auto ${isOnline ? 'bg-green-500/90 text-white border-green-400/50' : 'bg-white/95 text-[#9ca3af] border-gray-200'}`}>
                                     <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
@@ -486,10 +466,10 @@ export default function RiderDashboard() {
                             <div className="flex items-center justify-between bg-white p-5 rounded-[24px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100">
                                 <div>
                                     <h2 className={`text-[18px] font-extrabold tracking-tight uppercase leading-tight mb-0.5 ${isOnline ? 'text-emerald-500' : 'text-[#e60012]'}`}>
-                                        {isOnline ? "Conectado" : "Estás desconectado"}
+                                        {isOnline ? "Conectado" : "Estas desconectado"}
                                     </h2>
                                     <p className="text-[12px] text-[#6b6b6b] font-medium">
-                                        {isOnline ? "Buscando pedidos..." : "Conéctate para recibir órdenes"}
+                                        {isOnline ? "Buscando pedidos..." : "Conectate para recibir ordenes"}
                                     </p>
                                 </div>
                                 <button
@@ -510,16 +490,11 @@ export default function RiderDashboard() {
                             {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-white border border-gray-100 rounded-[22px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
-                                            <Wallet className="w-5 h-5 text-[#e60012]" />
-                                        </div>
-                                        <button onClick={() => setShowEarnings(!showEarnings)} className="text-gray-300">
-                                            {showEarnings ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                        </button>
+                                    <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                        <Wallet className="w-5 h-5 text-[#e60012]" />
                                     </div>
                                     <p className="text-xl font-extrabold text-gray-900 leading-none">
-                                        {showEarnings ? `$${stats.gananciasHoy}` : "••••"}
+                                        ${stats.gananciasHoy.toLocaleString()}
                                     </p>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Ganancias Hoy</p>
                                 </div>
@@ -533,27 +508,16 @@ export default function RiderDashboard() {
                                 </div>
                             </div>
 
-                            {/* Quick Actions */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => setActiveView("history")}
-                                    className="bg-white border border-gray-100 rounded-[22px] py-6 flex flex-col items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.03)] active:scale-95 transition-all"
-                                >
-                                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
-                                        <History className="w-6 h-6 text-[#e60012]" />
+                            {/* Waiting animation when online */}
+                            {isOnline && (
+                                <div className="py-8 text-center space-y-3">
+                                    <div className="w-20 h-20 bg-gray-50 rounded-full mx-auto flex items-center justify-center relative">
+                                        <div className="w-16 h-16 border-2 border-dashed border-gray-200 rounded-full animate-spin-slow" />
+                                        <Navigation className="w-8 h-8 text-gray-200 absolute" />
                                     </div>
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Historial</span>
-                                </button>
-                                <button
-                                    onClick={() => setActiveView("earnings")}
-                                    className="bg-white border border-gray-100 rounded-[22px] py-6 flex flex-col items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.03)] active:scale-95 transition-all"
-                                >
-                                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
-                                        <DollarSign className="w-6 h-6 text-[#e60012]" />
-                                    </div>
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Resumen</span>
-                                </button>
-                            </div>
+                                    <p className="text-xs font-extrabold text-gray-300 uppercase tracking-[3px]">Esperando ofertas</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -663,13 +627,24 @@ export default function RiderDashboard() {
                                                     <button
                                                         onClick={async () => {
                                                             try {
+                                                                if (navigator.vibrate) navigator.vibrate(50);
                                                                 const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
-                                                                if (res.ok) await fetchDashboard(true);
-                                                            } catch (e) { console.error(e); }
+                                                                if (res.ok) {
+                                                                    toast.success("Pedido aceptado");
+                                                                    if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+                                                                    await fetchDashboard(true);
+                                                                } else {
+                                                                    const data = await res.json();
+                                                                    toast.error(data.error || "No se pudo aceptar");
+                                                                }
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                                toast.error("Error de conexion");
+                                                            }
                                                         }}
                                                         className="flex-[2] py-4 bg-orange-500 text-white font-extrabold rounded-2xl shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 text-[13px] uppercase tracking-widest active:scale-95 transition-all"
                                                     >
-                                                        ¡Aceptar!
+                                                        Aceptar
                                                         <ArrowRight className="w-5 h-5" />
                                                     </button>
                                                 </div>
@@ -753,28 +728,55 @@ export default function RiderDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Action button — 48px+ height */}
+                                            {/* Action button — Large, one-tap, no confirm dialog */}
                                             <button
                                                 onClick={async () => {
-                                                    const nextStatus = (pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived") ? "PICKED_UP" : "DELIVERED";
-                                                    if (!confirm(`¿Confirmas que has completado esta etapa?`)) return;
+                                                    if (advancingStatus) return;
+                                                    const isPrePickup = pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived";
+                                                    const nextStatus = isPrePickup ? "PICKED_UP" : "DELIVERED";
 
+                                                    setAdvancingStatus(true);
                                                     try {
-                                                        const res = await fetch(`/api/orders/${pedidoActivo.id}`, {
+                                                        // Haptic feedback
+                                                        if (navigator.vibrate) navigator.vibrate(50);
+
+                                                        const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/status`, {
                                                             method: "PATCH",
                                                             headers: { "Content-Type": "application/json" },
-                                                            body: JSON.stringify({ status: nextStatus })
+                                                            body: JSON.stringify({ deliveryStatus: nextStatus })
                                                         });
 
-                                                        if (res.ok) await fetchDashboard(true);
-                                                    } catch (e) { console.error(e); }
+                                                        if (res.ok) {
+                                                            toast.success(isPrePickup ? "Pedido recogido" : "Entrega completada");
+                                                            if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+                                                            await fetchDashboard(true);
+                                                        } else {
+                                                            const data = await res.json();
+                                                            toast.error(data.error || "Error al actualizar");
+                                                        }
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                        toast.error("Error de conexion");
+                                                    } finally {
+                                                        setAdvancingStatus(false);
+                                                    }
                                                 }}
-                                                className="w-full py-5 bg-gray-900 hover:bg-black text-white font-black text-lg rounded-[22px] shadow-xl shadow-gray-400/20 transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest italic"
+                                                disabled={advancingStatus}
+                                                className={`w-full py-5 text-white font-black text-lg rounded-[22px] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest ${
+                                                    (pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived")
+                                                        ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/30"
+                                                        : "bg-green-600 hover:bg-green-700 shadow-green-500/30"
+                                                } disabled:opacity-50`}
                                             >
-                                                {(pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived")
-                                                    ? "Ya recogí el pedido"
-                                                    : "Finalizar entrega"}
-                                                <ChevronRight className="w-6 h-6" />
+                                                {advancingStatus
+                                                    ? <Loader2 className="w-6 h-6 animate-spin" />
+                                                    : <>
+                                                        {(pedidoActivo.estado === "driver_assigned" || pedidoActivo.estado === "driver_arrived")
+                                                            ? "Ya recogi el pedido"
+                                                            : "Entrega completada"}
+                                                        <ChevronRight className="w-6 h-6" />
+                                                    </>
+                                                }
                                             </button>
                                         </div>
                                     ) : (
@@ -810,79 +812,31 @@ export default function RiderDashboard() {
 
                                             {/* Waiting / Stats depending on status */}
                                             {isOnline ? (
-                                                <div className="py-16 text-center space-y-4">
-                                                    <div className="w-32 h-32 bg-gray-50 rounded-full mx-auto flex items-center justify-center relative">
-                                                        <div className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-full animate-spin-slow" />
-                                                        <Navigation className="w-10 h-10 text-gray-200 absolute" />
+                                                <div className="py-12 text-center space-y-4">
+                                                    <div className="w-24 h-24 bg-gray-50 rounded-full mx-auto flex items-center justify-center relative">
+                                                        <div className="w-20 h-20 border-2 border-dashed border-gray-200 rounded-full animate-spin-slow" />
+                                                        <Navigation className="w-8 h-8 text-gray-200 absolute" />
                                                     </div>
-                                                    <p className="text-xs font-extrabold text-gray-300 uppercase tracking-[4px]">Esperando ofertas</p>
+                                                    <p className="text-xs font-extrabold text-gray-300 uppercase tracking-[3px]">Esperando ofertas</p>
                                                 </div>
                                             ) : (
-                                                /* ── Stats Grid — 2x2 with modern compact design ── */
                                                 <div className="grid grid-cols-2 gap-3 pb-2">
-                                                    {/* Ganancias Card */}
-                                                    <div className="bg-white border-2 border-gray-100 rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:border-[#e60012] group relative overflow-hidden">
-                                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#e60012] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <div className="w-[36px] h-[36px] bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[10px] flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                                                <Wallet className="w-[18px] h-[18px] text-[#e60012]" />
-                                                            </div>
-                                                            <button
-                                                                onClick={() => setShowEarnings(!showEarnings)}
-                                                                className="p-1.5 -mr-1.5 -mt-1.5 rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
-                                                            >
-                                                                {showEarnings ? <Eye className="w-[18px] h-[18px]" /> : <EyeOff className="w-[18px] h-[18px]" />}
-                                                            </button>
+                                                    <div className="bg-white border border-gray-100 rounded-[20px] p-4">
+                                                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                                            <Wallet className="w-5 h-5 text-[#e60012]" />
                                                         </div>
-
-                                                        <p className="text-2xl font-extrabold text-[#1a1a1a] leading-none tracking-tight mb-1">
-                                                            {showEarnings ? `$${stats.gananciasHoy}` : "••••"}
-                                                        </p>
-                                                        <p className="text-[11px] text-[#6b6b6b] uppercase tracking-[1px] font-bold">Hoy</p>
+                                                        <p className="text-2xl font-extrabold text-gray-900 leading-none">${stats.gananciasHoy.toLocaleString()}</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Hoy</p>
                                                     </div>
-
-                                                    {/* Completados Card */}
-                                                    <div className="bg-white border-2 border-gray-100 rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:border-[#e60012] group relative overflow-hidden">
-                                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#e60012] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                                        <div className="flex justify-start items-start mb-3">
-                                                            <div className="w-[36px] h-[36px] bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[10px] flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                                                <CheckCircle className="w-[18px] h-[18px] text-[#e60012]" />
-                                                            </div>
+                                                    <div className="bg-white border border-gray-100 rounded-[20px] p-4">
+                                                        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-2">
+                                                            <CheckCircle className="w-5 h-5 text-[#e60012]" />
                                                         </div>
-
-                                                        <p className="text-2xl font-extrabold text-[#1a1a1a] leading-none tracking-tight mb-1">
-                                                            {stats.completados}
-                                                        </p>
-                                                        <p className="text-[11px] text-[#6b6b6b] uppercase tracking-[1px] font-bold">Completados</p>
+                                                        <p className="text-2xl font-extrabold text-gray-900 leading-none">{stats.completados}</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Completados</p>
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {/* Action Buttons — Historial & Resumen */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <button
-                                                    onClick={() => setActiveView("history")}
-                                                    className="bg-white border-2 border-gray-100 rounded-[24px] py-8 flex flex-col items-center gap-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#e60012] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_rgba(230,0,18,0.15)] group cursor-pointer relative overflow-hidden"
-                                                >
-                                                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,240,241,0.6),transparent)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                                    <div className="w-16 h-16 bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[18px] flex items-center justify-center transition-all duration-300 group-hover:rotate-[10deg] group-hover:scale-110 relative z-10">
-                                                        <History className="w-[30px] h-[30px] text-[#e60012]" />
-                                                    </div>
-                                                    <span className="text-[14px] text-[#6b6b6b] uppercase tracking-[1.2px] font-semibold relative z-10">Historial</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setActiveView("earnings")}
-                                                    className="bg-white border-2 border-gray-100 rounded-[24px] py-8 flex flex-col items-center gap-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 hover:border-[#e60012] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_rgba(230,0,18,0.15)] group cursor-pointer relative overflow-hidden"
-                                                >
-                                                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,240,241,0.6),transparent)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                                    <div className="w-16 h-16 bg-gradient-to-br from-[#fff0f1] to-[rgba(230,0,18,0.08)] rounded-[18px] flex items-center justify-center transition-all duration-300 group-hover:rotate-[10deg] group-hover:scale-110 relative z-10">
-                                                        <DollarSign className="w-[30px] h-[30px] text-[#e60012]" />
-                                                    </div>
-                                                    <span className="text-[14px] text-[#6b6b6b] uppercase tracking-[1.2px] font-semibold relative z-10">Resumen</span>
-                                                </button>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -939,27 +893,12 @@ export default function RiderDashboard() {
             )}
 
             {/* ═══════════════════════════════════════════════
-                LEVEL 50 — MENU SIDEBAR
-            ═══════════════════════════════════════════════ */}
-            <Sidebar
-                isOpen={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-                userName={session?.user?.name || "Moover"}
-                signOut={() => signOut()}
-                onNavigate={(view) => setActiveView(view)}
-                notificationCounts={{
-                    support: dashboardData?.unreadSupportMessages || 0
-                }}
-            />
-
-            {/* ═══════════════════════════════════════════════
                LEVEL 60 — SPA OVERLAYS
             ═══════════════════════════════════════════════ */}
             {activeView === "history" && <HistoryView onBack={() => setActiveView("dashboard")} />}
             {activeView === "earnings" && <EarningsView onBack={() => setActiveView("dashboard")} />}
-            {activeView === "support" && <SupportView onBack={() => { setActiveView("dashboard"); setIsMenuOpen(true); }} onChatRead={() => fetchDashboard(true)} />}
+            {activeView === "support" && <SupportView onBack={() => setActiveView("dashboard")} onChatRead={() => fetchDashboard(true)} />}
             {activeView === "profile" && <ProfileView onBack={() => setActiveView("dashboard")} />}
-            {activeView === "settings" && <SettingsView onBack={() => { setActiveView("dashboard"); setIsMenuOpen(true); }} />}
 
             {/* ═══════════════════════════════════════════════
                LEVEL 70 — BOTTOM NAVIGATION BAR (hidden when map expanded)
@@ -970,9 +909,9 @@ export default function RiderDashboard() {
                         activeTab={activeView === "dashboard" ? "dashboard" : activeView as any}
                         onTabChange={(tab) => {
                             setActiveView(tab as any);
-                            if (isMenuOpen) setIsMenuOpen(false);
                             if (isMapExpanded) setIsMapExpanded(false);
                         }}
+                        unreadSupport={dashboardData?.unreadSupportMessages || 0}
                     />
                 )
             }
