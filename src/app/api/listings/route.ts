@@ -6,6 +6,7 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const categoryId = searchParams.get("categoryId");
+        const sellerId = searchParams.get("sellerId");
         const condition = searchParams.get("condition");
         const search = searchParams.get("search");
         const minPrice = searchParams.get("minPrice");
@@ -18,6 +19,10 @@ export async function GET(request: Request) {
 
         if (categoryId) {
             where.categoryId = categoryId;
+        }
+
+        if (sellerId) {
+            where.sellerId = sellerId;
         }
 
         if (condition) {

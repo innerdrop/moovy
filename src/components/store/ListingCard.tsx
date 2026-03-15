@@ -132,7 +132,16 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                 </h3>
 
                 {/* Seller info */}
-                <div className="flex items-center gap-1.5">
+                <div
+                    className="flex items-center gap-1.5 hover:text-emerald-600 transition cursor-pointer"
+                    onClick={(e) => {
+                        if (listing.seller?.id) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.location.href = `/marketplace/vendedor/${listing.seller.id}`;
+                        }
+                    }}
+                >
                     {listing.seller?.avatar ? (
                         <img
                             src={listing.seller.avatar}
@@ -146,7 +155,7 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                             </span>
                         </div>
                     )}
-                    <span className="text-xs text-gray-500 truncate">
+                    <span className="text-xs text-gray-500 truncate group-hover/seller:text-emerald-600">
                         {listing.seller?.displayName || "Vendedor"}
                     </span>
                     {listing.seller?.rating && (

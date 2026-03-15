@@ -11,6 +11,7 @@ import {
     LogOut,
     Menu,
     MessageCircle,
+    DollarSign,
 } from "lucide-react";
 
 
@@ -31,6 +32,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/productos", icon: Package, label: "Productos" },
         { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
+        { href: "/comercios/pagos", icon: DollarSign, label: "Pagos" },
         // Soporte is handled separately via SupportNavBadge component
         { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
     ];
