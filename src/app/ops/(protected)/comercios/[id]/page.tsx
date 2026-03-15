@@ -22,7 +22,8 @@ import {
     Building2,
     CreditCard,
     Calendar,
-    FileText
+    FileText,
+    Eye
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
@@ -48,6 +49,10 @@ interface Merchant {
     bankAccount: string | null;
     ownerDni: string | null;
     ownerBirthDate: string | null;
+    constanciaAfipUrl: string | null;
+    habilitacionMunicipalUrl: string | null;
+    registroSanitarioUrl: string | null;
+    acceptedTermsAt: string | null;
     startedAt: string | null;
     instagramUrl: string | null;
     facebookUrl: string | null;
@@ -528,6 +533,24 @@ export default function MerchantDetailPage() {
                                             placeholder="CBU o Alias de cuenta"
                                         />
                                     </div>
+
+                                    {/* Documents */}
+                                    <div className="pt-4 border-t">
+                                        <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                            <FileText className="w-4 h-4" />
+                                            Documentación Presentada
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <DocRow label="Constancia AFIP" url={merchant.constanciaAfipUrl} />
+                                            <DocRow label="Habilitación Municipal" url={merchant.habilitacionMunicipalUrl} />
+                                            <DocRow label="Registro Sanitario" url={merchant.registroSanitarioUrl} />
+                                        </div>
+                                        {merchant.acceptedTermsAt && (
+                                            <p className="text-xs text-gray-400 mt-3">
+                                                Términos aceptados: {new Date(merchant.acceptedTermsAt).toLocaleDateString("es-AR")}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
@@ -627,6 +650,27 @@ export default function MerchantDetailPage() {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function DocRow({ label, url }: { label: string; url: string | null }) {
+    return (
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm text-gray-700">{label}</span>
+            {url ? (
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
+                >
+                    <Eye className="w-4 h-4" />
+                    Ver documento
+                </a>
+            ) : (
+                <span className="text-xs text-gray-400">No presentado</span>
+            )}
         </div>
     );
 }

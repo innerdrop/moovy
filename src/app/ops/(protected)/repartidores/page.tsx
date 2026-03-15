@@ -19,7 +19,9 @@ import {
     Calendar,
     TrendingUp,
     Home,
-    ShieldCheck
+    ShieldCheck,
+    FileText,
+    ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,6 +33,13 @@ interface Driver {
     isOnline: boolean;
     totalDeliveries: number;
     rating: number | null;
+    cuit: string | null;
+    dniFrenteUrl: string | null;
+    dniDorsoUrl: string | null;
+    licenciaUrl: string | null;
+    seguroUrl: string | null;
+    vtvUrl: string | null;
+    acceptedTermsAt: string | null;
     user: {
         id: string;
         name: string;
@@ -741,6 +750,32 @@ export default function AdminRepartidoresPage() {
                             </div>
                         </div>
 
+                        {/* Documents */}
+                        <div className="mt-4 pt-4 border-t">
+                            <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2 text-sm">
+                                <ShieldCheck className="w-4 h-4" />
+                                Documentación
+                            </h4>
+                            <div className="space-y-2">
+                                {viewDriver.cuit && (
+                                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
+                                        <span className="text-gray-500">CUIT</span>
+                                        <span className="font-medium text-gray-900">{viewDriver.cuit}</span>
+                                    </div>
+                                )}
+                                <DriverDocRow label="DNI Frente" url={viewDriver.dniFrenteUrl} />
+                                <DriverDocRow label="DNI Dorso" url={viewDriver.dniDorsoUrl} />
+                                <DriverDocRow label="Licencia" url={viewDriver.licenciaUrl} />
+                                <DriverDocRow label="Seguro" url={viewDriver.seguroUrl} />
+                                <DriverDocRow label="VTV" url={viewDriver.vtvUrl} />
+                            </div>
+                            {viewDriver.acceptedTermsAt && (
+                                <p className="text-xs text-gray-400 mt-2">
+                                    Términos aceptados: {new Date(viewDriver.acceptedTermsAt).toLocaleDateString("es-AR")}
+                                </p>
+                            )}
+                        </div>
+
                         <button
                             onClick={() => setViewDriver(null)}
                             className="w-full mt-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition"
@@ -749,6 +784,27 @@ export default function AdminRepartidoresPage() {
                         </button>
                     </div>
                 </div>
+            )}
+        </div>
+    );
+}
+
+function DriverDocRow({ label, url }: { label: string; url: string | null }) {
+    return (
+        <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
+            <span className="text-gray-500">{label}</span>
+            {url ? (
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline font-medium flex items-center gap-1 text-xs"
+                >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Ver
+                </a>
+            ) : (
+                <span className="text-xs text-gray-400">No presentado</span>
             )}
         </div>
     );

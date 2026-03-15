@@ -209,3 +209,7 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - `src/app/vendedor/(protected)/resenas/page.tsx` — Vista de reseñas para vendedores
 - `src/app/api/ops/revenue/route.ts` — API de revenue con desglose allTime/mensual/por método de pago
 - `src/app/ops/(protected)/revenue/page.tsx` — Dashboard de revenue OPS con KPIs, comparación mensual, desglose
+- `src/app/ops/(protected)/comercios/[id]/page.tsx` — Sección documentos en tab fiscal (constancia AFIP, habilitación, sanitario)
+- `src/app/ops/(protected)/repartidores/page.tsx` — Documentación en modal de detalle (DNI, licencia, seguro, VTV, CUIT)
+- `src/app/api/ops/refund/route.ts` — API de reembolso manual (marca paymentStatus REFUNDED + log en adminNotes)
+- `src/app/ops/(protected)/pedidos/[id]/page.tsx` — Botón "Procesar Reembolso" con modal y motivo

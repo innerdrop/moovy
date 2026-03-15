@@ -19,7 +19,8 @@ import {
     XCircle,
     Loader2,
     MessageSquare,
-    AlertTriangle
+    AlertTriangle,
+    RotateCcw
 } from "lucide-react";
 
 interface Order {
@@ -80,6 +81,11 @@ export default function AdminOrderDetailPage() {
     const [showConfirm, setShowConfirm] = useState(false);
     const [pendingStatus, setPendingStatus] = useState<string | null>(null);
 
+    // Refund state
+    const [showRefund, setShowRefund] = useState(false);
+    const [refundReason, setRefundReason] = useState("");
+    const [refunding, setRefunding] = useState(false);
+
     useEffect(() => {
         async function fetchOrder() {
             try {
@@ -133,6 +139,37 @@ export default function AdminOrderDetailPage() {
     const cancelStatusChange = () => {
         setShowConfirm(false);
         setPendingStatus(null);
+    };
+
+    const handleRefund = async () => {
+        if (!order) return;
+        setRefunding(true);
+        try {
+            const res = await fetch("/api/ops/refund", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderId: order.id,
+                    amount: order.total,
+                    reason: refundReason || "Reembolso manual desde OPS",
+                }),
+            });
+            if (res.ok) {
+                // Refresh order data
+                const orderRes = await fetch(`/api/orders/${orderId}`);
+                if (orderRes.ok) {
+                    const updated = await orderRes.json();
+                    setOrder(updated);
+                    setAdminNotes(updated.adminNotes || "");
+                }
+                setShowRefund(false);
+                setRefundReason("");
+            }
+        } catch (error) {
+            console.error("Error processing refund:", error);
+        } finally {
+            setRefunding(false);
+        }
     };
 
     const saveAdminNotes = async () => {
@@ -405,15 +442,84 @@ export default function AdminOrderDetailPage() {
                             </p>
                             <p className="text-sm">
                                 <span className="text-gray-600">Estado:</span>{" "}
-                                <span className={`font-medium ${order.paymentStatus === "APPROVED" ? "text-green-600" : "text-yellow-600"
+                                <span className={`font-medium ${order.paymentStatus === "REFUNDED" ? "text-purple-600" : order.paymentStatus === "APPROVED" ? "text-green-600" : "text-yellow-600"
                                     }`}>
-                                    {order.paymentStatus === "APPROVED" ? "Pagado" : "Pendiente"}
+                                    {order.paymentStatus === "REFUNDED" ? "Reembolsado" : order.paymentStatus === "APPROVED" ? "Pagado" : "Pendiente"}
                                 </span>
                             </p>
+                            {order.paymentStatus !== "REFUNDED" && (order.status === "CANCELLED" || order.paymentStatus === "APPROVED") && (
+                                <button
+                                    onClick={() => setShowRefund(true)}
+                                    className="mt-3 w-full py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition flex items-center justify-center gap-2"
+                                >
+                                    <RotateCcw className="w-4 h-4" />
+                                    Procesar Reembolso
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Refund Modal */}
+            {showRefund && order && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <h3 className="font-bold text-lg text-navy mb-4 flex items-center gap-2">
+                            <RotateCcw className="w-5 h-5 text-purple-600" />
+                            Procesar Reembolso
+                        </h3>
+
+                        <div className="bg-purple-50 rounded-lg p-4 mb-4">
+                            <p className="text-sm text-purple-800">
+                                Pedido <strong>#{order.orderNumber}</strong>
+                            </p>
+                            <p className="text-lg font-bold text-purple-900 mt-1">
+                                {formatPrice(order.total)}
+                            </p>
+                            <p className="text-xs text-purple-600 mt-1">
+                                {order.paymentMethod === "cash" ? "Pago en efectivo" : "MercadoPago"}
+                            </p>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Motivo del reembolso
+                            </label>
+                            <textarea
+                                value={refundReason}
+                                onChange={(e) => setRefundReason(e.target.value)}
+                                className="input w-full resize-none"
+                                rows={3}
+                                placeholder="Ej: Producto dañado, pedido no entregado..."
+                            />
+                        </div>
+
+                        {order.paymentMethod === "mercadopago" && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-xs text-yellow-800">
+                                El reembolso vía MercadoPago debe procesarse manualmente desde el panel de MP. Este registro queda como constancia interna.
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowRefund(false); setRefundReason(""); }}
+                                className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleRefund}
+                                disabled={refunding}
+                                className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {refunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                                Confirmar Reembolso
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
