@@ -29,180 +29,162 @@ interface ShiftSummaryModalProps {
     onConfirmDisconnect: () => void;
 }
 
-export function ShiftSummaryModal({
-    isOpen,
-    onClose,
-    onConfirmDisconnect,
-}: ShiftSummaryModalProps) {
+export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: ShiftSummaryModalProps) {
     const [data, setData] = useState<ShiftSummaryData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
-            // Reset state when modal closes
             setData(null);
             setError(null);
             return;
         }
 
-        // Fetch shift summary data
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
+        setLoading(true);
+        setError(null);
 
-            try {
-                const response = await fetch("/api/driver/shift-summary", {
-                    method: "GET",
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    setError(
-                        errorData.error || "Error al cargar el resumen"
-                    );
-                    return;
-                }
-
-                const result = await response.json();
-                setData(result);
-            } catch (err) {
-                console.error("[ShiftSummaryModal] Fetch error:", err);
-                setError("Error al cargar el resumen del turno");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
+        fetch("/api/driver/shift-summary")
+            .then((res) => {
+                if (!res.ok) throw new Error("Error al cargar resumen");
+                return res.json();
+            })
+            .then((d) => setData(d))
+            .catch((e) => setError(e.message))
+            .finally(() => setLoading(false));
     }, [isOpen]);
 
     if (!isOpen) return null;
 
+    const formatTime = (minutes: number) => {
+        if (minutes < 60) return `${minutes} min`;
+        const hrs = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+    };
+
     return (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center">
-            <div className="bg-white rounded-t-[28px] sm:rounded-[28px] sm:mx-4 max-w-md w-full p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-[fadeIn_0.2s_ease-out]">
+            <div className="bg-white rounded-t-[28px] sm:rounded-[28px] sm:mx-4 max-w-md w-full p-6 shadow-2xl animate-[slideUp_0.3s_cubic-bezier(0.32,0.72,0,1)]">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
-                    <Trophy className="w-6 h-6 text-amber-500" />
-                    <h2 className="text-[10px] font-black uppercase tracking-[3px] text-gray-400">
+                    <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[3px] text-gray-400">
                         Resumen de tu turno
-                    </h2>
+                    </p>
                 </div>
 
-                {loading ? (
-                    // Loading state
-                    <div className="flex flex-col items-center justify-center py-12 gap-4">
-                        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-                        <p className="text-sm text-gray-600">
+                {/* Loading */}
+                {loading && (
+                    <div className="flex flex-col items-center gap-3 py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-[#e60012]" />
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
                             Calculando resumen...
                         </p>
                     </div>
-                ) : error ? (
-                    // Error state
-                    <div className="py-8 text-center">
-                        <p className="text-red-600 text-sm font-medium">
-                            {error}
-                        </p>
-                    </div>
-                ) : data ? (
-                    // Data loaded
-                    <>
-                        {/* Main earnings display */}
-                        <div className="mb-6">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">
-                                Ganancias totales
-                            </p>
-                            <p className="text-4xl font-extrabold bg-gradient-to-r from-[#e60012] to-[#b8000e] bg-clip-text text-transparent">
-                                ${data.totalEarnings.toLocaleString("es-AR")}
-                            </p>
-                        </div>
+                )}
 
+                {/* Error */}
+                {error && !loading && (
+                    <div className="py-8 text-center">
+                        <p className="text-sm text-red-500 font-medium">{error}</p>
+                    </div>
+                )}
+
+                {/* Data */}
+                {data && !loading && (
+                    <>
                         {data.totalDeliveries === 0 ? (
-                            // No deliveries state
-                            <div className="py-8 text-center">
-                                <Bike className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                <p className="text-gray-600 text-sm font-medium">
-                                    No tuviste entregas este turno.
-                                </p>
-                                <p className="text-gray-500 text-xs mt-2">
-                                    ¡La próxima será mejor!
-                                </p>
+                            /* Empty state */
+                            <div className="py-8 text-center space-y-4">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full mx-auto flex items-center justify-center">
+                                    <Bike className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-500">
+                                        No tuviste entregas este turno.
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        ¡La próxima será mejor!
+                                    </p>
+                                </div>
                             </div>
                         ) : (
-                            // Stats grid
                             <>
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    {/* Total Deliveries */}
-                                    <div className="bg-gray-50 rounded-[18px] p-4 text-center">
-                                        <TrendingUp className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                                {/* Main earnings */}
+                                <div className="text-center mb-6">
+                                    <p className="text-4xl font-extrabold bg-gradient-to-r from-[#e60012] to-[#b8000e] bg-clip-text text-transparent">
+                                        ${data.totalEarnings.toLocaleString()}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                                        Ganancia total del turno
+                                    </p>
+                                </div>
+
+                                {/* Stats grid */}
+                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                        <TrendingUp className="w-4 h-4 text-emerald-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900">
                                             {data.totalDeliveries}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                                             Entregas
                                         </p>
                                     </div>
-
-                                    {/* Average per delivery */}
-                                    <div className="bg-gray-50 rounded-[18px] p-4 text-center">
-                                        <Star className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                        <Star className="w-4 h-4 text-blue-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900">
-                                            ${data.avgPerDelivery.toLocaleString("es-AR")}
+                                            ${data.avgPerDelivery.toLocaleString()}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                                             Promedio
                                         </p>
                                     </div>
-
-                                    {/* Best delivery */}
-                                    {data.bestDelivery && (
-                                        <div className="bg-gray-50 rounded-[18px] p-4 text-center">
-                                            <Trophy className="w-5 h-5 text-amber-500 mx-auto mb-2" />
-                                            <p className="text-xl font-extrabold text-gray-900">
-                                                ${data.bestDelivery.earnings.toLocaleString("es-AR")}
-                                            </p>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
-                                                Mejor
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Total time online */}
-                                    <div className="bg-gray-50 rounded-[18px] p-4 text-center">
-                                        <Clock className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                        <Trophy className="w-4 h-4 text-amber-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900">
-                                            {Math.floor(
-                                                data.totalMinutesOnline / 60
-                                            )}
-                                            h
+                                            ${data.bestDelivery?.earnings.toLocaleString() || "—"}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
-                                            Conectado
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                            Mejor entrega
+                                        </p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-[18px] p-4">
+                                        <Clock className="w-4 h-4 text-purple-500 mb-2" />
+                                        <p className="text-xl font-extrabold text-gray-900">
+                                            {formatTime(data.totalMinutesOnline)}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                            Tiempo activo
                                         </p>
                                     </div>
                                 </div>
                             </>
                         )}
-
-                        {/* Buttons */}
-                        <div className="flex gap-3 mt-8">
-                            <button
-                                onClick={onClose}
-                                className="flex-1 bg-gray-50 text-gray-700 font-bold rounded-2xl py-4 text-[11px] uppercase tracking-widest hover:bg-gray-100 transition"
-                            >
-                                Seguir conectado
-                            </button>
-                            <button
-                                onClick={onConfirmDisconnect}
-                                className="flex-1 bg-[#e60012] text-white font-extrabold rounded-2xl py-4 text-[13px] uppercase tracking-widest shadow-lg shadow-red-500/20 hover:bg-[#b8000e] transition"
-                            >
-                                <Power className="w-4 h-4 inline mr-2" />
-                                Desconectarme
-                            </button>
-                        </div>
                     </>
-                ) : null}
+                )}
+
+                {/* Buttons */}
+                {!loading && (
+                    <div className="space-y-3 pt-2">
+                        <button
+                            onClick={onClose}
+                            className="w-full bg-gray-50 text-gray-700 font-bold rounded-2xl py-4 text-[11px] uppercase tracking-widest active:scale-95 transition-all"
+                        >
+                            Seguir conectado
+                        </button>
+                        <button
+                            onClick={onConfirmDisconnect}
+                            className="w-full bg-[#e60012] text-white font-extrabold rounded-2xl py-4 text-[13px] uppercase tracking-widest shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                        >
+                            <Power className="w-4 h-4" />
+                            Desconectarme
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
