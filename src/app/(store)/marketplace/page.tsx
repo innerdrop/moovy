@@ -56,6 +56,9 @@ export default function MarketplacePage() {
     const [search, setSearch] = useState(searchParams.get("search") || "");
     const [categoryId, setCategoryId] = useState(searchParams.get("categoryId") || "");
     const [condition, setCondition] = useState(searchParams.get("condition") || "");
+    const [minPrice, setMinPrice] = useState("");
+    const [maxPrice, setMaxPrice] = useState("");
+    const [sortBy, setSortBy] = useState("newest");
     const [showFilters, setShowFilters] = useState(false);
 
     // Load categories
@@ -77,11 +80,14 @@ export default function MarketplacePage() {
             if (categoryId) params.set("categoryId", categoryId);
             if (condition) params.set("condition", condition);
             if (search) params.set("search", search);
+            if (minPrice) params.set("minPrice", minPrice);
+            if (maxPrice) params.set("maxPrice", maxPrice);
+            if (sortBy && sortBy !== "newest") params.set("sortBy", sortBy);
             params.set("limit", LIMIT.toString());
             params.set("offset", off.toString());
             return `/api/listings?${params.toString()}`;
         },
-        [categoryId, condition, search]
+        [categoryId, condition, search, minPrice, maxPrice, sortBy]
     );
 
     // Initial + filter change load
@@ -164,7 +170,7 @@ export default function MarketplacePage() {
             {/* Filters Panel */}
             {showFilters && (
                 <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-4 animate-fadeIn">
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Condición
@@ -200,18 +206,61 @@ export default function MarketplacePage() {
                                 </select>
                             </div>
                         )}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Precio mínimo
+                            </label>
+                            <input
+                                type="number"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value)}
+                                placeholder="$0"
+                                min="0"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#e60012] outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Precio máximo
+                            </label>
+                            <input
+                                type="number"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(e.target.value)}
+                                placeholder="Sin límite"
+                                min="0"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#e60012] outline-none"
+                            />
+                        </div>
                     </div>
-                    {(categoryId || condition) && (
-                        <button
-                            onClick={() => {
-                                setCategoryId("");
-                                setCondition("");
-                            }}
-                            className="text-sm text-[#e60012] font-medium hover:underline"
-                        >
-                            Limpiar filtros
-                        </button>
-                    )}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700">Ordenar:</label>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:border-[#e60012] outline-none"
+                            >
+                                <option value="newest">Más recientes</option>
+                                <option value="price_asc">Menor precio</option>
+                                <option value="price_desc">Mayor precio</option>
+                            </select>
+                        </div>
+                        {(categoryId || condition || minPrice || maxPrice) && (
+                            <button
+                                onClick={() => {
+                                    setCategoryId("");
+                                    setCondition("");
+                                    setMinPrice("");
+                                    setMaxPrice("");
+                                    setSortBy("newest");
+                                }}
+                                className="text-sm text-[#e60012] font-medium hover:underline"
+                            >
+                                Limpiar filtros
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 

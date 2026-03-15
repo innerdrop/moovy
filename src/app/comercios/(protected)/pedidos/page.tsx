@@ -19,7 +19,9 @@ import {
     Bell,
     AlertTriangle,
     Wifi,
-    WifiOff
+    WifiOff,
+    SlidersHorizontal,
+    X
 } from "lucide-react";
 
 interface Order {
@@ -99,6 +101,11 @@ export default function ComercioPedidosPage() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+    const [minAmount, setMinAmount] = useState("");
+    const [maxAmount, setMaxAmount] = useState("");
+    const [showFilters, setShowFilters] = useState(false);
     const [merchantId, setMerchantId] = useState<string | null>(null);
     const [unassignableAlerts, setUnassignableAlerts] = useState<{ orderId: string; orderNumber: string }[]>([]);
     const [confirmTimeout, setConfirmTimeout] = useState(300);
@@ -271,8 +278,20 @@ export default function ComercioPedidosPage() {
 
     const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
     const filteredOrders = orders.filter(order => {
-        if (filter === "active") return activeStatuses.includes(order.status);
-        if (filter === "completed") return !activeStatuses.includes(order.status);
+        if (filter === "active" && !activeStatuses.includes(order.status)) return false;
+        if (filter === "completed" && activeStatuses.includes(order.status)) return false;
+        if (dateFrom) {
+            const from = new Date(dateFrom);
+            from.setHours(0, 0, 0, 0);
+            if (new Date(order.createdAt) < from) return false;
+        }
+        if (dateTo) {
+            const to = new Date(dateTo);
+            to.setHours(23, 59, 59, 999);
+            if (new Date(order.createdAt) > to) return false;
+        }
+        if (minAmount && order.total < parseFloat(minAmount)) return false;
+        if (maxAmount && order.total > parseFloat(maxAmount)) return false;
         return true;
     });
 
@@ -362,6 +381,45 @@ export default function ComercioPedidosPage() {
                     </button>
                 ))}
             </div>
+
+            {/* Advanced Filters */}
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${showFilters ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    Filtros
+                </button>
+                {(dateFrom || dateTo || minAmount || maxAmount) && (
+                    <button
+                        onClick={() => { setDateFrom(""); setDateTo(""); setMinAmount(""); setMaxAmount(""); }}
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition"
+                    >
+                        <X className="w-3 h-3" /> Limpiar
+                    </button>
+                )}
+            </div>
+            {showFilters && (
+                <div className="bg-white rounded-xl border border-gray-100 p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Desde</label>
+                        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Hasta</label>
+                        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Monto mínimo</label>
+                        <input type="number" value={minAmount} onChange={e => setMinAmount(e.target.value)} placeholder="$0" min="0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Monto máximo</label>
+                        <input type="number" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} placeholder="$∞" min="0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </div>
+                </div>
+            )}
 
             {/* Orders List */}
             {filteredOrders.length === 0 ? (
