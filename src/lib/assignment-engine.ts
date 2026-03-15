@@ -583,7 +583,7 @@ export async function driverAcceptOrder(
                     data: {
                         driverId,
                         status: "DRIVER_ASSIGNED",
-                        deliveryStatus: "ASSIGNED",
+                        deliveryStatus: "DRIVER_ASSIGNED",
                         pendingDriverId: null,
                         assignmentExpiresAt: null,
                     },

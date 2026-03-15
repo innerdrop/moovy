@@ -61,7 +61,7 @@ export async function POST(
             data: {
                 driverId: driver.id,
                 status: "IN_DELIVERY",
-                deliveryStatus: "ASSIGNED",
+                deliveryStatus: "DRIVER_ASSIGNED",
             },
         });
 
