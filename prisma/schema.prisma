@@ -545,6 +545,7 @@ model StoreSettings {
   showRepartidoresCard  Boolean  @default(true)
   tiendaMaintenance     Boolean  @default(false)
   maxCategoriesHome     Int      @default(6)
+  heroSliderEnabled     Boolean  @default(true)
   heroSliderInterval    Int      @default(5000)
   promoBannerButtonLink String   @default("/productos?categoria=pizzas")
   promoBannerButtonText String   @default("Ver locales")

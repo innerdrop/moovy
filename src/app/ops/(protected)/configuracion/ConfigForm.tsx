@@ -58,7 +58,8 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             showComerciosCard: formData.get("showComerciosCard") === "on",
             maxCategoriesHome: formData.get("maxCategoriesHome"),
 
-            // Hero Slider interval (convert seconds to milliseconds)
+            // Hero Slider
+            heroSliderEnabled: formData.get("heroSliderEnabled") === "on",
             heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
 
             // Promo Banner (Slide Publicitario)

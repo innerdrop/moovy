@@ -171,6 +171,7 @@ async function LiveStoreView() {
         ]);
 
     const slideInterval = settings?.heroSliderInterval ?? 5000;
+    const sliderEnabled = (settings as any)?.heroSliderEnabled ?? true;
 
     return (
         <div className="animate-fadeIn">
@@ -181,8 +182,8 @@ async function LiveStoreView() {
             {/* 2. Social Proof */}
             <SocialProofBar totalDelivered={totalDelivered} activeMerchants={activeMerchants} />
 
-            {/* 3. Slider Promocional (solo si hay slides) */}
-            {slides.length > 0 && (
+            {/* 3. Slider Promocional (solo si hay slides Y está habilitado desde OPS) */}
+            {sliderEnabled && slides.length > 0 && (
                 <HeroSliderNew slides={slides} slideInterval={slideInterval} />
             )}
 
