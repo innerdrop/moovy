@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { ArrowRight, Store, Megaphone } from "lucide-react";
+import { ArrowRight, Store, Megaphone, Home } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroStatic from "@/components/home/HeroStatic";
 import HeroSliderNew from "@/components/home/HeroSliderNew";
@@ -129,6 +129,16 @@ async function getActiveMerchantCount() {
     }
 }
 
+async function getOpenMerchantCount() {
+    try {
+        return await prisma.merchant.count({
+            where: { isActive: true, isOpen: true },
+        });
+    } catch {
+        return 0;
+    }
+}
+
 // ============================================
 // MAINTENANCE VIEW
 // ============================================
@@ -160,7 +170,7 @@ function MaintenanceView() {
 async function LiveStoreView() {
     const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } }).catch(() => null);
 
-    const [categories, merchants, featuredProducts, recentListings, slides, totalDelivered, activeMerchants] =
+    const [categories, merchants, featuredProducts, recentListings, slides, totalDelivered, activeMerchants, openMerchants] =
         await Promise.all([
             getCategories(settings?.maxCategoriesHome ?? 8),
             getMerchants(),
@@ -169,6 +179,7 @@ async function LiveStoreView() {
             getHeroSlides(),
             getTotalDelivered(),
             getActiveMerchantCount(),
+            getOpenMerchantCount(),
         ]);
 
     const slideInterval = settings?.heroSliderInterval ?? 5000;
@@ -180,15 +191,33 @@ async function LiveStoreView() {
             {/* 1. Hero Estático con buscador */}
             <HeroStatic totalDelivered={totalDelivered} activeMerchants={activeMerchants} />
 
-            {/* 2. Social Proof */}
-            <SocialProofBar totalDelivered={totalDelivered} activeMerchants={activeMerchants} />
-
-            {/* 3. Categorías — con imágenes de OPS, auto-scroll + swipe */}
-            <section className="py-4 bg-white">
+            {/* 2. Categorías — con imágenes de OPS, auto-scroll + swipe */}
+            <section className="relative py-4 bg-white" style={{ zIndex: 1 }}>
                 <div className="container mx-auto px-4">
-                    <h2 className="text-xl lg:text-2xl font-black text-gray-900 mb-3">
-                        ¿Qué querés pedir?
-                    </h2>
+                    <div className="flex items-center gap-2.5 mb-3">
+                        {/* Casita verde indicando comercios abiertos */}
+                        <div className="relative flex-shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center shadow-sm shadow-green-500/30">
+                                <Home className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
+                            </div>
+                            {openMerchants > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 border-2 border-white" />
+                                </span>
+                            )}
+                        </div>
+                        <div>
+                            <h2 className="text-lg lg:text-xl font-black text-gray-900 leading-tight">
+                                ¿Qué querés pedir?
+                            </h2>
+                            {openMerchants > 0 && (
+                                <p className="text-xs font-semibold text-green-600">
+                                    {openMerchants} {openMerchants === 1 ? 'comercio abierto' : 'comercios abiertos'} ahora
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </div>
                 <CategoryGrid categories={categories} />
             </section>

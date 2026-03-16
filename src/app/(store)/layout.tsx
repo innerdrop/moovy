@@ -105,19 +105,19 @@ export default function StoreLayout({
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 
-            {/* Header compacto tipo app */}
+            {/* Header compacto tipo app — fijo arriba */}
             <AppHeader
                 isLoggedIn={!!isLoggedIn}
                 cartCount={cartCount}
                 userName={session?.user?.name || undefined}
             />
 
-            {/* Contenido con padding para header y bottom nav */}
+            {/* Contenido scrollable — solo esta zona se mueve */}
             <main className="flex-1 pt-14 pb-20">
                 {children}
             </main>
 
-            {/* Bottom Navigation siempre visible */}
+            {/* Bottom Navigation siempre visible — fijo abajo */}
             <BottomNav isLoggedIn={!!isLoggedIn} />
 
             {/* Floating Cart Button (when cart has items) */}

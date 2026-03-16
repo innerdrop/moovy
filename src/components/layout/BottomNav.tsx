@@ -84,8 +84,11 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                             </>
                                         )}
 
-                                        {/* Breathing pulse animation */}
-                                        <span className={`absolute w-14 h-14 rounded-full animate-pulse ${isLoggedIn ? 'bg-amber-400/30' : 'bg-red-400/30'}`} />
+                                        {/* Radar ring pulse */}
+                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-amber-400/20' : 'bg-red-400/20'}`}
+                                              style={{ animation: 'moover-ring 2s cubic-bezier(0,0,0.2,1) infinite' }} />
+                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-amber-400/15' : 'bg-red-400/15'}`}
+                                              style={{ animation: 'moover-ring 2s cubic-bezier(0,0,0.2,1) infinite 0.5s' }} />
 
                                         <div className={`
                                             w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 relative
@@ -93,8 +96,9 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                                 ? "bg-gradient-to-br from-amber-400 to-amber-500 shadow-amber-500/40"
                                                 : "bg-gradient-to-br from-[#e60012] to-[#ff3333] shadow-red-500/40"
                                             }
-                                        `}>
-                                            {/* White star - bigger */}
+                                        `}
+                                        style={{ animation: 'moover-breathe 3s ease-in-out infinite' }}
+                                        >
                                             <Icon className="w-8 h-8 text-white fill-current" />
                                         </div>
                                         <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-amber-500" : "text-[#e60012]"}`}>
@@ -111,7 +115,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                 key={item.label}
                                 href={item.href}
                                 onClick={(e) => handleNavClick(e, item)}
-                                className={`flex flex-col items-center justify-center flex-1 h-full pb-1 transition-colors ${isActive ? "text-[#e60012]" : "text-gray-400 active:text-gray-600"
+                                className={`flex flex-col items-center justify-center flex-1 h-full pb-1 transition-colors relative ${isActive ? "text-[#e60012]" : "text-gray-400 active:text-gray-600"
                                     }`}
                             >
                                 <Icon className={`w-6 h-6 mb-0.5 ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />

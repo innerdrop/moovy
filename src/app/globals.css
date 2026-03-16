@@ -155,6 +155,35 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* Prevent rubber-band bounce on mobile — feels like native app */
+html {
+  overscroll-behavior: none;
+}
+body {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hero animations */
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-12px) scale(1.03); }
+}
+@keyframes hero-accent-line {
+  0%, 100% { width: 60px; opacity: 0.7; }
+  50% { width: 100px; opacity: 1; }
+}
+
+/* MOOVER button animations */
+@keyframes moover-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes moover-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
 /* MOOVY Brand Font Class */
 .font-moovy {
   font-family: 'Junegull', sans-serif;

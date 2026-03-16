@@ -145,7 +145,7 @@ export default function AppHeader({
                 <div className="h-1 bg-gradient-to-r from-[#e60012] via-[#ff3344] to-[#e60012]" />
 
                 {/* Mobile Header - Single clean row */}
-                <div className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-gray-100">
+                <div className="lg:hidden flex items-center justify-between h-14 px-4">
                     {/* Left: App Switcher + Greeting or Logo */}
                     <div className="flex items-center gap-2">
                         <AppSwitcher />

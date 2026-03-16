@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOOVY — Landing Concepto WOW</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0a0a0f;display:flex;justify-content:center;padding:40px 20px;min-height:100vh;}
+  .phone{width:390px;border-radius:44px;overflow:hidden;box-shadow:0 40px 100px rgba(230,0,18,0.15),0 0 0 1px rgba(255,255,255,0.06);background:#0d0d14;position:relative;}
+  .phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:140px;height:30px;background:#0d0d14;border-radius:0 0 20px 20px;z-index:200;}
+
+  /* ===== HEADER — Floating glass ===== */
+  .nav{position:relative;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:44px 20px 14px;background:transparent;}
+  .logo{font-size:26px;font-weight:900;letter-spacing:-1px;color:#fff;}
+  .logo .o{color:#e60012;display:inline-block;animation:pulse-o 2s ease-in-out infinite;}
+  @keyframes pulse-o{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  .nav-actions{display:flex;gap:10px;}
+  .nav-btn{width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,0.06);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;}
+
+  /* ===== HERO — Organic blob shape ===== */
+  .hero-wrap{position:relative;overflow:visible;}
+  .hero{
+    position:relative;padding:20px 24px 80px;
+    background:
+      radial-gradient(ellipse 140% 70% at 30% 110%, rgba(230,0,18,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 90% 20%, rgba(255,60,40,0.2) 0%, transparent 40%),
+      radial-gradient(ellipse 60% 40% at 10% 30%, rgba(255,180,0,0.08) 0%, transparent 50%),
+      linear-gradient(170deg, #1a0a0c 0%, #0d0d14 100%);
+    overflow:hidden;
+  }
+  .hero::after{
+    content:'';position:absolute;bottom:-2px;left:0;right:0;height:80px;
+    background:url("data:image/svg+xml,%3Csvg viewBox='0 0 390 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40 C60 80 130 10 195 50 C260 90 330 20 390 55 L390 80 L0 80Z' fill='%230d0d14'/%3E%3C/svg%3E") no-repeat bottom;
+    background-size:100% auto;z-index:2;
+  }
+
+  /* Floating orbs */
+  .orb{position:absolute;border-radius:50%;filter:blur(40px);opacity:0.4;animation:float 6s ease-in-out infinite;}
+  .orb-1{width:120px;height:120px;background:#e60012;top:10px;right:-20px;animation-delay:0s;}
+  .orb-2{width:80px;height:80px;background:#ff6b35;bottom:60px;left:-10px;animation-delay:2s;}
+  .orb-3{width:60px;height:60px;background:#ffaa00;top:40%;right:30%;animation-delay:4s;opacity:0.2;}
+  @keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-15px) scale(1.05)}}
+
+  .hero h1{
+    position:relative;z-index:3;
+    font-size:38px;font-weight:900;line-height:1.02;
+    letter-spacing:-1.5px;margin-bottom:4px;
+  }
+  .hero h1 .line1{color:#fff;display:block;}
+  .hero h1 .line2{color:#fff;display:block;}
+  .hero h1 .highlight{
+    background:linear-gradient(90deg,#e60012,#ff6b35);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .hero .sub{
+    position:relative;z-index:3;
+    font-size:14px;color:rgba(255,255,255,0.5);font-weight:600;
+    margin-bottom:24px;letter-spacing:0.5px;
+  }
+
+  /* Search — Glassmorphism */
+  .search{
+    position:relative;z-index:3;
+    display:flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:18px;padding:6px 6px 6px 18px;
+    transition:border-color 0.3s;
+  }
+  .search:hover{border-color:rgba(230,0,18,0.4);}
+  .search svg{flex-shrink:0;opacity:0.4;}
+  .search input{flex:1;background:none;border:none;outline:none;color:#fff;font-size:14px;font-weight:500;padding:10px 4px;}
+  .search input::placeholder{color:rgba(255,255,255,0.3);}
+  .search .go{background:linear-gradient(135deg,#e60012,#ff3322);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;}
+
+  /* ===== LIVE PULSE BAR ===== */
+  .live-bar{
+    display:flex;justify-content:center;gap:6px;padding:14px 20px;
+    background:#0d0d14;position:relative;z-index:5;
+  }
+  .live-chip{
+    display:flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);
+    border-radius:100px;padding:6px 14px;
+  }
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:blink 2s infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+  .live-chip span{font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;}
+  .live-chip strong{color:#fff;font-weight:800;}
+
+  /* ===== CATEGORIES — Floating pills ===== */
+  .cats-section{padding:24px 0 16px;background:#0d0d14;}
+  .cats-section h2{font-size:17px;font-weight:900;color:#fff;padding:0 24px;margin-bottom:16px;letter-spacing:-0.3px;}
+  .cats-scroll{display:flex;gap:12px;overflow-x:auto;padding:0 24px 8px;scroll-snap-type:x mandatory;}
+  .cats-scroll::-webkit-scrollbar{display:none;}
+  .cat-pill{
+    flex-shrink:0;display:flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:20px;padding:10px 18px 10px 12px;
+    scroll-snap-align:start;
+    transition:all 0.3s;cursor:pointer;
+  }
+  .cat-pill:hover{background:rgba(230,0,18,0.1);border-color:rgba(230,0,18,0.3);}
+  .cat-emoji{font-size:28px;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;}
+  .cat-pill .name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;}
+  .cat-pill .count{font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;}
+
+  /* ===== PROMO BANNER — Diagonal glass ===== */
+  .promo{
+    margin:8px 20px 20px;border-radius:22px;padding:22px 20px;
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#e60012 0%,#ff3322 40%,#ff6b35 100%);
+  }
+  .promo::before{
+    content:'';position:absolute;top:-30%;right:-10%;width:180px;height:180px;
+    background:rgba(255,255,255,0.1);border-radius:50%;
+  }
+  .promo::after{
+    content:'';position:absolute;bottom:-20%;left:-5%;width:120px;height:120px;
+    background:rgba(0,0,0,0.1);border-radius:50%;
+  }
+  .promo-tag{
+    display:inline-block;background:rgba(0,0,0,0.2);color:#fff;
+    font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+    padding:4px 10px;border-radius:6px;margin-bottom:10px;position:relative;z-index:1;
+  }
+  .promo h3{font-size:20px;font-weight:900;color:#fff;margin-bottom:4px;position:relative;z-index:1;line-height:1.15;}
+  .promo p{font-size:12px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:14px;position:relative;z-index:1;}
+  .promo .btn{
+    display:inline-flex;align-items:center;gap:6px;
+    background:#fff;color:#e60012;border:none;border-radius:12px;
+    padding:10px 20px;font-size:13px;font-weight:800;cursor:pointer;
+    position:relative;z-index:1;box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  /* ===== MERCHANTS — Dark cards ===== */
+  .section{padding:20px 0;}
+  .section-header{display:flex;justify-content:space-between;align-items:center;padding:0 24px;margin-bottom:16px;}
+  .section h2{font-size:17px;font-weight:900;color:#fff;letter-spacing:-0.3px;}
+  .section .see-all{font-size:12px;font-weight:700;color:#e60012;text-decoration:none;display:flex;align-items:center;gap:4px;}
+  .merchants{display:flex;gap:14px;overflow-x:auto;padding:0 24px 12px;scroll-snap-type:x mandatory;}
+  .merchants::-webkit-scrollbar{display:none;}
+  .m-card{
+    flex-shrink:0;width:240px;border-radius:20px;overflow:hidden;
+    background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+    scroll-snap-align:start;transition:transform 0.3s,border-color 0.3s;
+  }
+  .m-card:hover{transform:translateY(-4px);border-color:rgba(230,0,18,0.3);}
+  .m-img{width:100%;height:120px;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:36px;background:linear-gradient(135deg,rgba(230,0,18,0.1),rgba(255,107,53,0.05));}
+  .m-info{padding:14px 16px;}
+  .m-name{font-size:14px;font-weight:800;color:#fff;margin-bottom:4px;}
+  .m-meta{font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;}
+  .m-tags{display:flex;gap:6px;margin-top:8px;}
+  .m-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;}
+  .m-tag.open{background:rgba(34,197,94,0.15);color:#22c55e;}
+  .m-tag.rating{background:rgba(255,170,0,0.15);color:#ffaa00;}
+
+  /* ===== PRODUCTS GRID ===== */
+  .products-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 24px;}
+  .p-card{
+    border-radius:18px;overflow:hidden;
+    background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+    transition:transform 0.3s;
+  }
+  .p-card:hover{transform:scale(1.02);}
+  .p-img{width:100%;height:110px;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));}
+  .p-info{padding:10px 12px;}
+  .p-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;line-height:1.3;}
+  .p-shop{font-size:10px;color:rgba(255,255,255,0.3);font-weight:500;}
+  .p-price{font-size:15px;font-weight:900;color:#e60012;margin-top:6px;}
+
+  /* ===== MARKETPLACE CARD — Gradient border ===== */
+  .mp-card{
+    margin:10px 20px 20px;padding:2px;border-radius:22px;
+    background:linear-gradient(135deg,#7c3aed,#a855f7,#e60012);
+  }
+  .mp-inner{
+    background:#0d0d14;border-radius:20px;padding:20px;
+  }
+  .mp-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .mp-icon{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .mp-title{font-size:18px;font-weight:900;color:#fff;}
+  .mp-sub{font-size:11px;color:#a855f7;font-weight:700;}
+  .mp-desc{font-size:12px;color:rgba(255,255,255,0.4);font-weight:500;margin-bottom:14px;line-height:1.5;}
+  .mp-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg,#7c3aed,#a855f7);
+    color:#fff;border:none;border-radius:12px;padding:10px 20px;
+    font-size:13px;font-weight:800;cursor:pointer;
+  }
+
+  /* ===== AD CTA ===== */
+  .ad-cta{
+    margin:0 20px 20px;padding:16px 18px;border-radius:16px;
+    background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.1);
+    display:flex;align-items:center;gap:12px;
+  }
+  .ad-icon{width:36px;height:36px;border-radius:10px;background:rgba(230,0,18,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+  .ad-text{flex:1;}
+  .ad-text p{font-size:12px;font-weight:700;color:rgba(255,255,255,0.6);}
+  .ad-text span{font-size:10px;color:rgba(255,255,255,0.25);font-weight:500;}
+  .ad-link{font-size:11px;color:#e60012;font-weight:800;text-decoration:none;white-space:nowrap;}
+
+  /* ===== BOTTOM NAV — Glassmorphism ===== */
+  .bnav{
+    position:sticky;bottom:0;
+    display:flex;justify-content:space-around;align-items:center;
+    padding:10px 0 24px;
+    background:rgba(13,13,20,0.85);backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:rgba(255,255,255,0.3);}
+  .bnav-item.active{color:#fff;}
+  .bnav-item .icon{font-size:18px;height:24px;display:flex;align-items:center;}
+  .bnav-item.active .icon{filter:drop-shadow(0 0 6px rgba(230,0,18,0.5));}
+  .bnav-moover{
+    width:52px;height:52px;border-radius:50%;
+    background:linear-gradient(135deg,#e60012,#ff3322);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:900;color:#fff;
+    margin-top:-24px;
+    box-shadow:0 4px 25px rgba(230,0,18,0.4);
+    position:relative;
+  }
+  .bnav-moover::after{
+    content:'';position:absolute;inset:-3px;border-radius:50%;
+    border:2px solid rgba(230,0,18,0.3);
+    animation:ring-pulse 2s ease-out infinite;
+  }
+  @keyframes ring-pulse{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.3);opacity:0}}
+
+  /* ===== URGENCY BADGE ===== */
+  .urgency{
+    position:relative;z-index:3;
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.2);
+    border-radius:10px;padding:8px 14px;margin-top:16px;
+  }
+  .urgency .fire{font-size:14px;}
+  .urgency span{font-size:11px;font-weight:700;color:#ffaa00;}
+  .urgency strong{color:#fff;}
+
+  /* ===== NEUROSALES: Trust Signals ===== */
+  .trust{
+    display:flex;justify-content:center;gap:20px;padding:20px 24px;
+    border-top:1px solid rgba(255,255,255,0.04);
+  }
+  .trust-item{text-align:center;}
+  .trust-icon{font-size:20px;margin-bottom:4px;}
+  .trust-label{font-size:9px;color:rgba(255,255,255,0.25);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- NAV -->
+  <div class="nav">
+    <div class="logo">M<span class="o">O</span><span class="o">O</span>VY</div>
+    <div class="nav-actions">
+      <div class="nav-btn">
+        <svg width="18" height="18" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div class="nav-btn" style="position:relative;">
+        <svg width="18" height="18" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <div style="position:absolute;top:6px;right:6px;width:8px;height:8px;background:#e60012;border-radius:50;border:2px solid #0d0d14;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero-wrap">
+    <div class="hero">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+
+      <h1>
+        <span class="line1">Todo Ushuaia en tu</span>
+        <span class="line2"><span class="highlight">puerta.</span></span>
+      </h1>
+      <p class="sub">Pedidos de comercios locales en minutos</p>
+
+      <div class="search">
+        <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input placeholder="¿Qué querés pedir hoy?" />
+        <button class="go">Buscar</button>
+      </div>
+
+      <!-- Neurosales: Urgency + Social Proof -->
+      <div class="urgency">
+        <span class="fire">🔥</span>
+        <span><strong>14 pedidos</strong> en la última hora</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE BAR -->
+  <div class="live-bar">
+    <div class="live-chip">
+      <div class="live-dot"></div>
+      <span><strong>12</strong> comercios abiertos ahora</span>
+    </div>
+    <div class="live-chip">
+      <span>⭐ <strong>4.8</strong> satisfacción</span>
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="cats-section">
+    <h2>¿Qué querés pedir?</h2>
+    <div class="cats-scroll">
+      <div class="cat-pill">
+        <div class="cat-emoji">🍔</div>
+        <div><div class="name">Comida</div><div class="count">6 locales</div></div>
+      </div>
+      <div class="cat-pill">
+        <div class="cat-emoji">🥐</div>
+        <div><div class="name">Panadería</div><div class="count">3 locales</div></div>
+      </div>
+      <div class="cat-pill">
+        <div class="cat-emoji">🛒</div>
+        <div><div class="name">Súper</div><div class="count">4 locales</div></div>
+      </div>
+      <div class="cat-pill">
+        <div class="cat-emoji">💊</div>
+        <div><div class="name">Farmacia</div><div class="count">2 locales</div></div>
+      </div>
+      <div class="cat-pill">
+        <div class="cat-emoji">🍕</div>
+        <div><div class="name">Pizzas</div><div class="count">5 locales</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMO BANNER -->
+  <div class="promo">
+    <div class="promo-tag">📣 Promo activa</div>
+    <h3>Noches de Pizza<br>& Pelis 🍿</h3>
+    <p>2x1 en locales seleccionados de 20 a 23hs</p>
+    <button class="btn">Ver locales →</button>
+  </div>
+
+  <!-- MERCHANTS -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Comercios en Ushuaia</h2>
+      <a href="#" class="see-all">Ver todos →</a>
+    </div>
+    <div class="merchants">
+      <div class="m-card">
+        <div class="m-img">🏔️</div>
+        <div class="m-info">
+          <div class="m-name">Panadería del Fin del Mundo</div>
+          <div class="m-meta">Panadería · 25-35 min</div>
+          <div class="m-tags">
+            <span class="m-tag open">Abierto</span>
+            <span class="m-tag rating">⭐ 4.8</span>
+          </div>
+        </div>
+      </div>
+      <div class="m-card">
+        <div class="m-img">🌊</div>
+        <div class="m-info">
+          <div class="m-name">Almacén Beagle</div>
+          <div class="m-meta">Almacén · 15-25 min</div>
+          <div class="m-tags">
+            <span class="m-tag open">Abierto</span>
+            <span class="m-tag rating">⭐ 4.6</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Lo más pedido 🔥</h2>
+      <a href="#" class="see-all">Ver todos →</a>
+    </div>
+    <div class="products-grid">
+      <div class="p-card">
+        <div class="p-img">🍕</div>
+        <div class="p-info">
+          <div class="p-name">Pizza Muzzarella Grande</div>
+          <div class="p-shop">La Esquina</div>
+          <div class="p-price">$4.500</div>
+        </div>
+      </div>
+      <div class="p-card">
+        <div class="p-img">🥐</div>
+        <div class="p-info">
+          <div class="p-name">Docena de Medialunas</div>
+          <div class="p-shop">Panadería FDM</div>
+          <div class="p-price">$2.800</div>
+        </div>
+      </div>
+      <div class="p-card">
+        <div class="p-img">🍔</div>
+        <div class="p-info">
+          <div class="p-name">Hamburguesa Clásica</div>
+          <div class="p-shop">Burger Beagle</div>
+          <div class="p-price">$5.200</div>
+        </div>
+      </div>
+      <div class="p-card">
+        <div class="p-img">🧉</div>
+        <div class="p-info">
+          <div class="p-name">Yerba Playadito 1kg</div>
+          <div class="p-shop">Super Sur</div>
+          <div class="p-price">$3.100</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARKETPLACE -->
+  <div class="mp-card">
+    <div class="mp-inner">
+      <div class="mp-header">
+        <div class="mp-icon">🛍️</div>
+        <div>
+          <div class="mp-title">Marketplace</div>
+          <div class="mp-sub">Comprá y vendé entre vecinos</div>
+        </div>
+      </div>
+      <div class="mp-desc">Productos nuevos y usados de vendedores de Ushuaia. Publicar es gratis.</div>
+      <button class="mp-btn">Explorar Marketplace →</button>
+    </div>
+  </div>
+
+  <!-- AD CTA -->
+  <div class="ad-cta">
+    <div class="ad-icon">📢</div>
+    <div class="ad-text">
+      <p>Publicitá tu negocio en MOOVY</p>
+      <span>Banners destacados para miles de usuarios</span>
+    </div>
+    <a href="#" class="ad-link">Info →</a>
+  </div>
+
+  <!-- TRUST SIGNALS (Neurosales) -->
+  <div class="trust">
+    <div class="trust-item"><div class="trust-icon">🔒</div><div class="trust-label">Pago seguro</div></div>
+    <div class="trust-item"><div class="trust-icon">⚡</div><div class="trust-label">30 min avg</div></div>
+    <div class="trust-item"><div class="trust-icon">💬</div><div class="trust-label">Soporte real</div></div>
+    <div class="trust-item"><div class="trust-icon">🏔️</div><div class="trust-label">100% local</div></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bnav-item active"><div class="icon">🏠</div>Inicio</div>
+    <div class="bnav-item"><div class="icon">📦</div>Pedidos</div>
+    <div class="bnav-moover">M</div>
+    <div class="bnav-item"><div class="icon">🛍️</div>Market</div>
+    <div class="bnav-item"><div class="icon">👤</div>Perfil</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import Link from "next/link";
 import { getCategoryIcon } from "@/lib/icons";
 
@@ -22,26 +22,45 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const rafId = useRef(0);
     const prevTime = useRef(0);
     const resumeTimer = useRef<ReturnType<typeof setTimeout>>(null);
+    const [mounted, setMounted] = useState(false);
+
+    // Wait for mount so scrollWidth is real
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const tick = useCallback((now: number) => {
         const el = scrollRef.current;
         if (el && autoScrolling.current) {
-            if (prevTime.current) {
-                const dt = now - prevTime.current;
-                el.scrollLeft += (18 * dt) / 1000; // 18px/s — despacio
-                const half = el.scrollWidth / 2;
-                if (el.scrollLeft >= half) el.scrollLeft -= half;
+            const half = el.scrollWidth / 2;
+            // Only auto-scroll if there's enough content to scroll
+            if (half > el.clientWidth) {
+                if (prevTime.current) {
+                    const dt = Math.min(now - prevTime.current, 50); // cap delta to prevent jumps
+                    el.scrollLeft += (20 * dt) / 1000; // 20px/s
+                    if (el.scrollLeft >= half) {
+                        el.scrollLeft -= half;
+                    }
+                }
+                prevTime.current = now;
             }
-            prevTime.current = now;
+        } else {
+            prevTime.current = 0;
         }
         rafId.current = requestAnimationFrame(tick);
     }, []);
 
     useEffect(() => {
-        if (categories.length === 0) return;
-        rafId.current = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(rafId.current);
-    }, [categories.length, tick]);
+        if (!mounted || categories.length === 0) return;
+        // Small delay to ensure layout is settled
+        const startTimer = setTimeout(() => {
+            rafId.current = requestAnimationFrame(tick);
+        }, 500);
+        return () => {
+            clearTimeout(startTimer);
+            cancelAnimationFrame(rafId.current);
+        };
+    }, [mounted, categories.length, tick]);
 
     const pause = useCallback(() => {
         autoScrolling.current = false;
@@ -50,6 +69,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     }, []);
 
     const resume = useCallback(() => {
+        if (resumeTimer.current) clearTimeout(resumeTimer.current);
         resumeTimer.current = setTimeout(() => {
             prevTime.current = 0;
             autoScrolling.current = true;
@@ -58,6 +78,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
 
     if (categories.length === 0) return null;
 
+    // Duplicate items for seamless infinite scroll
     const items = [...categories, ...categories];
 
     return (
