@@ -213,7 +213,7 @@ async function LiveStoreView() {
                     {merchants.length > 0 ? (
                         <>
                             {/* Mobile: horizontal scroll like mockup */}
-                            <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-4 px-4 lg:hidden" style={{ scrollbarWidth: "none" }}>
+                            <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 pl-4 pr-4 lg:hidden" style={{ scrollbarWidth: "none" }}>
                                 {merchants.map((merchant) => (
                                     <div key={merchant.id} className="flex-shrink-0 w-[260px] snap-start">
                                         <MerchantCard merchant={merchant} />
