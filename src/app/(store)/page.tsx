@@ -16,6 +16,7 @@ import HeroStatic from "@/components/home/HeroStatic";
 import HeroSliderNew from "@/components/home/HeroSliderNew";
 import SocialProofBar from "@/components/home/SocialProofBar";
 import HowItWorks from "@/components/home/HowItWorks";
+import CategoryGrid from "@/components/home/CategoryGrid";
 import TrustBar from "@/components/home/TrustBar";
 import SupplySideCTA from "@/components/home/SupplySideCTA";
 import MerchantCard from "@/components/store/MerchantCard";
@@ -190,42 +191,14 @@ async function LiveStoreView() {
             {/* 4. Cómo Funciona */}
             <HowItWorks />
 
-            {/* 5. Categorías — con imágenes propias */}
-            <section className="py-4 bg-white">
+            {/* 5. Categorías — con imágenes de OPS, auto-scroll + swipe */}
+            <section className="py-2 bg-white">
                 <div className="container mx-auto px-4">
-                    <h2 className="text-lg lg:text-2xl font-extrabold text-gray-900 mb-4">
+                    <h2 className="text-lg lg:text-2xl font-extrabold text-gray-900 mb-2">
                         ¿Qué querés pedir?
                     </h2>
-
-                    <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap" style={{ scrollbarWidth: "none" }}>
-                        {categories.map((cat) => (
-                            <Link
-                                key={cat.id}
-                                href={`/productos?categoria=${cat.slug}`}
-                                className="flex-shrink-0 snap-start group"
-                            >
-                                <div className="w-[72px] lg:w-20 flex flex-col items-center gap-2">
-                                    <div className="w-14 h-14 lg:w-[60px] lg:h-[60px] rounded-2xl overflow-hidden bg-gray-100 border-2 border-gray-100 group-hover:border-[#e60012]/40 group-hover:shadow-lg transition-all duration-300 group-hover:scale-110">
-                                        {cat.image ? (
-                                            <img
-                                                src={cat.image}
-                                                alt={cat.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-[#e60012] to-[#ff4444] flex items-center justify-center">
-                                                <Store className="w-6 h-6 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <span className="text-[11px] font-semibold text-gray-600 group-hover:text-[#e60012] transition-colors text-center truncate w-full">
-                                        {cat.name}
-                                    </span>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
                 </div>
+                <CategoryGrid categories={categories} />
             </section>
 
             {/* 6. Comercios en Ushuaia */}
