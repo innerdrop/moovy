@@ -10,12 +10,12 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { ArrowRight, Store } from "lucide-react";
+import { ArrowRight, Store, Megaphone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroStatic from "@/components/home/HeroStatic";
 import HeroSliderNew from "@/components/home/HeroSliderNew";
 import SocialProofBar from "@/components/home/SocialProofBar";
-import HowItWorks from "@/components/home/HowItWorks";
+// HowItWorks removed — replaced by banner slot
 import CategoryGrid from "@/components/home/CategoryGrid";
 import TrustBar from "@/components/home/TrustBar";
 import SupplySideCTA from "@/components/home/SupplySideCTA";
@@ -183,29 +183,26 @@ async function LiveStoreView() {
             {/* 2. Social Proof */}
             <SocialProofBar totalDelivered={totalDelivered} activeMerchants={activeMerchants} />
 
-            {/* 3. Slider Promocional (solo si hay slides Y está habilitado desde OPS) */}
-            {sliderEnabled && slides.length > 0 && (
-                <HeroSliderNew slides={slides} slideInterval={slideInterval} />
-            )}
-
-            {/* 4. Cómo Funciona */}
-            <HowItWorks />
-
-            {/* 5. Categorías — con imágenes de OPS, auto-scroll + swipe */}
-            <section className="py-2 bg-white">
+            {/* 3. Categorías — con imágenes de OPS, auto-scroll + swipe */}
+            <section className="py-4 bg-white">
                 <div className="container mx-auto px-4">
-                    <h2 className="text-lg lg:text-2xl font-extrabold text-gray-900 mb-2">
+                    <h2 className="text-xl lg:text-2xl font-black text-gray-900 mb-3">
                         ¿Qué querés pedir?
                     </h2>
                 </div>
                 <CategoryGrid categories={categories} />
             </section>
 
+            {/* 4. Banner Publicitario OPS (posición premium — monetizable) */}
+            {sliderEnabled && slides.length > 0 && (
+                <HeroSliderNew slides={slides} slideInterval={slideInterval} />
+            )}
+
             {/* 6. Comercios en Ushuaia */}
             <section className="py-6 lg:py-8 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-lg lg:text-2xl font-extrabold text-gray-900">
+                        <h2 className="text-xl lg:text-2xl font-black text-gray-900">
                             Comercios en Ushuaia
                         </h2>
                         <Link href="/productos" className="text-[#e60012] text-sm font-semibold hover:underline flex items-center gap-1">
@@ -247,7 +244,7 @@ async function LiveStoreView() {
             <section className="py-8 lg:py-10 bg-white border-t border-gray-100">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-lg lg:text-2xl font-extrabold text-gray-900">
+                        <h2 className="text-xl lg:text-2xl font-black text-gray-900">
                             Lo más pedido
                         </h2>
                         <Link href="/productos" className="text-[#e60012] text-sm font-semibold hover:underline flex items-center gap-1">
@@ -275,18 +272,18 @@ async function LiveStoreView() {
                 <section className="py-8 lg:py-10 bg-gray-50 border-t border-gray-100">
                     <div className="container mx-auto px-4">
                         {/* Marketplace intro card — desktop: side layout */}
-                        <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-2xl p-5 mb-6 lg:flex lg:items-center lg:justify-between lg:p-8">
+                        <div className="bg-gradient-to-br from-purple-100 to-violet-100 border border-purple-200 rounded-2xl p-5 mb-6 lg:flex lg:items-center lg:justify-between lg:p-8 shadow-sm">
                             <div className="lg:max-w-lg">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] flex items-center justify-center">
-                                        <Store className="w-4 h-4 text-white" />
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] flex items-center justify-center shadow-md">
+                                        <Store className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-extrabold text-gray-900">Marketplace</h2>
-                                        <p className="text-xs font-semibold text-[#7C3AED]">Comprá y vendé entre vecinos</p>
+                                        <h2 className="text-xl font-black text-gray-900">Marketplace</h2>
+                                        <p className="text-xs font-bold text-[#7C3AED]">Comprá y vendé entre vecinos</p>
                                     </div>
                                 </div>
-                                <p className="text-sm text-gray-600 mb-3 lg:mb-4">
+                                <p className="text-sm text-gray-700 font-medium mb-3 lg:mb-4">
                                     Productos nuevos y usados de vendedores de Ushuaia. Publicar es gratis.
                                 </p>
                                 <Link
@@ -317,7 +314,35 @@ async function LiveStoreView() {
             {/* 10. Supply Side CTAs */}
             <SupplySideCTA />
 
-            {/* 11. Footer */}
+            {/* 11. CTA Espacio Publicitario */}
+            <section className="py-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                <div className="container mx-auto px-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#e60012] flex items-center justify-center flex-shrink-0">
+                                <Megaphone className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-white font-bold text-sm sm:text-base">
+                                    Publicitá tu negocio en MOOVY
+                                </p>
+                                <p className="text-gray-400 text-xs sm:text-sm">
+                                    Llegá a miles de usuarios en Ushuaia con banners destacados
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href="https://wa.me/5492901553173?text=Hola%2C%20quiero%20info%20sobre%20publicidad%20en%20MOOVY"
+                            target="_blank"
+                            className="bg-[#e60012] hover:bg-[#cc000f] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors flex-shrink-0"
+                        >
+                            Consultar
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* 12. Footer */}
             <Footer />
         </div>
     );
