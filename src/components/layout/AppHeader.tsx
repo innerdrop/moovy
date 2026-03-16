@@ -4,9 +4,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Star, User, Package, X, ChevronRight, Bell, Search, Loader2, Store, CloudRain } from "lucide-react";
+import { ShoppingBag, MapPin, User, Package, X, ChevronRight, Bell, Search, Loader2, Store } from "lucide-react";
 import { useCartStore } from "@/store/cart";
-import { useUserPoints } from "@/hooks/useUserPoints";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
 import AppSwitcher from "@/components/home/AppSwitcher";
@@ -31,7 +30,6 @@ export default function AppHeader({
     userName,
 }: AppHeaderProps) {
     const openCart = useCartStore((state) => state.openCart);
-    const { points } = useUserPoints();
     const items = useCartStore((state) => state.items);
     const actualCartCount = cartCount || items.length;
 
@@ -186,16 +184,6 @@ export default function AppHeader({
                             <Search className="w-5 h-5" />
                         </button>
 
-                        {isLoggedIn && points > 0 && (
-                            <Link
-                                href="/puntos"
-                                className="flex items-center gap-1 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-amber-700 px-2 py-1 rounded-full text-xs font-bold"
-                            >
-                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                {points > 999 ? `${(points / 1000).toFixed(1)}K` : points}
-                            </Link>
-                        )}
-
                         {isLoggedIn && (
                             <Link
                                 href="/mis-pedidos"
@@ -345,16 +333,6 @@ export default function AppHeader({
 
                     {/* Right */}
                     <div className="flex items-center gap-3 flex-shrink-0">
-                        {isLoggedIn && points > 0 && (
-                            <Link
-                                href="/puntos"
-                                className="flex items-center gap-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-amber-700 px-3 py-2 rounded-full text-sm font-bold hover:shadow-md transition"
-                            >
-                                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                                {points.toLocaleString()} pts
-                            </Link>
-                        )}
-
                         {isLoggedIn && (
                             <Link
                                 href="/mis-pedidos"
