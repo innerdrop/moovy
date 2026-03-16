@@ -37,7 +37,7 @@ export default function Footer() {
                     <div>
                         <h4 className="text-white font-bold mb-6 text-lg">Explorar</h4>
                         <ul className="space-y-4 text-sm text-gray-400">
-                            <li><FooterLink href="/tienda">Pedir Ahora</FooterLink></li>
+                            <li><FooterLink href="/">Pedir Ahora</FooterLink></li>
                             <li><FooterLink href="/repartidor/registro">Quiero ser Repartidor</FooterLink></li>
                             <li><FooterLink href="/comercio/registro">Registrar mi Comercio</FooterLink></li>
                             <li><FooterLink href="/puntos">Programa MOOVER</FooterLink></li>

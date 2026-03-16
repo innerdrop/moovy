@@ -9,7 +9,7 @@ const ecosystemApps = [
         id: "tienda",
         label: "Tienda",
         sublabel: "Delivery y comercios",
-        href: "/tienda",
+        href: "/",
         icon: ShoppingBag,
         color: "#e60012",
         gradient: "from-[#e60012] to-[#ff4444]",

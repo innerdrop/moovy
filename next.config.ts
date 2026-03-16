@@ -77,7 +77,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/servicios.html",
-        destination: "/tienda",
+        destination: "/",
         permanent: true,
       },
       {
