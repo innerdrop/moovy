@@ -2,7 +2,6 @@
 
 import React, { useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Store } from "lucide-react";
 import { getCategoryIcon } from "@/lib/icons";
 
 interface Category {
@@ -22,16 +21,15 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const autoScrolling = useRef(true);
     const rafId = useRef(0);
     const prevTime = useRef(0);
-    const resumeTimerId = useRef<ReturnType<typeof setTimeout>>(null);
+    const resumeTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
-    // Auto-scroll loop
+    // rAF auto-scroll loop — runs continuously, only moves when autoScrolling=true
     const tick = useCallback((now: number) => {
         const el = scrollRef.current;
         if (el && autoScrolling.current) {
             if (prevTime.current) {
                 const dt = now - prevTime.current;
-                el.scrollLeft += (25 * dt) / 1000; // 25px/s
-                // Seamless reset at halfway (duplicate point)
+                el.scrollLeft += (25 * dt) / 1000;
                 const half = el.scrollWidth / 2;
                 if (el.scrollLeft >= half) el.scrollLeft -= half;
             }
@@ -46,15 +44,15 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         return () => cancelAnimationFrame(rafId.current);
     }, [categories.length, tick]);
 
-    // Pause auto-scroll on touch — native scroll takes over
-    const onTouchStart = useCallback(() => {
+    // Touch/mouse: pause auto-scroll, let native scroll take over
+    const pause = useCallback(() => {
         autoScrolling.current = false;
         prevTime.current = 0;
-        if (resumeTimerId.current) clearTimeout(resumeTimerId.current);
+        if (resumeTimer.current) clearTimeout(resumeTimer.current);
     }, []);
 
-    const onTouchEnd = useCallback(() => {
-        resumeTimerId.current = setTimeout(() => {
+    const resume = useCallback(() => {
+        resumeTimer.current = setTimeout(() => {
             prevTime.current = 0;
             autoScrolling.current = true;
         }, 3000);
@@ -65,27 +63,24 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     const items = [...categories, ...categories];
 
     return (
-        <div className="overflow-hidden">
+        <>
+            <style>{`
+                .category-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+                .category-scroll::-webkit-scrollbar { display: none; }
+            `}</style>
             <div
                 ref={scrollRef}
-                className="flex gap-2 overflow-x-scroll py-1 px-4"
-                style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    touchAction: "pan-x",
-                }}
-                onTouchStart={onTouchStart}
-                onTouchEnd={onTouchEnd}
-                onMouseEnter={onTouchStart}
-                onMouseLeave={onTouchEnd}
+                className="category-scroll flex gap-2 overflow-x-auto py-1 px-4"
+                onTouchStart={pause}
+                onTouchEnd={resume}
+                onMouseEnter={pause}
+                onMouseLeave={resume}
             >
-                {/* Hide webkit scrollbar */}
-                <style>{`.cat-scroll::-webkit-scrollbar { display: none; }`}</style>
                 {items.map((cat, idx) => (
                     <Link
                         key={`${cat.id}-${idx}`}
                         href={`/productos?categoria=${cat.slug}`}
-                        className="flex-shrink-0 group cat-scroll"
+                        className="flex-shrink-0 group"
                     >
                         <div className="flex flex-col items-center gap-1.5 w-[74px]">
                             <div className="w-[66px] h-[66px] rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center group-hover:bg-gray-200 group-hover:scale-105 transition-all duration-200">
@@ -98,7 +93,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                     </Link>
                 ))}
             </div>
-        </div>
+        </>
     );
 }
 
