@@ -114,6 +114,12 @@ export default function AppHeader({
         setSearchResults(null);
     };
 
+    // Navigate then close — prevents overlay unmount from cancelling navigation
+    const navigateAndClose = (href: string) => {
+        router.push(href);
+        closeSearch();
+    };
+
     // Click outside to close search results
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -272,11 +278,11 @@ export default function AppHeader({
                                             <>
                                                 <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comercios</div>
                                                 {searchResults.merchants.slice(0, 3).map((m: any) => (
-                                                    <Link
+                                                    <button
                                                         key={m.id}
-                                                        href={`/tienda/${m.slug}`}
-                                                        onClick={closeSearch}
-                                                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition"
+                                                        type="button"
+                                                        onClick={() => navigateAndClose(`/tienda/${m.slug}`)}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                                                     >
                                                         {m.logo ? (
                                                             <img src={m.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />
@@ -289,17 +295,17 @@ export default function AppHeader({
                                                             <p className="text-sm font-semibold text-gray-900">{m.name}</p>
                                                             {m.description && <p className="text-xs text-gray-500 line-clamp-1">{m.description}</p>}
                                                         </div>
-                                                    </Link>
+                                                    </button>
                                                 ))}
                                             </>
                                         )}
                                         <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Productos</div>
                                         {searchResults.results.slice(0, 5).map((p: any) => (
-                                            <Link
+                                            <button
                                                 key={p.id}
-                                                href={`/productos/${p.slug}`}
-                                                onClick={closeSearch}
-                                                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition"
+                                                type="button"
+                                                onClick={() => navigateAndClose(`/productos/${p.slug}`)}
+                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                                             >
                                                 {p.images?.[0]?.url ? (
                                                     <img src={p.images[0].url} alt="" className="w-10 h-10 rounded-xl object-cover" />
@@ -312,7 +318,7 @@ export default function AppHeader({
                                                     <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
                                                     <p className="text-sm font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
                                                 </div>
-                                            </Link>
+                                            </button>
                                         ))}
                                     </div>
                                 ) : (
@@ -320,13 +326,13 @@ export default function AppHeader({
                                         <p className="text-sm text-gray-500">No se encontraron resultados</p>
                                     </div>
                                 )}
-                                <Link
-                                    href={`/buscar?q=${encodeURIComponent(searchQuery.trim())}`}
-                                    onClick={closeSearch}
-                                    className="block px-4 py-3 text-center text-sm font-semibold text-[#e60012] bg-gray-50 hover:bg-gray-100 transition border-t border-gray-100"
+                                <button
+                                    type="button"
+                                    onClick={() => navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)}
+                                    className="w-full px-4 py-3 text-center text-sm font-semibold text-[#e60012] bg-gray-50 hover:bg-gray-100 transition border-t border-gray-100"
                                 >
                                     Ver todos los resultados
-                                </Link>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -391,11 +397,11 @@ export default function AppHeader({
                                         <>
                                             <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comercios</div>
                                             {searchResults.merchants.slice(0, 3).map((m: any) => (
-                                                <Link
+                                                <button
                                                     key={m.id}
-                                                    href={`/tienda/${m.slug}`}
-                                                    onClick={closeSearch}
-                                                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50"
+                                                    type="button"
+                                                    onClick={() => navigateAndClose(`/tienda/${m.slug}`)}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
                                                 >
                                                     {m.logo ? (
                                                         <img src={m.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />
@@ -409,7 +415,7 @@ export default function AppHeader({
                                                         {m.description && <p className="text-xs text-gray-500 line-clamp-1">{m.description}</p>}
                                                     </div>
                                                     <ChevronRight className="w-4 h-4 text-gray-300 ml-auto" />
-                                                </Link>
+                                                </button>
                                             ))}
                                         </>
                                     )}
@@ -417,11 +423,11 @@ export default function AppHeader({
                                         <>
                                             <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Productos</div>
                                             {searchResults.results.slice(0, 6).map((p: any) => (
-                                                <Link
+                                                <button
                                                     key={p.id}
-                                                    href={`/productos/${p.slug}`}
-                                                    onClick={closeSearch}
-                                                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50"
+                                                    type="button"
+                                                    onClick={() => navigateAndClose(`/productos/${p.slug}`)}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
                                                 >
                                                     {p.images?.[0]?.url ? (
                                                         <img src={p.images[0].url} alt="" className="w-10 h-10 rounded-xl object-cover" />
@@ -435,17 +441,17 @@ export default function AppHeader({
                                                         <p className="text-sm font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
                                                     </div>
                                                     <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                                                </Link>
+                                                </button>
                                             ))}
                                         </>
                                     )}
-                                    <Link
-                                        href={`/buscar?q=${encodeURIComponent(searchQuery.trim())}`}
-                                        onClick={closeSearch}
-                                        className="block px-4 py-4 text-center text-sm font-semibold text-[#e60012] hover:bg-gray-50 transition"
+                                    <button
+                                        type="button"
+                                        onClick={() => navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)}
+                                        className="w-full px-4 py-4 text-center text-sm font-semibold text-[#e60012] hover:bg-gray-50 transition"
                                     >
                                         Ver todos los resultados
-                                    </Link>
+                                    </button>
                                 </>
                             ) : (
                                 <div className="p-8 text-center">

@@ -1,20 +1,45 @@
 // Product Detail Page - Server Component with SEO metadata + JSON-LD
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { normalizeSlug } from "@/lib/slugify";
 import ProductDetailClient from "./ProductDetailClient";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.somosmoovy.com";
 
-async function getProduct(slug: string) {
+const includeOpts = {
+    categories: { include: { category: true } } as const,
+    images: { orderBy: { order: "asc" as const }, take: 4 },
+    merchant: { select: { name: true, slug: true } },
+};
+
+async function getProduct(rawSlug: string) {
+    const decoded = decodeURIComponent(rawSlug);
+
     try {
-        return await prisma.product.findFirst({
-            where: { slug, isActive: true },
-            include: {
-                categories: { include: { category: true } },
-                images: { orderBy: { order: "asc" }, take: 4 },
-                merchant: { select: { name: true, slug: true } },
-            },
+        // 1. Exact match
+        let product = await prisma.product.findFirst({
+            where: { slug: decoded, isActive: true },
+            include: includeOpts,
         });
+
+        // 2. Normalized (accent-stripped)
+        if (!product) {
+            const normalized = normalizeSlug(decoded);
+            product = await prisma.product.findFirst({
+                where: { slug: normalized, isActive: true },
+                include: includeOpts,
+            });
+        }
+
+        // 3. startsWith fallback for truncated slugs (e.g. accented chars split by ?)
+        if (!product) {
+            product = await prisma.product.findFirst({
+                where: { slug: { startsWith: decoded }, isActive: true },
+                include: includeOpts,
+            });
+        }
+
+        return product;
     } catch {
         return null;
     }

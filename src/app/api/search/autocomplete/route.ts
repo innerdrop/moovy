@@ -79,7 +79,7 @@ export async function GET(request: Request) {
                 id: p.id,
                 label: p.name,
                 image: p.images[0]?.url || null,
-                href: `/productos/${p.slug}`,
+                href: `/productos/${encodeURIComponent(p.slug)}`,
                 extra: p.merchant?.name || null,
                 price: Number(p.price),
             })),

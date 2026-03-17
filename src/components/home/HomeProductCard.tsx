@@ -45,7 +45,7 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
 
     return (
         <div className="group border border-gray-100 rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow">
-            <Link href={`/productos/${product.slug}`}>
+            <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {image ? (
                         <img
@@ -82,7 +82,7 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
                 {merchantName && (
                     <p className="text-[10px] text-gray-400 font-medium mb-0.5 truncate">{merchantName}</p>
                 )}
-                <Link href={`/productos/${product.slug}`}>
+                <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
                     <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#e60012] transition line-clamp-2 leading-tight mb-1">
                         {product.name}
                     </h3>

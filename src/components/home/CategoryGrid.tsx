@@ -18,28 +18,29 @@ interface CategoryGridProps {
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
-    const autoScrolling = useRef(true);
+    const isPaused = useRef(false);
     const rafId = useRef(0);
     const prevTime = useRef(0);
     const resumeTimer = useRef<ReturnType<typeof setTimeout>>(null);
-    const [mounted, setMounted] = useState(false);
+    const [ready, setReady] = useState(false);
 
-    // Wait for mount so scrollWidth is real
     useEffect(() => {
-        setMounted(true);
-    }, []);
+        if (categories.length === 0) return;
+        const t = setTimeout(() => setReady(true), 300);
+        return () => clearTimeout(t);
+    }, [categories.length]);
 
     const tick = useCallback((now: number) => {
         const el = scrollRef.current;
-        if (el && autoScrolling.current) {
-            const half = el.scrollWidth / 2;
-            // Only auto-scroll if there's enough content to scroll
-            if (half > el.clientWidth) {
+        if (el && !isPaused.current) {
+            const maxScroll = el.scrollWidth - el.clientWidth;
+            if (maxScroll > 0) {
                 if (prevTime.current) {
-                    const dt = Math.min(now - prevTime.current, 50); // cap delta to prevent jumps
-                    el.scrollLeft += (20 * dt) / 1000; // 20px/s
-                    if (el.scrollLeft >= half) {
-                        el.scrollLeft -= half;
+                    const dt = Math.min(now - prevTime.current, 50);
+                    el.scrollLeft += (22 * dt) / 1000;
+                    // Al llegar al final, volver al inicio
+                    if (el.scrollLeft >= maxScroll) {
+                        el.scrollLeft = 0;
                     }
                 }
                 prevTime.current = now;
@@ -51,19 +52,13 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     }, []);
 
     useEffect(() => {
-        if (!mounted || categories.length === 0) return;
-        // Small delay to ensure layout is settled
-        const startTimer = setTimeout(() => {
-            rafId.current = requestAnimationFrame(tick);
-        }, 500);
-        return () => {
-            clearTimeout(startTimer);
-            cancelAnimationFrame(rafId.current);
-        };
-    }, [mounted, categories.length, tick]);
+        if (!ready) return;
+        rafId.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId.current);
+    }, [ready, tick]);
 
     const pause = useCallback(() => {
-        autoScrolling.current = false;
+        isPaused.current = true;
         prevTime.current = 0;
         if (resumeTimer.current) clearTimeout(resumeTimer.current);
     }, []);
@@ -72,14 +67,11 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         if (resumeTimer.current) clearTimeout(resumeTimer.current);
         resumeTimer.current = setTimeout(() => {
             prevTime.current = 0;
-            autoScrolling.current = true;
+            isPaused.current = false;
         }, 3000);
     }, []);
 
     if (categories.length === 0) return null;
-
-    // Duplicate items for seamless infinite scroll
-    const items = [...categories, ...categories];
 
     return (
         <>
@@ -96,9 +88,9 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 onMouseLeave={resume}
             >
                 <div className="flex gap-2 w-max">
-                    {items.map((cat, idx) => (
+                    {categories.map((cat) => (
                         <Link
-                            key={`${cat.id}-${idx}`}
+                            key={cat.id}
                             href={`/productos?categoria=${cat.slug}`}
                             className="flex-shrink-0 group"
                         >

@@ -181,7 +181,7 @@ export default function HeroStatic({ totalDelivered = 0, activeMerchants = 0 }: 
             </div>
 
             {/* === CONTENT (outside overflow-hidden so dropdown is visible) === */}
-            <div className="relative z-10 container mx-auto px-4 pt-10 pb-24 md:pt-14 md:pb-28 lg:pt-20 lg:pb-32">
+            <div className="relative z-10 container mx-auto px-4 pt-8 pb-16 md:pt-12 md:pb-20 lg:pt-16 lg:pb-24">
                 <div className="lg:flex lg:items-center lg:justify-between">
                     <div className="max-w-2xl mx-auto lg:mx-0">
 
@@ -212,7 +212,7 @@ export default function HeroStatic({ totalDelivered = 0, activeMerchants = 0 }: 
                             <form onSubmit={handleSubmit}>
                                 {/* Glow */}
                                 <div className="absolute -inset-1 bg-white/20 rounded-3xl blur-lg" />
-                                <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-black/25 overflow-hidden">
+                                <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-black/25">
                                     <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
                                     <input
                                         ref={inputRef}
@@ -222,18 +222,18 @@ export default function HeroStatic({ totalDelivered = 0, activeMerchants = 0 }: 
                                         onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
                                         onKeyDown={handleKeyDown}
                                         placeholder="¿Qué querés pedir?"
-                                        className="flex-1 px-3 py-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent font-medium"
+                                        className="flex-1 min-w-0 px-3 py-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent font-medium"
                                         autoComplete="off"
                                     />
                                     {query.length > 0 && (
-                                        <button type="button" onClick={handleClear} className="p-2 mr-1 text-gray-400 hover:text-gray-600 transition">
+                                        <button type="button" onClick={handleClear} className="p-1.5 mr-0.5 text-gray-400 hover:text-gray-600 transition flex-shrink-0">
                                             <X className="w-4 h-4" />
                                         </button>
                                     )}
                                     {query.length >= 2 && (
                                         <button
                                             type="submit"
-                                            className="bg-[#e60012] text-white px-5 py-2.5 mr-1.5 rounded-xl text-sm font-bold hover:bg-[#cc000f] transition-colors"
+                                            className="bg-[#e60012] text-white px-3 sm:px-5 py-2 sm:py-2.5 mr-1.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-[#cc000f] transition-colors flex-shrink-0 whitespace-nowrap"
                                         >
                                             Buscar
                                         </button>

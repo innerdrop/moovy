@@ -54,7 +54,7 @@ export default function ProductDetailClient() {
     useEffect(() => {
         async function fetchProduct() {
             try {
-                const response = await fetch(`/api/products/${slug}`);
+                const response = await fetch(`/api/products/${encodeURIComponent(slug)}`);
                 if (response.ok) {
                     const data = await response.json();
                     setProduct(data);
