@@ -208,36 +208,41 @@ export default function HeroStatic({
             backgroundSize: "128px 128px",
           }}
         />
-        {/* === WAVE: Double-wave organic transition === */}
-        <div
-          className="absolute -bottom-px left-0 right-0 z-20"
-          style={{ lineHeight: 0 }}
+      </div>
+
+      {/* === WAVE: outside overflow-hidden so it renders cleanly === */}
+      <div
+        className="absolute left-0 right-0 bottom-0 pointer-events-none"
+        style={{ zIndex: 5, lineHeight: 0 }}
+      >
+        {/* Semi-transparent wave */}
+        <svg
+          viewBox="0 0 1440 100"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full block absolute bottom-0"
+          preserveAspectRatio="none"
+          style={{ height: "55px" }}
         >
-          <svg
-            viewBox="0 0 1440 100"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full block absolute bottom-0"
-            preserveAspectRatio="none"
-            style={{ height: "55px" }}
-          >
-            <path
-              d="M0 45C180 85 360 15 540 50C720 85 900 20 1080 55C1260 90 1380 35 1440 60V100H0Z"
-              fill="rgba(255,255,255,0.4)"
-            />
-          </svg>
-          <svg
-            viewBox="0 0 1440 100"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full block relative"
-            preserveAspectRatio="none"
-            style={{ height: "50px" }}
-          >
-            <path
-              d="M0 55C200 95 440 10 720 60C1000 110 1240 25 1440 70V100H0Z"
-              fill="#ffffff"
-            />
-          </svg>
-        </div>
+          <path
+            d="M0 45C180 85 360 15 540 50C720 85 900 20 1080 55C1260 90 1380 35 1440 60V100H0Z"
+            fill="rgba(255,255,255,0.4)"
+          />
+        </svg>
+        {/* Solid white wave — covers bottom completely */}
+        <svg
+          viewBox="0 0 1440 100"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full block relative"
+          preserveAspectRatio="none"
+          style={{ height: "50px" }}
+        >
+          <path
+            d="M0 55C200 95 440 10 720 60C1000 110 1240 25 1440 70V100H0Z"
+            fill="#ffffff"
+          />
+        </svg>
+        {/* White bar to guarantee no red line leaks at the very bottom */}
+        <div className="h-1 bg-white w-full" />
       </div>
 
       {/* === CONTENT (outside overflow-hidden so dropdown is visible) === */}
@@ -289,13 +294,13 @@ export default function HeroStatic({
               {/* Person image — behind the search bar, "holding" it */}
               <div
                 className="absolute -top-[150px] sm:-top-[180px] md:-top-[210px] lg:-top-[250px] -right-[30px] sm:-right-[40px] md:-right-[20px] lg:-right-[60px] pointer-events-none select-none"
-                style={{ zIndex: -1 }}
+                style={{ zIndex: 1 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/hero-person.png"
                   alt="Persona usando MOOVY"
-                  className="h-[300px] sm:h-[330px] md:h-[380px] lg:h-[460px] w-auto object-contain"
+                  className="h-[255px] sm:h-[330px] md:h-[380px] lg:h-[460px] w-auto object-contain"
                   style={{
                     filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.25))",
                   }}
