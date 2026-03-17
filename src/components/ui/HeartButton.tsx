@@ -37,7 +37,7 @@ export default function HeartButton({ type, itemId, className = "" }: HeartButto
 
         setAnimating(true);
         await toggleFavorite(type, itemId);
-        setTimeout(() => setAnimating(false), 300);
+        setTimeout(() => setAnimating(false), 450);
     };
 
     return (
@@ -48,7 +48,7 @@ export default function HeartButton({ type, itemId, className = "" }: HeartButto
                 bg-white/90 backdrop-blur-sm shadow-sm
                 transition-all duration-200
                 hover:scale-110 active:scale-95
-                ${animating ? "scale-125" : ""}
+                ${animating ? "mp-heart-bounce" : ""}
                 ${className}
             `}
             aria-label={favorited ? "Quitar de favoritos" : "Agregar a favoritos"}

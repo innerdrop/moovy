@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Star, Tag, Plus, Check } from "lucide-react";
+import { Star, Tag, Plus, Check, ShieldCheck, Sparkles } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
 import HeartButton from "@/components/ui/HeartButton";
@@ -26,17 +26,34 @@ interface ListingCardProps {
             displayName: string | null;
             rating: number | null;
             avatar: string | null;
+            isVerified?: boolean;
             availability?: SellerAvailability | null;
         };
         category?: { name: string } | null;
     };
     showAddButton?: boolean;
+    /** "marketplace" applies purple accent; default keeps red */
+    variant?: "default" | "marketplace";
 }
 
+/* ── Default condition badges (store variant) ── */
 const conditionBadge: Record<string, { text: string; bg: string }> = {
     NUEVO: { text: "Nuevo", bg: "bg-green-100 text-green-700" },
     USADO: { text: "Usado", bg: "bg-orange-100 text-orange-700" },
     REACONDICIONADO: { text: "Reacondi.", bg: "bg-blue-100 text-blue-700" },
+};
+
+/* ── Marketplace condition badges (violet glass) ── */
+const mpConditionBadge: Record<string, string> = {
+    NUEVO: "mp-badge-nuevo",
+    USADO: "mp-badge-usado",
+    REACONDICIONADO: "mp-badge-reacondicionado",
+};
+
+const conditionLabel: Record<string, string> = {
+    NUEVO: "Nuevo",
+    USADO: "Usado",
+    REACONDICIONADO: "Reacondi.",
 };
 
 function getAvailabilityBadge(availability?: SellerAvailability | null) {
@@ -66,9 +83,11 @@ function getAvailabilityBadge(availability?: SellerAvailability | null) {
     };
 }
 
-export default function ListingCard({ listing, showAddButton = false }: ListingCardProps) {
+export default function ListingCard({ listing, showAddButton = false, variant = "default" }: ListingCardProps) {
     const addItem = useCartStore((s) => s.addItem);
     const [added, setAdded] = useState(false);
+    const [cartPop, setCartPop] = useState(false);
+    const isMp = variant === "marketplace";
 
     const cond = conditionBadge[listing.condition] || {
         text: listing.condition,
@@ -93,13 +112,146 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
         });
 
         setAdded(true);
+        setCartPop(true);
+        setTimeout(() => setCartPop(false), 350);
         setTimeout(() => setAdded(false), 1500);
     };
 
+    /* ════════════════════════════════════════════════
+       MARKETPLACE VARIANT — Violet Premium Card
+       ════════════════════════════════════════════════ */
+    if (isMp) {
+        const mpBadgeClass = mpConditionBadge[listing.condition] || "mp-badge-usado";
+        const mpBadgeLabel = conditionLabel[listing.condition] || listing.condition;
+
+        return (
+            <Link
+                href={`/marketplace/${listing.id}`}
+                className="mp-card-glow block h-full"
+            >
+                <div className="mp-glass rounded-2xl overflow-hidden h-full flex flex-col border border-purple-100/60">
+                    {/* ── Image Section ── */}
+                    <div className="aspect-square bg-gradient-to-br from-purple-50 to-violet-50 relative overflow-hidden group">
+                        {listing.images?.[0]?.url ? (
+                            <img
+                                src={listing.images[0].url}
+                                alt={listing.title}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <Tag className="w-10 h-10 text-purple-200" />
+                            </div>
+                        )}
+
+                        {/* Gradient overlay bottom for readability */}
+                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+
+                        {/* Condition Badge — glass violet style */}
+                        <span className={`absolute top-2 left-2 ${mpBadgeClass}`}>
+                            {mpBadgeLabel}
+                        </span>
+
+                        {/* Heart */}
+                        <HeartButton type="listing" itemId={listing.id} className="absolute top-2 right-2" />
+
+                        {/* Verified sparkle overlay */}
+                        {listing.seller?.isVerified && (
+                            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-sm">
+                                <ShieldCheck className="w-3 h-3 text-violet-600" />
+                                <span className="text-[9px] font-bold text-violet-700">Verificado</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Info Section ── */}
+                    <div className="p-3 flex-1 flex flex-col gap-1.5">
+                        {/* Title */}
+                        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-snug group-hover:text-violet-700 transition-colors">
+                            {listing.title}
+                        </h3>
+
+                        {/* Seller row */}
+                        <div
+                            className="flex items-center gap-1.5 transition cursor-pointer group/seller"
+                            onClick={(e) => {
+                                if (listing.seller?.id) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.location.href = `/marketplace/vendedor/${listing.seller.id}`;
+                                }
+                            }}
+                        >
+                            {listing.seller?.avatar ? (
+                                <img
+                                    src={listing.seller.avatar}
+                                    alt=""
+                                    className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-200"
+                                />
+                            ) : (
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-violet-200 flex items-center justify-center">
+                                    <span className="text-[9px] font-bold text-purple-600">
+                                        {listing.seller?.displayName?.charAt(0) || "V"}
+                                    </span>
+                                </div>
+                            )}
+                            <span className="text-xs text-gray-500 truncate group-hover/seller:text-violet-600 transition-colors">
+                                {listing.seller?.displayName || "Vendedor"}
+                            </span>
+                            {listing.seller?.rating && (
+                                <span className="flex items-center gap-0.5 text-[11px] text-amber-600 ml-auto">
+                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                    {listing.seller.rating.toFixed(1)}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Availability badge */}
+                        {(() => {
+                            const badge = getAvailabilityBadge(listing.seller?.availability);
+                            if (!badge) return null;
+                            return (
+                                <div className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full w-fit ${badge.bg}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${badge.dot === "bg-green-500" ? "mp-pulse-dot" : ""}`} />
+                                    {badge.text}
+                                </div>
+                            );
+                        })()}
+
+                        {/* Spacer */}
+                        <div className="flex-1" />
+
+                        {/* Price + Add to cart */}
+                        <div className="flex items-center justify-between mt-1 pt-2 border-t border-purple-50">
+                            <p className="mp-gradient-text text-lg font-extrabold tracking-tight">
+                                ${listing.price.toLocaleString("es-AR")}
+                            </p>
+                            {showAddButton && (
+                                <button
+                                    onClick={handleAddToCart}
+                                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 shadow-sm ${cartPop ? "mp-cart-pop" : ""} ${
+                                        added
+                                            ? "bg-green-500 text-white shadow-green-200"
+                                            : "bg-gradient-to-br from-purple-50 to-violet-100 text-[#7C3AED] border border-purple-200/60 hover:from-[#7C3AED] hover:to-[#6D28D9] hover:text-white hover:border-transparent hover:shadow-purple-300/40 hover:shadow-md active:scale-90"
+                                    }`}
+                                >
+                                    {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </Link>
+        );
+    }
+
+    /* ════════════════════════════════════════════════
+       DEFAULT VARIANT — Store (red accent, unchanged)
+       ════════════════════════════════════════════════ */
     return (
         <Link
             href={`/marketplace/${listing.id}`}
-            className="card overflow-hidden group bg-white border border-gray-100 rounded-xl block h-full flex flex-col relative"
+            className="card overflow-hidden group bg-white border border-gray-100 rounded-xl block h-full flex flex-col relative transition-all duration-200"
         >
             {/* Image */}
             <div className="aspect-square bg-gray-100 relative overflow-hidden">
@@ -127,7 +279,7 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
 
             {/* Info */}
             <div className="p-3 flex-1 flex flex-col">
-                <h3 className="font-semibold text-gray-800 text-sm group-hover:text-[#e60012] transition line-clamp-2 mb-1">
+                <h3 className="font-semibold text-gray-800 text-sm transition line-clamp-2 mb-1 group-hover:text-[#e60012]">
                     {listing.title}
                 </h3>
 
@@ -158,6 +310,9 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                     <span className="text-xs text-gray-500 truncate group-hover/seller:text-emerald-600">
                         {listing.seller?.displayName || "Vendedor"}
                     </span>
+                    {listing.seller?.isVerified && (
+                        <ShieldCheck className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                    )}
                     {listing.seller?.rating && (
                         <span className="flex items-center gap-0.5 text-xs text-amber-600">
                             <Star className="w-3 h-3 fill-current" />
@@ -186,7 +341,7 @@ export default function ListingCard({ listing, showAddButton = false }: ListingC
                     {showAddButton && (
                         <button
                             onClick={handleAddToCart}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm ${
+                            className={`w-8 h-8 flex items-center justify-center rounded-full transition shadow-sm ${cartPop ? "mp-cart-pop" : ""} ${
                                 added
                                     ? "bg-green-500 text-white"
                                     : "bg-gray-100 text-gray-600 hover:bg-[#e60012] hover:text-white"

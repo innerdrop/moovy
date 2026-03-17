@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
@@ -10,18 +10,23 @@ import {
     Package,
     MapPin,
     Clock,
-    User,
     Phone,
     CheckCircle,
     XCircle,
     Loader2,
     Store,
-    Receipt,
     Star,
     RefreshCw,
     Calendar,
     CreditCard,
-    Truck
+    Truck,
+    Banknote,
+    Share2,
+    HelpCircle,
+    AlertTriangle,
+    MessageCircle,
+    X,
+    ChevronRight
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
@@ -30,9 +35,10 @@ import dynamic from "next/dynamic";
 
 const OrderTrackingMiniMap = dynamic(() => import("@/components/orders/OrderTrackingMiniMap"), {
     ssr: false,
-    loading: () => <div className="h-[220px] bg-gray-100 rounded-xl animate-pulse" />,
+    loading: () => <div className="h-[200px] bg-gray-100 rounded-xl animate-pulse" />,
 });
 
+// ─── Types ────────────────────────────────────────────────
 interface OrderDetail {
     id: string;
     orderNumber: string;
@@ -74,10 +80,7 @@ interface OrderDetail {
         id: string;
         latitude?: number;
         longitude?: number;
-        user: {
-            name: string;
-            phone?: string;
-        };
+        user: { name: string; phone?: string };
     };
     driverRating?: number;
     ratingComment?: string;
@@ -88,25 +91,29 @@ interface OrderDetail {
     subOrders?: Array<{
         id: string;
         sellerId?: string;
-        seller?: {
-            id: string;
-            displayName?: string;
-        };
+        seller?: { id: string; displayName?: string };
     }>;
 }
 
-const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
-    PENDING: { label: "Pendiente", color: "text-yellow-600", bgColor: "bg-yellow-100", icon: <Clock className="w-5 h-5" /> },
-    CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
-    PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-5 h-5" /> },
-    READY: { label: "Listo para retirar", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
-    DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-cyan-600", bgColor: "bg-cyan-100", icon: <Truck className="w-5 h-5" /> },
-    PICKED_UP: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
-    IN_DELIVERY: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
-    DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
-    CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
-};
+// ─── Timeline steps ───────────────────────────────────────
+const timeline = [
+    { key: "PENDING", label: "Pedido recibido", icon: Clock },
+    { key: "CONFIRMED", label: "Confirmado por el comercio", icon: CheckCircle },
+    { key: "PREPARING", label: "Preparando tu pedido", icon: Package },
+    { key: "READY", label: "Listo para retirar", icon: Package },
+    { key: "DRIVER_ASSIGNED", label: "Repartidor en camino al local", icon: Truck },
+    { key: "PICKED_UP", label: "Pedido retirado", icon: Truck },
+    { key: "IN_DELIVERY", label: "En camino a tu domicilio", icon: Truck },
+    { key: "DELIVERED", label: "Entregado", icon: CheckCircle },
+];
 
+// ─── Helpers ──────────────────────────────────────────────
+function paymentLabel(m: string) {
+    const map: Record<string, string> = { CASH: "Efectivo", cash: "Efectivo", CARD: "Tarjeta", card: "Tarjeta", TRANSFER: "Transferencia", transfer: "Transferencia", mercadopago: "MercadoPago" };
+    return map[m] || m || "No especificado";
+}
+
+// ─── Component ────────────────────────────────────────────
 export default function OrderDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -118,241 +125,335 @@ export default function OrderDetailPage() {
     const [isReordering, setIsReordering] = useState(false);
     const [showMerchantRating, setShowMerchantRating] = useState(false);
     const [showSellerRating, setShowSellerRating] = useState(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
 
+    // Fetch order
     useEffect(() => {
-        async function loadOrder() {
+        if (!orderId) return;
+        (async () => {
             try {
                 const res = await fetch(`/api/orders/${orderId}`);
                 if (!res.ok) throw new Error("Pedido no encontrado");
-                const data = await res.json();
-                setOrder(data);
+                setOrder(await res.json());
             } catch (e: unknown) {
                 setError(e instanceof Error ? e.message : "Error desconocido");
             } finally {
                 setLoading(false);
             }
-        }
-
-        if (orderId) loadOrder();
+        })();
     }, [orderId]);
 
-    // Poll for status updates on active orders
-    const isActiveOrder = order && !["DELIVERED", "CANCELLED"].includes(order.status);
+    // Poll active orders
+    const isActive = order && !["DELIVERED", "CANCELLED"].includes(order.status);
     useEffect(() => {
-        if (!isActiveOrder || !orderId) return;
-        const interval = setInterval(async () => {
+        if (!isActive || !orderId) return;
+        const id = setInterval(async () => {
             try {
                 const res = await fetch(`/api/orders/${orderId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setOrder(data);
-                }
-            } catch {}
+                if (res.ok) setOrder(await res.json());
+            } catch { /* silent */ }
         }, 10000);
-        return () => clearInterval(interval);
-    }, [isActiveOrder, orderId]);
+        return () => clearInterval(id);
+    }, [isActive, orderId]);
 
+    const canCancel = order && ["PENDING", "CONFIRMED"].includes(order.status);
+    const isDelivered = order?.status === "DELIVERED";
+    const isCancelled = order?.status === "CANCELLED";
+    const showMap = isActive && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status || "");
+
+    const currentStepIdx = useMemo(() => {
+        if (!order) return -1;
+        return timeline.findIndex(s => s.key === order.status);
+    }, [order]);
+
+    // ─── Actions ──────────────────────────────────────────
     const handleReorder = async () => {
         if (!order) return;
         setIsReordering(true);
-
         try {
             const res = await fetch("/api/cart/reorder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId: order.id })
+                body: JSON.stringify({ orderId: order.id }),
             });
-
             const data = await res.json();
-
             if (res.ok) {
-                // UPDATE FRONTEND STORE
-                useCartStore.setState({
-                    items: data.items,
-                });
-
+                useCartStore.setState({ items: data.items });
                 router.push("/carrito");
             } else {
-                // Show specific error from server (e.g. unavailable products)
                 toast.error(data.error || "No se pudo repetir el pedido");
-
-                // If it's not a business logic error (like unavailable items),
-                // but something else, optional redirect as secondary fallback
-                if (res.status !== 400 && order.merchant?.id) {
-                    router.push(`/comercio/${order.merchant.id}`);
-                }
+                if (res.status !== 400 && order.merchant?.id) router.push(`/comercio/${order.merchant.id}`);
             }
-        } catch (err) {
-            console.error("[Reorder Front] Error:", err);
-            toast.error("Ocurrió un error al intentar repetir el pedido");
-            if (order?.merchant?.id) {
-                router.push(`/comercio/${order.merchant.id}`);
-            }
+        } catch {
+            toast.error("Error al repetir el pedido");
+            if (order?.merchant?.id) router.push(`/comercio/${order.merchant.id}`);
         } finally {
             setIsReordering(false);
         }
     };
 
+    const handleCancel = async () => {
+        if (!order) return;
+        setIsCancelling(true);
+        try {
+            const res = await fetch(`/api/orders/${order.id}`, { method: "DELETE" });
+            if (res.ok) {
+                toast.success("Pedido cancelado");
+                setOrder(prev => prev ? { ...prev, status: "CANCELLED" } : null);
+                setShowCancelModal(false);
+            } else {
+                const data = await res.json();
+                toast.error(data.error || "No se pudo cancelar");
+            }
+        } catch {
+            toast.error("Error al cancelar");
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    const handleShare = () => {
+        if (!order) return;
+        const step = timeline.find(s => s.key === order.status);
+        const text = `Mi pedido #${order.orderNumber} de ${order.merchant?.name || "MOOVY"} — ${step?.label || order.status}`;
+        const url = `${window.location.origin}/mis-pedidos/${order.id}`;
+        if (navigator.share) {
+            navigator.share({ title: `Pedido #${order.orderNumber}`, text, url }).catch(() => { });
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, "_blank");
+        }
+    };
+
+    // ─── Loading ──────────────────────────────────────────
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="text-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-[#e60012] mx-auto mb-4" />
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Cargando pedido...</p>
+            <div className="min-h-screen bg-gray-50">
+                <div className="bg-white border-b px-4 py-4 flex items-center gap-3">
+                    <div className="w-9 h-9 bg-gray-100 rounded-full animate-pulse" />
+                    <div className="flex-1">
+                        <div className="h-4 w-36 bg-gray-200 rounded animate-pulse mb-1.5" />
+                        <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                    </div>
+                </div>
+                <div className="container mx-auto px-4 pt-5 space-y-4">
+                    <div className="h-24 bg-white rounded-xl border border-gray-100 animate-pulse" />
+                    <div className="h-48 bg-white rounded-xl border border-gray-100 animate-pulse" />
+                    <div className="h-64 bg-white rounded-xl border border-gray-100 animate-pulse" />
                 </div>
             </div>
         );
     }
 
+    // ─── Error ────────────────────────────────────────────
     if (error || !order) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white">
-                <XCircle className="w-16 h-16 text-red-500 mb-4" />
-                <h1 className="text-xl font-bold mb-2">Pedido no encontrado</h1>
-                <p className="text-gray-500 mb-8">{error}</p>
-                <button
-                    onClick={() => router.back()}
-                    className="px-8 py-3 bg-gray-900 text-white font-bold rounded-xl"
-                >
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                    <XCircle className="w-8 h-8 text-red-400" />
+                </div>
+                <h1 className="text-xl font-black text-gray-900 mb-1">Pedido no encontrado</h1>
+                <p className="text-gray-400 text-sm mb-6 text-center max-w-xs">{error}</p>
+                <button onClick={() => router.back()} className="px-6 py-2.5 bg-[#e60012] hover:bg-[#cc000f] text-white rounded-xl font-bold text-sm transition-colors">
                     Volver
                 </button>
             </div>
         );
     }
 
-    const status = statusConfig[order.status] || statusConfig.DELIVERED;
     const orderDate = new Date(order.createdAt);
-    const deliveredDate = order.deliveredAt ? new Date(order.deliveredAt) : orderDate;
+    const deliveredDate = order.deliveredAt ? new Date(order.deliveredAt) : null;
 
     return (
         <div className="min-h-screen bg-gray-50 pb-32">
-            {/* Header */}
-            <div className="bg-white sticky top-0 z-30 border-b">
-                <div className="flex items-center gap-4 p-4">
+            {/* ── Header ── */}
+            <div className="bg-white sticky top-0 z-30 border-b border-gray-100">
+                <div className="container mx-auto px-4 py-3 flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition"
+                        className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition active:scale-95"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-4 h-4 text-gray-700" />
                     </button>
-                    <div className="flex-1">
-                        <h1 className="text-lg font-black italic tracking-tighter text-gray-900 uppercase">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-base font-bold text-gray-900 truncate">
                             Pedido #{order.orderNumber}
                         </h1>
-                        <p className="text-xs text-gray-400 font-medium">
-                            {orderDate.toLocaleDateString("es-AR", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric"
-                            })}
+                        <p className="text-xs text-gray-400">
+                            {orderDate.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
                         </p>
                     </div>
+                    <button onClick={handleShare} className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition active:scale-95">
+                        <Share2 className="w-4 h-4 text-gray-600" />
+                    </button>
                 </div>
             </div>
 
-            <div className="p-4 space-y-4">
-                {/* Status Banner */}
-                <div className={`${status.bgColor} rounded-2xl p-4 flex items-center gap-4`}>
-                    <div className={`w-12 h-12 bg-white/50 rounded-xl flex items-center justify-center ${status.color}`}>
-                        {status.icon}
+            <div className="container mx-auto px-4 pt-5 space-y-4">
+
+                {/* ── Status Hero ── */}
+                <div className={`rounded-xl p-4 ${isCancelled ? "bg-gray-100" : isDelivered ? "bg-green-50" : "bg-gradient-to-r from-red-50 to-orange-50"}`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isCancelled ? "bg-white text-gray-400" : isDelivered ? "bg-white text-green-500" : "bg-white/80 text-[#e60012]"} shadow-sm`}>
+                            {isCancelled ? <XCircle className="w-6 h-6" /> : isDelivered ? <CheckCircle className="w-6 h-6" /> : currentStepIdx >= 0 ? (() => { const Icon = timeline[currentStepIdx].icon; return <Icon className="w-6 h-6" />; })() : <Package className="w-6 h-6" />}
+                        </div>
+                        <div className="flex-1">
+                            <p className={`font-bold text-sm ${isCancelled ? "text-gray-500" : isDelivered ? "text-green-700" : "text-gray-900"}`}>
+                                {isCancelled ? "Pedido cancelado" : currentStepIdx >= 0 ? timeline[currentStepIdx].label : order.status}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                {isDelivered && deliveredDate
+                                    ? `${deliveredDate.toLocaleDateString("es-AR", { day: "numeric", month: "long" })} a las ${deliveredDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                                    : isActive
+                                        ? "Actualizando en tiempo real"
+                                        : isCancelled
+                                            ? "Este pedido fue cancelado"
+                                            : ""}
+                            </p>
+                        </div>
+                        {order.driverRating && (
+                            <div className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-full shadow-sm">
+                                <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs font-bold">{order.driverRating}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="flex-1">
-                        <p className={`font-black uppercase tracking-widest text-sm ${status.color}`}>
-                            {status.label}
-                        </p>
-                        <p className="text-xs text-gray-600 font-medium">
-                            {deliveredDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                            {" - "}
-                            {deliveredDate.toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
-                        </p>
-                    </div>
-                    {order.driverRating && (
-                        <div className="flex items-center gap-1 bg-white/70 px-3 py-1.5 rounded-full">
-                            <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
-                            <span className="font-bold text-sm">{order.driverRating}</span>
+
+                    {/* Progress bar */}
+                    {isActive && currentStepIdx >= 0 && (
+                        <div className="flex gap-0.5 h-1 mt-3">
+                            {timeline.map((_, i) => (
+                                <div key={i} className={`flex-1 rounded-full transition-all duration-700 ${i <= currentStepIdx ? "bg-[#e60012]" : "bg-black/5"}`} />
+                            ))}
                         </div>
                     )}
                 </div>
 
-                {/* Live Tracking Map — show for active orders with driver */}
-                {isActiveOrder && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order.status) && (
-                    <OrderTrackingMiniMap
-                        orderId={order.id}
-                        orderStatus={order.status}
-                        merchantLat={order.merchant?.latitude}
-                        merchantLng={order.merchant?.longitude}
-                        merchantName={order.merchant?.name}
-                        customerLat={order.address?.latitude}
-                        customerLng={order.address?.longitude}
-                        customerAddress={`${order.address.street} ${order.address.number}`}
-                        initialDriverLat={order.driver?.latitude}
-                        initialDriverLng={order.driver?.longitude}
-                        height="220px"
-                        showEta
-                    />
-                )}
+                {/* ── Timeline ── */}
+                {!isCancelled && (
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <p className="text-xs font-semibold text-gray-400 mb-4">PROGRESO</p>
+                        <div className="relative">
+                            {timeline.map((step, idx) => {
+                                const Icon = step.icon;
+                                const done = idx <= currentStepIdx;
+                                const current = idx === currentStepIdx;
+                                const last = idx === timeline.length - 1;
 
-                {/* Merchant Info */}
-                {order.merchant && (
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                <Store className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Comercio</p>
-                                <p className="font-bold text-gray-900">{order.merchant.name}</p>
-                                {order.merchant.address && (
-                                    <p className="text-xs text-gray-500">{order.merchant.address}</p>
-                                )}
-                            </div>
-                            {/* Rate Merchant Button */}
-                            {(order.status === "DELIVERED" || order.status === "COMPLETED") && !order.merchantRating && (
-                                <button
-                                    onClick={() => setShowMerchantRating(true)}
-                                    className="ml-auto px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition flex items-center gap-1"
-                                >
-                                    <Star className="w-3.5 h-3.5" />
-                                    Calificar
-                                </button>
-                            )}
-                            {order.merchantRating && (
-                                <div className="ml-auto flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg">
-                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                                    <span className="text-xs font-bold text-gray-700">{order.merchantRating}</span>
-                                </div>
-                            )}
+                                return (
+                                    <div key={step.key} className="flex gap-3 relative">
+                                        {/* Line */}
+                                        {!last && (
+                                            <div className={`absolute left-[15px] top-[30px] w-0.5 h-[calc(100%-6px)] ${done ? "bg-[#e60012]/20" : "bg-gray-100"}`} />
+                                        )}
+                                        {/* Dot */}
+                                        <div className={`relative z-10 w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0 transition-all ${current
+                                            ? "bg-[#e60012] text-white shadow-md shadow-red-500/20 scale-110"
+                                            : done
+                                                ? "bg-[#e60012]/10 text-[#e60012]"
+                                                : "bg-gray-100 text-gray-300"
+                                            }`}>
+                                            <Icon className="w-3.5 h-3.5" />
+                                        </div>
+                                        {/* Text */}
+                                        <div className={`pb-5 ${!done ? "opacity-30" : ""}`}>
+                                            <p className={`text-sm ${current ? "font-bold text-gray-900" : done ? "font-medium text-gray-700" : "font-medium text-gray-400"}`}>
+                                                {step.label}
+                                            </p>
+                                            {current && (
+                                                <p className="text-[11px] text-gray-400 mt-0.5">
+                                                    {new Date(order.updatedAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
 
-                {/* Seller Info (Marketplace) */}
-                {order.subOrders?.some(so => so.seller) && (
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                                <Star className="w-6 h-6 text-purple-600" />
+                {/* ── Map ── */}
+                {showMap && (
+                    <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                        <OrderTrackingMiniMap
+                            orderId={order.id}
+                            orderStatus={order.status}
+                            merchantLat={order.merchant?.latitude}
+                            merchantLng={order.merchant?.longitude}
+                            merchantName={order.merchant?.name}
+                            customerLat={order.address?.latitude}
+                            customerLng={order.address?.longitude}
+                            customerAddress={`${order.address.street} ${order.address.number}`}
+                            initialDriverLat={order.driver?.latitude}
+                            initialDriverLng={order.driver?.longitude}
+                            height="200px"
+                            showEta
+                        />
+                    </div>
+                )}
+
+                {/* ── Merchant ── */}
+                {order.merchant && (
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Store className="w-5 h-5 text-blue-500" />
                             </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vendedor</p>
-                                <p className="font-bold text-gray-900">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Comercio</p>
+                                <p className="font-bold text-gray-900 text-sm truncate">{order.merchant.name}</p>
+                                {order.merchant.address && <p className="text-xs text-gray-400 truncate">{order.merchant.address}</p>}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                {isDelivered && !order.merchantRating && (
+                                    <button
+                                        onClick={() => setShowMerchantRating(true)}
+                                        className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition flex items-center gap-1 active:scale-95"
+                                    >
+                                        <Star className="w-3 h-3" /> Calificar
+                                    </button>
+                                )}
+                                {order.merchantRating && (
+                                    <div className="flex items-center gap-1 bg-yellow-50 px-2.5 py-1.5 rounded-lg">
+                                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                        <span className="text-xs font-bold text-gray-700">{order.merchantRating}</span>
+                                    </div>
+                                )}
+                                {order.merchant.phone && (
+                                    <a href={`tel:${order.merchant.phone}`} className="w-9 h-9 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center justify-center text-white transition active:scale-95">
+                                        <Phone className="w-4 h-4" />
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Seller (Marketplace) ── */}
+                {order.subOrders?.some(so => so.seller) && (
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 bg-violet-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Star className="w-5 h-5 text-violet-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Vendedor</p>
+                                <p className="font-bold text-gray-900 text-sm truncate">
                                     {order.subOrders?.find(so => so.seller)?.seller?.displayName || "Vendedor"}
                                 </p>
                             </div>
-                            {/* Rate Seller Button */}
-                            {(order.status === "DELIVERED" || order.status === "COMPLETED") && !order.sellerRating && (
+                            {isDelivered && !order.sellerRating && (
                                 <button
                                     onClick={() => setShowSellerRating(true)}
-                                    className="ml-auto px-3 py-1.5 bg-purple-50 text-purple-600 text-xs font-bold rounded-lg hover:bg-purple-100 transition flex items-center gap-1"
+                                    className="px-3 py-1.5 bg-violet-50 text-violet-600 text-xs font-bold rounded-lg hover:bg-violet-100 transition flex items-center gap-1 active:scale-95"
                                 >
-                                    <Star className="w-3.5 h-3.5" />
-                                    Calificar
+                                    <Star className="w-3 h-3" /> Calificar
                                 </button>
                             )}
                             {order.sellerRating && (
-                                <div className="ml-auto flex items-center gap-1 bg-purple-50 px-3 py-1.5 rounded-lg">
-                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                <div className="flex items-center gap-1 bg-yellow-50 px-2.5 py-1.5 rounded-lg">
+                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                                     <span className="text-xs font-bold text-gray-700">{order.sellerRating}</span>
                                 </div>
                             )}
@@ -360,163 +461,199 @@ export default function OrderDetailPage() {
                     </div>
                 )}
 
-                {/* Order Items */}
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                    <div className="p-4 border-b border-gray-50 flex items-center gap-3">
-                        <Receipt className="w-5 h-5 text-gray-400" />
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                            Detalle del pedido
-                        </span>
-                    </div>
-                    <div className="divide-y divide-gray-50">
-                        {order.items.map((item) => (
-                            <div key={item.id} className="p-4 flex justify-between items-start">
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                        <span className="text-xs font-black text-gray-600">{item.quantity}x</span>
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900">{item.name}</p>
-                                        {item.notes && (
-                                            <p className="text-xs text-gray-400 italic">{item.notes}</p>
-                                        )}
-                                    </div>
-                                </div>
-                                <p className="font-bold text-gray-900">{formatPrice(item.price * item.quantity)}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Totals */}
-                    <div className="bg-gray-50 p-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Subtotal</span>
-                            <span className="font-medium">{formatPrice(order.subtotal || order.total - (order.deliveryFee || 0))}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Envío</span>
-                            <span className="font-medium">{formatPrice(order.deliveryFee || 0)}</span>
-                        </div>
-                        <div className="flex justify-between text-lg pt-2 border-t border-gray-200">
-                            <span className="font-black uppercase">Total</span>
-                            <span className="font-black text-[#e60012]">{formatPrice(order.total)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Delivery Address */}
-                <div className="bg-white rounded-2xl p-4 border border-gray-100">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-5 h-5 text-red-600" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                                Dirección de entrega
-                            </p>
-                            <p className="font-bold text-gray-900">
-                                {order.address.street} {order.address.number}
-                            </p>
-                            {order.address.floor && (
-                                <p className="text-sm text-gray-500">
-                                    Piso {order.address.floor}
-                                    {order.address.apartment && `, Depto ${order.address.apartment}`}
-                                </p>
-                            )}
-                            <p className="text-sm text-gray-500">{order.address.city}</p>
-                            {order.address.notes && (
-                                <p className="text-xs text-gray-400 italic mt-1">{order.address.notes}</p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Driver Info */}
+                {/* ── Driver ── */}
                 {order.driver && (
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                <Truck className="w-6 h-6 text-green-600" />
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Truck className="w-5 h-5 text-green-500" />
                             </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                    Repartidor
-                                </p>
-                                <p className="font-bold text-gray-900">{order.driver.user.name}</p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Repartidor</p>
+                                <p className="font-bold text-gray-900 text-sm">{order.driver.user.name}</p>
                             </div>
                             {order.driver.user.phone && (
-                                <a
-                                    href={`tel:${order.driver.user.phone}`}
-                                    className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white"
-                                >
-                                    <Phone className="w-5 h-5" />
+                                <a href={`tel:${order.driver.user.phone}`} className="w-9 h-9 bg-green-500 hover:bg-green-600 rounded-lg flex items-center justify-center text-white transition active:scale-95">
+                                    <Phone className="w-4 h-4" />
                                 </a>
                             )}
                         </div>
                         {order.ratingComment && (
                             <div className="mt-3 pt-3 border-t border-gray-100">
-                                <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Tu comentario</p>
-                                <p className="text-sm text-gray-600 italic">"{order.ratingComment}"</p>
+                                <p className="text-xs text-gray-400 flex items-center gap-1 mb-1"><MessageCircle className="w-3 h-3" /> Tu comentario</p>
+                                <p className="text-sm text-gray-600 italic">&ldquo;{order.ratingComment}&rdquo;</p>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Order Info */}
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 space-y-3">
-                    <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-gray-400" />
-                        <div className="flex-1">
-                            <p className="text-xs text-gray-400">Fecha del pedido</p>
-                            <p className="font-bold text-gray-900">
-                                {orderDate.toLocaleDateString("es-AR", {
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                })}
-                            </p>
-                        </div>
+                {/* ── Items ── */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-xs font-semibold text-gray-400">DETALLE DEL PEDIDO</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <CreditCard className="w-5 h-5 text-gray-400" />
-                        <div className="flex-1">
-                            <p className="text-xs text-gray-400">Método de pago</p>
-                            <p className="font-bold text-gray-900">
-                                {order.paymentMethod === "CASH" || order.paymentMethod === "cash" ? "Efectivo" :
-                                    order.paymentMethod === "CARD" || order.paymentMethod === "card" ? "Tarjeta" :
-                                        order.paymentMethod === "TRANSFER" || order.paymentMethod === "transfer" ? "Transferencia" :
-                                            order.paymentMethod === "mercadopago" ? "Mercado Pago" : order.paymentMethod || "No especificado"}
-                            </p>
+                    <div className="divide-y divide-gray-50">
+                        {order.items.map(item => (
+                            <div key={item.id} className="px-4 py-3 flex items-start justify-between gap-3">
+                                <div className="flex gap-2.5 min-w-0 flex-1">
+                                    <span className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
+                                        {item.quantity}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
+                                        {item.notes && <p className="text-[11px] text-gray-400 italic truncate">{item.notes}</p>}
+                                    </div>
+                                </div>
+                                <span className="text-sm font-bold text-gray-700 flex-shrink-0">
+                                    {formatPrice(item.price * item.quantity)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="bg-gray-50 px-4 py-3 space-y-1.5">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Subtotal</span>
+                            <span className="font-medium text-gray-600">{formatPrice(order.subtotal || order.total - (order.deliveryFee || 0))}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Envio</span>
+                            <span className={`font-medium ${order.deliveryFee ? "text-gray-600" : "text-green-600"}`}>
+                                {order.deliveryFee ? formatPrice(order.deliveryFee) : "Gratis"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-200">
+                            <span className="font-bold text-gray-900">Total</span>
+                            <span className="font-bold text-lg text-[#e60012]">{formatPrice(order.total)}</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Fixed Bottom Actions */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 space-y-3">
-                <button
-                    onClick={handleReorder}
-                    disabled={isReordering}
-                    className="w-full py-4 bg-[#e60012] text-white font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-red-500/20 active:scale-95 transition disabled:opacity-50"
-                >
-                    {isReordering ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-5 h-5" />
-                    )}
-                    Repetir Pedido
-                </button>
+                {/* ── Address ── */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-5 h-5 text-[#e60012]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Entrega</p>
+                            <p className="font-bold text-gray-900 text-sm">{order.address.street} {order.address.number}</p>
+                            {order.address.floor && (
+                                <p className="text-xs text-gray-500">Piso {order.address.floor}{order.address.apartment && `, Depto ${order.address.apartment}`}</p>
+                            )}
+                            <p className="text-xs text-gray-400">{order.address.city}</p>
+                            {order.address.notes && (
+                                <p className="text-xs text-gray-400 italic mt-1 bg-gray-50 px-2 py-1 rounded-md inline-block">{order.address.notes}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Meta (date + payment) ── */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            {orderDate.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
+                        <span className="text-gray-200">|</span>
+                        <span className="flex items-center gap-1.5">
+                            {(order.paymentMethod === "CASH" || order.paymentMethod === "cash")
+                                ? <Banknote className="w-3.5 h-3.5 text-green-500" />
+                                : <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+                            }
+                            {paymentLabel(order.paymentMethod)}
+                        </span>
+                    </div>
+                </div>
+
+                {/* ── Help ── */}
                 <Link
-                    href="/mis-pedidos"
-                    className="block w-full py-3 text-center text-gray-500 font-bold uppercase tracking-widest text-xs"
+                    href="/ayuda"
+                    className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition active:scale-[0.99]"
                 >
-                    Ver todos mis pedidos
+                    <HelpCircle className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm font-semibold text-gray-600 flex-1">Necesitas ayuda con este pedido?</span>
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
                 </Link>
             </div>
 
-            {/* Rating Modals */}
+            {/* ── Bottom Bar ── */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 z-20" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+                <div className="container mx-auto px-4 pt-3">
+                    {isActive && !isCancelled && (
+                        <div className="flex gap-2">
+                            {canCancel && (
+                                <button
+                                    onClick={() => setShowCancelModal(true)}
+                                    className="px-4 py-3 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition active:scale-95"
+                                >
+                                    Cancelar
+                                </button>
+                            )}
+                            <Link
+                                href={`/seguimiento/${order.id}`}
+                                className="flex-1 py-3 bg-[#e60012] hover:bg-[#cc000f] text-white rounded-xl text-sm font-bold text-center shadow-lg shadow-red-500/20 transition-colors flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                <Truck className="w-4 h-4" />
+                                Seguir en vivo
+                            </Link>
+                        </div>
+                    )}
+                    {isDelivered && (
+                        <button
+                            onClick={handleReorder}
+                            disabled={isReordering}
+                            className="w-full py-3 bg-[#e60012] hover:bg-[#cc000f] text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/20 transition-colors flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                        >
+                            {isReordering ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                            Repetir pedido
+                        </button>
+                    )}
+                    {isCancelled && (
+                        <button
+                            onClick={handleReorder}
+                            disabled={isReordering}
+                            className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-bold shadow-lg transition-colors flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                        >
+                            {isReordering ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                            Volver a pedir
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* ── Cancel Modal ── */}
+            {showCancelModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCancelModal(false)} />
+                    <div className="relative bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-6 animate-slideUp">
+                        <button onClick={() => setShowCancelModal(false)} className="absolute top-3 right-3 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition">
+                            <X className="w-4 h-4" />
+                        </button>
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-3">
+                                <AlertTriangle className="w-7 h-7 text-red-500" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">Cancelar pedido?</h3>
+                            <p className="text-sm text-gray-500 mb-5">Esta accion no se puede deshacer.</p>
+                            <div className="flex gap-2 w-full">
+                                <button onClick={() => setShowCancelModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition active:scale-95">
+                                    No, volver
+                                </button>
+                                <button
+                                    onClick={handleCancel}
+                                    disabled={isCancelling}
+                                    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm transition active:scale-95 disabled:opacity-50"
+                                >
+                                    {isCancelling ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Si, cancelar"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Rating Modals ── */}
             {showMerchantRating && order.merchant && (
                 <RateMerchantModal
                     orderId={order.id}
@@ -524,7 +661,7 @@ export default function OrderDetailPage() {
                     merchantName={order.merchant.name}
                     onClose={() => setShowMerchantRating(false)}
                     onSuccess={() => {
-                        setOrder(prev => prev ? { ...prev, merchantRating: 5 } : null);
+                        fetch(`/api/orders/${orderId}`).then(r => r.json()).then(d => setOrder(d)).catch(() => {});
                     }}
                 />
             )}
@@ -535,7 +672,7 @@ export default function OrderDetailPage() {
                     sellerName={order.subOrders[0].seller.displayName || "Vendedor"}
                     onClose={() => setShowSellerRating(false)}
                     onSuccess={() => {
-                        setOrder(prev => prev ? { ...prev, sellerRating: 5 } : null);
+                        fetch(`/api/orders/${orderId}`).then(r => r.json()).then(d => setOrder(d)).catch(() => {});
                     }}
                 />
             )}

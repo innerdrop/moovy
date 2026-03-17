@@ -330,11 +330,20 @@ export default function HeroStatic({ totalDelivered = 0, activeMerchants = 0 }: 
                         )}
                     </div>
 
-                    {/* Desktop: visual placeholder */}
-                    <div className="hidden lg:flex w-80 h-48 bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl items-center justify-center flex-shrink-0">
-                        <span className="text-white/50 text-sm font-semibold">Ilustración / Foto Ushuaia</span>
-                    </div>
                 </div>
+            </div>
+
+            {/* === PERSON IMAGE: spans red hero + white section below === */}
+            <div
+                className="absolute right-2 sm:right-6 md:right-12 lg:right-[10%] bottom-0 translate-y-[35%] z-20 pointer-events-none select-none"
+            >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src="/hero-person.png"
+                    alt="Persona usando MOOVY"
+                    className="h-[260px] sm:h-[320px] md:h-[380px] lg:h-[440px] w-auto object-contain drop-shadow-2xl"
+                    style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.2))" }}
+                />
             </div>
         </section>
     );

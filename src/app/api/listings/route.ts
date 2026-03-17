@@ -56,6 +56,7 @@ export async function GET(request: Request) {
                             displayName: true,
                             rating: true,
                             avatar: true,
+                            isVerified: true,
                             user: {
                                 select: {
                                     sellerAvailability: {

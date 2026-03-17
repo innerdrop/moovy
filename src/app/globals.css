@@ -766,6 +766,184 @@ h6 {
   animation: shimmer 3s ease-in-out infinite;
 }
 
+/* ===== MARKETPLACE — VIOLET MAGIC SYSTEM ===== */
+
+/* --- Base: full-page violet tint --- */
+.mp-page {
+  background: linear-gradient(180deg, #f5f0ff 0%, #faf8ff 30%, #f8f6ff 100%);
+  min-height: 100vh;
+}
+
+/* --- Shimmer skeleton (violet-tinted) --- */
+@keyframes mp-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.mp-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #ede9fe;
+  border-radius: 8px;
+}
+.mp-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+  animation: mp-shimmer 1.4s ease-in-out infinite;
+}
+
+/* --- Staggered fade-up grid (Depop) --- */
+@keyframes mp-fadeUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mp-stagger { opacity: 0; animation: mp-fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.mp-stagger-1 { animation-delay: 0ms; }
+.mp-stagger-2 { animation-delay: 50ms; }
+.mp-stagger-3 { animation-delay: 100ms; }
+.mp-stagger-4 { animation-delay: 150ms; }
+.mp-stagger-5 { animation-delay: 200ms; }
+.mp-stagger-6 { animation-delay: 250ms; }
+.mp-stagger-7 { animation-delay: 300ms; }
+.mp-stagger-8 { animation-delay: 350ms; }
+.mp-stagger-9 { animation-delay: 400ms; }
+.mp-stagger-10 { animation-delay: 450ms; }
+.mp-stagger-11 { animation-delay: 500ms; }
+.mp-stagger-12 { animation-delay: 550ms; }
+
+/* --- Heart bounce (Etsy elastic) --- */
+@keyframes mp-heartBounce {
+  0%   { transform: scale(1); }
+  15%  { transform: scale(1.4); }
+  30%  { transform: scale(0.85); }
+  50%  { transform: scale(1.15); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.mp-heart-bounce {
+  animation: mp-heartBounce 0.55s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+}
+
+/* --- Add-to-cart pop (StockX) --- */
+@keyframes mp-cartPop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.3) rotate(5deg); }
+  65%  { transform: scale(0.9) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.mp-cart-pop {
+  animation: mp-cartPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Live pulse dot (social proof) --- */
+@keyframes mp-pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(167,139,250,0.6); }
+  50%      { opacity: 0.7; transform: scale(1.5); box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+}
+.mp-pulse-dot {
+  animation: mp-pulseDot 2s ease-in-out infinite;
+}
+
+/* --- Hero floating orbs --- */
+@keyframes mp-orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -20px) scale(1.1); }
+  66%      { transform: translate(-15px, 15px) scale(0.95); }
+}
+@keyframes mp-orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-25px, 25px) scale(1.05); }
+  66%      { transform: translate(20px, -10px) scale(0.9); }
+}
+.mp-orb-1 { animation: mp-orbFloat1 8s ease-in-out infinite; }
+.mp-orb-2 { animation: mp-orbFloat2 10s ease-in-out infinite; animation-delay: -3s; }
+
+/* --- Glass card effect --- */
+.mp-glass {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(139,92,246,0.1);
+}
+
+/* --- Card hover glow --- */
+.mp-card-glow {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mp-card-glow:hover {
+  box-shadow: 0 8px 30px -4px rgba(124,58,237,0.12), 0 2px 8px -2px rgba(124,58,237,0.06);
+  border-color: rgba(139,92,246,0.2);
+  transform: translateY(-3px);
+}
+@media (max-width: 640px) {
+  .mp-card-glow:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px -2px rgba(124,58,237,0.15);
+  }
+}
+
+/* --- Gradient text --- */
+.mp-gradient-text {
+  background: linear-gradient(135deg, #7C3AED, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Condition badges with glow --- */
+.mp-badge-nuevo { background: rgba(34,197,94,0.12); color: #15803d; border: 1px solid rgba(34,197,94,0.2); }
+.mp-badge-usado { background: rgba(249,115,22,0.12); color: #c2410c; border: 1px solid rgba(249,115,22,0.2); }
+.mp-badge-reacondicionado { background: rgba(59,130,246,0.12); color: #1d4ed8; border: 1px solid rgba(59,130,246,0.2); }
+
+/* --- Scroll reveal --- */
+@keyframes mp-scrollReveal {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mp-scroll-reveal {
+  animation: mp-scrollReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* --- Fade edges horizontal scroll (Airbnb) --- */
+.mp-fade-scroll {
+  mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+}
+
+/* --- Category chip active glow --- */
+.mp-chip-active {
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.15), 0 2px 8px rgba(124,58,237,0.2);
+}
+
+/* --- Search bar glass in hero --- */
+.mp-search-glass {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.3) inset;
+}
+
+/* --- Loading spinner violet --- */
+@keyframes mp-spinGlow {
+  0% { filter: drop-shadow(0 0 2px rgba(124,58,237,0.3)); }
+  50% { filter: drop-shadow(0 0 8px rgba(124,58,237,0.6)); }
+  100% { filter: drop-shadow(0 0 2px rgba(124,58,237,0.3)); }
+}
+.mp-spin-glow {
+  animation: spin 1s linear infinite, mp-spinGlow 2s ease-in-out infinite;
+}
+
+/* --- Empty state float --- */
+@keyframes mp-emptyFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.mp-empty-float {
+  animation: mp-emptyFloat 3s ease-in-out infinite;
+}
+
 /* ===== GOOGLE PLACES AUTOCOMPLETE FIX (MOBILE) ===== */
 /* The .pac-container is injected by Google into <body> */
 /* On mobile it can appear behind sticky/fixed headers or be untappable */
