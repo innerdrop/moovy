@@ -192,7 +192,7 @@ async function LiveStoreView() {
             <HeroStatic totalDelivered={totalDelivered} activeMerchants={activeMerchants} />
 
             {/* 2. Categorías — con imágenes de OPS, auto-scroll + swipe */}
-            <section className="relative py-4 bg-white -mt-px" style={{ zIndex: 1 }}>
+            <section className="relative py-4 bg-white -mt-3" style={{ zIndex: 1 }}>
                 <div className="container mx-auto px-4">
                     <div className="flex items-center gap-2.5 mb-3">
                         {/* Casita verde indicando comercios abiertos */}

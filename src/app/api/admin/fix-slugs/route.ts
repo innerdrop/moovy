@@ -1,15 +1,14 @@
 // One-time endpoint to normalize all product slugs (strip accents)
 // Usage: GET /api/admin/fix-slugs (requires ADMIN role)
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { normalizeSlug } from "@/lib/slugify";
 
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
         if (!session || !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
