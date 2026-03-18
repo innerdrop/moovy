@@ -332,7 +332,7 @@ function RegistrationForm() {
                         <button
                             type="submit"
                             disabled={isLoading || success || !acceptTerms || !acceptPrivacy}
-                            className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg mt-4 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-shadow"
+                            className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg mt-4 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-shadow"
                         >
                             {isLoading ? (
                                 <>

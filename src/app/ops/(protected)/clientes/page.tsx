@@ -500,7 +500,7 @@ export default function ClientsPage() {
 
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={() => setShowCreateForm(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                                <button type="submit" disabled={saving} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] disabled:opacity-50 flex items-center justify-center gap-2">
+                                <button type="submit" disabled={saving} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] disabled:opacity-50 flex items-center justify-center gap-2">
                                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                                     Crear
                                 </button>
@@ -547,7 +547,7 @@ export default function ClientsPage() {
                             </div>
                         </div>
 
-                        <button onClick={() => { setViewUser(null); openEditModal(viewUser); }} className="w-full mt-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] flex items-center justify-center gap-2">
+                        <button onClick={() => { setViewUser(null); openEditModal(viewUser); }} className="w-full mt-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] flex items-center justify-center gap-2">
                             <Edit className="w-5 h-5" />
                             Editar Cliente
                         </button>
@@ -587,7 +587,7 @@ export default function ClientsPage() {
 
                         <div className="flex gap-3 pt-4">
                             <button onClick={() => setEditUser(null)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                            <button onClick={() => setShowEditConfirm(true)} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f]">Guardar Cambios</button>
+                            <button onClick={() => setShowEditConfirm(true)} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f]">Guardar Cambios</button>
                         </div>
                     </div>
                 </div>
@@ -601,7 +601,7 @@ export default function ClientsPage() {
                         <p className="text-gray-600 mb-6">¿Estás seguro de guardar los cambios para "{editUser?.name}"?</p>
                         <div className="flex gap-3">
                             <button onClick={() => setShowEditConfirm(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                            <button onClick={handleEdit} disabled={saving} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] disabled:opacity-50 flex items-center justify-center gap-2">
+                            <button onClick={handleEdit} disabled={saving} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] disabled:opacity-50 flex items-center justify-center gap-2">
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                                 Confirmar
                             </button>
@@ -708,7 +708,7 @@ export default function ClientsPage() {
                                     }
                                 }}
                                 disabled={resetting}
-                                className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {resetting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Key className="w-5 h-5" />}
                                 Restablecer

@@ -57,7 +57,7 @@ function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: Ride
                                     <div
                                         className="absolute -top-1 w-5 h-[3px] rounded-full"
                                         style={{
-                                            background: "linear-gradient(90deg, #e60012, #ff3344)",
+                                            background: "linear-gradient(90deg, #e60012, #ff1a2e)",
                                         }}
                                     />
                                 )}

@@ -13,7 +13,7 @@ const portalConfig = {
     client: {
         title: 'Iniciar Sesión',
         subtitle: 'Accede a tu cuenta de cliente',
-        logo: '/logo-moovy.png',
+        logo: '/logo-moovy.svg',
         color: '#e60012',
         bgGradient: 'from-red-500 to-red-600',
         icon: LogIn,
@@ -24,7 +24,7 @@ const portalConfig = {
     comercio: {
         title: 'Portal Comercios',
         subtitle: 'Gestiona tu tienda en Moovy',
-        logo: '/logo-moovy.png',
+        logo: '/logo-moovy.svg',
         color: '#2563eb',
         bgGradient: 'from-blue-500 to-blue-600',
         icon: Store,
@@ -35,7 +35,7 @@ const portalConfig = {
     conductor: {
         title: 'Portal Repartidores',
         subtitle: 'Gestiona tus entregas',
-        logo: '/logo-moovy.png',
+        logo: '/logo-moovy.svg',
         color: '#16a34a',
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
@@ -46,7 +46,7 @@ const portalConfig = {
     repartidor: {
         title: 'Portal Repartidores',
         subtitle: 'Gestiona tus entregas',
-        logo: '/logo-moovy.png',
+        logo: '/logo-moovy.svg',
         color: '#16a34a',
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
@@ -57,9 +57,9 @@ const portalConfig = {
     ops: {
         title: 'Centro de Comando',
         subtitle: 'Administración de Moovy',
-        logo: '/logo-moovy.png',
-        color: '#7c3aed',
-        bgGradient: 'from-purple-500 to-purple-600',
+        logo: '/logo-moovy.svg',
+        color: '#e60012',
+        bgGradient: 'from-red-500 to-red-600',
         icon: Shield,
         redirectAfterLogin: '/ops',
         registerLink: null,
@@ -150,7 +150,8 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
                     <div className="flex items-center justify-center mb-4 sm:mb-6">
                         <div
-                            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r ${config.bgGradient} flex items-center justify-center`}
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: config.color }}
                         >
                             <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>

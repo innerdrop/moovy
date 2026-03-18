@@ -101,7 +101,7 @@ export default function StoreLayout({
 
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
+        <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 

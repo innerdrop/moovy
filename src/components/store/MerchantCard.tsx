@@ -31,7 +31,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
 
         const tier = merchant.premiumTier || "basic";
         const styles: Record<string, { bg: string; text: string; label: string }> = {
-            platinum: { bg: "bg-gradient-to-r from-purple-500 to-pink-500", text: "text-white", label: "⭐ Platino" },
+            platinum: { bg: "bg-gradient-to-r from-red-500 to-pink-500", text: "text-white", label: "⭐ Platino" },
             gold: { bg: "bg-gradient-to-r from-yellow-400 to-orange-500", text: "text-white", label: "🔥 Destacado" },
             basic: { bg: "bg-gradient-to-r from-blue-500 to-cyan-500", text: "text-white", label: "✨ Premium" }
         };

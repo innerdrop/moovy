@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Users */}
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white">
+                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-white">
                     <div className="flex items-center justify-between mb-3">
                         <Users className="w-8 h-8 opacity-80" />
                         <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Usuarios</span>

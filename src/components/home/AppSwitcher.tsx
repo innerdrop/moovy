@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ShoppingBag, Briefcase, Tag, Compass, ChevronDown } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ShoppingBag, Tag, ChevronDown } from "lucide-react";
 
 const ecosystemApps = [
     {
@@ -12,20 +13,8 @@ const ecosystemApps = [
         href: "/",
         icon: ShoppingBag,
         color: "#e60012",
-        gradient: "from-[#e60012] to-[#ff4444]",
+        gradient: "from-[#e60012] to-[#cc000f]",
         active: true,
-    },
-    {
-        id: "jobs",
-        label: "Jobs",
-        sublabel: "Oportunidades laborales",
-        href: "https://jobs.somosmoovy.com",
-        icon: Briefcase,
-        color: "#003a9b",
-        gradient: "from-[#003a9b] to-[#0052cc]",
-        badge: "Nuevo",
-        badgeColor: "bg-blue-100 text-blue-700",
-        external: true,
     },
     {
         id: "marketplace",
@@ -34,24 +23,17 @@ const ecosystemApps = [
         href: "/marketplace",
         icon: Tag,
         color: "#7C3AED",
-        gradient: "from-[#7C3AED] to-[#6D28D9]",
-    },
-    {
-        id: "moovyx",
-        label: "MOOVY X",
-        sublabel: "Turismo y experiencias",
-        href: "/moovyx",
-        icon: Compass,
-        color: "#00D4AA",
-        gradient: "from-[#00D4AA] to-[#0ea5e9]",
-        badge: "Pronto",
-        badgeColor: "bg-teal-100 text-teal-700",
+        gradient: "from-[#7C3AED] to-[#5B21B6]",
     },
 ];
 
 export default function AppSwitcher() {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
+    const isMarketplace = pathname?.startsWith("/marketplace");
+    const accent = isMarketplace ? "#7C3AED" : "#e60012";
+    const accentBg = isMarketplace ? "hover:bg-violet-50/50" : "hover:bg-red-50/50";
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -67,15 +49,16 @@ export default function AppSwitcher() {
         <div ref={ref} className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[#e60012] hover:border-[#e60012]/40 hover:bg-red-50/50 transition-all"
+                className={`flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all ${accentBg}`}
+                style={{ color: accent, borderColor: undefined }}
             >
                 <div className="grid grid-cols-2 gap-[2px] w-[12px] h-[12px]">
-                    <span className="w-[5px] h-[5px] rounded-[1.5px] bg-[#e60012]" />
-                    <span className="w-[5px] h-[5px] rounded-[1.5px] bg-[#e60012]" />
-                    <span className="w-[5px] h-[5px] rounded-[1.5px] bg-[#e60012]" />
-                    <span className="w-[5px] h-[5px] rounded-[1.5px] bg-[#e60012]" />
+                    <span className="w-[5px] h-[5px] rounded-[1.5px]" style={{ backgroundColor: accent }} />
+                    <span className="w-[5px] h-[5px] rounded-[1.5px]" style={{ backgroundColor: accent }} />
+                    <span className="w-[5px] h-[5px] rounded-[1.5px]" style={{ backgroundColor: accent }} />
+                    <span className="w-[5px] h-[5px] rounded-[1.5px]" style={{ backgroundColor: accent }} />
                 </div>
-                <span className="hidden sm:inline">Tienda</span>
+                <span className="hidden sm:inline">{isMarketplace ? "Marketplace" : "Tienda"}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
             </button>
 

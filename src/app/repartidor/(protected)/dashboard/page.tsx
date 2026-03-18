@@ -460,7 +460,7 @@ export default function RiderDashboard() {
                         </ul>
                     </div>
                     <div className="gps-brand">
-                        <img src="/logo-moovy.png" alt="Moovy" style={{ height: '28px', objectFit: 'contain' }} />
+                        <img src="/logo-moovy.svg" alt="Moovy" style={{ height: '28px', objectFit: 'contain' }} />
                     </div>
                 </div>
             </div>

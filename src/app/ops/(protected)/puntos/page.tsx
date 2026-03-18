@@ -272,7 +272,7 @@ export default function PointsConfigPage() {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-2 bg-[#e60012] hover:bg-[#c4000f] text-white px-8 py-3 rounded-full lg:rounded-lg font-bold shadow-lg lg:shadow-none transition transform hover:scale-105 lg:hover:scale-100 disabled:opacity-50"
+                        className="flex items-center gap-2 bg-[#e60012] hover:bg-[#cc000f] text-white px-8 py-3 rounded-full lg:rounded-lg font-bold shadow-lg lg:shadow-none transition transform hover:scale-105 lg:hover:scale-100 disabled:opacity-50"
                     >
                         {saving ? (
                             <>

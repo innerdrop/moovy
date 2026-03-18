@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const payload = JSON.stringify({
       title,
       body: notificationBody,
-      icon: "/icon-192x192.png",
+      icon: "/icons/icon-192x192.png",
       badge: "/badge-72x72.png",
       data: data || {},
     });

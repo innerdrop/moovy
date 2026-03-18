@@ -38,7 +38,7 @@ interface Order {
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
     PENDING: { label: "Nuevo", color: "text-yellow-600", bgColor: "bg-yellow-100", icon: <Bell className="w-4 h-4" /> },
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-4 h-4" /> },
-    PREPARING: { label: "Preparando", color: "text-purple-600", bgColor: "bg-purple-100", icon: <Package className="w-4 h-4" /> },
+    PREPARING: { label: "Preparando", color: "text-red-600", bgColor: "bg-red-100", icon: <Package className="w-4 h-4" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-4 h-4" /> },
     IN_DELIVERY: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-4 h-4" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-4 h-4" /> },
@@ -143,9 +143,9 @@ export default function OpsLiveDashboardPage() {
                     <p className="text-sm font-medium text-yellow-700">Nuevos</p>
                     <p className="text-3xl font-bold text-yellow-900">{stats.pending}</p>
                 </div>
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <p className="text-sm font-medium text-purple-700">Preparando</p>
-                    <p className="text-3xl font-bold text-purple-900">{stats.inProgress}</p>
+                <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                    <p className="text-sm font-medium text-red-700">Preparando</p>
+                    <p className="text-3xl font-bold text-red-900">{stats.inProgress}</p>
                 </div>
                 <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
                     <p className="text-sm font-medium text-indigo-700">Listos</p>
@@ -176,8 +176,8 @@ export default function OpsLiveDashboardPage() {
                 </div>
 
                 {/* Preparing Column */}
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <h3 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                    <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
                         <Package className="w-4 h-4" />
                         Preparando ({preparingOrders.length})
                     </h3>
@@ -186,7 +186,7 @@ export default function OpsLiveDashboardPage() {
                             <OrderCard key={order.id} order={order} />
                         ))}
                         {preparingOrders.length === 0 && (
-                            <p className="text-purple-600 text-sm text-center py-4">Sin pedidos</p>
+                            <p className="text-red-600 text-sm text-center py-4">Sin pedidos</p>
                         )}
                     </div>
                 </div>

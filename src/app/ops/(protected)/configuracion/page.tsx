@@ -153,7 +153,7 @@ export default async function ConfigurationPage() {
                                 />
                             </div>
 
-                            <div className="flex items-center justify-between p-5 bg-purple-50/30 rounded-2xl border border-purple-50">
+                            <div className="flex items-center justify-between p-5 bg-red-50/30 rounded-2xl border border-red-50">
                                 <div>
                                     <h3 className="font-extrabold text-gray-900 text-sm">Slider Promocional</h3>
                                     <p className="text-[10px] text-slate-400 font-medium">Mostrar banners en la landing</p>
@@ -161,7 +161,7 @@ export default async function ConfigurationPage() {
                                 <Switch
                                     name="heroSliderEnabled"
                                     defaultChecked={(settings as any)?.heroSliderEnabled ?? true}
-                                    activeColor="bg-purple-500"
+                                    activeColor="bg-red-500"
                                 />
                             </div>
 
@@ -179,8 +179,8 @@ export default async function ConfigurationPage() {
                                         name="maxCategoriesHome"
                                     />
                                 </div>
-                                <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                                    <label className="block text-[9px] font-black text-purple-400 uppercase tracking-widest mb-2">
+                                <div className="p-4 bg-red-50 rounded-2xl border border-red-100">
+                                    <label className="block text-[9px] font-black text-red-400 uppercase tracking-widest mb-2">
                                         Intervalo Slider
                                     </label>
                                     <div className="flex items-center gap-2">
@@ -190,10 +190,10 @@ export default async function ConfigurationPage() {
                                             max="30"
                                             step="1"
                                             defaultValue={Math.round((settings?.heroSliderInterval ?? 5000) / 1000)}
-                                            className="w-full bg-white border border-purple-100 rounded-xl px-3 py-2 font-black text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                            className="w-full bg-white border border-red-100 rounded-xl px-3 py-2 font-black text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                             name="heroSliderInterval"
                                         />
-                                        <span className="text-[10px] font-black text-purple-400">SEG</span>
+                                        <span className="text-[10px] font-black text-red-400">SEG</span>
                                     </div>
                                 </div>
                             </div>
@@ -205,11 +205,11 @@ export default async function ConfigurationPage() {
                 <div className="space-y-8">
                     {/* Promo Popup Section */}
                     <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
                                     <span className="text-2xl">🎉</span>
                                 </div>
                                 <div>
@@ -220,7 +220,7 @@ export default async function ConfigurationPage() {
                             <Switch
                                 name="promoPopupEnabled"
                                 defaultChecked={settings?.promoPopupEnabled ?? false}
-                                activeColor="bg-purple-500"
+                                activeColor="bg-red-500"
                             />
                         </div>
 
@@ -231,7 +231,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupTitle || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         placeholder="¡Super Oferta!"
                                         name="promoPopupTitle"
                                     />
@@ -240,7 +240,7 @@ export default async function ConfigurationPage() {
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Mensaje</label>
                                     <textarea
                                         defaultValue={settings?.promoPopupMessage || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all resize-none"
                                         rows={2}
                                         placeholder="Aprovecha 20% OFF..."
                                         name="promoPopupMessage"
@@ -253,7 +253,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupButtonText || "Ver más"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         name="promoPopupButtonText"
                                     />
                                 </div>
@@ -262,17 +262,17 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupLink || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         placeholder="/tienda"
                                         name="promoPopupLink"
                                     />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 p-4 bg-purple-50/50 rounded-2xl border border-purple-100/50">
+                            <div className="flex items-center gap-3 p-4 bg-red-50/50 rounded-2xl border border-red-100/50">
                                 <input
                                     type="checkbox"
                                     defaultChecked={settings?.promoPopupDismissable ?? true}
-                                    className="w-5 h-5 text-purple-600 rounded-lg border-purple-200 focus:ring-purple-500"
+                                    className="w-5 h-5 text-red-600 rounded-lg border-red-200 focus:ring-red-500"
                                     name="promoPopupDismissable"
                                     id="promoPopupDismissable"
                                 />

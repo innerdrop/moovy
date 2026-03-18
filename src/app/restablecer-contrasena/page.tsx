@@ -143,7 +143,7 @@ function ResetPasswordContent() {
                 <div className="flex justify-center mb-6">
                     <Link href="/">
                         <Image
-                            src="/logo-moovy.png"
+                            src="/logo-moovy.svg"
                             alt="Moovy"
                             width={160}
                             height={60}

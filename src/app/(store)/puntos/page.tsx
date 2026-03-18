@@ -390,7 +390,7 @@ export default function PuntosPage() {
     // ========== MOOVER LANDING PARA USUARIOS ANÓNIMOS ==========
     if (authStatus === "unauthenticated") {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-[#e60012] via-red-600 to-red-800 text-white">
+            <div className="min-h-screen bg-gradient-to-b from-[#a3000c] via-[#e60012] to-[#ff1a2e] text-white">
                 {/* Hero */}
                 <div className="px-6 pt-8 pb-12 text-center">
                     <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full mb-6">
@@ -490,7 +490,7 @@ export default function PuntosPage() {
     return (
         <div className="pb-24">
             {/* MOOVER Hero Card */}
-            <div className="bg-gradient-to-br from-[#e60012] via-red-600 to-red-800 mx-4 mt-4 rounded-2xl p-6 text-white relative overflow-hidden">
+            <div className="bg-gradient-to-br from-[#a3000c] via-[#e60012] to-[#ff1a2e] mx-4 mt-4 rounded-2xl p-6 text-white relative overflow-hidden">
                 {/* Decorative elements */}
                 <div className="absolute top-0 right-0 opacity-10">
                     <Crown className="w-32 h-32" />
@@ -583,14 +583,14 @@ export default function PuntosPage() {
             <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
                 <button
                     onClick={handleOpenFriendsModal}
-                    className="bg-white rounded-xl p-4 text-center hover:bg-purple-50 transition active:scale-95"
+                    className="bg-white rounded-xl p-4 text-center hover:bg-red-50 transition active:scale-95"
                 >
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <Users className="w-6 h-6 text-purple-600" />
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Users className="w-6 h-6 text-red-600" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{friendsInvited}</p>
                     <p className="text-xs text-gray-500">Amigos invitados</p>
-                    <p className="text-[10px] text-purple-600 mt-1">Ver lista →</p>
+                    <p className="text-[10px] text-red-600 mt-1">Ver lista →</p>
                 </button>
                 <button
                     onClick={() => setShowStatsModal(true)}
@@ -666,21 +666,21 @@ export default function PuntosPage() {
                             onClick={() => setExpandedItem(expandedItem === 'referidos' ? null : 'referidos')}
                             className="w-full flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-gray-50 transition"
                         >
-                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                <Users className="w-5 h-5 text-purple-600" />
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <Users className="w-5 h-5 text-red-600" />
                             </div>
                             <div className="flex-1 text-left">
                                 <p className="font-medium text-gray-900">Refiriendo amigos</p>
                                 <p className="text-gray-500 text-xs">500 puntos por cada amigo</p>
                             </div>
                             {expandedItem === 'referidos' ? (
-                                <ChevronDown className="w-5 h-5 text-purple-600" />
+                                <ChevronDown className="w-5 h-5 text-red-600" />
                             ) : (
                                 <ChevronRight className="w-5 h-5 text-gray-300" />
                             )}
                         </button>
                         {expandedItem === 'referidos' && (
-                            <div className="ml-14 mr-2 mt-2 p-3 bg-purple-50 rounded-lg text-sm text-gray-600">
+                            <div className="ml-14 mr-2 mt-2 p-3 bg-red-50 rounded-lg text-sm text-gray-600">
                                 <p className="mb-2">👥 Compartí tu código y ganá puntos cuando tu amigo haga su primera compra:</p>
                                 <ul className="list-disc list-inside space-y-1 text-xs">
                                     <li>Vos ganás 500 puntos cuando tu amigo compra $8,000+</li>
@@ -716,7 +716,7 @@ export default function PuntosPage() {
             </div>
 
             {/* Catalog Teaser */}
-            <div className="mx-4 mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
+            <div className="mx-4 mt-4 bg-gradient-to-r from-red-600 to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 opacity-20">
                     <Gift className="w-24 h-24 -mt-4 -mr-4" />
                 </div>
@@ -876,7 +876,7 @@ export default function PuntosPage() {
                     <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-purple-600" />
+                                <Users className="w-5 h-5 text-red-600" />
                                 Amigos Invitados
                             </h2>
                             <button onClick={() => setShowFriendsModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
@@ -886,7 +886,7 @@ export default function PuntosPage() {
                         <div className="flex-1 overflow-y-auto p-4">
                             {loadingFriends ? (
                                 <div className="flex justify-center py-8">
-                                    <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                                    <Loader2 className="w-6 h-6 animate-spin text-red-600" />
                                 </div>
                             ) : friendsList.length === 0 ? (
                                 <div className="text-center py-8">
@@ -898,8 +898,8 @@ export default function PuntosPage() {
                                 <ul className="space-y-3">
                                     {friendsList.map(friend => (
                                         <li key={friend.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                                <span className="text-purple-600 font-bold text-sm">
+                                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                                <span className="text-red-600 font-bold text-sm">
                                                     {friend.name.charAt(0).toUpperCase()}
                                                 </span>
                                             </div>
@@ -1030,14 +1030,14 @@ export default function PuntosPage() {
                             </div>
 
                             {/* Pro */}
-                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 300000 && pointsLifetime < 1000000 ? "border-purple-500 bg-purple-50" : "border-gray-200 bg-gray-50"}`}>
+                            <div className={`rounded-xl p-4 border-2 ${pointsLifetime >= 300000 && pointsLifetime < 1000000 ? "border-red-500 bg-red-50" : "border-gray-200 bg-gray-50"}`}>
                                 <div className="flex items-center gap-3 mb-2">
                                     <span className="text-3xl">⚡</span>
                                     <div>
                                         <p className="font-bold text-gray-900">Pro</p>
                                         <p className="text-xs text-gray-500">300,000 - 999,999 puntos</p>
                                     </div>
-                                    {pointsLifetime >= 300000 && pointsLifetime < 1000000 && <span className="ml-auto text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
+                                    {pointsLifetime >= 300000 && pointsLifetime < 1000000 && <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel</span>}
                                 </div>
                                 <ul className="text-sm text-gray-600 space-y-1">
                                     <li>✓ Todo lo de Moover</li>

@@ -111,7 +111,7 @@ export default function CambiarPasswordPage() {
                     </p>
                     <Link
                         href="/mi-perfil"
-                        className="inline-block px-6 py-3 bg-[#e60012] text-white font-bold rounded-xl hover:bg-[#c5000f] transition"
+                        className="inline-block px-6 py-3 bg-[#e60012] text-white font-bold rounded-xl hover:bg-[#cc000f] transition"
                     >
                         Volver al Perfil
                     </Link>
@@ -268,7 +268,7 @@ export default function CambiarPasswordPage() {
                     <button
                         type="submit"
                         disabled={loading || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
-                        className="w-full py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-[#c5000f] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200"
+                        className="w-full py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-[#cc000f] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200"
                     >
                         {loading ? (
                             <>

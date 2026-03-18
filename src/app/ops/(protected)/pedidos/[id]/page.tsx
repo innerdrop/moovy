@@ -64,7 +64,7 @@ interface Order {
 const statusOptions = [
     { value: "PENDING", label: "Pendiente", color: "bg-yellow-500" },
     { value: "CONFIRMED", label: "Confirmado", color: "bg-blue-500" },
-    { value: "PREPARING", label: "Preparando", color: "bg-purple-500" },
+    { value: "PREPARING", label: "Preparando", color: "bg-red-500" },
     { value: "READY", label: "Listo para envío", color: "bg-indigo-500" },
     { value: "IN_DELIVERY", label: "En camino", color: "bg-[#e60012]" },
     { value: "DELIVERED", label: "Entregado", color: "bg-green-500" },
@@ -323,7 +323,7 @@ export default function AdminOrderDetailPage() {
                             <button
                                 onClick={confirmStatusChange}
                                 disabled={updating}
-                                className="flex-1 px-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition disabled:opacity-50"
+                                className="flex-1 px-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition disabled:opacity-50"
                             >
                                 {updating ? "Actualizando..." : "Confirmar"}
                             </button>
@@ -533,7 +533,7 @@ export default function AdminOrderDetailPage() {
                             </p>
                             <p className="text-sm">
                                 <span className="text-gray-600">Estado:</span>{" "}
-                                <span className={`font-medium ${order.paymentStatus === "REFUNDED" ? "text-purple-600" : order.paymentStatus === "APPROVED" ? "text-green-600" : "text-yellow-600"
+                                <span className={`font-medium ${order.paymentStatus === "REFUNDED" ? "text-red-600" : order.paymentStatus === "APPROVED" ? "text-green-600" : "text-yellow-600"
                                     }`}>
                                     {order.paymentStatus === "REFUNDED" ? "Reembolsado" : order.paymentStatus === "APPROVED" ? "Pagado" : "Pendiente"}
                                 </span>
@@ -541,7 +541,7 @@ export default function AdminOrderDetailPage() {
                             {order.paymentStatus !== "REFUNDED" && (order.status === "CANCELLED" || order.paymentStatus === "APPROVED") && (
                                 <button
                                     onClick={() => setShowRefund(true)}
-                                    className="mt-3 w-full py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition flex items-center justify-center gap-2"
+                                    className="mt-3 w-full py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center justify-center gap-2"
                                 >
                                     <RotateCcw className="w-4 h-4" />
                                     Procesar Reembolso
@@ -582,7 +582,7 @@ export default function AdminOrderDetailPage() {
                         </div>
                         <div className="flex gap-3 mt-4">
                             <button onClick={() => setShowReassign(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancelar</button>
-                            <button onClick={handleReassign} disabled={!selectedDriver || reassigning} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition disabled:opacity-50 flex items-center justify-center gap-2">
+                            <button onClick={handleReassign} disabled={!selectedDriver || reassigning} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition disabled:opacity-50 flex items-center justify-center gap-2">
                                 {reassigning ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
                             </button>
                         </div>
@@ -595,18 +595,18 @@ export default function AdminOrderDetailPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
                         <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-                            <RotateCcw className="w-5 h-5 text-purple-600" />
+                            <RotateCcw className="w-5 h-5 text-red-600" />
                             Procesar Reembolso
                         </h3>
 
-                        <div className="bg-purple-50 rounded-lg p-4 mb-4">
-                            <p className="text-sm text-purple-800">
+                        <div className="bg-red-50 rounded-lg p-4 mb-4">
+                            <p className="text-sm text-red-800">
                                 Pedido <strong>#{order.orderNumber}</strong>
                             </p>
-                            <p className="text-lg font-bold text-purple-900 mt-1">
+                            <p className="text-lg font-bold text-red-900 mt-1">
                                 {formatPrice(order.total)}
                             </p>
-                            <p className="text-xs text-purple-600 mt-1">
+                            <p className="text-xs text-red-600 mt-1">
                                 {order.paymentMethod === "cash" ? "Pago en efectivo" : "MercadoPago"}
                             </p>
                         </div>
@@ -640,7 +640,7 @@ export default function AdminOrderDetailPage() {
                             <button
                                 onClick={handleRefund}
                                 disabled={refunding}
-                                className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {refunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
                                 Confirmar Reembolso

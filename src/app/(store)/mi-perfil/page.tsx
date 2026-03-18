@@ -154,11 +154,11 @@ export default function ProfilePage() {
             <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4">
                 <div className="max-w-md mx-auto">
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#e60012] to-red-600 flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                        <div className="w-16 h-16 rounded-full bg-[#e60012] flex items-center justify-center text-white text-2xl font-bold shadow-md">
                             {session?.user?.name?.charAt(0).toUpperCase() || <User />}
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-900">{session?.user?.name}</h1>
+                            <h1 className="text-xl font-semibold text-gray-900">{session?.user?.name}</h1>
                             <p className="text-gray-500 text-sm">{session?.user?.email}</p>
                             <div className="flex items-center gap-1 mt-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full w-fit">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
@@ -173,7 +173,7 @@ export default function ProfilePage() {
                             <p className="text-xs text-amber-700 font-medium mb-1 flex items-center gap-1">
                                 <Award className="w-3 h-3" /> Nivel {level.name}
                             </p>
-                            <p className="text-2xl font-bold text-gray-900">{points.toLocaleString()}</p>
+                            <p className="text-2xl font-semibold text-gray-900">{points.toLocaleString()}</p>
                             <p className="text-[10px] text-gray-400">Puntos MOOVER</p>
                         </div>
                         <div className="w-24">
@@ -193,7 +193,7 @@ export default function ProfilePage() {
 
                 {/* 1. My Account Section */}
                 <section>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mi Cuenta</h3>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mi Cuenta</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <Link href="/mi-perfil/datos" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
                             <div className="flex items-center gap-3">
@@ -249,7 +249,7 @@ export default function ProfilePage() {
                 {/* 2. My Portals — links to active role dashboards */}
                 {(hasSeller || driverStatus === "ACTIVE" || hasMerchant || hasAdmin) && (
                     <section>
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mis Portales</h3>
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mis Portales</h3>
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             {hasSeller && (
                                 <Link href="/vendedor" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
@@ -282,7 +282,7 @@ export default function ProfilePage() {
                             {hasMerchant && (
                                 <Link href="/comercios" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
                                             <Store className="w-4 h-4" />
                                         </div>
                                         <div>
@@ -313,13 +313,13 @@ export default function ProfilePage() {
 
                 {/* 3. Opportunities Section — activate roles you don't have yet */}
                 <section>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Oportunidades MOOVY</h3>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Oportunidades MOOVY</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {/* Comercio - se mantiene como link (onboarding separado) */}
                         {!hasMerchant && (
                             <Link href="/comercio/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
                                         <Store className="w-4 h-4" />
                                     </div>
                                     <div>
@@ -380,7 +380,7 @@ export default function ProfilePage() {
 
                 {/* 3. Settings & Support */}
                 <section>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Configuración y Ayuda</h3>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Configuración y Ayuda</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {pushSupported && (
                             <div className="flex items-center justify-between p-4 border-b border-gray-50">

@@ -27,7 +27,7 @@ import { formatPrice } from "@/lib/delivery";
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     PENDING: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800", icon: <Clock className="w-4 h-4" /> },
     CONFIRMED: { label: "Confirmado", color: "bg-blue-100 text-blue-800", icon: <CheckCircle className="w-4 h-4" /> },
-    PREPARING: { label: "Preparando", color: "bg-purple-100 text-purple-800", icon: <Package className="w-4 h-4" /> },
+    PREPARING: { label: "Preparando", color: "bg-red-100 text-red-800", icon: <Package className="w-4 h-4" /> },
     READY: { label: "Listo", color: "bg-indigo-100 text-indigo-800", icon: <Package className="w-4 h-4" /> },
     IN_DELIVERY: { label: "En camino", color: "bg-orange-100 text-orange-800", icon: <Truck className="w-4 h-4" /> },
     DELIVERED: { label: "Entregado", color: "bg-green-100 text-green-800", icon: <CheckCircle className="w-4 h-4" /> },
@@ -204,9 +204,9 @@ export default function AdminPedidosPage() {
                     <p className="text-sm text-green-800">Entregados</p>
                     <p className="text-2xl font-bold text-green-900">{stats.delivered}</p>
                 </div>
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <p className="text-sm text-purple-800">Hoy</p>
-                    <p className="text-2xl font-bold text-purple-900">{stats.today}</p>
+                <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                    <p className="text-sm text-red-800">Hoy</p>
+                    <p className="text-2xl font-bold text-red-900">{stats.today}</p>
                 </div>
             </div>
 

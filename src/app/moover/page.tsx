@@ -227,12 +227,12 @@ export default function MooverPage() {
                         </div>
 
                         <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
-                            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                                <Gift className="w-6 h-6 text-purple-600" />
+                            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
+                                <Gift className="w-6 h-6 text-red-600" />
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Bono de Bienvenida</h3>
                             <p className="text-gray-500 text-sm mb-3">Al registrarte y hacer tu primera compra, recibís puntos extra.</p>
-                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 250} puntos</span>
+                            <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 250} puntos</span>
                         </div>
                     </div>
                 </div>
@@ -359,7 +359,7 @@ export default function MooverPage() {
                     <p className="text-xs text-gray-500 mb-2">
                         Programa MOOVER sujeto a <Link href="/terminos-moover" className="underline hover:text-gray-400">términos y condiciones</Link>.
                     </p>
-                    <p className="text-xs text-gray-600">© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Poppins', sans-serif", fontSize: '8px' }}>™</sup>. Todos los derechos reservados.</p>
+                    <p className="text-xs text-gray-600">© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '8px' }}>™</sup>. Todos los derechos reservados.</p>
                 </div>
             </footer>
 

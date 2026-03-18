@@ -77,31 +77,31 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                         {/* Sparkle stars when logged in */}
                                         {isLoggedIn && (
                                             <>
-                                                <span className="absolute -top-1 -left-1 text-amber-400 animate-pulse" style={{ animationDelay: '0s' }}>✦</span>
-                                                <span className="absolute -top-1 -right-1 text-amber-300 animate-pulse" style={{ animationDelay: '0.3s' }}>✧</span>
-                                                <span className="absolute top-3 -left-3 text-yellow-400 animate-pulse" style={{ animationDelay: '0.6s' }}>✦</span>
-                                                <span className="absolute top-3 -right-3 text-amber-400 animate-pulse" style={{ animationDelay: '0.9s' }}>✧</span>
+                                                <span className="absolute -top-1 -left-1 text-red-400 animate-pulse" style={{ animationDelay: '0s' }}>✦</span>
+                                                <span className="absolute -top-1 -right-1 text-red-300 animate-pulse" style={{ animationDelay: '0.3s' }}>✧</span>
+                                                <span className="absolute top-3 -left-3 text-red-400 animate-pulse" style={{ animationDelay: '0.6s' }}>✦</span>
+                                                <span className="absolute top-3 -right-3 text-red-400 animate-pulse" style={{ animationDelay: '0.9s' }}>✧</span>
                                             </>
                                         )}
 
                                         {/* Radar ring pulse */}
-                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-amber-400/20' : 'bg-red-400/20'}`}
+                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-red-400/20' : 'bg-red-400/15'}`}
                                               style={{ animation: 'moover-ring 2s cubic-bezier(0,0,0.2,1) infinite' }} />
-                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-amber-400/15' : 'bg-red-400/15'}`}
+                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-red-400/15' : 'bg-red-400/10'}`}
                                               style={{ animation: 'moover-ring 2s cubic-bezier(0,0,0.2,1) infinite 0.5s' }} />
 
                                         <div className={`
                                             w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 relative
                                             ${isLoggedIn
-                                                ? "bg-gradient-to-br from-amber-400 to-amber-500 shadow-amber-500/40"
-                                                : "bg-gradient-to-br from-[#e60012] to-[#ff3333] shadow-red-500/40"
+                                                ? "bg-gradient-to-br from-[#e60012] to-[#cc000f] shadow-red-500/40"
+                                                : "bg-gradient-to-br from-[#e60012]/60 to-[#cc000f]/60 shadow-red-500/20"
                                             }
                                         `}
                                         style={{ animation: 'moover-breathe 3s ease-in-out infinite' }}
                                         >
                                             <Icon className="w-8 h-8 text-white fill-current" />
                                         </div>
-                                        <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-amber-500" : "text-[#e60012]"}`}>
+                                        <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-[#e60012]" : "text-gray-400"}`}>
                                             {item.label}
                                         </span>
                                     </Link>
@@ -153,7 +153,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                         <div className="space-y-3">
                             <Link
                                 href="/login"
-                                className="block w-full bg-[#e60012] text-white font-bold py-3 rounded-xl hover:bg-[#c4000f] transition"
+                                className="block w-full bg-[#e60012] text-white font-bold py-3 rounded-xl hover:bg-[#cc000f] transition"
                                 onClick={() => setShowAuthModal(false)}
                             >
                                 Iniciar Sesión

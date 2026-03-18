@@ -48,7 +48,7 @@ export const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = 
     PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
     AWAITING_PAYMENT: { bg: 'bg-amber-100', text: 'text-amber-700' },
     CONFIRMED: { bg: 'bg-blue-100', text: 'text-blue-700' },
-    PREPARING: { bg: 'bg-purple-100', text: 'text-purple-700' },
+    PREPARING: { bg: 'bg-red-100', text: 'text-red-700' },
     READY: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
     DRIVER_ASSIGNED: { bg: 'bg-cyan-100', text: 'text-cyan-700' },
     PICKED_UP: { bg: 'bg-orange-100', text: 'text-orange-700' },

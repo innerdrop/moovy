@@ -162,7 +162,7 @@ function ComercioRegistroContent() {
                 <div className="text-center mb-6">
                     <Link href="/" className="inline-block">
                         <Image
-                            src="/logo-moovy.png"
+                            src="/logo-moovy.svg"
                             alt="Moovy"
                             width={120}
                             height={38}

@@ -55,7 +55,7 @@ export default function PromoPopup({
             <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-scaleIn">
                 {/* Image */}
                 {image && (
-                    <div className="relative h-48 bg-gradient-to-br from-[#e60012] to-[#ff4444]">
+                    <div className="relative h-48 bg-gradient-to-br from-[#e60012] to-[#ff4d5e]">
                         <img
                             src={image}
                             alt={title || "Promoción"}
@@ -101,7 +101,7 @@ export default function PromoPopup({
                             <Link
                                 href={link}
                                 onClick={handleDismiss}
-                                className="w-full py-3 bg-[#e60012] text-white rounded-xl font-medium hover:bg-[#c5000f] transition flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-[#e60012] text-white rounded-xl font-medium hover:bg-[#cc000f] transition flex items-center justify-center gap-2"
                             >
                                 {buttonText}
                                 <ExternalLink className="w-4 h-4" />
@@ -109,7 +109,7 @@ export default function PromoPopup({
                         ) : (
                             <button
                                 onClick={handleDismiss}
-                                className="w-full py-3 bg-[#e60012] text-white rounded-xl font-medium hover:bg-[#c5000f] transition"
+                                className="w-full py-3 bg-[#e60012] text-white rounded-xl font-medium hover:bg-[#cc000f] transition"
                             >
                                 {buttonText || "Entendido"}
                             </button>

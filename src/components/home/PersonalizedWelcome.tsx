@@ -18,7 +18,7 @@ export default function PersonalizedWelcome() {
     const firstName = session?.user?.name?.split(" ")[0] || "MOOVER";
 
     return (
-        <section className="bg-gradient-to-r from-[#e60012] to-red-600 text-white">
+        <section className="bg-gradient-to-r from-[#cc000f] to-[#e60012] text-white">
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Greeting */}

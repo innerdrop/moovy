@@ -210,7 +210,7 @@ export default function AyudaPage() {
                 ))}
 
                 {/* Contact CTA */}
-                <div className="bg-gradient-to-br from-[#e60012] to-[#ff4444] rounded-2xl p-6 text-white text-center">
+                <div className="bg-gradient-to-br from-[#e60012] to-[#ff4d5e] rounded-2xl p-6 text-white text-center">
                     <h3 className="font-bold text-lg mb-2">¿No encontrás lo que buscás?</h3>
                     <p className="text-white/80 text-sm mb-5">
                         Nuestro equipo está disponible para ayudarte

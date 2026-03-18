@@ -514,7 +514,7 @@ export default function MerchantDetailPage() {
                 </div>
                 <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <Calendar className="w-8 h-8 text-purple-500" />
+                        <Calendar className="w-8 h-8 text-red-500" />
                         <div>
                             <p className="text-lg font-bold text-gray-900">
                                 {new Date(merchant.createdAt).toLocaleDateString("es-AR")}
@@ -950,8 +950,8 @@ export default function MerchantDetailPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                                    <p className="text-sm text-purple-700 font-medium mb-3">Mes Anterior</p>
+                                                <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                                                    <p className="text-sm text-red-700 font-medium mb-3">Mes Anterior</p>
                                                     <div className="space-y-2 text-sm">
                                                         <div className="flex justify-between">
                                                             <span className="text-gray-600">Ventas:</span>

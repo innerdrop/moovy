@@ -371,7 +371,7 @@ export default function ProductDetailClient() {
                             <div className="space-y-3">
                                 <button
                                     onClick={() => router.push("/registro")}
-                                    className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#c5000f] transition"
+                                    className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition"
                                 >
                                     Crear cuenta gratis
                                 </button>

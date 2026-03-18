@@ -47,6 +47,11 @@ Cada tarea debe hacerse en su propia rama. Sin excepciones.
 .\scripts\finish.ps1 -Message "tipo: descripcion en español"
 ```
 
+## Notas para git en PowerShell
+- Rutas con paréntesis como `(store)` deben ir entre comillas dobles: `git add "src/app/(store)/page.tsx"`
+- PowerShell interpreta `()` como sintaxis propia — sin comillas da error "outside repository"
+- Auth en NextAuth v5: usar `import { auth } from "@/lib/auth"` + `await auth()`, **NUNCA** `getServerSession(authOptions)` (eso es v4)
+
 ## Reglas de ejecución — SIEMPRE seguir estas reglas
 1. **NO** abrir browser ni ejecutar dev server
 2. **NO** correr `npm run dev` ni `npm run build`
@@ -152,12 +157,28 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Soft delete**: Orders tienen campo `deletedAt` — `null` = activo, `DateTime` = eliminado
 - **Backup restore**: POST `/api/admin/backups` con `{ backupId }` restaura pedido soft-deleted
 
+## Sistema de colores de marca (refactor 2026-03-18)
+- **MOOVY brand (Tienda, Repartidor, Comercio, OPS)**: Rojo `#e60012` como primario
+  - Dark: `#cc000f`, Darker: `#a3000c`, Light: `#ff1a2e`, Lighter: `#ff4d5e`, Lightest: `#fff1f2`
+- **Marketplace (Vendedor, Listings)**: Violeta `#7C3AED` como primario
+  - Dark: `#5B21B6`, Darker: `#4C1D95`, Light: `#8B5CF6`, Lighter: `#A78BFA`, Lightest: `#EDE9FE`
+- **Logos**: `logo-moovy.svg` (rojo), `logo-moovy-white.svg` (blanco), `logo-moovy-purple.svg` (violeta marketplace)
+- **PWA icons**: `moovy-m.png` (M roja 500x500), `moovy-m-purple.png` (M violeta, reserva)
+- **Font**: Plus Jakarta Sans (reemplaza Poppins, variable `--font-jakarta`)
+- **AppSwitcher + AppHeader**: detectan ruta `/marketplace` via `usePathname()` y cambian logo/acento a violeta
+- **ListingCard**: prop `variant="marketplace"` para violeta, default para rojo
+- **Header fijo**: fondo blanco, línea roja de acento, buscador compacto al scroll con onda SVG
+- **Scroll search**: usa `data-hero-search` en HeroStatic como marcador, `IntersectionObserver`-like en AppHeader
+
 ## Deuda técnica conocida
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
 - ~~Quedan ~8 extracciones de `(session.user as any).role`~~ **RESUELTO** — migrado a `hasAnyRole()` / `getUserRoles()` (solo quedan 2 en `auth.ts` que son la fuente)
 - Portal COMEX eliminado (era legacy, apuntaba a rutas `/partner/` inexistentes)
 - ~~Crons sin health check~~ **RESUELTO** — socket-server expone `GET /health` con estado de cada cron + `GET /api/health` en Next.js verifica DB + socket
+- `logo-moovy.png` y `logo-moovy-white.png` (PNGs viejos) — aún referenciados en emails (`src/lib/email.ts`), requieren reemplazo en producción por versiones rojas actualizadas
+- Imágenes eliminadas del proyecto (backup en Desktop/newimg/unused-assets): logo-jobs-v2/v3, moovyx-*.png, file/globe/next/vercel/window.svg, logo-moovy-white.png
+- **`@font-face` Poppins** en globals.css: las declaraciones `@font-face` para Poppins siguen en el CSS pero ya no se usan (Next.js carga Plus Jakarta Sans via `next/font/google`). Pueden eliminarse para limpiar
 
 ## Lo que NO existe todavía
 - Pago con MP en producción (requiere credenciales productivas)

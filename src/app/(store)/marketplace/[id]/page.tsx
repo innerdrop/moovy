@@ -162,7 +162,7 @@ export default async function MarketplaceDetailPage({
                 {/* Back */}
                 <Link
                     href="/marketplace"
-                    className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#e60012] transition mb-6"
+                    className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#7C3AED] transition mb-6"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Volver al Marketplace
@@ -228,7 +228,7 @@ export default async function MarketplaceDetailPage({
                                 {listing.title}
                             </h1>
                             <div className="flex items-center justify-between">
-                                <p className="text-3xl font-bold text-[#e60012]">
+                                <p className="text-3xl font-bold text-[#7C3AED]">
                                     ${listing.price.toLocaleString("es-AR")}
                                 </p>
                                 <a

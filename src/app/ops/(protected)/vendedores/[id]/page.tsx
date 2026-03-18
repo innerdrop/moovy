@@ -153,7 +153,7 @@ export default function SellerDetailPage({ params }: { params: Promise<{ id: str
                     <p className="text-2xl font-bold text-gray-900">{seller.rating?.toFixed(1) || "—"}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
-                    <Shield className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                    <Shield className="w-5 h-5 text-red-400 mx-auto mb-1" />
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Comisión</p>
                     <p className="text-2xl font-bold text-gray-900">{seller.commissionRate}%</p>
                 </div>
@@ -178,7 +178,7 @@ export default function SellerDetailPage({ params }: { params: Promise<{ id: str
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Tasa de Comisión (%)</label>
                                 <input type="number" value={editData.commissionRate} onChange={(e) => setEditData({ ...editData, commissionRate: parseFloat(e.target.value) || 0 })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" min="0" max="100" step="0.5" />
                             </div>
-                            <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-[#e60012] text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-[#c5000f] disabled:opacity-50 transition">
+                            <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-[#e60012] text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-[#cc000f] disabled:opacity-50 transition">
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Guardar</>}
                             </button>
                         </div>

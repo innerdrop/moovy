@@ -25,10 +25,10 @@ export default function MantenimientoPage() {
                 {/* Logo */}
                 <div className="mb-8">
                     <Image
-                        src="/logo-moovy.png"
+                        src="/logo-moovy.svg"
                         alt="MOOVY"
-                        width={180}
-                        height={60}
+                        width={280}
+                        height={90}
                         className="mx-auto"
                     />
                 </div>

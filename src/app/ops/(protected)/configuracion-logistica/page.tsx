@@ -610,11 +610,11 @@ export default function ConfigLogisticaPage() {
                 SECTION 4 — Zonas de Cobertura (Placeholder)
             ═══════════════════════════════════════════════════════════════════ */}
             <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
-                        <MapPin className="w-6 h-6 text-purple-600" />
+                    <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-red-600" />
                     </div>
                     <div>
                         <h2 className="text-xl font-black text-gray-900 leading-none">Zonas de Cobertura</h2>
@@ -623,8 +623,8 @@ export default function ConfigLogisticaPage() {
                 </div>
 
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mb-4">
-                        <MapPin className="w-10 h-10 text-purple-300" />
+                    <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                        <MapPin className="w-10 h-10 text-red-300" />
                     </div>
                     <p className="text-lg font-black text-slate-300 italic">Próximamente</p>
                     <p className="text-sm text-slate-400 mt-1">Configuración de zonas geográficas de cobertura</p>

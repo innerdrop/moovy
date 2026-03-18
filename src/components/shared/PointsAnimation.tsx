@@ -32,7 +32,7 @@ export default function PointsAnimation({ pointsEarned, isVisible, onComplete }:
                 </button>
 
                 {/* Main Circle */}
-                <div className="w-56 h-56 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(230,0,18,0.5)] border-4 border-white/20 relative overflow-hidden">
+                <div className="w-56 h-56 bg-gradient-to-br from-[#cc000f] to-[#e60012] rounded-full flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(124,58,237,0.5)] border-4 border-white/20 relative overflow-hidden">
 
                     {/* Background rays */}
                     <div className="absolute inset-0 animate-spin-slow opacity-20">

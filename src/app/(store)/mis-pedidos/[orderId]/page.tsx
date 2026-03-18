@@ -434,8 +434,8 @@ export default function OrderDetailPage() {
                 {order.subOrders?.some(so => so.seller) && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 bg-violet-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <Star className="w-5 h-5 text-violet-500" />
+                            <div className="w-11 h-11 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Star className="w-5 h-5 text-red-500" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Vendedor</p>
@@ -446,7 +446,7 @@ export default function OrderDetailPage() {
                             {isDelivered && !order.sellerRating && (
                                 <button
                                     onClick={() => setShowSellerRating(true)}
-                                    className="px-3 py-1.5 bg-violet-50 text-violet-600 text-xs font-bold rounded-lg hover:bg-violet-100 transition flex items-center gap-1 active:scale-95"
+                                    className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition flex items-center gap-1 active:scale-95"
                                 >
                                     <Star className="w-3 h-3" /> Calificar
                                 </button>

@@ -174,12 +174,6 @@ export default function MarketplacePage() {
                 <div className="pointer-events-none absolute right-[20%] top-[30%] h-32 w-32 rounded-full bg-violet-300/8 blur-xl mp-orb-2" />
 
                 <div className="relative z-10 mx-auto max-w-5xl">
-                    {/* Social proof badge */}
-                    <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur-md">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 mp-pulse-dot" />
-                        Vendedores activos en Ushuaia
-                    </span>
-
                     <h1 className="mb-3 text-[28px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
                         Marketplace
                         <br />

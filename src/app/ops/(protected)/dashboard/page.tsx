@@ -275,11 +275,11 @@ export default async function AdminDashboard() {
 
                 <Link href="/ops/clientes" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <Users className="w-5 h-5 text-purple-600" />
+                        <div className="p-2 bg-red-100 rounded-lg">
+                            <Users className="w-5 h-5 text-red-600" />
                         </div>
                         {stats.newUsersToday > 0 && (
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
                                 +{stats.newUsersToday} hoy
                             </span>
                         )}

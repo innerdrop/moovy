@@ -67,7 +67,7 @@ const statusConfig: Record<string, {
 }> = {
     PENDING: { label: "Pendiente", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 1 },
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-500", icon: <CheckCircle className="w-4 h-4" />, step: 2 },
-    PREPARING: { label: "En preparacion", color: "text-violet-600", bg: "bg-violet-50", dot: "bg-violet-500", icon: <Package className="w-4 h-4" />, step: 3 },
+    PREPARING: { label: "En preparacion", color: "text-red-600", bg: "bg-red-50", dot: "bg-red-500", icon: <Package className="w-4 h-4" />, step: 3 },
     READY: { label: "Listo para retirar", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500", icon: <Package className="w-4 h-4" />, step: 4 },
     DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500", icon: <Truck className="w-4 h-4" />, step: 5 },
     PICKED_UP: { label: "Retirado", color: "text-orange-600", bg: "bg-orange-50", dot: "bg-orange-500", icon: <Truck className="w-4 h-4" />, step: 6 },
@@ -207,7 +207,7 @@ export default function MisPedidosPage() {
                     <div className="w-28 h-28 bg-gray-50 rounded-full flex items-center justify-center">
                         <Package className="w-14 h-14 text-gray-200" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-11 h-11 bg-gradient-to-br from-[#e60012] to-[#ff3333] rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
+                    <div className="absolute -bottom-1 -right-1 w-11 h-11 bg-gradient-to-br from-[#e60012] to-[#ff1a2e] rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
                         <Rocket className="w-5 h-5 text-white" />
                     </div>
                 </div>

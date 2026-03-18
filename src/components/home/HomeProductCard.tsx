@@ -73,7 +73,7 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
                     className={`absolute -top-4 right-3 w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shadow-md border-[3px] border-white transition-all hover:scale-110 z-10 ${
                         added
                             ? "bg-green-500 text-white"
-                            : "bg-[#e60012] hover:bg-[#c4000f] text-white"
+                            : "bg-[#e60012] hover:bg-[#cc000f] text-white"
                     }`}
                 >
                     {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}

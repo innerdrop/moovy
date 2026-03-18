@@ -272,9 +272,9 @@ export default function AdminRepartidoresPage() {
                         {drivers.filter(d => d.isOnline).length}
                     </p>
                 </div>
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                    <p className="text-sm text-purple-800">Entregas totales</p>
-                    <p className="text-2xl font-bold text-purple-900">
+                <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                    <p className="text-sm text-red-800">Entregas totales</p>
+                    <p className="text-2xl font-bold text-red-900">
                         {drivers.reduce((sum, d) => sum + (d._count?.orders || 0), 0)}
                     </p>
                 </div>
@@ -320,7 +320,7 @@ export default function AdminRepartidoresPage() {
                                 onClick={confirmAction}
                                 className={`flex-1 py-2 text-white rounded-lg transition ${pendingAction.action === "delete"
                                     ? "bg-red-500 hover:bg-red-600"
-                                    : "bg-[#e60012] hover:bg-[#c5000f]"
+                                    : "bg-[#e60012] hover:bg-[#cc000f]"
                                     }`}
                             >
                                 Confirmar
@@ -456,7 +456,7 @@ export default function AdminRepartidoresPage() {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {saving ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -779,7 +779,7 @@ export default function AdminRepartidoresPage() {
 
                         <button
                             onClick={() => setViewDriver(null)}
-                            className="w-full mt-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition"
+                            className="w-full mt-4 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition"
                         >
                             Cerrar
                         </button>

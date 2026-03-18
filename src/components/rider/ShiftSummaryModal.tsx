@@ -177,7 +177,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                         </p>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
-                                        <Clock className="w-4 h-4 text-purple-500 mb-2" />
+                                        <Clock className="w-4 h-4 text-red-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900 dark:text-white">
                                             {formatTime(data.totalMinutesOnline)}
                                         </p>

@@ -217,8 +217,8 @@ export default function VendedoresPage() {
                                         <span className="text-xs font-bold truncate">{seller.user.email}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-slate-600">
-                                        <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                                            <Shield className="w-3.5 h-3.5 text-purple-500" />
+                                        <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                                            <Shield className="w-3.5 h-3.5 text-red-500" />
                                         </div>
                                         <span className="text-xs font-bold">Comisión: {seller.commissionRate}%</span>
                                     </div>

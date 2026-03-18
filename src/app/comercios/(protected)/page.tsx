@@ -132,9 +132,9 @@ export default async function ComerciosDashboardPage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-purple-200 transition-colors">
-                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                        <TrendingUp className="w-5 h-5 text-purple-600" />
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-red-200 transition-colors">
+                    <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mb-4">
+                        <TrendingUp className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ventas Mes</p>

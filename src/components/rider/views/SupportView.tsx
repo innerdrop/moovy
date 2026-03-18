@@ -278,7 +278,7 @@ export default function SupportView({ onBack, onChatRead }: SupportViewProps) {
                                     <button
                                         type="submit"
                                         disabled={sending || !newChatMessage.trim()}
-                                        className="w-full py-3 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] flex items-center justify-center gap-2"
+                                        className="w-full py-3 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] flex items-center justify-center gap-2"
                                     >
                                         {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                                         Enviar
@@ -317,7 +317,7 @@ export default function SupportView({ onBack, onChatRead }: SupportViewProps) {
                                 </div>
 
                                 <div className="p-4 bg-white dark:bg-[#1a1d27] border-t dark:border-white/10 border-gray-100" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-                                    <form onSubmit={sendMessage} className="flex gap-2 items-center bg-gray-50 dark:bg-[#22252f] rounded-[24px] p-2 border border-transparent dark:border-white/10 focus-within:bg-white dark:focus-within:bg-[#2a2d38] focus-within:border-red-100 dark:focus-within:border-white/20 focus-within:shadow-[0_4px_20px_-4px_rgba(230,0,18,0.1)] transition-all duration-300">
+                                    <form onSubmit={sendMessage} className="flex gap-2 items-center bg-gray-50 dark:bg-[#22252f] rounded-[24px] p-2 border border-transparent dark:border-white/10 focus-within:bg-white dark:focus-within:bg-[#2a2d38] focus-within:border-red-100 dark:focus-within:border-white/20 focus-within:shadow-[0_4px_20px_-4px_rgba(124,58,237,0.1)] transition-all duration-300">
                                         <input
                                             type="text"
                                             value={newMessage}
@@ -328,7 +328,7 @@ export default function SupportView({ onBack, onChatRead }: SupportViewProps) {
                                         <button
                                             type="submit"
                                             disabled={sending || !newMessage.trim()}
-                                            className="w-11 h-11 bg-[#e60012] text-white rounded-full hover:bg-[#c5000f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-red-500/20 active:scale-90 transition-all"
+                                            className="w-11 h-11 bg-[#e60012] text-white rounded-full hover:bg-[#cc000f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-red-500/20 active:scale-90 transition-all"
                                         >
                                             {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
                                         </button>

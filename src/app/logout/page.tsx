@@ -39,7 +39,7 @@ export default function LogoutPage() {
                         <button
                             onClick={handleSignOut}
                             disabled={loading}
-                            className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {loading ? (
                                 <span className="animate-pulse">Cerrando...</span>

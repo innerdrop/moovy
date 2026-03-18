@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag, MapPin, User, Package, X, ChevronRight, Bell, Search, Loader2, Store } from "lucide-react";
 import { useCartStore } from "@/store/cart";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
 import AppSwitcher from "@/components/home/AppSwitcher";
 
@@ -34,6 +34,8 @@ export default function AppHeader({
     const actualCartCount = cartCount || items.length;
 
     const router = useRouter();
+    const pathname = usePathname();
+    const isMarketplace = pathname?.startsWith("/marketplace");
     const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
     const [showOrderPopup, setShowOrderPopup] = useState(false);
 
@@ -47,6 +49,38 @@ export default function AppHeader({
     const searchRef = useRef<HTMLDivElement>(null);
 
     const firstName = userName?.split(" ")[0] || "";
+
+    // Scroll detection — show compact search bar when hero search is off-screen
+    const [scrolledPastHero, setScrolledPastHero] = useState(false);
+    const headerSearchRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        let heroSearchTop = 0;
+
+        const measureHeroSearch = () => {
+            const el = document.querySelector('[data-hero-search]');
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                heroSearchTop = rect.top + window.scrollY;
+            }
+        };
+
+        // Measure after paint
+        requestAnimationFrame(measureHeroSearch);
+
+        const handleScroll = () => {
+            // Show compact search when hero search bar scrolls behind the header (60px)
+            const threshold = heroSearchTop > 0 ? heroSearchTop - 60 : 140;
+            setScrolledPastHero(window.scrollY > threshold);
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        window.addEventListener("resize", measureHeroSearch);
+        handleScroll();
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", measureHeroSearch);
+        };
+    }, []);
 
     // Fetch active orders
     useEffect(() => {
@@ -146,9 +180,12 @@ export default function AppHeader({
 
     return (
         <>
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <header
+                className="fixed top-0 left-0 right-0 z-50 overflow-visible bg-white shadow-sm"
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
+            >
                 {/* Red accent line */}
-                <div className="h-1 bg-gradient-to-r from-[#e60012] via-[#ff3344] to-[#e60012]" />
+                <div className="h-1 bg-gradient-to-r from-[#e60012] via-[#ff1a2e] to-[#e60012]" />
 
                 {/* Mobile Header - Single clean row */}
                 <div className="lg:hidden flex items-center justify-between h-14 px-4">
@@ -157,10 +194,10 @@ export default function AppHeader({
                         <AppSwitcher />
                         {isLoggedIn && firstName ? (
                             <Link href="/mi-perfil" className="flex items-center gap-1.5">
-                                <div className="w-7 h-7 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-[11px]">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] text-white ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
                                     {firstName.charAt(0).toUpperCase()}
                                 </div>
-                                <span className="text-xs font-semibold text-gray-900 hidden xs:inline">{firstName}</span>
+                                <span className="text-xs font-semibold hidden xs:inline text-gray-900">{firstName}</span>
                             </Link>
                         ) : (
                             <Link href="/login" className="text-xs font-medium text-gray-500 hover:text-[#e60012] transition">
@@ -169,19 +206,19 @@ export default function AppHeader({
                         )}
                     </div>
 
-                    {/* Center: Logo */}
+                    {/* Center: Logo — switches to purple on marketplace */}
                     <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
                         <Image
-                            src="/logo-moovy.png"
+                            src={isMarketplace ? "/logo-moovy-purple.svg" : "/logo-moovy.svg"}
                             alt="Moovy"
-                            width={70}
-                            height={22}
-                            className="w-auto h-auto"
+                            width={280}
+                            height={90}
+                            className="h-6 w-auto"
                             priority
                         />
                     </Link>
 
-                    {/* Right: Search + Points + Orders + Cart */}
+                    {/* Right: Search + Orders + Cart */}
                     <div className="flex items-center gap-0.5">
                         <button
                             onClick={() => setShowMobileSearch(true)}
@@ -205,12 +242,46 @@ export default function AppHeader({
                         >
                             <ShoppingBag className="w-6 h-6" />
                             {actualCartCount > 0 && (
-                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-[#e60012] text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-sm">
+                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] rounded-full flex items-center justify-center font-bold shadow-sm bg-[#e60012] text-white">
                                     {actualCartCount > 99 ? "99+" : actualCartCount}
                                 </span>
                             )}
                         </button>
                     </div>
+                </div>
+
+                {/* Mobile: Compact search bar — slides in with wavy bottom edge */}
+                <div
+                    className={`lg:hidden relative overflow-visible transition-all duration-300 ease-out ${
+                        scrolledPastHero ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                >
+                    <div className="relative px-4 pb-5 pt-2" style={{ backgroundColor: "#e60012" }}>
+                        <form onSubmit={handleSearchSubmit} className="relative z-10">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                ref={headerSearchRef}
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => setShowMobileSearch(true)}
+                                placeholder="¿Qué querés pedir?"
+                                className="w-full pl-11 pr-4 py-3 bg-white rounded-2xl text-sm shadow-lg shadow-black/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition placeholder:text-gray-400 font-medium"
+                            />
+                        </form>
+                    </div>
+                    {/* Wavy bottom edge — same solid red */}
+                    <svg
+                        className="absolute bottom-0 left-0 w-full translate-y-[calc(100%-1px)]"
+                        viewBox="0 0 1440 30"
+                        preserveAspectRatio="none"
+                        style={{ height: "16px" }}
+                    >
+                        <path
+                            d="M0,0 L0,10 Q180,30 360,15 Q540,0 720,12 Q900,28 1080,14 Q1260,0 1440,10 L1440,0 Z"
+                            fill="#e60012"
+                        />
+                    </svg>
                 </div>
 
                 {/* Desktop Header */}
@@ -220,17 +291,17 @@ export default function AppHeader({
                         <AppSwitcher />
                         <Link href="/" className="flex-shrink-0">
                             <Image
-                                src="/logo-moovy.png"
+                                src={isMarketplace ? "/logo-moovy-purple.svg" : "/logo-moovy.svg"}
                                 alt="Moovy"
-                                width={100}
-                                height={32}
-                                className="w-auto h-auto"
+                                width={280}
+                                height={90}
+                                className="h-7 w-auto"
                                 priority
                             />
                         </Link>
                         {isLoggedIn && firstName ? (
                             <Link href="/mi-perfil" className="flex items-center gap-2 hover:opacity-80 transition">
-                                <div className="w-8 h-8 bg-gradient-to-br from-[#e60012] to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
                                     {firstName.charAt(0).toUpperCase()}
                                 </div>
                                 <span className="text-sm font-semibold text-gray-900">{firstName}</span>
@@ -351,7 +422,7 @@ export default function AppHeader({
                         {/* Cart Button */}
                         <button
                             onClick={() => openCart()}
-                            className="relative flex items-center gap-2 bg-[#e60012] hover:bg-[#c4000f] text-white px-4 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg"
+                            className="relative flex items-center gap-2 bg-[#e60012] hover:bg-[#cc000f] text-white px-4 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg"
                         >
                             <ShoppingBag className="w-5 h-5" />
                             <span className="text-sm">Carrito</span>

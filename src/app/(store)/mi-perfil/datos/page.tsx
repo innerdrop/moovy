@@ -216,7 +216,7 @@ export default function DatosPersonalesPage() {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-[#c5000f] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-red-200"
+                        className="w-full py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-[#cc000f] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-red-200"
                     >
                         {saving ? (
                             <>

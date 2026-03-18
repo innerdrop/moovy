@@ -5,7 +5,7 @@ export default function TerminosMooverPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header */}
-            <div className="bg-gradient-to-br from-[#e60012] to-red-700 text-white px-4 py-8">
+            <div className="bg-gradient-to-br from-[#a3000c] to-[#e60012] text-white px-4 py-8">
                 <Link href="/puntos" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-4">
                     <ArrowLeft className="w-5 h-5" />
                     Volver a MOOVER
@@ -70,10 +70,10 @@ export default function TerminosMooverPage() {
                             </div>
                             <span className="font-bold text-[#e60012]">+250 puntos</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                             <div>
                                 <span className="text-sm text-gray-700">Por referir un amigo</span>
-                                <p className="text-xs text-purple-600">Cuando tu amigo compra $8,000+</p>
+                                <p className="text-xs text-red-600">Cuando tu amigo compra $8,000+</p>
                             </div>
                             <span className="font-bold text-[#e60012]">+500 puntos</span>
                         </div>
@@ -87,24 +87,24 @@ export default function TerminosMooverPage() {
                 {/* Referrals */}
                 <section className="bg-white rounded-xl p-6">
                     <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-600" />
+                        <Users className="w-5 h-5 text-red-600" />
                         Sistema de Referidos
                     </h2>
                     <ul className="space-y-3 text-sm text-gray-600">
                         <li className="flex items-start gap-2">
-                            <span className="text-purple-600 font-bold">•</span>
+                            <span className="text-red-600 font-bold">•</span>
                             <span>Cada usuario tiene un código de referido único e intransferible.</span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-purple-600 font-bold">•</span>
+                            <span className="text-red-600 font-bold">•</span>
                             <span>El nuevo usuario debe ingresar el código durante el registro.</span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-purple-600 font-bold">•</span>
+                            <span className="text-red-600 font-bold">•</span>
                             <span>Vos ganás <strong>1,000 puntos</strong> y tu amigo gana <strong>500 puntos</strong>.</span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-purple-600 font-bold">•</span>
+                            <span className="text-red-600 font-bold">•</span>
                             <span>Un usuario solo puede ser referido una vez.</span>
                         </li>
                     </ul>

@@ -20,7 +20,7 @@ export default function AdBanner({
 }: AdBannerProps) {
 
     const variants = {
-        primary: "bg-gradient-to-r from-[#e60012] to-[#ff4444] text-white",
+        primary: "bg-gradient-to-r from-[#e60012] to-[#ff4d5e] text-white",
         secondary: "bg-gradient-to-r from-blue-600 to-blue-800 text-white",
         dark: "bg-gradient-to-r from-gray-800 to-gray-950 text-white"
     };

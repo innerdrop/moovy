@@ -117,7 +117,7 @@ export default function ContactoPage() {
                                         href="https://instagram.com/somosmoovy"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold rounded-xl transition-colors"
+                                        className="flex items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold rounded-xl transition-colors"
                                     >
                                         <Instagram className="w-5 h-5" />
                                         Seguinos en Instagram
@@ -125,7 +125,7 @@ export default function ContactoPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-[#e60012] to-[#ff4444] rounded-2xl p-6 text-white">
+                            <div className="bg-gradient-to-br from-[#e60012] to-[#ff4d5e] rounded-2xl p-6 text-white">
                                 <h3 className="font-bold text-lg mb-2">¿Querés ser parte de MOOVY?</h3>
                                 <p className="text-white/80 text-sm mb-4">
                                     Si tenés un comercio o querés ser repartidor, también podés contactarnos.

@@ -16,14 +16,14 @@ export default function GlobalAppHeader() {
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3">
                     <Image
-                        src="/logo-moovy.png"
+                        src="/logo-moovy.svg"
                         alt="Moovy"
                         width={100}
                         height={32}
                         className="h-8 w-auto"
                         priority
                     />
-                    <span className="hidden sm:block font-[var(--font-poppins)] text-gray-600 text-sm">
+                    <span className="hidden sm:block font-[var(--font-sans)] text-gray-600 text-sm">
                         Tu Antojo Manda!
                     </span>
                 </Link>

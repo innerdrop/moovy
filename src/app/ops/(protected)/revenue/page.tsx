@@ -144,7 +144,7 @@ export default function RevenuePage() {
                     value={formatPrice(data.allTime.merchantPayouts)}
                     sub="Total pagado a merchants"
                     icon={<Store className="w-5 h-5" />}
-                    color="bg-purple-500"
+                    color="bg-red-500"
                 />
                 <KpiCard
                     label="Payouts Vendedores"

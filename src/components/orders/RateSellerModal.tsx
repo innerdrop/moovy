@@ -86,8 +86,8 @@ export default function RateSellerModal({
 
                 {/* Seller Info */}
                 <div className="bg-gray-50 rounded-xl p-4 mb-6 text-center">
-                    <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Tag className="w-7 h-7 text-purple-600" />
+                    <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Tag className="w-7 h-7 text-red-600" />
                     </div>
                     <p className="font-semibold text-gray-900">{sellerName}</p>
                     <p className="text-xs text-gray-500">Vendedor del marketplace</p>
@@ -125,7 +125,7 @@ export default function RateSellerModal({
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         placeholder="Contanos más sobre tu experiencia (opcional)"
-                        className="w-full p-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                        className="w-full p-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                         rows={3}
                     />
                 </div>
@@ -138,7 +138,7 @@ export default function RateSellerModal({
                 <button
                     onClick={handleSubmit}
                     disabled={loading || rating === 0}
-                    className="w-full py-3 bg-purple-500 text-white rounded-xl font-medium hover:bg-purple-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
                         <Loader2 className="w-5 h-5 animate-spin" />

@@ -65,7 +65,7 @@ export default function CartSidebar() {
                                     <Link
                                         href="/registro"
                                         onClick={closeCart}
-                                        className="block w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#c5000f] transition text-center"
+                                        className="block w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition text-center"
                                     >
                                         Crear cuenta gratis
                                     </Link>

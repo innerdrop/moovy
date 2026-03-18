@@ -24,7 +24,7 @@ export default function SpecialOffers() {
             <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6">
                 {/* Card 1 - Hamburguesas */}
                 <Link href="/productos?categoria=hamburguesas" className="group">
-                    <div className="relative bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg aspect-[3/4] md:aspect-[4/3]">
+                    <div className="relative bg-gradient-to-br from-red-400 via-red-500 to-red-600 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg aspect-[3/4] md:aspect-[4/3]">
                         {/* Badge */}
                         <span className="absolute top-3 md:top-5 left-3 md:left-5 bg-[#e60012] text-white text-[10px] md:text-sm px-2 md:px-3 py-0.5 md:py-1 rounded-full font-bold z-10">
                             Promo

@@ -262,14 +262,14 @@ export default function BuscarPage() {
                         onClick={() => handleTabChange("marketplace")}
                         className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border-b-2 transition ${
                             activeTab === "marketplace"
-                                ? "border-[#7C3AED] text-[#7C3AED]"
+                                ? "border-[#e60012] text-[#e60012]"
                                 : "border-transparent text-gray-400 hover:text-gray-600"
                         }`}
                     >
                         <Tag className="w-4 h-4" />
                         Marketplace
                         {activeTab === "marketplace" && hasSearched && (
-                            <span className="text-xs bg-purple-50 text-[#7C3AED] px-1.5 py-0.5 rounded-full">
+                            <span className="text-xs bg-red-50 text-[#e60012] px-1.5 py-0.5 rounded-full">
                                 {listingTotal}
                             </span>
                         )}
@@ -333,7 +333,7 @@ export default function BuscarPage() {
                         </p>
                         <button
                             onClick={() => handleTabChange("marketplace")}
-                            className="mt-4 px-4 py-2 bg-purple-50 text-[#7C3AED] rounded-xl text-sm font-semibold hover:bg-purple-100 transition"
+                            className="mt-4 px-4 py-2 bg-red-50 text-[#e60012] rounded-xl text-sm font-semibold hover:bg-red-100 transition"
                         >
                             Buscar en Marketplace
                         </button>

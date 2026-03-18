@@ -120,7 +120,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                     <Menu className="w-6 h-6" />
                 </button>
                 <Link href="/ops/dashboard" className="flex items-center gap-2">
-                    <Image src="/logo-moovy.png" alt="Moovy" width={80} height={26} className="w-auto h-auto" />
+                    <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} className="h-6 w-auto" />
                     <span className="text-xs font-medium text-slate-400">Admin</span>
                 </Link>
                 <div className="w-10" /> {/* Spacer for balance */}
@@ -172,7 +172,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                 {/* Header */}
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                     <Link href="/ops/dashboard" className="flex items-center gap-3" onClick={closeMobileMenu}>
-                        <Image src="/logo-moovy.png" alt="Moovy" width={100} height={32} className="w-auto h-auto" />
+                        <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} className="h-7 w-auto" />
                     </Link>
                     <button
                         onClick={closeMobileMenu}
@@ -186,7 +186,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                 {/* User Info - Top */}
                 <div className="px-4 py-3 border-b border-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-sm font-bold">
+                        <div className="w-9 h-9 rounded-full bg-[#e60012] flex items-center justify-center text-sm font-bold">
                             {userName?.charAt(0)?.toUpperCase() || "A"}
                         </div>
                         <div className="flex-1 min-w-0">

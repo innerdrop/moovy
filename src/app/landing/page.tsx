@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowLeft, ShoppingBag, Briefcase, Compass, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Gift, Users, Award, ChevronRight, Bike, Store, Hotel, Map, Send, HelpCircle, Tag } from "lucide-react";
+import { ArrowRight, ArrowLeft, ShoppingBag, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Users, ChevronRight, Store, Tag } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -36,21 +36,8 @@ const slidesConfig: SlideConfig[] = [
         icon: <ShoppingBag className="w-8 h-8" />,
     },
     {
-        id: "jobs",
-        color: "#003a9b",
-        secondaryColor: "#f26101",
-        title: "Tu trabajo",
-        subtitle: "te espera.",
-        description: "Oportunidades laborales en el fin del mundo.",
-        cta: "Ver Empleos",
-        href: "https://jobs.somosmoovy.com",
-        icon: <Briefcase className="w-8 h-8" />,
-        badge: "Nuevo",
-        logo: "/logo-jobs-v3.png",
-    },
-    {
         id: "marketplace",
-        color: "#7C3AED",
+        color: "#e60012",
         title: "Tu estilo",
         subtitle: "tu precio.",
         description: "Comprá y vendé productos nuevos y usados en Ushuaia.",
@@ -58,17 +45,6 @@ const slidesConfig: SlideConfig[] = [
         href: "/marketplace",
         icon: <Tag className="w-8 h-8" />,
         badge: "Marketplace",
-    },
-    {
-        id: "x",
-        color: "#00D4AA",
-        title: "Tu aventura",
-        subtitle: "comienza.",
-        description: "Turismo y experiencias únicas en Ushuaia.",
-        cta: "Próximamente",
-        href: "/moovyx",
-        icon: <Compass className="w-8 h-8" />,
-        badge: "Próximamente",
     },
 ];
 
@@ -78,10 +54,10 @@ const slidesConfig: SlideConfig[] = [
 function FloatingStar({ delay, duration, left, top }: { delay: number; duration: number; left: string; top: string }) {
     return (
         <div
-            className="absolute animate-float text-amber-400/60 pointer-events-none"
+            className="absolute animate-float text-red-400/60 pointer-events-none"
             style={{ left, top, animationDelay: `${delay}s`, animationDuration: `${duration}s` }}
         >
-            <Star className="w-4 h-4 fill-amber-400" />
+            <Star className="w-4 h-4 fill-red-400" />
         </div>
     );
 }
@@ -109,16 +85,8 @@ function MobileMenu({ isOpen, onClose, accentColor }: { isOpen: boolean; onClose
                     <Link href="/tienda" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <ShoppingBag className="w-5 h-5 text-[#e60012]" /> Tienda
                     </Link>
-                    <Link href="https://jobs.somosmoovy.com" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Briefcase className="w-5 h-5 text-[#2563eb]" /> Jobs
-                        <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Nuevo</span>
-                    </Link>
                     <Link href="/marketplace" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Tag className="w-5 h-5 text-[#7C3AED]" /> Marketplace
-                    </Link>
-                    <Link href="/moovyx" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
-                        <Compass className="w-5 h-5 text-[#00D4AA]" /> MOOVY X
-                        <span className="ml-auto text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">Próximamente</span>
+                        <Tag className="w-5 h-5 text-[#e60012]" /> Marketplace
                     </Link>
                     <Link href="/nosotros" onClick={onClose} className="flex items-center gap-4 py-4 text-lg font-medium text-gray-900 border-b border-gray-50">
                         <Info className="w-5 h-5" style={{ color: accentColor }} /> Quiénes Somos
@@ -224,7 +192,7 @@ function HeroSlide({ slide, isActive }: { slide: SlideConfig; isActive: boolean 
                     {/* Title */}
                     <h1
                         className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] mb-6 tracking-tight"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                     >
                         {slide.title}
                         <br />
@@ -429,19 +397,9 @@ export default function LandingPage() {
                     </div>
 
                     <Link href="/" className="flex justify-center">
-                        {slidesConfig[currentSlide].logo ? (
-                            <Image
-                                src={slidesConfig[currentSlide].logo!}
-                                alt="MOOVY Jobs"
-                                width={120}
-                                height={40}
-                                className="h-8 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="text-2xl sm:text-3xl font-bold text-white tracking-tighter" style={{ fontFamily: "'Junegull', sans-serif" }}>
+                        <span className="text-2xl sm:text-3xl font-bold text-white tracking-tighter" style={{ fontFamily: "'Junegull', sans-serif" }}>
                                 MOOVY
                             </span>
-                        )}
                     </Link>
 
                     <div className="flex justify-end">
@@ -495,7 +453,7 @@ export default function LandingPage() {
 
                                     <div className="relative z-10">
                                         <div className="flex items-center gap-4 mb-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-[#e60012] to-[#ff4444] rounded-xl flex items-center justify-center shadow-lg">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-[#e60012] to-[#ff4d5e] rounded-xl flex items-center justify-center shadow-lg">
                                                 <ShoppingBag className="w-7 h-7 text-white" />
                                             </div>
                                             <div>
@@ -590,7 +548,7 @@ export default function LandingPage() {
                                         title="Marketplace"
                                         description="Comprá y vendé en tu ciudad"
                                         details="Publicá productos nuevos o usados. Comprá a vendedores de Ushuaia de forma segura."
-                                        accentColor="#7C3AED"
+                                        accentColor="#e60012"
                                         registerText="Explorar"
                                         loginText="Soy Vendedor"
                                     />
@@ -599,12 +557,12 @@ export default function LandingPage() {
                         )}
 
                         {/* MARKETPLACE CONTENT */}
-                        {currentSlide === 2 && (
+                        {currentSlide === 1 && (
                             <>
-                                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-6 sm:p-8 relative overflow-hidden mb-8">
+                                <div className="bg-red-50 border border-red-100 rounded-2xl p-6 sm:p-8 relative overflow-hidden mb-8">
                                     <div className="relative z-10">
                                         <div className="flex items-center gap-4 mb-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
                                                 <Tag className="w-7 h-7 text-white" />
                                             </div>
                                             <div>
@@ -619,7 +577,7 @@ export default function LandingPage() {
 
                                         <div className="grid sm:grid-cols-3 gap-3 mb-6">
                                             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Tag className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                                                <Tag className="w-5 h-5 text-red-500 flex-shrink-0" />
                                                 <span className="text-sm text-gray-700">Publicaciones verificadas</span>
                                             </div>
                                             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
@@ -627,13 +585,13 @@ export default function LandingPage() {
                                                 <span className="text-sm text-gray-700">Sumá puntos MOOVER</span>
                                             </div>
                                             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Users className="w-5 h-5 text-violet-500 flex-shrink-0" />
+                                                <Users className="w-5 h-5 text-red-500 flex-shrink-0" />
                                                 <span className="text-sm text-gray-700">Comunidad local</span>
                                             </div>
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row gap-3">
-                                            <Link href="/marketplace" className="inline-flex items-center justify-center gap-2 bg-[#7C3AED] text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-[#6D28D9] transition-colors">
+                                            <Link href="/marketplace" className="inline-flex items-center justify-center gap-2 bg-[#e60012] text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-[#b5000e] transition-colors">
                                                 Explorar Marketplace <ArrowRight className="w-4 h-4" />
                                             </Link>
                                             <Link href="/mi-perfil" className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
@@ -645,109 +603,6 @@ export default function LandingPage() {
                             </>
                         )}
 
-                        {/* JOBS CONTENT */}
-                        {currentSlide === 1 && (
-                            <>
-                                <div className="grid md:grid-cols-2 gap-6 mb-8">
-                                    {/* Buscás Empleo */}
-                                    <div className="bg-[#003a9b]/5 border border-[#003a9b]/20 rounded-2xl p-6 sm:p-8">
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-[#003a9b] to-[#0052cc] rounded-xl flex items-center justify-center shadow-lg">
-                                                <Users className="w-7 h-7 text-white" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Buscás Empleo</h2>
-                                                <p className="text-sm text-gray-500">Encontrá tu oportunidad</p>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-gray-600 mb-6">
-                                            Explorá ofertas laborales en Ushuaia. Repartidor, staff, atención al cliente y más.
-                                        </p>
-
-                                        <div className="space-y-3 mb-6">
-                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Bike className="w-5 h-5 text-[#f26101] flex-shrink-0" />
-                                                <span className="text-sm text-gray-700">Repartidor / Delivery</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Store className="w-5 h-5 text-[#f26101] flex-shrink-0" />
-                                                <span className="text-sm text-gray-700">Staff / Atención</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Briefcase className="w-5 h-5 text-[#f26101] flex-shrink-0" />
-                                                <span className="text-sm text-gray-700">Administrativo</span>
-                                            </div>
-                                        </div>
-
-                                        <Link
-                                            href="https://jobs.somosmoovy.com"
-                                            className="inline-flex items-center justify-center gap-2 bg-[#f26101] text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-[#e05500] transition-colors w-full"
-                                        >
-                                            Ver Empleos <ArrowRight className="w-4 h-4" />
-                                        </Link>
-                                    </div>
-
-                                    {/* Tenés Ofertas */}
-                                    <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 sm:p-8">
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl flex items-center justify-center shadow-lg">
-                                                <Store className="w-7 h-7 text-white" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Tenés Ofertas</h2>
-                                                <p className="text-sm text-gray-500">Publicá y encontrá talento</p>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-gray-600 mb-6">
-                                            ¿Tenés una empresa? Publicá tus ofertas laborales y encontrá el personal ideal.
-                                        </p>
-
-                                        <div className="space-y-3 mb-6">
-                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Gift className="w-5 h-5 text-[#003a9b] flex-shrink-0" />
-                                                <span className="text-sm text-gray-700">Publicación gratuita</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Award className="w-5 h-5 text-[#003a9b] flex-shrink-0" />
-                                                <span className="text-sm text-gray-700">Gestión de candidatos</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                                                <Users className="w-5 h-5 text-[#003a9b] flex-shrink-0" />
-                                                <span className="text-sm text-gray-700">Alcance local</span>
-                                            </div>
-                                        </div>
-
-                                        <Link
-                                            href="https://jobs.somosmoovy.com/empresas"
-                                            className="inline-flex items-center justify-center gap-2 bg-[#003a9b] text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-[#002d7a] transition-colors w-full"
-                                        >
-                                            Publicar Oferta <ArrowRight className="w-4 h-4" />
-                                        </Link>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* MOOVY X CONTENT */}
-                        {currentSlide === 3 && (
-                            <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100 rounded-2xl p-6 sm:p-8 text-center">
-                                <div className="mb-4">
-                                    <span className="text-3xl sm:text-4xl font-black tracking-tight" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-sky-500 to-emerald-500">MOOVY</span>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 ml-1">X</span>
-                                    </span>
-                                </div>
-                                <span className="inline-block bg-teal-100 text-teal-700 text-xs font-bold px-4 py-1.5 rounded-full mb-4">
-                                    Próximamente
-                                </span>
-                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Experiencias turísticas</h2>
-                                <p className="text-gray-600 max-w-lg mx-auto">
-                                    Explorá el Fin del Mundo. Excursiones, hoteles, tours y servicios para turistas. Muy pronto en MOOVY.
-                                </p>
-                            </div>
-                        )}
                     </div>
                 </div>
             </section>
@@ -775,7 +630,6 @@ export default function LandingPage() {
                                 <li><Link href="/tienda" className="text-white/60 hover:text-white transition-all">Tienda</Link></li>
                                 <li><Link href="/marketplace" className="text-white/60 hover:text-white transition-all">Marketplace</Link></li>
                                 <li><Link href="/moover" className="text-white/60 hover:text-white transition-all">MOOVER</Link></li>
-                                <li><Link href="https://jobs.somosmoovy.com" className="text-white/60 hover:text-white transition-all">Jobs</Link></li>
                             </ul>
                         </div>
 
@@ -797,7 +651,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="border-t border-white/10 pt-4 sm:pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/40 max-w-5xl mx-auto">
-                        <p>© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Poppins', sans-serif", fontSize: '8px' }}>™</sup>. Hecho en el Fin del Mundo.</p>
+                        <p>© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '8px' }}>™</sup>. Hecho en el Fin del Mundo.</p>
                         <p>Ushuaia, Tierra del Fuego</p>
                     </div>
                 </div>

@@ -252,10 +252,10 @@ export default function AdminSoportePage() {
                                         }`}
                                 >
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${chat.user.role === "MERCHANT" ? 'bg-purple-100' : 'bg-blue-100'
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${chat.user.role === "MERCHANT" ? 'bg-red-100' : 'bg-blue-100'
                                             }`}>
                                             {chat.user.role === "MERCHANT" ? (
-                                                <Store className="w-4 h-4 text-purple-600" />
+                                                <Store className="w-4 h-4 text-red-600" />
                                             ) : (
                                                 <Bike className="w-4 h-4 text-blue-600" />
                                             )}
@@ -302,10 +302,10 @@ export default function AdminSoportePage() {
                                 >
                                     <ChevronLeft className="w-5 h-5" />
                                 </button>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedChat.user.role === "MERCHANT" ? 'bg-purple-100' : 'bg-blue-100'
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedChat.user.role === "MERCHANT" ? 'bg-red-100' : 'bg-blue-100'
                                     }`}>
                                     {selectedChat.user.role === "MERCHANT" ? (
-                                        <Store className="w-5 h-5 text-purple-600" />
+                                        <Store className="w-5 h-5 text-red-600" />
                                     ) : (
                                         <Bike className="w-5 h-5 text-blue-600" />
                                     )}
@@ -405,7 +405,7 @@ export default function AdminSoportePage() {
                                         <button
                                             type="submit"
                                             disabled={sending || !newMessage.trim()}
-                                            className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#c5000f] transition disabled:opacity-50"
+                                            className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#cc000f] transition disabled:opacity-50"
                                         >
                                             {sending ? (
                                                 <Loader2 className="w-5 h-5 animate-spin" />

@@ -208,7 +208,7 @@ async function LiveStoreView() {
       />
 
       {/* 2. Categorías — con imágenes de OPS, auto-scroll + swipe */}
-      <section className="relative py-4 bg-white -mt-0" style={{ zIndex: 1 }}>
+      <section className="relative py-4 bg-white">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-2.5 mb-3">
             {/* Casita verde indicando comercios abiertos */}
@@ -225,7 +225,7 @@ async function LiveStoreView() {
             </div>
             <div>
               <h2 className="text-lg lg:text-xl font-black text-gray-900 leading-tight">
-                ¿Qué querés pedir?
+                Explorá por categoría
               </h2>
               {openMerchants > 0 && (
                 <p className="text-xs font-semibold text-green-600">
@@ -340,17 +340,17 @@ async function LiveStoreView() {
         <section className="py-8 lg:py-10 bg-gray-50 border-t border-gray-100">
           <div className="container mx-auto px-4">
             {/* Marketplace intro card — desktop: side layout */}
-            <div className="bg-gradient-to-br from-purple-100 to-violet-100 border border-purple-200 rounded-2xl p-5 mb-6 lg:flex lg:items-center lg:justify-between lg:p-8 shadow-sm">
+            <div className="bg-gradient-to-br from-red-100 to-red-100 border border-red-200 rounded-2xl p-5 mb-6 lg:flex lg:items-center lg:justify-between lg:p-8 shadow-sm">
               <div className="lg:max-w-lg">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] flex items-center justify-center shadow-md">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#e60012] to-[#b5000e] flex items-center justify-center shadow-md">
                     <Store className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-gray-900">
                       Marketplace
                     </h2>
-                    <p className="text-xs font-bold text-[#7C3AED]">
+                    <p className="text-xs font-bold text-[#e60012]">
                       Comprá y vendé entre vecinos
                     </p>
                   </div>
@@ -361,14 +361,14 @@ async function LiveStoreView() {
                 </p>
                 <Link
                   href="/marketplace"
-                  className="inline-flex items-center gap-1.5 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-[#e60012] hover:bg-[#b5000e] text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors"
                 >
                   Explorar Marketplace
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
-              <div className="hidden lg:flex w-48 h-28 bg-purple-100/60 rounded-2xl items-center justify-center">
-                <span className="text-purple-300 text-xs font-semibold">
+              <div className="hidden lg:flex w-48 h-28 bg-red-100/60 rounded-2xl items-center justify-center">
+                <span className="text-red-300 text-xs font-semibold">
                   Ilustración
                 </span>
               </div>

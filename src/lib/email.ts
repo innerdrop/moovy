@@ -50,7 +50,7 @@ export async function sendWelcomeEmail(email: string, firstName: string, referra
 
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${baseUrl}/tienda" 
-                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4444); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4d5e); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
                                 Empezar a comprar
                             </a>
                         </div>
@@ -161,7 +161,7 @@ export async function sendOrderConfirmationEmail(orderData: {
 
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${baseUrl}/mis-pedidos" 
-                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4444); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4d5e); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
                                 Ver estado de mi pedido
                             </a>
                         </div>
@@ -206,7 +206,7 @@ export async function sendPasswordResetEmail(email: string, resetLink: string) {
                         </p>
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${resetLink}" 
-                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4444); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                               style="display: inline-block; background: linear-gradient(to right, #e60012, #ff4d5e); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
                                 Restablecer Contraseña
                             </a>
                         </div>

@@ -256,7 +256,7 @@ export default function BuyFromCatalogPage() {
     }
 
     return (
-        <div className="space-y-8 font-poppins">
+        <div className="space-y-8 font-sans">
             {/* Header Area */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

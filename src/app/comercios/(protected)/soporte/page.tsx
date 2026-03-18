@@ -158,7 +158,7 @@ export default function ComercioSoportePage() {
                         <h2 className="font-bold text-lg text-gray-900">Soporte MOOVY</h2>
                         <button
                             onClick={() => setShowNewChat(true)}
-                            className="p-2 bg-[#e60012] text-white rounded-lg hover:bg-[#c5000f] transition"
+                            className="p-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition"
                         >
                             <Plus className="w-5 h-5" />
                         </button>
@@ -322,7 +322,7 @@ export default function ComercioSoportePage() {
                                 <button
                                     type="submit"
                                     disabled={sending || !newMessage.trim()}
-                                    className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#c5000f] transition disabled:opacity-50"
+                                    className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#cc000f] transition disabled:opacity-50"
                                 >
                                     {sending ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
