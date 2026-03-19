@@ -12,6 +12,7 @@ import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
+import PullToRefresh from "@/components/ui/PullToRefresh";
 
 const SPLASH_SHOWN_KEY = "moovy_splash_v4";
 
@@ -114,7 +115,9 @@ export default function StoreLayout({
 
             {/* Contenido scrollable — solo esta zona se mueve */}
             <main className="flex-1 pt-14 pb-20">
-                {children}
+                <PullToRefresh>
+                    {children}
+                </PullToRefresh>
             </main>
 
             {/* Bottom Navigation siempre visible — fijo abajo */}

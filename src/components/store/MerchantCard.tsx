@@ -45,11 +45,11 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
     };
 
     return (
-        <Link href={`/store/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'}`}>
+        <Link href={`/tienda/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover-lift tap-bounce border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'}`}>
             <div className="relative aspect-video bg-gray-100">
                 {/* Image placeholder or real image */}
                 {merchant.image ? (
-                    <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
+                    <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover img-zoom" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
                         <span className="text-4xl font-bold opacity-20">{cleanEncoding(merchant.name).charAt(0)}</span>

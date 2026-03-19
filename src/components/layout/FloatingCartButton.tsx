@@ -23,7 +23,7 @@ export default function FloatingCartButton() {
     return (
         <button
             onClick={() => openCart()}
-            className="fixed bottom-20 left-4 right-4 max-w-lg mx-auto z-40 bg-[#e60012] text-white rounded-2xl py-4 px-6 shadow-lg flex items-center justify-between gap-4 active:scale-[0.98] transition-transform"
+            className="fixed bottom-24 left-4 right-4 max-w-lg mx-auto z-[55] bg-[#e60012] text-white rounded-2xl py-4 px-6 shadow-xl shadow-red-500/20 flex items-center justify-between gap-4 active:scale-[0.98] transition-transform"
             style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
         >
             <div className="flex items-center gap-3">

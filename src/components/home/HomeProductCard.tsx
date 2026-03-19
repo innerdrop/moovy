@@ -44,7 +44,7 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
     };
 
     return (
-        <div className="group border border-gray-100 rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow">
+        <div className="group border border-gray-100 rounded-xl overflow-hidden bg-white hover-lift tap-bounce">
             <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {image ? (

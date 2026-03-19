@@ -27,7 +27,8 @@ import {
     UserCheck,
     Shield,
     TrendingUp,
-    Archive
+    Archive,
+    Paintbrush
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -80,6 +81,7 @@ const navSections: NavSection[] = [
         title: "Sistema",
         items: [
             { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
+            { href: "/ops/hero", icon: Paintbrush, label: "Hero Builder" },
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
             { href: "/ops/backups", icon: Archive, label: "Backups" },

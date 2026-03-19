@@ -7,6 +7,22 @@ const includeOpts = {
     images: { orderBy: { order: "asc" as const } },
     categories: { include: { category: true } },
     variants: { where: { isActive: true } },
+    merchant: {
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            isOpen: true,
+            isVerified: true,
+            isPremium: true,
+            rating: true,
+            deliveryTimeMin: true,
+            deliveryTimeMax: true,
+            deliveryFee: true,
+            address: true,
+        },
+    },
 };
 
 async function findProduct(slug: string) {

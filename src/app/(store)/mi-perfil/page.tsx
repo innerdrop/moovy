@@ -167,25 +167,7 @@ export default function ProfilePage() {
                         </div>
                     </div>
 
-                    {/* Quick Stats Card */}
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100 flex items-center justify-between">
-                        <div>
-                            <p className="text-xs text-amber-700 font-medium mb-1 flex items-center gap-1">
-                                <Award className="w-3 h-3" /> Nivel {level.name}
-                            </p>
-                            <p className="text-2xl font-semibold text-gray-900">{points.toLocaleString()}</p>
-                            <p className="text-[10px] text-gray-400">Puntos MOOVER</p>
-                        </div>
-                        <div className="w-24">
-                            {/* Popup trigger for redemptions */}
-                            <button
-                                onClick={() => setShowRedemptions(true)}
-                                className="text-xs bg-white text-amber-600 px-3 py-1.5 rounded-full shadow-sm font-semibold border border-amber-100 block text-center w-full hover:bg-amber-50 transition-colors"
-                            >
-                                Ver canjes
-                            </button>
-                        </div>
-                    </div>
+                    {/* MOOVER card removed — info available via MOOVER star button in BottomNav */}
                 </div>
             </div>
 

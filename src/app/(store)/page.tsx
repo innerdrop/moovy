@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { ArrowRight, Store, Home } from "lucide-react";
+import { ArrowRight, Store } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroStatic from "@/components/home/HeroStatic";
 import HeroSliderNew from "@/components/home/HeroSliderNew";
@@ -24,6 +24,8 @@ import MerchantCard from "@/components/store/MerchantCard";
 import ListingCard from "@/components/store/ListingCard";
 import Footer from "@/components/layout/Footer";
 import HomeProductCard from "@/components/home/HomeProductCard";
+import PromoBanner from "@/components/home/PromoBanner";
+import AnimateIn from "@/components/ui/AnimateIn";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
@@ -171,6 +173,19 @@ function MaintenanceView() {
 // MAIN STORE VIEW
 // ============================================
 
+async function getHeroConfig() {
+  try {
+    const configs = await prisma.moovyConfig.findMany({
+      where: { key: { startsWith: "hero_" } },
+    });
+    const result: Record<string, string> = {};
+    for (const c of configs) result[c.key] = c.value;
+    return Object.keys(result).length > 0 ? result : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function LiveStoreView() {
   const settings = await prisma.storeSettings
     .findUnique({ where: { id: "settings" } })
@@ -185,6 +200,7 @@ async function LiveStoreView() {
     totalDelivered,
     activeMerchants,
     openMerchants,
+    heroConfig,
   ] = await Promise.all([
     getCategories(settings?.maxCategoriesHome ?? 8),
     getMerchants(),
@@ -194,60 +210,49 @@ async function LiveStoreView() {
     getTotalDelivered(),
     getActiveMerchantCount(),
     getOpenMerchantCount(),
+    getHeroConfig(),
   ]);
 
   const slideInterval = settings?.heroSliderInterval ?? 5000;
   const sliderEnabled = (settings as any)?.heroSliderEnabled ?? true;
 
+  // Banner /Tienda settings
+  const bannerEnabled = (settings as any)?.promoBannerEnabled ?? false;
+  const bannerProps = bannerEnabled ? {
+    enabled: true,
+    title: (settings as any)?.promoBannerTitle || undefined,
+    subtitle: (settings as any)?.promoBannerSubtitle || undefined,
+    buttonText: (settings as any)?.promoBannerButtonText || undefined,
+    buttonLink: (settings as any)?.promoBannerButtonLink || undefined,
+    image: (settings as any)?.promoBannerImage || null,
+  } : null;
+
   return (
     <div className="animate-fadeIn">
-      {/* 1. Hero Estático con buscador */}
+      {/* 1. Hero Estático con buscador — config dinámica desde OPS */}
       <HeroStatic
         totalDelivered={totalDelivered}
+        config={heroConfig as any}
         activeMerchants={activeMerchants}
       />
 
-      {/* 2. Categorías — con imágenes de OPS, auto-scroll + swipe */}
-      <section className="relative py-4 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-2.5 mb-3">
-            {/* Casita verde indicando comercios abiertos */}
-            <div className="relative flex-shrink-0">
-              <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center shadow-sm shadow-green-500/30">
-                <Home className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
-              </div>
-              {openMerchants > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 border-2 border-white" />
-                </span>
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg lg:text-xl font-black text-gray-900 leading-tight">
-                Explorá por categoría
-              </h2>
-              {openMerchants > 0 && (
-                <p className="text-xs font-semibold text-green-600">
-                  {openMerchants}{" "}
-                  {openMerchants === 1
-                    ? "comercio abierto"
-                    : "comercios abiertos"}{" "}
-                  ahora
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-        <CategoryGrid categories={categories} />
-      </section>
+      {/* 2. Categorías — sin título, protagonistas */}
+      <AnimateIn animation="reveal">
+        <section className="relative py-5 bg-white">
+          <CategoryGrid categories={categories} />
+        </section>
+      </AnimateIn>
 
       {/* 4. Banner Publicitario OPS (posición premium — monetizable) */}
       {sliderEnabled && slides.length > 0 && (
         <HeroSliderNew slides={slides} slideInterval={slideInterval} />
       )}
 
+      {/* 5. Banner Promocional configurable desde OPS */}
+      {bannerProps && <PromoBanner {...bannerProps} />}
+
       {/* 6. Comercios en Ushuaia */}
+      <AnimateIn animation="reveal">
       <section className="py-6 lg:py-8 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-5">
@@ -302,8 +307,10 @@ async function LiveStoreView() {
           )}
         </div>
       </section>
+      </AnimateIn>
 
       {/* 7. Productos — Lo más pedido */}
+      <AnimateIn animation="reveal" delay={100}>
       <section className="py-8 lg:py-10 bg-white border-t border-gray-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-5">
@@ -334,43 +341,68 @@ async function LiveStoreView() {
           )}
         </div>
       </section>
+      </AnimateIn>
 
       {/* 8. Marketplace */}
       {recentListings.length > 0 && (
+        <AnimateIn animation="reveal-scale">
         <section className="py-8 lg:py-10 bg-gray-50 border-t border-gray-100">
           <div className="container mx-auto px-4">
-            {/* Marketplace intro card — desktop: side layout */}
-            <div className="bg-gradient-to-br from-red-100 to-red-100 border border-red-200 rounded-2xl p-5 mb-6 lg:flex lg:items-center lg:justify-between lg:p-8 shadow-sm">
-              <div className="lg:max-w-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#e60012] to-[#b5000e] flex items-center justify-center shadow-md">
-                    <Store className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900">
-                      Marketplace
-                    </h2>
-                    <p className="text-xs font-bold text-[#e60012]">
-                      Comprá y vendé entre vecinos
-                    </p>
+            {/* Marketplace hero banner — immersive gradient */}
+            <div className="relative overflow-hidden rounded-3xl mb-6">
+              {/* Background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6]" />
+              {/* Decorative orbs */}
+              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-purple-400/20 blur-2xl" />
+              <div className="absolute -left-10 bottom-0 w-32 h-32 rounded-full bg-fuchsia-400/15 blur-2xl" />
+
+              <div className="relative z-10 px-5 py-6 lg:px-10 lg:py-8 lg:flex lg:items-center lg:justify-between">
+                <div className="lg:max-w-md">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Vendedores activos en Ushuaia
+                  </span>
+                  <h2 className="text-2xl lg:text-3xl font-black text-white mb-1.5 leading-tight">
+                    Marketplace
+                  </h2>
+                  <p className="text-sm text-white/70 mb-4 leading-relaxed">
+                    Comprá y vendé productos entre vecinos. Publicar es gratis.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/marketplace"
+                      className="inline-flex items-center gap-1.5 bg-white text-[#7C3AED] text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-white/90 transition shadow-lg shadow-black/10"
+                    >
+                      Explorar
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href="/vendedor/registro"
+                      className="inline-flex items-center gap-1.5 bg-white/15 text-white text-sm font-semibold px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/25 transition"
+                    >
+                      Quiero vender
+                    </Link>
                   </div>
                 </div>
-                <p className="text-sm text-gray-700 font-medium mb-3 lg:mb-4">
-                  Productos nuevos y usados de vendedores de Ushuaia. Publicar
-                  es gratis.
-                </p>
-                <Link
-                  href="/marketplace"
-                  className="inline-flex items-center gap-1.5 bg-[#e60012] hover:bg-[#b5000e] text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors"
-                >
-                  Explorar Marketplace
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-              <div className="hidden lg:flex w-48 h-28 bg-red-100/60 rounded-2xl items-center justify-center">
-                <span className="text-red-300 text-xs font-semibold">
-                  Ilustración
-                </span>
+
+                {/* Right: mini preview cards stacked (desktop only) */}
+                <div className="hidden lg:flex flex-col gap-2 w-56">
+                  {recentListings.slice(0, 2).map((listing) => (
+                    <Link
+                      key={listing.id}
+                      href={`/marketplace/${listing.id}`}
+                      className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 border border-white/10 hover:bg-white/20 transition"
+                    >
+                      {listing.images[0]?.url && (
+                        <img src={listing.images[0].url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{listing.title}</p>
+                        <p className="text-xs font-bold text-purple-200">${listing.price.toLocaleString("es-AR")}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -381,13 +413,18 @@ async function LiveStoreView() {
             </div>
           </div>
         </section>
+        </AnimateIn>
       )}
 
       {/* 9. Trust Bar */}
-      <TrustBar />
+      <AnimateIn animation="reveal" delay={50}>
+        <TrustBar />
+      </AnimateIn>
 
       {/* 10. Supply Side CTAs */}
-      <SupplySideCTA />
+      <AnimateIn animation="reveal-scale" delay={100}>
+        <SupplySideCTA />
+      </AnimateIn>
 
       {/* Footer */}
       <Footer />

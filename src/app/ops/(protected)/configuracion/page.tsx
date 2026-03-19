@@ -7,7 +7,6 @@ import {
     Truck,
     DollarSign,
     MapPin,
-    Phone,
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
 import { Switch } from "./Switch";
@@ -561,53 +560,6 @@ export default async function ConfigurationPage() {
                     </div>
                 </div>
 
-                {/* Contact Card */}
-                <div className="lg:col-span-2">
-                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 group">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
-                                <Phone className="w-6 h-6 text-green-500" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900 leading-none">Canales de Contacto</h2>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Soporte y Atención</p>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 italic">WhatsApp</label>
-                                <input
-                                    type="tel"
-                                    defaultValue={settings?.whatsappNumber || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                    placeholder="+54 264 555 5555"
-                                    name="whatsappNumber"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 italic">Teléfono</label>
-                                <input
-                                    type="tel"
-                                    defaultValue={settings?.phone || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    placeholder="+54 264 555 5555"
-                                    name="phone"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 italic">Email</label>
-                                <input
-                                    type="email"
-                                    defaultValue={settings?.email || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                    placeholder="contacto@Moovysanjuan.com"
-                                    name="email"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </ConfigForm>
     );

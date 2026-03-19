@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, User, Package, X, ChevronRight, Bell, Search, Loader2, Store } from "lucide-react";
+import { ShoppingBag, MapPin, User, Package, X, ChevronRight, Bell, Search, Loader2, Store, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -184,8 +184,8 @@ export default function AppHeader({
                 className="fixed top-0 left-0 right-0 z-50 overflow-visible bg-white shadow-sm"
                 style={{ paddingTop: 'env(safe-area-inset-top)' }}
             >
-                {/* Red accent line */}
-                <div className="h-1 bg-gradient-to-r from-[#e60012] via-[#ff1a2e] to-[#e60012]" />
+                {/* Accent line — red or violet on marketplace */}
+                <div className={`h-1 bg-gradient-to-r ${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"}`} />
 
                 {/* Mobile Header - Single clean row */}
                 <div className="lg:hidden flex items-center justify-between h-14 px-4">
@@ -250,13 +250,13 @@ export default function AppHeader({
                     </div>
                 </div>
 
-                {/* Mobile: Compact search bar — slides in with wavy bottom edge */}
+                {/* Mobile: Compact search bar — slides in with wavy bottom edge (not on marketplace — has its own) */}
                 <div
                     className={`lg:hidden relative overflow-visible transition-all duration-300 ease-out ${
-                        scrolledPastHero ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+                        scrolledPastHero && !isMarketplace ? "max-h-20 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
                     }`}
                 >
-                    <div className="relative px-4 pb-5 pt-2" style={{ backgroundColor: "#e60012" }}>
+                    <div className="relative px-4 pb-5 pt-2" style={{ backgroundColor: isMarketplace ? "#7C3AED" : "#e60012" }}>
                         <form onSubmit={handleSearchSubmit} className="relative z-10">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
@@ -265,21 +265,21 @@ export default function AppHeader({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setShowMobileSearch(true)}
-                                placeholder="¿Qué querés pedir?"
+                                placeholder={isMarketplace ? "Buscar en marketplace..." : "¿Qué querés pedir?"}
                                 className="w-full pl-11 pr-4 py-3 bg-white rounded-2xl text-sm shadow-lg shadow-black/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition placeholder:text-gray-400 font-medium"
                             />
                         </form>
                     </div>
-                    {/* Wavy bottom edge — same solid red */}
+                    {/* Wavy bottom edge — exact same bezier curves as hero clip-path */}
                     <svg
                         className="absolute bottom-0 left-0 w-full translate-y-[calc(100%-1px)]"
-                        viewBox="0 0 1440 30"
+                        viewBox="0 0 1 0.18"
                         preserveAspectRatio="none"
-                        style={{ height: "16px" }}
+                        style={{ height: "22px" }}
                     >
                         <path
-                            d="M0,0 L0,10 Q180,30 360,15 Q540,0 720,12 Q900,28 1080,14 Q1260,0 1440,10 L1440,0 Z"
-                            fill="#e60012"
+                            d="M0,0 L1,0 L1,0.02 C0.85,0.12 0.7,0.04 0.55,0.10 C0.4,0.16 0.25,0.08 0.1,0.15 C0.05,0.17 0.02,0.15 0,0.13 Z"
+                            fill={isMarketplace ? "#7C3AED" : "#e60012"}
                         />
                     </svg>
                 </div>
@@ -439,7 +439,11 @@ export default function AppHeader({
             {/* Mobile Search Overlay */}
             {showMobileSearch && (
                 <div className="fixed inset-0 z-[60] bg-white lg:hidden">
-                    <div className="flex items-center gap-3 h-14 px-4 border-b border-gray-100" style={{ marginTop: 'env(safe-area-inset-top)' }}>
+                    <div className="flex items-center gap-2 h-14 px-2 border-b border-gray-100" style={{ marginTop: 'env(safe-area-inset-top)' }}>
+                        {/* Back arrow — closes overlay */}
+                        <button onClick={closeSearch} className="p-2 text-gray-500 hover:text-gray-700 flex-shrink-0">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
                         <form onSubmit={handleSearchSubmit} className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -448,15 +452,22 @@ export default function AppHeader({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Buscar productos, comercios..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 transition placeholder:text-gray-400"
+                                className="w-full pl-10 pr-9 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 transition placeholder:text-gray-400"
                             />
+                            {/* X inside input — clears text only */}
+                            {searchQuery.length > 0 && !searchLoading && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setSearchQuery(""); setSearchResults(null); setShowResults(false); }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
                             {searchLoading && (
                                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
                             )}
                         </form>
-                        <button onClick={closeSearch} className="p-2 text-gray-500 hover:text-gray-700">
-                            <X className="w-5 h-5" />
-                        </button>
                     </div>
 
                     {/* Mobile Search Results */}
@@ -532,9 +543,20 @@ export default function AppHeader({
                                 </div>
                             )
                         ) : !searchQuery ? (
-                            <div className="p-8 text-center">
-                                <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                                <p className="text-sm text-gray-400">Buscá productos, comercios y más</p>
+                            <div className="px-5 pt-6">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Búsquedas populares</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {["Pizza", "Hamburguesa", "Farmacia", "Bebidas", "Ropa", "Electrónica", "Sushi", "Panadería"].map((term) => (
+                                        <button
+                                            key={term}
+                                            type="button"
+                                            onClick={() => { setSearchQuery(term); }}
+                                            className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-700 hover:bg-[#e60012]/10 hover:text-[#e60012] transition"
+                                        >
+                                            {term}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         ) : null}
                     </div>
