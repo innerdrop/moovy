@@ -163,7 +163,7 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Marketplace (Vendedor, Listings)**: Violeta `#7C3AED` como primario
   - Dark: `#5B21B6`, Darker: `#4C1D95`, Light: `#8B5CF6`, Lighter: `#A78BFA`, Lightest: `#EDE9FE`
 - **Logos**: `logo-moovy.svg` (rojo), `logo-moovy-white.svg` (blanco), `logo-moovy-purple.svg` (violeta marketplace)
-- **PWA icons**: `moovy-m.png` (M roja 500x500), `moovy-m-purple.png` (M violeta, reserva)
+- **PWA icons**: `moovy-m.png` (M roja 500x500) — único ícono de app, sin variante violeta (eliminada)
 - **Font**: Plus Jakarta Sans (reemplaza Poppins, variable `--font-jakarta`)
 - **AppSwitcher + AppHeader**: detectan ruta `/marketplace` via `usePathname()` y cambian logo/acento a violeta
 - **ListingCard**: prop `variant="marketplace"` para violeta, default para rojo
@@ -381,3 +381,47 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Logger estructurado (Pino/Winston) reemplazando console.log
 - Mecanismo de revocación de sesiones JWT (token blacklist)
 - Botón "Eliminar mi cuenta" en UI de mi-perfil (endpoint ya existe)
+
+## Marketplace UX Overhaul (2026-03-19)
+- **Hero compacto**: Reducido de ~400px a ~140px en mobile. Título + stats inline, sin búsqueda duplicada (se usa la del sticky bar debajo)
+- **Búsqueda única**: Barra de búsqueda sticky debajo del hero (no en el hero), evita duplicación con AppHeader search
+- **Categorías con contadores**: `/api/categories-public` ahora retorna `listingCount` con `_count` de Prisma
+- **Destacados reales**: Nuevo endpoint `/api/listings/featured` ordena por `seller.isVerified` desc → `seller.rating` desc → `seller.totalSales` desc (no más "newest = featured")
+- **Social proof en cards**: API `/api/listings` ahora retorna `soldCount` y `favCount` via `_count` de Prisma. ListingCard muestra "X vendidos" y badge "Últimas N" cuando stock ≤ 3
+- **Detalle violet premium**: Nuevo `ListingDetailClient.tsx` client component con galería swipe (touch), dots, thumbnails, breadcrumb, botón "Agregar al carrito" funcional, trust signals, badge "Últimas unidades", share nativo (Web Share API con fallback WhatsApp)
+- **Sección "Más de este vendedor"**: Server component fetchea `getRelatedListings()` (mismo seller, excluye current, take 4)
+- **Perfil vendedor violet**: Stats en cards (rating, ventas, publicaciones, miembro desde), glass card, badges verificado/online, stagger animations en listings
+- **Empty states inteligentes**: Sugieren categorías con publicaciones, CTA "Publicar algo", textos contextuales según búsqueda vs categoría vacía
+- **CTA vendedor integrado**: Mini-banner mobile (no intrusivo), botón "Vender" en hero desktop, CTA scroll-reveal para desktop
+- **Loading skeletons**: Detalle (`[id]/loading.tsx`) y listado (`loading.tsx`) actualizados para matchear nuevos layouts
+
+### Archivos nuevos/modificados
+- `src/app/api/listings/featured/route.ts` — **NUEVO**: Endpoint de destacados reales (por calidad de vendedor)
+- `src/app/(store)/marketplace/[id]/ListingDetailClient.tsx` — **NUEVO**: Client component del detalle (galería, carrito, share)
+- `src/app/(store)/marketplace/[id]/loading.tsx` — **NUEVO**: Skeleton del detalle
+- `src/app/api/categories-public/route.ts` — Ahora retorna `listingCount`
+- `src/app/api/listings/route.ts` — Ahora retorna `soldCount`, `favCount` via `_count`
+- `src/app/(store)/marketplace/page.tsx` — **REESCRITO**: Hero compacto, búsqueda sticky, chips con contador, featured real, empty states, CTA integrado
+- `src/app/(store)/marketplace/[id]/page.tsx` — **REESCRITO**: Server component + client component, related listings
+- `src/app/(store)/marketplace/vendedor/[id]/page.tsx` — **REESCRITO**: Tema violet, stats cards, stagger animations
+- `src/components/store/ListingCard.tsx` — Marketplace variant: social proof, low stock badge, tamaños ajustados
+- `src/app/(store)/marketplace/loading.tsx` — Actualizado para nuevo layout compacto
+
+### Sistema de categorías con scope (2026-03-19)
+- Schema Category: nuevo campo `scope` (String, default "BOTH") — valores: `STORE`, `MARKETPLACE`, `BOTH`
+- `/api/categories-public?scope=STORE|MARKETPLACE` filtra categorías por scope (incluye "BOTH" automáticamente)
+- Home + Productos filtran `scope: { in: ["STORE", "BOTH"] }`
+- Marketplace filtra `scope: { in: ["MARKETPLACE", "BOTH"] }`
+- Panel OPS Categorías: selector visual de scope (Tienda/Marketplace/Ambos) al crear/editar
+- Panel OPS: badges de scope (rojo=Tienda, violeta=Marketplace, azul=Ambos) + contadores de products y listings
+- `src/lib/db.ts` → `getAllCategories(scope?)` acepta filtro opcional
+- **IMPORTANTE**: Después de agregar el campo `scope`, ejecutar `npx prisma db push` para regenerar el client
+
+### Patrones marketplace establecidos
+- **Detalle split**: Server component (SEO, data, JSON-LD) + Client component (interacciones, carrito, galería)
+- **Featured logic**: Ordenar por `isVerified` → `rating` → `totalSales`, nunca usar "newest" como "featured"
+- **Social proof fields**: `soldCount` y `favCount` disponibles en `/api/listings` response
+- **Low stock threshold**: stock ≤ 3 muestra badge "Últimas N" en card y detalle
+- **Web Share API**: Usar `navigator.share` con fallback a WhatsApp deep link
+- **Categorías con count**: Siempre mostrar `listingCount` en chips y selects
+- **Category scope**: Tienda usa STORE, Marketplace usa MARKETPLACE, compartidas usan BOTH

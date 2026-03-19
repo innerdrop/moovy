@@ -73,6 +73,7 @@ export async function GET(request: Request) {
                     },
                     images: { orderBy: { order: "asc" } },
                     category: { select: { id: true, name: true, slug: true } },
+                    _count: { select: { orderItems: true, favorites: true } },
                 },
                 orderBy,
                 take: limit,
@@ -81,15 +82,18 @@ export async function GET(request: Request) {
             prisma.listing.count({ where }),
         ]);
 
-        // Flatten seller.user.sellerAvailability into seller.availability
+        // Flatten seller.user.sellerAvailability into seller.availability + _count into soldCount/favCount
         const flatListings = listings.map((listing: any) => {
             const { user, ...sellerRest } = listing.seller;
+            const { _count, ...listingRest } = listing;
             return {
-                ...listing,
+                ...listingRest,
                 seller: {
                     ...sellerRest,
                     availability: user?.sellerAvailability || null,
                 },
+                soldCount: _count?.orderItems || 0,
+                favCount: _count?.favorites || 0,
             };
         });
 

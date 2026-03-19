@@ -65,7 +65,7 @@ async function getProducts(categoria?: string, buscar?: string): Promise<Product
 }
 
 async function getCategories(): Promise<Category[]> {
-    return await getAllCategories();
+    return await getAllCategories("STORE");
 }
 
 export default async function ProductosPage({ searchParams }: ProductsPageProps) {

@@ -10,10 +10,10 @@ export async function GET() {
         const categories = await prisma.category.findMany({
             orderBy: { order: "asc" },
             include: {
-                _count: { select: { products: true } },
+                _count: { select: { products: true, listings: { where: { isActive: true } } } },
                 children: {
                     orderBy: { order: "asc" },
-                    include: { _count: { select: { products: true } } }
+                    include: { _count: { select: { products: true, listings: { where: { isActive: true } } } } }
                 },
                 parent: true
             },
@@ -57,6 +57,7 @@ export async function POST(request: Request) {
                 description: data.description || null,
                 image: data.image || null,
                 isActive: data.isActive !== false,
+                scope: ["STORE", "MARKETPLACE", "BOTH"].includes(data.scope) ? data.scope : "BOTH",
                 price: parseFloat(data.price || 0),
                 allowIndividualPurchase: data.allowIndividualPurchase !== false,
                 order: newOrder,

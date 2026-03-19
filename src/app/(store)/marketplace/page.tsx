@@ -5,23 +5,26 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ListingCard from "@/components/store/ListingCard";
 import {
-    Tag,
     Search,
     Loader2,
     X,
-    Star,
     Sparkles,
-    ChevronRight,
     ChevronDown,
     SlidersHorizontal,
     ArrowRight,
     PackageSearch,
+    ShieldCheck,
+    Tag,
+    TrendingUp,
+    Users,
+    Flame,
 } from "lucide-react";
 
 interface Listing {
     id: string;
     title: string;
     price: number;
+    stock: number;
     condition: string;
     sellerId: string;
     images: { url: string; order: number }[];
@@ -30,14 +33,18 @@ interface Listing {
         displayName: string | null;
         rating: number | null;
         avatar: string | null;
+        isVerified?: boolean;
     };
     category: { id: string; name: string; slug: string } | null;
+    soldCount?: number;
+    favCount?: number;
 }
 
 interface Category {
     id: string;
     name: string;
     slug: string;
+    listingCount: number;
 }
 
 const CONDITIONS = [
@@ -49,18 +56,17 @@ const CONDITIONS = [
 
 const CATEGORY_EMOJIS: Record<string, string> = {
     electronica: "📱", ropa: "👕", hogar: "🏠", deportes: "⚽",
-    gaming: "🎮", libros: "📚", niños: "🧸", herramientas: "🔧",
+    gaming: "🎮", libros: "📚", "niños": "🧸", herramientas: "🔧",
     vehiculos: "🚗", musica: "🎵", mascotas: "🐾", jardin: "🌱",
     arte: "🎨", juguetes: "🧸", belleza: "💄", salud: "💊",
 };
 
 const LIMIT = 12;
-const FEATURED_LIMIT = 6;
 
 export default function MarketplacePage() {
     const searchParams = useSearchParams();
-    const ctaRef = useRef<HTMLDivElement>(null);
-    const [ctaVisible, setCtaVisible] = useState(false);
+    const sellCtaRef = useRef<HTMLDivElement>(null);
+    const [sellCtaVisible, setSellCtaVisible] = useState(false);
 
     const [listings, setListings] = useState<Listing[]>([]);
     const [featuredListings, setFeaturedListings] = useState<Listing[]>([]);
@@ -78,26 +84,31 @@ export default function MarketplacePage() {
     const [sortBy, setSortBy] = useState("newest");
     const [showFilters, setShowFilters] = useState(false);
 
+    // Total listings for hero stat
+    const totalListings = useRef(0);
+
+    // Fetch categories scoped to MARKETPLACE
     useEffect(() => {
-        fetch("/api/categories-public")
+        fetch("/api/categories-public?scope=MARKETPLACE")
             .then((r) => (r.ok ? r.json() : []))
             .then((data) => setCategories(Array.isArray(data) ? data : []))
             .catch(() => {});
     }, []);
 
+    // Fetch featured (real: by seller rating + sales)
     useEffect(() => {
-        fetch(`/api/listings?limit=${FEATURED_LIMIT}&sortBy=newest`)
-            .then((r) => r.json())
-            .then((data) => setFeaturedListings(data.listings || []))
+        fetch("/api/listings/featured")
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data) => setFeaturedListings(Array.isArray(data) ? data : []))
             .catch(() => {});
     }, []);
 
-    // Intersection observer for CTA scroll reveal
+    // Sell CTA scroll reveal
     useEffect(() => {
-        const el = ctaRef.current;
+        const el = sellCtaRef.current;
         if (!el) return;
         const obs = new IntersectionObserver(
-            ([entry]) => { if (entry.isIntersecting) setCtaVisible(true); },
+            ([entry]) => { if (entry.isIntersecting) setSellCtaVisible(true); },
             { threshold: 0.2 }
         );
         obs.observe(el);
@@ -128,6 +139,7 @@ export default function MarketplacePage() {
             .then((data) => {
                 setListings(data.listings || []);
                 setTotal(data.total || 0);
+                if (!totalListings.current) totalListings.current = data.total || 0;
             })
             .catch(() => {})
             .finally(() => setLoading(false));
@@ -150,6 +162,7 @@ export default function MarketplacePage() {
 
     const hasMore = listings.length < total;
     const hasActiveFilters = !!(categoryId || condition || minPrice || maxPrice);
+    const isSearching = !!search;
 
     function getCategoryEmoji(slug: string): string {
         const normalized = slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -164,37 +177,74 @@ export default function MarketplacePage() {
         setSortBy("newest");
     }
 
+    // Total count for hero (use totalListings ref to avoid flicker)
+    const heroTotal = totalListings.current || total;
+
     return (
         <div className="mp-page">
-            {/* ═══════ HERO ═══════ */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95] px-4 pb-14 pt-10 lg:pb-16 lg:pt-14">
-                {/* Floating orbs */}
-                <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-purple-400/10 blur-3xl mp-orb-1" />
-                <div className="pointer-events-none absolute -left-20 bottom-[-40px] h-56 w-56 rounded-full bg-fuchsia-400/10 blur-2xl mp-orb-2" />
-                <div className="pointer-events-none absolute right-[20%] top-[30%] h-32 w-32 rounded-full bg-violet-300/8 blur-xl mp-orb-2" />
 
-                <div className="relative z-10 mx-auto max-w-5xl">
-                    <h1 className="mb-3 text-[28px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
-                        Marketplace
-                        <br />
-                        <span className="bg-gradient-to-r from-purple-200 to-fuchsia-200 bg-clip-text text-transparent">
-                            entre vecinos
+            {/* ═══════════════════════════════════════════
+                HERO — Compacto, orientado a acción
+               ═══════════════════════════════════════════ */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95]">
+                {/* Orbs decorativos */}
+                <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-purple-400/10 blur-3xl mp-orb-1" />
+                <div className="pointer-events-none absolute -left-12 bottom-[-20px] h-40 w-40 rounded-full bg-fuchsia-400/10 blur-2xl mp-orb-2" />
+
+                <div className="relative z-10 mx-auto max-w-5xl px-4 pb-5 pt-6 lg:pb-7 lg:pt-8">
+                    {/* Title row */}
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-xl font-extrabold leading-tight text-white sm:text-2xl lg:text-3xl">
+                                Marketplace
+                                <span className="ml-2 bg-gradient-to-r from-purple-200 to-fuchsia-200 bg-clip-text text-transparent">
+                                    Ushuaia
+                                </span>
+                            </h1>
+                            <p className="mt-1 text-xs text-white/50 sm:text-sm">
+                                Comprá y vendé entre vecinos. Publicar es gratis.
+                            </p>
+                        </div>
+                        <Link
+                            href="/vendedor/registro"
+                            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 text-xs font-bold text-white backdrop-blur-sm transition hover:bg-white/25 active:scale-95"
+                        >
+                            <Tag className="h-3.5 w-3.5" />
+                            Vender
+                        </Link>
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="mt-3 flex items-center gap-4 text-[11px] text-white/40 sm:gap-6 sm:text-xs">
+                        <span className="flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3 text-green-400" />
+                            <strong className="font-bold text-white/70">{heroTotal || "…"}</strong> publicaciones
                         </span>
-                    </h1>
-                    <p className="mb-7 max-w-sm text-[15px] leading-relaxed text-white/60 lg:max-w-md lg:text-base">
-                        Comprá y vendé productos nuevos y usados en tu ciudad. Publicar es gratis.
-                    </p>
+                        <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-purple-300" />
+                            <strong className="font-bold text-white/70">{categories.length}</strong> categorías
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3 text-blue-300" />
+                            Compra protegida
+                        </span>
+                    </div>
+                </div>
+            </section>
 
-                    {/* Search bar — glass */}
-                    <div className="mp-search-glass flex max-w-xl items-center rounded-2xl p-1.5">
-                        <div className="flex flex-1 items-center gap-3 px-4 py-2.5">
-                            <Search className="h-5 w-5 flex-shrink-0 text-purple-400" />
+            <div className="mx-auto max-w-5xl px-4">
+
+                {/* ═══════ BUSCADOR (único, debajo del hero) ═══════ */}
+                <div className="sticky top-[56px] z-40 -mx-4 px-4 pt-3 pb-1 backdrop-blur-xl" style={{ background: "rgba(245,240,255,0.95)" }}>
+                    <div className="mp-search-glass flex items-center rounded-2xl p-1 mb-2">
+                        <div className="flex flex-1 items-center gap-2.5 px-3.5 py-2">
+                            <Search className="h-4.5 w-4.5 flex-shrink-0 text-purple-400" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="¿Qué estás buscando?"
-                                className="w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400 lg:text-[15px]"
+                                placeholder="Buscar en marketplace..."
+                                className="w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400"
                             />
                             {search && (
                                 <button onClick={() => setSearch("")} className="text-gray-400 hover:text-gray-600 transition">
@@ -202,32 +252,15 @@ export default function MarketplacePage() {
                                 </button>
                             )}
                         </div>
-                        <button className="hidden rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:shadow-purple-500/40 active:scale-95 sm:block">
-                            Buscar
-                        </button>
                     </div>
 
-                    {/* Stats */}
-                    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-white/50 lg:text-sm">
-                        <span><strong className="font-bold text-white/80">{total || "…"}</strong> publicaciones</span>
-                        <span className="hidden sm:inline text-white/30">•</span>
-                        <span className="flex items-center gap-1">
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            <strong className="font-bold text-white/80">4.8</strong> satisfacción
-                        </span>
-                    </div>
-                </div>
-            </section>
-
-            <div className="mx-auto max-w-5xl px-4">
-                {/* ═══════ CATEGORY CHIPS ═══════ */}
-                {categories.length > 0 && (
-                    <div className="sticky top-[57px] z-40 -mx-4 px-4 pb-1 pt-4 backdrop-blur-lg" style={{ background: "rgba(245,240,255,0.92)" }}>
+                    {/* ═══════ CATEGORY CHIPS con contadores ═══════ */}
+                    {categories.length > 0 && (
                         <div className="mp-fade-scroll">
-                            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                                 <button
                                     onClick={() => setCategoryId("")}
-                                    className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 ${
+                                    className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
                                         !categoryId
                                             ? "bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white shadow-md shadow-purple-500/20 mp-chip-active"
                                             : "border border-purple-200/60 bg-white/80 text-gray-600 hover:border-purple-300 hover:bg-purple-50 active:scale-95"
@@ -239,7 +272,7 @@ export default function MarketplacePage() {
                                     <button
                                         key={cat.id}
                                         onClick={() => setCategoryId(categoryId === cat.id ? "" : cat.id)}
-                                        className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 ${
+                                        className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
                                             categoryId === cat.id
                                                 ? "bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white shadow-md shadow-purple-500/20 mp-chip-active"
                                                 : "border border-purple-200/60 bg-white/80 text-gray-600 hover:border-purple-300 hover:bg-purple-50 active:scale-95"
@@ -247,28 +280,31 @@ export default function MarketplacePage() {
                                     >
                                         <span>{getCategoryEmoji(cat.slug)}</span>
                                         {cat.name}
+                                        <span className={`text-[10px] font-bold ${categoryId === cat.id ? "text-white/70" : "text-purple-400"}`}>
+                                            {cat.listingCount}
+                                        </span>
                                     </button>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* ═══════ FILTER BAR ═══════ */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-purple-100/50 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-purple-100/50 py-2.5">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-purple-400">
-                            {total} publicacion{total !== 1 ? "es" : ""}
+                        <span className="text-xs font-medium text-purple-400">
+                            {loading ? "..." : `${total} resultado${total !== 1 ? "s" : ""}`}
                         </span>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all duration-200 active:scale-95 ${
+                            className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition-all duration-200 active:scale-95 ${
                                 hasActiveFilters || showFilters
                                     ? "border-[#7C3AED] bg-purple-50 text-[#7C3AED]"
                                     : "border-purple-200/50 bg-white/60 text-purple-500 hover:border-purple-300 hover:bg-purple-50"
                             }`}
                         >
-                            <SlidersHorizontal className="h-3.5 w-3.5" />
+                            <SlidersHorizontal className="h-3 w-3" />
                             Filtros
                             {hasActiveFilters && (
                                 <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#7C3AED] text-[10px] font-bold text-white">
@@ -286,7 +322,7 @@ export default function MarketplacePage() {
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="rounded-xl border border-purple-200/50 bg-white/60 px-3 py-1.5 text-xs font-medium text-purple-600 outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-purple-200"
+                        className="rounded-xl border border-purple-200/50 bg-white/60 px-2.5 py-1 text-xs font-medium text-purple-600 outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-purple-200"
                     >
                         <option value="newest">Más recientes</option>
                         <option value="price_asc">Menor precio</option>
@@ -296,53 +332,51 @@ export default function MarketplacePage() {
 
                 {/* ═══════ FILTERS PANEL ═══════ */}
                 {showFilters && (
-                    <div className="animate-fadeIn mt-3 mb-2 rounded-2xl border border-purple-100 bg-white/70 p-4 backdrop-blur-sm">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="animate-fadeIn mt-2 mb-2 rounded-2xl border border-purple-100 bg-white/70 p-4 backdrop-blur-sm">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-purple-600">Condición</label>
+                                <label className="mb-1 block text-[11px] font-semibold text-purple-600 uppercase tracking-wide">Condición</label>
                                 <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full rounded-xl border border-purple-200/50 bg-white px-3 py-2 text-sm outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-purple-200">
                                     {CONDITIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                                 </select>
                             </div>
                             {categories.length > 0 && (
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-purple-600">Categoría</label>
+                                    <label className="mb-1 block text-[11px] font-semibold text-purple-600 uppercase tracking-wide">Categoría</label>
                                     <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="w-full rounded-xl border border-purple-200/50 bg-white px-3 py-2 text-sm outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-purple-200">
-                                        <option value="">Todas las categorías</option>
-                                        {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                        <option value="">Todas</option>
+                                        {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name} ({cat.listingCount})</option>)}
                                     </select>
                                 </div>
                             )}
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-purple-600">Precio mínimo</label>
+                                <label className="mb-1 block text-[11px] font-semibold text-purple-600 uppercase tracking-wide">Precio mín.</label>
                                 <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="$0" min="0" className="w-full rounded-xl border border-purple-200/50 bg-white px-3 py-2 text-sm outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-purple-200" />
                             </div>
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-purple-600">Precio máximo</label>
+                                <label className="mb-1 block text-[11px] font-semibold text-purple-600 uppercase tracking-wide">Precio máx.</label>
                                 <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Sin límite" min="0" className="w-full rounded-xl border border-purple-200/50 bg-white px-3 py-2 text-sm outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-purple-200" />
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* ═══════ FEATURED ═══════ */}
+                {/* ═══════ FEATURED — Real (por rating + ventas del vendedor) ═══════ */}
                 {!loading && featuredListings.length > 0 && !search && !hasActiveFilters && (
-                    <section className="mt-6 mb-6">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h2 className="flex items-center gap-2 text-base font-extrabold text-gray-800 lg:text-lg">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm shadow-amber-500/30">
-                                    <Sparkles className="h-3.5 w-3.5 text-white" />
-                                </span>
-                                Destacados
-                            </h2>
-                            <span className="flex items-center gap-1 text-xs font-semibold text-[#7C3AED] transition hover:gap-2">
-                                Ver todos <ChevronRight className="h-3.5 w-3.5" />
+                    <section className="mt-4 mb-4">
+                        <div className="mb-2.5 flex items-center gap-2">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+                                <Flame className="h-3 w-3 text-white" />
+                            </div>
+                            <h2 className="text-sm font-extrabold text-gray-800">Destacados</h2>
+                            <span className="text-[10px] font-medium text-purple-400 bg-purple-50 px-2 py-0.5 rounded-full">
+                                Mejores vendedores
                             </span>
                         </div>
                         <div className="mp-fade-scroll">
-                            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                                 {featuredListings.map((listing, i) => (
-                                    <div key={listing.id} className={`w-[240px] flex-shrink-0 sm:w-[270px] mp-stagger mp-stagger-${i + 1}`}>
+                                    <div key={listing.id} className={`w-[200px] flex-shrink-0 sm:w-[220px] mp-stagger mp-stagger-${i + 1}`}>
                                         <ListingCard listing={listing} showAddButton variant="marketplace" />
                                     </div>
                                 ))}
@@ -351,35 +385,97 @@ export default function MarketplacePage() {
                     </section>
                 )}
 
+                {/* ═══════ MINI CTA vendedor — mobile only, flotante ═══════ */}
+                <div className="sm:hidden flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100/60 px-3 py-2 my-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7C3AED]/10">
+                        <Tag className="h-4 w-4 text-[#7C3AED]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-700 truncate">¿Tenés algo para vender?</p>
+                        <p className="text-[10px] text-purple-400">Publicar es gratis</p>
+                    </div>
+                    <Link
+                        href="/vendedor/registro"
+                        className="flex-shrink-0 rounded-lg bg-[#7C3AED] px-3 py-1.5 text-[11px] font-bold text-white transition active:scale-95"
+                    >
+                        Publicar
+                    </Link>
+                </div>
+
                 {/* ═══════ MAIN RESULTS ═══════ */}
-                <section className="mt-2 pb-8">
+                <section className="mt-1 pb-8">
                     {!loading && listings.length > 0 && (
-                        <h2 className="mb-4 text-base font-extrabold text-gray-800">
-                            Todas las publicaciones
+                        <h2 className="mb-3 text-sm font-extrabold text-gray-800">
+                            {isSearching
+                                ? `Resultados para "${search}"`
+                                : categoryId
+                                    ? `${categories.find(c => c.id === categoryId)?.name || "Categoría"}`
+                                    : "Todas las publicaciones"
+                            }
                         </h2>
                     )}
 
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-24 gap-3">
-                            <Loader2 className="h-8 w-8 text-[#7C3AED] mp-spin-glow" />
-                            <span className="text-sm font-medium text-purple-400">Cargando...</span>
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <Loader2 className="h-7 w-7 text-[#7C3AED] mp-spin-glow" />
+                            <span className="text-xs font-medium text-purple-400">Buscando...</span>
                         </div>
                     ) : listings.length === 0 ? (
-                        <div className="py-24 text-center">
-                            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-purple-100 to-fuchsia-50 mp-empty-float">
-                                <PackageSearch className="h-12 w-12 text-purple-300" />
+                        /* ═══════ EMPTY STATE INTELIGENTE ═══════ */
+                        <div className="py-16 text-center">
+                            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-purple-100 to-fuchsia-50 mp-empty-float">
+                                <PackageSearch className="h-10 w-10 text-purple-300" />
                             </div>
-                            <p className="text-lg font-bold text-gray-700">No encontramos resultados</p>
-                            <p className="mt-1.5 text-sm text-purple-400">Probá con otra búsqueda o explorá las categorías</p>
-                            {hasActiveFilters && (
-                                <button onClick={clearFilters} className="mt-4 rounded-xl bg-[#7C3AED] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:shadow-purple-500/40 active:scale-95">
-                                    Limpiar filtros
-                                </button>
+                            <p className="text-base font-bold text-gray-700">
+                                {isSearching
+                                    ? `No encontramos "${search}"`
+                                    : "No hay publicaciones en esta categoría"
+                                }
+                            </p>
+                            <p className="mt-1 text-sm text-purple-400">
+                                {isSearching
+                                    ? "Intentá con otras palabras o revisá las categorías"
+                                    : "Sé el primero en publicar"
+                                }
+                            </p>
+
+                            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                                {hasActiveFilters && (
+                                    <button onClick={clearFilters} className="rounded-xl bg-[#7C3AED] px-5 py-2 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:shadow-purple-500/40 active:scale-95">
+                                        Limpiar filtros
+                                    </button>
+                                )}
+                                <Link
+                                    href="/vendedor/registro"
+                                    className="rounded-xl border border-[#7C3AED] px-5 py-2 text-sm font-bold text-[#7C3AED] transition hover:bg-purple-50 active:scale-95"
+                                >
+                                    Publicar algo
+                                </Link>
+                            </div>
+
+                            {/* Sugerir categorías populares */}
+                            {categories.filter(c => c.listingCount > 0).length > 0 && (
+                                <div className="mt-8">
+                                    <p className="text-xs font-semibold text-gray-400 mb-2">Categorías con publicaciones</p>
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {categories.filter(c => c.listingCount > 0).slice(0, 5).map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                onClick={() => { setCategoryId(cat.id); setSearch(""); }}
+                                                className="flex items-center gap-1 rounded-full border border-purple-200/60 bg-white/80 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-purple-300 hover:bg-purple-50 active:scale-95"
+                                            >
+                                                <span>{getCategoryEmoji(cat.slug)}</span>
+                                                {cat.name}
+                                                <span className="text-[10px] text-purple-400">{cat.listingCount}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
                                 {listings.map((listing, i) => (
                                     <div key={listing.id} className={`mp-stagger mp-stagger-${(i % 12) + 1}`}>
                                         <ListingCard listing={listing} showAddButton variant="marketplace" />
@@ -387,46 +483,44 @@ export default function MarketplacePage() {
                                 ))}
                             </div>
 
-                            {/* CTA — scroll reveal */}
+                            {/* ═══════ SELL CTA — scroll reveal (desktop) ═══════ */}
                             {listings.length >= 8 && (
-                                <div ref={ctaRef} className={`my-10 overflow-hidden rounded-3xl bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#5B21B6] p-6 shadow-xl shadow-purple-500/10 lg:flex lg:items-center lg:justify-between lg:p-10 transition-all duration-700 ${ctaVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-                                    <div className="relative z-10 max-w-md">
-                                        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-                                            <Tag className="h-5 w-5 text-white" />
-                                        </div>
-                                        <h3 className="text-xl font-extrabold text-white lg:text-2xl">
+                                <div
+                                    ref={sellCtaRef}
+                                    className={`my-8 overflow-hidden rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] p-5 shadow-lg lg:flex lg:items-center lg:justify-between lg:p-8 transition-all duration-700 ${sellCtaVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                                >
+                                    <div className="relative z-10">
+                                        <h3 className="text-lg font-extrabold text-white lg:text-xl">
                                             ¿Tenés algo para vender?
                                         </h3>
-                                        <p className="mt-2 text-sm leading-relaxed text-white/60">
-                                            Publicar es gratis y en minutos. Llegá a vecinos de Ushuaia que buscan lo que ofrecés.
+                                        <p className="mt-1 text-sm text-white/50">
+                                            Publicá gratis y llegá a vecinos de Ushuaia.
                                         </p>
-                                        <Link
-                                            href="/vendedor/registro"
-                                            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#7C3AED] shadow-lg transition hover:shadow-xl active:scale-95"
-                                        >
-                                            Empezar a vender
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Link>
                                     </div>
-                                    {/* Decorative orbs */}
-                                    <div className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-purple-400/10 blur-2xl" />
-                                    <div className="pointer-events-none absolute bottom-0 right-[20%] h-28 w-28 rounded-full bg-fuchsia-400/10 blur-xl" />
+                                    <Link
+                                        href="/vendedor/registro"
+                                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#7C3AED] shadow-lg transition hover:shadow-xl active:scale-95 lg:mt-0"
+                                    >
+                                        Empezar a vender
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Link>
+                                    <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-purple-400/10 blur-2xl" />
                                 </div>
                             )}
 
                             {/* Load More */}
                             {hasMore && (
-                                <div className="mt-8 mb-4 text-center">
+                                <div className="mt-6 mb-4 text-center">
                                     <button
                                         onClick={loadMore}
                                         disabled={loadingMore}
-                                        className="inline-flex items-center gap-2 rounded-2xl border border-purple-200 bg-white/70 px-8 py-3.5 text-sm font-bold text-[#7C3AED] shadow-sm backdrop-blur-sm transition-all hover:bg-purple-50 hover:shadow-md hover:shadow-purple-500/10 active:scale-95 disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-2xl border border-purple-200 bg-white/70 px-7 py-3 text-sm font-bold text-[#7C3AED] shadow-sm backdrop-blur-sm transition-all hover:bg-purple-50 hover:shadow-md hover:shadow-purple-500/10 active:scale-95 disabled:opacity-50"
                                     >
                                         {loadingMore ? (
                                             <Loader2 className="h-5 w-5 animate-spin" />
                                         ) : (
                                             <>
-                                                Cargar más publicaciones
+                                                Ver más publicaciones
                                                 <ChevronDown className="h-4 w-4" />
                                             </>
                                         )}

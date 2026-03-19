@@ -60,9 +60,14 @@ export async function getAllProducts(): Promise<Product[]> {
     }
 }
 
-export async function getAllCategories(): Promise<Category[]> {
+export async function getAllCategories(scope?: "STORE" | "MARKETPLACE"): Promise<Category[]> {
     try {
+        const where: any = {};
+        if (scope) {
+            where.scope = { in: [scope, "BOTH"] };
+        }
         const categories = await prisma.category.findMany({
+            where,
             orderBy: { order: 'asc' }
         });
         return categories;

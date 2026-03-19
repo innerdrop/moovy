@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Star, Tag, Plus, Check, ShieldCheck, Sparkles } from "lucide-react";
+import { Star, Tag, Plus, Check, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
 import HeartButton from "@/components/ui/HeartButton";
@@ -18,6 +18,7 @@ interface ListingCardProps {
         id: string;
         title: string;
         price: number;
+        stock?: number;
         condition: string;
         images: { url: string; order: number }[];
         sellerId?: string;
@@ -30,6 +31,8 @@ interface ListingCardProps {
             availability?: SellerAvailability | null;
         };
         category?: { name: string } | null;
+        soldCount?: number;
+        favCount?: number;
     };
     showAddButton?: boolean;
     /** "marketplace" applies purple accent; default keeps red */
@@ -123,6 +126,8 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
     if (isMp) {
         const mpBadgeClass = mpConditionBadge[listing.condition] || "mp-badge-usado";
         const mpBadgeLabel = conditionLabel[listing.condition] || listing.condition;
+        const isLowStock = listing.stock !== undefined && listing.stock > 0 && listing.stock <= 3;
+        const hasSold = (listing.soldCount || 0) > 0;
 
         return (
             <Link
@@ -144,10 +149,10 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                             </div>
                         )}
 
-                        {/* Gradient overlay bottom for readability */}
+                        {/* Gradient overlay bottom */}
                         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
 
-                        {/* Condition Badge — glass violet style */}
+                        {/* Condition Badge */}
                         <span className={`absolute top-2 left-2 ${mpBadgeClass}`}>
                             {mpBadgeLabel}
                         </span>
@@ -155,17 +160,25 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                         {/* Heart */}
                         <HeartButton type="listing" itemId={listing.id} className="absolute top-2 right-2" />
 
-                        {/* Verified sparkle overlay */}
-                        {listing.seller?.isVerified && (
-                            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-sm">
-                                <ShieldCheck className="w-3 h-3 text-violet-600" />
-                                <span className="text-[9px] font-bold text-violet-700">Verificado</span>
-                            </div>
-                        )}
+                        {/* Bottom overlays: verified + low stock */}
+                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                            {listing.seller?.isVerified ? (
+                                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-sm">
+                                    <ShieldCheck className="w-3 h-3 text-violet-600" />
+                                    <span className="text-[9px] font-bold text-violet-700">Verificado</span>
+                                </div>
+                            ) : <div />}
+                            {isLowStock && (
+                                <div className="flex items-center gap-0.5 bg-orange-500/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
+                                    <AlertTriangle className="w-2.5 h-2.5 text-white" />
+                                    <span className="text-[9px] font-bold text-white">Últimas {listing.stock}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* ── Info Section ── */}
-                    <div className="p-3 flex-1 flex flex-col gap-1.5">
+                    <div className="p-3 flex-1 flex flex-col gap-1">
                         {/* Title */}
                         <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-snug group-hover:text-violet-700 transition-colors">
                             {listing.title}
@@ -186,56 +199,51 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                                 <img
                                     src={listing.seller.avatar}
                                     alt=""
-                                    className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-200"
+                                    className="w-4.5 h-4.5 rounded-full object-cover ring-1 ring-purple-200"
                                 />
                             ) : (
-                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-violet-200 flex items-center justify-center">
-                                    <span className="text-[9px] font-bold text-purple-600">
+                                <div className="w-4.5 h-4.5 rounded-full bg-gradient-to-br from-purple-100 to-violet-200 flex items-center justify-center">
+                                    <span className="text-[8px] font-bold text-purple-600">
                                         {listing.seller?.displayName?.charAt(0) || "V"}
                                     </span>
                                 </div>
                             )}
-                            <span className="text-xs text-gray-500 truncate group-hover/seller:text-violet-600 transition-colors">
+                            <span className="text-[11px] text-gray-500 truncate group-hover/seller:text-violet-600 transition-colors">
                                 {listing.seller?.displayName || "Vendedor"}
                             </span>
                             {listing.seller?.rating && (
-                                <span className="flex items-center gap-0.5 text-[11px] text-amber-600 ml-auto">
-                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                <span className="flex items-center gap-0.5 text-[10px] text-amber-600 ml-auto">
+                                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                                     {listing.seller.rating.toFixed(1)}
                                 </span>
                             )}
                         </div>
 
-                        {/* Availability badge */}
-                        {(() => {
-                            const badge = getAvailabilityBadge(listing.seller?.availability);
-                            if (!badge) return null;
-                            return (
-                                <div className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full w-fit ${badge.bg}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${badge.dot === "bg-green-500" ? "mp-pulse-dot" : ""}`} />
-                                    {badge.text}
-                                </div>
-                            );
-                        })()}
+                        {/* Social proof line */}
+                        {hasSold && (
+                            <span className="text-[10px] text-purple-400 font-medium">
+                                {listing.soldCount} vendido{(listing.soldCount || 0) > 1 ? "s" : ""}
+                            </span>
+                        )}
 
                         {/* Spacer */}
                         <div className="flex-1" />
 
                         {/* Price + Add to cart */}
-                        <div className="flex items-center justify-between mt-1 pt-2 border-t border-purple-50">
-                            <p className="mp-gradient-text text-lg font-extrabold tracking-tight">
+                        <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-purple-50">
+                            <p className="mp-gradient-text text-base font-extrabold tracking-tight">
                                 ${listing.price.toLocaleString("es-AR")}
                             </p>
                             {showAddButton && (
                                 <button
                                     onClick={handleAddToCart}
-                                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 shadow-sm ${cartPop ? "mp-cart-pop" : ""} ${
+                                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 shadow-sm ${cartPop ? "mp-cart-pop" : ""} ${
                                         added
                                             ? "bg-green-500 text-white shadow-green-200"
                                             : "bg-gradient-to-br from-purple-50 to-violet-100 text-[#7C3AED] border border-purple-200/60 hover:from-[#7C3AED] hover:to-[#6D28D9] hover:text-white hover:border-transparent hover:shadow-purple-300/40 hover:shadow-md active:scale-90"
                                     }`}
                                 >
-                                    {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                    {added ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                                 </button>
                             )}
                         </div>

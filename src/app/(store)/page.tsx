@@ -48,7 +48,7 @@ async function getHeroSlides() {
 async function getCategories(limit: number = 8) {
   try {
     return await prisma.category.findMany({
-      where: { isActive: true },
+      where: { isActive: true, scope: { in: ["STORE", "BOTH"] } },
       orderBy: { order: "asc" },
       take: limit,
     });

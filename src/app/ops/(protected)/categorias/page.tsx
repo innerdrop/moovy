@@ -49,8 +49,9 @@ interface Category {
     image?: string | null;
     icon?: string | null;
     isActive: boolean;
+    scope: string; // STORE, MARKETPLACE, BOTH
     order: number;
-    _count?: { products: number };
+    _count?: { products: number; listings: number };
 }
 
 // --- Sortable Item Component ---
@@ -122,10 +123,20 @@ function SortableCategoryItem({
                         </span>
                     )}
                 </div>
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
+                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium flex-wrap">
                     <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
                         <Package className="w-3 h-3" />
-                        {category._count?.products || 0}
+                        {category._count?.products || 0} prod
+                    </span>
+                    <span className="flex items-center gap-1 bg-purple-50 text-purple-500 px-2 py-0.5 rounded-lg border border-purple-100">
+                        {category._count?.listings || 0} listings
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide ${
+                        category.scope === "STORE" ? "bg-red-50 text-red-500 border border-red-100" :
+                        category.scope === "MARKETPLACE" ? "bg-violet-50 text-violet-600 border border-violet-100" :
+                        "bg-blue-50 text-blue-500 border border-blue-100"
+                    }`}>
+                        {category.scope === "STORE" ? "Tienda" : category.scope === "MARKETPLACE" ? "Marketplace" : "Ambos"}
                     </span>
                     <span className="hidden sm:inline-block truncate max-w-[200px]">
                         {category.description || "Sin descripción"}
@@ -177,6 +188,7 @@ export default function AdminCategoriasPage() {
     const [formImage, setFormImage] = useState("");
     const [showIconSelector, setShowIconSelector] = useState(false);
     const [formIsActive, setFormIsActive] = useState(true);
+    const [formScope, setFormScope] = useState("BOTH");
     const [error, setError] = useState("");
 
     // DnD Sensors - Desktop + Mobile
@@ -315,6 +327,7 @@ export default function AdminCategoriasPage() {
         setFormIcon(category.icon || "");
         setFormImage(category.image || "");
         setFormIsActive(category.isActive);
+        setFormScope(category.scope || "BOTH");
         setShowForm(true);
         setError("");
         setShowIconSelector(false);
@@ -327,6 +340,7 @@ export default function AdminCategoriasPage() {
         setFormIcon("");
         setFormImage("");
         setFormIsActive(true);
+        setFormScope("BOTH");
         setShowForm(true);
         setError("");
         setShowIconSelector(false);
@@ -339,6 +353,7 @@ export default function AdminCategoriasPage() {
         setFormDescription("");
         setFormIcon("");
         setFormImage("");
+        setFormScope("BOTH");
         setError("");
         setShowIconSelector(false);
     }
@@ -367,6 +382,7 @@ export default function AdminCategoriasPage() {
                     icon: formIcon || null,
                     image: formImage || null,
                     isActive: formIsActive,
+                    scope: formScope,
                 }),
             });
 
@@ -625,12 +641,42 @@ export default function AdminCategoriasPage() {
                                 )}
                             </div>
 
+                            {/* Scope selector */}
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Dónde se muestra</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { value: "STORE", label: "Tienda", color: "border-red-300 bg-red-50 text-red-700" },
+                                        { value: "MARKETPLACE", label: "Marketplace", color: "border-violet-300 bg-violet-50 text-violet-700" },
+                                        { value: "BOTH", label: "Ambos", color: "border-blue-300 bg-blue-50 text-blue-700" },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => setFormScope(opt.value)}
+                                            className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all active:scale-95 ${
+                                                formScope === opt.value
+                                                    ? opt.color + " shadow-sm"
+                                                    : "border-gray-200 bg-white text-gray-400 hover:border-gray-300"
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1.5 ml-1">
+                                    {formScope === "STORE" && "Solo visible en la Tienda (delivery/comercios)"}
+                                    {formScope === "MARKETPLACE" && "Solo visible en el Marketplace (entre vecinos)"}
+                                    {formScope === "BOTH" && "Visible en ambas secciones"}
+                                </p>
+                            </div>
+
                             <div
                                 className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl cursor-pointer hover:border-gray-200 transition-all active:bg-gray-50"
                                 onClick={() => setFormIsActive(!formIsActive)}
                             >
                                 <div>
-                                    <p className="text-sm font-bold text-gray-700">Visible en la tienda</p>
+                                    <p className="text-sm font-bold text-gray-700">Categoría activa</p>
                                     <p className="text-[10px] text-gray-400 font-medium uppercase">Estado de activación</p>
                                 </div>
                                 <div className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 ${formIsActive ? 'bg-green-500' : 'bg-gray-200'}`}>
