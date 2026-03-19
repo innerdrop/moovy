@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+// useSession removed — cart works without auth, login at checkout
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
 import {
@@ -17,7 +17,6 @@ import {
     Check,
     AlertCircle,
     Loader2,
-    UserPlus,
     Share2,
     Store,
     Clock,
@@ -65,14 +64,12 @@ interface Product {
 export default function ProductDetailClient() {
     const params = useParams();
     const router = useRouter();
-    const { status } = useSession();
     const slug = params.slug as string;
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [addedToCart, setAddedToCart] = useState(false);
-    const [showLoginModal, setShowLoginModal] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
     const addItem = useCartStore((state) => state.addItem);
@@ -97,10 +94,6 @@ export default function ProductDetailClient() {
 
     const handleAddToCart = () => {
         if (!product || product.stock <= 0) return;
-        if (status !== "authenticated") {
-            setShowLoginModal(true);
-            return;
-        }
         addItem({
             productId: product.id,
             name: product.name,
@@ -115,10 +108,6 @@ export default function ProductDetailClient() {
     };
 
     const handleAddAndGoToCart = () => {
-        if (status !== "authenticated") {
-            setShowLoginModal(true);
-            return;
-        }
         handleAddToCart();
         setTimeout(() => openCart(), 300);
     };
@@ -556,30 +545,7 @@ export default function ProductDetailClient() {
                 </div>
             </div>
 
-            {/* ═══════ Login Required Modal ═══════ */}
-            {showLoginModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowLoginModal(false)}>
-                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                        <div className="p-6 text-center">
-                            <div className="w-16 h-16 bg-[#e60012]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <UserPlus className="w-8 h-8 text-[#e60012]" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">¡Registrate para comprar!</h3>
-                            <p className="text-gray-600 mb-6">
-                                Para agregar productos al carrito necesitás crear una cuenta o iniciar sesión.
-                            </p>
-                            <div className="space-y-3">
-                                <button onClick={() => router.push("/registro")} className="w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition">
-                                    Crear cuenta gratis
-                                </button>
-                                <button onClick={() => router.push("/login")} className="w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition">
-                                    Ya tengo cuenta
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Login modal removed — login required at checkout only */}
         </>
     );
 }
