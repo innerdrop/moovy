@@ -228,7 +228,7 @@ async function LiveStoreView() {
   } : null;
 
   return (
-    <div className="animate-fadeIn">
+    <div>
       {/* 1. Hero Estático con buscador — config dinámica desde OPS */}
       <HeroStatic
         totalDelivered={totalDelivered}
@@ -236,12 +236,10 @@ async function LiveStoreView() {
         activeMerchants={activeMerchants}
       />
 
-      {/* 2. Categorías — sin título, protagonistas */}
-      <AnimateIn animation="reveal">
-        <section className="relative py-5 bg-white">
-          <CategoryGrid categories={categories} />
-        </section>
-      </AnimateIn>
+      {/* 2. Categorías — sin título, protagonistas (no reveal — above the fold) */}
+      <section className="relative py-5 bg-white">
+        <CategoryGrid categories={categories} />
+      </section>
 
       {/* 4. Banner Publicitario OPS (posición premium — monetizable) */}
       {sliderEnabled && slides.length > 0 && (
