@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 function toCsv(headers: string[], rows: string[][]): string {
     const escape = (val: string) => {
@@ -116,6 +117,21 @@ export async function GET(request: NextRequest) {
         } else {
             return NextResponse.json({ error: "Tipo no válido. Usar: orders, users, merchants" }, { status: 400 });
         }
+
+        // V-024 FIX: Audit log for PII data exports
+        const rowCount = csv.split("\n").length - 1; // minus header
+        await logAudit({
+            action: "DATA_EXPORT",
+            entityType: type!,
+            entityId: `export-${type}-${new Date().toISOString()}`,
+            userId: session.user.id,
+            details: {
+                exportType: type,
+                recordCount: rowCount,
+                filename,
+                ip: request.headers.get("x-forwarded-for") || "unknown",
+            },
+        });
 
         return new NextResponse(csv, {
             headers: {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowLeft, ShoppingBag, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Users, ChevronRight, Store, Tag } from "lucide-react";
+import { ArrowRight, ArrowLeft, ShoppingBag, Star, ChevronDown, MapPin, Menu, X, Home, Info, Instagram, Users, ChevronRight, Store, Tag, Gift, Award, Bike } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useEffect, useState, useRef, useCallback } from "react";

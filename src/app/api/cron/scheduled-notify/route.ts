@@ -33,7 +33,9 @@ export async function POST(request: Request) {
         const authHeader = request.headers.get("authorization");
         const token = authHeader?.replace("Bearer ", "");
 
-        if (!token || token !== process.env.CRON_SECRET) {
+        // V-028 FIX: timing-safe comparison
+        const { verifyBearerToken } = await import("@/lib/env-validation");
+        if (!verifyBearerToken(token, process.env.CRON_SECRET)) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

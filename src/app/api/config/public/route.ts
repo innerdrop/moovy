@@ -1,6 +1,7 @@
 // Public config endpoint — returns whitelisted MoovyConfig values
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 // Only these keys can be read without authentication
 const PUBLIC_KEYS = new Set([
@@ -14,6 +15,9 @@ const PUBLIC_KEYS = new Set([
 ]);
 
 export async function GET(request: Request) {
+    const limited = applyRateLimit(request, "config:public", 30, 60_000);
+    if (limited) return limited;
+
     const { searchParams } = new URL(request.url);
     const key = searchParams.get("key");
 

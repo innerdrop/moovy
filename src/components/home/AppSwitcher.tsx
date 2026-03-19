@@ -5,7 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingBag, Tag, ChevronDown } from "lucide-react";
 
-const ecosystemApps = [
+interface EcosystemApp {
+    id: string;
+    label: string;
+    sublabel: string;
+    href: string;
+    icon: typeof ShoppingBag;
+    color: string;
+    gradient: string;
+    active?: boolean;
+    external?: boolean;
+    badge?: string;
+    badgeColor?: string;
+}
+
+const ecosystemApps: EcosystemApp[] = [
     {
         id: "tienda",
         label: "Tienda",

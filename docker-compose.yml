@@ -8,9 +8,10 @@ services:
       - "5436:5432"
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: moovy_db
+      # V-021 FIX: Use env vars instead of hardcoded credentials
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-moovy_db}
     volumes:
       - moovy_data:/var/lib/postgresql/data
 

@@ -54,8 +54,9 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()",
           },
           {
+            // V-007 FIX: Removed unsafe-eval from CSP. Added base-uri and form-action restrictions.
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' data: blob: https://api.mercadopago.com https://*.googleapis.com https://*.gstatic.com https://*.google.com ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self';`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com; connect-src 'self' data: blob: https://api.mercadopago.com https://*.googleapis.com https://*.gstatic.com https://*.google.com ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';`,
           },
         ],
       },

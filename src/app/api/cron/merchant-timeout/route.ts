@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
         // Auth: CRON_SECRET
         const authHeader = req.headers.get("authorization");
         const token = authHeader?.replace("Bearer ", "");
-        if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
+        // V-028 FIX: timing-safe comparison
+        const { verifyBearerToken } = await import("@/lib/env-validation");
+        if (!verifyBearerToken(token, process.env.CRON_SECRET)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

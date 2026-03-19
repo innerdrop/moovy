@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { validatePasswordStrength } from "@/lib/security";
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,9 +14,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (password.length < 6) {
+        // V-027 FIX: Use unified password strength validation
+        const pwCheck = validatePasswordStrength(password);
+        if (!pwCheck.valid) {
             return NextResponse.json(
-                { error: "La contraseña debe tener al menos 6 caracteres" },
+                { error: `Contraseña débil: ${pwCheck.errors.join(", ")}` },
                 { status: 400 }
             );
         }

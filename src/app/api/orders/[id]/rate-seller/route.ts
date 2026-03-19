@@ -57,39 +57,57 @@ export async function POST(
 
         const sellerId = sellerSubOrder.sellerId;
 
-        // Update order with seller rating
-        await prisma.order.update({
-            where: { id: orderId },
-            data: {
-                sellerRating: rating,
-                sellerRatingComment: comment || null,
+        // V-019 FIX: Atomic transaction to prevent race condition
+        const result = await prisma.$transaction(async (tx) => {
+            // Re-check inside transaction to prevent TOCTOU race condition
+            const freshOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                select: { sellerRating: true }
+            });
+
+            if (freshOrder?.sellerRating) {
+                throw new Error("ALREADY_RATED");
             }
-        });
 
-        // Update seller's average rating
-        const sellerOrders = await prisma.order.findMany({
-            where: {
-                sellerRating: { not: null },
-                subOrders: {
-                    some: { sellerId }
+            // Update order with seller rating
+            await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    sellerRating: rating,
+                    ...(comment ? { sellerRatingComment: comment } : {}),
                 }
-            },
-            select: { sellerRating: true }
-        });
+            });
 
-        const avgRating = sellerOrders.reduce((sum, o) => sum + (o.sellerRating || 0), 0) / sellerOrders.length;
+            // Update seller's average rating
+            const sellerOrders = await tx.order.findMany({
+                where: {
+                    sellerRating: { not: null },
+                    subOrders: {
+                        some: { sellerId }
+                    }
+                },
+                select: { sellerRating: true }
+            });
 
-        await prisma.sellerProfile.update({
-            where: { id: sellerId },
-            data: { rating: avgRating }
-        });
+            const avgRating = sellerOrders.reduce((sum, o) => sum + (o.sellerRating || 0), 0) / sellerOrders.length;
+
+            await tx.sellerProfile.update({
+                where: { id: sellerId },
+                data: { rating: avgRating }
+            });
+
+            return avgRating;
+        }, { isolationLevel: "Serializable" });
 
         return NextResponse.json({
             success: true,
             message: "¡Gracias por tu calificación!",
-            newSellerRating: avgRating.toFixed(1)
+            newSellerRating: result.toFixed(1)
         });
     } catch (error) {
+        if (error instanceof Error && error.message === "ALREADY_RATED") {
+            return NextResponse.json({ error: "Ya calificaste al vendedor" }, { status: 400 });
+        }
         console.error("Error rating seller:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }

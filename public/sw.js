@@ -180,7 +180,24 @@ self.addEventListener('notificationclick', function (event) {
         return;
     }
 
-    var urlToOpen = event.notification.data?.url || '/repartidor/dashboard';
+    // V-SW FIX: Validate URL from push notification data (prevent phishing redirects)
+    var rawUrl = event.notification.data?.url || '/repartidor/dashboard';
+    var urlToOpen = rawUrl;
+    try {
+        // Only allow same-origin URLs or relative paths
+        if (rawUrl.startsWith('/')) {
+            urlToOpen = rawUrl; // Relative path — safe
+        } else {
+            var parsed = new URL(rawUrl);
+            var allowed = [self.location.hostname, 'somosmoovy.com', 'www.somosmoovy.com'];
+            if (!allowed.includes(parsed.hostname)) {
+                console.warn('[SW] Blocked redirect to untrusted URL:', rawUrl);
+                urlToOpen = '/';
+            }
+        }
+    } catch (e) {
+        urlToOpen = '/';
+    }
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {

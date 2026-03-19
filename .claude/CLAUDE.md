@@ -324,3 +324,60 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
   - `src/app/api/admin/backups/route.ts` — API para listar backups (paginado, search) y restaurar pedidos
   - `src/app/ops/(protected)/backups/page.tsx` — Visor de copias de seguridad con detalle y restauración
   - `src/components/ops/OpsSidebar.tsx` — Link "Backups" en sección Sistema
+
+## Security Hardening (2026-03-19)
+- **Auditoría de seguridad integral**: 30 vulnerabilidades identificadas y corregidas
+- `src/lib/env-validation.ts` — **NUEVO**: Validación de env vars al startup + `verifyBearerToken()` timing-safe
+- `scripts/socket-server.ts` — Eliminados secrets hardcodeados (fail-fast), CORS restringido a whitelist, timing-safe en /emit
+- `src/app/api/debug-cookies/route.ts` — Deshabilitado (retorna 404)
+- `src/app/api/debug-session/route.ts` — Deshabilitado (retorna 404)
+- `src/app/api/auth/register/route.ts` — Password policy unificada con `validatePasswordStrength()`, eliminado console.log con PII
+- `src/app/api/auth/reset-password/route.ts` — Password policy unificada
+- `src/app/api/auth/change-password/route.ts` — Password policy unificada
+- `next.config.ts` — CSP: eliminado `unsafe-eval`, agregado `base-uri` y `form-action`
+- `src/app/api/cron/assignment-tick/route.ts` — Timing-safe token comparison via `verifyBearerToken()`
+- `src/app/api/cron/seller-resume/route.ts` — Timing-safe token comparison
+- `src/app/api/cron/merchant-timeout/route.ts` — Timing-safe token comparison
+- `src/app/api/cron/scheduled-notify/route.ts` — Timing-safe token comparison
+- Rate limiting agregado: config/public, config/points, config/levels, reviews, push/subscribe
+- `src/app/api/webhooks/mercadopago/route.ts` — MP_WEBHOOK_SECRET requerido siempre; UUID fallback en idempotency
+- `src/app/api/ops/refund/route.ts` — Validación de monto (>0, <=total), motivo requerido, audit logging
+- `src/app/api/upload/route.ts` — Magic bytes validation, whitelist extensiones, límite 10MB
+- `src/app/api/orders/[id]/rate-merchant/route.ts` — Transacción serializable (fix race condition TOCTOU)
+- `src/app/api/orders/[id]/rate-seller/route.ts` — Transacción serializable (fix race condition TOCTOU)
+- `src/app/api/driver/location/route.ts` — Validación de velocidad GPS (max 200 km/h)
+- `docker-compose.yml` — Credenciales DB vía env vars
+- `.github/workflows/security.yml` — **NUEVO**: CI pipeline con npm audit, TypeScript check, Gitleaks
+- `src/app/api/admin/orders/[id]/reassign/route.ts` — Audit logging en reasignación
+- `src/app/api/ops/export/route.ts` — Audit logging en exports CSV
+- `src/app/api/profile/delete/route.ts` — **NUEVO**: Endpoint eliminación de cuenta (requisito Google Play)
+- `src/app/api/settings/route.ts` — Eliminados console.log con datos sensibles
+- `public/sw.js` — Validación de URLs en notificaciones push (prevent phishing redirect)
+
+### Patrones de seguridad establecidos
+- **Validación de tokens cron**: SIEMPRE usar `verifyBearerToken()` de `@/lib/env-validation` en endpoints protegidos con CRON_SECRET
+- **Passwords**: SIEMPRE usar `validatePasswordStrength()` de `@/lib/security` — NUNCA `password.length < 6`
+- **Audit logging**: SIEMPRE agregar `logAudit()` en operaciones admin sensibles (refund, reassign, delete, export)
+- **Rate limiting**: SIEMPRE agregar `applyRateLimit()` en endpoints públicos
+- **Uploads**: Validar magic bytes + extensión + tamaño ANTES de procesar con sharp
+
+### Deuda técnica de seguridad resuelta
+- ~~Secrets hardcodeados en socket-server.ts~~ **RESUELTO**
+- ~~Debug endpoints expuestos~~ **RESUELTO** (deshabilitados)
+- ~~Password policy inconsistente (6 vs 8 chars)~~ **RESUELTO** (unificado en 8+ con validatePasswordStrength)
+- ~~CORS Socket.IO origin: true~~ **RESUELTO** (whitelist)
+- ~~CSP con unsafe-eval~~ **RESUELTO** (eliminado)
+- ~~Timing attacks en cron tokens~~ **RESUELTO** (timingSafeEqual)
+- ~~Webhook MP sin validación si falta secret~~ **RESUELTO** (requerido siempre)
+- ~~Refund sin validación de monto~~ **RESUELTO** (validación completa + audit)
+- ~~Upload sin validación de contenido real~~ **RESUELTO** (magic bytes)
+- ~~Race condition en ratings~~ **RESUELTO** (transacciones serializables)
+- ~~Sin eliminación de cuenta~~ **RESUELTO** (POST /api/profile/delete)
+
+### Deuda técnica de seguridad pendiente
+- Play Integrity API (necesario para app nativa Android)
+- Migrar rate limiter a Redis para multi-instancia
+- Encriptación at-rest para columnas sensibles (CUIT, CBU)
+- Logger estructurado (Pino/Winston) reemplazando console.log
+- Mecanismo de revocación de sesiones JWT (token blacklist)
+- Botón "Eliminar mi cuenta" en UI de mi-perfil (endpoint ya existe)

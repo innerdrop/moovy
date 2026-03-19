@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 // GET /api/reviews?type=merchant&id=xxx  or  type=seller&id=xxx  or  type=driver&id=xxx
 export async function GET(request: NextRequest) {
+    const limited = applyRateLimit(request, "reviews:list", 20, 60_000);
+    if (limited) return limited;
+
     const session = await auth();
     if (!session?.user?.id) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });

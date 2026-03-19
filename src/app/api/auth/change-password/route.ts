@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
+import { validatePasswordStrength } from "@/lib/security";
 
 export async function POST(request: Request) {
     try {
@@ -29,9 +30,11 @@ export async function POST(request: Request) {
             );
         }
 
-        if (newPassword.length < 6) {
+        // V-027 FIX: Use unified password strength validation
+        const pwCheck = validatePasswordStrength(newPassword);
+        if (!pwCheck.valid) {
             return NextResponse.json(
-                { error: "La nueva contraseña debe tener al menos 6 caracteres" },
+                { error: `Contraseña débil: ${pwCheck.errors.join(", ")}` },
                 { status: 400 }
             );
         }

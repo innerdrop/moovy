@@ -35,7 +35,7 @@ export async function PUT(request: Request) {
 
         // Check for admin role (case insensitive)
         if (!session || !["ADMIN", "admin"].includes(userRole)) {
-            console.log("Auth failed - session:", session?.user, "role:", userRole);
+            // V-010 FIX: No PII in auth failure logs
             return NextResponse.json(
                 { error: "No autorizado" },
                 { status: 401 }
@@ -43,7 +43,6 @@ export async function PUT(request: Request) {
         }
 
         const data = await request.json();
-        console.log("Updating settings with data:", data);
 
         // Build update object with only defined values
         const updateData: any = {};
@@ -102,7 +101,7 @@ export async function PUT(request: Request) {
             updateData.freeDeliveryMinimum = null;
         }
 
-        console.log("Prisma update data:", updateData);
+        // V-010 FIX: Removed sensitive data logging
 
         const settings = await prisma.storeSettings.upsert({
             where: { id: "settings" },

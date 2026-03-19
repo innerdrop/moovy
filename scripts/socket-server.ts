@@ -9,8 +9,31 @@ import crypto from "crypto";
 
 const PORT = process.env.SOCKET_PORT || 3001;
 const NEXT_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-const SOCKET_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "fallback-secret";
-const CRON_SECRET = process.env.CRON_SECRET || "moovy-cron-secret-change-in-production";
+
+// ── Security: No fallback secrets — fail fast if not configured ─────────────
+const _socketSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+const _cronSecret = process.env.CRON_SECRET;
+
+if (!_socketSecret) {
+    console.error("FATAL: AUTH_SECRET or NEXTAUTH_SECRET must be set. Cannot start socket server.");
+    process.exit(1);
+}
+if (!_cronSecret) {
+    console.error("FATAL: CRON_SECRET must be set. Cannot start socket server.");
+    process.exit(1);
+}
+
+// After validation, these are guaranteed to be strings
+const SOCKET_SECRET: string = _socketSecret;
+const CRON_SECRET: string = _cronSecret;
+
+// ── CORS: Whitelist allowed origins ─────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+    NEXT_URL,
+    "http://localhost:3000",
+    "https://somosmoovy.com",
+    "https://www.somosmoovy.com",
+].filter(Boolean);
 
 // ─── Token Verification ─────────────────────────────────────────────────────
 
@@ -107,7 +130,14 @@ const httpServer = createServer((req, res) => {
 
 const io = new Server(httpServer, {
     cors: {
-        origin: true, // Allow all origins for local network testing
+        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            if (!origin || ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))) {
+                callback(null, true);
+            } else {
+                console.warn(`[Socket] CORS rejected origin: ${origin}`);
+                callback(new Error("CORS not allowed"));
+            }
+        },
         methods: ["GET", "POST"],
         credentials: true,
     },
@@ -279,8 +309,10 @@ logistica.on("connection", (socket) => {
 // Protected with CRON_SECRET — only the Next.js server should call this
 
 httpServer.on("request", (req, res) => {
-    // CORS headers
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    // CORS headers — restrict to known origins
+    const reqOrigin = req.headers.origin || "";
+    const allowedOrigin = ALLOWED_ORIGINS.find(o => reqOrigin.startsWith(o)) || NEXT_URL;
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
@@ -291,9 +323,13 @@ httpServer.on("request", (req, res) => {
     }
 
     if (req.method === "POST" && req.url === "/emit") {
-        // ── Verify Authorization ────────────────────────────────────────
+        // ── Verify Authorization (timing-safe) ─────────────────────────
         const authHeader = req.headers.authorization;
-        if (!authHeader || authHeader !== `Bearer ${CRON_SECRET}`) {
+        const providedToken = authHeader?.replace("Bearer ", "") || "";
+        const tokenBuffer = Buffer.from(providedToken, "utf-8");
+        const secretBuffer = Buffer.from(CRON_SECRET, "utf-8");
+        const isValidToken = tokenBuffer.length === secretBuffer.length && crypto.timingSafeEqual(tokenBuffer, secretBuffer);
+        if (!authHeader || !isValidToken) {
             console.warn(`[Socket HTTP] Unauthorized /emit attempt from ${req.socket.remoteAddress}`);
             res.writeHead(401, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ error: "Unauthorized" }));

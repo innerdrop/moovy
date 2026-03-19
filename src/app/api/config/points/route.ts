@@ -2,8 +2,12 @@
 // Returns points system configuration for public access (no auth required)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { applyRateLimit } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(request: Request) {
+    const limited = applyRateLimit(request, "config:points", 30, 60_000);
+    if (limited) return limited;
+
     try {
         const config = await prisma.pointsConfig.findUnique({
             where: { id: "points_config" }

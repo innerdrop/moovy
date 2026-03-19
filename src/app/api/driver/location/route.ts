@@ -58,6 +58,22 @@ export async function PUT(request: Request) {
             );
             const distanceMeters = distanceKm * 1000;
 
+            // V-016 FIX: GPS speed validation — reject physically impossible movements
+            // Max realistic speed: 200 km/h (covers motorcycles on highways)
+            if (driver.lastLocationAt) {
+                const timeDiffSeconds = (Date.now() - new Date(driver.lastLocationAt).getTime()) / 1000;
+                if (timeDiffSeconds > 0 && timeDiffSeconds < 300) { // Only check within 5 min window
+                    const speedKmh = (distanceKm / timeDiffSeconds) * 3600;
+                    if (speedKmh > 200) {
+                        console.warn(`[GPS] Suspicious speed: ${speedKmh.toFixed(0)} km/h for driver ${driver.id}`);
+                        return NextResponse.json(
+                            { error: "Movimiento inválido: velocidad imposible detectada", updated: false },
+                            { status: 400 }
+                        );
+                    }
+                }
+            }
+
             // Only update if moved more than 10 meters
             if (distanceMeters < 10) {
                 shouldUpdate = false;

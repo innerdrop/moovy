@@ -1,15 +1,17 @@
 // API Route: Process expired assignment offers (cron tick)
 // POST /api/cron/assignment-tick
-// Protected with CRON_SECRET Bearer token — no fallback
+// Protected with CRON_SECRET Bearer token — timing-safe comparison
 import { NextResponse } from "next/server";
 import { processExpiredAssignments } from "@/lib/assignment-engine";
+import { verifyBearerToken } from "@/lib/env-validation";
 
 export async function POST(request: Request) {
     try {
         const authHeader = request.headers.get("authorization");
         const token = authHeader?.replace("Bearer ", "");
 
-        if (!token || token !== process.env.CRON_SECRET) {
+        // V-028 FIX: timing-safe comparison
+        if (!verifyBearerToken(token, process.env.CRON_SECRET)) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 

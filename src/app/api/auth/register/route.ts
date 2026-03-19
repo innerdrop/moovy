@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/email";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { validatePasswordStrength, sanitizeEmail } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const data = await request.json();
-        console.log("[Register] Received data:", {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            phone: data.phone,
-            referralCode: data.referralCode || "none"
-        });
+        // V-010 FIX: No logging of PII in registration
 
         // Validate required fields
         if (!data.firstName || !data.lastName || !data.email || !data.password) {
@@ -51,10 +46,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate password length
-        if (data.password.length < 6) {
+        // V-003 FIX: Validate password strength (min 8 chars, 1 upper, 1 lower, 1 number)
+        const pwCheck = validatePasswordStrength(data.password);
+        if (!pwCheck.valid) {
             return NextResponse.json(
-                { error: "La contraseña debe tener al menos 6 caracteres" },
+                { error: `Contraseña débil: ${pwCheck.errors.join(", ")}` },
                 { status: 400 }
             );
         }
@@ -85,9 +81,9 @@ export async function POST(request: NextRequest) {
 
             if (referrerInfo) {
                 referrerId = referrerInfo.id;
-                console.log("[Register] Valid referral code from:", referrerInfo.name);
+                // Referral code validated successfully
             } else {
-                console.log("[Register] Invalid referral code:", referralCodeClean);
+                // Invalid referral code — silently ignore
             }
         }
 
@@ -150,7 +146,7 @@ export async function POST(request: NextRequest) {
             return newUser;
         });
 
-        console.log("[Register] New user created successfully:", data.email);
+        // Registration successful
 
         // Send welcome email (non-blocking)
         sendWelcomeEmail(data.email, data.firstName, newUserReferralCode);

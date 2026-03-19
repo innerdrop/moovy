@@ -2,19 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
-// POST — Mark order as refunded (manual refund tracking)
+// V-014 FIX: Refund with amount validation, reason requirement, audit logging
 export async function POST(request: NextRequest) {
     const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
+    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     try {
         const { orderId, amount, reason } = await request.json();
 
-        if (!orderId) {
+        if (!orderId || typeof orderId !== "string") {
             return NextResponse.json({ error: "orderId requerido" }, { status: 400 });
+        }
+
+        // V-014: Require reason with minimum length
+        if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+            return NextResponse.json({ error: "Motivo requerido (mínimo 5 caracteres)" }, { status: 400 });
         }
 
         const order = await prisma.order.findUnique({
@@ -37,8 +43,22 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Este pedido ya fue reembolsado" }, { status: 400 });
         }
 
-        const refundAmount = amount || order.total;
-        const refundNote = `[REEMBOLSO ${new Date().toLocaleDateString("es-AR")}] $${refundAmount.toLocaleString("es-AR")} — ${reason || "Sin motivo especificado"} — Por: ${session.user?.name || session.user?.email}`;
+        // V-014: Validate payment was actually completed before allowing refund
+        if (!["COMPLETED", "PAID"].includes(order.paymentStatus || "")) {
+            return NextResponse.json({
+                error: `No se puede reembolsar un pedido con estado de pago: ${order.paymentStatus || "sin pago"}`
+            }, { status: 400 });
+        }
+
+        // V-014: Validate amount range (must be > 0 and <= order total)
+        const refundAmount = amount ? Number(amount) : order.total;
+        if (isNaN(refundAmount) || refundAmount <= 0 || refundAmount > order.total) {
+            return NextResponse.json({
+                error: `Monto inválido. Debe ser entre $0.01 y $${order.total}`
+            }, { status: 400 });
+        }
+
+        const refundNote = `[REEMBOLSO ${new Date().toLocaleDateString("es-AR")}] $${refundAmount.toLocaleString("es-AR")} — ${reason.trim()} — Por: ${session.user?.name || session.user?.email}`;
         const existingNotes = order.adminNotes ? `${order.adminNotes}\n\n` : "";
 
         await prisma.order.update({
@@ -49,8 +69,20 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Restore MOOVER points if any were used (future enhancement)
-        // TODO: If the order used MOOVER points, restore them to the user
+        // V-023 FIX: Audit log for refund operations
+        await logAudit({
+            action: "REFUND_PROCESSED",
+            entityType: "order",
+            entityId: orderId,
+            userId: session.user.id,
+            details: {
+                refundAmount,
+                reason: reason.trim(),
+                originalTotal: order.total,
+                orderNumber: order.orderNumber,
+                paymentMethod: order.paymentMethod,
+            },
+        });
 
         return NextResponse.json({
             success: true,

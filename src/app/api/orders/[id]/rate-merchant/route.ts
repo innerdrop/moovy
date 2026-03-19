@@ -47,37 +47,55 @@ export async function POST(
             return NextResponse.json({ error: "Este pedido no tiene comercio" }, { status: 400 });
         }
 
-        // Update order with merchant rating
-        await prisma.order.update({
-            where: { id: orderId },
-            data: {
-                merchantRating: rating,
-                merchantRatingComment: comment || null,
+        // V-019 FIX: Atomic transaction to prevent race condition
+        const result = await prisma.$transaction(async (tx) => {
+            // Re-check inside transaction to prevent TOCTOU race condition
+            const freshOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                select: { merchantRating: true }
+            });
+
+            if (freshOrder?.merchantRating) {
+                throw new Error("ALREADY_RATED");
             }
-        });
 
-        // Update merchant's average rating
-        const merchantOrders = await prisma.order.findMany({
-            where: {
-                merchantId: order.merchantId,
-                merchantRating: { not: null }
-            },
-            select: { merchantRating: true }
-        });
+            // Update order with merchant rating
+            await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    merchantRating: rating,
+                    ...(comment ? { merchantRatingComment: comment } : {}),
+                }
+            });
 
-        const avgRating = merchantOrders.reduce((sum, o) => sum + (o.merchantRating || 0), 0) / merchantOrders.length;
+            // Update merchant's average rating
+            const merchantOrders = await tx.order.findMany({
+                where: {
+                    merchantId: order.merchantId!,
+                    merchantRating: { not: null }
+                },
+                select: { merchantRating: true }
+            });
 
-        await prisma.merchant.update({
-            where: { id: order.merchantId },
-            data: { rating: avgRating }
-        });
+            const avgRating = merchantOrders.reduce((sum, o) => sum + (o.merchantRating || 0), 0) / merchantOrders.length;
+
+            await tx.merchant.update({
+                where: { id: order.merchantId! },
+                data: { rating: avgRating }
+            });
+
+            return avgRating;
+        }, { isolationLevel: "Serializable" });
 
         return NextResponse.json({
             success: true,
             message: "¡Gracias por tu calificación!",
-            newMerchantRating: avgRating.toFixed(1)
+            newMerchantRating: result.toFixed(1)
         });
     } catch (error) {
+        if (error instanceof Error && error.message === "ALREADY_RATED") {
+            return NextResponse.json({ error: "Ya calificaste este comercio" }, { status: 400 });
+        }
         console.error("Error rating merchant:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }

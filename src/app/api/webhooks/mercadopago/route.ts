@@ -23,17 +23,25 @@ export async function POST(request: NextRequest) {
 
         const dataId = String(data.id);
 
-        // Validate HMAC signature
-        if (xSignature && process.env.MP_WEBHOOK_SECRET) {
+        // V-012 FIX: ALWAYS validate HMAC signature — reject if secret not configured
+        if (!process.env.MP_WEBHOOK_SECRET) {
+            console.error("[MP-Webhook] CRITICAL: MP_WEBHOOK_SECRET is not configured. Rejecting webhook.");
+            return NextResponse.json({ error: "Webhook validation not configured" }, { status: 500 });
+        }
+        if (xSignature) {
             const valid = verifyWebhookSignature(xSignature, xRequestId, dataId);
             if (!valid) {
                 console.error("[MP-Webhook] Invalid HMAC signature");
                 return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
             }
+        } else {
+            console.warn("[MP-Webhook] Missing x-signature header — rejecting");
+            return NextResponse.json({ error: "Missing signature" }, { status: 401 });
         }
 
-        // Idempotency: check if already processed
-        const eventId = xRequestId || `payment-${dataId}-${Date.now()}`;
+        // V-015 FIX: Idempotency — use crypto UUID as fallback instead of Date.now()
+        const crypto = await import("crypto");
+        const eventId = xRequestId || `payment-${dataId}-${crypto.randomUUID()}`;
         const existing = await prisma.mpWebhookLog.findUnique({
             where: { eventId },
         });
