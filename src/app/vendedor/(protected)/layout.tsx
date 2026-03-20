@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { hasRole } from "@/lib/auth-utils";
+import { hasRole, getUserRoles } from "@/lib/auth-utils";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -13,6 +13,7 @@ import {
     Store,
     Star,
 } from "lucide-react";
+import PortalSwitcher from "@/components/ui/PortalSwitcher";
 
 export default async function VendedorLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
@@ -25,6 +26,8 @@ export default async function VendedorLayout({ children }: { children: React.Rea
     if (!hasRole(session, "SELLER") && !hasRole(session, "ADMIN")) {
         redirect("/mi-perfil");
     }
+
+    const userRoles = getUserRoles(session);
 
     const navItems = [
         { href: "/vendedor/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -67,6 +70,11 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                     </ul>
                 </nav>
 
+                {/* Portal Switcher */}
+                <div className="px-4 py-3 border-t border-gray-100">
+                    <PortalSwitcher currentPortal="vendedor" userRoles={userRoles} />
+                </div>
+
                 <div className="p-4 border-t border-gray-100">
                     {/* User Info */}
                     <div className="flex items-center gap-3 mb-4 px-2">
@@ -91,16 +99,22 @@ export default async function VendedorLayout({ children }: { children: React.Rea
             </aside>
 
             {/* Mobile Header */}
-            <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
-                        <Store className="w-5 h-5" />
+            <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
+                            <Store className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-gray-900">Vendedor</span>
                     </div>
-                    <span className="font-bold text-gray-900">Vendedor</span>
+                    <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
+                        <LogOut className="w-5 h-5" />
+                    </Link>
                 </div>
-                <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
-                    <LogOut className="w-5 h-5" />
-                </Link>
+                {/* Mobile Portal Switcher */}
+                <div className="mt-2 -mx-1">
+                    <PortalSwitcher currentPortal="vendedor" userRoles={userRoles} compact />
+                </div>
             </header>
 
             {/* Main Content */}

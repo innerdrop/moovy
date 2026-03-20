@@ -1,6 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasAnyRole, getUserRoles } from "@/lib/auth-utils";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -15,17 +16,18 @@ import {
     Star,
 } from "lucide-react";
 
-
 import SupportNavBadge, { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
+import PortalSwitcher from "@/components/ui/PortalSwitcher";
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
-    const role = (session?.user as any)?.role;
 
-    // Security Check
-    if (!session || !["MERCHANT", "ADMIN"].includes(role)) {
+    // Security Check — use hasAnyRole (not legacy session.user.role)
+    if (!session || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         redirect("/comercios/login");
     }
+
+    const userRoles = getUserRoles(session);
 
     const navItems = [
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
@@ -89,6 +91,11 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                     </ul>
                 </nav>
 
+                {/* Portal Switcher */}
+                <div className="px-4 py-3 border-t border-gray-100">
+                    <PortalSwitcher currentPortal="comercio" userRoles={userRoles} />
+                </div>
+
                 <div className="p-4 border-t border-gray-100">
                     {/* User Info */}
                     <div className="flex items-center gap-3 mb-4 px-2">
@@ -97,7 +104,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                         </div>
                         <div className="overflow-hidden flex-1">
                             <p className="font-medium text-sm truncate">{session.user?.name}</p>
-                            <p className="text-xs text-gray-400">Vendedor</p>
+                            <p className="text-xs text-gray-400">Comercio</p>
                         </div>
                     </div>
 
@@ -113,16 +120,22 @@ export default async function ComerciosLayout({ children }: { children: React.Re
             </aside>
 
             {/* Mobile Header */}
-            <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                        <Store className="w-5 h-5" />
+            <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                            <Store className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-gray-900">Comercio</span>
                     </div>
-                    <span className="font-bold text-gray-900">Comercio</span>
+                    <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
+                        <LogOut className="w-5 h-5" />
+                    </Link>
                 </div>
-                <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
-                    <LogOut className="w-5 h-5" />
-                </Link>
+                {/* Mobile Portal Switcher */}
+                <div className="mt-2 -mx-1">
+                    <PortalSwitcher currentPortal="comercio" userRoles={userRoles} compact />
+                </div>
             </header>
 
             {/* Main Content */}

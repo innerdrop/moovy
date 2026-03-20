@@ -19,6 +19,7 @@ import {
 import ImageUpload from "@/components/ui/ImageUpload";
 import ReviewsList from "@/components/ui/ReviewsList";
 import Link from "next/link";
+import { PortalSwitcherDark } from "@/components/ui/PortalSwitcher";
 
 interface ProfileViewProps {
     onBack: () => void;
@@ -307,21 +308,16 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                     </div>
                 )}
 
-                {/* Quick Links */}
+                {/* Mis Portales & Options */}
                 <div className="bg-white dark:bg-[#1a1d27] rounded-xl shadow-sm overflow-hidden">
                     <div className="p-4 border-b dark:border-white/10">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Opciones</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Mis Portales</h3>
                     </div>
                     <div className="divide-y dark:divide-white/10">
-                        <Link
-                            href="/tienda"
-                            className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-[#22252f] transition"
-                        >
-                            <div className="w-10 h-10 bg-gray-100 dark:bg-[#22252f] rounded-lg flex items-center justify-center">
-                                <Home className="w-5 h-5 text-gray-500" />
-                            </div>
-                            <span className="text-gray-900 dark:text-white font-medium">Ir a la tienda</span>
-                        </Link>
+                        <PortalSwitcherDark
+                            currentPortal="repartidor"
+                            userRoles={(session?.user as any)?.roles || [(session?.user as any)?.role].filter(Boolean)}
+                        />
                         <button
                             onClick={() => signOut({ callbackUrl: "/repartidor/login" })}
                             className="flex items-center gap-3 p-4 w-full text-left hover:bg-red-50 dark:hover:bg-red-500/10 transition"
@@ -329,7 +325,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                             <div className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-lg flex items-center justify-center">
                                 <LogOut className="w-5 h-5 text-[#e60012]" />
                             </div>
-                            <span className="text-[#e60012] font-medium">Cerrar sesion</span>
+                            <span className="text-[#e60012] font-medium">Cerrar sesión</span>
                         </button>
                     </div>
                 </div>
