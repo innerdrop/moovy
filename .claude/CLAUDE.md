@@ -382,6 +382,44 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - Mecanismo de revocación de sesiones JWT (token blacklist)
 - Botón "Eliminar mi cuenta" en UI de mi-perfil (endpoint ya existe)
 
+## Sistema de Paquetes B2B Pro (2026-03-19)
+- **PackagePurchase model**: Registra compras de catálogos por comercios (tipo, monto, estado pago, estado import, MP refs)
+- **PackagePricingTier model**: Precios escalonados para compras custom (Pack x10, x25, x50 con precio/item)
+- **Category**: Nuevos campos `starterPrice` (Float?) y `isStarter` (Boolean) para paquetes starter curados
+- **Flujo de compra**: Comercio → elige paquete → POST `/api/merchant/packages/purchase` → crea preferencia MP → redirect a MP → webhook confirma → auto-import
+- **Auto-import**: Al confirmar pago, los productos se clonan automáticamente a la tienda del comercio (sin intervención manual)
+- **Seguridad**: `/api/merchant/import` ahora verifica que el comercio tenga una `PackagePurchase` aprobada o `MerchantCategory`/`MerchantAcquiredProduct`
+- **Compras gratis**: Soporte para promoCode "FUNDADOR" y compras con amount=0 (auto-import inmediato sin MP)
+- **Webhook MP**: Detecta paquetes por external_reference que empieza con `pkg_`, procesa pago y auto-import
+- **3 opciones UX**: Paquete Completo (por rubro), Armar tu propio (custom builder con pricing tiers), Mis Paquetes (gestión)
+- **Buscador global**: En catálogo de rubros y en custom builder
+- **Upselling**: Sticky bar con tier actual + sugerencia del siguiente tier más barato
+- **Historial de compras**: `/comercios/paquetes/historial` con stats y lista de todas las compras
+- **Resultado de compra**: `/comercios/paquetes/resultado` con polling de status para MP async
+- **OPS Ventas B2B**: `/ops/ventas-paquetes` con KPIs (revenue, comercios, productos importados) y tabla de ventas
+- **Checkout legacy**: `/comercios/checkout` redirige al nuevo flujo
+
+### Archivos nuevos/modificados (Paquetes B2B)
+- `src/app/api/merchant/packages/purchase/route.ts` — **NUEVO**: Crear compra + preferencia MP + auto-import para gratis
+- `src/app/api/merchant/packages/catalog/route.ts` — **NUEVO**: Catálogo público con tiers, owned, historial
+- `src/app/api/merchant/packages/history/route.ts` — **NUEVO**: Historial de compras del comercio
+- `src/app/api/admin/package-sales/route.ts` — **NUEVO**: Vista admin de todas las ventas B2B
+- `src/app/api/merchant/import/route.ts` — **REESCRITO**: Verificación de pago/adquisición antes de importar
+- `src/app/api/webhooks/mercadopago/route.ts` — Agregado handler para paquetes (external_ref `pkg_*`)
+- `src/app/comercios/(protected)/adquirir-paquetes/page.tsx` — **REESCRITO**: 3 opciones + buscador + custom builder + upselling
+- `src/app/comercios/(protected)/paquetes/resultado/page.tsx` — **NUEVO**: Resultado de compra con polling
+- `src/app/comercios/(protected)/paquetes/historial/page.tsx` — **NUEVO**: Historial de compras con stats
+- `src/app/ops/(protected)/ventas-paquetes/page.tsx` — **NUEVO**: Dashboard ventas B2B para admin
+- `src/app/comercios/(protected)/checkout/page.tsx` — Redirect legacy al nuevo flujo
+- Schema: Modelos `PackagePurchase`, `PackagePricingTier` + campos `starterPrice`/`isStarter` en Category
+
+### Patrones paquetes establecidos
+- **Compra paquete**: POST `/api/merchant/packages/purchase` con `{ purchaseType, categoryId?, productIds?, promoCode? }`
+- **Tipos de compra**: `package` (rubro completo), `starter` (curado), `custom` (mix de productos), `individual` (uno solo)
+- **Auto-import**: función `autoImportProducts()` exportada desde purchase/route.ts, usada por webhook
+- **Verificación en import**: SIEMPRE verificar `PackagePurchase` aprobada O `MerchantCategory`/`MerchantAcquiredProduct` antes de importar
+- **External reference MP**: Paquetes usan `pkg_{uuid}` para distinguirse de orders en el webhook
+
 ## Marketplace UX Overhaul (2026-03-19)
 - **Hero compacto**: Reducido de ~400px a ~140px en mobile. Título + stats inline, sin búsqueda duplicada (se usa la del sticky bar debajo)
 - **Búsqueda única**: Barra de búsqueda sticky debajo del hero (no en el hero), evita duplicación con AppHeader search

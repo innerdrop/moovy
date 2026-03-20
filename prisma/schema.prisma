@@ -144,6 +144,8 @@ model Category {
   updatedAt               DateTime           @updatedAt
   allowIndividualPurchase Boolean            @default(true)
   price                   Float              @default(0)
+  starterPrice            Float?             // Precio del starter pack (subset curado)
+  isStarter               Boolean            @default(false) // Si es un starter pack curado
   parentId                String?
   icon                    String?
   parent                  Category?          @relation("CategoryHierarchy", fields: [parentId], references: [id])
@@ -151,6 +153,7 @@ model Category {
   merchants               MerchantCategory[]
   products                ProductCategory[]
   listings                Listing[]
+  packagePurchases        PackagePurchase[]
 }
 
 model Product {
@@ -407,6 +410,7 @@ model Merchant {
   owner            User                      @relation(fields: [ownerId], references: [id])
   acquiredProducts MerchantAcquiredProduct[]
   categories       MerchantCategory[]
+  packagePurchases PackagePurchase[]
   orders           Order[]
   products         Product[]
   subOrders        SubOrder[]
@@ -694,6 +698,55 @@ model MerchantAcquiredProduct {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([merchantId, productId])
+}
+
+// Paquetes B2B — registro de compras de catálogos por comercios
+model PackagePurchase {
+  id              String    @id @default(cuid())
+  merchantId      String
+  // What was purchased
+  purchaseType    String    // "package" | "starter" | "custom" | "individual"
+  categoryId      String?   // For package/starter purchases
+  productIds      String?   // JSON array of product IDs for custom/individual
+  itemCount       Int       @default(0)
+  // Pricing
+  amount          Float
+  currency        String    @default("ARS")
+  // Payment
+  paymentStatus   String    @default("pending") // pending | approved | rejected | refunded
+  paymentMethod   String?   // mercadopago | free | promo
+  mpPreferenceId  String?
+  mpPaymentId     String?
+  mpExternalRef   String?   @unique
+  // Import status
+  importStatus    String    @default("pending") // pending | imported | failed
+  importedCount   Int       @default(0)
+  importedAt      DateTime?
+  // Metadata
+  promoCode       String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([merchantId])
+  @@index([paymentStatus])
+  @@index([mpExternalRef])
+}
+
+// Precios escalonados para compra custom de productos individuales
+model PackagePricingTier {
+  id          String @id @default(cuid())
+  name        String // "Pack x10", "Pack x25", "Pack x50"
+  minItems    Int    // Mínimo de items (10, 25, 50)
+  maxItems    Int?   // Máximo (null = ilimitado)
+  pricePerItem Float // Precio por item en este tier
+  totalPrice  Float  // Precio total del pack
+  isActive    Boolean @default(true)
+  order       Int     @default(0)
+  createdAt   DateTime @default(now())
 }
 
 model Payment {

@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ received: true });
         }
 
+        // Check if this is a package purchase (external_reference starts with "pkg_")
+        const externalRef = mpPayment.external_reference;
+        if (externalRef && externalRef.startsWith("pkg_")) {
+            await handlePackagePurchaseWebhook(externalRef, mpPayment, eventId);
+            return NextResponse.json({ received: true });
+        }
+
         // Find order by external_reference (= order.id)
         const orderId = mpPayment.external_reference;
         const order = await prisma.order.findUnique({
@@ -232,6 +239,70 @@ async function handleRejected(
 
     // Socket emit
     await emitPaymentEvent("payment_failed", order);
+}
+
+// ─── Socket Helper ───────────────────────────────────────────────────────────
+
+// ─── Package Purchase Handler ─────────────────────────────────────────────────
+
+async function handlePackagePurchaseWebhook(
+    externalRef: string,
+    mpPayment: any,
+    eventId: string
+) {
+    const purchase = await prisma.packagePurchase.findUnique({
+        where: { mpExternalRef: externalRef },
+    });
+
+    if (!purchase) {
+        console.error("[MP-Webhook] Package purchase not found for ref:", externalRef);
+        return;
+    }
+
+    const paymentStatus = mpPayment.status || "unknown";
+    const mpPaymentId = String(mpPayment.id);
+
+    if (paymentStatus === "approved") {
+        // Update purchase and auto-import products
+        await prisma.packagePurchase.update({
+            where: { id: purchase.id },
+            data: {
+                paymentStatus: "approved",
+                mpPaymentId,
+            },
+        });
+
+        // Auto-import products
+        const { autoImportProducts } = await import("@/app/api/merchant/packages/purchase/route");
+        const productIds = purchase.productIds ? JSON.parse(purchase.productIds) : undefined;
+
+        await autoImportProducts(
+            purchase.merchantId,
+            purchase.id,
+            purchase.purchaseType,
+            purchase.categoryId || undefined,
+            productIds
+        );
+
+        console.log(`[MP-Webhook] Package purchase approved: ${purchase.id} — auto-import triggered`);
+    } else if (paymentStatus === "rejected") {
+        await prisma.packagePurchase.update({
+            where: { id: purchase.id },
+            data: { paymentStatus: "rejected", mpPaymentId },
+        });
+        console.log(`[MP-Webhook] Package purchase rejected: ${purchase.id}`);
+    } else {
+        await prisma.packagePurchase.update({
+            where: { id: purchase.id },
+            data: { mpPaymentId },
+        });
+    }
+
+    // Mark webhook processed
+    await prisma.mpWebhookLog.update({
+        where: { eventId },
+        data: { processed: true },
+    });
 }
 
 // ─── Socket Helper ───────────────────────────────────────────────────────────

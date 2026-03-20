@@ -17,44 +17,101 @@ export async function POST(request: Request) {
 
         const { productIds, categoryId } = await request.json();
 
-        // Determine which master product IDs to import
+        // SECURITY: Verify merchant has purchased this package/products
+        if (categoryId) {
+            const hasPurchase = await prisma.packagePurchase.findFirst({
+                where: {
+                    merchantId,
+                    categoryId,
+                    paymentStatus: "approved",
+                },
+            });
+
+            const hasCategory = await prisma.merchantCategory.findFirst({
+                where: { merchantId, categoryId },
+            });
+
+            if (!hasPurchase && !hasCategory) {
+                return NextResponse.json(
+                    { error: "No tenés acceso a este paquete. Primero debés adquirirlo." },
+                    { status: 403 }
+                );
+            }
+        } else if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+            // Check if merchant acquired these products individually
+            const acquiredProducts = await prisma.merchantAcquiredProduct.findMany({
+                where: { merchantId, productId: { in: productIds } },
+                select: { productId: true },
+            });
+
+            const acquiredIds = new Set(acquiredProducts.map(p => p.productId));
+
+            // Also check if products belong to a purchased category
+            const purchasedCategories = await prisma.merchantCategory.findMany({
+                where: { merchantId },
+                select: { categoryId: true },
+            });
+            const catIds = purchasedCategories.map(c => c.categoryId);
+
+            if (catIds.length > 0) {
+                const productsInOwnedCats = await prisma.product.findMany({
+                    where: {
+                        id: { in: productIds },
+                        merchantId: null,
+                        categories: { some: { categoryId: { in: catIds } } },
+                    },
+                    select: { id: true },
+                });
+                productsInOwnedCats.forEach(p => acquiredIds.add(p.id));
+            }
+
+            const unauthorizedIds = productIds.filter((id: string) => !acquiredIds.has(id));
+            if (unauthorizedIds.length > 0) {
+                return NextResponse.json(
+                    { error: `No tenés acceso a ${unauthorizedIds.length} producto(s). Adquirilos primero.` },
+                    { status: 403 }
+                );
+            }
+        } else {
+            return NextResponse.json({ error: "categoryId o productIds requeridos" }, { status: 400 });
+        }
+
+        // Determine which master products to import
         let targetIds: string[] = [];
 
         if (categoryId) {
-            // Find all master products in this category
+            const category = await prisma.category.findUnique({
+                where: { id: categoryId },
+                include: { children: { select: { id: true } } },
+            });
+
+            const allCatIds = [categoryId];
+            if (category?.children) {
+                allCatIds.push(...category.children.map(c => c.id));
+            }
+
             const masterProducts = await prisma.product.findMany({
                 where: {
                     merchantId: null,
-                    categories: { some: { categoryId } },
+                    isActive: true,
+                    categories: { some: { categoryId: { in: allCatIds } } },
                 },
                 select: { id: true },
             });
             targetIds = masterProducts.map(p => p.id);
-        } else if (productIds && Array.isArray(productIds) && productIds.length > 0) {
-            targetIds = productIds;
         } else {
-            return NextResponse.json({ error: "categoryId o productIds requeridos" }, { status: 400 });
+            targetIds = productIds;
         }
 
         if (targetIds.length === 0) {
             return NextResponse.json({ success: true, imported: 0 });
         }
 
-        // Fetch master products with their images and categories
+        // Fetch master products with images and categories
         const masterProducts = await prisma.product.findMany({
-            where: {
-                id: { in: targetIds },
-                merchantId: null,
-            },
-            include: {
-                categories: true,
-                images: true,
-            },
+            where: { id: { in: targetIds }, merchantId: null },
+            include: { categories: true, images: true },
         });
-
-        if (masterProducts.length === 0) {
-            return NextResponse.json({ success: true, imported: 0 });
-        }
 
         let count = 0;
         await prisma.$transaction(async (tx) => {
@@ -63,12 +120,7 @@ export async function POST(request: Request) {
 
                 // Skip if already imported
                 const existing = await tx.product.findFirst({
-                    where: {
-                        OR: [
-                            { slug: newSlug },
-                            { name: master.name, merchantId },
-                        ],
-                    },
+                    where: { OR: [{ slug: newSlug }, { name: master.name, merchantId }] },
                 });
                 if (existing) continue;
 

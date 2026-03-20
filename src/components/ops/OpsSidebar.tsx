@@ -66,6 +66,7 @@ const navSections: NavSection[] = [
             { href: "/ops/moderacion", icon: Shield, label: "Moderación" },
             { href: "/ops/categorias", icon: Tag, label: "Categorías" },
             { href: "/ops/catalogo-paquetes", icon: Package, label: "Paquetes" },
+            { href: "/ops/precios-paquetes", icon: DollarSign, label: "Precios B2B" },
             { href: "/ops/slides", icon: ImageIcon, label: "Hero Slider" },
         ],
     },
@@ -74,6 +75,7 @@ const navSections: NavSection[] = [
         items: [
             { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
             { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
+            { href: "/ops/ventas-paquetes", icon: Package, label: "Ventas B2B" },
             { href: "/ops/puntos", icon: Gift, label: "Puntos" },
         ],
     },
