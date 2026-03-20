@@ -121,38 +121,7 @@ function parseCsv(text: string): ImportRow[] {
     return rows;
 }
 
-async function parseExcelFile(file: File): Promise<ImportRow[]> {
-    const XLSX = await import(/* webpackIgnore: true */ "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, { type: "array" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const jsonData: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-    return jsonData
-        .filter((row: Record<string, unknown>) => {
-            const name = String(row.name || "").trim();
-            return name && !name.startsWith("GASEOSAS") && !name.startsWith("TÓNICAS") &&
-                !name.startsWith("AGUAS") && !name.startsWith("BEBIDAS") &&
-                !name.startsWith("JUGOS") && !name.startsWith("ENERGIZANTES");
-        })
-        .map((row: Record<string, unknown>) => ({
-            name: String(row.name || "").trim(),
-            slug: String(row.slug || "").trim(),
-            description: String(row.description || "").trim(),
-            price: parseFloat(String(row.price)) || 0,
-            costPrice: parseFloat(String(row.costPrice)) || 0,
-            stock: parseInt(String(row.stock)) || 100,
-            minStock: parseInt(String(row.minStock)) || 5,
-            categorySlug: String(row.categorySlug || "").trim(),
-            packageCategory: String(row.packageCategory || "").trim(),
-            maxWeightGrams: parseInt(String(row.maxWeightGrams)) || 0,
-            maxLengthCm: parseInt(String(row.maxLengthCm)) || 0,
-            maxWidthCm: parseInt(String(row.maxWidthCm)) || 0,
-            maxHeightCm: parseInt(String(row.maxHeightCm)) || 0,
-            volumeScore: parseInt(String(row.volumeScore)) || 1,
-            allowedVehicles: String(row.allowedVehicles || "").trim(),
-        }));
-}
+// Excel parsing removed — CSP blocks CDN scripts. Use CSV format instead.
 
 export default function ImportProductosPage() {
     const [parsedRows, setParsedRows] = useState<ImportRow[]>([]);
@@ -171,10 +140,8 @@ export default function ImportProductosPage() {
             if (file.name.endsWith(".csv") || file.name.endsWith(".tsv")) {
                 const text = await file.text();
                 rows = parseCsv(text);
-            } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-                rows = await parseExcelFile(file);
             } else {
-                toast.error("Formato no soportado. Usá .xlsx o .csv");
+                toast.error("Formato no soportado. Guardá tu archivo como .csv (UTF-8) desde Excel.");
                 setParsing(false);
                 return;
             }
@@ -254,7 +221,7 @@ export default function ImportProductosPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Importar Productos Masivamente</h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        Cargá un archivo Excel (.xlsx) o CSV con el catálogo de productos para agregarlos al sistema.
+                        Cargá un archivo CSV con el catálogo de productos para agregarlos al sistema. Desde Excel: Guardar como → CSV UTF-8.
                     </p>
                 </div>
             </div>
@@ -297,7 +264,7 @@ export default function ImportProductosPage() {
                     <input
                         ref={fileRef}
                         type="file"
-                        accept=".xlsx,.xls,.csv"
+                        accept=".csv,.tsv"
                         className="hidden"
                         onChange={(e) => {
                             const f = e.target.files?.[0];
@@ -319,7 +286,7 @@ export default function ImportProductosPage() {
                                     Arrastrá tu archivo acá o hacé clic para seleccionar
                                 </p>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Soporta archivos .xlsx y .csv · Máximo 500 productos por carga
+                                    Formato CSV (UTF-8) · Máximo 500 productos por carga
                                 </p>
                             </div>
                         </div>

@@ -40,19 +40,23 @@ export async function POST(request: NextRequest) {
 
         // Check if email already exists
         const existingUser = await prisma.user.findUnique({
-            where: { email: data.email }
+            where: { email: data.email },
+            include: {
+                roles: { where: { isActive: true }, select: { role: true } },
+                ownedMerchants: { select: { id: true }, take: 1 },
+            }
         });
 
-        if (existingUser) {
+        // If user exists AND already has a merchant, reject
+        if (existingUser?.ownedMerchants && existingUser.ownedMerchants.length > 0) {
             return NextResponse.json(
-                { error: "Ya existe una cuenta con ese email" },
+                { error: "Ya tenés un comercio registrado con ese email" },
                 { status: 409 }
             );
         }
 
         // Generate slug
         let slug = generateSlug(data.businessName);
-        // Check for duplicate slug
         const existingSlug = await prisma.merchant.findUnique({
             where: { slug }
         });
@@ -60,50 +64,75 @@ export async function POST(request: NextRequest) {
             slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(data.password, 10);
         const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
 
-        // Create User + Merchant in transaction
-        await prisma.$transaction(async (tx) => {
-            // 1. Create User
-            const newUser = await tx.user.create({
-                data: {
-                    email: data.email,
-                    password: hashedPassword,
-                    name: fullName,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    phone: data.phone,
-                    role: 'MERCHANT',
-                }
-            });
+        // Merchant data (shared between both paths)
+        const merchantData = {
+            name: data.businessName,
+            businessName: data.businessName,
+            slug: slug,
+            category: data.businessType,
+            cuit: data.cuit || null,
+            bankAccount: data.cbu || null,
+            constanciaAfipUrl: data.constanciaAfipUrl || null,
+            habilitacionMunicipalUrl: data.habilitacionMunicipalUrl || null,
+            registroSanitarioUrl: data.registroSanitarioUrl || null,
+            acceptedTermsAt: data.acceptedTerms ? new Date() : null,
+            acceptedPrivacyAt: data.acceptedPrivacy ? new Date() : null,
+            email: data.email,
+            phone: data.businessPhone || data.phone,
+            address: data.address,
+            latitude: data.latitude ? parseFloat(data.latitude) : null,
+            longitude: data.longitude ? parseFloat(data.longitude) : null,
+            description: data.description || "Nuevo comercio Moovy",
+            isActive: false,
+            isVerified: false,
+        };
 
-            // 2. Create Merchant with legal/fiscal data
-            await tx.merchant.create({
-                data: {
-                    ownerId: newUser.id,
-                    name: data.businessName,
-                    businessName: data.businessName,
-                    slug: slug,
-                    category: data.businessType,
-                    cuit: data.cuit || null,
-                    bankAccount: data.cbu || null,
-                    constanciaAfipUrl: data.constanciaAfipUrl || null,
-                    habilitacionMunicipalUrl: data.habilitacionMunicipalUrl || null,
-                    registroSanitarioUrl: data.registroSanitarioUrl || null,
-                    acceptedTermsAt: data.acceptedTerms ? new Date() : null,
-                    acceptedPrivacyAt: data.acceptedPrivacy ? new Date() : null,
-                    email: data.email,
-                    phone: data.businessPhone || data.phone,
-                    address: data.address,
-                    latitude: data.latitude ? parseFloat(data.latitude) : null,
-                    longitude: data.longitude ? parseFloat(data.longitude) : null,
-                    description: data.description || "Nuevo comercio Moovy",
-                    isActive: false, // Pending approval
-                    isVerified: false
+        await prisma.$transaction(async (tx) => {
+            if (existingUser) {
+                // --- PATH A: User already exists (has a store/driver account) ---
+                // Add MERCHANT role if not already present
+                const hasMerchantRole = existingUser.roles.some((r: { role: string }) => r.role === "COMERCIO");
+                if (!hasMerchantRole) {
+                    await tx.userRole.create({
+                        data: { userId: existingUser.id, role: "COMERCIO", isActive: true }
+                    });
                 }
-            });
+
+                // Create Merchant linked to existing user
+                await tx.merchant.create({
+                    data: { ...merchantData, ownerId: existingUser.id }
+                });
+            } else {
+                // --- PATH B: Brand new user ---
+                // 1. Create User with legacy role USER (base account)
+                const newUser = await tx.user.create({
+                    data: {
+                        email: data.email,
+                        password: hashedPassword,
+                        name: fullName,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        phone: data.phone,
+                        role: 'USER',
+                    }
+                });
+
+                // 2. Create UserRole entries: USER (base) + MERCHANT
+                await tx.userRole.createMany({
+                    data: [
+                        { userId: newUser.id, role: "USER", isActive: true },
+                        { userId: newUser.id, role: "COMERCIO", isActive: true },
+                    ]
+                });
+
+                // 3. Create Merchant
+                await tx.merchant.create({
+                    data: { ...merchantData, ownerId: newUser.id }
+                });
+            }
         });
 
         return NextResponse.json({

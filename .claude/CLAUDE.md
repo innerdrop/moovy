@@ -20,10 +20,12 @@
 | Marketplace | `/marketplace` | Público |
 
 ## Arquitectura de roles
-- Sistema multi-rol: un usuario puede tener USER + SELLER + DRIVER simultáneamente
+- Sistema multi-rol: un usuario puede tener USER + SELLER + DRIVER + MERCHANT simultáneamente
 - Roles almacenados en tabla `UserRole` (no en `User.role`)
 - **SIEMPRE** verificar roles con `hasAnyRole(session, ["ROL"])` de `@/lib/auth-utils`
 - **NUNCA** usar `session.user.role` directo — es campo legacy
+- **Alias MERCHANT ↔ COMERCIO**: El enum `UserRoleType` en Prisma usa `COMERCIO`, pero el código usa `MERCHANT`. `auth-utils` resuelve esto automáticamente con aliases. Usar `"MERCHANT"` en los checks es correcto.
+- **Modelo de cuenta unificada**: Todo registro (merchant, driver) crea o reutiliza un User con rol base `USER`. Los roles B2B se agregan como UserRole adicionales. Si el email ya existe, se agrega el rol sin crear cuenta nueva.
 
 ## Base de datos
 - Motor: PostgreSQL + PostGIS en Docker (puerto 5436)
@@ -171,6 +173,8 @@ Ver `.env.example` en la raíz del proyecto para la lista completa con comentari
 - **Scroll search**: usa `data-hero-search` en HeroStatic como marcador, `IntersectionObserver`-like en AppHeader
 
 ## Deuda técnica conocida
+- ~~Registro merchant/driver creaban cuentas aisladas sin UserRole~~ **RESUELTO** — ahora crean USER base + rol B2B en UserRole, reusan cuenta existente si el email ya existe
+- ~~Alias MERCHANT/COMERCIO inconsistente~~ **RESUELTO** — `auth-utils` resuelve aliases automáticamente
 - `SellerProfile` no tiene coordenadas de ubicación (pendiente Fase 4)
 - Analytics cuenta roles desde `UserRole` table (ya migrado)
 - ~~Quedan ~8 extracciones de `(session.user as any).role`~~ **RESUELTO** — migrado a `hasAnyRole()` / `getUserRoles()` (solo quedan 2 en `auth.ts` que son la fuente)
