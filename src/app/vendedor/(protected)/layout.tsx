@@ -18,12 +18,16 @@ export default async function VendedorLayout({ children }: { children: React.Rea
     const session = await auth();
 
     // Security: require SELLER or ADMIN role
-    if (!session || (!hasRole(session, "SELLER") && !hasRole(session, "ADMIN"))) {
+    if (!session) {
+        redirect("/vendedor/registro");
+    }
+
+    if (!hasRole(session, "SELLER") && !hasRole(session, "ADMIN")) {
         redirect("/mi-perfil");
     }
 
     const navItems = [
-        { href: "/vendedor", icon: LayoutDashboard, label: "Dashboard" },
+        { href: "/vendedor/dashboard", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/vendedor/listings", icon: Tag, label: "Mis Listings" },
         { href: "/vendedor/pedidos", icon: ShoppingCart, label: "Mis Ventas" },
         { href: "/vendedor/ganancias", icon: DollarSign, label: "Ganancias" },

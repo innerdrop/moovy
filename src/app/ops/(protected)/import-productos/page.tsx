@@ -53,24 +53,47 @@ const EXPECTED_HEADERS = [
     "maxWidthCm", "maxHeightCm", "volumeScore", "allowedVehicles",
 ];
 
+function splitCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (ch === "," && !inQuotes) {
+            result.push(current);
+            current = "";
+        } else {
+            current += ch;
+        }
+    }
+    result.push(current);
+    return result;
+}
+
 function parseCsv(text: string): ImportRow[] {
     const lines = text.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length < 2) return [];
 
-    const headerLine = lines[0].replace(/^\uFEFF/, ""); // Remove BOM
+    const headerLine = lines[0].replace(/^\uFEFF/, "");
     const headers = headerLine.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
 
     const rows: ImportRow[] = [];
     for (let i = 1; i < lines.length; i++) {
         const values = splitCsvLine(lines[i]);
-        if (values.length < 3) continue; // skip empty/malformed rows
+        if (values.length < 3) continue;
 
-        const obj: any = {};
+        const obj: Record<string, string> = {};
         headers.forEach((h, idx) => {
             obj[h] = values[idx]?.trim().replace(/^"|"$/g, "") || "";
         });
 
-        // Skip category separator rows (no name or name is a section header)
         if (!obj.name || obj.name.startsWith("GASEOSAS") || obj.name.startsWith("TÓNICAS") ||
             obj.name.startsWith("AGUAS") || obj.name.startsWith("BEBIDAS") ||
             obj.name.startsWith("JUGOS") || obj.name.startsWith("ENERGIZANTES")) {
@@ -98,61 +121,36 @@ function parseCsv(text: string): ImportRow[] {
     return rows;
 }
 
-function splitCsvLine(line: string): string[] {
-    const result: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-                current += '"';
-                i++;
-            } else {
-                inQuotes = !inQuotes;
-            }
-        } else if (ch === "," && !inQuotes) {
-            result.push(current);
-            current = "";
-        } else {
-            current += ch;
-        }
-    }
-    result.push(current);
-    return result;
-}
-
 async function parseExcelFile(file: File): Promise<ImportRow[]> {
-    // Dynamic import of xlsx from CDN
-    const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs" as any);
+    const XLSX = await import(/* webpackIgnore: true */ "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
     const buffer = await file.arrayBuffer();
     const wb = XLSX.read(buffer, { type: "array" });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const jsonData: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    const jsonData: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
     return jsonData
-        .filter((row: any) => {
-            const name = row.name?.toString().trim();
+        .filter((row: Record<string, unknown>) => {
+            const name = String(row.name || "").trim();
             return name && !name.startsWith("GASEOSAS") && !name.startsWith("TÓNICAS") &&
                 !name.startsWith("AGUAS") && !name.startsWith("BEBIDAS") &&
                 !name.startsWith("JUGOS") && !name.startsWith("ENERGIZANTES");
         })
-        .map((row: any) => ({
-            name: row.name?.toString().trim() || "",
-            slug: row.slug?.toString().trim() || "",
-            description: row.description?.toString().trim() || "",
-            price: parseFloat(row.price) || 0,
-            costPrice: parseFloat(row.costPrice) || 0,
-            stock: parseInt(row.stock) || 100,
-            minStock: parseInt(row.minStock) || 5,
-            categorySlug: row.categorySlug?.toString().trim() || "",
-            packageCategory: row.packageCategory?.toString().trim() || "",
-            maxWeightGrams: parseInt(row.maxWeightGrams) || 0,
-            maxLengthCm: parseInt(row.maxLengthCm) || 0,
-            maxWidthCm: parseInt(row.maxWidthCm) || 0,
-            maxHeightCm: parseInt(row.maxHeightCm) || 0,
-            volumeScore: parseInt(row.volumeScore) || 1,
-            allowedVehicles: row.allowedVehicles?.toString().trim() || "",
+        .map((row: Record<string, unknown>) => ({
+            name: String(row.name || "").trim(),
+            slug: String(row.slug || "").trim(),
+            description: String(row.description || "").trim(),
+            price: parseFloat(String(row.price)) || 0,
+            costPrice: parseFloat(String(row.costPrice)) || 0,
+            stock: parseInt(String(row.stock)) || 100,
+            minStock: parseInt(String(row.minStock)) || 5,
+            categorySlug: String(row.categorySlug || "").trim(),
+            packageCategory: String(row.packageCategory || "").trim(),
+            maxWeightGrams: parseInt(String(row.maxWeightGrams)) || 0,
+            maxLengthCm: parseInt(String(row.maxLengthCm)) || 0,
+            maxWidthCm: parseInt(String(row.maxWidthCm)) || 0,
+            maxHeightCm: parseInt(String(row.maxHeightCm)) || 0,
+            volumeScore: parseInt(String(row.volumeScore)) || 1,
+            allowedVehicles: String(row.allowedVehicles || "").trim(),
         }));
 }
 
@@ -190,9 +188,10 @@ export default function ImportProductosPage() {
             setParsedRows(rows);
             setStep("preview");
             toast.success(`Se encontraron ${rows.length} productos para importar`);
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "formato inválido";
             console.error("Parse error:", err);
-            toast.error(`Error al leer el archivo: ${err.message || "formato inválido"}`);
+            toast.error(`Error al leer el archivo: ${message}`);
         }
         setParsing(false);
     }, []);
@@ -386,31 +385,21 @@ export default function ImportProductosPage() {
                                             <td className="px-3 py-2 font-medium text-gray-800 max-w-[200px] truncate">{row.name}</td>
                                             <td className="px-3 py-2 text-gray-600">{row.categorySlug || "—"}</td>
                                             <td className="px-3 py-2 text-center">
-                                                <span
-                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                                        row.packageCategory === "MICRO"
-                                                            ? "bg-blue-50 text-blue-600"
-                                                            : row.packageCategory === "SMALL"
-                                                            ? "bg-green-50 text-green-600"
-                                                            : row.packageCategory === "MEDIUM"
-                                                            ? "bg-yellow-50 text-yellow-700"
-                                                            : row.packageCategory === "LARGE"
-                                                            ? "bg-orange-50 text-orange-600"
-                                                            : "bg-red-50 text-red-600"
-                                                    }`}
-                                                >
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                                    row.packageCategory === "MICRO" ? "bg-blue-50 text-blue-600" :
+                                                    row.packageCategory === "SMALL" ? "bg-green-50 text-green-600" :
+                                                    row.packageCategory === "MEDIUM" ? "bg-yellow-50 text-yellow-700" :
+                                                    row.packageCategory === "LARGE" ? "bg-orange-50 text-orange-600" :
+                                                    "bg-red-50 text-red-600"
+                                                }`}>
                                                     {row.packageCategory}
                                                 </span>
                                             </td>
                                             <td className="px-3 py-2 text-center text-gray-600">{row.maxWeightGrams}</td>
-                                            <td className="px-3 py-2 text-center text-gray-500">
-                                                {row.maxLengthCm}×{row.maxWidthCm}×{row.maxHeightCm}
-                                            </td>
+                                            <td className="px-3 py-2 text-center text-gray-500">{row.maxLengthCm}×{row.maxWidthCm}×{row.maxHeightCm}</td>
                                             <td className="px-3 py-2 text-center font-mono font-bold text-gray-700">{row.volumeScore}</td>
                                             <td className="px-3 py-2 text-center text-gray-500 text-[10px]">{row.allowedVehicles}</td>
-                                            <td className="px-3 py-2 text-right text-gray-600">
-                                                {row.price > 0 ? `$${row.price.toLocaleString()}` : "—"}
-                                            </td>
+                                            <td className="px-3 py-2 text-right text-gray-600">{row.price > 0 ? `$${row.price.toLocaleString()}` : "—"}</td>
                                             <td className="px-3 py-2 text-center text-gray-600">{row.stock}</td>
                                         </tr>
                                     ))}

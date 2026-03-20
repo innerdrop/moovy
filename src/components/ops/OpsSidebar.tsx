@@ -28,7 +28,8 @@ import {
     Shield,
     TrendingUp,
     Archive,
-    Paintbrush
+    Paintbrush,
+    Upload,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -67,6 +68,7 @@ const navSections: NavSection[] = [
             { href: "/ops/categorias", icon: Tag, label: "Categorías" },
             { href: "/ops/catalogo-paquetes", icon: Package, label: "Paquetes" },
             { href: "/ops/precios-paquetes", icon: DollarSign, label: "Precios B2B" },
+            { href: "/ops/import-productos", icon: Upload, label: "Importar" },
             { href: "/ops/slides", icon: ImageIcon, label: "Hero Slider" },
         ],
     },

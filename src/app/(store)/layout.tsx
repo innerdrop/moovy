@@ -12,6 +12,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
+import MobileOnlyGuard from "@/components/ui/MobileOnlyGuard";
 
 const SPLASH_SHOWN_KEY = "moovy_splash_v5";
 
@@ -156,6 +157,7 @@ export default function StoreLayout({
 
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
+        <MobileOnlyGuard mode="warn">
         <div className={`min-h-screen flex flex-col bg-gray-50 overflow-x-hidden ${contentReady ? "app-ready" : ""}`}>
             {/* Scroll to top on navigation */}
             <ScrollToTop />
@@ -186,5 +188,6 @@ export default function StoreLayout({
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}
         </div>
+        </MobileOnlyGuard>
     );
 }

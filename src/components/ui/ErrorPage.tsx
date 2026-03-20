@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 interface ErrorPageProps {
@@ -9,7 +10,7 @@ interface ErrorPageProps {
     portalName?: string;
     backHref: string;
     backLabel: string;
-    accentColor?: string; // tailwind color class like "red" "blue" "green" "emerald"
+    accentColor?: string;
 }
 
 export default function ErrorPage({
@@ -20,7 +21,6 @@ export default function ErrorPage({
     backLabel,
     accentColor = "red",
 }: ErrorPageProps) {
-    // Map color to tailwind classes
     const colorMap: Record<string, { bg: string; text: string; border: string; btnBg: string; btnHover: string }> = {
         red: {
             bg: "bg-red-50",
@@ -50,6 +50,13 @@ export default function ErrorPage({
             btnBg: "bg-emerald-600",
             btnHover: "hover:bg-emerald-700",
         },
+        purple: {
+            bg: "bg-purple-50",
+            text: "text-purple-600",
+            border: "border-purple-200",
+            btnBg: "bg-purple-600",
+            btnHover: "hover:bg-purple-700",
+        },
     };
 
     const colors = colorMap[accentColor] || colorMap.red;
@@ -57,6 +64,17 @@ export default function ErrorPage({
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 max-w-md w-full text-center space-y-6">
+                {/* Logo MOOVY */}
+                <div className="flex justify-center">
+                    <Image
+                        src="/logo-moovy.svg"
+                        alt="MOOVY"
+                        width={120}
+                        height={38}
+                        priority
+                    />
+                </div>
+
                 {/* Icon */}
                 <div className={`mx-auto w-16 h-16 ${colors.bg} rounded-full flex items-center justify-center`}>
                     <AlertTriangle className={`w-8 h-8 ${colors.text}`} />
@@ -65,7 +83,7 @@ export default function ErrorPage({
                 {/* Title */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">
-                        ¡Ups! Algo salió mal
+                        Algo salió mal
                     </h1>
                     {portalName && (
                         <p className="text-sm text-gray-400 mt-1">Portal: {portalName}</p>
@@ -95,7 +113,7 @@ export default function ErrorPage({
                     </button>
                     <Link
                         href={backHref}
-                        className={`inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors`}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                     >
                         <Home className="w-4 h-4" />
                         {backLabel}

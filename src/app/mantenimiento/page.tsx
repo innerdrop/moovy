@@ -1,12 +1,11 @@
-// Página de Mantenimiento - Usa el componente MaintenancePage
 "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Instagram } from "lucide-react";
+import { Instagram, Wrench, RefreshCcw } from "lucide-react";
 
 export default function MantenimientoPage() {
-    const [message, setMessage] = useState("Estamos trabajando para mejorar tu experiencia. ¡Gracias por tu paciencia!");
+    const [message, setMessage] = useState("Estamos trabajando para mejorar tu experiencia.");
 
     useEffect(() => {
         fetch("/api/maintenance")
@@ -20,63 +19,83 @@ export default function MantenimientoPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-6">
-            <div className="max-w-md w-full text-center">
-                {/* Logo */}
-                <div className="mb-8">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 max-w-md w-full text-center space-y-6">
+                {/* Logo MOOVY */}
+                <div className="flex justify-center">
                     <Image
                         src="/logo-moovy.svg"
                         alt="MOOVY"
-                        width={280}
-                        height={90}
-                        className="mx-auto"
+                        width={120}
+                        height={38}
+                        priority
                     />
                 </div>
 
-                {/* Construction Icon */}
-                <div className="text-6xl mb-6 animate-bounce">
-                    🚧
+                {/* Icon with pulse */}
+                <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center animate-pulse">
+                    <Wrench className="w-8 h-8 text-amber-500" />
                 </div>
 
                 {/* Title */}
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                    ¡Volvemos Pronto!
-                </h1>
-
-                {/* Custom Message */}
-                <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                    {message}
-                </p>
-
-                {/* Progress Animation */}
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
-                    <div
-                        className="h-2 rounded-full bg-gradient-to-r from-[#e60012] to-[#00D4AA] animate-pulse"
-                        style={{ width: "60%" }}
-                    />
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        En mantenimiento
+                    </h1>
+                    <p className="text-gray-500 mt-2">
+                        {message}
+                    </p>
                 </div>
 
-                {/* Social Links */}
-                <div className="flex justify-center gap-4">
+                {/* Progress bar */}
+                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#e60012] to-amber-500 rounded-full animate-pulse w-2/3" />
+                </div>
+
+                {/* Info */}
+                <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2">
+                    <p className="text-sm text-gray-600 font-medium">Mientras tanto:</p>
+                    <ul className="text-sm text-gray-500 space-y-1">
+                        <li className="flex items-start gap-2">
+                            <span className="text-[#e60012] mt-0.5">•</span>
+                            No perdés tu carrito ni tus pedidos
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-[#e60012] mt-0.5">•</span>
+                            Los pedidos en curso siguen activos
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-[#e60012] mt-0.5">•</span>
+                            Te notificamos cuando volvamos
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Retry */}
+                <a
+                    href="/"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#e60012] hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+                >
+                    <RefreshCcw className="w-4 h-4" />
+                    Volver a intentar
+                </a>
+
+                {/* Social */}
+                <div className="flex justify-center">
                     <a
                         href="https://instagram.com/somosmoovy"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-gray-700 hover:bg-gray-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full text-gray-600 hover:bg-gray-100 transition-colors text-sm"
                     >
-                        <Instagram className="w-5 h-5" />
-                        <span className="text-sm font-medium">@somosmoovy</span>
+                        <Instagram className="w-4 h-4" />
+                        @somosmoovy
                     </a>
                 </div>
 
-                {/* Contact Email */}
-                <p className="mt-6 text-sm text-gray-500">
-                    Consultas: <a href="mailto:somosmoovy@gmail.com" className="text-[#e60012] hover:underline">somosmoovy@gmail.com</a>
-                </p>
-
                 {/* Footer */}
-                <p className="mt-8 text-sm text-gray-400">
-                    © {new Date().getFullYear()} MOOVY™ — Ushuaia, Tierra del Fuego
+                <p className="text-xs text-gray-400">
+                    Consultas: <a href="mailto:somosmoovy@gmail.com" className="text-[#e60012] hover:underline">somosmoovy@gmail.com</a>
                 </p>
             </div>
         </div>
