@@ -80,9 +80,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     });
 
                     // Build roles array from UserRole table, fallback to legacy role
-                    const activeRoles = user.roles && user.roles.length > 0
+                    const rolesFromTable = user.roles && user.roles.length > 0
                         ? user.roles.map((r: { role: string }) => r.role)
-                        : [user.role];
+                        : [];
+                    // Always include legacy User.role for backward compatibility
+                    const activeRoles = [...new Set([...rolesFromTable, user.role].filter(Boolean))];
 
                     return {
                         id: user.id,

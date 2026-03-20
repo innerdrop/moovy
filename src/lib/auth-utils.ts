@@ -17,12 +17,12 @@ export function hasRole(session: Session | null, role: string): boolean {
     if (!session?.user) return false;
     const user = session.user as SessionUser;
 
-    // Prefer new roles[] array
-    if (Array.isArray(user.roles) && user.roles.length > 0) {
-        return user.roles.includes(role);
+    // Check roles[] array first
+    if (Array.isArray(user.roles) && user.roles.includes(role)) {
+        return true;
     }
 
-    // Fallback to legacy single role
+    // Also check legacy role field (defense-in-depth for data inconsistencies)
     return user.role === role;
 }
 
@@ -42,9 +42,10 @@ export function getUserRoles(session: Session | null): string[] {
     if (!session?.user) return [];
     const user = session.user as SessionUser;
 
-    if (Array.isArray(user.roles) && user.roles.length > 0) {
-        return user.roles;
-    }
+    // Merge both sources to handle data inconsistencies
+    const rolesFromArray = Array.isArray(user.roles) ? user.roles : [];
+    const legacyRole = user.role ? [user.role] : [];
 
-    return user.role ? [user.role] : [];
+    const merged = [...new Set([...rolesFromArray, ...legacyRole])];
+    return merged.length > 0 ? merged : [];
 }
