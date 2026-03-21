@@ -21,14 +21,14 @@ if ($confirm -ne "s") {
 Write-Host "[STOP] Deteniendo procesos..." -ForegroundColor Yellow
 taskkill /F /IM node.exe /T 2>$null
 
-# 2. Limpiar esquema
+# 2. Limpiar esquema y restaurar PostGIS
 Write-Host "[DB] Limpiando base de datos..." -ForegroundColor Yellow
-docker exec -i moovy-db psql -U postgres -d moovy_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+docker exec -i moovy-db psql -U postgres -d moovy_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;"
 if ($LASTEXITCODE -ne 0) { Add-Error "[DB] Error al resetear el esquema" }
 
 # 3. Aplicar esquema actual
 Write-Host "[PRISMA] Aplicando esquema Prisma..." -ForegroundColor Yellow
-npx prisma db push
+npx prisma db push --accept-data-loss
 if ($LASTEXITCODE -ne 0) { Add-Error "[PRISMA] Error al aplicar db push" }
 
 # 4. Ejecutar seed
@@ -45,6 +45,6 @@ if ($errorSummary.Count -gt 0) {
 } else {
     Write-Host ""
     Write-Host "[OK] BASE DE DATOS REINICIADA" -ForegroundColor Green
-    Write-Host "[INFO] Credenciales: admin@somosmoovy.com / demo123" -ForegroundColor Cyan
+    Write-Host "[INFO] Credenciales: admin@somosmoovy.com / demo2026" -ForegroundColor Cyan
     Write-Host ""
 }

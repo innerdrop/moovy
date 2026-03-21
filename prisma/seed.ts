@@ -3,29 +3,56 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+/** Safe deleteMany — skips if table doesn't exist yet */
+async function safeDelete(model: any) {
+    try {
+        await model.deleteMany({});
+    } catch {
+        // Table may not exist yet, skip
+    }
+}
+
 async function main() {
     console.log("🗑️ Limpiando base de datos...");
 
     // Clear all data in order (respect foreign keys)
-    // First: Delete tables that reference other tables
-    await prisma.orderItem.deleteMany({});
-    await prisma.order.deleteMany({});
-    await prisma.cartItem.deleteMany({});
-    await prisma.productImage.deleteMany({});
-    await prisma.productVariant.deleteMany({});
-    await prisma.productCategory.deleteMany({});
-    await prisma.merchantAcquiredProduct.deleteMany({});
-    await prisma.merchantCategory.deleteMany({});
-    await prisma.product.deleteMany({});
-    await prisma.category.deleteMany({});
-    await prisma.supportMessage.deleteMany({});
-    await prisma.supportChat.deleteMany({});
-    await prisma.driver.deleteMany({});
-    await prisma.merchant.deleteMany({});
-    await prisma.address.deleteMany({});
-    await prisma.pointsTransaction.deleteMany({});
-    await prisma.referral.deleteMany({});
-    await prisma.user.deleteMany({});
+    await safeDelete(prisma.couponUsage);
+    await safeDelete(prisma.coupon);
+    await safeDelete(prisma.auditLog);
+    await safeDelete(prisma.assignmentLog);
+    await safeDelete(prisma.pendingAssignment);
+    await safeDelete(prisma.payment);
+    await safeDelete(prisma.mpWebhookLog);
+    await safeDelete(prisma.orderItem);
+    await safeDelete(prisma.subOrder);
+    await safeDelete(prisma.order);
+    await safeDelete(prisma.cartItem);
+    await safeDelete(prisma.productImage);
+    await safeDelete(prisma.productVariant);
+    await safeDelete(prisma.productCategory);
+    await safeDelete(prisma.merchantAcquiredProduct);
+    await safeDelete(prisma.merchantCategory);
+    await safeDelete(prisma.product);
+    await safeDelete(prisma.category);
+    await safeDelete(prisma.favorite);
+    await safeDelete(prisma.pointsTransaction);
+    await safeDelete(prisma.referral);
+    await safeDelete(prisma.pushSubscription);
+    await safeDelete(prisma.supportMessage);
+    await safeDelete(prisma.supportChat);
+    await safeDelete(prisma.sellerAvailability);
+    await safeDelete(prisma.listingImage);
+    await safeDelete(prisma.listing);
+    await safeDelete(prisma.sellerProfile);
+    await safeDelete(prisma.driver);
+    await safeDelete(prisma.merchant);
+    await safeDelete(prisma.address);
+    await safeDelete(prisma.packagePurchase);
+    await safeDelete(prisma.userRole);
+    await safeDelete(prisma.user);
+    await safeDelete(prisma.storeSettings);
+    await safeDelete(prisma.moovyConfig);
+    await safeDelete(prisma.pointsConfig);
 
     console.log("✅ Base de datos limpia");
 
@@ -52,7 +79,7 @@ async function main() {
             id: "settings",
             storeName: "Moovy Ushuaia",
             storeAddress: "Ushuaia, Tierra del Fuego",
-            isOpen: false,
+            isOpen: true,
             originLat: -54.8019,
             originLng: -68.303,
             fuelPricePerLiter: 1200,
@@ -77,167 +104,121 @@ async function main() {
         prisma.category.upsert({ where: { slug: "limpieza" }, update: {}, create: { name: "Limpieza", slug: "limpieza", order: 9 } }),
     ]);
 
-    // ==================== COMERCIOS ====================
-    console.log("\n🏪 Creando Comercios...");
+    // ==================== COMERCIO ====================
+    console.log("\n🏪 Creando Comercio...");
 
-    const comerciosData = [
-        {
-            name: "COMERCIO 1",
-            slug: "comercio-1",
-            email: "comercio1@somosmoovy.com",
+    const comercioOwner = await prisma.user.create({
+        data: {
+            email: "comercio@somosmoovy.com",
+            password,
+            name: "Burger Ushuaia",
+            role: "MERCHANT",
+        },
+    });
+
+    const merchant = await prisma.merchant.create({
+        data: {
+            name: "Burger Ushuaia",
+            slug: "burger-ushuaia",
+            description: "Las mejores hamburguesas del fin del mundo",
             category: "Hamburguesas",
-            categoryId: categorias[0].id,
-            description: "Las mejores hamburguesas de Ushuaia",
-            products: [
-                { name: "Hamburguesa Clásica", price: 5500, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" },
-                { name: "Hamburguesa Doble", price: 7500, image: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400" },
-                { name: "Hamburguesa Veggie", price: 5000, image: "https://images.unsplash.com/photo-1520072959219-c595dc870360?w=400" },
-            ],
+            email: "comercio@somosmoovy.com",
+            phone: "+54 9 2901 553173",
+            address: "San Martín 500, Ushuaia",
+            isActive: true,
+            isOpen: true,
+            isVerified: true,
+            approvalStatus: "APPROVED",
+            ownerId: comercioOwner.id,
         },
-        {
-            name: "COMERCIO 2",
-            slug: "comercio-2",
-            email: "comercio2@somosmoovy.com",
-            category: "Pizzas",
-            categoryId: categorias[1].id,
-            description: "Pizzas artesanales con ingredientes premium",
-            products: [
-                { name: "Pizza Margherita", price: 6000, image: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=400" },
-                { name: "Pizza Pepperoni", price: 7000, image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400" },
-                { name: "Pizza 4 Quesos", price: 7500, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
-            ],
-        },
-        {
-            name: "COMERCIO 3",
-            slug: "comercio-3",
-            email: "comercio3@somosmoovy.com",
-            category: "Sushi",
-            categoryId: categorias[2].id,
-            description: "Sushi fresco preparado por chefs expertos",
-            products: [
-                { name: "Roll California", price: 4500, image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400" },
-                { name: "Roll Salmón", price: 5500, image: "https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400" },
-                { name: "Combo 30 piezas", price: 12000, image: "https://images.unsplash.com/photo-1553621042-f6e147245754?w=400" },
-            ],
-        },
+    });
+
+    // Products
+    const productos = [
+        { name: "Hamburguesa Clásica", price: 5500, img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" },
+        { name: "Hamburguesa Doble", price: 7500, img: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400" },
+        { name: "Hamburguesa Veggie", price: 5000, img: "https://images.unsplash.com/photo-1520072959219-c595dc870360?w=400" },
+        { name: "Papas Fritas", price: 2500, img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400" },
+        { name: "Coca Cola 500ml", price: 1500, img: "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=400" },
     ];
 
-    for (const comercio of comerciosData) {
-        // Create merchant owner user
-        const owner = await prisma.user.create({
+    for (const prod of productos) {
+        const product = await prisma.product.create({
             data: {
-                email: comercio.email,
-                password,
-                name: comercio.name,
-                role: "MERCHANT",
-            },
-        });
-
-        // Create merchant
-        const merchant = await prisma.merchant.create({
-            data: {
-                name: comercio.name,
-                slug: comercio.slug,
-                description: comercio.description,
-                category: comercio.category,
-                email: comercio.email,
-                phone: "+54 9 2901 000000",
-                address: "Ushuaia, Tierra del Fuego",
+                name: prod.name,
+                slug: `burger-ushuaia-${prod.name.toLowerCase().replace(/\s+/g, "-")}`,
+                price: prod.price,
+                costPrice: prod.price * 0.6,
+                stock: 100,
                 isActive: true,
-                isOpen: true,
-                isVerified: true,
-                ownerId: owner.id,
+                merchantId: merchant.id,
             },
         });
 
-        // Create products for this merchant
-        for (const prod of comercio.products) {
-            const product = await prisma.product.create({
-                data: {
-                    name: prod.name,
-                    slug: `${comercio.slug}-${prod.name.toLowerCase().replace(/\s+/g, '-')}`,
-                    price: prod.price,
-                    costPrice: prod.price * 0.6,
-                    stock: 100,
-                    isActive: true,
-                    merchantId: merchant.id,
-                },
-            });
+        await prisma.productImage.create({
+            data: { productId: product.id, url: prod.img, alt: prod.name, order: 0 },
+        });
 
-            // Add image
-            await prisma.productImage.create({
-                data: {
-                    productId: product.id,
-                    url: prod.image,
-                    alt: prod.name,
-                    order: 0,
-                },
-            });
-
-            // Link to category
-            await prisma.productCategory.create({
-                data: {
-                    productId: product.id,
-                    categoryId: comercio.categoryId,
-                },
-            });
-        }
-
-        console.log(`   ✅ ${comercio.name} con 3 productos`);
+        // Assign category (hamburguesas for burgers, bebidas for coca)
+        const catId = prod.name.includes("Coca") ? categorias[4].id : categorias[0].id;
+        await prisma.productCategory.create({
+            data: { productId: product.id, categoryId: catId },
+        });
     }
+    console.log("   ✅ Burger Ushuaia con 5 productos");
 
-    // ==================== REPARTIDORES ====================
-    console.log("\n🏍️ Creando Repartidores...");
+    // ==================== REPARTIDOR ====================
+    console.log("\n🏍️ Creando Repartidor...");
 
-    const repartidoresData = [
-        { name: "RIDER 1", email: "rider1@somosmoovy.com", vehicle: "MOTO", plate: "ABC 001" },
-        { name: "RIDER 2", email: "rider2@somosmoovy.com", vehicle: "BICICLETA", plate: null },
-        { name: "RIDER 3", email: "rider3@somosmoovy.com", vehicle: "AUTO", plate: "XYZ 999" },
-    ];
+    const riderUser = await prisma.user.create({
+        data: {
+            email: "rider@somosmoovy.com",
+            password,
+            name: "Repartidor Demo",
+            role: "DRIVER",
+        },
+    });
 
-    for (const rider of repartidoresData) {
-        const user = await prisma.user.create({
-            data: {
-                email: rider.email,
-                password,
-                name: rider.name,
-                role: "DRIVER",
-            },
-        });
+    await prisma.driver.create({
+        data: {
+            userId: riderUser.id,
+            vehicleType: "MOTO",
+            licensePlate: "ABC 123",
+            isActive: true,
+            isOnline: false,
+            approvalStatus: "APPROVED",
+        },
+    });
+    console.log("   ✅ Repartidor Demo (moto)");
 
-        await prisma.driver.create({
-            data: {
-                userId: user.id,
-                vehicleType: rider.vehicle,
-                licensePlate: rider.plate,
-                isActive: true,
-                isOnline: false,
-            },
-        });
+    // ==================== CLIENTE ====================
+    console.log("\n👥 Creando Cliente...");
 
-        console.log(`   ✅ ${rider.name}`);
-    }
+    const clienteUser = await prisma.user.create({
+        data: {
+            email: "cliente@somosmoovy.com",
+            password,
+            name: "Cliente Demo",
+            role: "CLIENT",
+        },
+    });
 
-    // ==================== CLIENTES ====================
-    console.log("\n👥 Creando Clientes...");
-
-    const clientesData = [
-        { name: "CLIENTE 1", email: "cliente1@somosmoovy.com" },
-        { name: "CLIENTE 2", email: "cliente2@somosmoovy.com" },
-        { name: "CLIENTE 3", email: "cliente3@somosmoovy.com" },
-    ];
-
-    for (const cliente of clientesData) {
-        await prisma.user.create({
-            data: {
-                email: cliente.email,
-                password,
-                name: cliente.name,
-                role: "CLIENT",
-            },
-        });
-        console.log(`   ✅ ${cliente.name}`);
-    }
+    // Create a default address for the client
+    await prisma.address.create({
+        data: {
+            userId: clienteUser.id,
+            label: "Casa",
+            street: "San Martín 800",
+            number: "800",
+            city: "Ushuaia",
+            province: "Tierra del Fuego",
+            postalCode: "9410",
+            latitude: -54.8069,
+            longitude: -68.3040,
+            isDefault: true,
+        },
+    });
+    console.log("   ✅ Cliente Demo con dirección");
 
     // ==================== SUMMARY ====================
     console.log("\n" + "=".repeat(50));
@@ -245,24 +226,19 @@ async function main() {
     console.log("=".repeat(50));
     console.log("\n📋 RESUMEN:");
     console.log("   • 1 Admin");
-    console.log("   • 3 Comercios (con 3 productos c/u)");
-    console.log("   • 3 Repartidores");
-    console.log("   • 3 Clientes");
-    console.log("\n🔐 CREDENCIALES (todas con contraseña: demo123):");
+    console.log("   • 1 Comercio (Burger Ushuaia, 5 productos)");
+    console.log("   • 1 Repartidor (moto, aprobado)");
+    console.log("   • 1 Cliente (con dirección en Ushuaia)");
+    console.log("   • 9 Categorías");
+    console.log("\n🔐 CREDENCIALES (contraseña: demo2026):");
     console.log("\n   ADMIN:");
     console.log("   └─ admin@somosmoovy.com");
-    console.log("\n   COMERCIOS:");
-    console.log("   ├─ comercio1@somosmoovy.com");
-    console.log("   ├─ comercio2@somosmoovy.com");
-    console.log("   └─ comercio3@somosmoovy.com");
-    console.log("\n   REPARTIDORES:");
-    console.log("   ├─ rider1@somosmoovy.com");
-    console.log("   ├─ rider2@somosmoovy.com");
-    console.log("   └─ rider3@somosmoovy.com");
-    console.log("\n   CLIENTES:");
-    console.log("   ├─ cliente1@somosmoovy.com");
-    console.log("   ├─ cliente2@somosmoovy.com");
-    console.log("   └─ cliente3@somosmoovy.com");
+    console.log("\n   COMERCIO:");
+    console.log("   └─ comercio@somosmoovy.com");
+    console.log("\n   REPARTIDOR:");
+    console.log("   └─ rider@somosmoovy.com");
+    console.log("\n   CLIENTE:");
+    console.log("   └─ cliente@somosmoovy.com");
     console.log("\n");
 }
 

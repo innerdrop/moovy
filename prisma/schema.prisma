@@ -69,6 +69,7 @@ model User {
   sellerAvailability SellerAvailability?
   favorites          Favorite[]
   auditLogs          AuditLog[]             @relation("AuditLogs")
+  couponUsages       CouponUsage[]
 }
 
 model UserRole {
@@ -287,6 +288,7 @@ model Order {
   scheduledSlotStart  DateTime?
   scheduledSlotEnd    DateTime?
   scheduledConfirmedAt DateTime?
+  couponCode          String?
 
   @@index([status])
   @@index([driverId])
@@ -913,4 +915,40 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model Coupon {
+  id               String        @id @default(cuid())
+  code             String        @unique
+  description      String?
+  discountType     String        @default("PERCENTAGE") // PERCENTAGE | FIXED_AMOUNT | FREE_DELIVERY
+  discountValue    Float
+  maxDiscountAmount Float?
+  minOrderAmount   Float?
+  maxUses          Int?
+  maxUsesPerUser   Int           @default(1)
+  usedCount        Int           @default(0)
+  isActive         Boolean       @default(true)
+  validFrom        DateTime      @default(now())
+  validUntil       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  usages           CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String
+  userId    String
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([couponId])
+  @@index([userId])
 }
