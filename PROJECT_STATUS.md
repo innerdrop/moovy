@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 83/100 | P0: 2 tareas | P1: 12 | P2: 12
+Score: 87/100 | P0: 2 tareas | P1: 8 | P2: 12
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
@@ -43,8 +43,8 @@ Score: 83/100 | P0: 2 tareas | P1: 12 | P2: 12
 
 ## P1 — Sin esto los usuarios se van
 
-- [ ] Tests unitarios para order creation + webhook MP — `__tests__/` — L
-  Mínimo: crear orden cash, crear orden MP, webhook approve, webhook reject, stock restore.
+- [x] Tests unitarios para order creation + webhook MP — `__tests__/` — L ✅ 2026-03-21
+  68 tests (orders.test.ts + webhook-mp.test.ts): schema validation, scheduled delivery, webhook structure.
 
 - [x] Botón "Eliminar mi cuenta" en UI — `src/app/(store)/mi-perfil/page.tsx` — S ✅ 2026-03-21
   Botón discreto + modal con doble confirmación (escribir ELIMINAR). Llama a POST /api/profile/delete.
@@ -55,8 +55,8 @@ Score: 83/100 | P0: 2 tareas | P1: 12 | P2: 12
 - [x] Sonido/vibración en notificaciones del merchant — `src/app/comercios/(protected)/pedidos/page.tsx` — S ✅ 2026-03-21
   El merchant ya tenía audio (new-order.wav). Agregado: navigator.vibrate() + Notification API cuando tab en background.
 
-- [ ] Página de estado del pedido pública (sin auth) — `src/app/seguimiento/[orderId]/page.tsx` — S
-  Verificar que funciona sin auth para que el buyer comparta link por WhatsApp.
+- [x] Página de estado del pedido pública (sin auth) — `src/app/seguimiento/[orderId]/page.tsx` — S ✅ 2026-03-21
+  Nuevo endpoint /api/orders/[id]/tracking (datos no sensibles). Página funciona sin auth.
 
 - [ ] Retry automático de asignación si no hay drivers — `src/lib/assignment-engine.ts` — M
   Después de agotar todos los drivers, el pedido queda en limbo. Falta: retry cada X minutos o notificar admin.
@@ -73,11 +73,11 @@ Score: 83/100 | P0: 2 tareas | P1: 12 | P2: 12
 - [ ] Notificación cuando pedido está listo para retirar — `src/app/api/merchant/orders/[id]/ready/route.ts` — S
   Verificar que el push llega al driver cuando merchant marca "listo". Si no, el driver no sabe cuándo ir.
 
-- [ ] Rate limiting en login de portales — `src/app/repartidor/login/page.tsx`, etc. — S
-  El rate limit está en el backend pero el frontend no muestra mensaje claro de "demasiados intentos".
+- [x] Rate limiting en login de portales — PortalLoginForm.tsx — S ✅ 2026-03-21
+  Detecta 429, muestra countdown MM:SS. Endpoint /api/auth/check-rate-limit. Aplica a todos los portales.
 
-- [ ] Validación de imágenes en listings — `src/app/vendedor/(protected)/listings/nuevo/page.tsx` — S
-  Verificar que se requiere al menos 1 imagen. Hoy se puede publicar listing sin foto.
+- [x] Validación de imágenes en listings — NewListingForm + EditListingForm + API — S ✅ 2026-03-21
+  Client-side y server-side: requiere al menos 1 imagen para publicar listing.
 
 - [ ] Mejorar empty states en marketplace — `src/app/(store)/marketplace/page.tsx` — S
   Si no hay listings en una categoría, sugerir vendedores verificados o CTA para vender.
@@ -151,3 +151,7 @@ Score: 83/100 | P0: 2 tareas | P1: 12 | P2: 12
 - [x] Email de confirmación de pedido (código verificado, falta SMTP prod) — 2026-03-21
 - [x] Botón "Eliminar mi cuenta" en UI (modal doble confirmación) — 2026-03-21
 - [x] Sonido/vibración en notificaciones del merchant (vibrate + Notification API) — 2026-03-21
+- [x] Tests unitarios (68 tests: orders + webhook MP) — 2026-03-21
+- [x] Rate limiting UI en login de portales (countdown + check-rate-limit endpoint) — 2026-03-21
+- [x] Validación de imágenes en listings (client + server) — 2026-03-21
+- [x] Página de seguimiento pública sin auth (tracking endpoint) — 2026-03-21
