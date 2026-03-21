@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { formatTime } from "@/lib/timezone";
 import { prisma } from "@/lib/prisma";
 import KPIDashboard from "./KPIDashboard";
+import OnboardingChecklist from "./OnboardingChecklist";
 
 export default async function ComerciosDashboardPage() {
     const session = await auth();
@@ -74,6 +75,9 @@ export default async function ComerciosDashboardPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* Onboarding Checklist - Only shown if merchant is approved and onboarding incomplete */}
+            <OnboardingChecklist />
 
             {/* Pending Orders Alert */}
             {pendingOrdersCount > 0 && (

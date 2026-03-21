@@ -26,7 +26,8 @@ import {
     AlertTriangle,
     MessageCircle,
     X,
-    ChevronRight
+    ChevronRight,
+    FileText
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
@@ -225,6 +226,11 @@ export default function OrderDetailPage() {
         }
     };
 
+    const handleDownloadReceipt = () => {
+        if (!order) return;
+        window.open(`/api/orders/${order.id}/receipt`, "_blank");
+    };
+
     // ─── Loading ──────────────────────────────────────────
     if (loading) {
         return (
@@ -286,6 +292,11 @@ export default function OrderDetailPage() {
                     <button onClick={handleShare} className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition active:scale-95">
                         <Share2 className="w-4 h-4 text-gray-600" />
                     </button>
+                    {(isDelivered || order?.paymentStatus === "PAID" || order?.paymentStatus === "paid") && (
+                        <button onClick={handleDownloadReceipt} className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition active:scale-95" title="Descargar comprobante">
+                            <FileText className="w-4 h-4 text-gray-600" />
+                        </button>
+                    )}
                 </div>
             </div>
 
