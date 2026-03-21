@@ -147,6 +147,31 @@ export async function notifySeller(
     });
 }
 
+/**
+ * Send push notification to driver when order is ready for pickup.
+ * Resolves the driver's userId internally.
+ */
+export async function notifyDriver(
+    driverId: string,
+    orderNumber: string,
+    merchantName?: string,
+    orderId?: string
+): Promise<number> {
+    const driver = await prisma.driver.findUnique({
+        where: { id: driverId },
+        select: { userId: true },
+    });
+
+    if (!driver) return 0;
+
+    return sendPushToUser(driver.userId, {
+        title: '📦 Pedido listo para retirar',
+        body: `Pedido ${orderNumber}${merchantName ? ` en ${merchantName}` : ''} está listo. ¡Andá a buscarlo!`,
+        url: orderId ? `/repartidor/pedidos/${orderId}` : '/repartidor/dashboard',
+        tag: 'order-ready',
+    });
+}
+
 export async function notifyBuyer(
     userId: string,
     status: string,

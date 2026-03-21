@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { sendPushToUser } from "@/lib/push";
+import { notifyDriver, notifyBuyer } from "@/lib/notifications";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -53,11 +53,7 @@ export async function POST(
                 userId: true,
                 orderNumber: true,
                 driverId: true,
-                driver: {
-                    select: {
-                        userId: true,
-                    },
-                },
+                merchant: { select: { name: true } },
             },
         });
 
@@ -85,12 +81,15 @@ export async function POST(
         });
 
         // Notify assigned driver if exists
-        if (order.driver?.userId) {
-            sendPushToUser(order.driver.userId, {
-                title: "📦 Pedido listo para retirar",
-                body: `El pedido ${order.orderNumber} está listo para retirar en el comercio`,
-                url: "/repartidor",
-                tag: `order-ready-${orderId}`,
+        if (order.driverId) {
+            notifyDriver(order.driverId, order.orderNumber, order.merchant?.name || undefined, orderId).catch(console.error);
+        }
+
+        // Notify buyer that order is ready
+        if (order.userId) {
+            notifyBuyer(order.userId, "READY", order.orderNumber, {
+                merchantName: order.merchant?.name || undefined,
+                orderId,
             }).catch(console.error);
         }
 

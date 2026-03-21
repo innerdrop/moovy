@@ -1,34 +1,33 @@
 "use client";
 
-// WhatsApp Floating Button
+// WhatsApp Floating Support Button
 import { MessageCircle } from "lucide-react";
 
 interface WhatsAppButtonProps {
+    // TODO: Reemplazar con el número real de soporte MOOVY
     phoneNumber?: string;
     message?: string;
 }
 
 export default function WhatsAppButton({
-    phoneNumber = "",
-    message = "¡Hola! Quiero hacer un pedido",
+    phoneNumber = "5492901000000", // TODO: número real de WhatsApp soporte
+    message = "Hola! Necesito ayuda con MOOVY",
 }: WhatsAppButtonProps) {
-    const handleClick = () => {
-        const cleanNumber = phoneNumber.replace(/\D/g, "");
-        const encodedMessage = encodeURIComponent(message);
-        const url = cleanNumber
-            ? `https://wa.me/${cleanNumber}?text=${encodedMessage}`
-            : `https://wa.me/?text=${encodedMessage}`;
-        window.open(url, "_blank");
-    };
+    if (!phoneNumber) return null;
+
+    const cleanNumber = phoneNumber.replace(/\D/g, "");
+    const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
 
     return (
-        <button
-            onClick={handleClick}
-            className="whatsapp-button"
-            aria-label="Contactar por WhatsApp"
+        <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Soporte por WhatsApp"
+            className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg shadow-green-500/30 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            aria-label="Contactar soporte por WhatsApp"
         >
             <MessageCircle className="w-7 h-7" />
-        </button>
+        </a>
     );
 }
-
