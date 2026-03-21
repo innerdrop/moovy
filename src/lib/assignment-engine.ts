@@ -307,8 +307,8 @@ export async function startAssignmentCycle(
                         latitude: true,
                         longitude: true,
                         name: true,
-                        // P0: Include merchant category for ShipmentType auto-detection
-                        category: { select: { name: true } },
+                        // P0: category is a scalar String field
+                        category: true,
                     },
                 },
                 items: {
@@ -316,9 +316,6 @@ export async function startAssignmentCycle(
                         quantity: true,
                         name: true,
                         packageCategoryName: true,
-                        product: {
-                            select: { packageCategory: { select: { name: true } } },
-                        },
                     },
                 },
                 address: { select: { latitude: true, longitude: true, street: true, number: true } },
@@ -335,12 +332,12 @@ export async function startAssignmentCycle(
         // Determine package category from items
         // P0: Include item names for ShipmentType auto-detection
         const itemCategories = order.items.map((item) => ({
-            packageCategory: item.packageCategoryName || item.product?.packageCategory?.name || null,
+            packageCategory: item.packageCategoryName || null,
             quantity: item.quantity,
             name: item.name || undefined,
         }));
         const orderCategory = await calculateOrderCategory(itemCategories, {
-            merchantCategoryName: order.merchant?.category?.name,
+            merchantCategoryName: order.merchant?.category ?? undefined,
         });
 
         // Read timeout from config
@@ -489,8 +486,8 @@ export async function processExpiredAssignments(): Promise<number> {
                             latitude: true,
                             longitude: true,
                             name: true,
-                            // P0: Include category for ShipmentType auto-detection
-                            category: { select: { name: true } },
+                            // P0: category is a scalar String field
+                            category: true,
                         },
                     },
                     items: {
@@ -498,7 +495,6 @@ export async function processExpiredAssignments(): Promise<number> {
                             quantity: true,
                             name: true,
                             packageCategoryName: true,
-                            product: { select: { packageCategory: { select: { name: true } } } },
                         },
                     },
                     address: { select: { latitude: true, longitude: true } },
@@ -582,12 +578,12 @@ export async function processExpiredAssignments(): Promise<number> {
 
         // P0: Include item names and merchant category for ShipmentType auto-detection
         const itemCategories = assignment.order.items.map((item) => ({
-            packageCategory: item.packageCategoryName || item.product?.packageCategory?.name || null,
+            packageCategory: item.packageCategoryName || null,
             quantity: item.quantity,
             name: item.name || undefined,
         }));
         const orderCategory = await calculateOrderCategory(itemCategories, {
-            merchantCategoryName: assignment.order.merchant?.category?.name,
+            merchantCategoryName: assignment.order.merchant?.category ?? undefined,
         });
 
         const nextDriver = await findNextEligibleDriver(
@@ -834,8 +830,8 @@ export async function driverRejectOrder(
                                 latitude: true,
                                 longitude: true,
                                 name: true,
-                                // P0: Include category for ShipmentType auto-detection
-                                category: { select: { name: true } },
+                                // P0: category is a scalar String field
+                                category: true,
                             },
                         },
                         items: {
@@ -843,7 +839,6 @@ export async function driverRejectOrder(
                                 quantity: true,
                                 name: true,
                                 packageCategoryName: true,
-                                product: { select: { packageCategory: { select: { name: true } } } },
                             },
                         },
                         address: { select: { latitude: true, longitude: true } },
@@ -888,12 +883,12 @@ export async function driverRejectOrder(
 
         // P0: Include item names for ShipmentType auto-detection
         const itemCategories = pending.order.items.map((item) => ({
-            packageCategory: item.packageCategoryName || item.product?.packageCategory?.name || null,
+            packageCategory: item.packageCategoryName || null,
             quantity: item.quantity,
             name: item.name || undefined,
         }));
         const orderCategory = await calculateOrderCategory(itemCategories, {
-            merchantCategoryName: pending.order.merchant?.category?.name,
+            merchantCategoryName: pending.order.merchant?.category ?? undefined,
         });
 
         const nextDriver = await findNextEligibleDriver(
