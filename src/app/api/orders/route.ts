@@ -203,8 +203,31 @@ export async function POST(request: Request) {
                 throw new Error(`STOCK_ERROR:${JSON.stringify(stockErrors)}`);
             }
 
-            // Create the order
+            // Validate scheduled slot capacity
             const isScheduled = deliveryType === "SCHEDULED";
+            if (isScheduled && scheduledSlotStart && scheduledSlotEnd) {
+                const slotStart = new Date(scheduledSlotStart);
+                const slotEnd = new Date(scheduledSlotEnd);
+
+                // Count existing orders in the same time slot (not cancelled)
+                const existingOrdersInSlot = await tx.order.count({
+                    where: {
+                        deliveryType: "SCHEDULED",
+                        scheduledSlotStart: { gte: slotStart },
+                        scheduledSlotEnd: { lte: slotEnd },
+                        status: { notIn: ["CANCELLED"] },
+                        deletedAt: null,
+                    },
+                });
+
+                // Max 15 orders per 2-hour slot (configurable via MoovyConfig if needed)
+                const MAX_ORDERS_PER_SLOT = 15;
+                if (existingOrdersInSlot >= MAX_ORDERS_PER_SLOT) {
+                    throw new Error("SLOT_FULL:El horario seleccionado ya no tiene disponibilidad. Por favor elegí otro horario.");
+                }
+            }
+
+            // Create the order
             const newOrder = await tx.order.create({
                 data: {
                     orderNumber: generateOrderNumber(),
@@ -618,6 +641,14 @@ export async function POST(request: Request) {
             const stockErrors = JSON.parse(error.message.replace("STOCK_ERROR:", ""));
             return NextResponse.json(
                 { error: "Algunos productos no tienen stock suficiente", stockErrors },
+                { status: 409 }
+            );
+        }
+
+        if (error?.message?.startsWith("SLOT_FULL:")) {
+            const msg = error.message.replace("SLOT_FULL:", "");
+            return NextResponse.json(
+                { error: msg },
                 { status: 409 }
             );
         }

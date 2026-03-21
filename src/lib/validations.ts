@@ -55,6 +55,55 @@ export const CreateOrderSchema = z.object({
         return true;
     },
     { message: "Se requiere horario de entrega para pedidos programados", path: ["scheduledSlotStart"] }
+).refine(
+    (data) => {
+        if (data.deliveryType !== "SCHEDULED" || !data.scheduledSlotStart) return true;
+        const start = new Date(data.scheduledSlotStart);
+        const now = new Date();
+        // Slot must be at least 1.5 hours from now
+        const minTime = new Date(now.getTime() + 90 * 60_000);
+        return start >= minTime;
+    },
+    { message: "El horario programado debe ser al menos 1.5 horas desde ahora", path: ["scheduledSlotStart"] }
+).refine(
+    (data) => {
+        if (data.deliveryType !== "SCHEDULED" || !data.scheduledSlotStart || !data.scheduledSlotEnd) return true;
+        const start = new Date(data.scheduledSlotStart);
+        const end = new Date(data.scheduledSlotEnd);
+        // End must be after start
+        return end > start;
+    },
+    { message: "El horario de fin debe ser posterior al de inicio", path: ["scheduledSlotEnd"] }
+).refine(
+    (data) => {
+        if (data.deliveryType !== "SCHEDULED" || !data.scheduledSlotStart || !data.scheduledSlotEnd) return true;
+        const start = new Date(data.scheduledSlotStart);
+        const end = new Date(data.scheduledSlotEnd);
+        // Slot duration must be between 1 and 3 hours
+        const durationMs = end.getTime() - start.getTime();
+        const durationHours = durationMs / (60 * 60_000);
+        return durationHours >= 1 && durationHours <= 3;
+    },
+    { message: "La duración del slot debe ser entre 1 y 3 horas", path: ["scheduledSlotEnd"] }
+).refine(
+    (data) => {
+        if (data.deliveryType !== "SCHEDULED" || !data.scheduledSlotStart) return true;
+        const start = new Date(data.scheduledSlotStart);
+        const hour = start.getHours();
+        // Must be within business hours (9 AM - 10 PM)
+        return hour >= 9 && hour < 22;
+    },
+    { message: "El horario debe estar dentro del horario de atención (9:00 - 22:00)", path: ["scheduledSlotStart"] }
+).refine(
+    (data) => {
+        if (data.deliveryType !== "SCHEDULED" || !data.scheduledSlotStart) return true;
+        const start = new Date(data.scheduledSlotStart);
+        const now = new Date();
+        // Cannot schedule more than 48 hours ahead
+        const maxTime = new Date(now.getTime() + 48 * 60 * 60_000);
+        return start <= maxTime;
+    },
+    { message: "No se puede programar con más de 48 horas de anticipación", path: ["scheduledSlotStart"] }
 );
 
 export const UpdateOrderSchema = z.object({
