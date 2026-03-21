@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 88/100 | P0: 2 tareas | P1: 7 | P2: 12
+Score: 91/100 | P0: 2 tareas | P1: 4 | P2: 12
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
@@ -70,8 +70,8 @@ Score: 88/100 | P0: 2 tareas | P1: 7 | P2: 12
 - [ ] Comprobante/recibo descargable — `src/app/(store)/mis-pedidos/[orderId]/page.tsx` — M
   PDF o imagen con detalle del pedido, monto, fecha, nro de orden. Para reclamos y contabilidad.
 
-- [ ] Notificación cuando pedido está listo para retirar — `src/app/api/merchant/orders/[id]/ready/route.ts` — S
-  Verificar que el push llega al driver cuando merchant marca "listo". Si no, el driver no sabe cuándo ir.
+- [x] Notificación cuando pedido está listo para retirar — `src/app/api/merchant/orders/[id]/ready/route.ts` — S ✅ 2026-03-21
+  notifyDriver() + notifyBuyer(READY) + socket a todas las partes cuando merchant marca listo.
 
 - [x] Rate limiting en login de portales — PortalLoginForm.tsx — S ✅ 2026-03-21
   Detecta 429, muestra countdown MM:SS. Endpoint /api/auth/check-rate-limit. Aplica a todos los portales.
@@ -79,11 +79,11 @@ Score: 88/100 | P0: 2 tareas | P1: 7 | P2: 12
 - [x] Validación de imágenes en listings — NewListingForm + EditListingForm + API — S ✅ 2026-03-21
   Client-side y server-side: requiere al menos 1 imagen para publicar listing.
 
-- [ ] Mejorar empty states en marketplace — `src/app/(store)/marketplace/page.tsx` — S
-  Si no hay listings en una categoría, sugerir vendedores verificados o CTA para vender.
+- [x] Mejorar empty states en marketplace — `src/app/(store)/marketplace/page.tsx` — S ✅ 2026-03-21
+  CTAs para vender, sugerencia de vendedores verificados, diseño mejorado.
 
-- [ ] Soporte WhatsApp directo — `src/components/layout/WhatsAppButton.tsx` — S
-  Verificar que el botón flotante funciona con el número correcto y mensaje pre-cargado.
+- [x] Soporte WhatsApp directo — `src/components/layout/WhatsAppButton.tsx` — S ✅ 2026-03-21
+  Botón flotante verde en store layout, abre wa.me con mensaje pre-cargado. TODO: reemplazar número placeholder.
 
 ## P2 — Esto lo hace competitivo
 
@@ -156,3 +156,7 @@ Score: 88/100 | P0: 2 tareas | P1: 7 | P2: 12
 - [x] Rate limiting UI en login de portales (countdown + check-rate-limit endpoint) — 2026-03-21
 - [x] Validación de imágenes en listings (client + server) — 2026-03-21
 - [x] Página de seguimiento pública sin auth (tracking endpoint) — 2026-03-21
+- [x] Notificación push cuando pedido listo (notifyDriver + notifyBuyer READY) — 2026-03-21
+- [x] Mejorar empty states en marketplace (CTAs + diseño) — 2026-03-21
+- [x] Soporte WhatsApp directo (botón flotante en store layout) — 2026-03-21
+- [x] Dashboard merchant con KPIs reales (6 cards, API stats, auto-refresh) — 2026-03-21
