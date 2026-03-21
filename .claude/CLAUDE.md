@@ -84,7 +84,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Approval flow: campo String approvalStatus (PENDING/APPROVED/REJECTED) en Merchant y Driver, no enum Prisma (evita migration)
 - Scheduled delivery: capacidad 15 pedidos por slot, slots 2h dinámicos según horario real del vendor, min 1.5h anticipación, max 48h. Backend valida slot vs schedule. Sellers configuran su propio schedule de despacho
 - Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
-- Google Places → Geocoding: Decisión 2026-03-21: Places API (New) no habilitada en el proyecto GCP, legacy deprecada marzo 2025. Reescrito AddressAutocomplete para usar Geocoding API con sugerencias manuales. Si se habilita Places API (New) en Google Cloud Console en el futuro, se puede volver a PlaceAutocompleteElement para mejor UX. Ver sección "Dependencias externas"
+- Google Places: Decisión 2026-03-21: AddressAutocomplete usa Places API (New) Data API como primario (AutocompleteSuggestion.fetchAutocompleteSuggestions) con fallback a Geocoding API. Session tokens para optimización de billing. Auto-detecta disponibilidad de la API. Ver sección "Dependencias externas"
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
@@ -120,12 +120,12 @@ servicios, verificar que la versión y el estado sigan vigentes.
 | Servicio | Estado | Versión/API | Uso en Moovy | Última verificación |
 |----------|--------|-------------|--------------|---------------------|
 | Maps JavaScript API | ✅ Habilitada | v3 weekly | Mapas en tracking, checkout, driver portal | 2026-03-21 |
-| Geocoding API | ✅ Habilitada | v1 | AddressAutocomplete (sugerencias + coords) | 2026-03-21 |
-| Places API (New) | ❌ No habilitada | — | No se usa. Habilitar para mejor autocompletado | 2026-03-21 |
+| Geocoding API | ✅ Habilitada | v1 | AddressAutocomplete (fallback si Places API falla) | 2026-03-21 |
+| Places API (New) | ✅ Habilitada | Data API v1 | AddressAutocomplete (primary: AutocompleteSuggestion + fetchFields) | 2026-03-21 |
 | Places API (Legacy) | ⛔ Deprecada | — | Deprecada marzo 2025, no disponible para proyectos nuevos | 2026-03-21 |
 | Directions API | ✅ Habilitada | v1 | Ruta en tracking page (driver → destino) | 2026-03-21 |
 
-**Acción pendiente:** Habilitar Places API (New) en Google Cloud Console para mejorar autocompletado de direcciones. Pasos: Console → APIs & Services → Library → "Places API (New)" → Enable.
+**✅ Places API (New) habilitada el 2026-03-21.** AddressAutocomplete usa Data API como primario con Geocoding como fallback automático.
 
 ### MercadoPago
 | Componente | Estado | Versión | Uso en Moovy | Última verificación |
