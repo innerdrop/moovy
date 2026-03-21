@@ -158,9 +158,22 @@ export default function ComercioPedidosPage() {
         merchantId: merchantId || undefined,
         enabled: !!merchantId,
         onNewOrder: (order) => {
-            // Play notification sound
+            // Play notification sound + vibrate
             if (audioRef.current) {
+                audioRef.current.currentTime = 0;
                 audioRef.current.play().catch(() => { });
+            }
+            // Vibrate pattern: 3 short pulses (mobile devices)
+            if (typeof navigator !== "undefined" && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200, 100, 200]);
+            }
+            // Show browser notification if page is in background
+            if (typeof document !== "undefined" && document.hidden && "Notification" in window && Notification.permission === "granted") {
+                new Notification("¡Nuevo pedido en MOOVY!", {
+                    body: `Pedido #${order?.orderNumber || "nuevo"} recibido`,
+                    icon: "/logo-moovy.svg",
+                    tag: "new-order",
+                });
             }
             // Reload orders to get full data
             loadOrders(true);
