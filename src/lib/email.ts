@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
+import { emailLogger } from "@/lib/logger";
 
 // ─── Transporter centralizado ───────────────────────────────────────────────
 export const transporter = nodemailer.createTransport({
@@ -55,7 +56,7 @@ export async function getAlertEmails(): Promise<string[]> {
             }
         }
     } catch (error) {
-        console.error("[Email] Error reading alert_emails config:", error);
+        emailLogger.error({ error }, "Error reading alert_emails config");
     }
 
     // Fallback
@@ -144,10 +145,10 @@ export async function sendEmail(params: {
             subject: params.subject,
             html: params.html,
         });
-        console.log(`[Email][${params.tag || 'generic'}] Sent to: ${params.to.substring(0, 3)}***`);
+        emailLogger.info({ tag: params.tag, recipient: `${params.to.substring(0, 3)}***` }, "Email sent");
         return true;
     } catch (error) {
-        console.error(`[Email][${params.tag || 'generic'}] Error:`, error);
+        emailLogger.error({ tag: params.tag, error }, "Email send error");
         return false;
     }
 }

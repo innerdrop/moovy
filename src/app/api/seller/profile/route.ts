@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { encryptSellerData, decryptSellerData } from "@/lib/fiscal-crypto";
 
 // GET - Get seller profile for the authenticated user
 export async function GET() {
@@ -29,8 +30,11 @@ export async function GET() {
             );
         }
 
+        // Decrypt fiscal data before returning
+        const decrypted = decryptSellerData(seller);
+
         // Strip sensitive tokens before returning to client
-        const { mpAccessToken: _token, mpRefreshToken: _refresh, ...safeProfile } = seller;
+        const { mpAccessToken: _token, mpRefreshToken: _refresh, ...safeProfile } = decrypted;
         return NextResponse.json(safeProfile);
     } catch (error) {
         console.error("Error fetching seller profile:", error);
@@ -62,18 +66,25 @@ export async function PUT(request: Request) {
             );
         }
 
+        const updateData = {
+            ...(displayName !== undefined && { displayName }),
+            ...(bio !== undefined && { bio }),
+            ...(avatar !== undefined && { avatar }),
+            ...(bankAlias !== undefined && { bankAlias }),
+            ...(bankCbu !== undefined && { bankCbu }),
+        };
+
+        // Encrypt sensitive fiscal data before saving
+        const encryptedData = encryptSellerData(updateData);
+
         const updated = await prisma.sellerProfile.update({
             where: { userId },
-            data: {
-                ...(displayName !== undefined && { displayName }),
-                ...(bio !== undefined && { bio }),
-                ...(avatar !== undefined && { avatar }),
-                ...(bankAlias !== undefined && { bankAlias }),
-                ...(bankCbu !== undefined && { bankCbu }),
-            },
+            data: encryptedData,
         });
 
-        return NextResponse.json(updated);
+        // Decrypt before returning to client
+        const decrypted = decryptSellerData(updated);
+        return NextResponse.json(decrypted);
     } catch (error) {
         console.error("Error updating seller profile:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { decryptMerchantData, encryptMerchantData } from "@/lib/fiscal-crypto";
 
 // GET single merchant by ID
 export async function GET(
@@ -38,20 +39,23 @@ export async function GET(
             },
         });
 
-        // Ensure all required fields are present
-        if (merchant) {
-            (merchant as any).commissionRate = merchant.commissionRate || 8;
-            (merchant as any).rating = merchant.rating || null;
-            (merchant as any).scheduleEnabled = merchant.scheduleEnabled || false;
-            (merchant as any).scheduleJson = merchant.scheduleJson || null;
-            (merchant as any).mpAccessToken = merchant.mpAccessToken || null;
-        }
-
         if (!merchant) {
             return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
         }
 
-        return NextResponse.json(merchant);
+        // Decrypt fiscal data before returning
+        const decrypted = decryptMerchantData(merchant);
+
+        // Ensure all required fields are present
+        if (decrypted) {
+            (decrypted as any).commissionRate = decrypted.commissionRate || 8;
+            (decrypted as any).rating = decrypted.rating || null;
+            (decrypted as any).scheduleEnabled = decrypted.scheduleEnabled || false;
+            (decrypted as any).scheduleJson = decrypted.scheduleJson || null;
+            (decrypted as any).mpAccessToken = decrypted.mpAccessToken || null;
+        }
+
+        return NextResponse.json(decrypted);
     } catch (error) {
         console.error("Error fetching merchant:", error);
         return NextResponse.json({ error: "Error fetching merchant" }, { status: 500 });
@@ -130,9 +134,12 @@ export async function PATCH(
         if (body.scheduleEnabled !== undefined) updateData.scheduleEnabled = body.scheduleEnabled;
         if (body.scheduleJson !== undefined) updateData.scheduleJson = body.scheduleJson || null;
 
+        // Encrypt sensitive fiscal data before saving
+        const encryptedData = encryptMerchantData(updateData);
+
         const merchant = await prisma.merchant.update({
             where: { id },
-            data: updateData,
+            data: encryptedData,
             include: {
                 owner: {
                     select: {
@@ -153,14 +160,17 @@ export async function PATCH(
             },
         });
 
-        // Ensure all required fields are present
-        (merchant as any).commissionRate = merchant.commissionRate || 8;
-        (merchant as any).rating = merchant.rating || null;
-        (merchant as any).scheduleEnabled = merchant.scheduleEnabled || false;
-        (merchant as any).scheduleJson = merchant.scheduleJson || null;
-        (merchant as any).mpAccessToken = merchant.mpAccessToken || null;
+        // Decrypt fiscal data before returning
+        const decrypted = decryptMerchantData(merchant);
 
-        return NextResponse.json(merchant);
+        // Ensure all required fields are present
+        (decrypted as any).commissionRate = decrypted.commissionRate || 8;
+        (decrypted as any).rating = decrypted.rating || null;
+        (decrypted as any).scheduleEnabled = decrypted.scheduleEnabled || false;
+        (decrypted as any).scheduleJson = decrypted.scheduleJson || null;
+        (decrypted as any).mpAccessToken = decrypted.mpAccessToken || null;
+
+        return NextResponse.json(decrypted);
     } catch (error) {
         console.error("Error updating merchant:", error);
         return NextResponse.json({ error: "Error updating merchant" }, { status: 500 });

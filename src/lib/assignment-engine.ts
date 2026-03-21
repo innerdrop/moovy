@@ -14,6 +14,7 @@ import { notifyBuyer } from "./notifications";
 import { normalizeVehicleType } from "./vehicle-type-mapping";
 import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, type ShipmentTypeCode } from "./shipment-types";
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
+import { deliveryLogger } from "./logger";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ async function notifyOps(title: string, body: string, orderId?: string): Promise
     });
     for (const { userId } of adminRoles) {
         sendPushToUser(userId, { title, body, url: "/ops", tag: "ops-alert", orderId }).catch(
-            (err) => console.error("[Push] Ops notification error:", err)
+            (err) => deliveryLogger.error({ error: err }, "Ops notification error")
         );
     }
 }
@@ -248,7 +249,7 @@ export async function findNextEligibleDriver(
             distance: Number(d.distance),
         };
     } catch (error) {
-        console.error("[AssignmentEngine] PostGIS query failed, falling back to Haversine:", error);
+        deliveryLogger.error({ error }, "PostGIS query failed, falling back to Haversine");
 
         // Haversine fallback
         // P0 FIX: Use expanded vehicle variants for Haversine fallback too
@@ -414,7 +415,7 @@ export async function startAssignmentCycle(
             order.merchant.name || "Comercio",
             estimatedEarnings,
             orderId
-        ).catch((err) => console.error("[AssignmentEngine] Push error:", err));
+        ).catch((err) => deliveryLogger.error({ error: err }, "Push error"));
 
         // P0: Get shipment type info for the offer
         const shipmentType = getShipmentType(orderCategory.shipmentTypeCode);
@@ -437,7 +438,7 @@ export async function startAssignmentCycle(
             estimatedTime,
             expiresAt: expiresAt.toISOString(),
             productDescription,
-        }).catch((err) => console.error("[AssignmentEngine] Socket error:", err));
+        }).catch((err) => deliveryLogger.error({ error: err }, "Socket error emitting new order offer"));
 
         // Notify admin
         emitSocket("assignment_started", "admin:orders", {
@@ -445,15 +446,16 @@ export async function startAssignmentCycle(
             orderNumber: order.orderNumber,
             driverId: driver.id,
             attemptNumber: 1,
-        }).catch((err) => console.error("[AssignmentEngine] Socket admin error:", err));
+        }).catch((err) => deliveryLogger.error({ error: err }, "Socket error notifying admin"));
 
-        console.log(
-            `[AssignmentEngine] Order ${order.orderNumber} offered to driver ${driver.id} (${driver.distance.toFixed(2)}km away). Expires at ${expiresAt.toISOString()}`
+        deliveryLogger.info(
+            { orderId, orderNumber: order.orderNumber, driverId: driver.id, distanceKm: driver.distance.toFixed(2), expiresAt: expiresAt.toISOString() },
+            "Order offered to driver"
         );
 
         return { success: true, driverId: driver.id };
     } catch (error) {
-        console.error("[AssignmentEngine] Error starting assignment cycle:", error);
+        deliveryLogger.error({ error }, "Error starting assignment cycle");
         return { success: false, error: "Error interno al asignar repartidor" };
     }
 }
@@ -562,8 +564,9 @@ export async function processExpiredAssignments(): Promise<number> {
 
         if (assignment.attemptNumber >= maxAttempts) {
             await handleNoDriverFound(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
-            console.log(
-                `[AssignmentEngine] Order ${assignment.order.orderNumber} reached max attempts (${maxAttempts}). Marked UNASSIGNABLE.`
+            deliveryLogger.info(
+                { orderId: assignment.orderId, orderNumber: assignment.order.orderNumber, maxAttempts },
+                "Order reached max attempts. Marked UNASSIGNABLE."
             );
             processed++;
             continue;
@@ -595,8 +598,9 @@ export async function processExpiredAssignments(): Promise<number> {
 
         if (!nextDriver) {
             await handleNoDriverFound(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
-            console.log(
-                `[AssignmentEngine] Order ${assignment.order.orderNumber}: no more eligible drivers. Marked UNASSIGNABLE.`
+            deliveryLogger.info(
+                { orderId: assignment.orderId, orderNumber: assignment.order.orderNumber },
+                "No more eligible drivers. Marked UNASSIGNABLE."
             );
             processed++;
             continue;
@@ -647,7 +651,7 @@ export async function processExpiredAssignments(): Promise<number> {
             assignment.order.merchant.name || "Comercio",
             estimatedEarnings,
             assignment.orderId
-        ).catch((err) => console.error("[AssignmentEngine] Push cascade error:", err));
+        ).catch((err) => deliveryLogger.error({ error: err }, "Push cascade error"));
 
         emitSocket("new_delivery_offer", `driver:${nextDriver.id}`, {
             orderId: assignment.orderId,
@@ -662,10 +666,11 @@ export async function processExpiredAssignments(): Promise<number> {
             distanceToMerchant: Math.round(nextDriver.distance * 10) / 10,
             estimatedEarnings,
             expiresAt: newExpiresAt.toISOString(),
-        }).catch((err) => console.error("[AssignmentEngine] Socket cascade error:", err));
+        }).catch((err) => deliveryLogger.error({ error: err }, "Socket cascade error"));
 
-        console.log(
-            `[AssignmentEngine] Timeout cascade for order ${assignment.order.orderNumber}: offered to driver ${nextDriver.id} (attempt ${assignment.attemptNumber + 1})`
+        deliveryLogger.info(
+            { orderId: assignment.orderId, orderNumber: assignment.order.orderNumber, driverId: nextDriver.id, attempt: assignment.attemptNumber + 1 },
+            "Timeout cascade: offered to next driver"
         );
 
         processed++;
@@ -786,7 +791,7 @@ export async function driverAcceptOrder(
         );
 
         Promise.allSettled(emitPromises).catch((e) =>
-            console.error("[AssignmentEngine] Socket emit error on accept:", e)
+            deliveryLogger.error({ error: e }, "Socket emit error on accept")
         );
 
         if (result.userId) {
@@ -794,17 +799,17 @@ export async function driverAcceptOrder(
                 total: result.total,
                 orderId: result.id,
             }).catch((err) =>
-                console.error("[AssignmentEngine] Push buyer error:", err)
+                deliveryLogger.error({ error: err }, "Push buyer error")
             );
         }
 
-        console.log(`[AssignmentEngine] Driver ${driverId} accepted order ${result.orderNumber}`);
+        deliveryLogger.info({ driverId, orderId: result.id, orderNumber: result.orderNumber }, "Driver accepted order");
         return { success: true };
     } catch (error: any) {
         if (error.message === "conflict") {
             return { success: false, error: "conflict" };
         }
-        console.error("[AssignmentEngine] Error accepting order:", error);
+        deliveryLogger.error({ driverId, error }, "Error accepting order");
         return { success: false, error: error.message || "Error al aceptar el pedido" };
     }
 }
@@ -936,7 +941,7 @@ export async function driverRejectOrder(
             pending.order.merchant.name || "Comercio",
             estimatedEarnings,
             orderId
-        ).catch((err) => console.error("[AssignmentEngine] Push reject-cascade error:", err));
+        ).catch((err) => deliveryLogger.error({ error: err }, "Push reject-cascade error"));
 
         emitSocket("new_delivery_offer", `driver:${nextDriver.id}`, {
             orderId,
@@ -951,15 +956,16 @@ export async function driverRejectOrder(
             distanceToMerchant: Math.round(nextDriver.distance * 10) / 10,
             estimatedEarnings,
             expiresAt: newExpiresAt.toISOString(),
-        }).catch((err) => console.error("[AssignmentEngine] Socket reject-cascade error:", err));
+        }).catch((err) => deliveryLogger.error({ error: err }, "Socket reject-cascade error"));
 
-        console.log(
-            `[AssignmentEngine] Driver ${driverId} rejected order ${pending.order.orderNumber}. Next: driver ${nextDriver.id}`
+        deliveryLogger.info(
+            { driverId, orderId: pending.orderId, orderNumber: pending.order.orderNumber, nextDriverId: nextDriver.id },
+            "Driver rejected order. Offering to next driver."
         );
 
         return { success: true };
     } catch (error) {
-        console.error("[AssignmentEngine] Error rejecting order:", error);
+        deliveryLogger.error({ driverId, error }, "Error rejecting order");
         return { success: false, error: "Error al rechazar el pedido" };
     }
 }
@@ -987,10 +993,10 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
         "⚠️ Pedido sin repartidor",
         `El pedido ${orderNumber} no tiene repartidores disponibles. Requiere asignación manual.`,
         orderId
-    ).catch((err) => console.error("[AssignmentEngine] Ops notification error:", err));
+    ).catch((err) => deliveryLogger.error({ error: err }, "Ops notification error"));
 
     emitSocket("order_unassignable", "admin:orders", { orderId, orderNumber }).catch((err) =>
-        console.error("[AssignmentEngine] Socket unassignable error:", err)
+        deliveryLogger.error({ error: err }, "Socket unassignable error")
     );
 
     // Also notify the merchant
@@ -1000,13 +1006,13 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
     });
     if (orderForMerchant?.merchantId) {
         emitSocket("order_unassignable", `merchant_${orderForMerchant.merchantId}`, { orderId, orderNumber }).catch((err) =>
-            console.error("[AssignmentEngine] Socket merchant unassignable error:", err)
+            deliveryLogger.error({ error: err }, "Socket merchant unassignable error")
         );
     }
 
     // Notify customer
     notifyBuyer(userId, "CANCELLED", orderNumber, { orderId }).catch((err) =>
-        console.error("[AssignmentEngine] Buyer notification error:", err)
+        deliveryLogger.error({ error: err }, "Buyer notification error")
     );
 }
 

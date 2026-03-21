@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import WebVitalsReporter from "@/components/analytics/WebVitalsReporter";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -73,6 +74,7 @@ export default function RootLayout({
       </head>
       <body className={`${jakarta.variable} font-sans antialiased`}>
         <ServiceWorkerRegistrar />
+        <WebVitalsReporter />
         <Providers>
           {children}
         </Providers>

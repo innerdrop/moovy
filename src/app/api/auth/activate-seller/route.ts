@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { encryptSellerData } from "@/lib/fiscal-crypto";
 
 // POST - Activate SELLER role for authenticated user
 export async function POST(request: NextRequest) {
@@ -59,21 +60,21 @@ export async function POST(request: NextRequest) {
             });
 
             if (!existingProfile) {
+                const profileData = { userId, cuit: body.cuit || null, acceptedTermsAt: body.acceptedTerms ? new Date() : null };
+                const encryptedData = encryptSellerData(profileData);
                 await tx.sellerProfile.create({
-                    data: {
-                        userId,
-                        cuit: body.cuit || null,
-                        acceptedTermsAt: body.acceptedTerms ? new Date() : null,
-                    }
+                    data: encryptedData
                 });
             } else {
                 // Update existing profile with CUIT and terms
+                const updateData = {
+                    cuit: body.cuit || existingProfile.cuit,
+                    acceptedTermsAt: body.acceptedTerms ? new Date() : existingProfile.acceptedTermsAt,
+                };
+                const encryptedData = encryptSellerData(updateData);
                 await tx.sellerProfile.update({
                     where: { userId },
-                    data: {
-                        cuit: body.cuit || existingProfile.cuit,
-                        acceptedTermsAt: body.acceptedTerms ? new Date() : existingProfile.acceptedTermsAt,
-                    }
+                    data: encryptedData
                 });
             }
         });

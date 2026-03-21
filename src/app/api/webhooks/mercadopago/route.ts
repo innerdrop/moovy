@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { paymentApi, verifyWebhookSignature } from "@/lib/mercadopago";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { paymentLogger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,17 +26,17 @@ export async function POST(request: NextRequest) {
 
         // V-012 FIX: ALWAYS validate HMAC signature — reject if secret not configured
         if (!process.env.MP_WEBHOOK_SECRET) {
-            console.error("[MP-Webhook] CRITICAL: MP_WEBHOOK_SECRET is not configured. Rejecting webhook.");
+            paymentLogger.error({ dataId }, "CRITICAL: MP_WEBHOOK_SECRET is not configured. Rejecting webhook.");
             return NextResponse.json({ error: "Webhook validation not configured" }, { status: 500 });
         }
         if (xSignature) {
             const valid = verifyWebhookSignature(xSignature, xRequestId, dataId);
             if (!valid) {
-                console.error("[MP-Webhook] Invalid HMAC signature");
+                paymentLogger.error({ dataId, xRequestId }, "Invalid HMAC signature");
                 return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
             }
         } else {
-            console.warn("[MP-Webhook] Missing x-signature header — rejecting");
+            paymentLogger.warn({ dataId }, "Missing x-signature header — rejecting");
             return NextResponse.json({ error: "Missing signature" }, { status: 401 });
         }
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
         const mpPayment = await paymentApi.get({ id: dataId });
 
         if (!mpPayment || !mpPayment.external_reference) {
-            console.error("[MP-Webhook] Payment not found or missing external_reference:", dataId);
+            paymentLogger.error({ dataId }, "Payment not found or missing external_reference");
             return NextResponse.json({ received: true });
         }
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!order) {
-            console.error("[MP-Webhook] Order not found:", orderId);
+            paymentLogger.error({ orderId }, "Order not found");
             return NextResponse.json({ received: true });
         }
 
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ received: true });
     } catch (error) {
-        console.error("[MP-Webhook] Error processing webhook:", error);
+        paymentLogger.error({ error }, "Error processing webhook");
         // Return 200 to prevent MP from retrying on server errors we already logged
         return NextResponse.json({ received: true, error: "internal" });
     }
@@ -198,7 +199,7 @@ async function handleApproved(
             isPickup: order.isPickup,
         });
     } catch (emailError) {
-        console.error("[MP-Webhook] Failed to send confirmation email:", emailError);
+        paymentLogger.error({ error: emailError }, "Failed to send confirmation email");
     }
 }
 
@@ -255,7 +256,7 @@ async function handlePackagePurchaseWebhook(
     });
 
     if (!purchase) {
-        console.error("[MP-Webhook] Package purchase not found for ref:", externalRef);
+        paymentLogger.error({ externalRef }, "Package purchase not found for ref");
         return;
     }
 
@@ -284,13 +285,13 @@ async function handlePackagePurchaseWebhook(
             productIds
         );
 
-        console.log(`[MP-Webhook] Package purchase approved: ${purchase.id} — auto-import triggered`);
+        paymentLogger.info({ purchaseId: purchase.id }, "Package purchase approved — auto-import triggered");
     } else if (paymentStatus === "rejected") {
         await prisma.packagePurchase.update({
             where: { id: purchase.id },
             data: { paymentStatus: "rejected", mpPaymentId },
         });
-        console.log(`[MP-Webhook] Package purchase rejected: ${purchase.id}`);
+        paymentLogger.info({ purchaseId: purchase.id }, "Package purchase rejected");
     } else {
         await prisma.packagePurchase.update({
             where: { id: purchase.id },
@@ -354,8 +355,8 @@ async function emitPaymentEvent(event: string, order: OrderWithRelations) {
             body: JSON.stringify({ event, room: `order:${order.id}`, data: payload }),
         });
 
-        console.log(`[MP-Webhook] Socket emit ${event} for order ${order.orderNumber}`);
+        paymentLogger.info({ orderId: order.id, orderNumber: order.orderNumber, event }, "Socket emit successful");
     } catch (e) {
-        console.error("[MP-Webhook] Socket emit failed:", e);
+        paymentLogger.error({ error: e }, "Socket emit failed");
     }
 }

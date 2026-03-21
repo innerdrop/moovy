@@ -10,6 +10,7 @@ import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
 import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/lib/mercadopago";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { notifyMerchant, notifySeller } from "@/lib/notifications";
+import { orderLogger } from "@/lib/logger";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -391,8 +392,36 @@ export async function POST(request: Request) {
                 validPointsUsed
             );
         } catch (pointsError) {
-            console.error("Error processing points for order:", order.id, pointsError);
+            orderLogger.error({ orderId: order.id, error: pointsError }, "Error processing points for order");
             // Don't fail the order if points fail, but log it
+        }
+
+        // Record coupon usage
+        if (validCouponCode) {
+            try {
+                const coupon = await prisma.coupon.findUnique({
+                    where: { code: validCouponCode },
+                    select: { id: true },
+                });
+
+                if (coupon) {
+                    await prisma.couponUsage.create({
+                        data: {
+                            couponId: coupon.id,
+                            userId: session.user.id,
+                            orderId: order.id,
+                        },
+                    });
+
+                    // Increment used count
+                    await prisma.coupon.update({
+                        where: { id: coupon.id },
+                        data: { usedCount: { increment: 1 } },
+                    });
+                }
+            } catch (couponError) {
+                orderLogger.error({ orderId: order.id, couponCode, error: couponError }, "Error recording coupon usage for order");
+            }
         }
 
         // --- MERCADOPAGO: Create preference and return early ---
@@ -481,7 +510,7 @@ export async function POST(request: Request) {
                     }
                     await fetch(`${socketUrl}/emit`, { method: "POST", headers: socketHeaders, body: JSON.stringify({ event: "new_order", room: "admin:orders", data: { ...socketData, merchantId, isMultiVendor } }) });
                 } catch (e) {
-                    console.error("[Socket-Emit] Failed to notify new MP order:", e);
+                    orderLogger.error({ orderId: order.id, error: e }, "Failed to notify new MP order via socket");
                 }
 
                 // Push notify vendors about new MP order (non-blocking)
@@ -489,14 +518,14 @@ export async function POST(request: Request) {
                     const buyerName = session.user.name || undefined;
                     if (groups && groups.length > 0) {
                         for (const group of groups) {
-                            if (group.merchantId) notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
-                            if (group.sellerId) notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch(console.error);
+                            if (group.merchantId) notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
+                            if (group.sellerId) notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify seller"));
                         }
                     } else if (merchantId) {
-                        notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+                        notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
                     }
                 } catch (e) {
-                    console.error("[Push] Failed to notify vendor (MP flow):", e);
+                    orderLogger.error({ orderId: order.id, error: e }, "Failed to notify vendor (MP flow)");
                 }
 
                 // Always use init_point — MP auto-redirects to sandbox when using TEST- credentials.
@@ -514,7 +543,7 @@ export async function POST(request: Request) {
                 }, { status: 201 });
 
             } catch (mpError) {
-                console.error("[MP] Error creating preference:", mpError);
+                orderLogger.error({ orderId: order.id, error: mpError }, "Error creating preference");
                 // Cancel the order since payment can't proceed
                 await prisma.order.update({ where: { id: order.id }, data: { status: "CANCELLED", cancelReason: "Error al crear preferencia de pago" } });
                 return NextResponse.json({ error: "Error al iniciar el pago con MercadoPago" }, { status: 500 });
@@ -600,9 +629,9 @@ export async function POST(request: Request) {
                 })
             });
 
-            console.log(`[Socket-Emit] New order ${order.orderNumber} notified`);
+            orderLogger.info({ orderId: order.id, orderNumber: order.orderNumber }, "New order notified via socket");
         } catch (e) {
-            console.error("[Socket-Emit] Failed to notify new order:", e);
+            orderLogger.error({ orderId: order.id, error: e }, "Failed to notify new order via socket");
         }
 
         // --- PUSH: Notify merchants/sellers about new order ---
@@ -611,17 +640,17 @@ export async function POST(request: Request) {
             if (groups && groups.length > 0) {
                 for (const group of groups) {
                     if (group.merchantId) {
-                        notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+                        notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
                     }
                     if (group.sellerId) {
-                        notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch(console.error);
+                        notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify seller"));
                     }
                 }
             } else if (merchantId) {
-                notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+                notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
             }
         } catch (e) {
-            console.error("[Push] Failed to notify vendor:", e);
+            orderLogger.error({ orderId: order.id, error: e }, "Failed to notify vendor");
         }
 
         // --- EMAIL: Send order confirmation to customer ---
@@ -651,7 +680,7 @@ export async function POST(request: Request) {
                 isPickup: isPickup || false
             });
         } catch (emailError) {
-            console.error("[Email] Failed to trigger confirmation email:", emailError);
+            orderLogger.error({ orderId: order.id, error: emailError }, "Failed to trigger confirmation email");
         }
 
         return NextResponse.json({
@@ -684,7 +713,7 @@ export async function POST(request: Request) {
             );
         }
         status = "500";
-        console.error("Error creating order:", error);
+        orderLogger.error({ userId: session?.user?.id, error }, "Error creating order");
         return NextResponse.json(
             { error: "Error al crear el pedido" },
             { status: 500 }
@@ -695,7 +724,7 @@ export async function POST(request: Request) {
             httpRequestsTotal.inc({ method: "POST", route: "/api/orders", status });
             httpRequestDuration.observe({ method: "POST", route: "/api/orders", status }, duration);
         } catch (e) {
-            console.error("Metrics increment failed:", e);
+            orderLogger.error({ error: e }, "Metrics increment failed");
         }
     }
 }
@@ -752,7 +781,7 @@ export async function GET(request: Request) {
         return NextResponse.json(orders);
     } catch (error) {
         status = "500";
-        console.error("Error fetching orders:", error);
+        orderLogger.error({ userId: session?.user?.id, error }, "Error fetching orders");
         return NextResponse.json(
             { error: "Error al obtener los pedidos" },
             { status: 500 }
@@ -763,7 +792,7 @@ export async function GET(request: Request) {
             httpRequestsTotal.inc({ method: "GET", route: "/api/orders", status });
             httpRequestDuration.observe({ method: "GET", route: "/api/orders", status }, duration);
         } catch (e) {
-            console.error("Metrics increment failed:", e);
+            orderLogger.error({ error: e }, "Metrics increment failed");
         }
     }
 }

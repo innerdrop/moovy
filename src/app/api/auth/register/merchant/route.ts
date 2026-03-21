@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { sendMerchantRequestNotification } from "@/lib/email";
+import { encryptMerchantData } from "@/lib/fiscal-crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
         const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
 
         // Merchant data (shared between both paths)
-        const merchantData = {
+        let merchantData = {
             name: data.businessName,
             businessName: data.businessName,
             slug: slug,
@@ -90,6 +91,9 @@ export async function POST(request: NextRequest) {
             isActive: false,
             isVerified: false,
         };
+
+        // Encrypt sensitive fiscal data before saving
+        merchantData = encryptMerchantData(merchantData);
 
         await prisma.$transaction(async (tx) => {
             if (existingUser) {

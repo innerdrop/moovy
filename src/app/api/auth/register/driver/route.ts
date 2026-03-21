@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { encryptDriverData } from "@/lib/fiscal-crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
         const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
 
         // Driver data (shared between both paths)
-        const driverData = {
+        let driverData = {
             vehicleType: data.vehicleType.toUpperCase(),
             vehicleBrand: isMotorized ? data.vehicleBrand : null,
             vehicleModel: isMotorized ? data.vehicleModel : null,
@@ -78,6 +79,9 @@ export async function POST(request: NextRequest) {
             acceptedTermsAt: data.acceptTerms ? new Date() : null,
             isActive: false,
         };
+
+        // Encrypt sensitive fiscal data before saving
+        driverData = encryptDriverData(driverData);
 
         await prisma.$transaction(async (tx) => {
             if (existingUser) {

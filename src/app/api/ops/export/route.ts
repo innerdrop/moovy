@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { decryptMerchantData } from "@/lib/fiscal-crypto";
 
 function toCsv(headers: string[], rows: string[][]): string {
     const escape = (val: string) => {
@@ -97,20 +98,24 @@ export async function GET(request: NextRequest) {
 
             csv = toCsv(
                 ["Nombre", "Categoría", "CUIT", "Email", "Teléfono", "Dirección", "Activo", "Abierto", "Rating", "Comisión %", "Propietario", "Fecha Registro"],
-                merchants.map((m) => [
-                    m.name,
-                    m.category || "",
-                    m.cuit || "",
-                    m.email || "",
-                    m.phone || "",
-                    m.address || "",
-                    m.isActive ? "Sí" : "No",
-                    m.isOpen ? "Sí" : "No",
-                    m.rating?.toFixed(1) || "",
-                    m.commissionRate.toString(),
-                    m.owner?.name || "",
-                    new Date(m.createdAt).toLocaleString("es-AR"),
-                ])
+                merchants.map((m) => {
+                    // Decrypt fiscal data before exporting
+                    const decrypted = decryptMerchantData(m);
+                    return [
+                        decrypted.name,
+                        decrypted.category || "",
+                        decrypted.cuit || "",
+                        decrypted.email || "",
+                        decrypted.phone || "",
+                        decrypted.address || "",
+                        decrypted.isActive ? "Sí" : "No",
+                        decrypted.isOpen ? "Sí" : "No",
+                        decrypted.rating?.toFixed(1) || "",
+                        decrypted.commissionRate.toString(),
+                        decrypted.owner?.name || "",
+                        new Date(decrypted.createdAt).toLocaleString("es-AR"),
+                    ];
+                })
             );
             filename = `comercios-${new Date().toISOString().slice(0, 10)}.csv`;
 
