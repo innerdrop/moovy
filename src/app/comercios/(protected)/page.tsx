@@ -1,9 +1,10 @@
 // Comercios Portal - Dashboard Page
-import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle, LayoutDashboard, ArrowRight } from "lucide-react";
+import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle, LayoutDashboard, ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { formatTime } from "@/lib/timezone";
 import { prisma } from "@/lib/prisma";
+import KPIDashboard from "./KPIDashboard";
 
 export default async function ComerciosDashboardPage() {
     const session = await auth();
@@ -25,37 +26,19 @@ export default async function ComerciosDashboardPage() {
     }
 
     // Get stats & recent orders
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    const [activeProducts, todayOrders, monthlyOrders, pendingOrdersCount, recentOrders] = await Promise.all([
+    const [activeProducts, pendingOrdersCount, recentOrders] = await Promise.all([
         prisma.product.count({
             where: { merchantId: merchant.id, isActive: true },
         }),
         prisma.order.count({
             where: {
                 merchantId: merchant.id,
-                createdAt: { gte: today },
-            },
-        }),
-        prisma.order.aggregate({
-            where: {
-                merchantId: merchant.id,
-                createdAt: { gte: startOfMonth },
-                paymentStatus: "APPROVED",
-            },
-            _sum: { total: true },
-        }),
-        prisma.order.count({
-            where: {
-                merchantId: merchant.id,
                 status: { in: ["PENDING", "CONFIRMED"] },
+                deletedAt: null,
             },
         }),
         prisma.order.findMany({
-            where: { merchantId: merchant.id },
+            where: { merchantId: merchant.id, deletedAt: null },
             take: 5,
             orderBy: { createdAt: "desc" },
             include: {
@@ -64,18 +47,16 @@ export default async function ComerciosDashboardPage() {
         })
     ]);
 
-    const monthlySales = monthlyOrders._sum.total || 0;
-
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 group flex items-center gap-2">
-                        <LayoutDashboard className="w-6 h-6 text-blue-600" />
+                        <LayoutDashboard className="w-6 h-6" style={{ color: "#e60012" }} />
                         Dashboard
                     </h1>
-                    <p className="text-gray-500">Bienvenido de nuevo, <span className="text-blue-600 font-medium">{userName}</span></p>
+                    <p className="text-gray-500">Bienvenido de nuevo, <span style={{ color: "#e60012" }} className="font-medium">{userName}</span></p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -85,7 +66,8 @@ export default async function ComerciosDashboardPage() {
                     </div>
                     <Link
                         href="/comercios/productos/nuevo"
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition shadow-sm hover:shadow-md text-sm font-semibold"
+                        className="flex items-center gap-2 text-white px-4 py-2 rounded-xl hover:opacity-90 transition shadow-sm hover:shadow-md text-sm font-semibold"
+                        style={{ backgroundColor: "#e60012" }}
                     >
                         <Plus className="w-5 h-5" />
                         <span className="hidden xs:inline">Nuevo Producto</span>
@@ -110,8 +92,11 @@ export default async function ComerciosDashboardPage() {
                 </Link>
             )}
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            {/* KPI Cards */}
+            <KPIDashboard />
+
+            {/* Additional Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-blue-200 transition-colors">
                     <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                         <Package className="w-5 h-5 text-blue-600" />
@@ -122,33 +107,23 @@ export default async function ComerciosDashboardPage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-green-200 transition-colors">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                        <ShoppingCart className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hoy</p>
-                        <p className="text-2xl font-bold text-gray-900">{todayOrders}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-red-200 transition-colors">
-                    <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mb-4">
-                        <TrendingUp className="w-5 h-5 text-red-600" />
-                    </div>
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ventas Mes</p>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">${monthlySales.toLocaleString("es-AR")}</p>
-                    </div>
-                </div>
-
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-amber-200 transition-colors">
                     <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
                         <Settings className="w-5 h-5 text-amber-600" />
                     </div>
                     <Link href="/comercios/configuracion" className="group">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuracion</p>
-                        <p className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors">Ajustar tienda &rarr;</p>
+                        <p className="text-sm font-bold text-gray-700 group-hover:text-red-600 transition-colors">Ajustar tienda &rarr;</p>
+                    </Link>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:border-purple-200 transition-colors">
+                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                        <Star className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <Link href="/comercios/resenas" className="group">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Reseñas</p>
+                        <p className="text-sm font-bold text-gray-700 group-hover:text-red-600 transition-colors">Ver todas &rarr;</p>
                     </Link>
                 </div>
             </div>
