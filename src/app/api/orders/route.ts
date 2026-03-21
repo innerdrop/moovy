@@ -9,6 +9,7 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
 import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/lib/mercadopago";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { notifyMerchant, notifySeller } from "@/lib/notifications";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -158,6 +159,50 @@ export async function POST(request: Request) {
 
         // Create order with items in a transaction
         const order = await prisma.$transaction(async (tx) => {
+            // --- PRE-FLIGHT STOCK VALIDATION ---
+            // Check all items have sufficient stock BEFORE creating the order
+            const stockErrors: string[] = [];
+            for (const item of items) {
+                const isListing = item.type === "listing";
+                if (isListing) {
+                    const listing = await tx.listing.findUnique({
+                        where: { id: item.productId },
+                        select: { id: true, title: true, stock: true, isActive: true },
+                    });
+                    if (!listing) {
+                        stockErrors.push(`Publicación "${item.name}" ya no existe`);
+                    } else if (!listing.isActive) {
+                        stockErrors.push(`"${item.name}" ya no está disponible`);
+                    } else if (listing.stock < item.quantity) {
+                        stockErrors.push(
+                            listing.stock === 0
+                                ? `"${item.name}" está agotado`
+                                : `"${item.name}" solo tiene ${listing.stock} unidad(es) disponible(s)`
+                        );
+                    }
+                } else {
+                    const product = await tx.product.findUnique({
+                        where: { id: item.productId },
+                        select: { id: true, name: true, stock: true, isActive: true },
+                    });
+                    if (!product) {
+                        stockErrors.push(`Producto "${item.name}" ya no existe`);
+                    } else if (!product.isActive) {
+                        stockErrors.push(`"${item.name}" ya no está disponible`);
+                    } else if (product.stock < item.quantity) {
+                        stockErrors.push(
+                            product.stock === 0
+                                ? `"${item.name}" está agotado`
+                                : `"${item.name}" solo tiene ${product.stock} unidad(es) disponible(s)`
+                        );
+                    }
+                }
+            }
+
+            if (stockErrors.length > 0) {
+                throw new Error(`STOCK_ERROR:${JSON.stringify(stockErrors)}`);
+            }
+
             // Create the order
             const isScheduled = deliveryType === "SCHEDULED";
             const newOrder = await tx.order.create({
@@ -385,6 +430,21 @@ export async function POST(request: Request) {
                     console.error("[Socket-Emit] Failed to notify new MP order:", e);
                 }
 
+                // Push notify vendors about new MP order (non-blocking)
+                try {
+                    const buyerName = session.user.name || undefined;
+                    if (groups && groups.length > 0) {
+                        for (const group of groups) {
+                            if (group.merchantId) notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+                            if (group.sellerId) notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch(console.error);
+                        }
+                    } else if (merchantId) {
+                        notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+                    }
+                } catch (e) {
+                    console.error("[Push] Failed to notify vendor (MP flow):", e);
+                }
+
                 // Always use init_point — MP auto-redirects to sandbox when using TEST- credentials.
                 // sandbox_init_point causes ERR_TOO_MANY_REDIRECTS with test users.
                 const initPoint = preference.init_point;
@@ -491,6 +551,25 @@ export async function POST(request: Request) {
             console.error("[Socket-Emit] Failed to notify new order:", e);
         }
 
+        // --- PUSH: Notify merchants/sellers about new order ---
+        try {
+            const buyerName = session.user.name || undefined;
+            if (groups && groups.length > 0) {
+                for (const group of groups) {
+                    if (group.merchantId) {
+                        notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+                    }
+                    if (group.sellerId) {
+                        notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch(console.error);
+                    }
+                }
+            } else if (merchantId) {
+                notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch(console.error);
+            }
+        } catch (e) {
+            console.error("[Push] Failed to notify vendor:", e);
+        }
+
         // --- EMAIL: Send order confirmation to customer ---
         try {
             // we need the full address string for the email
@@ -532,7 +611,16 @@ export async function POST(request: Request) {
             points: pointsResult
         }, { status: 201 });
 
-    } catch (error) {
+    } catch (error: any) {
+        // Handle stock validation errors (thrown from inside transaction)
+        if (error?.message?.startsWith("STOCK_ERROR:")) {
+            status = "409";
+            const stockErrors = JSON.parse(error.message.replace("STOCK_ERROR:", ""));
+            return NextResponse.json(
+                { error: "Algunos productos no tienen stock suficiente", stockErrors },
+                { status: 409 }
+            );
+        }
         status = "500";
         console.error("Error creating order:", error);
         return NextResponse.json(

@@ -1,7 +1,8 @@
-// Buyer Push Notification Utilities
-// Notifies the buyer when their order status changes
+// Push Notification Utilities
+// Notifies buyers, merchants, and sellers when order events happen
 
 import { sendPushToUser } from './push';
+import { prisma } from './prisma';
 
 /** Extra context for enriched push notifications */
 interface NotifyContext {
@@ -96,6 +97,56 @@ const STATUS_MESSAGES: Record<string, MessageBuilder> = {
  * @param orderNumber - The order number (e.g. "MOV-A1B2")
  * @param context - Optional extra context for enriched messages
  */
+/**
+ * Send push notification to merchant owner when a new order arrives.
+ * Resolves the merchant's owner userId internally.
+ */
+export async function notifyMerchant(
+    merchantId: string,
+    orderNumber: string,
+    total: number,
+    buyerName?: string
+): Promise<number> {
+    const merchant = await prisma.merchant.findUnique({
+        where: { id: merchantId },
+        select: { ownerId: true, name: true },
+    });
+
+    if (!merchant) return 0;
+
+    return sendPushToUser(merchant.ownerId, {
+        title: '🔔 ¡Nuevo pedido!',
+        body: `Pedido ${orderNumber} — ${formatMoney(total)}${buyerName ? ` de ${buyerName}` : ''}`,
+        url: '/comercios/pedidos',
+        tag: 'new-order',
+    });
+}
+
+/**
+ * Send push notification to marketplace seller when a new order arrives.
+ * Resolves the seller's userId internally.
+ */
+export async function notifySeller(
+    sellerId: string,
+    orderNumber: string,
+    total: number,
+    buyerName?: string
+): Promise<number> {
+    const seller = await prisma.sellerProfile.findUnique({
+        where: { id: sellerId },
+        select: { userId: true, displayName: true },
+    });
+
+    if (!seller) return 0;
+
+    return sendPushToUser(seller.userId, {
+        title: '🛍️ ¡Nueva venta!',
+        body: `Pedido ${orderNumber} — ${formatMoney(total)}${buyerName ? ` de ${buyerName}` : ''}`,
+        url: '/vendedor/pedidos',
+        tag: 'new-order',
+    });
+}
+
 export async function notifyBuyer(
     userId: string,
     status: string,

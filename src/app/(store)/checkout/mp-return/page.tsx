@@ -84,7 +84,7 @@ export default function MpReturnPage() {
                 setStatus(result);
 
                 // If payment is resolved (PAID or FAILED), stop polling
-                if (result.paymentStatus === "PAID" || result.paymentStatus === "FAILED") {
+                if (["PAID", "APPROVED"].includes(result.paymentStatus) || result.paymentStatus === "FAILED") {
                     return;
                 }
             }
@@ -122,7 +122,7 @@ export default function MpReturnPage() {
     }
 
     // Payment confirmed
-    if (status?.paymentStatus === "PAID") {
+    if (status?.paymentStatus === "PAID" || status?.paymentStatus === "APPROVED") {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
@@ -178,12 +178,22 @@ export default function MpReturnPage() {
                     <p className="text-gray-600 mb-2">
                         El pago de tu pedido <span className="font-semibold">{status?.orderNumber}</span> está siendo procesado.
                     </p>
-                    <p className="text-sm text-gray-500 mb-6">
+                    <p className="text-sm text-gray-500 mb-4">
                         Te notificaremos por email cuando se confirme. Esto puede tomar unos minutos.
                     </p>
-                    <Link href="/mis-pedidos" className="btn-primary inline-block">
-                        Ir a mis pedidos
-                    </Link>
+                    <div className="flex flex-col gap-3">
+                        <Link href="/mis-pedidos" className="btn-primary inline-block">
+                            Ir a mis pedidos
+                        </Link>
+                        <a
+                            href="https://wa.me/5492901531773?text=Hola%2C%20mi%20pago%20está%20pendiente%20de%20confirmación"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-gray-500 underline"
+                        >
+                            ¿Problema? Contactanos por WhatsApp
+                        </a>
+                    </div>
                 </div>
             </div>
         );

@@ -320,8 +320,13 @@ export default function CheckoutPage() {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Error al crear el pedido");
+                const errorData = await response.json();
+                // Show specific stock errors to user
+                if (response.status === 409 && errorData.stockErrors) {
+                    const stockMsg = (errorData.stockErrors as string[]).join("\n• ");
+                    throw new Error(`Stock insuficiente:\n• ${stockMsg}`);
+                }
+                throw new Error(errorData.error || "Error al crear el pedido");
             }
 
             // Parse response before clearing cart to avoid useEffect race
