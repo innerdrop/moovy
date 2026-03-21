@@ -20,10 +20,11 @@ import {
     AlertCircle,
     Store,
     User,
-    Calendar
+    Calendar,
+    Navigation
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
-import TimeSlotPicker from "@/components/checkout/TimeSlotPicker";
+import TimeSlotPicker, { type VendorSchedule } from "@/components/checkout/TimeSlotPicker";
 import { toast } from "@/store/toast";
 
 interface DeliveryResult {
@@ -70,12 +71,17 @@ export default function CheckoutPage() {
     const [deliveryType, setDeliveryType] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
     const [scheduledSlotStart, setScheduledSlotStart] = useState<string | undefined>();
     const [scheduledSlotEnd, setScheduledSlotEnd] = useState<string | undefined>();
+    const [geoLoading, setGeoLoading] = useState(false);
 
     // Get primary merchantId for delivery calc (first merchant group, if any)
     const primaryMerchantId = groups.find(g => g.vendorType === "merchant")?.vendorId.replace("merchant_", "") || null;
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [saveAddress, setSaveAddress] = useState(false);
     const [addressLabel, setAddressLabel] = useState("Casa");
+
+    // Vendor schedule state (for smart scheduled delivery)
+    const [vendorSchedule, setVendorSchedule] = useState<VendorSchedule | null>(null);
+    const [scheduleLoading, setScheduleLoading] = useState(false);
 
     // Points state
     const [pointsUsed, setPointsUsed] = useState(0);
@@ -113,6 +119,29 @@ export default function CheckoutPage() {
             })
             .catch(err => console.error("Error checking driver availability", err));
     }, []);
+
+    // Fetch vendor schedules for scheduled delivery slots
+    useEffect(() => {
+        if (groups.length === 0) return;
+        setScheduleLoading(true);
+        const vendorIds = groups.map(g => ({
+            type: g.vendorType as "merchant" | "seller",
+            id: g.vendorId.replace(/^(merchant_|seller_)/, ""),
+        }));
+        fetch("/api/delivery/vendor-schedules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vendorIds }),
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.schedules) {
+                    setVendorSchedule(data.schedules);
+                }
+            })
+            .catch(err => console.error("Error fetching vendor schedules:", err))
+            .finally(() => setScheduleLoading(false));
+    }, [groups.length]);
 
     // Fetch saved addresses
     useEffect(() => {
@@ -169,6 +198,103 @@ export default function CheckoutPage() {
             longitude: undefined,
         });
         setDeliveryResult(null);
+    };
+
+    // Handle geolocation for current location
+    const handleUseCurrentLocation = async () => {
+        setGeoLoading(true);
+        try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                });
+            });
+
+            const { latitude: lat, longitude: lng } = position.coords;
+
+            // Check if Google Maps Geocoder is available
+            if (typeof google !== 'undefined' && google.maps && google.maps.Geocoder) {
+                const geocoder = new google.maps.Geocoder();
+
+                try {
+                    const results = await geocoder.geocode({ location: { lat, lng } });
+
+                    if (results && results.results.length > 0) {
+                        const result = results.results[0];
+
+                        // Extract street address and number from formatted_address
+                        // Typical format: "street number, neighborhood, city, province, country"
+                        const addressComponents = result.address_components || [];
+                        let streetName = "";
+                        let streetNumber = "";
+
+                        // Try to get route (street) and street_number components
+                        for (const component of addressComponents) {
+                            if (component.types.includes("route")) {
+                                streetName = component.long_name;
+                            }
+                            if (component.types.includes("street_number")) {
+                                streetNumber = component.long_name;
+                            }
+                        }
+
+                        // Fallback: parse formatted_address if components not found
+                        if (!streetName || !streetNumber) {
+                            const formatted = result.formatted_address.split(",")[0];
+                            const match = formatted.match(/^(.+?)\s+(\d+)(?:\s*[A-Za-z])?/);
+                            if (match) {
+                                streetName = streetName || match[1];
+                                streetNumber = streetNumber || match[2];
+                            }
+                        }
+
+                        setAddress({
+                            ...address,
+                            street: streetName,
+                            number: streetNumber,
+                            latitude: lat,
+                            longitude: lng,
+                        });
+
+                        toast.success("📍 Ubicación obtenida correctamente");
+                    } else {
+                        toast.error("No pudimos identificar tu dirección en el mapa");
+                    }
+                } catch (geocodeError) {
+                    console.error("Geocoding error:", geocodeError);
+                    // Even if geocoding fails, we have coordinates
+                    setAddress({
+                        ...address,
+                        latitude: lat,
+                        longitude: lng,
+                    });
+                    toast.info("📍 Coordenadas obtenidas (dirección manual requerida)");
+                }
+            } else {
+                // Google Maps not loaded yet, just save coordinates
+                setAddress({
+                    ...address,
+                    latitude: lat,
+                    longitude: lng,
+                });
+                toast.info("📍 Coordenadas obtenidas (dirección manual requerida)");
+            }
+        } catch (error: any) {
+            console.error("Geolocation error:", error);
+            if (error.code === 1) {
+                toast.error("🚫 Debes permitir el acceso a tu ubicación");
+            } else if (error.code === 2) {
+                toast.error("📍 No pudimos obtener tu ubicación (sin GPS)");
+            } else if (error.code === 3) {
+                toast.error("⏱️ Tiempo agotado al obtener ubicación");
+            } else {
+                toast.error("No pudimos obtener tu ubicación");
+            }
+        } finally {
+            setGeoLoading(false);
+        }
     };
 
     // Calculate delivery cost using server-side geocoding
@@ -521,6 +647,27 @@ export default function CheckoutPage() {
                                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                                             Dirección *
                                                         </label>
+
+                                                        {/* Geolocation Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleUseCurrentLocation}
+                                                            disabled={geoLoading}
+                                                            className="w-full mb-3 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {geoLoading ? (
+                                                                <>
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    Obteniendo ubicación...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Navigation className="w-4 h-4" />
+                                                                    📍 Usar mi ubicación actual
+                                                                </>
+                                                            )}
+                                                        </button>
+
                                                         <AddressAutocomplete
                                                             value={address.street && address.number ? `${address.street} ${address.number}` : address.street}
                                                             onChange={(val, lat, lng, street, num) => {
@@ -780,6 +927,8 @@ export default function CheckoutPage() {
                                                         setScheduledSlotEnd(end);
                                                     }}
                                                     selectedStart={scheduledSlotStart}
+                                                    vendorSchedule={vendorSchedule}
+                                                    loading={scheduleLoading}
                                                 />
                                                 {scheduledSlotStart && (
                                                     <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">

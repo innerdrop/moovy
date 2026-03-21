@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ImageUpload from "@/components/ui/ImageUpload";
+import ScheduleSection from "@/components/vendedor/ScheduleSection";
 import {
     Settings,
     Save,
@@ -26,6 +27,8 @@ interface SellerProfile {
     mpEmail: string | null;
     mpLinkedAt: string | null;
     mpUserId: string | null;
+    scheduleEnabled: boolean;
+    scheduleJson: string | null;
 }
 
 export default function VendedorConfiguracionPage() {
@@ -45,6 +48,8 @@ export default function VendedorConfiguracionPage() {
         bio: "",
         bankAlias: "",
         bankCbu: "",
+        scheduleEnabled: false,
+        scheduleJson: null as string | null,
     });
 
     useEffect(() => {
@@ -61,6 +66,8 @@ export default function VendedorConfiguracionPage() {
                     bio: data.bio || "",
                     bankAlias: data.bankAlias || "",
                     bankCbu: data.bankCbu || "",
+                    scheduleEnabled: data.scheduleEnabled || false,
+                    scheduleJson: data.scheduleJson || null,
                 });
                 setAvatar(data.avatar || "");
                 setMpEmail(data.mpEmail || null);
@@ -271,6 +278,12 @@ export default function VendedorConfiguracionPage() {
                     Guardar Cambios
                 </button>
             </form>
+
+            {/* Dispatch Schedule */}
+            <ScheduleSection
+                initialScheduleEnabled={formData.scheduleEnabled || false}
+                initialScheduleJson={formData.scheduleJson || null}
+            />
 
             {/* MercadoPago */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

@@ -225,6 +225,37 @@ export async function POST(request: Request) {
                 if (existingOrdersInSlot >= MAX_ORDERS_PER_SLOT) {
                     throw new Error("SLOT_FULL:El horario seleccionado ya no tiene disponibilidad. Por favor elegí otro horario.");
                 }
+
+                // Validate slot is within vendor's operating hours
+                // Convert JS day (0=Sun) to schedule format (1=Mon..7=Sun)
+                const jsDay = slotStart.getDay();
+                const scheduleDay = jsDay === 0 ? "7" : String(jsDay);
+                const slotHour = slotStart.getHours();
+
+                // Check primary merchant schedule if available
+                if (merchantId) {
+                    const merchant = await tx.merchant.findUnique({
+                        where: { id: merchantId },
+                        select: { scheduleEnabled: true, scheduleJson: true, name: true },
+                    });
+                    if (merchant?.scheduleEnabled && merchant.scheduleJson) {
+                        try {
+                            const schedule = JSON.parse(merchant.scheduleJson);
+                            const daySchedule = schedule[scheduleDay];
+                            if (!daySchedule) {
+                                throw new Error(`SLOT_FULL:${merchant.name} no opera ese día. Elegí otro horario.`);
+                            }
+                            const [openH] = daySchedule.open.split(":").map(Number);
+                            const [closeH] = daySchedule.close.split(":").map(Number);
+                            if (slotHour < openH || slotHour >= closeH) {
+                                throw new Error(`SLOT_FULL:El horario seleccionado está fuera del horario de ${merchant.name} (${daySchedule.open}-${daySchedule.close}).`);
+                            }
+                        } catch (e: any) {
+                            if (e?.message?.startsWith("SLOT_FULL:")) throw e;
+                            // Invalid JSON, skip validation
+                        }
+                    }
+                }
             }
 
             // Create the order
