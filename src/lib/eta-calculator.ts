@@ -65,7 +65,7 @@ export interface ETABreakdown {
   buffer: number;
 }
 
-// ─── Constantes ─────────────────────────────────────────────────────────────────
+// ─── Constantes (defaults, override vía loadETACalculatorConfig) ─────────────
 
 /** Tiempo promedio de espera si no hay driver asignado (minutos) */
 const DEFAULT_DRIVER_WAIT_TIME = 5;
@@ -81,6 +81,18 @@ const RANGE_MINUS = 5;
 
 /** Margen superior del rango (minutos más que el estimado) */
 const RANGE_PLUS = 10;
+
+/**
+ * Parámetros inyectables del ETA (cargados desde MoovyConfig).
+ * Si no se pasan, se usan las constantes de arriba.
+ */
+export interface ETAConfigOverrides {
+  defaultDriverWaitTimeMin?: number;
+  pickupTimeMin?: number;
+  bufferPercent?: number;
+  rangeMinus?: number;
+  rangePlus?: number;
+}
 
 // ─── Funciones ──────────────────────────────────────────────────────────────────
 
@@ -100,7 +112,13 @@ const RANGE_PLUS = 10;
  * // eta.displayLabel → "23-38 min"
  * // eta.exceedsSLA → false (45 min SLA para HOT)
  */
-export function calculateFullETA(params: ETAParams): ETAResult {
+export function calculateFullETA(params: ETAParams, overrides?: ETAConfigOverrides): ETAResult {
+  const _driverWait = overrides?.defaultDriverWaitTimeMin ?? DEFAULT_DRIVER_WAIT_TIME;
+  const _pickupTime = overrides?.pickupTimeMin ?? PICKUP_TIME;
+  const _bufferPct = overrides?.bufferPercent ?? BUFFER_PERCENT;
+  const _rangeMinus = overrides?.rangeMinus ?? RANGE_MINUS;
+  const _rangePlus = overrides?.rangePlus ?? RANGE_PLUS;
+
   const speed = getVehicleSpeed(params.vehicleType);
   const shipmentType = getShipmentType(params.shipmentTypeCode);
 
@@ -108,7 +126,7 @@ export function calculateFullETA(params: ETAParams): ETAResult {
   const prepTime = Math.max(params.merchantPrepTimeMin, 0);
 
   // 2. Tiempo de espera de driver
-  const driverWaitTime = params.hasDriverAssigned ? 0 : DEFAULT_DRIVER_WAIT_TIME;
+  const driverWaitTime = params.hasDriverAssigned ? 0 : _driverWait;
 
   // 3. Tiempo driver → comercio
   const driverToMerchant = params.hasDriverAssigned
@@ -116,21 +134,21 @@ export function calculateFullETA(params: ETAParams): ETAResult {
     : 0; // Si no hay driver, ya se contó en driverWaitTime
 
   // 4. Tiempo en comercio (retiro)
-  const pickupTime = PICKUP_TIME;
+  const pickupTime = _pickupTime;
 
   // 5. Tiempo comercio → destino
   const merchantToCustomer = calculateTravelMinutes(params.distanceMerchantToCustomerKm, speed);
 
   // 6. Buffer de imprevistos (sobre tiempo de viaje)
   const travelTime = driverToMerchant + merchantToCustomer;
-  const buffer = Math.ceil(travelTime * BUFFER_PERCENT);
+  const buffer = Math.ceil(travelTime * _bufferPct);
 
   // Total
   const totalMinutes = prepTime + driverWaitTime + driverToMerchant + pickupTime + merchantToCustomer + buffer;
 
   // Rango
-  const rangeMinMinutes = Math.max(totalMinutes - RANGE_MINUS, 1);
-  const rangeMaxMinutes = totalMinutes + RANGE_PLUS;
+  const rangeMinMinutes = Math.max(totalMinutes - _rangeMinus, 1);
+  const rangeMaxMinutes = totalMinutes + _rangePlus;
 
   // SLA check
   const slaMinutes = shipmentType.maxDeliveryMinutes;
@@ -181,7 +199,7 @@ export function calculatePreCheckoutETA(params: {
   shipmentTypeCode: ShipmentTypeCode | string;
   /** Tipo de vehículo más probable para esta categoría de paquete */
   likelyVehicleType?: string;
-}): ETAResult {
+}, overrides?: ETAConfigOverrides): ETAResult {
   return calculateFullETA({
     distanceDriverToMerchantKm: 1.0, // Promedio 1km de distancia driver-merchant
     distanceMerchantToCustomerKm: params.distanceMerchantToCustomerKm,
@@ -189,7 +207,7 @@ export function calculatePreCheckoutETA(params: {
     merchantPrepTimeMin: params.merchantPrepTimeMin,
     shipmentTypeCode: params.shipmentTypeCode,
     hasDriverAssigned: false,
-  });
+  }, overrides);
 }
 
 // ─── Helpers internos ───────────────────────────────────────────────────────────

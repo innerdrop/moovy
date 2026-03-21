@@ -42,7 +42,7 @@ export interface PrioritizedOrder {
   };
 }
 
-// ─── Constantes ─────────────────────────────────────────────────────────────────
+// ─── Constantes (defaults, override vía loadOrderPriorityConfig) ─────────────
 
 /** Peso máximo que puede sumar el tiempo de espera */
 const MAX_WAIT_PRIORITY = 60;
@@ -56,6 +56,17 @@ const RETRY_PRIORITY_PER_ATTEMPT = 15;
 /** Penalidad para pedidos programados (se asignan más adelante) */
 const SCHEDULED_PENALTY = -50;
 
+/**
+ * Parámetros inyectables de prioridad (cargados desde MoovyConfig).
+ * Si no se pasan, se usan las constantes de arriba.
+ */
+export interface PriorityConfigOverrides {
+  maxWaitPriority?: number;
+  waitPriorityPerMinute?: number;
+  retryPriorityPerAttempt?: number;
+  scheduledPenalty?: number;
+}
+
 // ─── Funciones ──────────────────────────────────────────────────────────────────
 
 /**
@@ -68,7 +79,15 @@ const SCHEDULED_PENALTY = -50;
  * calculateOrderPriority({ id: "x", createdAt: 5minAgo, shipmentTypeCode: "HOT", assignmentAttempts: 0 })
  * // → { priority: 110, breakdown: { shipmentTypePriority: 100, waitTimePriority: 10, retryPriority: 0, scheduledPenalty: 0 } }
  */
-export function calculateOrderPriority(order: OrderForPriority): PrioritizedOrder {
+export function calculateOrderPriority(
+  order: OrderForPriority,
+  overrides?: PriorityConfigOverrides,
+): PrioritizedOrder {
+  const _maxWait = overrides?.maxWaitPriority ?? MAX_WAIT_PRIORITY;
+  const _waitPerMin = overrides?.waitPriorityPerMinute ?? WAIT_PRIORITY_PER_MINUTE;
+  const _retryPer = overrides?.retryPriorityPerAttempt ?? RETRY_PRIORITY_PER_ATTEMPT;
+  const _schedPenalty = overrides?.scheduledPenalty ?? SCHEDULED_PENALTY;
+
   // 1. Prioridad por tipo de envío
   const shipmentType = getShipmentType(order.shipmentTypeCode);
   const shipmentTypePriority = shipmentType.priorityWeight;
@@ -76,20 +95,19 @@ export function calculateOrderPriority(order: OrderForPriority): PrioritizedOrde
   // 2. Prioridad por tiempo de espera
   const waitMinutes = (Date.now() - order.createdAt.getTime()) / 60000;
   const waitTimePriority = Math.min(
-    Math.round(waitMinutes * WAIT_PRIORITY_PER_MINUTE),
-    MAX_WAIT_PRIORITY
+    Math.round(waitMinutes * _waitPerMin),
+    _maxWait
   );
 
   // 3. Prioridad por intentos fallidos
-  const retryPriority = order.assignmentAttempts * RETRY_PRIORITY_PER_ATTEMPT;
+  const retryPriority = order.assignmentAttempts * _retryPer;
 
   // 4. Penalidad para programados (si el slot es en el futuro, no priorizar ahora)
   let scheduledPenalty = 0;
   if (order.deliveryType === "SCHEDULED" && order.scheduledSlotStart) {
     const minutesToSlot = (order.scheduledSlotStart.getTime() - Date.now()) / 60000;
     if (minutesToSlot > 30) {
-      // Si faltan más de 30 min para el slot, penalizar
-      scheduledPenalty = SCHEDULED_PENALTY;
+      scheduledPenalty = _schedPenalty;
     }
   }
 
@@ -118,9 +136,12 @@ export function calculateOrderPriority(order: OrderForPriority): PrioritizedOrde
  * const sorted = prioritizeOrders(orders);
  * // sorted[0] será orderHot (prioridad más alta)
  */
-export function prioritizeOrders(orders: OrderForPriority[]): PrioritizedOrder[] {
+export function prioritizeOrders(
+  orders: OrderForPriority[],
+  overrides?: PriorityConfigOverrides,
+): PrioritizedOrder[] {
   return orders
-    .map(calculateOrderPriority)
+    .map((o) => calculateOrderPriority(o, overrides))
     .sort((a, b) => b.priority - a.priority);
 }
 

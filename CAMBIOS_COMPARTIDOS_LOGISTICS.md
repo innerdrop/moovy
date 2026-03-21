@@ -209,17 +209,24 @@ export async function POST(req: Request) {
 
 ---
 
-## 7. Panel OPS — Configuración de ShipmentTypes (FUTURO)
+## 7. Panel OPS — Configuración de ShipmentTypes ✅ IMPLEMENTADO
 
-Cuando el modelo `ShipmentType` exista en la DB, agregar una sección en:
-- `src/app/ops/(protected)/configuracion-logistica/page.tsx`
+**Estado**: Completamente implementado vía MoovyConfig (JSON en tabla key-value).
 
-Para que el admin pueda:
-- Ver y editar los tipos de envío
-- Modificar SLAs y recargos
-- Activar/desactivar tipos
+El panel OPS ahora incluye 8 tabs con configuración completa:
+- **Global**: Timeouts, comisiones, distancia máx, intentos asignación
+- **Paquetes**: Categorías de paquete con dimensiones y vehículos
+- **Tipos de Envío**: SLA, prioridad, recargos, vehículos, flags de equipamiento
+- **Vehículos**: Velocidades promedio por tipo
+- **Prioridad**: Parámetros de la cola de asignación
+- **ETA**: Parámetros del calculador de tiempo estimado
+- **SLA en Vivo**: Dashboard en tiempo real con pedidos activos
+- **Tarifas**: DeliveryRate + tarifas fallback
 
-Mientras tanto, los valores viven como constantes en `src/lib/shipment-types.ts`.
+Todos los campos tienen botón (i) con explicación detallada.
+
+**Nota**: Cuando se agregue el modelo `ShipmentType` en Prisma (punto 1),
+se podrá migrar de MoovyConfig a tablas dedicadas sin cambios en la UI.
 
 ---
 
@@ -232,7 +239,7 @@ Mientras tanto, los valores viven como constantes en `src/lib/shipment-types.ts`
 | `src/app/api/auth/register/driver/route.ts` | Normalizar vehicleType | P1 |
 | `prisma/schema.prisma` (Driver) | Campos equipamiento | P1 |
 | `src/app/api/delivery/calculate/route.ts` | Nuevo endpoint | P1 |
-| `src/app/ops/.../configuracion-logistica` | UI de ShipmentTypes | P2 |
+| `src/app/ops/.../configuracion-logistica` | UI de ShipmentTypes | ✅ HECHO |
 
 ---
 
@@ -248,5 +255,18 @@ assignment-engine.ts    ← importa todo lo anterior (ya modificado)
 geo.ts                  ← importa vehicle-type-mapping.ts (ya modificado)
 ```
 
-Ningún módulo nuevo depende de Prisma directamente.
-Los valores de configuración se leen de constantes hasta que el modelo ShipmentType exista en la DB.
+Ningún módulo nuevo depende de Prisma directamente (excepto `logistics-config.ts` que lee/escribe MoovyConfig).
+
+**Módulos nuevos agregados en esta fase:**
+- `src/lib/logistics-config.ts` — Loaders/writers centralizados + info texts
+- `src/app/api/ops/config/shipment-types/route.ts` — CRUD ShipmentTypes config
+- `src/app/api/ops/config/vehicle-speeds/route.ts` — CRUD velocidades
+- `src/app/api/ops/config/priority-queue/route.ts` — CRUD prioridad cola
+- `src/app/api/ops/config/eta-calculator/route.ts` — CRUD ETA config
+- `src/app/api/ops/config/shipping-defaults/route.ts` — CRUD tarifas fallback
+- `src/app/api/ops/logistics/sla-dashboard/route.ts` — Dashboard SLA en vivo
+
+**Módulos modificados:**
+- `src/lib/order-priority.ts` — Acepta `PriorityConfigOverrides` opcional
+- `src/lib/eta-calculator.ts` — Acepta `ETAConfigOverrides` opcional
+- `src/app/ops/(protected)/configuracion-logistica/page.tsx` — Reescrito completo (8 tabs)
