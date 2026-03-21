@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker, Polyline } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/api";
 import { io, Socket } from "socket.io-client";
 import { useSocketAuth } from "@/hooks/useSocketAuth";
 import {
@@ -10,33 +10,26 @@ import {
     Phone,
     MapPin,
     Clock,
-    CheckCircle,
+    CheckCircle2,
     Loader2,
-    Package,
     Star,
-    Rocket,
-    Navigation,
     Store,
-    User,
-    ChevronRight,
-    MessageCircle,
-    Bell,
+    ChefHat,
+    Bike,
+    PackageCheck,
+    PartyPopper,
     XCircle,
-    X
+    Navigation2,
+    CircleDot,
 } from "lucide-react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { toast } from "@/store/toast";
-
-const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
-    ssr: false,
-    loading: () => <div className="h-[45vh] bg-white rounded-t-[32px] animate-pulse" />
-});
 
 interface OrderData {
     id: string;
     orderNumber: string;
     status: string;
+    estimatedTime?: number | null;
+    createdAt?: string;
     address: {
         street: string;
         number: string;
@@ -69,19 +62,64 @@ interface DriverPosition {
     timestamp: number;
 }
 
-interface RouteInfo {
-    distance: string;
-    duration: string;
-    distanceValue: number;
-    durationValue: number;
+// ─── Status config ───
+const STATUS_STEPS = [
+    { key: "PENDING", label: "Confirmando", icon: CircleDot, color: "text-amber-500" },
+    { key: "CONFIRMED", label: "Confirmado", icon: CheckCircle2, color: "text-emerald-500" },
+    { key: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-orange-500" },
+    { key: "READY", label: "Listo", icon: PackageCheck, color: "text-blue-500" },
+    { key: "PICKED_UP", label: "En camino", icon: Bike, color: "text-violet-500" },
+    { key: "DELIVERED", label: "Entregado", icon: PartyPopper, color: "text-emerald-600" },
+];
+
+function getStepIndex(status: string): number {
+    const s = status?.toUpperCase() || "PENDING";
+    // Map compound statuses
+    if (s === "DRIVER_ASSIGNED" || s === "DRIVER_ARRIVED") return 3; // same as READY
+    if (s === "IN_DELIVERY") return 4; // same as PICKED_UP
+    const idx = STATUS_STEPS.findIndex((st) => st.key === s);
+    return idx >= 0 ? idx : 0;
 }
 
-const containerStyle = {
-    width: "100%",
-    height: "100%",
-};
+function getStatusMessage(status: string): { title: string; subtitle: string } {
+    const s = status?.toUpperCase() || "PENDING";
+    switch (s) {
+        case "PENDING":
+        case "AWAITING_PAYMENT":
+            return { title: "Esperando confirmación", subtitle: "El comercio está revisando tu pedido" };
+        case "CONFIRMED":
+            return { title: "¡Pedido confirmado!", subtitle: "El comercio comenzará a prepararlo" };
+        case "PREPARING":
+            return { title: "Preparando tu pedido", subtitle: "El comercio está trabajando en él" };
+        case "READY":
+            return { title: "¡Tu pedido está listo!", subtitle: "Esperando al repartidor" };
+        case "DRIVER_ASSIGNED":
+            return { title: "Repartidor en camino al comercio", subtitle: "Tu pedido será recogido pronto" };
+        case "DRIVER_ARRIVED":
+            return { title: "El repartidor llegó al comercio", subtitle: "Está retirando tu pedido" };
+        case "PICKED_UP":
+        case "IN_DELIVERY":
+            return { title: "¡Tu pedido viene en camino!", subtitle: "El repartidor se dirige hacia vos" };
+        case "DELIVERED":
+            return { title: "¡Pedido entregado!", subtitle: "Esperamos que lo disfrutes" };
+        case "CANCELLED":
+            return { title: "Pedido cancelado", subtitle: "Este pedido fue cancelado" };
+        default:
+            return { title: "Procesando", subtitle: "Un momento..." };
+    }
+}
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+
+const mapOptions: google.maps.MapOptions = {
+    disableDefaultUI: true,
+    zoomControl: false,
+    gestureHandling: "greedy",
+    styles: [
+        { featureType: "poi", stylers: [{ visibility: "off" }] },
+        { featureType: "transit", stylers: [{ visibility: "off" }] },
+    ],
+};
 
 export default function TrackingPage() {
     const params = useParams();
@@ -89,812 +127,501 @@ export default function TrackingPage() {
     const orderId = params.orderId as string;
 
     const [order, setOrder] = useState<OrderData | null>(null);
-    const [driverPosition, setDriverPosition] = useState<DriverPosition | null>(null);
-    const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
-    const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+    const [driverPos, setDriverPos] = useState<DriverPosition | null>(null);
+    const [routePath, setRoutePath] = useState<google.maps.LatLngLiteral[]>([]);
     const [connected, setConnected] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [delivered, setDelivered] = useState(false);
     const [rating, setRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasRated, setHasRated] = useState(false);
-    const [sheetState, setSheetState] = useState<"fullscreen" | "expanded" | "mid" | "minimized" | "hidden">("expanded");
+    const [eta, setEta] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
 
     const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
+        id: "google-map-script",
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
         libraries,
-        language: 'es',
-        region: 'AR'
+        language: "es",
+        region: "AR",
     });
 
-    // Fetch order details
-    useEffect(() => {
-        async function fetchOrder() {
-            try {
-                const res = await fetch(`/api/orders/${orderId}/tracking`);
-                if (!res.ok) throw new Error("Pedido no encontrado");
-                const data = await res.json();
-                setOrder(data);
-
-                if (data.status === "DELIVERED") {
-                    setDelivered(true);
-                }
-
-                if (data.driver?.latitude && data.driver?.longitude) {
-                    setDriverPosition({
-                        lat: data.driver.latitude,
-                        lng: data.driver.longitude,
-                        timestamp: Date.now()
-                    });
-                }
-            } catch (e: any) {
-                setError(e.message);
-            } finally {
-                setLoading(false);
+    // ─── Fetch order ───
+    const fetchOrder = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/orders/${orderId}/tracking`);
+            if (!res.ok) throw new Error("Pedido no encontrado");
+            const data: OrderData = await res.json();
+            setOrder(data);
+            if (data.status === "DELIVERED") setDelivered(true);
+            if (data.driver?.latitude && data.driver?.longitude) {
+                setDriverPos({ lat: data.driver.latitude, lng: data.driver.longitude, timestamp: Date.now() });
             }
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
         }
-
-        if (orderId) fetchOrder();
-
-        // Polling fallback every 5s for fast status updates
-        const pollInterval = setInterval(() => {
-            if (orderId) fetchOrder();
-        }, 5000);
-        return () => clearInterval(pollInterval);
     }, [orderId]);
 
-    // Directions logic
     useEffect(() => {
-        const addr = order?.address;
-        const driver = order?.driver;
-        const merchant = order?.merchant;
-        const status = order?.status?.toUpperCase() || "";
+        if (orderId) fetchOrder();
+        const poll = setInterval(() => { if (orderId) fetchOrder(); }, 5000);
+        return () => clearInterval(poll);
+    }, [orderId, fetchOrder]);
 
-        if (!isLoaded || !order) return;
-
-        if (status === "DELIVERED") {
-            setDirections(null);
-            setRouteInfo(null);
-            return;
-        }
-
-        const solveDirections = async () => {
-            let destLat = addr?.latitude;
-            let destLng = addr?.longitude;
-
-            // FALLBACK: If DB has no coordinates, try geocoding the address string
-            if ((!destLat || !destLng) && addr?.street) {
-                console.log("[Tracking] Coordinates missing, attempting geocode for:", addr.street);
-                const geocoder = new google.maps.Geocoder();
-                try {
-                    const result = await geocoder.geocode({
-                        address: `${addr.street} ${addr.number}, ${(addr as { city?: string }).city || "Ushuaia"}, Argentina`
-                    });
-                    if (result.results[0]) {
-                        destLat = result.results[0].geometry.location.lat();
-                        destLng = result.results[0].geometry.location.lng();
-                        console.log("[Tracking] Geocoding success:", { destLat, destLng });
-                    }
-                } catch (e: any) {
-                    console.error("[Tracking] Geocoding failed. TIP: If you see 'REQUEST_DENIED', enable 'Geocoding API' in Google Cloud Console for your API Key.", e);
-                }
-            }
-
-            if (!destLat) {
-                console.log("[Tracking] Directions skipped: still no destination coordinates");
-                return;
-            }
-
-            const directionsService = new google.maps.DirectionsService();
-
-            const destination: google.maps.LatLngLiteral = {
-                lat: typeof destLat === 'string' ? parseFloat(destLat) : Number(destLat),
-                lng: typeof destLng === 'string' ? parseFloat(destLng) : Number(destLng || 0)
-            };
-
-            let origin: google.maps.LatLngLiteral;
-            let waypoints: google.maps.DirectionsWaypoint[] = [];
-
-            const currentDriverPos = driverPosition
-                || (driver?.latitude && driver?.longitude
-                    ? { lat: parseFloat(driver.latitude as any), lng: parseFloat(driver.longitude as any) } : null);
-
-            if (currentDriverPos) {
-                origin = { lat: currentDriverPos.lat, lng: currentDriverPos.lng };
-                if (status === "DRIVER_ASSIGNED" && merchant?.latitude) {
-                    waypoints = [{
-                        location: { lat: parseFloat(merchant.latitude as any), lng: parseFloat(merchant.longitude as any || "0") },
-                        stopover: true
-                    }];
-                }
-            } else if (merchant?.latitude) {
-                origin = { lat: parseFloat(merchant.latitude as any), lng: parseFloat(merchant.longitude as any || "0") };
-            } else {
-                console.log("[Tracking] No valid origin found for route");
-                return;
-            }
-
-            console.log("[Tracking] Requesting route:", { origin, destination, waypoints: waypoints.length });
-
-            directionsService.route(
-                {
-                    origin,
-                    destination,
-                    waypoints,
-                    travelMode: google.maps.TravelMode.DRIVING,
-                    optimizeWaypoints: true
-                },
-                (result, status) => {
-                    if (status === google.maps.DirectionsStatus.OK && result) {
-                        console.log("[Tracking] Route found:", result.routes[0].summary);
-                        setDirections(result);
-                        const route = result.routes[0];
-                        if (route && route.legs) {
-                            let d = 0, t = 0;
-                            route.legs.forEach(leg => {
-                                d += leg.distance?.value || 0;
-                                t += leg.duration?.value || 0;
-                            });
-                            setRouteInfo({
-                                distance: d >= 1000 ? `${(d / 1000).toFixed(1)} km` : `${d} m`,
-                                duration: `${Math.ceil(t / 60)} min`,
-                                distanceValue: d,
-                                durationValue: t
-                            });
-                        }
-                    } else {
-                        console.error(`[Tracking] Directions request failed due to ${status}. TIP: You MUST also enable "Directions API" in Google Cloud Console.`);
-                    }
-                }
-            );
-        };
-
-        solveDirections();
-    }, [isLoaded, order, driverPosition]);
-
-    // Socket auth
-    const { token: socketToken } = useSocketAuth(!!orderId);
-
-    // Socket.io connection
+    // ─── Socket.IO ───
+    const socketToken = useSocketAuth();
     useEffect(() => {
-        if (!orderId || !order || !socketToken) return;
-
-        // Connect socket for all non-terminal statuses
-        if (["DELIVERED", "CANCELLED"].includes(order.status.toUpperCase())) {
-            console.log("[Tracking] Order in terminal status, skipping socket:", order.status);
-            return;
-        }
-
-        const envSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
-        const isLocalHostEnv = envSocketUrl.includes("localhost") || envSocketUrl.includes("127.0.0.1");
-
-        const socketUrl = (isLocalHostEnv && typeof window !== 'undefined' && !window.location.hostname.includes("localhost"))
-            ? `${window.location.protocol}//${window.location.hostname}:3001`
-            : envSocketUrl;
-
-        console.log("[Tracking] Connecting to socket (authenticated):", socketUrl);
-
-        const socket = io(`${socketUrl}/logistica`, {
-            transports: ["websocket", "polling"],
-            reconnectionAttempts: 10,
-            reconnectionDelay: 2000,
-            auth: { token: socketToken },
-        });
-
+        if (!orderId || !socketToken || delivered) return;
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== "undefined" && window.location.hostname === "localhost" ? "http://localhost:3001" : "https://somosmoovy.com");
+        const socket = io(`${socketUrl}/logistica`, { auth: { token: socketToken }, transports: ["websocket", "polling"], reconnection: true });
         socketRef.current = socket;
-
-        socket.on("connect", () => {
-            console.log("[Tracking] Connected to socket!");
-            setConnected(true);
-            socket.emit("track_order", orderId);
-        });
-
-        socket.on("connect_error", (err) => {
-            console.error("[Tracking] Socket connection error:", err.message);
-        });
-
-        socket.on("disconnect", (reason) => {
-            console.log("[Tracking] Disconnected:", reason);
-            setConnected(false);
-        });
-
-        socket.on("posicion_repartidor", (data: DriverPosition) => {
-            console.log("[Tracking] New position received:", data);
-            setDriverPosition(data);
-        });
-
-        socket.on("pedido_entregado", () => {
-            console.log("[Tracking] Order delivered event received!");
-            setDelivered(true);
-            setOrder(prev => prev ? { ...prev, status: "DELIVERED" } : prev);
-        });
-
-        socket.on("order_status_changed", (data: { orderId: string, status: string }) => {
-            console.log("[Tracking] Status changed via socket:", data.status);
+        socket.on("connect", () => { setConnected(true); socket.emit("track_order", { orderId }); });
+        socket.on("disconnect", () => setConnected(false));
+        socket.on("posicion_repartidor", (pos: DriverPosition) => setDriverPos(pos));
+        socket.on("pedido_entregado", () => { setDelivered(true); fetchOrder(); });
+        socket.on("order_status_changed", (data: { orderId: string; status: string }) => {
             if (data.orderId === orderId) {
-                setOrder(prev => prev ? { ...prev, status: data.status } : prev);
-                if (data.status === "DELIVERED") {
-                    setDelivered(true);
+                setOrder((prev) => prev ? { ...prev, status: data.status } : prev);
+                if (data.status === "DELIVERED") setDelivered(true);
+            }
+        });
+        socket.on("order_status_update", (data: { orderId: string; status: string }) => {
+            if (data.orderId === orderId) {
+                setOrder((prev) => prev ? { ...prev, status: data.status } : prev);
+                if (data.status === "DELIVERED") setDelivered(true);
+            }
+        });
+        return () => { socket.disconnect(); };
+    }, [orderId, socketToken, delivered, fetchOrder]);
+
+    // ─── Directions ───
+    useEffect(() => {
+        if (!isLoaded || !order) return;
+        const s = order.status?.toUpperCase() || "";
+        if (s === "DELIVERED" || s === "CANCELLED") { setRoutePath([]); setEta(null); return; }
+
+        const origin = driverPos
+            ? { lat: driverPos.lat, lng: driverPos.lng }
+            : order.merchant?.latitude && order.merchant?.longitude
+            ? { lat: order.merchant.latitude, lng: order.merchant.longitude }
+            : null;
+
+        const dest = order.address?.latitude && order.address?.longitude
+            ? { lat: order.address.latitude, lng: order.address.longitude }
+            : null;
+
+        if (!origin || !dest) return;
+
+        const ds = new google.maps.DirectionsService();
+        ds.route({ origin, destination: dest, travelMode: google.maps.TravelMode.DRIVING }, (result, status) => {
+            if (status === "OK" && result) {
+                const leg = result.routes[0]?.legs[0];
+                if (leg) {
+                    setEta(leg.duration?.text || null);
+                    setRoutePath(result.routes[0].overview_path.map((p) => ({ lat: p.lat(), lng: p.lng() })));
+                    if (mapRef.current && result.routes[0].bounds) {
+                        mapRef.current.fitBounds(result.routes[0].bounds, { top: 60, bottom: 200, left: 40, right: 40 });
+                    }
                 }
             }
         });
+    }, [isLoaded, order, driverPos]);
 
-        socket.on("order_status_update", (data: { orderId: string; status: string }) => {
-            console.log("[Tracking] Status update:", data);
-            if (data.orderId === orderId) {
-                setOrder(prev => prev ? { ...prev, status: data.status } : prev);
-            }
-        });
-
-        return () => {
-            console.log("[Tracking] Cleaning up socket");
-            socket.disconnect();
-        };
-    }, [orderId, order?.id, order?.status, socketToken]);
-
-    // Fit map bounds to show all relevant points
-    useEffect(() => {
-        if (!mapRef.current || !isLoaded) return;
-
-        const bounds = new google.maps.LatLngBounds();
-        let hasPoints = false;
-
-        const currentDriverPos = driverPosition
-            || (order?.driver?.latitude && order?.driver?.longitude ? {
-                lat: Number(order.driver.latitude),
-                lng: Number(order.driver.longitude)
-            } : null);
-
-        if (currentDriverPos) {
-            bounds.extend(currentDriverPos);
-            hasPoints = true;
-        }
-
-        if (order?.merchant?.latitude) {
-            bounds.extend({
-                lat: Number(order.merchant.latitude),
-                lng: Number(order.merchant.longitude || 0)
-            });
-            hasPoints = true;
-        }
-
-        // Use directions bounds if available for better framing
-        if (directions && directions.routes[0]?.bounds) {
-            mapRef.current.fitBounds(directions.routes[0].bounds, {
-                top: 100,
-                right: 50,
-                bottom: 100,
-                left: 50
-            });
-            return;
-        }
-
-        if (order?.address.latitude) {
-            bounds.extend({
-                lat: Number(order.address.latitude),
-                lng: Number(order.address.longitude || 0)
-            });
-            hasPoints = true;
-        } else if (directions && directions.routes[0]?.legs[0]?.end_location) {
-            // Fallback to directions end_location if DB has no coords
-            bounds.extend(directions.routes[0].legs[0].end_location);
-            hasPoints = true;
-        }
-
-        if (hasPoints) {
-            // Apply bounds with reasonable padding
-            mapRef.current.fitBounds(bounds, {
-                top: 100,
-                right: 50,
-                bottom: 100,
-                left: 50
-            });
-        }
-    }, [isLoaded, directions, driverPosition, order?.id, order?.merchant, order?.address]);
-
+    // ─── Rating ───
     const handleRate = async () => {
-        if (rating === 0) { toast.warning("Selecciona una calificación"); return; }
+        if (!rating || isSubmitting) return;
         setIsSubmitting(true);
         try {
             const res = await fetch(`/api/orders/${orderId}/rate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ rating, comment })
+                body: JSON.stringify({ rating, comment: comment.trim() || undefined }),
             });
             if (res.ok) setHasRated(true);
-        } catch (e) { toast.error("Error al calificar"); } finally { setIsSubmitting(false); }
-    };
-
-    const getStatusStep = () => {
-        switch (order?.status?.toUpperCase()) {
-            case "PENDING": return 0;
-            case "CONFIRMED":
-            case "PREPARING":
-            case "READY":
-            case "DRIVER_ASSIGNED":
-            case "DRIVER_ARRIVED": return 1;
-            case "PICKED_UP":
-            case "IN_DELIVERY": return 2;
-            case "DELIVERED": return 3;
-            default: return 0;
+        } catch { /* ignore */ } finally {
+            setIsSubmitting(false);
         }
     };
 
-    const statusStep = getStatusStep();
+    // ─── Derived state ───
+    const status = order?.status?.toUpperCase() || "PENDING";
+    const stepIdx = getStepIndex(status);
+    const statusMsg = getStatusMessage(status);
+    const isInTransit = ["PICKED_UP", "IN_DELIVERY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(status);
+    const showMap = isInTransit && isLoaded;
+    const driverName = order?.driver?.user?.name?.split(" ")[0] || "Repartidor";
 
-    if (loading || !isLoaded) {
+    // ─── Loading ───
+    if (loading) {
         return (
-            <div className="h-screen bg-white flex flex-col items-center justify-center gap-4">
+            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col items-center justify-center gap-4">
                 <div className="relative">
-                    <Rocket className="w-10 h-10 text-[#e60012] animate-bounce" />
-                    <Loader2 className="w-16 h-16 text-gray-100 animate-spin absolute -top-3 -left-3 -z-10" />
+                    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 text-[#e60012] animate-spin" />
+                    </div>
                 </div>
-                <p className="font-black italic tracking-tighter text-gray-900 uppercase">Localizando pedido...</p>
+                <p className="text-gray-500 text-sm font-medium">Cargando pedido...</p>
             </div>
         );
     }
 
+    // ─── Error ───
     if (error || !order) {
         return (
-            <div className="h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
-                <XCircle className="w-16 h-16 text-red-500 mb-4" />
-                <h1 className="text-xl font-bold mb-2">¡Ups! Algo salió mal</h1>
-                <p className="text-gray-500 mb-8">{error || "No se pudo cargar el pedido"}</p>
-                <button onClick={() => router.back()} className="px-8 py-3 bg-gray-900 text-white font-bold rounded-xl">Volver</button>
+            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col items-center justify-center gap-4 px-6">
+                <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                    <XCircle className="w-8 h-8 text-red-400" />
+                </div>
+                <p className="text-gray-900 font-semibold text-lg">Pedido no encontrado</p>
+                <p className="text-gray-500 text-sm text-center">{error}</p>
+                <button onClick={() => router.back()} className="mt-4 px-6 py-2.5 bg-gray-900 text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors">
+                    Volver
+                </button>
             </div>
         );
     }
 
-    return (
-        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden font-sans">
-            {/* Delivered overlay & Rating */}
-            {delivered && (
-                <div className="fixed inset-0 bg-white/95 flex flex-col items-center justify-center z-[100] p-6 text-center transition-all duration-500 backdrop-blur-md">
-                    {!hasRated && !order.driverRating ? (
-                        <div className="w-full max-w-sm space-y-8 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="w-24 h-24 bg-green-100 rounded-[32px] flex items-center justify-center mx-auto mb-4 rotate-12">
-                                <CheckCircle className="w-12 h-12 text-green-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <h2 className="text-4xl font-black italic tracking-tighter text-gray-900 uppercase leading-none">¡PEDIDO RECIBIDO!</h2>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Cuéntanos cómo te atendió {order.driver?.user.name.split(' ')[0]}</p>
-                            </div>
+    // ─── DELIVERED + RATING ───
+    if (delivered && !hasRated && !order.driverRating) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white flex flex-col items-center justify-center px-6">
+                <div className="w-full max-w-sm flex flex-col items-center gap-6">
+                    {/* Animated check */}
+                    <div className="relative">
+                        <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center animate-[bounceIn_0.6s_ease-out]">
+                            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                        </div>
+                        <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center animate-[bounceIn_0.8s_ease-out]">
+                            <PartyPopper className="w-4 h-4 text-amber-500" />
+                        </div>
+                    </div>
 
-                            <div className="flex justify-center gap-2">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button key={star} onClick={() => setRating(star)} className="p-1 transition-all active:scale-75 hover:scale-110">
-                                        <Star className={`w-10 h-10 transition-colors ${star <= rating ? "fill-orange-500 text-orange-500" : "text-gray-200"}`} />
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="text-center">
+                        <h1 className="text-2xl font-bold text-gray-900">¡Pedido entregado!</h1>
+                        <p className="text-gray-500 mt-1">¿Cómo fue la entrega de {driverName}?</p>
+                    </div>
 
+                    {/* Stars */}
+                    <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                            <button
+                                key={s}
+                                onMouseEnter={() => setHoverRating(s)}
+                                onMouseLeave={() => setHoverRating(0)}
+                                onClick={() => setRating(s)}
+                                className="transition-transform hover:scale-125 active:scale-95"
+                            >
+                                <Star
+                                    className={`w-10 h-10 transition-colors duration-150 ${
+                                        s <= (hoverRating || rating)
+                                            ? "fill-amber-400 text-amber-400"
+                                            : "text-gray-200"
+                                    }`}
+                                />
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Comment */}
+                    {rating > 0 && (
+                        <div className="w-full animate-[fadeIn_0.3s_ease-out]">
                             <textarea
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
-                                placeholder="Escribe un comentario..."
-                                className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-5 text-sm focus:border-orange-500 outline-none min-h-[120px] resize-none font-medium text-gray-700"
+                                placeholder="Contanos tu experiencia (opcional)"
+                                className="w-full p-4 border border-gray-200 rounded-2xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#e60012]/20 focus:border-[#e60012] bg-gray-50"
+                                rows={3}
                             />
+                        </div>
+                    )}
 
+                    {/* Actions */}
+                    <div className="w-full flex flex-col gap-3">
+                        {rating > 0 && (
                             <button
                                 onClick={handleRate}
                                 disabled={isSubmitting}
-                                className="w-full py-5 bg-gray-900 text-white rounded-[24px] font-black text-lg hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-95 italic uppercase tracking-widest"
+                                className="w-full py-3.5 bg-[#e60012] text-white rounded-2xl font-semibold text-sm hover:bg-[#cc0010] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                             >
-                                {isSubmitting ? "ENVIANDO..." : "CALIFICAR"}
+                                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                Enviar calificación
                             </button>
-
-                            <button onClick={() => router.push("/mis-pedidos")} className="text-gray-400 text-[10px] font-black uppercase tracking-[3px]">IR A MIS PEDIDOS</button>
-                        </div>
-                    ) : (
-                        <div className="space-y-8 animate-in zoom-in duration-500">
-                            <div className="w-32 h-32 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                                <Star className="w-16 h-16 text-orange-500 fill-orange-500" />
-                            </div>
-                            <div className="space-y-2">
-                                <h2 className="text-4xl font-black italic tracking-tighter text-gray-900 uppercase">¡GRACIAS!</h2>
-                                <p className="text-gray-400 font-bold uppercase tracking-[4px] text-xs">Valoración enviada</p>
-                            </div>
-                            <button
-                                onClick={() => router.push("/mis-pedidos")}
-                                className="w-full max-w-xs py-5 bg-gray-900 text-white rounded-[24px] font-black text-lg tracking-widest uppercase italic"
-                            >
-                                CONTINUAR
-                            </button>
-                        </div>
-                    )}
+                        )}
+                        <Link
+                            href="/mis-pedidos"
+                            className="w-full py-3.5 bg-gray-100 text-gray-700 rounded-2xl font-medium text-sm text-center hover:bg-gray-200 transition-colors"
+                        >
+                            Ir a mis pedidos
+                        </Link>
+                    </div>
                 </div>
-            )}
+            </div>
+        );
+    }
 
-            {/* Check if order is picked up (rider has the package) */}
-            {(() => {
-                const status = order?.status?.toUpperCase() || "PENDING";
-                const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(status);
+    // ─── RATED THANK YOU ───
+    if (hasRated) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-white flex flex-col items-center justify-center px-6 gap-6">
+                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Star className="w-10 h-10 fill-amber-400 text-amber-400" />
+                </div>
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gray-900">¡Gracias!</h1>
+                    <p className="text-gray-500 mt-1">Tu opinión nos ayuda a mejorar</p>
+                </div>
+                <Link
+                    href="/mis-pedidos"
+                    className="px-8 py-3.5 bg-gray-900 text-white rounded-2xl font-semibold text-sm hover:bg-gray-800 transition-colors"
+                >
+                    Continuar
+                </Link>
+            </div>
+        );
+    }
 
-                if (!isPickedUp) {
-                    // PREPARATION UI - Before pickup
-                    const prepHeight = sheetState === "fullscreen" ? "0vh"
-                        : sheetState === "expanded" ? "55vh"
-                            : sheetState === "minimized" ? "calc(100vh - 100px)"
-                                : "100vh";
+    // ─── CANCELLED ───
+    if (status === "CANCELLED") {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-red-50 via-white to-white flex flex-col items-center justify-center px-6 gap-6">
+                <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+                    <XCircle className="w-10 h-10 text-red-400" />
+                </div>
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gray-900">Pedido cancelado</h1>
+                    <p className="text-gray-500 mt-1">Este pedido fue cancelado</p>
+                </div>
+                <Link
+                    href="/"
+                    className="px-8 py-3.5 bg-gray-900 text-white rounded-2xl font-semibold text-sm hover:bg-gray-800 transition-colors"
+                >
+                    Volver al inicio
+                </Link>
+            </div>
+        );
+    }
 
-                    return (
-                        <div
-                            className="relative flex-shrink-0 z-10 shadow-lg bg-gradient-to-b from-orange-50 via-white to-orange-50/30 flex flex-col items-center justify-center px-6 transition-all duration-300 ease-out"
-                            style={{ height: prepHeight }}
-                        >
-                            <button
-                                onClick={() => router.back()}
-                                className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
-                            >
-                                <ArrowLeft className="w-6 h-6 text-gray-900" />
-                            </button>
-
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900 text-white rounded-full px-5 py-2 shadow-2xl border-2 border-white/20">
-                                <span className="text-[10px] font-black uppercase tracking-widest">#{order.orderNumber}</span>
-                            </div>
-
-                            {/* Animated Package Icon */}
-                            <div className="relative mb-6">
-                                <div className="w-24 h-24 bg-orange-100 rounded-[32px] flex items-center justify-center animate-pulse">
-                                    <Package className="w-12 h-12 text-orange-500" />
-                                </div>
-                                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-200">
-                                    <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-                                </div>
-                            </div>
-
-                            <h3 className="text-2xl font-black italic tracking-tight text-gray-900 uppercase text-center leading-tight">
-                                {order.status.toUpperCase() === "DRIVER_ASSIGNED" ? "Repartidor asignado" : "Preparando tu pedido"}
-                            </h3>
-                            <p className="text-gray-500 text-sm text-center mt-2 max-w-xs">
-                                {order.status.toUpperCase() === "DRIVER_ASSIGNED"
-                                    ? "El repartidor está yendo al comercio a recoger tu pedido"
-                                    : "El mapa se activará cuando el repartidor recoja tu pedido"}
-                            </p>
-
-                            {/* Merchant Info */}
-                            {order.merchant && (
-                                <div className="mt-6 bg-white rounded-2xl p-4 shadow-lg border border-orange-100 flex items-center gap-4 w-full max-w-sm">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <Store className="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-gray-900">{order.merchant.name}</p>
-                                        <p className="text-xs text-gray-500">Preparando tu pedido</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Driver Info if assigned */}
-                            {order.driver && (
-                                <div className="mt-3 bg-white rounded-2xl p-4 shadow-lg border border-green-100 flex items-center gap-4 w-full max-w-sm">
-                                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                        <User className="w-6 h-6 text-green-600" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-gray-900">{order.driver.user.name}</p>
-                                        <p className="text-xs text-gray-500">Tu repartidor</p>
-                                    </div>
-                                    {order.driver.user.phone && (
-                                        <a href={`tel:${order.driver.user.phone}`} className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                                            <Phone className="w-5 h-5 text-white" />
-                                        </a>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                }
-
-                // MAP SECTION - After pickup (rider has the package)
-                const mapHeight = sheetState === "fullscreen" ? "0vh"
-                    : sheetState === "expanded" ? "55vh"
-                        : sheetState === "minimized" ? "calc(100vh - 100px)"
-                            : "100vh";
-
-                return (
-                    <div
-                        className="relative flex-shrink-0 z-10 shadow-lg transition-all duration-300 ease-out"
-                        style={{ height: mapHeight }}
-                    >
-                        <button
-                            onClick={() => router.back()}
-                            className="absolute top-4 left-4 z-20 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl border border-white active:scale-95 transition"
-                        >
-                            <ArrowLeft className="w-6 h-6 text-gray-900" />
-                        </button>
-
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900 text-white rounded-full px-5 py-2 shadow-2xl border-2 border-white/20">
-                            <span className="text-[10px] font-black uppercase tracking-widest">#{order.orderNumber}</span>
-                        </div>
-
-                        <div className={`absolute top-4 right-4 z-20 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border border-white ${connected ? "bg-white/90 backdrop-blur-md" : "bg-red-50"}`}>
-                            <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{connected ? "En Vivo" : "Desconectado"}</span>
-                        </div>
-
-                        <GoogleMap
-                            mapContainerStyle={containerStyle}
-                            center={{ lat: order.address.latitude || -54.8019, lng: order.address.longitude || -68.3030 }}
-                            zoom={15}
-                            onLoad={map => { mapRef.current = map; }}
-                            options={{
-                                disableDefaultUI: true,
-                                zoomControl: false,
-                                scrollwheel: true,
-                                gestureHandling: "greedy",
-                            }}
-                        >
-                            {/* Animated Route Line */}
-                            {directions && directions.routes[0].overview_path && (
-                                <Polyline
-                                    path={directions.routes[0].overview_path}
-                                    options={{
-                                        strokeColor: "#4285F4",
-                                        strokeOpacity: 0.4, // Base line visible
-                                        strokeWeight: 6,
-                                        icons: [{
-                                            icon: {
-                                                path: 'M 0,-1.5 L 0,1.5',
-                                                strokeOpacity: 1,
-                                                strokeWeight: 4,
-                                                scale: 3,
-                                                strokeColor: "#4285F4",
-                                            },
-                                            offset: '0',
-                                            repeat: '20px'
-                                        }, {
-                                            icon: {
-                                                path: 'M -2,0 L 0,2 L 2,0',
-                                                strokeOpacity: 1,
-                                                strokeWeight: 2,
-                                                scale: 2,
-                                                strokeColor: "#2196F3",
-                                            },
-                                            offset: '50%',
-                                            repeat: '40px'
-                                        }]
-                                    }}
-                                    onLoad={(polyline) => {
-                                        let count = 0;
-                                        const interval = setInterval(() => {
-                                            count = (count + 1) % 200;
-                                            const icons = polyline.get('icons');
-                                            if (icons && icons[0]) {
-                                                icons[0].offset = (count / 2) + '%';
-                                                polyline.set('icons', icons);
-                                            }
-                                        }, 100); // 50% slower as requested (100ms instead of 50ms)
-                                        (polyline as any)._animationInterval = interval;
-                                    }}
-                                    onUnmount={(polyline) => {
-                                        if ((polyline as any)._animationInterval) {
-                                            clearInterval((polyline as any)._animationInterval);
-                                        }
-                                    }}
-                                />
-                            )}
-
-                            {/* Background Route Line (Static) */}
-                            {directions && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order.status.toUpperCase()) && directions.routes[0].overview_path && (
-                                <Polyline
-                                    path={directions.routes[0].overview_path}
-                                    options={{
-                                        strokeColor: "#4285F4",
-                                        strokeOpacity: 0.2,
-                                        strokeWeight: 8,
-                                    }}
-                                />
-                            )}
-
-                            {/* Directions calculation logic (hidden renderer) */}
-                            {directions && (
-                                <DirectionsRenderer
-                                    options={{
-                                        directions: directions,
-                                        suppressMarkers: true,
-                                        suppressPolylines: true, // We draw our own animated one
-                                        preserveViewport: true,
-                                    }}
-                                />
-                            )}
-
-                            {/* Merchant Marker */}
-                            {order.merchant?.latitude && (
-                                <Marker
-                                    position={{ lat: order.merchant.latitude, lng: order.merchant.longitude || 0 }}
-                                    icon={{
-                                        url: "data:image/svg+xml," + encodeURIComponent(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-                                        <circle cx="18" cy="18" r="16" fill="#3b82f6" stroke="white" stroke-width="3"/>
-                                        <path d="M11 17h14v8H11z M13 13h10l2 4H11l2-4z" fill="white"/>
-                                    </svg>
-                                `),
-                                        scaledSize: new google.maps.Size(36, 36),
-                                        anchor: new google.maps.Point(18, 18)
-                                    }}
-                                />
-                            )}
-
-                            {/* Driver Marker */}
-                            {driverPosition && (
-                                <Marker
-                                    position={{ lat: driverPosition.lat, lng: driverPosition.lng }}
-                                    icon={{
-                                        url: "data:image/svg+xml," + encodeURIComponent(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
-                                        <circle cx="22" cy="22" r="20" fill="#22c55e" stroke="white" stroke-width="3"/>
-                                        <path d="M15 26 L23 20 L29 20 L37 26" stroke="white" stroke-width="3" fill="none"/>
-                                        <circle cx="15" cy="28" r="4" fill="white"/>
-                                        <circle cx="29" cy="28" r="4" fill="white"/>
-                                    </svg>
-                                `),
-                                        scaledSize: new google.maps.Size(44, 44),
-                                        anchor: new google.maps.Point(22, 22)
-                                    }}
-                                />
-                            )}
-
-                            {/* Destination Marker */}
-                            {(order.address.latitude || (directions && directions.routes[0]?.legs[0]?.end_location)) && (
-                                <Marker
-                                    position={order.address.latitude
-                                        ? { lat: order.address.latitude, lng: order.address.longitude || 0 }
-                                        : directions!.routes[0].legs[0].end_location
-                                    }
-                                    icon={{
-                                        url: "data:image/svg+xml," + encodeURIComponent(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
-                                        <path d="M18 0 C8 0 0 8 0 18 C0 32 18 46 18 46 C18 46 36 32 36 18 C36 8 28 0 18 0z" fill="#ef4444" stroke="white" stroke-width="3"/>
-                                        <circle cx="18" cy="18" r="7" fill="white"/>
-                                    </svg>
-                                `),
-                                        scaledSize: new google.maps.Size(36, 46),
-                                        anchor: new google.maps.Point(18, 46)
-                                    }}
-                                />
-                            )}
-                        </GoogleMap>
+    // ═════════════════════════════════════════════
+    // ─── MAIN TRACKING VIEW ───
+    // ═════════════════════════════════════════════
+    return (
+        <div className="min-h-screen bg-white flex flex-col">
+            {/* ─── HEADER ─── */}
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100">
+                <div className="flex items-center justify-between px-4 py-3">
+                    <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-gray-700" />
+                    </button>
+                    <div className="text-center">
+                        <p className="text-xs text-gray-400 font-medium">Pedido</p>
+                        <p className="text-sm font-bold text-gray-900">#{order.orderNumber}</p>
                     </div>
-                );
-            })()}
-
-            {/* BOTTOM PANEL - Collapsible */}
-            <BottomSheet
-                initialState="expanded"
-                onStateChange={setSheetState}
-            >
-                <div className="px-6 pb-10 space-y-6">
-                    {/* Status Message */}
-                    <div className="text-center pt-2">
-                        <p className="text-[10px] font-black text-[#e60012] uppercase tracking-[4px] mb-2 px-6 py-1 bg-red-50 rounded-full w-fit mx-auto">Estado del Pedido</p>
-                        <h1 className="text-2xl font-black italic tracking-tighter text-gray-900 uppercase">
-                            {order?.status?.toUpperCase() === "DRIVER_ASSIGNED" && "REPARTIDOR EN CAMINO"}
-                            {order?.status?.toUpperCase() === "PICKED_UP" && "PEDIDO RECOGIDO"}
-                            {["IN_DELIVERY"].includes(order?.status?.toUpperCase() || "") && "TU PEDIDO ESTÁ LLEGANDO"}
-                            {order?.status?.toUpperCase() === "DELIVERED" && "¡DISFRUTA TU PEDIDO!"}
-                            {["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ARRIVED"].includes(order?.status?.toUpperCase() || "") && "PREPARANDO TU PEDIDO"}
-                        </h1>
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${connected ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-400 animate-pulse" : "bg-gray-300"}`} />
+                        {connected ? "En vivo" : "Offline"}
                     </div>
+                </div>
+            </div>
 
-                    {/* Timeline Progress */}
-                    <div className="flex items-center justify-between px-2 pt-2">
-                        {[
-                            { icon: <Store className="w-4 h-4" />, label: "Tienda" },
-                            { icon: <Package className="w-4 h-4" />, label: "Preparado" },
-                            { icon: <Rocket className="w-4 h-4" />, label: "En Viaje" },
-                            { icon: <CheckCircle className="w-4 h-4" />, label: "Recibido" }
-                        ].map((step, idx) => {
-                            const status = order?.status?.toUpperCase() || "PENDING";
-                            const activeIdx = idx <= (
-                                status === "DELIVERED" ? 3 :
-                                    ["PICKED_UP", "IN_DELIVERY"].includes(status) ? 2 :
-                                        ["CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(status) ? 1 : 0
-                            );
-                            return (
-                                <div key={idx} className="flex flex-col items-center gap-2 flex-1 relative">
-                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${activeIdx ? "bg-gray-900 text-white scale-110 shadow-lg" : "bg-gray-50 text-gray-300"}`}>
-                                        {step.icon}
-                                    </div>
-                                    <span className={`text-[8px] font-black uppercase tracking-widest ${activeIdx ? "text-gray-900" : "text-gray-300"}`}>{step.label}</span>
-                                    {idx < 3 && (
-                                        <div className={`absolute top-5 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 ${idx < statusStep ? "bg-gray-900" : "bg-gray-100"}`} />
-                                    )}
-                                </div>
-                            );
-                        })}
+            {/* ─── STATUS HERO ─── */}
+            <div className="px-5 pt-6 pb-4">
+                {/* Animated status icon */}
+                <div className="flex items-start gap-4 mb-6">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                        isInTransit ? "bg-violet-100" : stepIdx >= 5 ? "bg-emerald-100" : "bg-orange-100"
+                    }`}>
+                        {isInTransit ? (
+                            <Bike className="w-7 h-7 text-violet-500 animate-[pulse_2s_ease-in-out_infinite]" />
+                        ) : status === "PREPARING" ? (
+                            <ChefHat className="w-7 h-7 text-orange-500 animate-[pulse_2s_ease-in-out_infinite]" />
+                        ) : status === "READY" ? (
+                            <PackageCheck className="w-7 h-7 text-blue-500" />
+                        ) : (
+                            <CircleDot className="w-7 h-7 text-amber-500 animate-[pulse_2s_ease-in-out_infinite]" />
+                        )}
                     </div>
-
-                    {/* ETA Card */}
-                    {routeInfo && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status?.toUpperCase() || "") && (
-                        <div className="bg-gray-900 rounded-[28px] p-6 text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
-                            <div className="flex flex-col gap-1">
-                                <p className="text-[10px] font-black text-white/50 uppercase tracking-[3px]">Llegada Estimada</p>
-                                <div className="flex items-center gap-2">
-                                    <p className="text-4xl font-black italic tracking-tighter">{routeInfo.duration}</p>
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse mt-2" />
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <Navigation className="w-8 h-8 text-blue-400 mb-1 ml-auto" />
-                                <p className="text-sm font-black italic">{routeInfo.distance}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Driver Card */}
-                    <div className="bg-gray-50 rounded-[32px] p-5 flex items-center gap-4 border border-gray-100 font-sans">
-                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 relative">
-                            <User className="w-8 h-8 text-gray-400" />
-                            {connected && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />}
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Tu repartidor</p>
-                            <h3 className="text-lg font-black italic tracking-tighter text-gray-900 uppercase leading-none">{order.driver?.user.name || "Asignando..."}</h3>
-                            <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-gray-400 bg-white w-fit px-2 py-0.5 rounded-full shadow-sm">
-                                <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
-                                <span>4.9 (500+)</span>
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            {order.driver?.user.phone && (
-                                <a href={`tel:${order.driver.user.phone}`} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-gray-100 active:scale-90 transition">
-                                    <Phone className="w-5 h-5 text-green-600" />
-                                </a>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Addresses */}
-                    <div className="space-y-3 font-sans">
-                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-                                <MapPin className="w-5 h-5 text-[#e60012]" />
-                            </div>
-                            <div className="overflow-hidden">
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Tu dirección</p>
-                                <p className="text-sm font-bold text-gray-900 truncate">{order.address.street} {order.address.number}</p>
-                            </div>
-                        </div>
-
-                        {order.merchant && (
-                            <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-                                    <Store className="w-5 h-5 text-blue-500" />
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Comercio</p>
-                                    <p className="text-sm font-bold text-gray-900 truncate">{order.merchant.name}</p>
-                                    <p className="text-[10px] text-gray-400 font-medium truncate italic">{order.merchant.address}</p>
-                                </div>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl font-bold text-gray-900 leading-tight">{statusMsg.title}</h1>
+                        <p className="text-sm text-gray-500 mt-0.5">{statusMsg.subtitle}</p>
+                        {eta && isInTransit && (
+                            <div className="flex items-center gap-1.5 mt-2">
+                                <Clock className="w-4 h-4 text-[#e60012]" />
+                                <span className="text-sm font-semibold text-[#e60012]">Llega en ~{eta}</span>
                             </div>
                         )}
                     </div>
-
-                    <Link href="/mis-pedidos" className="flex items-center justify-between p-5 bg-gray-50 rounded-2xl group active:scale-95 transition">
-                        <div className="flex items-center gap-3">
-                            <Clock className="w-5 h-5 text-gray-400" />
-                            <span className="text-xs font-black uppercase tracking-widest text-gray-900">Ver resumen de compra</span>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 transition" />
-                    </Link>
                 </div>
-            </BottomSheet>
 
-            <style jsx global>{`
-                @keyframes zoomIn {
-                    from { transform: scale(0.95); opacity: 0; }
-                    to { transform: scale(1); opacity: 1; }
-                }
-            `}</style>
-        </div >
+                {/* ─── PROGRESS TIMELINE ─── */}
+                <div className="flex items-center gap-0 mb-2">
+                    {STATUS_STEPS.map((step, i) => {
+                        const isActive = i <= stepIdx;
+                        const isCurrent = i === stepIdx;
+                        return (
+                            <div key={step.key} className="flex-1 flex flex-col items-center relative">
+                                {/* Connector line */}
+                                {i > 0 && (
+                                    <div className={`absolute top-3 right-1/2 w-full h-0.5 -translate-y-1/2 transition-colors duration-500 ${
+                                        isActive ? "bg-[#e60012]" : "bg-gray-200"
+                                    }`} />
+                                )}
+                                {/* Dot */}
+                                <div className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ${
+                                    isCurrent
+                                        ? "bg-[#e60012] ring-4 ring-red-100 scale-110"
+                                        : isActive
+                                        ? "bg-[#e60012]"
+                                        : "bg-gray-200"
+                                }`}>
+                                    {isActive && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                {/* Label */}
+                                <span className={`text-[10px] mt-1.5 font-medium text-center leading-tight ${
+                                    isCurrent ? "text-[#e60012] font-semibold" : isActive ? "text-gray-700" : "text-gray-400"
+                                }`}>
+                                    {step.label}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* ─── MAP (in transit) ─── */}
+            {showMap && (
+                <div className="mx-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm" style={{ height: "240px" }}>
+                    <GoogleMap
+                        mapContainerStyle={{ width: "100%", height: "100%" }}
+                        center={driverPos || { lat: -54.8019, lng: -68.303 }}
+                        zoom={15}
+                        options={mapOptions as google.maps.MapOptions}
+                        onLoad={(map) => { mapRef.current = map; }}
+                    >
+                        {/* Route */}
+                        {routePath.length > 0 && (
+                            <>
+                                <Polyline
+                                    path={routePath}
+                                    options={{ strokeColor: "#e60012", strokeWeight: 4, strokeOpacity: 0.3 }}
+                                />
+                                <Polyline
+                                    path={routePath}
+                                    options={{ strokeColor: "#e60012", strokeWeight: 3, strokeOpacity: 0.8, icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 2.5, strokeColor: "#e60012", fillColor: "#e60012", fillOpacity: 1 }, offset: "0", repeat: "80px" }] }}
+                                />
+                            </>
+                        )}
+
+                        {/* Driver marker */}
+                        {driverPos && (
+                            <Marker
+                                position={driverPos}
+                                icon={{
+                                    url: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#e60012" stroke="white" stroke-width="3"/><text x="22" y="28" text-anchor="middle" fill="white" font-size="20">🛵</text></svg>`),
+                                    scaledSize: new google.maps.Size(44, 44),
+                                    anchor: new google.maps.Point(22, 22),
+                                }}
+                            />
+                        )}
+
+                        {/* Merchant marker */}
+                        {order.merchant?.latitude && order.merchant?.longitude && (
+                            <Marker
+                                position={{ lat: order.merchant.latitude, lng: order.merchant.longitude }}
+                                icon={{
+                                    url: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#3B82F6" stroke="white" stroke-width="3"/><text x="18" y="24" text-anchor="middle" fill="white" font-size="16">🏪</text></svg>`),
+                                    scaledSize: new google.maps.Size(36, 36),
+                                    anchor: new google.maps.Point(18, 18),
+                                }}
+                            />
+                        )}
+
+                        {/* Destination marker */}
+                        {order.address?.latitude && order.address?.longitude && (
+                            <Marker
+                                position={{ lat: order.address.latitude, lng: order.address.longitude }}
+                                icon={{
+                                    url: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><path d="M18 0C8 0 0 8 0 18c0 14 18 26 18 26s18-12 18-26C36 8 28 0 18 0z" fill="#e60012" stroke="white" stroke-width="2"/><circle cx="18" cy="16" r="6" fill="white"/></svg>`),
+                                    scaledSize: new google.maps.Size(36, 44),
+                                    anchor: new google.maps.Point(18, 44),
+                                }}
+                            />
+                        )}
+                    </GoogleMap>
+                </div>
+            )}
+
+            {/* ─── INFO CARDS ─── */}
+            <div className="flex-1 px-4 pt-4 pb-8 flex flex-col gap-3">
+                {/* Driver card */}
+                {order.driver && (
+                    <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-[#e60012] flex items-center justify-center flex-shrink-0">
+                            <Bike className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{order.driver.user.name}</p>
+                            <p className="text-xs text-gray-500">Tu repartidor</p>
+                        </div>
+                        {order.driver.user.phone && (
+                            <a
+                                href={`tel:${order.driver.user.phone}`}
+                                className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                            >
+                                <Phone className="w-5 h-5 text-white" />
+                            </a>
+                        )}
+                    </div>
+                )}
+
+                {/* Merchant card */}
+                {order.merchant && (
+                    <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                            <Store className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{order.merchant.name}</p>
+                            {order.merchant.address && (
+                                <p className="text-xs text-gray-500 truncate">{order.merchant.address}</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Delivery address */}
+                <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                            {order.address.street} {order.address.number}
+                        </p>
+                        <p className="text-xs text-gray-500">Tu dirección de entrega</p>
+                    </div>
+                    {isInTransit && driverPos && (
+                        <div className="flex items-center gap-1 px-3 py-1.5 bg-violet-100 rounded-full flex-shrink-0">
+                            <Navigation2 className="w-3.5 h-3.5 text-violet-600" />
+                            <span className="text-xs font-semibold text-violet-600">{eta || "..."}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Order summary link */}
+                <Link
+                    href="/mis-pedidos"
+                    className="mt-auto text-center text-sm text-gray-400 hover:text-gray-600 transition-colors py-2"
+                >
+                    Ver mis pedidos
+                </Link>
+            </div>
+        </div>
     );
 }
-
