@@ -141,12 +141,51 @@ export function AddressAutocomplete({
 
             const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
 
-            const mapped: Suggestion[] = (response.suggestions || []).slice(0, 5).map((s: any) => ({
-                description: s.placePrediction?.text?.text || "",
-                mainText: s.placePrediction?.structuredFormat?.mainText?.text || "",
-                secondaryText: s.placePrediction?.structuredFormat?.secondaryText?.text || "",
-                placePrediction: s.placePrediction,
-            }));
+            // DEBUG: log response structure to identify correct property paths
+            if (response.suggestions?.[0]) {
+                const sample = response.suggestions[0];
+                console.log("[AddressAutocomplete] DEBUG suggestion structure:", JSON.stringify(sample, null, 2));
+                console.log("[AddressAutocomplete] DEBUG placePrediction keys:", Object.keys(sample.placePrediction || {}));
+                const pp = sample.placePrediction;
+                if (pp) {
+                    console.log("[AddressAutocomplete] DEBUG pp.text:", pp.text, "type:", typeof pp.text);
+                    console.log("[AddressAutocomplete] DEBUG pp.mainText:", pp.mainText, "type:", typeof pp.mainText);
+                    console.log("[AddressAutocomplete] DEBUG pp.structuredFormat:", pp.structuredFormat);
+                }
+            }
+
+            const mapped: Suggestion[] = (response.suggestions || []).slice(0, 5).map((s: any) => {
+                const pp = s.placePrediction;
+
+                // Extract full text — try multiple paths (JS SDK vs REST structure)
+                const fullText =
+                    pp?.text?.text ??
+                    pp?.text?.toString?.() ??
+                    (typeof pp?.text === "string" ? pp.text : "") ??
+                    "";
+
+                // Extract structured main/secondary text
+                const mainText =
+                    pp?.structuredFormat?.mainText?.text ??
+                    pp?.mainText?.text ??
+                    (typeof pp?.mainText === "string" ? pp.mainText : "") ??
+                    fullText.split(",")[0]?.trim() ??
+                    "";
+
+                const secondaryText =
+                    pp?.structuredFormat?.secondaryText?.text ??
+                    pp?.secondaryText?.text ??
+                    (typeof pp?.secondaryText === "string" ? pp.secondaryText : "") ??
+                    fullText.split(",").slice(1).join(",").trim() ??
+                    "";
+
+                return {
+                    description: fullText || mainText,
+                    mainText: mainText || fullText,
+                    secondaryText,
+                    placePrediction: pp,
+                };
+            });
 
             setSuggestions(mapped);
             setShowSuggestions(mapped.length > 0);
