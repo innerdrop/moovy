@@ -39,7 +39,16 @@ Score: 97/100 | P0: 2 tareas | P1: 0 | P2: 8
   Admin, StoreSettings, PointsConfig, MoovyConfig (10 keys), PackageCategories, DeliveryRates, PricingTiers.
 
 - [ ] Smoke test manual de flujo completo — ningún archivo — L
-  Recorrer los 4 flujos completos en local antes de deploy. Documentar bugs encontrados. (Ver guía abajo)
+  Flow 1 (comprador) parcialmente testeado. Bugs encontrados y corregidos:
+  ✅ Error 500 al pagar con efectivo (couponCode + logger fix)
+  ✅ Error 500 en tracking (estimatedDeliveryTime → estimatedTime)
+  ✅ WhatsApp button tapaba botón Agregar (bottom-20 → bottom-6)
+  ✅ Heart button feo cuando deslogueado (rediseñado ghost style)
+  ✅ Botón puntos desbordaba en pantalla chica (texto acortado)
+  ✅ Indicadores Offline/En vivo innecesarios (removidos)
+  ✅ Celebración puntos con glow azul fuera de branding (rediseñada)
+  ✅ Tracking page con BottomSheet feo (rediseñado completo)
+  Pendiente: completar flows 2 (comercio), 3 (repartidor), 4 (admin)
 
 ## P1 — Sin esto los usuarios se van
 
