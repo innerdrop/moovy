@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 91/100 | P0: 2 tareas | P1: 4 | P2: 12
+Score: 94/100 | P0: 2 tareas | P1: 1 | P2: 12
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
@@ -49,8 +49,8 @@ Score: 91/100 | P0: 2 tareas | P1: 4 | P2: 12
 - [x] Botón "Eliminar mi cuenta" en UI — `src/app/(store)/mi-perfil/page.tsx` — S ✅ 2026-03-21
   Botón discreto + modal con doble confirmación (escribir ELIMINAR). Llama a POST /api/profile/delete.
 
-- [ ] Onboarding del merchant post-aprobación — `src/app/comercios/(protected)/page.tsx` — M
-  Wizard o checklist: subir logo, configurar horarios, importar primer paquete de productos.
+- [x] Onboarding del merchant post-aprobación — `src/app/comercios/(protected)/page.tsx` — M ✅ 2026-03-21
+  OnboardingChecklist: 4 pasos (logo, horarios, 3+ productos, delivery). API /api/merchant/onboarding. Auto-hide al completar.
 
 - [x] Sonido/vibración en notificaciones del merchant — `src/app/comercios/(protected)/pedidos/page.tsx` — S ✅ 2026-03-21
   El merchant ya tenía audio (new-order.wav). Agregado: navigator.vibrate() + Notification API cuando tab en background.
@@ -58,8 +58,8 @@ Score: 91/100 | P0: 2 tareas | P1: 4 | P2: 12
 - [x] Página de estado del pedido pública (sin auth) — `src/app/seguimiento/[orderId]/page.tsx` — S ✅ 2026-03-21
   Nuevo endpoint /api/orders/[id]/tracking (datos no sensibles). Página funciona sin auth.
 
-- [ ] Retry automático de asignación si no hay drivers — `src/lib/assignment-engine.ts` — M
-  Después de agotar todos los drivers, el pedido queda en limbo. Falta: retry cada X minutos o notificar admin.
+- [x] Retry automático de asignación si no hay drivers — `src/app/api/cron/retry-assignments/route.ts` — M ✅ 2026-03-21
+  Cron cada 5min: busca pedidos CONFIRMED sin driver, reintenta asignación (max 3), escala a admin si falla.
 
 - [x] Dashboard merchant con KPIs reales — `src/app/comercios/(protected)/page.tsx` — M ✅ 2026-03-21
   KPI cards: Pedidos hoy, ingresos hoy, pendientes, rating, pedidos semana, ingresos semana. API endpoint /api/merchant/stats. Auto-refresh 30s.
@@ -67,8 +67,8 @@ Score: 91/100 | P0: 2 tareas | P1: 4 | P2: 12
 - [ ] Responsive completo en checkout — `src/app/(store)/checkout/page.tsx` — S
   Verificar en móvil real (iPhone SE, Android low-end). Formularios largos pueden ser difíciles.
 
-- [ ] Comprobante/recibo descargable — `src/app/(store)/mis-pedidos/[orderId]/page.tsx` — M
-  PDF o imagen con detalle del pedido, monto, fecha, nro de orden. Para reclamos y contabilidad.
+- [x] Comprobante/recibo descargable — `src/app/api/orders/[id]/receipt/route.ts` — M ✅ 2026-03-21
+  HTML printable: datos del pedido, items, totales, método de pago. Botón en detalle de pedido. Browser print-to-PDF.
 
 - [x] Notificación cuando pedido está listo para retirar — `src/app/api/merchant/orders/[id]/ready/route.ts` — S ✅ 2026-03-21
   notifyDriver() + notifyBuyer(READY) + socket a todas las partes cuando merchant marca listo.
@@ -159,4 +159,7 @@ Score: 91/100 | P0: 2 tareas | P1: 4 | P2: 12
 - [x] Notificación push cuando pedido listo (notifyDriver + notifyBuyer READY) — 2026-03-21
 - [x] Mejorar empty states en marketplace (CTAs + diseño) — 2026-03-21
 - [x] Soporte WhatsApp directo (botón flotante en store layout) — 2026-03-21
+- [x] Onboarding merchant post-aprobación (checklist 4 pasos + API) — 2026-03-21
+- [x] Retry automático asignación drivers (cron + escalación admin) — 2026-03-21
+- [x] Comprobante/recibo descargable (HTML printable + botón) — 2026-03-21
 - [x] Dashboard merchant con KPIs reales (6 cards, API stats, auto-refresh) — 2026-03-21
