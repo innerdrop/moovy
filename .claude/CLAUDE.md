@@ -82,7 +82,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Colores: Rojo #e60012 (MOOVY), Violeta #7C3AED (Marketplace)
 - Font: Plus Jakarta Sans (variable --font-jakarta)
 - Approval flow: campo String approvalStatus (PENDING/APPROVED/REJECTED) en Merchant y Driver, no enum Prisma (evita migration)
-- Scheduled delivery: capacidad 15 pedidos por slot, slots 2h, horario 9-22h, min 1.5h anticipación, max 48h
+- Scheduled delivery: capacidad 15 pedidos por slot, slots 2h dinámicos según horario real del vendor, min 1.5h anticipación, max 48h. Backend valida slot vs schedule. Sellers configuran su propio schedule de despacho
 - Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
 - Google Places: migrado a PlaceAutocompleteElement (nueva API). Fallback a legacy si no disponible. Decisión 2026-03-21: la API vieja fue deprecada marzo 2025, no disponible para clientes nuevos
 

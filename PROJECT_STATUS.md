@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 94/100 | P0: 2 tareas | P1: 1 | P2: 12
+Score: 95/100 | P0: 2 tareas | P1: 0 | P2: 12
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
@@ -64,8 +64,8 @@ Score: 94/100 | P0: 2 tareas | P1: 1 | P2: 12
 - [x] Dashboard merchant con KPIs reales — `src/app/comercios/(protected)/page.tsx` — M ✅ 2026-03-21
   KPI cards: Pedidos hoy, ingresos hoy, pendientes, rating, pedidos semana, ingresos semana. API endpoint /api/merchant/stats. Auto-refresh 30s.
 
-- [ ] Responsive completo en checkout — `src/app/(store)/checkout/page.tsx` — S
-  Verificar en móvil real (iPhone SE, Android low-end). Formularios largos pueden ser difíciles.
+- [x] Responsive completo en checkout — `src/app/(store)/checkout/page.tsx` — S ✅ 2026-03-21
+  Verificado por Mauro en iPhone SE (375px). 16 puntos chequeados, todos OK. Agregado botón geolocalización.
 
 - [x] Comprobante/recibo descargable — `src/app/api/orders/[id]/receipt/route.ts` — M ✅ 2026-03-21
   HTML printable: datos del pedido, items, totales, método de pago. Botón en detalle de pedido. Browser print-to-PDF.
@@ -163,3 +163,7 @@ Score: 94/100 | P0: 2 tareas | P1: 1 | P2: 12
 - [x] Retry automático asignación drivers (cron + escalación admin) — 2026-03-21
 - [x] Comprobante/recibo descargable (HTML printable + botón) — 2026-03-21
 - [x] Dashboard merchant con KPIs reales (6 cards, API stats, auto-refresh) — 2026-03-21
+- [x] Responsive checkout verificado (16 puntos OK, geolocalización agregada) — 2026-03-21
+- [x] Smart scheduled delivery (slots basados en horario real del vendor) — 2026-03-21
+- [x] Seller schedule config (UI + server action + schema) — 2026-03-21
+- [x] Migración Google Places API (PlaceAutocompleteElement) — 2026-03-21
