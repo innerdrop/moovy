@@ -423,50 +423,76 @@ export default function MarketplacePage() {
                     ) : listings.length === 0 ? (
                         /* ═══════ EMPTY STATE INTELIGENTE ═══════ */
                         <div className="py-16 text-center">
-                            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-purple-100 to-fuchsia-50 mp-empty-float">
-                                <PackageSearch className="h-10 w-10 text-purple-300" />
+                            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-purple-100 to-fuchsia-50 mp-empty-float">
+                                <PackageSearch className="h-12 w-12 text-purple-400" />
                             </div>
-                            <p className="text-base font-bold text-gray-700">
+
+                            <h3 className="text-lg font-extrabold text-gray-800">
                                 {isSearching
-                                    ? `No encontramos "${search}"`
-                                    : "No hay publicaciones en esta categoría"
+                                    ? `No hay resultados para "${search}"`
+                                    : hasActiveFilters
+                                        ? "No encontramos publicaciones con estos filtros"
+                                        : categoryId
+                                            ? `Sin publicaciones en esta categoría`
+                                            : "No hay publicaciones aún"
                                 }
-                            </p>
-                            <p className="mt-1 text-sm text-purple-400">
+                            </h3>
+
+                            <p className="mt-2 text-sm text-gray-600 max-w-md mx-auto">
                                 {isSearching
-                                    ? "Intentá con otras palabras o revisá las categorías"
-                                    : "Sé el primero en publicar"
+                                    ? "Intentá buscar con otras palabras, letras o números"
+                                    : hasActiveFilters
+                                        ? "Los filtros que aplicaste no coinciden con ninguna publicación"
+                                        : categoryId
+                                            ? "Sé el primero en publicar en esta categoría"
+                                            : "Todavía no hay publicaciones en el marketplace"
                                 }
                             </p>
 
-                            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                                {hasActiveFilters && (
-                                    <button onClick={clearFilters} className="rounded-xl bg-[#7C3AED] px-5 py-2 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:shadow-purple-500/40 active:scale-95">
+                            <div className="mt-6 flex flex-col items-center gap-3">
+                                {/* Primary CTA: Clear filters or Explore */}
+                                {hasActiveFilters ? (
+                                    <button
+                                        onClick={clearFilters}
+                                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition hover:shadow-purple-500/50 active:scale-95"
+                                    >
+                                        <X className="h-4 w-4" />
                                         Limpiar filtros
                                     </button>
+                                ) : (
+                                    <button
+                                        onClick={() => { setCategoryId(""); setSearch(""); }}
+                                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition hover:shadow-purple-500/50 active:scale-95"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        Explorar todas las publicaciones
+                                    </button>
                                 )}
+
+                                {/* Secondary CTA: Publish */}
                                 <Link
                                     href="/vendedor/registro"
-                                    className="rounded-xl border border-[#7C3AED] px-5 py-2 text-sm font-bold text-[#7C3AED] transition hover:bg-purple-50 active:scale-95"
+                                    className="flex items-center gap-2 rounded-xl border-2 border-[#7C3AED] px-6 py-2.5 text-sm font-bold text-[#7C3AED] transition hover:bg-purple-50 active:scale-95"
                                 >
-                                    Publicar algo
+                                    <Tag className="h-4 w-4" />
+                                    Publicá tu primer producto
                                 </Link>
                             </div>
 
-                            {/* Sugerir categorías populares */}
+                            {/* Suggest popular categories */}
                             {categories.filter(c => c.listingCount > 0).length > 0 && (
-                                <div className="mt-8">
-                                    <p className="text-xs font-semibold text-gray-400 mb-2">Categorías con publicaciones</p>
+                                <div className="mt-8 border-t border-purple-100 pt-6">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Explorá estas categorías</p>
                                     <div className="flex flex-wrap justify-center gap-2">
-                                        {categories.filter(c => c.listingCount > 0).slice(0, 5).map(cat => (
+                                        {categories.filter(c => c.listingCount > 0).slice(0, 6).map(cat => (
                                             <button
                                                 key={cat.id}
                                                 onClick={() => { setCategoryId(cat.id); setSearch(""); }}
-                                                className="flex items-center gap-1 rounded-full border border-purple-200/60 bg-white/80 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-purple-300 hover:bg-purple-50 active:scale-95"
+                                                className="group flex items-center gap-2 rounded-full border border-purple-200/60 bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 transition hover:border-[#7C3AED] hover:bg-purple-50 hover:text-[#7C3AED] active:scale-95"
                                             >
-                                                <span>{getCategoryEmoji(cat.slug)}</span>
+                                                <span className="text-sm">{getCategoryEmoji(cat.slug)}</span>
                                                 {cat.name}
-                                                <span className="text-[10px] text-purple-400">{cat.listingCount}</span>
+                                                <span className="text-[10px] font-bold text-purple-400 group-hover:text-[#7C3AED]">{cat.listingCount}</span>
                                             </button>
                                         ))}
                                     </div>
