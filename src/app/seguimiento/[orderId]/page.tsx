@@ -117,7 +117,7 @@ export default function TrackingPage() {
     useEffect(() => {
         async function fetchOrder() {
             try {
-                const res = await fetch(`/api/orders/${orderId}`);
+                const res = await fetch(`/api/orders/${orderId}/tracking`);
                 if (!res.ok) throw new Error("Pedido no encontrado");
                 const data = await res.json();
                 setOrder(data);

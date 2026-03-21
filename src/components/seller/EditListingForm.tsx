@@ -41,6 +41,11 @@ export default function EditListingForm({ listing, categories }: EditListingForm
         e.preventDefault();
         setError("");
 
+        if (!imageUrl.trim() && listing.images.length === 0) {
+            setError("Necesitás subir al menos 1 imagen para publicar tu listing");
+            return;
+        }
+
         if (!formData.title.trim()) {
             setError("El título es obligatorio");
             return;
@@ -65,6 +70,7 @@ export default function EditListingForm({ listing, categories }: EditListingForm
                     stock: parseInt(formData.stock) || 1,
                     condition: formData.condition,
                     categoryId: formData.categoryId || null,
+                    imageUrl: imageUrl || null,
                 }),
             });
 

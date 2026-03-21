@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { title, description, price, stock, condition, categoryId, weightKg, lengthCm, widthCm, heightCm } = body;
+        const { title, description, price, stock, condition, categoryId, weightKg, lengthCm, widthCm, heightCm, imageUrl } = body;
 
         // Validate required fields
         if (!title || price === undefined || price === null) {
@@ -76,6 +76,14 @@ export async function POST(request: Request) {
         if (typeof price !== "number" || price <= 0) {
             return NextResponse.json(
                 { error: "El precio debe ser un número positivo" },
+                { status: 400 }
+            );
+        }
+
+        // Validate at least one image
+        if (!imageUrl || typeof imageUrl !== "string" || !imageUrl.trim()) {
+            return NextResponse.json(
+                { error: "Necesitás subir al menos 1 imagen para publicar tu listing" },
                 { status: 400 }
             );
         }
@@ -106,9 +114,15 @@ export async function POST(request: Request) {
                 lengthCm: typeof lengthCm === "number" ? lengthCm : null,
                 widthCm: typeof widthCm === "number" ? widthCm : null,
                 heightCm: typeof heightCm === "number" ? heightCm : null,
+                images: {
+                    create: {
+                        url: imageUrl.trim(),
+                        order: 0,
+                    },
+                },
             },
             include: {
-                images: true,
+                images: { orderBy: { order: "asc" } },
                 category: { select: { id: true, name: true, slug: true } },
             },
         });

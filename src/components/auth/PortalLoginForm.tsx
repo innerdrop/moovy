@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LogIn, Mail, Lock, Eye, EyeOff, Loader2, Check, ArrowLeft, Store, Truck, Shield } from "lucide-react";
+import { LogIn, Mail, Lock, Eye, EyeOff, Loader2, Check, ArrowLeft, Store, Truck, Shield, AlertTriangle } from "lucide-react";
 
 type PortalType = 'client' | 'comercio' | 'conductor' | 'repartidor' | 'ops';
 
@@ -80,6 +80,31 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isRateLimited, setIsRateLimited] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
+
+    // Countdown timer effect
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isRateLimited && remainingTime > 0) {
+            interval = setInterval(() => {
+                setRemainingTime(prev => {
+                    if (prev <= 1) {
+                        setIsRateLimited(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isRateLimited, remainingTime]);
+
+    const formatTimeRemaining = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -94,7 +119,30 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
             });
 
             if (result?.error) {
-                setError("Email o contraseña incorrectos");
+                // Check if this is a rate limit error
+                if (result.error === "CredentialsSignin" || result.error.includes("Demasiados intentos")) {
+                    // Check backend to confirm rate limit status
+                    try {
+                        const checkResponse = await fetch("/api/auth/check-rate-limit", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: email.toLowerCase() }),
+                        });
+                        const data = await checkResponse.json();
+
+                        if (checkResponse.status === 429 || data.rateLimited) {
+                            setIsRateLimited(true);
+                            setRemainingTime(data.remainingSeconds || 900); // Default 15 minutes
+                            setError("");
+                            return;
+                        }
+                    } catch (e) {
+                        // Fallback: if we can't check, assume generic error
+                    }
+                    setError("Email o contraseña incorrectos");
+                } else {
+                    setError("Email o contraseña incorrectos");
+                }
             } else {
                 // Determine redirect path based on user role (client-side check for robust redirection)
                 try {
@@ -171,7 +219,22 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                         </div>
                     )}
 
-                    {error && (
+                    {isRateLimited && (
+                        <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-amber-900 text-sm">
+                                    Demasiados intentos de inicio de sesión
+                                </p>
+                                <p className="text-amber-700 text-sm mt-1">
+                                    Por seguridad, tu cuenta está bloqueada temporalmente. Intenta de nuevo en:{" "}
+                                    <span className="font-mono font-bold text-amber-900">{formatTimeRemaining(remainingTime)}</span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {error && !isRateLimited && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
                             {error}
                         </div>
@@ -243,13 +306,18 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                         {/* Submit */}
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || isRateLimited}
                             className={`w-full py-3 flex items-center justify-center gap-2 text-base sm:text-lg text-white rounded-xl font-semibold transition-all bg-gradient-to-r ${config.bgGradient} hover:opacity-90 disabled:opacity-50`}
                         >
                             {isLoading ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                     Ingresando...
+                                </>
+                            ) : isRateLimited ? (
+                                <>
+                                    <AlertTriangle className="w-5 h-5" />
+                                    Cuenta bloqueada
                                 </>
                             ) : (
                                 <>

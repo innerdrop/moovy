@@ -90,7 +90,7 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const { title, description, price, stock, condition, categoryId } = body;
+        const { title, description, price, stock, condition, categoryId, imageUrl } = body;
 
         const updated = await prisma.listing.update({
             where: { id },
@@ -101,12 +101,30 @@ export async function PUT(
                 ...(stock !== undefined && { stock }),
                 ...(condition !== undefined && { condition }),
                 ...(categoryId !== undefined && { categoryId: categoryId || null }),
+                // If a new image URL is provided, replace the first image
+                ...(imageUrl && imageUrl.trim() && {
+                    images: {
+                        deleteMany: { order: 0 },
+                        create: {
+                            url: imageUrl.trim(),
+                            order: 0,
+                        },
+                    },
+                }),
             },
             include: {
                 images: { orderBy: { order: "asc" } },
                 category: { select: { id: true, name: true, slug: true } },
             },
         });
+
+        // Validate at least one image exists after update
+        if (updated.images.length === 0) {
+            return NextResponse.json(
+                { error: "Necesitás tener al menos 1 imagen en tu listing" },
+                { status: 400 }
+            );
+        }
 
         return NextResponse.json(updated);
     } catch (error) {

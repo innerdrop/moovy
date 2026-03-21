@@ -33,6 +33,11 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
         e.preventDefault();
         setError("");
 
+        if (!imageUrl.trim()) {
+            setError("Necesitás subir al menos 1 imagen para publicar tu listing");
+            return;
+        }
+
         if (!formData.title.trim()) {
             setError("El título es obligatorio");
             return;
@@ -61,21 +66,12 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
                     lengthCm: formData.lengthCm ? parseFloat(formData.lengthCm) : null,
                     widthCm: formData.widthCm ? parseFloat(formData.widthCm) : null,
                     heightCm: formData.heightCm ? parseFloat(formData.heightCm) : null,
+                    imageUrl: imageUrl || null,
                 }),
             });
 
             if (res.ok) {
                 const listing = await res.json();
-
-                // Upload image if provided
-                if (imageUrl && listing.id) {
-                    await fetch(`/api/seller/listings/${listing.id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({}), // placeholder; images handled separately
-                    });
-                }
-
                 router.push("/vendedor/listings");
                 router.refresh();
             } else {
