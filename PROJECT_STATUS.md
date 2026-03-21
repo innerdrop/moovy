@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 87/100 | P0: 2 tareas | P1: 8 | P2: 12
+Score: 88/100 | P0: 2 tareas | P1: 7 | P2: 12
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
@@ -61,8 +61,8 @@ Score: 87/100 | P0: 2 tareas | P1: 8 | P2: 12
 - [ ] Retry automático de asignación si no hay drivers — `src/lib/assignment-engine.ts` — M
   Después de agotar todos los drivers, el pedido queda en limbo. Falta: retry cada X minutos o notificar admin.
 
-- [ ] Dashboard merchant con KPIs reales — `src/app/comercios/(protected)/page.tsx` — M
-  Pedidos hoy, ingresos del día, pedidos pendientes, rating promedio. Ahora es genérico.
+- [x] Dashboard merchant con KPIs reales — `src/app/comercios/(protected)/page.tsx` — M ✅ 2026-03-21
+  KPI cards: Pedidos hoy, ingresos hoy, pendientes, rating, pedidos semana, ingresos semana. API endpoint /api/merchant/stats. Auto-refresh 30s.
 
 - [ ] Responsive completo en checkout — `src/app/(store)/checkout/page.tsx` — S
   Verificar en móvil real (iPhone SE, Android low-end). Formularios largos pueden ser difíciles.
@@ -139,6 +139,7 @@ Score: 87/100 | P0: 2 tareas | P1: 8 | P2: 12
 - Play Integrity API para Android
 
 ## Completadas
+- [x] Dashboard merchant con KPIs reales (6 KPI cards, API stats endpoint) — 2026-03-21
 - [x] Validación pre-flight de stock en checkout — 2026-03-21
 - [x] Notificación push al merchant/seller cuando recibe pedido — 2026-03-21
 - [x] Endpoint de cancelación de pedido por buyer (POST /api/orders/[id]/cancel) — 2026-03-21
