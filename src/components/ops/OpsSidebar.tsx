@@ -30,6 +30,7 @@ import {
     Archive,
     Paintbrush,
     Upload,
+    Mail,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -89,6 +90,7 @@ const navSections: NavSection[] = [
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
             { href: "/ops/backups", icon: Archive, label: "Backups" },
+            { href: "/ops/emails", icon: Mail, label: "Emails" },
         ],
     },
 ];
