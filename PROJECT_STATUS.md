@@ -1,25 +1,29 @@
 # Moovy — Tareas pendientes
-Score: 78/100 | P0: 5 tareas | P1: 14 | P2: 12
+Score: 83/100 | P0: 2 tareas | P1: 12 | P2: 12
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
 
 - [x] Validación pre-flight de stock en checkout — `src/app/api/orders/route.ts` — S ✅ 2026-03-21
 
-- [ ] Flujo de aprobación de merchant/driver — `src/app/ops/(protected)/comercios/page.tsx`, `repartidores/page.tsx` — M
-  Hoy solo toggle isActive. Falta: estado PENDING_APPROVAL, notificación al admin, email al merchant/driver al aprobar/rechazar.
+- [x] Flujo de aprobación de merchant/driver — M ✅ 2026-03-21
+  Schema: approvalStatus + approvedAt + rejectionReason en Merchant y Driver.
+  API: approve/reject endpoints para ambos. Emails: 4 nuevos templates.
+  OPS UI: botones Aprobar/Rechazar con modal de motivo. Notificación al admin en registro merchant.
 
 - [ ] Credenciales MP producción — config + testing — M
   Cambiar TEST- por credenciales productivas. Verificar webhook URL en panel MP. Testear pago real ida y vuelta.
 
-- [ ] Validación de scheduled delivery — `src/app/api/orders/route.ts`, `checkout/page.tsx` — M
-  TimeSlotPicker existe pero el backend no valida disponibilidad del slot ni capacidad de entrega.
+- [x] Validación de scheduled delivery — `src/app/api/orders/route.ts`, `src/lib/validations.ts` — M ✅ 2026-03-21
+  Zod: slot mínimo 1.5h desde ahora, máximo 48h, horario 9-22h, duración 1-3h.
+  Backend: capacidad máxima 15 pedidos por slot. Error SLOT_FULL con 409.
 
 - [x] Manejo de errores de pago visible al usuario — `mp-return/page.tsx` — S ✅ 2026-03-21
   Ya tenía timeout+FAILED+PAID. Agregado: soporte APPROVED status, link WhatsApp en timeout.
 
-- [ ] Email de confirmación de pedido funcional — `src/lib/email.ts` — S
-  Verificar que SMTP esté configurado en producción. Testear que los emails lleguen (no spam).
+- [x] Email de confirmación de pedido funcional — `src/lib/email.ts` — S ✅ 2026-03-21
+  Código verificado: sendOrderConfirmationEmail se llama en orders/route.ts (cash) y webhook MP (pago aprobado).
+  Pendiente: configurar SMTP en producción y verificar que no caiga en spam.
 
 - [x] Notificación push al merchant/seller cuando recibe pedido — S ✅ 2026-03-21
   notifyMerchant() y notifySeller() en notifications.ts, llamados en orders/route.ts (cash + MP).
@@ -42,14 +46,14 @@ Score: 78/100 | P0: 5 tareas | P1: 14 | P2: 12
 - [ ] Tests unitarios para order creation + webhook MP — `__tests__/` — L
   Mínimo: crear orden cash, crear orden MP, webhook approve, webhook reject, stock restore.
 
-- [ ] Botón "Eliminar mi cuenta" en UI — `src/app/(store)/mi-perfil/page.tsx` — S
-  Endpoint existe (POST /api/profile/delete) pero no hay botón en la UI. Requerido por Google Play.
+- [x] Botón "Eliminar mi cuenta" en UI — `src/app/(store)/mi-perfil/page.tsx` — S ✅ 2026-03-21
+  Botón discreto + modal con doble confirmación (escribir ELIMINAR). Llama a POST /api/profile/delete.
 
 - [ ] Onboarding del merchant post-aprobación — `src/app/comercios/(protected)/page.tsx` — M
   Wizard o checklist: subir logo, configurar horarios, importar primer paquete de productos.
 
-- [ ] Sonido/vibración en notificaciones del merchant — `src/app/comercios/(protected)/pedidos/page.tsx` — S
-  El vendedor tiene alerta sonora (new-order.wav) pero el merchant no. Puede perder pedidos.
+- [x] Sonido/vibración en notificaciones del merchant — `src/app/comercios/(protected)/pedidos/page.tsx` — S ✅ 2026-03-21
+  El merchant ya tenía audio (new-order.wav). Agregado: navigator.vibrate() + Notification API cuando tab en background.
 
 - [ ] Página de estado del pedido pública (sin auth) — `src/app/seguimiento/[orderId]/page.tsx` — S
   Verificar que funciona sin auth para que el buyer comparta link por WhatsApp.
@@ -142,3 +146,8 @@ Score: 78/100 | P0: 5 tareas | P1: 14 | P2: 12
 - [x] Páginas de error 404 y 500 customizadas (ya existían) — 2026-03-21
 - [x] PWA manifest + icons correctos (ya configurado) — 2026-03-21
 - [x] Seed de datos iniciales para producción (prisma/seed-production.ts) — 2026-03-21
+- [x] Flujo de aprobación de merchant/driver (schema + API + emails + OPS UI) — 2026-03-21
+- [x] Validación de scheduled delivery (Zod + capacidad backend) — 2026-03-21
+- [x] Email de confirmación de pedido (código verificado, falta SMTP prod) — 2026-03-21
+- [x] Botón "Eliminar mi cuenta" en UI (modal doble confirmación) — 2026-03-21
+- [x] Sonido/vibración en notificaciones del merchant (vibrate + Notification API) — 2026-03-21

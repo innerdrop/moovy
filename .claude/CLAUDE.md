@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-03-21
+Última actualización: 2026-03-22
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -51,7 +51,7 @@ StoreSettings/MoovyConfig/PointsConfig → config dinámica singleton
 ✅ Seguridad — Rate limiting, timing-safe tokens, magic bytes upload, CSP, audit log
 ✅ SEO — generateMetadata() + JSON-LD en detalle producto/listing/vendedor
 🟡 Dark mode rider — CSS vars + prefers-color-scheme, funciona con inconsistencias menores
-🟡 Scheduled delivery — UI existe, backend parcial (slot picker sin validación disponibilidad)
+✅ Scheduled delivery — UI + validación Zod + capacidad backend (max 15/slot, 9-22h, 1.5h min)
 🔴 Tests — Vitest configurado pero 0 tests escritos
 🔴 MP producción — Solo credenciales TEST, falta activar en MP
 🔴 Split payments — SubOrder tiene mpTransferId pero split real no implementado
@@ -59,8 +59,7 @@ StoreSettings/MoovyConfig/PointsConfig → config dinámica singleton
 ## Flujos
 Comprador: registro ✅ → buscar ✅ → carrito ✅ → checkout ✅ → pagar MP ✅ → tracking ✅ → recibir ✅ → calificar ✅
   ⚠️ Sin validación pre-flight de stock (puede ir negativo en race condition)
-Comercio: registro ✅ → login ✅ → productos ✅ → recibir pedido ✅ → confirmar ✅ → preparar ✅ → cobrar 🟡(solo sandbox)
-  ⚠️ No hay flujo formal de aprobación (solo toggle isActive en OPS)
+Comercio: registro ✅ → aprobación admin ✅ → login ✅ → productos ✅ → recibir pedido ✅ → confirmar ✅ → preparar ✅ → cobrar 🟡(solo sandbox)
 Repartidor: registro ✅ → login ✅ → conectarse ✅ → recibir oferta ✅ → aceptar ✅ → retirar ✅ → entregar ✅ → cobrar 🟡
 Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue ✅ → config ✅ → export CSV ✅
 
@@ -82,6 +81,9 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Multi-vendor: SubOrder por vendedor, un solo pago al comprador
 - Colores: Rojo #e60012 (MOOVY), Violeta #7C3AED (Marketplace)
 - Font: Plus Jakarta Sans (variable --font-jakarta)
+- Approval flow: campo String approvalStatus (PENDING/APPROVED/REJECTED) en Merchant y Driver, no enum Prisma (evita migration)
+- Scheduled delivery: capacidad 15 pedidos por slot, slots 2h, horario 9-22h, min 1.5h anticipación, max 48h
+- Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
