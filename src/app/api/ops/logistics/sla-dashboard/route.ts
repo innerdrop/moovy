@@ -32,26 +32,15 @@ export async function GET() {
         deletedAt: null,
         status: { notIn: ["DELIVERED", "CANCELLED"] },
       },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        deliveryStatus: true,
-        createdAt: true,
-        assignmentAttempts: true,
-        deliveryType: true,
-        scheduledSlotStart: true,
-        driverId: true,
-        merchantId: true,
-        distanceKm: true,
+      include: {
         merchant: {
           select: {
             businessName: true,
-            category: { select: { name: true } },
+            category: true,
           },
         },
         items: {
-          select: {
+          include: {
             product: { select: { name: true } },
           },
         },
@@ -60,10 +49,10 @@ export async function GET() {
     });
 
     // Enrich each order with shipment type + priority + SLA status
-    const enriched = activeOrders.map((order) => {
-      const merchantCategoryName = order.merchant?.category?.name ?? "";
-      const productNames = order.items
-        .map((i) => i.product?.name ?? "")
+    const enriched = activeOrders.map((order: any) => {
+      const merchantCategoryName = order.merchant?.category ?? "";
+      const productNames = (order.items ?? [])
+        .map((i: any) => i.product?.name ?? "")
         .filter(Boolean);
 
       const shipmentTypeCode = autoDetectShipmentType({
@@ -99,7 +88,7 @@ export async function GET() {
         createdAt: order.createdAt,
         elapsedMin,
         shipmentTypeCode,
-        shipmentTypeName: shipmentDef.label,
+        shipmentTypeName: shipmentDef.name,
         shipmentTypeIcon: shipmentDef.icon,
         slaMinutes,
         slaPercent,

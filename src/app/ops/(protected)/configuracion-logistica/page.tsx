@@ -1063,7 +1063,7 @@ export default function ConfigLogisticaPage() {
                       <label key={field} className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={!!(st as Record<string, unknown>)[field]}
+                          checked={!!(st as unknown as Record<string, unknown>)[field]}
                           onChange={(e) => updateShipmentField(code, field, e.target.checked)}
                           className="w-4 h-4 rounded border-slate-300 text-red-500 focus:ring-red-500"
                         />
@@ -1144,7 +1144,7 @@ export default function ConfigLogisticaPage() {
                   type="number"
                   min={min}
                   max={max}
-                  value={(priorityConfig as Record<string, number>)[field]}
+                  value={(priorityConfig as unknown as Record<string, number>)[field]}
                   onChange={(e) => setPriorityConfig((prev) => prev ? { ...prev, [field]: Number(e.target.value) } : prev)}
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
@@ -1196,7 +1196,7 @@ export default function ConfigLogisticaPage() {
                   min={min}
                   max={max}
                   step={step}
-                  value={(etaConfig as Record<string, number>)[field]}
+                  value={(etaConfig as unknown as Record<string, number>)[field]}
                   onChange={(e) => setETAConfig((prev) => prev ? { ...prev, [field]: Number(e.target.value) } : prev)}
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-gray-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />

@@ -261,7 +261,7 @@ describe("MercadoPago Webhook Handler", () => {
     });
 
     it("should default to unknown if status missing", () => {
-      const mpPaymentNoStatus = {
+      const mpPaymentNoStatus: Record<string, string> = {
         id: "mp-125",
         external_reference: "order-458",
       };

@@ -5,7 +5,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const limited = applyRateLimit(request, "ops:coupons:update", 30, 60_000);
   if (limited) return limited;
@@ -27,10 +27,11 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await request.json();
 
     const coupon = await prisma.coupon.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(body.description !== undefined && { description: body.description }),
         ...(body.discountType && { discountType: body.discountType }),
@@ -75,7 +76,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const limited = applyRateLimit(request, "ops:coupons:delete", 20, 60_000);
   if (limited) return limited;
@@ -97,14 +98,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
+
     // Delete associated usages first (cascade)
     await prisma.couponUsage.deleteMany({
-      where: { couponId: params.id },
+      where: { couponId: id },
     });
 
     // Delete the coupon
     await prisma.coupon.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

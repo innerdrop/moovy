@@ -85,7 +85,7 @@ async function writeConfigJSON(key: string, value: unknown): Promise<void> {
   await prisma.moovyConfig.upsert({
     where: { key },
     update: { value: json },
-    create: { key, value: json, label: key },
+    create: { key, value: json, description: key },
   });
 }
 

@@ -732,7 +732,7 @@ export async function POST(request: Request) {
             );
         }
         status = "500";
-        orderLogger.error({ userId: session?.user?.id, error }, "Error creating order");
+        orderLogger.error({ error }, "Error creating order");
         return NextResponse.json(
             { error: "Error al crear el pedido" },
             { status: 500 }
@@ -800,7 +800,7 @@ export async function GET(request: Request) {
         return NextResponse.json(orders);
     } catch (error) {
         status = "500";
-        orderLogger.error({ userId: session?.user?.id, error }, "Error fetching orders");
+        orderLogger.error({ error }, "Error fetching orders");
         return NextResponse.json(
             { error: "Error al obtener los pedidos" },
             { status: 500 }

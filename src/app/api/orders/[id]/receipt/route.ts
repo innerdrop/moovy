@@ -361,9 +361,9 @@ export async function GET(
             <div class="section-title">Dirección de entrega</div>
             <div class="address-info">
                 <div class="address-street">${order.address.street} ${order.address.number}</div>
-                ${order.address.floor ? `<div class="address-detail">Piso ${order.address.floor}${order.address.apartment ? `, Depto ${order.address.apartment}` : ""}</div>` : ""}
+                ${order.address.apartment ? `<div class="address-detail">Depto ${order.address.apartment}</div>` : ""}
+                ${order.address.neighborhood ? `<div class="address-detail">${order.address.neighborhood}</div>` : ""}
                 <div class="address-detail">${order.address.city}</div>
-                ${order.address.notes ? `<div class="address-detail" style="margin-top: 6px; font-style: italic;">${order.address.notes}</div>` : ""}
             </div>
         </div>
 
