@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useJsApiLoader } from "@react-google-maps/api";
 import { MapPin, Loader2, X, Search } from "lucide-react";
 
 interface AddressAutocompleteProps {
@@ -13,277 +12,270 @@ interface AddressAutocompleteProps {
     required?: boolean;
 }
 
+interface Suggestion {
+    description: string;
+    placeId?: string;
+}
+
 /**
- * AddressAutocomplete — migrado a PlaceAutocompleteElement (nueva API de Google)
+ * AddressAutocomplete — Geocoding-based with manual suggestions
  *
- * La API legacy (google.maps.places.Autocomplete) fue deprecada en marzo 2025
- * y no está disponible para clientes nuevos. Esta versión usa el nuevo Web Component
- * PlaceAutocompleteElement que Google recomienda.
+ * Uses Google Geocoding API (which is reliably available) instead of Places API
+ * (which requires separate enablement and costs more). Provides real-time
+ * suggestions as the user types by geocoding partial addresses.
  *
- * Decisión 2026-03-21: Migración urgente para evitar corte de servicio antes del lanzamiento.
+ * Decisión 2026-03-21: Places API (New) no habilitada en el proyecto,
+ * legacy deprecada. Geocoding funciona y es más barato.
  */
 export function AddressAutocomplete({
     value,
     onChange,
-    placeholder = "Ingresá tu dirección...",
+    placeholder = "Ej: San Martín 500, Ushuaia",
     className = "",
     restrictToArgentina = true,
     required = false,
 }: AddressAutocompleteProps) {
     const [inputValue, setInputValue] = useState(value);
-    const [isPlaceSelected, setIsPlaceSelected] = useState(false);
+    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [geocoderReady, setGeocoderReady] = useState(false);
+
+    const inputRef = useRef<HTMLInputElement>(null);
+    const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const autocompleteElementRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
-    const inputRef = useRef<HTMLInputElement | null>(null);
-    const initializedRef = useRef(false);
 
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: "google-map-script",
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries: ["places", "geometry"],
-        language: "es",
-        region: "AR",
-    });
-
-    // Sync external value changes
+    // Sync external value
     useEffect(() => {
-        if (value !== inputValue) {
-            setInputValue(value);
-        }
+        if (value !== inputValue) setInputValue(value);
     }, [value]);
 
-    // Initialize PlaceAutocompleteElement when Google Maps is loaded
+    // Load Google Maps script manually (lightweight, no Places library needed)
     useEffect(() => {
-        if (!isLoaded || !containerRef.current || initializedRef.current) return;
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) return;
 
-        // Check if the new API is available
-        if (!google.maps.places.PlaceAutocompleteElement) {
-            console.warn("[AddressAutocomplete] PlaceAutocompleteElement not available, falling back to legacy");
-            initLegacyAutocomplete();
+        // Check if already loaded
+        if (typeof google !== "undefined" && google.maps?.Geocoder) {
+            geocoderRef.current = new google.maps.Geocoder();
+            setGeocoderReady(true);
+            return;
+        }
+
+        // Wait for it to load (might be loading from another component)
+        const checkInterval = setInterval(() => {
+            if (typeof google !== "undefined" && google.maps?.Geocoder) {
+                geocoderRef.current = new google.maps.Geocoder();
+                setGeocoderReady(true);
+                clearInterval(checkInterval);
+            }
+        }, 500);
+
+        return () => clearInterval(checkInterval);
+    }, []);
+
+    // Close suggestions on outside click
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    // Geocode partial address for suggestions
+    const fetchSuggestions = useCallback(async (query: string) => {
+        if (!geocoderRef.current || query.length < 3) {
+            setSuggestions([]);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const suffix = restrictToArgentina ? ", Ushuaia, Tierra del Fuego, Argentina" : "";
+            const result = await geocoderRef.current.geocode({
+                address: query + suffix,
+                region: "ar",
+                bounds: new google.maps.LatLngBounds(
+                    { lat: -54.85, lng: -68.45 },
+                    { lat: -54.70, lng: -68.15 }
+                ),
+            });
+
+            if (result.results) {
+                const mapped: Suggestion[] = result.results
+                    .slice(0, 5)
+                    .map((r) => ({
+                        description: r.formatted_address || "",
+                        placeId: r.place_id,
+                    }));
+                setSuggestions(mapped);
+                setShowSuggestions(mapped.length > 0);
+            }
+        } catch {
+            setSuggestions([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [restrictToArgentina]);
+
+    const handleInputChange = (val: string) => {
+        setInputValue(val);
+        onChange(val); // Keep parent in sync with raw text
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchSuggestions(val), 400);
+    };
+
+    const selectSuggestion = async (suggestion: Suggestion) => {
+        setShowSuggestions(false);
+
+        if (!geocoderRef.current) {
+            setInputValue(suggestion.description);
+            onChange(suggestion.description);
             return;
         }
 
         try {
-            const ushuaiaBounds = new google.maps.LatLngBounds(
-                new google.maps.LatLng(-54.85, -68.45),
-                new google.maps.LatLng(-54.70, -68.15)
-            );
-
-            const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({
-                componentRestrictions: restrictToArgentina ? { country: "ar" } : undefined,
-                locationBias: ushuaiaBounds,
-                types: ["address"],
+            // Re-geocode the selected address for precise coordinates
+            const result = await geocoderRef.current.geocode({
+                address: suggestion.description,
             });
 
-            // Style the web component to match our design
-            autocompleteElement.style.width = "100%";
-            autocompleteElement.style.outline = "none";
-
-            // Listen for place selection
-            autocompleteElement.addEventListener("gmp-select", async (event: any) => {
-                const placePrediction = event.placePrediction;
-                if (!placePrediction) return;
-
-                try {
-                    const place = placePrediction.toPlace();
-                    await place.fetchFields({
-                        fields: ["addressComponents", "location", "formattedAddress", "displayName"],
-                    });
-
-                    const lat = place.location?.lat();
-                    const lng = place.location?.lng();
-                    const addressComponents = place.addressComponents;
-
-                    let streetNumber = "";
-                    let route = "";
-
-                    if (addressComponents) {
-                        for (const component of addressComponents) {
-                            if (component.types.includes("street_number")) {
-                                streetNumber = component.longText || "";
-                            }
-                            if (component.types.includes("route")) {
-                                route = component.longText || "";
-                            }
-                        }
-                    }
-
-                    const cleanAddress = route
-                        ? (streetNumber ? `${route} ${streetNumber}` : route)
-                        : (place.displayName || place.formattedAddress || "");
-
-                    setInputValue(cleanAddress);
-                    setIsPlaceSelected(true);
-                    onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber || "");
-                } catch (err) {
-                    console.error("[AddressAutocomplete] Error fetching place details:", err);
-                }
-            });
-
-            // Clear existing content and append
-            const wrapper = containerRef.current;
-            // Keep only our custom UI elements, replace the autocomplete slot
-            const slot = wrapper.querySelector("[data-autocomplete-slot]");
-            if (slot) {
-                slot.innerHTML = "";
-                slot.appendChild(autocompleteElement);
+            const place = result.results?.[0];
+            if (!place) {
+                setInputValue(suggestion.description);
+                onChange(suggestion.description);
+                return;
             }
-
-            autocompleteElementRef.current = autocompleteElement;
-            initializedRef.current = true;
-        } catch (err) {
-            console.error("[AddressAutocomplete] Error creating PlaceAutocompleteElement:", err);
-            initLegacyAutocomplete();
-        }
-    }, [isLoaded, restrictToArgentina, onChange]);
-
-    // Fallback to legacy API if new API isn't available
-    const initLegacyAutocomplete = useCallback(() => {
-        if (!isLoaded || !inputRef.current || initializedRef.current) return;
-
-        const ushuaiaBounds = new google.maps.LatLngBounds(
-            new google.maps.LatLng(-54.85, -68.45),
-            new google.maps.LatLng(-54.70, -68.15)
-        );
-
-        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-            bounds: ushuaiaBounds,
-            componentRestrictions: restrictToArgentina ? { country: "ar" } : undefined,
-            fields: ["address_components", "geometry", "formatted_address", "name"],
-            types: ["address"],
-        });
-
-        autocomplete.addListener("place_changed", () => {
-            const place = autocomplete.getPlace();
-            if (!place.formatted_address) return;
 
             const lat = place.geometry?.location?.lat();
             const lng = place.geometry?.location?.lng();
-            const addressComponents = place.address_components;
-            const streetNumber = addressComponents?.find(c => c.types.includes("street_number"))?.long_name;
-            const route = addressComponents?.find(c => c.types.includes("route"))?.long_name;
+            const components = place.address_components;
+
+            const streetNumber = components?.find((c) =>
+                c.types.includes("street_number")
+            )?.long_name || "";
+            const route = components?.find((c) =>
+                c.types.includes("route")
+            )?.long_name || "";
 
             const cleanAddress = route
-                ? (streetNumber ? `${route} ${streetNumber}` : route)
-                : (place.name || place.formatted_address);
+                ? streetNumber ? `${route} ${streetNumber}` : route
+                : suggestion.description;
 
             setInputValue(cleanAddress);
-            setIsPlaceSelected(true);
-            if (inputRef.current) inputRef.current.value = cleanAddress;
-            onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber || "");
-        });
+            onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber);
+        } catch {
+            setInputValue(suggestion.description);
+            onChange(suggestion.description);
+        }
+    };
 
-        initializedRef.current = true;
-
-        // Fix z-index for pac-container
-        const observer = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                for (const node of mutation.addedNodes) {
-                    if (node instanceof HTMLElement && node.classList.contains("pac-container")) {
-                        node.style.zIndex = "10000";
-                        node.addEventListener("touchend", (e) => e.stopPropagation());
-                    }
-                }
-            }
-        });
-        observer.observe(document.body, { childList: true });
-
-        return () => observer.disconnect();
-    }, [isLoaded, restrictToArgentina, onChange]);
-
-    const handleClear = useCallback(() => {
+    const handleClear = () => {
         setInputValue("");
-        setIsPlaceSelected(false);
-        if (inputRef.current) {
-            inputRef.current.value = "";
-            inputRef.current.focus();
-        }
-        // Reset the PlaceAutocompleteElement if it exists
-        if (autocompleteElementRef.current) {
-            // Remove and re-create to clear the input
-            const slot = containerRef.current?.querySelector("[data-autocomplete-slot]");
-            if (slot && autocompleteElementRef.current.parentElement) {
-                initializedRef.current = false;
-                autocompleteElementRef.current = null;
+        setSuggestions([]);
+        setShowSuggestions(false);
+        onChange("");
+        inputRef.current?.focus();
+    };
+
+    // Allow manual submission on Enter (geocode whatever they typed)
+    const handleKeyDown = async (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            setShowSuggestions(false);
+
+            if (inputValue.trim().length < 3 || !geocoderRef.current) return;
+
+            try {
+                const suffix = restrictToArgentina ? ", Ushuaia, Argentina" : "";
+                const result = await geocoderRef.current.geocode({
+                    address: inputValue.trim() + suffix,
+                    region: "ar",
+                });
+
+                const place = result.results?.[0];
+                if (place) {
+                    const lat = place.geometry?.location?.lat();
+                    const lng = place.geometry?.location?.lng();
+                    const components = place.address_components;
+                    const streetNumber = components?.find((c) =>
+                        c.types.includes("street_number")
+                    )?.long_name || "";
+                    const route = components?.find((c) =>
+                        c.types.includes("route")
+                    )?.long_name || "";
+
+                    const cleanAddress = route
+                        ? streetNumber ? `${route} ${streetNumber}` : route
+                        : inputValue.trim();
+
+                    setInputValue(cleanAddress);
+                    onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber);
+                }
+            } catch {
+                // Keep the raw input
             }
         }
-        onChange("");
-    }, [onChange]);
-
-    if (loadError) {
-        return <div className="text-red-500 text-sm">Error cargando Google Maps</div>;
-    }
-
-    // New API: PlaceAutocompleteElement renders as a web component
-    // We render a container for it + a fallback input for the legacy API
-    const usesNewApi = isLoaded && typeof google !== "undefined" &&
-        google.maps?.places?.PlaceAutocompleteElement;
+    };
 
     return (
         <div ref={containerRef} className={`relative ${className}`}>
             <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
-
-                {isLoaded ? (
-                    usesNewApi ? (
-                        // New API: Web Component slot
-                        <div className="address-autocomplete-new">
-                            <div
-                                data-autocomplete-slot
-                                className="w-full [&_gmp-placeautocomplete]:w-full [&_gmp-placeautocomplete]:border [&_gmp-placeautocomplete]:border-gray-300 [&_gmp-placeautocomplete]:rounded-lg [&_gmp-placeautocomplete]:text-base [&_input]:pl-10 [&_input]:pr-10 [&_input]:py-3"
-                            />
-                            {/* Clear button for new API */}
-                            {isPlaceSelected && (
-                                <button
-                                    type="button"
-                                    onClick={handleClear}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 z-10"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        // Legacy API fallback
-                        <>
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                defaultValue={inputValue}
-                                onChange={(e) => {
-                                    setInputValue(e.target.value);
-                                    onChange(e.target.value);
-                                }}
-                                placeholder={placeholder}
-                                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition text-base"
-                                autoComplete="off"
-                                autoCorrect="off"
-                                autoCapitalize="off"
-                                spellCheck={false}
-                                enterKeyHint="search"
-                                required={required}
-                            />
-                            {inputValue && (
-                                <button
-                                    type="button"
-                                    onClick={handleClear}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            )}
-                            {!inputValue && (
-                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                            )}
-                        </>
-                    )
-                ) : (
-                    <div className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                        <span className="text-sm text-gray-400">Cargando buscador...</span>
-                    </div>
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition text-base bg-white"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    enterKeyHint="search"
+                    required={required}
+                />
+                {loading && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
+                )}
+                {!loading && inputValue && (
+                    <button
+                        type="button"
+                        onClick={handleClear}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
+                {!loading && !inputValue && (
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 )}
             </div>
+
+            {/* Suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                    {suggestions.map((s, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => selectSuggestion(s)}
+                            className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors flex items-start gap-3 border-b border-gray-50 last:border-0"
+                        >
+                            <MapPin className="w-4 h-4 text-[#e60012] mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-700 leading-snug">{s.description}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
