@@ -142,7 +142,7 @@ describe("MercadoPago Webhook Handler", () => {
         ]);
 
         const requestId = headers.get("x-request-id");
-        expect(requestId).toBeNull();
+        expect(requestId).toBeUndefined();
       });
     });
   });
