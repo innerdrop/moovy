@@ -212,7 +212,7 @@ async function main() {
             number: "800",
             city: "Ushuaia",
             province: "Tierra del Fuego",
-            postalCode: "9410",
+            zipCode: "9410",
             latitude: -54.8069,
             longitude: -68.3040,
             isDefault: true,
