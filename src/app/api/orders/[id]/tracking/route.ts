@@ -17,7 +17,7 @@ export async function GET(
                 orderNumber: true,
                 status: true,
                 createdAt: true,
-                estimatedDeliveryTime: true,
+                estimatedTime: true,
                 address: {
                     select: {
                         street: true,
