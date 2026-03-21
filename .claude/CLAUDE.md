@@ -84,6 +84,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Approval flow: campo String approvalStatus (PENDING/APPROVED/REJECTED) en Merchant y Driver, no enum Prisma (evita migration)
 - Scheduled delivery: capacidad 15 pedidos por slot, slots 2h, horario 9-22h, min 1.5h anticipación, max 48h
 - Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
+- Google Places: migrado a PlaceAutocompleteElement (nueva API). Fallback a legacy si no disponible. Decisión 2026-03-21: la API vieja fue deprecada marzo 2025, no disponible para clientes nuevos
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
