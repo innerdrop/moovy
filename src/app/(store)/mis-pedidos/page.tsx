@@ -15,8 +15,6 @@ import {
     ShoppingBag,
     ChevronRight,
     Phone,
-    Wifi,
-    WifiOff,
     Rocket,
     Store,
     CreditCard,
@@ -234,15 +232,8 @@ export default function MisPedidosPage() {
             <div className="container mx-auto px-4 pt-5 pb-24">
 
                 {/* Title row */}
-                <div className="flex items-center justify-between mb-5">
+                <div className="mb-5">
                     <h1 className="text-xl font-black text-gray-900">Mis pedidos</h1>
-                    <div className="flex items-center gap-2">
-                        {/* Live indicator */}
-                        <div className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full transition ${isConnected ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>
-                            {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                            {isConnected ? "En vivo" : "Offline"}
-                        </div>
-                    </div>
                 </div>
 
                 {/* Tabs — pill style matching the rest of the site */}

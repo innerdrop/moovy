@@ -423,10 +423,7 @@ export default function TrackingPage() {
                         <p className="text-xs text-gray-400 font-medium">Pedido</p>
                         <p className="text-sm font-bold text-gray-900">#{order.orderNumber}</p>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${connected ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-400 animate-pulse" : "bg-gray-300"}`} />
-                        {connected ? "En vivo" : "Offline"}
-                    </div>
+                    <div className="w-10" /> {/* spacer for centering */}
                 </div>
             </div>
 
