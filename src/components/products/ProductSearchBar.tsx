@@ -12,9 +12,9 @@ export default function ProductSearchBar() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (query.trim()) {
-            router.push(`/buscar?q=${encodeURIComponent(query.trim())}`);
+            router.push(`/productos?buscar=${encodeURIComponent(query.trim())}`);
         } else {
-            router.push("/buscar");
+            router.push("/productos");
         }
     };
 

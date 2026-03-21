@@ -10,8 +10,8 @@ export default function PointsCelebration() {
     if (!isVisible || pointsEarned <= 0) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
-            <div className="relative animate-bounce-in">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="relative animate-bounce-in flex flex-col items-center">
                 {/* Close button */}
                 <button
                     onClick={hideCelebration}
@@ -20,66 +20,67 @@ export default function PointsCelebration() {
                     <X className="w-5 h-5 text-gray-600" />
                 </button>
 
-                {/* Main Circle */}
-                <div className="w-56 h-56 bg-gradient-to-br from-[#cc000f] to-[#e60012] rounded-full flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(124,58,237,0.5)] border-4 border-white/20 relative overflow-hidden">
+                {/* Main Card */}
+                <div className="w-72 bg-white rounded-3xl shadow-2xl overflow-hidden">
+                    {/* Red top section */}
+                    <div className="bg-gradient-to-br from-[#e60012] to-[#cc000f] px-6 pt-8 pb-10 flex flex-col items-center relative overflow-hidden">
+                        {/* Subtle background pattern */}
+                        <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-4 left-6 rotate-12"><Star className="w-6 h-6 text-white fill-current" /></div>
+                            <div className="absolute top-8 right-8 -rotate-12"><Star className="w-4 h-4 text-white fill-current" /></div>
+                            <div className="absolute bottom-4 left-10 rotate-45"><Star className="w-5 h-5 text-white fill-current" /></div>
+                            <div className="absolute bottom-6 right-6"><Star className="w-3 h-3 text-white fill-current" /></div>
+                        </div>
 
-                    {/* Background rays */}
-                    <div className="absolute inset-0 animate-spin-slow opacity-20">
-                        <div className="w-full h-full bg-[conic-gradient(transparent_0deg,white_45deg,transparent_90deg)]"></div>
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mb-3 animate-float">
+                                <Sparkles className="w-7 h-7 text-yellow-300" />
+                            </div>
+                            <p className="text-white/80 text-sm font-medium tracking-wide uppercase">¡Ganaste!</p>
+                            <p className="text-5xl font-black text-white mt-1 tracking-tight">
+                                +{pointsEarned.toLocaleString("es-AR")}
+                            </p>
+                            <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mt-1">
+                                Puntos MOOVY
+                            </p>
+                        </div>
                     </div>
 
-                    <Sparkles className="w-10 h-10 text-yellow-300 animate-pulse mb-1" />
-
-                    <span className="text-xl font-medium opacity-90">¡Ganaste!</span>
-                    <span className="text-5xl font-bold tracking-tight text-white drop-shadow-md">
-                        +{pointsEarned.toLocaleString("es-AR")}
-                    </span>
-                    <span className="text-sm font-medium mt-1 uppercase tracking-wider opacity-80">Puntos Moovy</span>
+                    {/* White bottom section */}
+                    <div className="px-6 py-5 flex flex-col items-center gap-3">
+                        <p className="text-gray-500 text-sm text-center">
+                            Acumulá puntos y canjeálos por descuentos en tus próximas compras
+                        </p>
+                        <Link
+                            href="/puntos"
+                            onClick={hideCelebration}
+                            className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold text-sm text-center hover:bg-gray-800 transition-colors"
+                        >
+                            Ver mis puntos
+                        </Link>
+                        <button
+                            onClick={hideCelebration}
+                            className="text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
-
-                {/* Floating particles */}
-                <div className="absolute -top-4 -right-4 animate-float-delayed text-yellow-400">
-                    <Star className="w-8 h-8 fill-current" />
-                </div>
-                <div className="absolute -bottom-2 -left-4 animate-float text-yellow-400">
-                    <Star className="w-6 h-6 fill-current" />
-                </div>
-
-                {/* Go to MOOVER button */}
-                <Link
-                    href="/puntos"
-                    onClick={hideCelebration}
-                    className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 bg-white text-[#e60012] px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-gray-50 transition whitespace-nowrap"
-                >
-                    Ver mis puntos →
-                </Link>
             </div>
 
             <style jsx>{`
                 @keyframes bounce-in {
-                    0% { transform: scale(0); opacity: 0; }
-                    60% { transform: scale(1.1); opacity: 1; }
-                    80% { transform: scale(0.95); opacity: 1; }
+                    0% { transform: scale(0.3); opacity: 0; }
+                    50% { transform: scale(1.05); opacity: 1; }
+                    70% { transform: scale(0.95); }
                     100% { transform: scale(1); opacity: 1; }
                 }
-                @keyframes spin-slow {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
                 @keyframes float {
-                    0% { transform: translateY(0px) rotate(0deg); }
-                    50% { transform: translateY(-10px) rotate(10deg); }
-                    100% { transform: translateY(0px) rotate(0deg); }
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-6px); }
                 }
-                @keyframes float-delayed {
-                    0% { transform: translateY(0px) rotate(0deg); }
-                    50% { transform: translateY(10px) rotate(-10deg); }
-                    100% { transform: translateY(0px) rotate(0deg); }
-                }
-                .animate-bounce-in { animation: bounce-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-                .animate-spin-slow { animation: spin-slow 10s linear infinite; }
-                .animate-float { animation: float 3s ease-in-out infinite; }
-                .animate-float-delayed { animation: float-delayed 4s ease-in-out infinite; }
+                .animate-bounce-in { animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+                .animate-float { animation: float 2.5s ease-in-out infinite; }
             `}</style>
         </div>
     );

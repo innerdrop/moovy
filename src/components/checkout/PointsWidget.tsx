@@ -178,10 +178,10 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
             <button
                 onClick={() => onApplyPoints(selectedPoints, calculateDiscount(selectedPoints))}
                 disabled={selectedPoints === 0}
-                className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm"
             >
-                <Sparkles className="w-4 h-4" />
-                {selectedPoints > 0 ? "Aplicar puntos" : "Seleccioná cuántos puntos usar"}
+                <Sparkles className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{selectedPoints > 0 ? "Aplicar puntos" : "Seleccioná puntos a usar"}</span>
             </button>
         </div>
     );
