@@ -84,7 +84,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Approval flow: campo String approvalStatus (PENDING/APPROVED/REJECTED) en Merchant y Driver, no enum Prisma (evita migration)
 - Scheduled delivery: capacidad 15 pedidos por slot, slots 2h dinámicos según horario real del vendor, min 1.5h anticipación, max 48h. Backend valida slot vs schedule. Sellers configuran su propio schedule de despacho
 - Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
-- Google Places: migrado a PlaceAutocompleteElement (nueva API). Fallback a legacy si no disponible. Decisión 2026-03-21: la API vieja fue deprecada marzo 2025, no disponible para clientes nuevos
+- Google Places → Geocoding: Decisión 2026-03-21: Places API (New) no habilitada en el proyecto GCP, legacy deprecada marzo 2025. Reescrito AddressAutocomplete para usar Geocoding API con sugerencias manuales. Si se habilita Places API (New) en Google Cloud Console en el futuro, se puede volver a PlaceAutocompleteElement para mejor UX. Ver sección "Dependencias externas"
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
@@ -108,6 +108,64 @@ Maps: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
 ## Scripts
 start.ps1: crear rama | finish.ps1: cerrar rama y merge a develop | publish.ps1: push + dump DB
 devmain.ps1: deploy a producción | sync.ps1: pull develop
+
+## Dependencias externas y servicios de terceros
+
+Registro obligatorio de todas las APIs, SDKs y servicios externos que usa Moovy.
+Cada sesión que integre, actualice o detecte un cambio en un servicio externo
+DEBE actualizar esta sección. Antes de implementar features que usen estos
+servicios, verificar que la versión y el estado sigan vigentes.
+
+### Google Cloud Platform (Proyecto ID: 1036892490928)
+| Servicio | Estado | Versión/API | Uso en Moovy | Última verificación |
+|----------|--------|-------------|--------------|---------------------|
+| Maps JavaScript API | ✅ Habilitada | v3 weekly | Mapas en tracking, checkout, driver portal | 2026-03-21 |
+| Geocoding API | ✅ Habilitada | v1 | AddressAutocomplete (sugerencias + coords) | 2026-03-21 |
+| Places API (New) | ❌ No habilitada | — | No se usa. Habilitar para mejor autocompletado | 2026-03-21 |
+| Places API (Legacy) | ⛔ Deprecada | — | Deprecada marzo 2025, no disponible para proyectos nuevos | 2026-03-21 |
+| Directions API | ✅ Habilitada | v1 | Ruta en tracking page (driver → destino) | 2026-03-21 |
+
+**Acción pendiente:** Habilitar Places API (New) en Google Cloud Console para mejorar autocompletado de direcciones. Pasos: Console → APIs & Services → Library → "Places API (New)" → Enable.
+
+### MercadoPago
+| Componente | Estado | Versión | Uso en Moovy | Última verificación |
+|------------|--------|---------|--------------|---------------------|
+| Checkout Pro (redirect) | ✅ Sandbox | SDK JS v2 | Pagos de pedidos | 2026-03-21 |
+| Webhooks (IPN) | ✅ Configurado (test) | v1 | Confirmación automática de pagos | 2026-03-21 |
+| OAuth (merchant connect) | 🟡 Pendiente | v2 | Split payments a comercios | 2026-03-21 |
+
+**Acción pendiente para producción:** Activar credenciales de producción, configurar webhook URL en panel MP (https://somosmoovy.com/api/webhooks/mercadopago), testear pago real.
+
+### Otros servicios
+| Servicio | Estado | Versión | Uso en Moovy | Última verificación |
+|----------|--------|---------|--------------|---------------------|
+| SMTP (Nodemailer) | 🟡 Sin config prod | v6 | Emails transaccionales (~50 templates) | 2026-03-21 |
+| Web Push (VAPID) | ✅ Configurado | web-push v3 | Notificaciones push a buyers/merchants/drivers | 2026-03-21 |
+| Socket.IO | ✅ Funcional | v4 | Real-time: pedidos, tracking, admin feed | 2026-03-21 |
+| PostGIS | ✅ Docker local | v3.4 | Geolocalización de drivers, cálculo de distancias | 2026-03-21 |
+| Pino (logger) | ✅ Con fallback | v9 | Logging estructurado en API routes | 2026-03-21 |
+| Sharp | ✅ Funcional | v0.33 | Compresión de imágenes en uploads | 2026-03-21 |
+
+### NPM: dependencias clave y versiones
+| Paquete | Versión | Notas |
+|---------|---------|-------|
+| next | 16.x | Verificar changelog en major updates |
+| react | 19.x | Server Components, use() hook |
+| prisma | 5.22.0 | NUNCA usar migrate dev, solo db push |
+| next-auth | 5.x (beta) | JWT 7 días, credentials-only |
+| @react-google-maps/api | 2.x | Wrapper para Google Maps JS API |
+| socket.io / socket.io-client | 4.x | WebSocket + polling fallback |
+| mercadopago | 2.x | SDK oficial de MercadoPago |
+| bcryptjs | 2.x | Hash de passwords |
+| zod | 3.x | Validación de schemas |
+| zustand | 4.x | State management (cart, favorites, toast, points) |
+
+### Protocolo de actualización
+1. Al inicio de cada sesión larga: verificar si hay deprecaciones conocidas en los servicios principales (Google, MP, Next.js)
+2. Al integrar un servicio nuevo: agregar una fila a la tabla correspondiente
+3. Al detectar un warning de deprecación: documentarlo inmediatamente con fecha y plan de migración
+4. Cada 2 semanas (o al iniciar sprint): revisar versiones de dependencias npm con `npm outdated`
+5. Antes de deploy a producción: verificar que todas las APIs estén habilitadas y con credenciales de prod
 
 ## Reglas de ejecución
 1. NO abrir browser, NO npm run dev/build, NO pruebas visuales
