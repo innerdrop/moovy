@@ -406,6 +406,9 @@ model Merchant {
   mpUserId         String?                   @unique
   mpEmail          String?
   mpLinkedAt       DateTime?
+  approvalStatus   String                    @default("PENDING") // PENDING | APPROVED | REJECTED
+  approvedAt       DateTime?
+  rejectionReason  String?
   ubicacion        Unsupported("geography")?
   owner            User                      @relation(fields: [ownerId], references: [id])
   acquiredProducts MerchantAcquiredProduct[]
@@ -418,6 +421,7 @@ model Merchant {
 
   @@index([isActive])
   @@index([ownerId])
+  @@index([approvalStatus])
 }
 
 model Driver {
@@ -446,6 +450,9 @@ model Driver {
   lastLocationAt     DateTime?
   latitude           Float?
   longitude          Float?
+  approvalStatus     String                    @default("PENDING") // PENDING | APPROVED | REJECTED
+  approvedAt         DateTime?
+  rejectionReason    String?
   ubicacion          Unsupported("geography")?
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders             Order[]
@@ -454,6 +461,7 @@ model Driver {
 
   @@index([isOnline])
   @@index([isActive])
+  @@index([approvalStatus])
 }
 
 model SellerProfile {

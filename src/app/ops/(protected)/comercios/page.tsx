@@ -20,7 +20,11 @@ import {
     User,
     Download,
     Check,
-    X
+    X,
+    ShieldCheck,
+    ShieldX,
+    Clock,
+    AlertTriangle
 } from "lucide-react";
 
 interface Merchant {
@@ -32,10 +36,14 @@ interface Merchant {
     isActive: boolean;
     isOpen: boolean;
     isVerified: boolean;
+    approvalStatus: string;
+    approvedAt: string | null;
+    rejectionReason: string | null;
     email: string | null;
     phone: string | null;
     address: string | null;
     category: string | null;
+    createdAt: string;
     _count: {
         products: number;
         orders: number;
@@ -59,6 +67,12 @@ export default function ComerciosPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [selectedMerchants, setSelectedMerchants] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Rejection modal state
+    const [rejectModal, setRejectModal] = useState<{ merchantId: string; merchantName: string } | null>(null);
+    const [rejectReason, setRejectReason] = useState("");
+    const [rejectLoading, setRejectLoading] = useState(false);
 
     const fetchMerchants = async () => {
         setLoading(true);
@@ -89,6 +103,45 @@ export default function ComerciosPage() {
         }, 300);
         return () => clearTimeout(timer);
     }, [search]);
+
+    const handleApprove = async (id: string) => {
+        setActionLoading(id);
+        try {
+            const res = await fetch(`/api/admin/merchants/${id}/approve`, { method: "PUT" });
+            if (res.ok) {
+                setSuccessMessage("Comercio aprobado exitosamente");
+                setTimeout(() => setSuccessMessage(null), 3000);
+                fetchMerchants();
+            }
+        } catch (error) {
+            console.error("Error approving merchant:", error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!rejectModal) return;
+        setRejectLoading(true);
+        try {
+            const res = await fetch(`/api/admin/merchants/${rejectModal.merchantId}/reject`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: rejectReason || undefined }),
+            });
+            if (res.ok) {
+                setSuccessMessage("Comercio rechazado");
+                setTimeout(() => setSuccessMessage(null), 3000);
+                setRejectModal(null);
+                setRejectReason("");
+                fetchMerchants();
+            }
+        } catch (error) {
+            console.error("Error rejecting merchant:", error);
+        } finally {
+            setRejectLoading(false);
+        }
+    };
 
     const toggleVerified = async (id: string, currentStatus: boolean) => {
         setActionLoading(id);
@@ -130,11 +183,7 @@ export default function ComerciosPage() {
         setBulkLoading(true);
         try {
             for (const id of selectedMerchants) {
-                await fetch("/api/admin/merchants", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id, isVerified: true }),
-                });
+                await fetch(`/api/admin/merchants/${id}/approve`, { method: "PUT" });
             }
             setSelectedMerchants([]);
             fetchMerchants();
@@ -164,20 +213,104 @@ export default function ComerciosPage() {
         }
     };
 
+    const pendingCount = merchants.filter(m => m.approvalStatus === "PENDING" || (!m.approvalStatus && !m.isVerified && !m.isActive)).length;
+
+    const getApprovalBadge = (merchant: Merchant) => {
+        const status = merchant.approvalStatus || (merchant.isVerified ? "APPROVED" : "PENDING");
+        switch (status) {
+            case "APPROVED":
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        <ShieldCheck className="w-3 h-3" />
+                        Aprobado
+                    </span>
+                );
+            case "REJECTED":
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        <ShieldX className="w-3 h-3" />
+                        Rechazado
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        <Clock className="w-3 h-3" />
+                        Pendiente
+                    </span>
+                );
+        }
+    };
+
+    const isPending = (merchant: Merchant) => {
+        return merchant.approvalStatus === "PENDING" || (!merchant.approvalStatus && !merchant.isVerified && !merchant.isActive);
+    };
+
     return (
         <div className="space-y-6">
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fadeIn">
+                    <ShieldCheck className="w-5 h-5" />
+                    {successMessage}
+                </div>
+            )}
+
+            {/* Rejection Modal */}
+            {rejectModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <h3 className="font-bold text-lg mb-2 text-gray-900">Rechazar comercio</h3>
+                        <p className="text-gray-600 text-sm mb-4">
+                            Vas a rechazar a <strong>{rejectModal.merchantName}</strong>. Se le enviará un email con el motivo.
+                        </p>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="Motivo del rechazo (opcional pero recomendado)..."
+                            className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none"
+                            rows={3}
+                        />
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={() => { setRejectModal(null); setRejectReason(""); }}
+                                className="flex-1 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleReject}
+                                disabled={rejectLoading}
+                                className="flex-1 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {rejectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldX className="w-4 h-4" />}
+                                Rechazar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Comercios</h1>
-                    <p className="text-slate-600">{merchants.length} comercios registrados</p>
+                    <p className="text-slate-600">
+                        {merchants.length} comercios registrados
+                        {pendingCount > 0 && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
+                                <AlertTriangle className="w-3 h-3" />
+                                {pendingCount} pendiente{pendingCount > 1 ? 's' : ''} de aprobación
+                            </span>
+                        )}
+                    </p>
                 </div>
                 {selectedMerchants.length > 0 ? (
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-slate-500">{selectedMerchants.length} seleccionados</span>
-                        <button onClick={bulkVerify} disabled={bulkLoading} className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100 hover:bg-blue-100 transition flex items-center gap-2">
-                            {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            Verificar todos
+                        <button onClick={bulkVerify} disabled={bulkLoading} className="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-bold border border-green-100 hover:bg-green-100 transition flex items-center gap-2">
+                            {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                            Aprobar todos
                         </button>
                         <button onClick={bulkSuspend} disabled={bulkLoading} className="px-3 py-2 bg-red-50 text-red-500 rounded-lg text-xs font-bold border border-red-100 hover:bg-red-100 transition flex items-center gap-2">
                             {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
@@ -236,7 +369,13 @@ export default function ComerciosPage() {
                         {merchants
                             .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
                             .map((merchant) => (
-                        <div key={merchant.id} className="group bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col relative">
+                        <div key={merchant.id} className={`group bg-white rounded-3xl shadow-sm border overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col relative ${
+                            merchant.approvalStatus === "PENDING" || (!merchant.approvalStatus && !merchant.isVerified)
+                                ? "border-amber-200 ring-1 ring-amber-100"
+                                : merchant.approvalStatus === "REJECTED"
+                                    ? "border-red-200"
+                                    : "border-slate-100"
+                        }`}>
                             {/* Checkbox */}
                             <div className="absolute top-3 right-3 z-10">
                                 <button
@@ -265,12 +404,23 @@ export default function ComerciosPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none">
-                                        {merchant.category || "General"}
-                                    </span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none">
+                                            {merchant.category || "General"}
+                                        </span>
+                                        {getApprovalBadge(merchant)}
+                                    </div>
                                 </div>
                                 <div className={`w-3 h-3 rounded-full border-2 ${merchant.isActive ? 'bg-green-500 border-green-100 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-slate-300 border-slate-100'}`} />
                             </div>
+
+                            {/* Rejection reason */}
+                            {merchant.approvalStatus === "REJECTED" && merchant.rejectionReason && (
+                                <div className="mx-5 mt-3 p-2.5 bg-red-50 border border-red-100 rounded-xl">
+                                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Motivo del rechazo</p>
+                                    <p className="text-xs text-red-700 line-clamp-2">{merchant.rejectionReason}</p>
+                                </div>
+                            )}
 
                             {/* Stats Dashboard */}
                             <div className="grid grid-cols-2 gap-px bg-slate-50 border-b border-slate-50">
@@ -336,32 +486,61 @@ export default function ComerciosPage() {
 
                             {/* Footer Actions */}
                             <div className="p-5 pt-0 mt-auto">
-                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <button
-                                        onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
-                                        disabled={actionLoading === merchant.id}
-                                        className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isVerified
-                                                ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
-                                                : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"
-                                            }`}
-                                    >
-                                        {actionLoading === merchant.id ? (
-                                            <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                        ) : merchant.isVerified ? "Verificado" : "Verificar"}
-                                    </button>
-                                    <button
-                                        onClick={() => toggleActive(merchant.id, merchant.isActive)}
-                                        disabled={actionLoading === merchant.id}
-                                        className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isActive
-                                                ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
-                                                : "bg-red-50 text-red-500 border-red-100 hover:bg-red-100"
-                                            }`}
-                                    >
-                                        {actionLoading === merchant.id ? (
-                                            <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                        ) : merchant.isActive ? "Activo" : "Inactivo"}
-                                    </button>
-                                </div>
+                                {/* Approval actions for pending merchants */}
+                                {(merchant.approvalStatus === "PENDING" || (!merchant.approvalStatus && !merchant.isVerified && !merchant.isActive)) && (
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <button
+                                            onClick={() => handleApprove(merchant.id)}
+                                            disabled={actionLoading === merchant.id}
+                                            className="py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border bg-green-50 text-green-600 border-green-200 hover:bg-green-100 flex items-center justify-center gap-1.5"
+                                        >
+                                            {actionLoading === merchant.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <ShieldCheck className="w-4 h-4" />
+                                            )}
+                                            Aprobar
+                                        </button>
+                                        <button
+                                            onClick={() => setRejectModal({ merchantId: merchant.id, merchantName: merchant.name })}
+                                            disabled={actionLoading === merchant.id}
+                                            className="py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border bg-red-50 text-red-500 border-red-200 hover:bg-red-100 flex items-center justify-center gap-1.5"
+                                        >
+                                            <ShieldX className="w-4 h-4" />
+                                            Rechazar
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Standard actions for approved/rejected merchants */}
+                                {merchant.approvalStatus !== "PENDING" && (merchant.approvalStatus || merchant.isVerified || merchant.isActive) && (
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <button
+                                            onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
+                                            disabled={actionLoading === merchant.id}
+                                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isVerified
+                                                    ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
+                                                    : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"
+                                                }`}
+                                        >
+                                            {actionLoading === merchant.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                            ) : merchant.isVerified ? "Verificado" : "Verificar"}
+                                        </button>
+                                        <button
+                                            onClick={() => toggleActive(merchant.id, merchant.isActive)}
+                                            disabled={actionLoading === merchant.id}
+                                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isActive
+                                                    ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
+                                                    : "bg-red-50 text-red-500 border-red-100 hover:bg-red-100"
+                                                }`}
+                                        >
+                                            {actionLoading === merchant.id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                            ) : merchant.isActive ? "Activo" : "Inactivo"}
+                                        </button>
+                                    </div>
+                                )}
                                 <Link
                                     href={`/ops/comercios/${merchant.id}`}
                                     className="block w-full text-center py-3 bg-navy text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-navy/10 active:scale-95"

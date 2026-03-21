@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { sendMerchantRequestNotification } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -134,6 +135,14 @@ export async function POST(request: NextRequest) {
                 });
             }
         });
+
+        // Notify admin about new merchant application (non-blocking)
+        sendMerchantRequestNotification(
+            data.businessName,
+            `${data.firstName} ${data.lastName}`.trim(),
+            data.email,
+            data.businessType || null
+        );
 
         return NextResponse.json({
             success: true,

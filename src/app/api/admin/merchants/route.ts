@@ -22,7 +22,10 @@ export async function GET(request: Request) {
         if (status === "verified") {
             where.isVerified = true;
         } else if (status === "pending") {
-            where.isVerified = false;
+            where.OR = [
+                { approvalStatus: "PENDING" },
+                { approvalStatus: null, isVerified: false },
+            ];
         } else if (status === "active") {
             where.isActive = true;
         } else if (status === "inactive") {

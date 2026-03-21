@@ -41,6 +41,8 @@ interface Driver {
     seguroUrl: string | null;
     vtvUrl: string | null;
     acceptedTermsAt: string | null;
+    approvalStatus: string;
+    rejectionReason: string | null;
     user: {
         id: string;
         name: string;
@@ -55,9 +57,14 @@ export default function AdminRepartidoresPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    // Approve driver state
+    // Approve/reject driver state
     const [approvingId, setApprovingId] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Rejection modal state
+    const [rejectModal, setRejectModal] = useState<{ driverId: string; driverName: string } | null>(null);
+    const [rejectReason, setRejectReason] = useState("");
+    const [rejectLoading, setRejectLoading] = useState(false);
 
     // Form state
     const [showForm, setShowForm] = useState(false);
@@ -184,6 +191,37 @@ export default function AdminRepartidoresPage() {
             setTimeout(() => setError(""), 3000);
         } finally {
             setApprovingId(null);
+        }
+    }
+
+    async function handleReject() {
+        if (!rejectModal) return;
+        setRejectLoading(true);
+        try {
+            const res = await fetch(`/api/admin/drivers/${rejectModal.driverId}/reject`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: rejectReason || undefined }),
+            });
+            if (res.ok) {
+                setDrivers(prev => prev.map(d =>
+                    d.id === rejectModal.driverId ? { ...d, isActive: false, approvalStatus: "REJECTED", rejectionReason: rejectReason || null } : d
+                ));
+                setSuccessMessage("Repartidor rechazado");
+                setTimeout(() => setSuccessMessage(null), 3000);
+                setRejectModal(null);
+                setRejectReason("");
+            } else {
+                const data = await res.json();
+                setError(data.error || "Error al rechazar repartidor");
+                setTimeout(() => setError(""), 3000);
+            }
+        } catch (err) {
+            console.error("Error rejecting driver:", err);
+            setError("Error de conexión al rechazar");
+            setTimeout(() => setError(""), 3000);
+        } finally {
+            setRejectLoading(false);
         }
     }
 
@@ -324,6 +362,41 @@ export default function AdminRepartidoresPage() {
                                     }`}
                             >
                                 Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rejection Modal */}
+            {rejectModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <h3 className="font-bold text-lg mb-2 text-gray-900">Rechazar repartidor</h3>
+                        <p className="text-gray-600 text-sm mb-4">
+                            Vas a rechazar a <strong>{rejectModal.driverName}</strong>. Se le enviará un email con el motivo.
+                        </p>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="Motivo del rechazo (opcional pero recomendado)..."
+                            className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none"
+                            rows={3}
+                        />
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={() => { setRejectModal(null); setRejectReason(""); }}
+                                className="flex-1 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleReject}
+                                disabled={rejectLoading}
+                                className="flex-1 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {rejectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                                Rechazar
                             </button>
                         </div>
                     </div>
@@ -558,19 +631,33 @@ export default function AdminRepartidoresPage() {
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                {!driver.isActive && (
-                                                    <button
-                                                        onClick={() => handleApprove(driver.id)}
-                                                        disabled={approvingId === driver.id}
-                                                        className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold border border-green-200 disabled:opacity-50"
-                                                    >
-                                                        {approvingId === driver.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : (
-                                                            <ShieldCheck className="w-3.5 h-3.5" />
-                                                        )}
-                                                        Aprobar
-                                                    </button>
+                                                {(!driver.isActive && driver.approvalStatus !== "REJECTED") && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleApprove(driver.id)}
+                                                            disabled={approvingId === driver.id}
+                                                            className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold border border-green-200 disabled:opacity-50"
+                                                        >
+                                                            {approvingId === driver.id ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <ShieldCheck className="w-3.5 h-3.5" />
+                                                            )}
+                                                            Aprobar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setRejectModal({ driverId: driver.id, driverName: driver.user.name })}
+                                                            className="px-3 py-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold border border-red-200"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                            Rechazar
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {driver.approvalStatus === "REJECTED" && (
+                                                    <span className="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-xs font-bold border border-red-200">
+                                                        Rechazado
+                                                    </span>
                                                 )}
                                                 <button
                                                     onClick={() => setViewDriver(driver)}
@@ -659,19 +746,33 @@ export default function AdminRepartidoresPage() {
                                     >
                                         Ver Perfil
                                     </button>
-                                    {!driver.isActive && (
-                                        <button
-                                            onClick={() => handleApprove(driver.id)}
-                                            disabled={approvingId === driver.id}
-                                            className="flex-1 py-2.5 bg-green-50 text-green-700 font-bold text-xs rounded-xl hover:bg-green-100 transition-all border border-green-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                        >
-                                            {approvingId === driver.id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <ShieldCheck className="w-4 h-4" />
-                                            )}
-                                            Aprobar
-                                        </button>
+                                    {(!driver.isActive && driver.approvalStatus !== "REJECTED") && (
+                                        <>
+                                            <button
+                                                onClick={() => handleApprove(driver.id)}
+                                                disabled={approvingId === driver.id}
+                                                className="flex-1 py-2.5 bg-green-50 text-green-700 font-bold text-xs rounded-xl hover:bg-green-100 transition-all border border-green-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                            >
+                                                {approvingId === driver.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <ShieldCheck className="w-4 h-4" />
+                                                )}
+                                                Aprobar
+                                            </button>
+                                            <button
+                                                onClick={() => setRejectModal({ driverId: driver.id, driverName: driver.user.name })}
+                                                className="flex-1 py-2.5 bg-red-50 text-red-500 font-bold text-xs rounded-xl hover:bg-red-100 transition-all border border-red-200 flex items-center justify-center gap-1.5"
+                                            >
+                                                <X className="w-4 h-4" />
+                                                Rechazar
+                                            </button>
+                                        </>
+                                    )}
+                                    {driver.approvalStatus === "REJECTED" && (
+                                        <span className="flex-1 py-2.5 bg-red-50 text-red-500 font-bold text-xs rounded-xl text-center border border-red-200">
+                                            Rechazado
+                                        </span>
                                     )}
                                     <button
                                         onClick={() => requestDelete(driver)}

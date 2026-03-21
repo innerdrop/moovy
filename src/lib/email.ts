@@ -327,3 +327,103 @@ export async function sendDriverApprovalEmail(email: string, firstName: string) 
 
     return sendEmail({ to: email, subject: '🎉 ¡Tu solicitud de repartidor fue aprobada!', html, tag: 'driver_approved' });
 }
+
+/**
+ * Notificación al admin — nueva solicitud de comercio
+ */
+export async function sendMerchantRequestNotification(
+    businessName: string,
+    ownerName: string | null,
+    ownerEmail: string | null,
+    category: string | null
+) {
+    const alertEmails = await getAlertEmails();
+    const html = emailLayout(`
+        <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de comercio</h2>
+        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+            Un nuevo comercio quiere sumarse a MOOVY:
+        </p>
+        ${emailInfoBox(`
+            <p style="margin: 5px 0; color: #4a5568;"><strong>Comercio:</strong> ${businessName}</p>
+            <p style="margin: 5px 0; color: #4a5568;"><strong>Due&ntilde;o:</strong> ${ownerName || "No especificado"}</p>
+            <p style="margin: 5px 0; color: #4a5568;"><strong>Email:</strong> ${ownerEmail || "No especificado"}</p>
+            <p style="margin: 5px 0; color: #4a5568;"><strong>Categor&iacute;a:</strong> ${category || "No especificada"}</p>
+        `)}
+        <p style="color: #6b7280; font-size: 14px;">
+            Revis&aacute; la documentaci&oacute;n y aprob&aacute; o rechaz&aacute; desde el panel de operaciones.
+        </p>
+        ${emailButton('Ir al panel OPS', `${baseUrl}/ops/comercios`, 'blue')}
+    `);
+
+    const results = await Promise.all(
+        alertEmails.map(email =>
+            sendEmail({ to: email, subject: `🏪 Nueva solicitud de comercio: ${businessName}`, html, tag: 'merchant_request_admin' })
+        )
+    );
+    return results.some(r => r);
+}
+
+/**
+ * Comercio aprobado — email al merchant
+ */
+export async function sendMerchantApprovalEmail(email: string, businessName: string) {
+    const html = emailLayout(`
+        <h2 style="color: #111827; margin-top: 0;">&iexcl;Felicitaciones, ${businessName}! &#x1f389;</h2>
+        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+            Tu solicitud para vender en MOOVY fue <strong style="color: #059669;">aprobada</strong>.
+            Ya pod&eacute;s cargar tus productos y empezar a recibir pedidos.
+        </p>
+        ${emailAlertBox(`
+            <strong>Pr&oacute;ximos pasos:</strong>
+            <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Configur&aacute; tus horarios de atenci&oacute;n</li>
+                <li>Sub&iacute; tus productos con fotos y precios</li>
+                <li>Activ&aacute; tu panel para recibir pedidos</li>
+            </ol>
+        `, 'success')}
+        ${emailButton('Ir a mi panel de comercio', `${baseUrl}/comercios`, 'green')}
+        <p style="color: #9ca3af; font-size: 14px; text-align: center;">
+            Si ten&eacute;s dudas, escribinos por WhatsApp al soporte.
+        </p>
+    `);
+
+    return sendEmail({ to: email, subject: `🎉 ¡Tu comercio ${businessName} fue aprobado en MOOVY!`, html, tag: 'merchant_approved' });
+}
+
+/**
+ * Comercio rechazado — email al merchant
+ */
+export async function sendMerchantRejectionEmail(email: string, businessName: string, reason?: string) {
+    const html = emailLayout(`
+        <h2 style="color: #111827; margin-top: 0;">Solicitud de comercio no aprobada</h2>
+        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+            Lamentamos informarte que la solicitud de <strong>${businessName}</strong> en MOOVY no fue aprobada en esta oportunidad.
+        </p>
+        ${reason ? emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning') : ''}
+        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+            Pod&eacute;s corregir los datos indicados y volver a registrarte, o contactarnos por WhatsApp si ten&eacute;s preguntas.
+        </p>
+        ${emailButton('Contactar soporte', `https://wa.me/5492901000000`, 'blue')}
+    `);
+
+    return sendEmail({ to: email, subject: `Solicitud de comercio ${businessName} — MOOVY`, html, tag: 'merchant_rejected' });
+}
+
+/**
+ * Repartidor rechazado — email al driver
+ */
+export async function sendDriverRejectionEmail(email: string, firstName: string, reason?: string) {
+    const html = emailLayout(`
+        <h2 style="color: #111827; margin-top: 0;">Solicitud de repartidor no aprobada</h2>
+        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+            Hola ${firstName}, lamentamos informarte que tu solicitud para ser repartidor en MOOVY no fue aprobada en esta oportunidad.
+        </p>
+        ${reason ? emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning') : ''}
+        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+            Pod&eacute;s corregir la documentaci&oacute;n indicada y volver a registrarte, o contactarnos por WhatsApp si ten&eacute;s preguntas.
+        </p>
+        ${emailButton('Contactar soporte', `https://wa.me/5492901000000`, 'blue')}
+    `);
+
+    return sendEmail({ to: email, subject: 'Solicitud de repartidor — MOOVY', html, tag: 'driver_rejected' });
+}
