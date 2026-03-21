@@ -291,16 +291,15 @@ antes de empezar a trabajar:
 
 ⚠️ PENDIENTES QUE NECESITAN TU ACCIÓN:
 
-### Credenciales y cuentas
+### Credenciales y cuentas (SOLO PARA PRODUCCIÓN — no bloquea desarrollo)
 - [ ] Crear/activar cuenta MercadoPago producción y cargar API keys (MP_ACCESS_TOKEN, MP_PUBLIC_KEY, MP_WEBHOOK_SECRET)
 - [ ] Configurar webhook URL en panel MP → https://somosmoovy.com/api/webhooks/mercadopago
-
-### Configuración externa
 - [ ] Configurar SMTP en producción (SMTP_HOST, SMTP_USER, SMTP_PASS en .env del VPS)
+  ℹ️ En dev se trabaja con credenciales TEST de MP. Emails no se envían sin SMTP. Esto se activa al momento del deploy a producción.
 
 ### Testing manual requerido
-- [ ] Hacer un pedido completo real con MercadoPago en producción
-- [ ] Smoke test de los 4 flujos completos en local
+- [ ] Smoke test de los 4 flujos completos en local (ver guía en PROJECT_STATUS.md)
+- [ ] Hacer un pedido completo real con MercadoPago en producción (post-deploy)
 
 ## Instrucciones para cada sesión
 1. Leé este archivo y PROJECT_STATUS.md antes de hacer cualquier cosa

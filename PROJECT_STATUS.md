@@ -11,8 +11,8 @@ Score: 94/100 | P0: 2 tareas | P1: 1 | P2: 12
   API: approve/reject endpoints para ambos. Emails: 4 nuevos templates.
   OPS UI: botones Aprobar/Rechazar con modal de motivo. Notificación al admin en registro merchant.
 
-- [ ] Credenciales MP producción — config + testing — M
-  Cambiar TEST- por credenciales productivas. Verificar webhook URL en panel MP. Testear pago real ida y vuelta.
+- [ ] Credenciales MP producción — config + testing — M ⏸️ NO BLOQUEANTE PARA DEV
+  Para producción con dinero real. En dev se trabaja con credenciales TEST. Al momento de subir a prod: cambiar API keys, configurar webhook URL en panel MP, testear pago real.
 
 - [x] Validación de scheduled delivery — `src/app/api/orders/route.ts`, `src/lib/validations.ts` — M ✅ 2026-03-21
   Zod: slot mínimo 1.5h desde ahora, máximo 48h, horario 9-22h, duración 1-3h.
@@ -39,7 +39,7 @@ Score: 94/100 | P0: 2 tareas | P1: 1 | P2: 12
   Admin, StoreSettings, PointsConfig, MoovyConfig (10 keys), PackageCategories, DeliveryRates, PricingTiers.
 
 - [ ] Smoke test manual de flujo completo — ningún archivo — L
-  Recorrer los 4 flujos completos en local antes de deploy. Documentar bugs encontrados.
+  Recorrer los 4 flujos completos en local antes de deploy. Documentar bugs encontrados. (Ver guía abajo)
 
 ## P1 — Sin esto los usuarios se van
 

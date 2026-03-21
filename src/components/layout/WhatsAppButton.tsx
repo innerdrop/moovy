@@ -4,13 +4,12 @@
 import { MessageCircle } from "lucide-react";
 
 interface WhatsAppButtonProps {
-    // TODO: Reemplazar con el número real de soporte MOOVY
     phoneNumber?: string;
     message?: string;
 }
 
 export default function WhatsAppButton({
-    phoneNumber = "5492901000000", // TODO: número real de WhatsApp soporte
+    phoneNumber = "5492901553173",
     message = "Hola! Necesito ayuda con MOOVY",
 }: WhatsAppButtonProps) {
     if (!phoneNumber) return null;
