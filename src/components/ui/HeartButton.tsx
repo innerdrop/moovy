@@ -24,13 +24,14 @@ export default function HeartButton({ type, itemId, className = "" }: HeartButto
         }
     }, [session?.user, loaded, loadFavorites]);
 
-    const favorited = isFavorite(type, itemId);
+    const isLoggedIn = !!session?.user;
+    const favorited = isLoggedIn ? isFavorite(type, itemId) : false;
 
     const handleClick = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!session?.user) {
+        if (!isLoggedIn) {
             router.push("/login");
             return;
         }
@@ -40,6 +41,30 @@ export default function HeartButton({ type, itemId, className = "" }: HeartButto
         setTimeout(() => setAnimating(false), 450);
     };
 
+    // Logged-out: subtle bookmark-style hint that invites login
+    if (!isLoggedIn) {
+        return (
+            <button
+                onClick={handleClick}
+                className={`
+                    w-8 h-8 rounded-full flex items-center justify-center
+                    bg-white/70 backdrop-blur-sm
+                    transition-all duration-200
+                    hover:bg-white hover:scale-110 active:scale-95
+                    group
+                    ${className}
+                `}
+                aria-label="Iniciá sesión para guardar en favoritos"
+                title="Iniciá sesión para guardar"
+            >
+                <Heart
+                    className="w-4 h-4 text-gray-300 group-hover:text-pink-400 transition-colors duration-200"
+                />
+            </button>
+        );
+    }
+
+    // Logged-in: full interactive heart
     return (
         <button
             onClick={handleClick}
@@ -57,7 +82,7 @@ export default function HeartButton({ type, itemId, className = "" }: HeartButto
                 className={`w-4 h-4 transition-colors duration-200 ${
                     favorited
                         ? "fill-pink-500 text-pink-500"
-                        : "text-gray-500 hover:text-pink-400"
+                        : "text-gray-400 hover:text-pink-400"
                 }`}
             />
         </button>

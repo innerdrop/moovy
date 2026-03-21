@@ -76,6 +76,7 @@ export async function POST(request: Request) {
             deliveryType,
             scheduledSlotStart,
             scheduledSlotEnd,
+            couponCode,
         } = data;
 
         const isMultiVendor = (groups && groups.length > 1) || false;
@@ -155,6 +156,24 @@ export async function POST(request: Request) {
                 const rate = merchant.commissionRate || defaultMerchantCommission;
                 moovyCommission = subtotal * (rate / 100);
                 merchantPayout = subtotal - moovyCommission;
+            }
+        }
+
+        // Validate coupon if provided (before transaction to fail fast)
+        let validCouponCode: string | undefined;
+        if (couponCode) {
+            try {
+                const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
+                if (coupon && coupon.isActive) {
+                    const now = new Date();
+                    const notExpired = !coupon.validUntil || coupon.validUntil > now;
+                    const notExhausted = !coupon.maxUses || coupon.usedCount < coupon.maxUses;
+                    if (notExpired && notExhausted) {
+                        validCouponCode = couponCode;
+                    }
+                }
+            } catch (e) {
+                orderLogger.warn({ couponCode }, "Coupon validation failed, proceeding without coupon");
             }
         }
 

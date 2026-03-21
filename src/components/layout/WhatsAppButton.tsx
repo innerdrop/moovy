@@ -23,7 +23,7 @@ export default function WhatsAppButton({
             target="_blank"
             rel="noopener noreferrer"
             title="Soporte por WhatsApp"
-            className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg shadow-green-500/30 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            className="fixed bottom-6 right-4 z-40 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg shadow-green-500/30 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
             aria-label="Contactar soporte por WhatsApp"
         >
             <MessageCircle className="w-7 h-7" />

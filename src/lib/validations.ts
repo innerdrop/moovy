@@ -47,6 +47,7 @@ export const CreateOrderSchema = z.object({
     deliveryType: z.enum(["IMMEDIATE", "SCHEDULED"]).default("IMMEDIATE"),
     scheduledSlotStart: z.string().datetime().optional(),
     scheduledSlotEnd: z.string().datetime().optional(),
+    couponCode: z.string().max(50).optional(),
 }).refine(
     (data) => {
         if (data.deliveryType === "SCHEDULED") {

@@ -1,28 +1,52 @@
-// @ts-ignore — pino has esm/cjs compatibility quirks
-import pino from "pino";
+// Structured logger — uses pino if available, falls back to console
+let pinoLogger: any = null;
 
-const isDev = process.env.NODE_ENV !== "production";
+try {
+    // Dynamic require to avoid breaking if pino isn't available
+    const pino = require("pino");
+    const isDev = process.env.NODE_ENV !== "production";
 
-const logger = pino({
-    level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
-    ...(isDev ? {
-        transport: {
-            target: "pino-pretty",
-            options: {
-                colorize: true,
-                translateTime: "HH:MM:ss",
-                ignore: "pid,hostname",
+    pinoLogger = pino({
+        level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
+        ...(isDev ? {
+            transport: {
+                target: "pino-pretty",
+                options: {
+                    colorize: true,
+                    translateTime: "HH:MM:ss",
+                    ignore: "pid,hostname",
+                },
             },
+        } : {}),
+        formatters: {
+            level: (label: string) => ({ level: label }),
         },
-    } : {}),
-    // Production: JSON output for log aggregation
-    formatters: {
-        level: (label) => ({ level: label }),
+        base: {
+            service: "moovy-api",
+        },
+    });
+} catch {
+    // pino not available — use console fallback
+}
+
+// Console-based fallback logger that matches pino's API
+const consoleLogger = {
+    info: (obj: any, msg?: string) => console.log(`[INFO]`, msg || "", typeof obj === "string" ? obj : JSON.stringify(obj)),
+    error: (obj: any, msg?: string) => console.error(`[ERROR]`, msg || "", typeof obj === "string" ? obj : JSON.stringify(obj)),
+    warn: (obj: any, msg?: string) => console.warn(`[WARN]`, msg || "", typeof obj === "string" ? obj : JSON.stringify(obj)),
+    debug: (obj: any, msg?: string) => console.log(`[DEBUG]`, msg || "", typeof obj === "string" ? obj : JSON.stringify(obj)),
+    child: (bindings: Record<string, unknown>) => {
+        const prefix = bindings.module ? `[${bindings.module}]` : "";
+        return {
+            info: (obj: any, msg?: string) => console.log(prefix, `[INFO]`, msg || "", typeof obj === "object" ? JSON.stringify(obj) : obj),
+            error: (obj: any, msg?: string) => console.error(prefix, `[ERROR]`, msg || "", typeof obj === "object" ? JSON.stringify(obj) : obj),
+            warn: (obj: any, msg?: string) => console.warn(prefix, `[WARN]`, msg || "", typeof obj === "object" ? JSON.stringify(obj) : obj),
+            debug: (obj: any, msg?: string) => console.log(prefix, `[DEBUG]`, msg || "", typeof obj === "object" ? JSON.stringify(obj) : obj),
+        };
     },
-    base: {
-        service: "moovy-api",
-    },
-});
+};
+
+const logger = pinoLogger || consoleLogger;
 
 export default logger;
 
