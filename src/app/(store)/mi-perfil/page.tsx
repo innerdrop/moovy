@@ -29,6 +29,8 @@ import {
     LayoutDashboard,
     Truck,
     UserPlus,
+    Trash2,
+    AlertTriangle,
 } from "lucide-react";
 import { useUserPoints } from "@/hooks/useUserPoints";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -40,6 +42,9 @@ export default function ProfilePage() {
     const [showRedemptions, setShowRedemptions] = useState(false);
     const [redemptions, setRedemptions] = useState<any[]>([]);
     const [loadingRedemptions, setLoadingRedemptions] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
     const firstName = session?.user?.name?.split(" ")[0] || "Usuario";
 
@@ -128,6 +133,25 @@ export default function ProfilePage() {
             toast.error("Error de conexión");
         } finally {
             setActivatingRole(null);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmText !== "ELIMINAR") return;
+        setDeleteLoading(true);
+        try {
+            const res = await fetch("/api/profile/delete", { method: "POST" });
+            if (res.ok) {
+                toast.success("Tu cuenta ha sido eliminada");
+                signOut({ callbackUrl: "/" });
+            } else {
+                const data = await res.json();
+                toast.error(data.error || "Error al eliminar la cuenta");
+            }
+        } catch {
+            toast.error("Error de conexión");
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -439,10 +463,74 @@ export default function ProfilePage() {
                     Cerrar Sesión
                 </button>
 
+                {/* Delete Account Button */}
+                <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full text-gray-400 font-medium text-xs py-3 flex items-center justify-center gap-2 hover:text-red-500 transition"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Eliminar mi cuenta
+                </button>
+
                 <p className="text-center text-[10px] text-gray-400 pb-4">
                     Versión 1.0.0 • Hecho con ❤️ en Ushuaia
                 </p>
             </div>
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                                <AlertTriangle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Eliminar cuenta</h3>
+                                <p className="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
+                            <p className="text-sm text-red-800 leading-relaxed">
+                                Al eliminar tu cuenta se borrarán permanentemente tus datos personales, historial de pedidos, puntos MOOVER y favoritos. Los pedidos activos en curso no serán afectados.
+                            </p>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-2">
+                            Escribí <strong className="text-red-600">ELIMINAR</strong> para confirmar:
+                        </p>
+                        <input
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder="ELIMINAR"
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm mb-4"
+                        />
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
+                                className="flex-1 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition text-sm font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={deleteConfirmText !== "ELIMINAR" || deleteLoading}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {deleteLoading ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                )}
+                                Eliminar definitivamente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Redemptions Modal */}
             {showRedemptions && (
