@@ -1,5 +1,7 @@
 // Utility functions for distance and time calculations
 
+import { getVehicleSpeed } from "./vehicle-type-mapping";
+
 /**
  * Calculate distance between two points using Haversine formula
  * @param unit - 'km' (default) or 'm' for meters
@@ -32,21 +34,19 @@ function toRad(deg: number): number {
 /**
  * Estimate travel time based on distance and vehicle type
  * @param distanceKm distance in kilometers
- * @param vehicleType type of vehicle (MOTO, AUTO, BICI)
+ * @param vehicleType type of vehicle — accepts both enum (MOTO, CAR, BIKE, TRUCK)
+ *   and spanish (moto, auto, bicicleta, camioneta) formats.
+ *   P0 FIX: Now uses getVehicleSpeed() for consistent normalization.
  * @returns estimated time in minutes
  */
 export function estimateTravelTime(
     distanceKm: number,
     vehicleType: string = "MOTO"
 ): number {
-    // Average speeds in km/h for urban areas
-    const speeds: Record<string, number> = {
-        MOTO: 25,   // Motos en ciudad con tráfico
-        AUTO: 20,   // Autos más lentos por tráfico
-        BICI: 12,   // Bicicletas
-    };
+    // P0 FIX: Use centralized vehicle speed with normalization
+    // This handles "bicicleta" → BIKE → 12 km/h transparently
+    const speed = getVehicleSpeed(vehicleType);
 
-    const speed = speeds[vehicleType] || speeds.MOTO;
     const timeHours = distanceKm / speed;
     const timeMinutes = Math.ceil(timeHours * 60);
 
