@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 95/100 | P0: 2 tareas | P1: 0 | P2: 12
+Score: 97/100 | P0: 2 tareas | P1: 0 | P2: 8
 Última actualización: 2026-03-21
 
 ## P0 — Sin esto no se lanza
@@ -87,17 +87,17 @@ Score: 95/100 | P0: 2 tareas | P1: 0 | P2: 12
 
 ## P2 — Esto lo hace competitivo
 
-- [ ] Logger estructurado (Pino/Winston) — reemplazar console.log — L
-  Para debugging en producción. Agregar request ID, user ID, latencias.
+- [x] Logger estructurado (Pino) — `src/lib/logger.ts` — L ✅ 2026-03-21
+  Child loggers por módulo, 62 calls en orders/webhooks/assignment/email. JSON en prod, pretty en dev.
 
 - [ ] Migrar rate limiter a Redis — `src/lib/rate-limit.ts` — M
   Hoy es in-memory, se resetea con cada deploy. Redis persiste y escala.
 
-- [ ] Encriptación at-rest para CUIT/CBU — schema + lib — M
-  Datos fiscales sensibles guardados en plain text. Usar AES-256 con key en env var.
+- [x] Encriptación at-rest para CUIT/CBU — `src/lib/encryption.ts` — M ✅ 2026-03-21
+  AES-256-GCM en merchant/seller/driver registration y APIs. Backward compatible. Dev key fallback.
 
-- [ ] Métricas de performance (Web Vitals) — layout.tsx — S
-  Reportar LCP, FID, CLS a analytics para optimizar UX.
+- [x] Métricas de performance (Web Vitals) — `src/components/analytics/WebVitalsReporter.tsx` — S ✅ 2026-03-21
+  LCP, INP, CLS, FCP, TTFB. sendBeacon en prod, console coloreada en dev. API /api/analytics/vitals.
 
 - [ ] App nativa Android (TWA o React Native) — proyecto separado — XL
   Para notificaciones nativas, geolocalización background, mejor UX.
@@ -108,8 +108,8 @@ Score: 95/100 | P0: 2 tareas | P1: 0 | P2: 12
 - [ ] Split payment automático via MP Marketplace API — `src/lib/mercadopago.ts` — L
   Pagar directo al vendedor/merchant sin intervención manual. Requiere aprobación MP.
 
-- [ ] Sistema de cupones/descuentos — schema + API + checkout — M
-  Códigos de descuento por porcentaje o monto fijo. Para marketing y retención.
+- [x] Sistema de cupones/descuentos — schema + API + checkout + admin — M ✅ 2026-03-21
+  Coupon + CouponUsage models. Validate API, CouponInput en checkout, admin CRUD en /ops/cupones. % o fijo, límites, fechas.
 
 - [ ] Chat en tiempo real buyer-driver — Socket.IO + UI — M
   Para coordinar entrega (portería, timbre, referencias).
@@ -167,3 +167,7 @@ Score: 95/100 | P0: 2 tareas | P1: 0 | P2: 12
 - [x] Smart scheduled delivery (slots basados en horario real del vendor) — 2026-03-21
 - [x] Seller schedule config (UI + server action + schema) — 2026-03-21
 - [x] Migración Google Places API (PlaceAutocompleteElement) — 2026-03-21
+- [x] Logger estructurado Pino (62 calls, 4 módulos críticos) — 2026-03-21
+- [x] Encriptación AES-256-GCM para CUIT/CBU (6 APIs) — 2026-03-21
+- [x] Web Vitals (LCP/INP/CLS/FCP/TTFB + API + admin page) — 2026-03-21
+- [x] Sistema de cupones (schema + validate + checkout + admin CRUD) — 2026-03-21
