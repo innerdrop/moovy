@@ -141,19 +141,6 @@ export function AddressAutocomplete({
 
             const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
 
-            // DEBUG: log response structure to identify correct property paths
-            if (response.suggestions?.[0]) {
-                const sample = response.suggestions[0];
-                console.log("[AddressAutocomplete] DEBUG suggestion structure:", JSON.stringify(sample, null, 2));
-                console.log("[AddressAutocomplete] DEBUG placePrediction keys:", Object.keys(sample.placePrediction || {}));
-                const pp = sample.placePrediction;
-                if (pp) {
-                    console.log("[AddressAutocomplete] DEBUG pp.text:", pp.text, "type:", typeof pp.text);
-                    console.log("[AddressAutocomplete] DEBUG pp.mainText:", pp.mainText, "type:", typeof pp.mainText);
-                    console.log("[AddressAutocomplete] DEBUG pp.structuredFormat:", pp.structuredFormat);
-                }
-            }
-
             const mapped: Suggestion[] = (response.suggestions || []).slice(0, 5).map((s: any) => {
                 const pp = s.placePrediction;
 
