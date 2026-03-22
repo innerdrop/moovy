@@ -65,41 +65,28 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                             (item.href !== "/" && pathname.startsWith(item.href));
                         const Icon = item.icon;
 
-                        // Central Button (MOOVER)
+                        // Central Button (MOOVER) — Orbe luminoso
                         if (item.isCenter) {
                             return (
                                 <div key={item.href} className="flex-1 flex justify-center relative z-10">
                                     <Link
                                         href={item.href}
                                         onClick={(e) => handleNavClick(e, item)}
-                                        className="relative -top-3 flex flex-col items-center group"
+                                        className="relative -top-3 flex flex-col items-center group active:scale-95 transition-transform duration-150"
                                     >
-                                        {/* Sparkle stars when logged in */}
-                                        {isLoggedIn && (
-                                            <>
-                                                <span className="absolute -top-1 -left-1 text-red-400 animate-pulse" style={{ animationDelay: '0s' }}>✦</span>
-                                                <span className="absolute -top-1 -right-1 text-red-300 animate-pulse" style={{ animationDelay: '0.3s' }}>✧</span>
-                                                <span className="absolute top-3 -left-3 text-red-400 animate-pulse" style={{ animationDelay: '0.6s' }}>✦</span>
-                                                <span className="absolute top-3 -right-3 text-red-400 animate-pulse" style={{ animationDelay: '0.9s' }}>✧</span>
-                                            </>
-                                        )}
-
-                                        {/* Radar ring pulse */}
-                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-red-400/20' : 'bg-red-400/15'}`}
-                                              style={{ animation: 'moover-ring 2s cubic-bezier(0,0,0.2,1) infinite' }} />
-                                        <span className={`absolute w-14 h-14 rounded-full ${isLoggedIn ? 'bg-red-400/15' : 'bg-red-400/10'}`}
-                                              style={{ animation: 'moover-ring 2s cubic-bezier(0,0,0.2,1) infinite 0.5s' }} />
-
-                                        <div className={`
-                                            w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 relative
-                                            ${isLoggedIn
-                                                ? "bg-gradient-to-br from-[#e60012] to-[#cc000f] shadow-red-500/40"
-                                                : "bg-gradient-to-br from-[#e60012]/60 to-[#cc000f]/60 shadow-red-500/20"
-                                            }
-                                        `}
-                                        style={{ animation: 'moover-breathe 3s ease-in-out infinite' }}
+                                        <div
+                                            className={`
+                                                w-14 h-14 rounded-full flex items-center justify-center relative transition-all duration-300
+                                                bg-gradient-to-br from-[#e60012] to-[#cc000f]
+                                                ${isLoggedIn ? "opacity-100" : "opacity-85"}
+                                            `}
+                                            style={{
+                                                animation: isLoggedIn
+                                                    ? 'moover-glow-pulse 2.5s ease-in-out infinite, moover-breathe 3s ease-in-out infinite'
+                                                    : 'moover-glow-idle 4s ease-in-out infinite',
+                                            }}
                                         >
-                                            <Icon className="w-8 h-8 text-white fill-current" />
+                                            <Icon className={`w-7 h-7 text-white ${isLoggedIn ? "fill-current" : ""}`} />
                                         </div>
                                         <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-[#e60012]" : "text-gray-400"}`}>
                                             {item.label}
