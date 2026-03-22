@@ -28,7 +28,7 @@ export default function CarritoPage() {
                             <ShoppingBag className="w-12 h-12 text-gray-300" />
                         </div>
                         <h2 className="text-xl font-bold text-navy mb-2">Tu carrito está vacío</h2>
-                        <p className="text-gray-500 mb-6 text-sm">Agregá productos para empezar tu pedido</p>
+                        <p className="text-gray-500 mb-6 text-base">Agregá productos para empezar tu pedido</p>
                         <Link href="/productos" className="btn-primary">Ver Productos</Link>
                     </div>
                 </div>
@@ -69,7 +69,7 @@ export default function CarritoPage() {
                             ) : (
                                 <Store className="w-4 h-4 text-[#e60012]" />
                             )}
-                            <span className="font-semibold text-sm text-gray-700">{group.vendorName}</span>
+                            <span className="font-semibold text-base text-gray-700">{group.vendorName}</span>
                             <span className="text-xs text-gray-400 ml-auto">
                                 {formatPrice(group.subtotal)}
                             </span>
@@ -87,7 +87,7 @@ export default function CarritoPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-navy truncate">{item.name}</h3>
-                                    {item.variantName && <p className="text-xs text-gray-500">{item.variantName}</p>}
+                                    {item.variantName && <p className="text-sm text-gray-500">{item.variantName}</p>}
                                     <p className="text-moovy font-bold mt-1">{formatPrice(item.price)}</p>
                                     <div className="flex items-center justify-between mt-2">
                                         <div className="flex items-center gap-2">
@@ -116,14 +116,14 @@ export default function CarritoPage() {
             <div className="fixed bottom-16 left-0 right-0 bg-white border-t shadow-lg p-4 safe-area-bottom">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <p className="text-sm text-gray-500">Total</p>
+                        <p className="text-base text-gray-500">Total</p>
                         <p className="text-2xl font-bold text-navy">{formatPrice(total)}</p>
                     </div>
                     <Link href="/checkout" className="btn-primary py-3 px-6 flex items-center gap-2">
                         Continuar <ArrowRight className="w-5 h-5" />
                     </Link>
                 </div>
-                <p className="text-xs text-gray-400 text-center">El costo de envío se calcula en el checkout</p>
+                <p className="text-sm text-gray-400 text-center">El costo de envío se calcula en el checkout</p>
             </div>
         </>
     );

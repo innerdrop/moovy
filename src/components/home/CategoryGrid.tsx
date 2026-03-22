@@ -98,7 +98,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                                 <div className="w-[66px] h-[66px] rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center group-hover:bg-gray-200 group-hover:scale-105 transition-all duration-200">
                                     <CategoryImage cat={cat} />
                                 </div>
-                                <span className="text-[12px] font-bold text-gray-800 group-hover:text-[#e60012] transition-colors text-center leading-tight w-full truncate">
+                                <span className="text-xs font-bold text-gray-800 group-hover:text-[#e60012] transition-colors text-center leading-tight w-full truncate">
                                     {cat.name}
                                 </span>
                             </div>

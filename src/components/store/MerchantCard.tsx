@@ -57,7 +57,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                 )}
 
                 {/* Status Badge (Open/Closed) */}
-                <div className={`absolute top-3 right-3 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-md transition-all duration-300 ${merchant.isOpen
+                <div className={`absolute top-3 right-3 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-md transition-all duration-300 ${merchant.isOpen
                     ? "bg-green-500/90 hover:bg-green-500"
                     : "bg-gray-500/90 hover:bg-gray-600"
                     }`}>
@@ -81,7 +81,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
             <div className="p-4">
                 <div className="flex justify-between items-start mb-1">
                     <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-[#e60012] transition line-clamp-1">
+                        <h3 className="font-bold text-gray-900 text-xl group-hover:text-[#e60012] transition line-clamp-1">
                             {cleanEncoding(merchant.name)}
                         </h3>
                         {merchant.isPremium ? (
@@ -90,17 +90,17 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                             <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
                         )}
                     </div>
-                    <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-xs font-semibold">
+                    <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-sm font-semibold">
                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                         <span>{merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}</span>
                     </div>
                 </div>
 
-                <p className="text-gray-500 text-sm line-clamp-2 mb-3 min-h-[40px]">
+                <p className="text-gray-500 text-base line-clamp-2 mb-3 min-h-[44px]">
                     {cleanEncoding(merchant.description || "Sin descripción")}
                 </p>
 
-                <div className="flex items-center gap-4 text-xs text-gray-500 border-t border-gray-100 pt-3">
+                <div className="flex items-center gap-4 text-sm text-gray-500 border-t border-gray-100 pt-3">
                     <div className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
                         <span>{merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min</span>

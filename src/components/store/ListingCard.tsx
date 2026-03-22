@@ -165,13 +165,13 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                             {listing.seller?.isVerified ? (
                                 <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-sm">
                                     <ShieldCheck className="w-3 h-3 text-violet-600" />
-                                    <span className="text-[9px] font-bold text-violet-700">Verificado</span>
+                                    <span className="text-[11px] font-bold text-violet-700">Verificado</span>
                                 </div>
                             ) : <div />}
                             {isLowStock && (
                                 <div className="flex items-center gap-0.5 bg-orange-500/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
                                     <AlertTriangle className="w-2.5 h-2.5 text-white" />
-                                    <span className="text-[9px] font-bold text-white">Últimas {listing.stock}</span>
+                                    <span className="text-[11px] font-bold text-white">Últimas {listing.stock}</span>
                                 </div>
                             )}
                         </div>
@@ -180,7 +180,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                     {/* ── Info Section ── */}
                     <div className="p-3 flex-1 flex flex-col gap-1">
                         {/* Title */}
-                        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-snug group-hover:text-violet-700 transition-colors">
+                        <h3 className="font-semibold text-gray-800 text-base line-clamp-2 leading-snug group-hover:text-violet-700 transition-colors">
                             {listing.title}
                         </h3>
 
@@ -208,11 +208,11 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                                     </span>
                                 </div>
                             )}
-                            <span className="text-[11px] text-gray-500 truncate group-hover/seller:text-violet-600 transition-colors">
+                            <span className="text-xs text-gray-500 truncate group-hover/seller:text-violet-600 transition-colors">
                                 {listing.seller?.displayName || "Vendedor"}
                             </span>
                             {listing.seller?.rating && (
-                                <span className="flex items-center gap-0.5 text-[10px] text-amber-600 ml-auto">
+                                <span className="flex items-center gap-0.5 text-xs text-amber-600 ml-auto">
                                     <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                                     {listing.seller.rating.toFixed(1)}
                                 </span>
@@ -221,7 +221,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
 
                         {/* Social proof line */}
                         {hasSold && (
-                            <span className="text-[10px] text-purple-400 font-medium">
+                            <span className="text-xs text-purple-400 font-medium">
                                 {listing.soldCount} vendido{(listing.soldCount || 0) > 1 ? "s" : ""}
                             </span>
                         )}
@@ -231,7 +231,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
 
                         {/* Price + Add to cart */}
                         <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-purple-50">
-                            <p className="mp-gradient-text text-base font-extrabold tracking-tight">
+                            <p className="mp-gradient-text text-lg font-extrabold tracking-tight">
                                 ${listing.price.toLocaleString("es-AR")}
                             </p>
                             {showAddButton && (
@@ -277,7 +277,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
 
                 {/* Condition Badge */}
                 <span
-                    className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ${cond.bg}`}
+                    className={`absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm ${cond.bg}`}
                 >
                     {cond.text}
                 </span>
@@ -287,7 +287,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
 
             {/* Info */}
             <div className="p-3 flex-1 flex flex-col">
-                <h3 className="font-semibold text-gray-800 text-sm transition line-clamp-2 mb-1 group-hover:text-[#e60012]">
+                <h3 className="font-semibold text-gray-800 text-base transition line-clamp-2 mb-1 group-hover:text-[#e60012]">
                     {listing.title}
                 </h3>
 
@@ -315,7 +315,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                             </span>
                         </div>
                     )}
-                    <span className="text-xs text-gray-500 truncate group-hover/seller:text-emerald-600">
+                    <span className="text-sm text-gray-500 truncate group-hover/seller:text-emerald-600">
                         {listing.seller?.displayName || "Vendedor"}
                     </span>
                     {listing.seller?.isVerified && (
@@ -334,7 +334,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                     const badge = getAvailabilityBadge(listing.seller?.availability);
                     if (!badge) return null;
                     return (
-                        <div className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full w-fit mb-auto ${badge.bg}`}>
+                        <div className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full w-fit mb-auto ${badge.bg}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                             {badge.text}
                         </div>
@@ -343,7 +343,7 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
 
                 {/* Price + Add to cart */}
                 <div className="flex items-center justify-between mt-3">
-                    <p className="text-lg font-bold text-[#e60012]">
+                    <p className="text-xl font-bold text-[#e60012]">
                         ${listing.price.toLocaleString("es-AR")}
                     </p>
                     {showAddButton && (

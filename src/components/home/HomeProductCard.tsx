@@ -59,7 +59,7 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
                         </div>
                     )}
                     {product.isFeatured && (
-                        <span className="absolute top-2 left-2 bg-[#e60012] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        <span className="absolute top-2 left-2 bg-[#e60012] text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                             Destacado
                         </span>
                     )}
@@ -80,14 +80,14 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
                 </button>
 
                 {merchantName && (
-                    <p className="text-[10px] text-gray-400 font-medium mb-0.5 truncate">{merchantName}</p>
+                    <p className="text-xs text-gray-400 font-medium mb-0.5 truncate">{merchantName}</p>
                 )}
                 <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
-                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#e60012] transition line-clamp-2 leading-tight mb-1">
+                    <h3 className="text-base font-bold text-gray-900 group-hover:text-[#e60012] transition line-clamp-2 leading-tight mb-1">
                         {product.name}
                     </h3>
                 </Link>
-                <p className="text-base font-extrabold text-[#e60012]">
+                <p className="text-lg font-extrabold text-[#e60012]">
                     ${product.price.toLocaleString("es-AR")}
                 </p>
             </div>

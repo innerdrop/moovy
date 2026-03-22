@@ -28,7 +28,7 @@ export default function Footer() {
                                 priority={false}
                             />
                         </Link>
-                        <p className="text-gray-400 text-xs leading-relaxed max-w-xs">
+                        <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
                             Revolucionando el delivery en el Fin del Mundo. Conectamos todo Ushuaia en una sola plataforma.
                         </p>
                         <div className="flex gap-3">
@@ -40,7 +40,7 @@ export default function Footer() {
                     {/* 2. Explorar */}
                     <div>
                         <h4 className="text-white font-bold mb-3 text-sm">Explorar</h4>
-                        <ul className="space-y-2 text-xs text-gray-400">
+                        <ul className="space-y-2 text-sm text-gray-400">
                             <li><FooterLink href="/">Pedir Ahora</FooterLink></li>
                             <li><FooterLink href="/marketplace">Marketplace</FooterLink></li>
                             <li><FooterLink href="/puntos">Programa MOOVER</FooterLink></li>
@@ -53,7 +53,7 @@ export default function Footer() {
                     {/* 3. Legal — dos sub-columnas en mobile */}
                     <div>
                         <h4 className="text-white font-bold mb-3 text-sm">Legal</h4>
-                        <ul className="space-y-2 text-xs text-gray-400">
+                        <ul className="space-y-2 text-sm text-gray-400">
                             <li><FooterLink href="/terminos">Términos Generales</FooterLink></li>
                             <li><FooterLink href="/privacidad">Privacidad</FooterLink></li>
                             <li><FooterLink href="/cookies">Cookies</FooterLink></li>
@@ -68,7 +68,7 @@ export default function Footer() {
                     {/* 4. Contacto */}
                     <div className="col-span-2 md:col-span-1">
                         <h4 className="text-white font-bold mb-3 text-sm">Contacto</h4>
-                        <ul className="space-y-3 text-xs text-gray-400">
+                        <ul className="space-y-3 text-sm text-gray-400">
                             <li className="flex items-center gap-2">
                                 <Mail className="w-4 h-4 text-[#e60012] shrink-0" />
                                 <a href="mailto:somosmoovy@gmail.com" className="hover:text-white transition">somosmoovy@gmail.com</a>
@@ -80,14 +80,14 @@ export default function Footer() {
                                 </a>
                             </li>
                         </ul>
-                        <p className="text-[10px] text-gray-600 mt-4">
+                        <p className="text-xs text-gray-600 mt-4">
                             Ushuaia, Tierra del Fuego, Argentina
                         </p>
                     </div>
                 </div>
 
                 {/* Bottom bar */}
-                <div className="border-t border-gray-800 pt-5 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-gray-500">
+                <div className="border-t border-gray-800 pt-5 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-500">
                     <p>&copy; {new Date().getFullYear()} MOOVY. Todos los derechos reservados.</p>
                     <p>Hecho con amor en Ushuaia</p>
                 </div>

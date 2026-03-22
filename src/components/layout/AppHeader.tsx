@@ -194,13 +194,13 @@ export default function AppHeader({
                         <AppSwitcher />
                         {isLoggedIn && firstName ? (
                             <Link href="/mi-perfil" className="flex items-center gap-1.5">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] text-white ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
                                     {firstName.charAt(0).toUpperCase()}
                                 </div>
-                                <span className="text-xs font-semibold hidden xs:inline text-gray-900">{firstName}</span>
+                                <span className="text-sm font-semibold hidden xs:inline text-gray-900">{firstName}</span>
                             </Link>
                         ) : (
-                            <Link href="/login" className="text-xs font-medium text-gray-500 hover:text-[#e60012] transition">
+                            <Link href="/login" className="text-sm font-medium text-gray-500 hover:text-[#e60012] transition">
                                 Ingresar
                             </Link>
                         )}
@@ -242,7 +242,7 @@ export default function AppHeader({
                         >
                             <ShoppingBag className="w-6 h-6" />
                             {actualCartCount > 0 && (
-                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] rounded-full flex items-center justify-center font-bold shadow-sm bg-[#e60012] text-white">
+                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-xs rounded-full flex items-center justify-center font-bold shadow-sm bg-[#e60012] text-white">
                                     {actualCartCount > 99 ? "99+" : actualCartCount}
                                 </span>
                             )}
@@ -266,7 +266,7 @@ export default function AppHeader({
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setShowMobileSearch(true)}
                                 placeholder={isMarketplace ? "Buscar en marketplace..." : "¿Qué querés pedir?"}
-                                className="w-full pl-11 pr-4 py-3 bg-white rounded-2xl text-sm shadow-lg shadow-black/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition placeholder:text-gray-400 font-medium"
+                                className="w-full pl-11 pr-4 py-3 bg-white rounded-2xl text-base shadow-lg shadow-black/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition placeholder:text-gray-400 font-medium"
                             />
                         </form>
                     </div>
@@ -308,7 +308,7 @@ export default function AppHeader({
                             </Link>
                         ) : (
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+                                <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium">
                                     <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
                                     Ushuaia
                                 </div>
@@ -333,7 +333,7 @@ export default function AppHeader({
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => { if (searchResults) setShowResults(true); }}
                                 placeholder="Buscar productos, comercios..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition placeholder:text-gray-400"
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition placeholder:text-gray-400"
                             />
                             {searchLoading && (
                                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
@@ -363,7 +363,7 @@ export default function AppHeader({
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <p className="text-sm font-semibold text-gray-900">{m.name}</p>
+                                                            <p className="text-base font-semibold text-gray-900">{m.name}</p>
                                                             {m.description && <p className="text-xs text-gray-500 line-clamp-1">{m.description}</p>}
                                                         </div>
                                                     </button>
@@ -386,8 +386,8 @@ export default function AppHeader({
                                                     </div>
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                                                    <p className="text-sm font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
+                                                    <p className="text-base font-semibold text-gray-900 truncate">{p.name}</p>
+                                                    <p className="text-base font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
                                                 </div>
                                             </button>
                                         ))}
@@ -452,7 +452,7 @@ export default function AppHeader({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Buscar productos, comercios..."
-                                className="w-full pl-10 pr-9 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 transition placeholder:text-gray-400"
+                                className="w-full pl-10 pr-9 py-2.5 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 transition placeholder:text-gray-400"
                             />
                             {/* X inside input — clears text only */}
                             {searchQuery.length > 0 && !searchLoading && (
@@ -519,8 +519,8 @@ export default function AppHeader({
                                                         </div>
                                                     )}
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                                                        <p className="text-sm font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
+                                                        <p className="text-base font-semibold text-gray-900 truncate">{p.name}</p>
+                                                        <p className="text-base font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
                                                     </div>
                                                     <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                                                 </button>
@@ -538,8 +538,8 @@ export default function AppHeader({
                             ) : (
                                 <div className="p-8 text-center">
                                     <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                                    <p className="text-sm text-gray-500">No se encontraron resultados</p>
-                                    <p className="text-xs text-gray-400 mt-1">Probá con otra palabra</p>
+                                    <p className="text-base text-gray-500">No se encontraron resultados</p>
+                                    <p className="text-sm text-gray-400 mt-1">Probá con otra palabra</p>
                                 </div>
                             )
                         ) : !searchQuery ? (

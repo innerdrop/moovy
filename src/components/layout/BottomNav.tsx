@@ -88,7 +88,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                         >
                                             <Icon className={`w-7 h-7 text-white ${isLoggedIn ? "fill-current" : ""}`} />
                                         </div>
-                                        <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-[#e60012]" : "text-gray-400"}`}>
+                                        <span className={`text-xs mt-1 font-bold ${isLoggedIn ? "text-[#e60012]" : "text-gray-400"}`}>
                                             {item.label}
                                         </span>
                                     </Link>
@@ -106,7 +106,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                     }`}
                             >
                                 <Icon className={`w-6 h-6 mb-0.5 ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
-                                <span className={`text-[10px] ${isActive ? "font-semibold" : ""}`}>
+                                <span className={`text-xs ${isActive ? "font-semibold" : ""}`}>
                                     {item.label}
                                 </span>
                                 {isActive && (
@@ -134,7 +134,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                             <Package className="w-8 h-8 text-[#e60012]" />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Seguí tus pedidos</h3>
-                        <p className="text-gray-500 mb-6 text-sm">
+                        <p className="text-gray-500 mb-6 text-base">
                             Ingresá a tu cuenta para ver el estado de tus envíos en tiempo real y acceder a tu historial.
                         </p>
                         <div className="space-y-3">

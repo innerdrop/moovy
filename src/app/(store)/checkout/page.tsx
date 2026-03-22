@@ -578,7 +578,7 @@ export default function CheckoutPage() {
                                                 } ${!hasDrivers ? "opacity-30 cursor-not-allowed" : ""}`}
                                         >
                                             <Truck className={`w-8 h-8 ${deliveryMethod === "home" ? "text-moovy" : "text-gray-400"}`} />
-                                            <span className="font-black uppercase tracking-widest text-[10px]">Envío a domicilio</span>
+                                            <span className="font-black uppercase tracking-widest text-xs">Envío a domicilio</span>
                                         </button>
 
                                         <button
@@ -589,7 +589,7 @@ export default function CheckoutPage() {
                                                 }`}
                                         >
                                             <ShoppingBag className={`w-8 h-8 ${deliveryMethod === "pickup" ? "text-moovy" : "text-gray-400"}`} />
-                                            <span className="font-black uppercase tracking-widest text-[10px]">Retiro en local</span>
+                                            <span className="font-black uppercase tracking-widest text-xs">Retiro en local</span>
                                         </button>
                                     </div>
 
@@ -825,7 +825,7 @@ export default function CheckoutPage() {
                                                 <p className="text-sm text-gray-600 flex items-center gap-1">
                                                     Distancia: {deliveryResult.distanceKm.toFixed(1)} km
                                                     {deliveryResult.isRealRoadDistance && (
-                                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">Recorrido real</span>
+                                                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">Recorrido real</span>
                                                     )}
                                                 </p>
                                                 {!deliveryResult.isFreeDelivery && (

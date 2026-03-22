@@ -220,7 +220,7 @@ export default function HeroStatic({
         <div className="lg:flex lg:items-center lg:justify-between">
           <div className="max-w-2xl mx-auto lg:mx-0">
             {/* Headline — dynamic from config */}
-            <h1 className="text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl leading-[1.1] tracking-tight mb-1.5 font-black" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.15)" }}>
+            <h1 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-tight mb-2 font-black" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.15)" }}>
               {cfg.hero_title.split("\n").map((line, i) => (
                 <span key={i}>{line}{i < cfg.hero_title.split("\n").length - 1 && <br />}</span>
               ))}
@@ -236,7 +236,7 @@ export default function HeroStatic({
               }}
             />
 
-            <p className="text-white/90 text-xs sm:text-sm md:text-base font-semibold mb-4 max-w-[240px] sm:max-w-xs md:max-w-sm lg:max-w-md">
+            <p className="text-white/90 text-sm sm:text-base md:text-lg font-semibold mb-4 max-w-[280px] sm:max-w-xs md:max-w-sm lg:max-w-md">
               {cfg.hero_subtitle}
             </p>
 
@@ -298,7 +298,7 @@ export default function HeroStatic({
                     }
                     onKeyDown={handleKeyDown}
                     placeholder={cfg.hero_search_placeholder}
-                    className="flex-1 min-w-0 px-3 py-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent font-medium"
+                    className="flex-1 min-w-0 px-3 py-4 text-base text-gray-900 placeholder:text-gray-400 outline-none bg-transparent font-medium"
                     autoComplete="off"
                   />
                   {query.length > 0 && (
@@ -313,7 +313,7 @@ export default function HeroStatic({
                   {query.length >= 2 && (
                     <button
                       type="submit"
-                      className="bg-[#e60012] text-white px-3 sm:px-5 py-2 sm:py-2.5 mr-1.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-[#cc000f] transition-colors flex-shrink-0 whitespace-nowrap"
+                      className="bg-[#e60012] text-white px-4 sm:px-5 py-2.5 mr-1.5 rounded-xl text-sm sm:text-base font-bold hover:bg-[#cc000f] transition-colors flex-shrink-0 whitespace-nowrap"
                     >
                       Buscar
                     </button>
@@ -360,23 +360,23 @@ export default function HeroStatic({
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">
+                          <div className="text-base font-semibold text-gray-900 truncate">
                             {s.label}
                           </div>
                           {s.extra && (
-                            <div className="text-xs text-gray-500 truncate">
+                            <div className="text-sm text-gray-500 truncate">
                               {s.extra}
                             </div>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {s.price != null && (
-                            <span className="text-sm font-bold text-gray-900">
+                            <span className="text-base font-bold text-gray-900">
                               ${s.price.toLocaleString("es-AR")}
                             </span>
                           )}
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${config.color}`}
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${config.color}`}
                           >
                             {config.label}
                           </span>
@@ -393,7 +393,7 @@ export default function HeroStatic({
                         );
                         setShowDropdown(false);
                       }}
-                      className="w-full px-4 py-3 text-center text-sm font-semibold text-[#e60012] hover:bg-red-50 transition-colors border-t border-gray-100"
+                      className="w-full px-4 py-3 text-center text-base font-semibold text-[#e60012] hover:bg-red-50 transition-colors border-t border-gray-100"
                     >
                       Ver todos los resultados
                     </button>
@@ -408,18 +408,18 @@ export default function HeroStatic({
               <div className="hidden lg:flex items-center gap-8 mt-10">
                 {totalDelivered > 0 && (
                   <div className="text-center text-white">
-                    <div className="text-3xl font-black">
+                    <div className="text-4xl font-black">
                       +{totalDelivered.toLocaleString("es-AR")}
                     </div>
-                    <div className="text-[11px] font-medium opacity-70">
+                    <div className="text-xs font-medium opacity-70">
                       pedidos entregados
                     </div>
                   </div>
                 )}
                 {activeMerchants > 0 && (
                   <div className="text-center text-white">
-                    <div className="text-3xl font-black">{activeMerchants}</div>
-                    <div className="text-[11px] font-medium opacity-70">
+                    <div className="text-4xl font-black">{activeMerchants}</div>
+                    <div className="text-xs font-medium opacity-70">
                       comercios activos
                     </div>
                   </div>
