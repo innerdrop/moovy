@@ -148,11 +148,17 @@ export default function AppHeader({
         setSearchResults(null);
     };
 
-    // Navigate then close — prevents overlay unmount from cancelling navigation
+    // Navigate then close — delay the close so router.push completes before overlay unmounts
     const navigateAndClose = (href: string) => {
         router.push(href);
-        closeSearch();
+        setTimeout(() => closeSearch(), 150);
     };
+
+    // Auto-close search on route change (covers all navigation paths)
+    useEffect(() => {
+        closeSearch();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
 
     // Click outside to close search results
     useEffect(() => {
