@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
     Facebook,
     Instagram,
@@ -18,9 +19,14 @@ export default function Footer() {
                     {/* 1. Brand */}
                     <div className="col-span-2 md:col-span-1 space-y-4">
                         <Link href="/" className="inline-block">
-                            <span className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Junegull', sans-serif" }}>
-                                MOOVY
-                            </span>
+                            <Image
+                                src="/logo-moovy-white.svg"
+                                alt="MOOVY"
+                                width={120}
+                                height={38}
+                                className="h-8 w-auto"
+                                priority={false}
+                            />
                         </Link>
                         <p className="text-gray-400 text-xs leading-relaxed max-w-xs">
                             Revolucionando el delivery en el Fin del Mundo. Conectamos todo Ushuaia en una sola plataforma.
