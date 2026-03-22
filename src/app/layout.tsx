@@ -1,12 +1,19 @@
 // Root Layout - Layout Principal
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import WebVitalsReporter from "@/components/analytics/WebVitalsReporter";
 
-// Jakarta Sans as fallback (Satoshi primary — loaded via CSS @import from Fontshare CDN)
+// DM Sans — primary font (clean geometric, great for e-commerce)
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-dm-sans",
+});
+
+// Jakarta Sans as fallback
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
@@ -68,15 +75,12 @@ export default function RootLayout({
   return (
     <html lang="es" data-scroll-behavior="smooth">
       <head>
-        {/* Preconnect to Fontshare CDN for Satoshi font */}
-        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
         {/* PWA Icons */}
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
-      <body className={`${jakarta.variable} font-sans antialiased`}>
+      <body className={`${dmSans.variable} ${jakarta.variable} font-sans antialiased`}>
         <ServiceWorkerRegistrar />
         <WebVitalsReporter />
         <Providers>
