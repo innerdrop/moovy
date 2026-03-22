@@ -1,16 +1,16 @@
 // Root Layout - Layout Principal
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import WebVitalsReporter from "@/components/analytics/WebVitalsReporter";
 
-// DM Sans — primary font (clean geometric, great for e-commerce)
-const dmSans = DM_Sans({
+// Manrope — primary font (semi-rounded, warm, approachable)
+const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-dm-sans",
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
 });
 
 // Jakarta Sans as fallback
@@ -80,7 +80,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
-      <body className={`${dmSans.variable} ${jakarta.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${jakarta.variable} font-sans antialiased`}>
         <ServiceWorkerRegistrar />
         <WebVitalsReporter />
         <Providers>
