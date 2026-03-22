@@ -74,7 +74,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     if (categories.length === 0) return null;
 
     return (
-        <>
+        <div className="container mx-auto px-4">
+            <h2 className="text-xl lg:text-2xl font-black text-gray-900 mb-4">
+                Explorá por categorías
+            </h2>
             <style>{`
                 .catscroll { -ms-overflow-style: none; scrollbar-width: none; }
                 .catscroll::-webkit-scrollbar { display: none; }
@@ -106,7 +109,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                     ))}
                 </div>
             </div>
-        </>
+        </div>
     );
 }
 

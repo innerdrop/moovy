@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -82,6 +82,18 @@ const POPULAR_SEARCHES = [
 // MAIN PAGE
 // ============================================
 export default function BuscarPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+            </div>
+        }>
+            <BuscarContent />
+        </Suspense>
+    );
+}
+
+function BuscarContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 

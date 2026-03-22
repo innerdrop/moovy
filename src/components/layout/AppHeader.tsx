@@ -399,8 +399,13 @@ export default function AppHeader({
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)}
-                                    className="w-full px-4 py-3 text-center text-sm font-semibold text-[#e60012] bg-gray-50 hover:bg-gray-100 transition border-t border-gray-100"
+                                    disabled={!searchQuery.trim()}
+                                    onClick={() => {
+                                        if (searchQuery.trim()) {
+                                            navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`);
+                                        }
+                                    }}
+                                    className="w-full px-4 py-3 text-center text-sm font-semibold text-[#e60012] bg-gray-50 hover:bg-gray-100 transition border-t border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Ver todos los resultados
                                 </button>
@@ -529,8 +534,13 @@ export default function AppHeader({
                                     )}
                                     <button
                                         type="button"
-                                        onClick={() => navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)}
-                                        className="w-full px-4 py-4 text-center text-sm font-semibold text-[#e60012] hover:bg-gray-50 transition"
+                                        disabled={!searchQuery.trim()}
+                                        onClick={() => {
+                                            if (searchQuery.trim()) {
+                                                navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`);
+                                            }
+                                        }}
+                                        className="w-full px-4 py-4 text-center text-sm font-semibold text-[#e60012] hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Ver todos los resultados
                                     </button>

@@ -2,6 +2,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+const SESSION_STORAGE_KEY = "moovy_cart_session";
+
 export interface CartItem {
     id: string;
     productId: string;
@@ -45,6 +47,17 @@ interface CartStore {
     // Computed
     getTotalItems: () => number;
     getTotalPrice: () => number;
+}
+
+// Helper: Generate and retrieve a session ID to validate persisted cart
+function getOrCreateSessionId() {
+    if (typeof window === "undefined") return null;
+    let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+    }
+    return sessionId;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -157,6 +170,31 @@ export const useCartStore = create<CartStore>()(
         {
             name: "Moovy-cart",
             partialize: (state) => ({ items: state.items }),
+            // Validate cart on hydration: if sessionStorage session ID changed (new tab/window),
+            // clear the persisted cart to prevent stale data from appearing
+            onRehydrateStorage: () => (state) => {
+                if (state && typeof window !== "undefined") {
+                    try {
+                        // On first load, generate a session ID
+                        const currentSession = getOrCreateSessionId();
+                        // Check if we have a stored session marker
+                        const storedSession = localStorage.getItem("moovy_cart_session_id");
+
+                        // If this is a new session (different tab/window or browser restart),
+                        // clear the stale persisted cart items
+                        if (currentSession && storedSession !== currentSession) {
+                            state.items = [];
+                            localStorage.setItem("moovy_cart_session_id", currentSession);
+                        } else if (currentSession && !storedSession) {
+                            // First time in this session, mark it
+                            localStorage.setItem("moovy_cart_session_id", currentSession);
+                        }
+                    } catch (e) {
+                        // Silent fail for storage errors
+                        console.error("Cart session validation failed:", e);
+                    }
+                }
+            },
         }
     )
 );

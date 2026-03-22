@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import CartSidebar from "@/components/layout/CartSidebar";
-import FloatingCartButton from "@/components/layout/FloatingCartButton";
+// FloatingCartButton removed — cart badge in header is sufficient
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
@@ -180,8 +180,7 @@ export default function StoreLayout({
             {/* Bottom Navigation siempre visible — fijo abajo */}
             <BottomNav isLoggedIn={!!isLoggedIn} />
 
-            {/* Floating Cart Button (when cart has items) */}
-            <FloatingCartButton />
+            {/* FloatingCartButton removed — the cart badge in header already indicates items */}
 
             {/* Sidebars y Modales */}
             <CartSidebar />
