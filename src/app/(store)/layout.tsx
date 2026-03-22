@@ -159,7 +159,7 @@ export default function StoreLayout({
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
         <MobileOnlyGuard mode="warn">
-        <div className={`min-h-screen flex flex-col bg-gray-50 overflow-x-hidden ${contentReady ? "app-ready" : ""}`}>
+        <div className={`min-h-screen flex flex-col bg-gray-50 overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-outfit), 'Outfit', system-ui, sans-serif" }}>
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 
