@@ -2,21 +2,23 @@ import { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Store,
-  ShoppingBag,
-  Truck,
-  Percent,
-  Zap,
-  Shield,
   CheckCircle2,
   X,
-  Clock,
-  Wallet,
-  Users,
-  TrendingDown,
-  Heart,
   ArrowRight,
 } from "lucide-react";
+import {
+  MoovyIconStore,
+  MoovyIconCart,
+  MoovyIconDelivery,
+  MoovyIconPercentage,
+  MoovyIconInstantPay,
+  MoovyIconShield,
+  MoovyIconClock,
+  MoovyIconFairFees,
+  MoovyIconHumanSupport,
+  MoovyIconLocal,
+  MoovyIconGrowth,
+} from "@/components/ui/MoovyIcons";
 
 export const metadata: Metadata = {
   title: "Tarifas y Comisiones | MOOVY",
@@ -33,7 +35,7 @@ export const metadata: Metadata = {
 const pricingCards = [
   {
     role: "Comercios",
-    icon: <Store className="w-8 h-8" />,
+    icon: <MoovyIconStore className="w-8 h-8" />,
     mainPrice: "8%",
     description: "Comisión por venta",
     details: [
@@ -52,7 +54,7 @@ const pricingCards = [
   },
   {
     role: "Vendedores Marketplace",
-    icon: <ShoppingBag className="w-8 h-8" />,
+    icon: <MoovyIconCart className="w-8 h-8" />,
     mainPrice: "0%",
     description: "Comisión de lanzamiento",
     details: [
@@ -71,7 +73,7 @@ const pricingCards = [
   },
   {
     role: "Compradores",
-    icon: <ShoppingBag className="w-8 h-5" />,
+    icon: <MoovyIconCart className="w-8 h-5" />,
     mainPrice: "$0",
     description: "Cargo de servicio",
     details: [
@@ -90,7 +92,7 @@ const pricingCards = [
   },
   {
     role: "Repartidores",
-    icon: <Truck className="w-8 h-8" />,
+    icon: <MoovyIconDelivery className="w-8 h-8" />,
     mainPrice: "80%",
     description: "Del fee de delivery",
     details: [
@@ -284,7 +286,7 @@ export default function ComisionesPage() {
                 Sin letra chica. Sin sorpresas. Sin retención de dinero.
               </p>
               <div className="flex items-center justify-center gap-2 text-red-600 font-semibold text-lg">
-                <Zap className="w-5 h-5" />
+                <MoovyIconInstantPay className="w-5 h-5" />
                 <span>Las comisiones más bajas de Ushuaia</span>
               </div>
             </div>
@@ -557,32 +559,32 @@ export default function ComisionesPage() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                icon: <Wallet className="w-8 h-8" />,
+                icon: <MoovyIconInstantPay className="w-8 h-8" />,
                 title: "Pago Instantáneo",
                 desc: "Comercios reciben al instante. 0% retención. Dinero en tu cuenta cuando se paga.",
               },
               {
-                icon: <TrendingDown className="w-8 h-8" />,
+                icon: <MoovyIconFairFees className="w-8 h-8" />,
                 title: "Comisiones Bajas",
                 desc: "8% en lugar de 25-30%. La diferencia se nota en tu flujo de caja.",
               },
               {
-                icon: <Users className="w-8 h-8" />,
+                icon: <MoovyIconHumanSupport className="w-8 h-8" />,
                 title: "Soporte Humano",
                 desc: "Atendemos por WhatsApp. Respuesta < 30 min. No es un chatbot.",
               },
               {
-                icon: <Truck className="w-8 h-8" />,
+                icon: <MoovyIconDelivery className="w-8 h-8" />,
                 title: "Delivery Confiable",
                 desc: "Red de repartidores capacitados. GPS en tiempo real. Aseguranza incluida.",
               },
               {
-                icon: <Heart className="w-8 h-8" />,
+                icon: <MoovyIconLocal className="w-8 h-8" />,
                 title: "Para Ushuaia",
                 desc: "Plataforma pensada por y para Ushuaia. Conocemos el mercado local.",
               },
               {
-                icon: <Shield className="w-8 h-8" />,
+                icon: <MoovyIconShield className="w-8 h-8" />,
                 title: "Transparencia Total",
                 desc: "Qué pagás y por qué. Sin sorpresas. Sin letra chica en ningún lado.",
               },

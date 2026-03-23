@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Zap,
-  Smile,
-  Users,
-  MapPin,
-  MessageCircle,
   ArrowRight,
   Check,
-  HeartHandshake,
-  Globe,
-  Shield,
-  Store,
+  MessageCircle,
 } from "lucide-react";
+import {
+  MoovyIconInstantPay,
+  MoovyIconFairFees,
+  MoovyIconHumanSupport,
+  MoovyIconLocal,
+  MoovyIconShield,
+  MoovyIconStore,
+} from "@/components/ui/MoovyIcons";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
@@ -81,7 +81,7 @@ export default function QuienesSomosPage() {
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-white/30">
-            <MapPin className="w-4 h-4" />
+            <MoovyIconLocal className="w-4 h-4" />
             <span className="text-sm font-semibold">Somos de Ushuaia</span>
           </div>
 
@@ -186,7 +186,7 @@ export default function QuienesSomosPage() {
             {/* Value 1: Instant Payment */}
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-100 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-5">
-                <Zap className="w-6 h-6 text-white" />
+                <MoovyIconInstantPay className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Pago Instantáneo
@@ -214,7 +214,7 @@ export default function QuienesSomosPage() {
             {/* Value 2: Fair Commissions */}
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-100 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-5">
-                <HeartHandshake className="w-6 h-6 text-white" />
+                <MoovyIconFairFees className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Comisiones Justas
@@ -242,7 +242,7 @@ export default function QuienesSomosPage() {
             {/* Value 3: Human Support */}
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 border border-blue-100 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-5">
-                <Smile className="w-6 h-6 text-white" />
+                <MoovyIconHumanSupport className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Soporte Humano
@@ -270,7 +270,7 @@ export default function QuienesSomosPage() {
             {/* Value 4: 100% Ushuaiense */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 border border-purple-100 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-5">
-                <Globe className="w-6 h-6 text-white" />
+                <MoovyIconLocal className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
                 100% Ushuaiense
@@ -380,7 +380,7 @@ export default function QuienesSomosPage() {
 
                 <div className="space-y-3 mb-8">
                   <div className="flex items-start gap-3">
-                    <Shield className="w-6 h-6 text-[#e60012] flex-shrink-0 mt-0.5" />
+                    <MoovyIconInstantPay className="w-6 h-6 text-[#e60012] flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-bold text-gray-900">
                         Cobras al instante
@@ -391,7 +391,7 @@ export default function QuienesSomosPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Users className="w-6 h-6 text-[#e60012] flex-shrink-0 mt-0.5" />
+                    <MoovyIconFairFees className="w-6 h-6 text-[#e60012] flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-bold text-gray-900">
                         Comisiones bajas
@@ -402,7 +402,7 @@ export default function QuienesSomosPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <MessageCircle className="w-6 h-6 text-[#e60012] flex-shrink-0 mt-0.5" />
+                    <MoovyIconHumanSupport className="w-6 h-6 text-[#e60012] flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-bold text-gray-900">
                         Soporte dedicado
@@ -438,7 +438,7 @@ export default function QuienesSomosPage() {
                 <div className="relative w-64 h-64">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#e60012] to-[#ff4d5e] rounded-3xl opacity-10 blur-2xl" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Store className="w-24 h-24 text-[#e60012] opacity-20" />
+                    <MoovyIconStore className="w-24 h-24 text-[#e60012] opacity-20" />
                   </div>
                 </div>
               </div>
