@@ -237,7 +237,7 @@ h4,
 h5,
 h6 {
   font-family: var(--font-arista), 'Arista', sans-serif;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.2;
 }
 
