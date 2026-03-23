@@ -1,461 +1,439 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import {
-    MessageCircle,
-    Send,
-    Loader2,
-    ChevronLeft,
-    Clock,
-    CheckCheck,
-    User,
-    Store,
-    Bike,
-    XCircle,
-    CheckCircle
-} from "lucide-react";
-
-interface Message {
-    id: string;
-    content: string;
-    isFromAdmin: boolean;
-    isRead: boolean;
-    createdAt: string;
-    sender: {
-        id: string;
-        name: string;
-        role: string;
-    };
-}
-
-interface Chat {
-    id: string;
-    subject: string;
-    status: string;
-    lastMessageAt: string;
-    messages: Message[];
-    unreadCount: number;
-    user: {
-        id: string;
-        name: string;
-        email: string;
-        role: string;
-    };
-}
+import { useEffect, useState } from "react";
+import { SupportOperator, CannedResponse } from "@/types/support";
 
 export default function AdminSoportePage() {
-    const [chats, setChats] = useState<Chat[]>([]);
-    const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [sending, setSending] = useState(false);
-    const [newMessage, setNewMessage] = useState("");
-    const [filter, setFilter] = useState<"all" | "open" | "closed">("all");
-    const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [tab, setTab] = useState<"chats" | "operators" | "canned" | "stats">("chats");
+    const [operators, setOperators] = useState<SupportOperator[]>([]);
+    const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>([]);
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [newOperatorEmail, setNewOperatorEmail] = useState("");
+    const [newOperatorName, setNewOperatorName] = useState("");
+    const [newCannedForm, setNewCannedForm] = useState({
+        shortcut: "",
+        title: "",
+        content: "",
+        category: "general"
+    });
 
-    const quickReplies = [
-        "Tu pedido está en camino, te avisamos cuando llegue.",
-        "Estamos revisando tu caso, te contactamos pronto.",
-        "El comercio confirmó tu pedido, está en preparación.",
-        "Lamentamos el inconveniente. Procesamos tu reembolso.",
-        "¿Podrías darnos más detalles sobre el problema?",
-    ];
-
-    useEffect(() => {
-        fetchChats();
-        // Poll for new messages every 10 seconds
-        const interval = setInterval(fetchChats, 10000);
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [selectedChat?.messages]);
-
-    // Poll active chat for new messages
-    useEffect(() => {
-        if (!selectedChat) return;
-
-        const interval = setInterval(async () => {
-            try {
-                // Don't use openChat to avoid UI flickering/unread count logic loop
-                const res = await fetch(`/api/support/chats/${selectedChat.id}`);
-                if (res.ok) {
-                    const data = await res.json();
-
-                    // Only update if there are new messages (simple length check or last ID)
-                    setSelectedChat(prev => {
-                        if (!prev) return null;
-                        // Determine if we need to update to avoid render loops
-                        if (JSON.stringify(prev.messages) !== JSON.stringify(data.messages)) {
-                            return data;
-                        }
-                        return prev;
-                    });
-                }
-            } catch (error) {
-                console.error("Polling error:", error);
-            }
-        }, 3000);
-
-        return () => clearInterval(interval);
-    }, [selectedChat?.id]);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    async function fetchChats() {
+    // Load operators
+    const loadOperators = async () => {
         try {
-            const res = await fetch("/api/support/chats");
+            const res = await fetch("/api/admin/support/operators");
             if (res.ok) {
                 const data = await res.json();
-                setChats(data);
+                setOperators(data);
             }
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error loading operators:", error);
+        }
+    };
+
+    // Load canned responses
+    const loadCanned = async () => {
+        try {
+            const res = await fetch("/api/admin/support/canned-responses");
+            if (res.ok) {
+                const data = await res.json();
+                setCannedResponses(data);
+            }
+        } catch (error) {
+            console.error("Error loading canned responses:", error);
+        }
+    };
+
+    // Load stats
+    const loadStats = async () => {
+        try {
+            const res = await fetch("/api/admin/support/stats");
+            if (res.ok) {
+                const data = await res.json();
+                setStats(data);
+            }
+        } catch (error) {
+            console.error("Error loading stats:", error);
+        }
+    };
+
+    useEffect(() => {
+        loadOperators();
+        loadCanned();
+        loadStats();
+    }, []);
+
+    const handleCreateOperator = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newOperatorEmail || !newOperatorName) return;
+
+        try {
+            setLoading(true);
+            // First find user by email - you'd need a separate endpoint or use admin search
+            // For now, show error message
+            alert("Funcionalidad en desarrollo - usa el panel admin para crear operadores");
         } finally {
             setLoading(false);
         }
-    }
+    };
 
-    async function openChat(chatId: string) {
-        try {
-            const res = await fetch(`/api/support/chats/${chatId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setSelectedChat(data);
-                // Update local state to remove unread badge
-                setChats(chats.map(c => c.id === chatId ? { ...c, unreadCount: 0 } : c));
-            }
-        } catch (error) {
-            console.error("Error:", error);
-        }
-    }
-
-    async function sendMessage(e: React.FormEvent) {
+    const handleCreateCanned = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedChat || !newMessage.trim()) return;
+        if (!newCannedForm.shortcut || !newCannedForm.content) return;
 
-        setSending(true);
         try {
-            const res = await fetch(`/api/support/chats/${selectedChat.id}`, {
+            setLoading(true);
+            const res = await fetch("/api/admin/support/canned-responses", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: newMessage }),
+                body: JSON.stringify(newCannedForm)
             });
 
             if (res.ok) {
-                const message = await res.json();
-                setSelectedChat({
-                    ...selectedChat,
-                    messages: [...selectedChat.messages, message]
-                });
-                setNewMessage("");
+                await loadCanned();
+                setNewCannedForm({ shortcut: "", title: "", content: "", category: "general" });
+                alert("Respuesta creada exitosamente");
+            } else {
+                const error = await res.json();
+                alert(error.error || "Error al crear");
             }
-        } catch (error) {
-            console.error("Error:", error);
         } finally {
-            setSending(false);
+            setLoading(false);
         }
-    }
+    };
 
-    function requestToggleChatStatus() {
-        if (!selectedChat) return;
-        // If closing, show confirmation
-        if (selectedChat.status === "open") {
-            setShowCloseConfirm(true);
-        } else {
-            // Reopening doesn't need confirmation
-            toggleChatStatus();
-        }
-    }
-
-    async function toggleChatStatus() {
-        if (!selectedChat) return;
-        setShowCloseConfirm(false);
-
-        const newStatus = selectedChat.status === "open" ? "closed" : "open";
-
+    const toggleOperator = async (operatorId: string, isActive: boolean) => {
         try {
-            const res = await fetch(`/api/support/chats/${selectedChat.id}`, {
+            const res = await fetch(`/api/admin/support/operators/${operatorId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({ isActive: !isActive })
             });
 
             if (res.ok) {
-                setSelectedChat({ ...selectedChat, status: newStatus });
-                setChats(chats.map(c => c.id === selectedChat.id ? { ...c, status: newStatus } : c));
+                await loadOperators();
             }
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error updating operator:", error);
         }
-    }
+    };
 
-    const filteredChats = filter === "all"
-        ? chats
-        : chats.filter(c => c.status === filter);
+    const deleteCanned = async (cannedId: string) => {
+        if (!confirm("¿Eliminar esta respuesta?")) return;
 
-    const totalUnread = chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        try {
+            const res = await fetch(`/api/admin/support/canned-responses/${cannedId}`, {
+                method: "DELETE"
+            });
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-[#e60012]" />
-            </div>
-        );
-    }
+            if (res.ok) {
+                await loadCanned();
+            }
+        } catch (error) {
+            console.error("Error deleting canned response:", error);
+        }
+    };
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Centro de Soporte</h1>
-                    <p className="text-gray-600">
-                        {chats.length} conversaciones • {totalUnread > 0 ? `${totalUnread} sin leer` : "Todo al día"}
-                    </p>
-                </div>
+            <div>
+                <h1 className="text-3xl font-bold text-gray-900">Centro de Soporte</h1>
+                <p className="text-gray-600 mt-2">Gestiona operadores, respuestas rápidas y estadísticas</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border h-[calc(100vh-12rem)] flex overflow-hidden">
-                {/* Sidebar - Chat List */}
-                <div className={`w-full md:w-80 border-r flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
-                    {/* Filters */}
-                    <div className="p-3 border-b flex gap-2">
-                        {["all", "open", "closed"].map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f as any)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === f
-                                    ? 'bg-[#e60012] text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {f === "all" ? "Todos" : f === "open" ? "Abiertos" : "Cerrados"}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto">
-                        {filteredChats.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">
-                                <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                <p className="text-sm">No hay conversaciones</p>
-                            </div>
-                        ) : (
-                            filteredChats.map((chat) => (
-                                <button
-                                    key={chat.id}
-                                    onClick={() => openChat(chat.id)}
-                                    className={`w-full p-4 border-b text-left hover:bg-gray-50 transition ${selectedChat?.id === chat.id ? 'bg-red-50 border-l-4 border-l-[#e60012]' : ''
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${chat.user.role === "MERCHANT" ? 'bg-red-100' : 'bg-blue-100'
-                                            }`}>
-                                            {chat.user.role === "MERCHANT" ? (
-                                                <Store className="w-4 h-4 text-red-600" />
-                                            ) : (
-                                                <Bike className="w-4 h-4 text-blue-600" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-gray-900 truncate text-sm">
-                                                {chat.user.name}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                {chat.user.role === "MERCHANT" ? "Comercio" : "Repartidor"}
-                                            </p>
-                                        </div>
-                                        {chat.unreadCount > 0 && (
-                                            <span className="bg-[#e60012] text-white text-xs px-2 py-0.5 rounded-full">
-                                                {chat.unreadCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-sm text-gray-800 font-medium truncate mb-1">
-                                        {chat.subject}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <Clock className="w-3 h-3" />
-                                        {new Date(chat.lastMessageAt).toLocaleDateString("es-AR")}
-                                        <span className={`ml-auto px-1.5 py-0.5 rounded text-xs ${chat.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                                            }`}>
-                                            {chat.status === 'open' ? 'Abierto' : 'Cerrado'}
-                                        </span>
-                                    </div>
-                                </button>
-                            ))
-                        )}
-                    </div>
+            {/* Tabs */}
+            <div className="bg-white rounded-lg shadow-sm border">
+                <div className="flex border-b">
+                    <button
+                        onClick={() => setTab("chats")}
+                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                            tab === "chats"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Conversaciones
+                    </button>
+                    <button
+                        onClick={() => setTab("operators")}
+                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                            tab === "operators"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Operadores
+                    </button>
+                    <button
+                        onClick={() => setTab("canned")}
+                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                            tab === "canned"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Respuestas Rápidas
+                    </button>
+                    <button
+                        onClick={() => setTab("stats")}
+                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                            tab === "stats"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Estadísticas
+                    </button>
                 </div>
 
-                {/* Chat Area */}
-                <div className={`flex-1 flex flex-col ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
-                    {selectedChat ? (
-                        <>
-                            <div className="p-4 border-b flex items-center gap-3 bg-white">
-                                <button
-                                    onClick={() => setSelectedChat(null)}
-                                    className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-                                >
-                                    <ChevronLeft className="w-5 h-5" />
-                                </button>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedChat.user.role === "MERCHANT" ? 'bg-red-100' : 'bg-blue-100'
-                                    }`}>
-                                    {selectedChat.user.role === "MERCHANT" ? (
-                                        <Store className="w-5 h-5 text-red-600" />
-                                    ) : (
-                                        <Bike className="w-5 h-5 text-blue-600" />
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-gray-900">{selectedChat.user.name}</h3>
-                                    <p className="text-xs text-gray-500">
-                                        {selectedChat.user.email} • {selectedChat.subject}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={requestToggleChatStatus}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${selectedChat.status === "open"
-                                        ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                        : "bg-green-100 text-green-700 hover:bg-green-200"
-                                        }`}
-                                >
-                                    {selectedChat.status === "open" ? (
-                                        <>
-                                            <XCircle className="w-4 h-4" />
-                                            Cerrar
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4" />
-                                            Reabrir
-                                        </>
-                                    )}
-                                </button>
-                            </div>
+                {/* Tab: Chats */}
+                {tab === "chats" && (
+                    <div className="p-6">
+                        <p className="text-gray-600">Ver conversaciones en el portal de soporte operadores</p>
+                    </div>
+                )}
 
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-                                {selectedChat.messages.map((msg) => (
-                                    <div
-                                        key={msg.id}
-                                        className={`flex ${msg.isFromAdmin ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${msg.isFromAdmin
-                                            ? 'bg-[#e60012] text-white'
-                                            : 'bg-white shadow-sm border'
-                                            }`}>
-                                            {!msg.isFromAdmin && (
-                                                <p className="text-xs font-medium text-gray-600 mb-1">
-                                                    {msg.sender.name}
-                                                </p>
-                                            )}
-                                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                            <div className={`flex items-center gap-1 mt-1 text-xs ${msg.isFromAdmin ? 'text-white/70' : 'text-gray-400'
-                                                }`}>
-                                                {new Date(msg.createdAt).toLocaleTimeString("es-AR", {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                                {msg.isFromAdmin && msg.isRead && (
-                                                    <CheckCheck className="w-3 h-3" />
-                                                )}
+                {/* Tab: Operators */}
+                {tab === "operators" && (
+                    <div className="p-6">
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-semibold mb-4">Operadores Activos</h3>
+                                <div className="space-y-2">
+                                    {operators.length === 0 ? (
+                                        <p className="text-gray-500">No hay operadores</p>
+                                    ) : (
+                                        operators.map(op => (
+                                            <div key={op.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                                                <div>
+                                                    <p className="font-medium">{op.displayName}</p>
+                                                    <p className="text-sm text-gray-500">{op.user?.email}</p>
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {op.activeChatCount || 0}/{op.maxChats} chats activos
+                                                        {op.isOnline && " • 🟢 En línea"}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => toggleOperator(op.id, op.isActive)}
+                                                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                                                            op.isActive
+                                                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                        }`}
+                                                    >
+                                                        {op.isActive ? "Activo" : "Inactivo"}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div ref={messagesEndRef} />
+                                        ))
+                                    )}
+                                </div>
                             </div>
 
-                            {selectedChat.status === "closed" ? (
-                                <div className="p-4 border-t bg-yellow-50 text-center">
-                                    <p className="text-yellow-800 text-sm mb-2">
-                                        Este chat está cerrado. Reabrilo para poder responder.
-                                    </p>
-                                    <button
-                                        onClick={toggleChatStatus}
-                                        className="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition"
-                                    >
-                                        Reabrir chat
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="border-t bg-white">
-                                    <div className="p-3 flex flex-wrap gap-2">
-                                        {quickReplies.map((reply, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setNewMessage(reply)}
-                                                className="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-gray-700 hover:bg-slate-200 transition"
-                                            >
-                                                {reply}
-                                            </button>
-                                        ))}
+                            <div className="border-t pt-6">
+                                <h3 className="text-lg font-semibold mb-4">Crear Operador</h3>
+                                <form onSubmit={handleCreateOperator} className="space-y-4 max-w-md">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Email del usuario</label>
+                                        <input
+                                            type="email"
+                                            value={newOperatorEmail}
+                                            onChange={(e) => setNewOperatorEmail(e.target.value)}
+                                            placeholder="operador@moovy.com"
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                                        />
                                     </div>
-                                    <form onSubmit={sendMessage} className="p-4 flex gap-2">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Nombre para mostrar</label>
                                         <input
                                             type="text"
-                                            value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
-                                            placeholder="Escribí tu respuesta..."
-                                            className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#e60012]"
+                                            value={newOperatorName}
+                                            onChange={(e) => setNewOperatorName(e.target.value)}
+                                            placeholder="Juan García"
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                                         />
-                                        <button
-                                            type="submit"
-                                            disabled={sending || !newMessage.trim()}
-                                            className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#cc000f] transition disabled:opacity-50"
-                                        >
-                                            {sending ? (
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                            ) : (
-                                                <Send className="w-5 h-5" />
-                                            )}
-                                        </button>
-                                    </form>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="flex-1 flex items-center justify-center text-center p-8">
-                            <div>
-                                <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                <h3 className="font-bold text-gray-900 mb-2">Centro de Soporte</h3>
-                                <p className="text-gray-500">
-                                    Seleccioná una conversación para responder
-                                </p>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-[#e60012] text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
+                                    >
+                                        {loading ? "Creando..." : "Crear Operador"}
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                )}
 
-            {/* Close Chat Confirmation Modal */}
-            {showCloseConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
-                        <h3 className="font-bold text-lg text-gray-900 mb-4">Cerrar Conversación</h3>
-                        <p className="text-gray-600 mb-6">
-                            ¿Estás seguro de cerrar esta conversación con {selectedChat?.user.name}?
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowCloseConfirm(false)}
-                                className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={toggleChatStatus}
-                                className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                            >
-                                Cerrar Chat
-                            </button>
+                {/* Tab: Canned Responses */}
+                {tab === "canned" && (
+                    <div className="p-6">
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-semibold mb-4">Respuestas Rápidas</h3>
+                                <div className="space-y-2">
+                                    {cannedResponses.length === 0 ? (
+                                        <p className="text-gray-500">No hay respuestas rápidas</p>
+                                    ) : (
+                                        cannedResponses.map(resp => (
+                                            <div key={resp.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div>
+                                                        <p className="font-mono text-sm font-semibold text-[#e60012]">{resp.shortcut}</p>
+                                                        <p className="font-medium">{resp.title}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => deleteCanned(resp.id)}
+                                                        className="text-red-600 hover:text-red-700 text-sm"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{resp.content}</p>
+                                                <p className="text-xs text-gray-400">Categoría: {resp.category}</p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-6">
+                                <h3 className="text-lg font-semibold mb-4">Agregar Respuesta Rápida</h3>
+                                <form onSubmit={handleCreateCanned} className="space-y-4 max-w-2xl">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Shortcut (ej: /saludo)</label>
+                                            <input
+                                                type="text"
+                                                value={newCannedForm.shortcut}
+                                                onChange={(e) =>
+                                                    setNewCannedForm({ ...newCannedForm, shortcut: e.target.value })
+                                                }
+                                                placeholder="/saludo"
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Categoría</label>
+                                            <select
+                                                value={newCannedForm.category}
+                                                onChange={(e) =>
+                                                    setNewCannedForm({ ...newCannedForm, category: e.target.value })
+                                                }
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012]"
+                                            >
+                                                <option value="general">General</option>
+                                                <option value="pedido">Pedido</option>
+                                                <option value="pago">Pago</option>
+                                                <option value="cuenta">Cuenta</option>
+                                                <option value="cierre">Cierre</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Título</label>
+                                        <input
+                                            type="text"
+                                            value={newCannedForm.title}
+                                            onChange={(e) =>
+                                                setNewCannedForm({ ...newCannedForm, title: e.target.value })
+                                            }
+                                            placeholder="Descripción corta"
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Contenido</label>
+                                        <textarea
+                                            value={newCannedForm.content}
+                                            onChange={(e) =>
+                                                setNewCannedForm({ ...newCannedForm, content: e.target.value })
+                                            }
+                                            placeholder="Texto completo de la respuesta..."
+                                            rows={4}
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] resize-none"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-[#e60012] text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
+                                    >
+                                        {loading ? "Creando..." : "Agregar Respuesta Rápida"}
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* Tab: Stats */}
+                {tab === "stats" && (
+                    <div className="p-6">
+                        {stats ? (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-4 gap-4">
+                                    <div className="p-4 border rounded-lg">
+                                        <p className="text-sm text-gray-600">Total de chats</p>
+                                        <p className="text-2xl font-bold text-gray-900">{stats.counts.total}</p>
+                                    </div>
+                                    <div className="p-4 border rounded-lg">
+                                        <p className="text-sm text-gray-600">Hoy</p>
+                                        <p className="text-2xl font-bold text-gray-900">{stats.counts.today}</p>
+                                    </div>
+                                    <div className="p-4 border rounded-lg">
+                                        <p className="text-sm text-gray-600">Promedio de rating</p>
+                                        <p className="text-2xl font-bold text-yellow-600">
+                                            {stats.avgRating.toFixed(1)} ⭐
+                                        </p>
+                                    </div>
+                                    <div className="p-4 border rounded-lg">
+                                        <p className="text-sm text-gray-600">Tiempo promedio</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {Math.round(stats.avgResolutionMinutes)}m
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 border rounded-lg">
+                                        <p className="font-semibold mb-3">Por estado</p>
+                                        <div className="space-y-2">
+                                            {Object.entries(stats.byStatus).map(([status, count]) => (
+                                                <div key={status} className="flex justify-between text-sm">
+                                                    <span className="capitalize text-gray-600">{status}</span>
+                                                    <span className="font-medium">{count}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 border rounded-lg">
+                                        <p className="font-semibold mb-3">Operadores en línea</p>
+                                        <div className="space-y-2">
+                                            {stats.operators
+                                                .filter((op: any) => op.isOnline)
+                                                .map((op: any) => (
+                                                    <div key={op.id} className="flex justify-between text-sm">
+                                                        <span className="text-gray-600">{op.displayName}</span>
+                                                        <span className="font-medium">{op.activeChats} chats</span>
+                                                    </div>
+                                                ))}
+                                            {stats.operators.filter((op: any) => op.isOnline).length === 0 && (
+                                                <p className="text-sm text-gray-400">Ninguno en línea</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500">Cargando estadísticas...</p>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
