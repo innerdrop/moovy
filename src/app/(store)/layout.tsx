@@ -9,6 +9,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
+import { ChatWidget } from "@/components/support/ChatWidget";
 import WhatsAppButton from "@/components/layout/WhatsAppButton";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
@@ -186,6 +187,9 @@ export default function StoreLayout({
             <CartSidebar />
 
             {/* WhatsApp Support Button */}
+            {/* Support Chat Widget */}
+            <ChatWidget />
+
             <WhatsAppButton />
 
             {/* Promo Popup */}
