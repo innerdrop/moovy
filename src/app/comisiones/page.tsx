@@ -522,7 +522,7 @@ export default function ComisionesPage() {
               {faqSections.map((section, sIdx) => (
                 <div key={sIdx}>
                   <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-red-600" />
+                    <MoovyIconShield className="w-5 h-5 text-red-600" />
                     {section.title}
                   </h4>
 
