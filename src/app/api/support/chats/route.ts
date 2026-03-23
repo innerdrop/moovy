@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
-// GET - Get user's support chats or all chats for admin
+// GET - Get user's support chats
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
@@ -13,69 +13,41 @@ export async function GET(request: NextRequest) {
         }
 
         const userId = (session.user as any).id;
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
-        let chats;
-
-        if (isAdmin) {
-            // Admin sees all chats
-            chats = await prisma.supportChat.findMany({
-                include: {
-                    user: {
-                        select: { id: true, name: true, email: true, role: true }
-                    },
-                    messages: {
-                        orderBy: { createdAt: "desc" },
-                        take: 1
-                    },
-                    _count: {
-                        select: { messages: true }
-                    }
+        // Regular users see only their chats
+        const chats = await (prisma as any).supportChat.findMany({
+            where: { userId },
+            include: {
+                user: {
+                    select: { id: true, name: true, email: true, role: true }
                 },
-                orderBy: { lastMessageAt: "desc" }
-            });
-
-            // Add unread count for admin
-            chats = await Promise.all(chats.map(async (chat) => {
-                const unreadCount = await prisma.supportMessage.count({
-                    where: {
-                        chatId: chat.id,
-                        isFromAdmin: false,
-                        isRead: false
-                    }
-                });
-                return { ...chat, unreadCount };
-            }));
-        } else {
-            // Regular user sees only their chats
-            chats = await prisma.supportChat.findMany({
-                where: { userId },
-                include: {
-                    messages: {
-                        orderBy: { createdAt: "desc" },
-                        take: 1
-                    },
-                    _count: {
-                        select: { messages: true }
-                    }
+                operator: {
+                    select: { id: true, displayName: true, isOnline: true }
                 },
-                orderBy: { lastMessageAt: "desc" }
+                messages: {
+                    orderBy: { createdAt: "desc" },
+                    take: 1
+                },
+                _count: {
+                    select: { messages: true }
+                }
+            },
+            orderBy: { lastMessageAt: "desc" }
+        });
+
+        // Add unread count
+        const chatsWithUnread = await Promise.all(chats.map(async (chat: any) => {
+            const unreadCount = await (prisma as any).supportMessage.count({
+                where: {
+                    chatId: chat.id,
+                    isFromAdmin: true,
+                    isRead: false
+                }
             });
+            return { ...chat, unreadCount };
+        }));
 
-            // Add unread count for user
-            chats = await Promise.all(chats.map(async (chat) => {
-                const unreadCount = await prisma.supportMessage.count({
-                    where: {
-                        chatId: chat.id,
-                        isFromAdmin: true,
-                        isRead: false
-                    }
-                });
-                return { ...chat, unreadCount };
-            }));
-        }
-
-        return NextResponse.json(chats);
+        return NextResponse.json(chatsWithUnread);
     } catch (error) {
         console.error("Error fetching chats:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
@@ -91,67 +63,33 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = (session.user as any).id;
+        const { category, subject, message } = await request.json();
 
-        // Only merchants and drivers can create support chats
-        if (!hasAnyRole(session, ["MERCHANT", "DRIVER"])) {
-            return NextResponse.json({ error: "Solo comercios y repartidores pueden usar el chat de soporte" }, { status: 403 });
-        }
-
-        const { subject, message } = await request.json();
-
-        if (!message) {
+        if (!message || !message.trim()) {
             return NextResponse.json({ error: "El mensaje es requerido" }, { status: 400 });
         }
 
-        // Check if user has an open chat already
-        const existingOpenChat = await prisma.supportChat.findFirst({
-            where: { userId, status: "open" }
-        });
-
-        if (existingOpenChat) {
-            // Add message to existing chat instead
-            const newMessage = await prisma.supportMessage.create({
-                data: {
-                    chatId: existingOpenChat.id,
-                    senderId: userId,
-                    content: message,
-                    isFromAdmin: false
-                }
-            });
-
-            await prisma.supportChat.update({
-                where: { id: existingOpenChat.id },
-                data: { lastMessageAt: new Date() }
-            });
-
-            return NextResponse.json({ chat: existingOpenChat, message: newMessage });
-        }
-
-        // Get merchant ID if user is a merchant
-        let merchantId = null;
-        if (hasAnyRole(session, ["MERCHANT"])) {
-            const merchant = await prisma.merchant.findFirst({
-                where: { ownerId: userId }
-            });
-            merchantId = merchant?.id || null;
-        }
-
-        // Create new chat with first message
-        const chat = await prisma.supportChat.create({
+        // Create new chat
+        const chat = await (prisma as any).supportChat.create({
             data: {
                 userId,
-                merchantId,
+                category: category || "otro",
                 subject: subject || "Consulta general",
-                status: "open",
+                status: "waiting",
+                priority: "normal",
                 messages: {
                     create: {
                         senderId: userId,
-                        content: message,
-                        isFromAdmin: false
+                        content: message.trim(),
+                        isFromAdmin: false,
+                        isSystem: false
                     }
                 }
             },
             include: {
+                user: {
+                    select: { id: true, name: true, email: true, role: true }
+                },
                 messages: true
             }
         });

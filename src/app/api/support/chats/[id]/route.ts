@@ -1,10 +1,9 @@
-// API: Support Chat Messages
+// API: Support Chat Messages - Buyer side
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
-// GET - Get messages for a specific chat
+// GET - Get chat with messages
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -17,19 +16,21 @@ export async function GET(
 
         const { id } = await params;
         const userId = (session.user as any).id;
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         // Get chat
-        const chat = await prisma.supportChat.findUnique({
+        const chat = await (prisma as any).supportChat.findUnique({
             where: { id },
             include: {
                 user: {
                     select: { id: true, name: true, email: true, role: true }
                 },
+                operator: {
+                    select: { id: true, displayName: true, isOnline: true }
+                },
                 messages: {
                     include: {
                         sender: {
-                            select: { id: true, name: true, role: true }
+                            select: { id: true, name: true, displayName: true, role: true }
                         }
                     },
                     orderBy: { createdAt: "asc" }
@@ -41,25 +42,16 @@ export async function GET(
             return NextResponse.json({ error: "Chat no encontrado" }, { status: 404 });
         }
 
-        // Check permission
-        if (!isAdmin && chat.userId !== userId) {
+        // Check permission - only own chats
+        if (chat.userId !== userId) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
-        // Mark messages as read
-        if (isAdmin) {
-            // Admin reads user messages
-            await prisma.supportMessage.updateMany({
-                where: { chatId: id, isFromAdmin: false },
-                data: { isRead: true }
-            });
-        } else {
-            // User reads admin messages
-            await prisma.supportMessage.updateMany({
-                where: { chatId: id, isFromAdmin: true },
-                data: { isRead: true }
-            });
-        }
+        // Mark user's unread operator messages as read
+        await (prisma as any).supportMessage.updateMany({
+            where: { chatId: id, isFromAdmin: true, isRead: false },
+            data: { isRead: true }
+        });
 
         return NextResponse.json(chat);
     } catch (error) {
@@ -68,7 +60,7 @@ export async function GET(
     }
 }
 
-// POST - Send a message to a chat
+// POST - Send message from buyer
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -81,45 +73,46 @@ export async function POST(
 
         const { id } = await params;
         const userId = (session.user as any).id;
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        // Get chat
-        const chat = await prisma.supportChat.findUnique({ where: { id } });
-
-        if (!chat) {
-            return NextResponse.json({ error: "Chat no encontrado" }, { status: 404 });
-        }
-
-        // Check permission
-        if (!isAdmin && chat.userId !== userId) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
         const { content } = await request.json();
 
         if (!content || !content.trim()) {
             return NextResponse.json({ error: "Mensaje vacío" }, { status: 400 });
         }
 
+        // Get chat
+        const chat = await (prisma as any).supportChat.findUnique({ where: { id } });
+        if (!chat) {
+            return NextResponse.json({ error: "Chat no encontrado" }, { status: 404 });
+        }
+
+        // Check permission
+        if (chat.userId !== userId) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
+
         // Create message
-        const message = await prisma.supportMessage.create({
+        const message = await (prisma as any).supportMessage.create({
             data: {
                 chatId: id,
                 senderId: userId,
                 content: content.trim(),
-                isFromAdmin: isAdmin
+                isFromAdmin: false,
+                isSystem: false
             },
             include: {
                 sender: {
-                    select: { id: true, name: true, role: true }
+                    select: { id: true, name: true, displayName: true, role: true }
                 }
             }
         });
 
-        // Update chat timestamp
-        await prisma.supportChat.update({
+        // Update chat timestamp and status
+        await (prisma as any).supportChat.update({
             where: { id },
-            data: { lastMessageAt: new Date() }
+            data: {
+                lastMessageAt: new Date(),
+                status: chat.status === "waiting" ? "active" : chat.status
+            }
         });
 
         return NextResponse.json(message, { status: 201 });
@@ -129,28 +122,49 @@ export async function POST(
     }
 }
 
-// PATCH - Update chat status (admin only)
-export async function PATCH(
+// POST - Rate chat after resolution
+export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
+        if (!session?.user) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
         const { id } = await params;
-        const { status } = await request.json();
+        const userId = (session.user as any).id;
+        const { rating, ratingComment } = await request.json();
 
-        const chat = await prisma.supportChat.update({
+        if (!rating || rating < 1 || rating > 5) {
+            return NextResponse.json({ error: "Calificación inválida (1-5)" }, { status: 400 });
+        }
+
+        // Get chat
+        const chat = await (prisma as any).supportChat.findUnique({ where: { id } });
+        if (!chat) {
+            return NextResponse.json({ error: "Chat no encontrado" }, { status: 404 });
+        }
+
+        // Check permission
+        if (chat.userId !== userId) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
+
+        // Update rating
+        const updated = await (prisma as any).supportChat.update({
             where: { id },
-            data: { status }
+            data: {
+                rating,
+                ratingComment: ratingComment || null,
+                status: "closed"
+            }
         });
 
-        return NextResponse.json(chat);
+        return NextResponse.json(updated);
     } catch (error) {
-        console.error("Error updating chat:", error);
+        console.error("Error rating chat:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }
 }
