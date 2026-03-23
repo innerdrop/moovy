@@ -1,7 +1,6 @@
 // API: Support Chat CRUD
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get user's support chats
@@ -14,12 +13,11 @@ export async function GET(request: NextRequest) {
 
         const userId = (session.user as any).id;
 
-        // Regular users see only their chats
         const chats = await (prisma as any).supportChat.findMany({
             where: { userId },
             include: {
                 user: {
-                    select: { id: true, name: true, email: true, role: true }
+                    select: { id: true, name: true, email: true }
                 },
                 operator: {
                     select: { id: true, displayName: true, isOnline: true }
@@ -35,7 +33,6 @@ export async function GET(request: NextRequest) {
             orderBy: { lastMessageAt: "desc" }
         });
 
-        // Add unread count
         const chatsWithUnread = await Promise.all(chats.map(async (chat: any) => {
             const unreadCount = await (prisma as any).supportMessage.count({
                 where: {
@@ -54,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST - Create new support chat
+// POST - Create new support chat with auto-assignment
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
@@ -63,34 +60,63 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = (session.user as any).id;
-        const { category, subject, message } = await request.json();
+        const userName = (session.user as any).name || "Cliente";
+        const { category, message } = await request.json();
 
         if (!message || !message.trim()) {
             return NextResponse.json({ error: "El mensaje es requerido" }, { status: 400 });
         }
 
-        // Create new chat
+        // Find available operator: online, active, with capacity
+        const availableOperator = await findAvailableOperator();
+
+        // Build subject from first message (max 60 chars)
+        const subject = message.trim().length > 60
+            ? message.trim().substring(0, 57) + "..."
+            : message.trim();
+
+        // Create chat with user's message + optional system message
+        const messagesData: any[] = [
+            {
+                senderId: userId,
+                content: message.trim(),
+                isFromAdmin: false,
+                isSystem: false
+            }
+        ];
+
+        // If operator found, add system assignment message
+        if (availableOperator) {
+            messagesData.push({
+                senderId: availableOperator.userId,
+                content: `${availableOperator.displayName} es tu operador asignado. En un momento te atiende, ${userName}.`,
+                isFromAdmin: true,
+                isSystem: true
+            });
+        }
+
         const chat = await (prisma as any).supportChat.create({
             data: {
                 userId,
-                category: category || "otro",
-                subject: subject || "Consulta general",
-                status: "waiting",
+                category: category || "general",
+                subject,
+                status: availableOperator ? "active" : "waiting",
                 priority: "normal",
+                operatorId: availableOperator?.id || undefined,
                 messages: {
-                    create: {
-                        senderId: userId,
-                        content: message.trim(),
-                        isFromAdmin: false,
-                        isSystem: false
-                    }
+                    create: messagesData
                 }
             },
             include: {
                 user: {
-                    select: { id: true, name: true, email: true, role: true }
+                    select: { id: true, name: true, email: true }
                 },
-                messages: true
+                operator: {
+                    select: { id: true, displayName: true, isOnline: true }
+                },
+                messages: {
+                    orderBy: { createdAt: "asc" }
+                }
             }
         });
 
@@ -99,4 +125,36 @@ export async function POST(request: NextRequest) {
         console.error("Error creating chat:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }
+}
+
+// Find the best available operator (online, active, with lowest active chats below their max)
+async function findAvailableOperator() {
+    const operators = await (prisma as any).supportOperator.findMany({
+        where: {
+            isActive: true,
+            isOnline: true
+        }
+    });
+
+    if (operators.length === 0) return null;
+
+    // Get active chat counts for each operator
+    const operatorsWithLoad = await Promise.all(
+        operators.map(async (op: any) => {
+            const activeChats = await (prisma as any).supportChat.count({
+                where: {
+                    operatorId: op.id,
+                    status: { in: ["active", "waiting"] }
+                }
+            });
+            return { ...op, activeChats };
+        })
+    );
+
+    // Filter operators with capacity and sort by lowest load
+    const available = operatorsWithLoad
+        .filter((op: any) => op.activeChats < op.maxChats)
+        .sort((a: any, b: any) => a.activeChats - b.activeChats);
+
+    return available.length > 0 ? available[0] : null;
 }

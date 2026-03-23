@@ -14,6 +14,7 @@ import {
     Star,
 } from "lucide-react";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
+import { MessageCircle } from "lucide-react";
 
 export default async function VendedorLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
@@ -35,6 +36,7 @@ export default async function VendedorLayout({ children }: { children: React.Rea
         { href: "/vendedor/pedidos", icon: ShoppingCart, label: "Mis Ventas" },
         { href: "/vendedor/ganancias", icon: DollarSign, label: "Ganancias" },
         { href: "/vendedor/resenas", icon: Star, label: "Reseñas" },
+        { href: "/vendedor/soporte", icon: MessageCircle, label: "Soporte" },
         { href: "/vendedor/configuracion", icon: Settings, label: "Configuración" },
     ];
 

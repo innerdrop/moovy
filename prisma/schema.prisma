@@ -71,6 +71,9 @@ model User {
   auditLogs          AuditLog[]             @relation("AuditLogs")
   couponUsages       CouponUsage[]
   supportOperator    SupportOperator?
+  orderChatsAsA      OrderChat[]         @relation("OrderChatParticipantA")
+  orderChatsAsB      OrderChat[]         @relation("OrderChatParticipantB")
+  orderChatMessages  OrderChatMessage[]  @relation("OrderChatMessageSender")
 }
 
 model UserRole {
@@ -290,6 +293,7 @@ model Order {
   scheduledSlotEnd    DateTime?
   scheduledConfirmedAt DateTime?
   couponCode          String?
+  orderChats          OrderChat[]
 
   @@index([status])
   @@index([driverId])
@@ -1001,4 +1005,45 @@ model CouponUsage {
 
   @@index([couponId])
   @@index([userId])
+}
+
+// ─── Order Chat (comunicación directa entre roles dentro de un pedido) ───
+
+model OrderChat {
+  id            String             @id @default(cuid())
+  orderId       String
+  subOrderId    String?
+  chatType      String             // BUYER_MERCHANT | BUYER_DRIVER | BUYER_SELLER
+  participantAId String            // Buyer (usually)
+  participantBId String            // Merchant/Seller/Driver userId
+  status        String             @default("active") // active | closed
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  order         Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  participantA  User               @relation("OrderChatParticipantA", fields: [participantAId], references: [id])
+  participantB  User               @relation("OrderChatParticipantB", fields: [participantBId], references: [id])
+  messages      OrderChatMessage[]
+
+  @@unique([orderId, chatType, participantAId, participantBId])
+  @@index([orderId])
+  @@index([participantAId])
+  @@index([participantBId])
+  @@index([status])
+}
+
+model OrderChatMessage {
+  id          String    @id @default(cuid())
+  chatId      String
+  senderId    String
+  content     String
+  isRead      Boolean   @default(false)
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  chat        OrderChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender      User      @relation("OrderChatMessageSender", fields: [senderId], references: [id])
+
+  @@index([chatId, createdAt])
+  @@index([senderId])
 }

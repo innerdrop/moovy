@@ -54,6 +54,8 @@ StoreSettings/MoovyConfig/PointsConfig → config dinámica singleton
 ✅ Scheduled delivery — UI + validación Zod + capacidad backend (max 15/slot, 9-22h, 1.5h min)
 ✅ Páginas institucionales — /quienes-somos, /terminos (14 cláusulas), /comisiones (transparencia + comparación)
 ✅ Analytics OPS — Dashboard con KPIs negocio/merchants/drivers/buyers, API por período, auto-refresh
+✅ Soporte MOOVY — Chat live con operadores, auto-asignación, mensaje sistema, canned responses, portal operador
+✅ Chat de Pedido — Comprador↔Comercio, Comprador↔Vendedor, Comprador↔Repartidor, respuestas rápidas por rol
 🔴 Tests — Vitest configurado pero 0 tests escritos
 🔴 MP producción — Solo credenciales TEST, falta activar en MP
 🔴 Split payments — SubOrder tiene mpTransferId pero split real no implementado

@@ -32,6 +32,7 @@ import {
 import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
 import RateSellerModal from "@/components/orders/RateSellerModal";
+import OrderChatPanel from "@/components/orders/OrderChatPanel";
 import dynamic from "next/dynamic";
 
 const OrderTrackingMiniMap = dynamic(() => import("@/components/orders/OrderTrackingMiniMap"), {
@@ -441,6 +442,30 @@ export default function OrderDetailPage() {
                     </div>
                 )}
 
+                {/* ── Chat con comercio ── */}
+                {order.merchant && isActive && (
+                    <OrderChatPanel
+                        orderId={order.id}
+                        orderNumber={order.orderNumber}
+                        chatType="BUYER_MERCHANT"
+                        counterpartName={order.merchant.name}
+                        userRole="buyer"
+                        compact
+                    />
+                )}
+
+                {/* ── Chat con repartidor ── */}
+                {order.driver && isActive && (
+                    <OrderChatPanel
+                        orderId={order.id}
+                        orderNumber={order.orderNumber}
+                        chatType="BUYER_DRIVER"
+                        counterpartName={order.driver.user.name}
+                        userRole="buyer"
+                        compact
+                    />
+                )}
+
                 {/* ── Seller (Marketplace) ── */}
                 {order.subOrders?.some(so => so.seller) && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -470,6 +495,18 @@ export default function OrderDetailPage() {
                             )}
                         </div>
                     </div>
+                )}
+
+                {/* ── Chat con vendedor ── */}
+                {order.subOrders?.some(so => so.seller) && isActive && (
+                    <OrderChatPanel
+                        orderId={order.id}
+                        orderNumber={order.orderNumber}
+                        chatType="BUYER_SELLER"
+                        counterpartName={order.subOrders?.find(so => so.seller)?.seller?.displayName || "Vendedor"}
+                        userRole="buyer"
+                        compact
+                    />
                 )}
 
                 {/* ── Driver ── */}

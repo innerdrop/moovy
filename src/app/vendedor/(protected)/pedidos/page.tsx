@@ -13,6 +13,7 @@ import {
     Calendar,
 } from "lucide-react";
 import { toast } from "@/store/toast";
+import OrderChatPanel from "@/components/orders/OrderChatPanel";
 
 interface SubOrder {
     id: string;
@@ -21,7 +22,9 @@ interface SubOrder {
     sellerPayout: number | null;
     createdAt: string;
     items: { id: string; name: string; quantity: number; price: number }[];
+    orderId?: string;
     order: {
+        id?: string;
         orderNumber: string;
         createdAt: string;
         deliveryType?: string;
@@ -327,6 +330,20 @@ export default function VendedorPedidosPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Chat con comprador */}
+                                {!["DELIVERED", "CANCELLED"].includes(order.status) && (order.orderId || order.order?.id) && (
+                                    <div className="mt-3 pt-3 border-t border-gray-100">
+                                        <OrderChatPanel
+                                            orderId={(order.orderId || order.order?.id) as string}
+                                            orderNumber={order.order.orderNumber}
+                                            chatType="BUYER_SELLER"
+                                            counterpartName={order.order.user?.name || "Comprador"}
+                                            userRole="seller"
+                                            compact
+                                        />
+                                    </div>
+                                )}
                             </div>
                         );
                     })}

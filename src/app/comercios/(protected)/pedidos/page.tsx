@@ -23,6 +23,7 @@ import {
     SlidersHorizontal,
     X
 } from "lucide-react";
+import OrderChatPanel from "@/components/orders/OrderChatPanel";
 
 interface Order {
     id: string;
@@ -548,6 +549,20 @@ export default function ComercioPedidosPage() {
                                             </button>
                                         )}
                                     </div>
+
+                                    {/* Chat con comprador */}
+                                    {!["DELIVERED", "CANCELLED"].includes(order.status) && (
+                                        <div className="mt-3 pt-3 border-t border-gray-100">
+                                            <OrderChatPanel
+                                                orderId={order.id}
+                                                orderNumber={order.orderNumber}
+                                                chatType="BUYER_MERCHANT"
+                                                counterpartName={order.user?.name || "Comprador"}
+                                                userRole="merchant"
+                                                compact
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
