@@ -71,9 +71,16 @@ export function generateSecureToken(length: number = 32): string {
 }
 
 /**
- * Rate limiter store (in-memory with auto-cleanup)
- * For production at scale, migrate to Redis. For single-instance VPS, this is sufficient.
+ * Rate limiter — Redis como primario, in-memory como fallback automático.
+ *
+ * Arquitectura:
+ * 1. Si Redis está conectado → INCR atómico con PEXPIRE (distribuido, persiste entre deploys)
+ * 2. Si Redis no está disponible → Map<> local (se resetea con deploy, suficiente para VPS single-instance)
+ * 3. La transición es transparente: si Redis cae mid-request, el siguiente request usa in-memory
  */
+
+import { redisRateLimitIncr, redisRateLimitReset } from "@/lib/redis";
+
 interface RateLimitEntry {
     count: number;
     resetTime: number;
@@ -82,8 +89,7 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Auto-cleanup expired entries every 60 seconds
-// This prevents unbounded memory growth even without Redis
+// Auto-cleanup del fallback in-memory cada 60s
 if (typeof setInterval !== "undefined") {
     setInterval(() => {
         const now = Date.now();
@@ -95,29 +101,25 @@ if (typeof setInterval !== "undefined") {
             }
         }
         if (cleaned > 0) {
-            console.log(`[RateLimit] Cleanup: ${cleaned} expired entries removed. Active: ${rateLimitStore.size}`);
+            console.log(`[RateLimit] In-memory cleanup: ${cleaned} expired. Active: ${rateLimitStore.size}`);
         }
-    }, 60 * 1000); // Every 60 seconds
+    }, 60 * 1000);
 }
 
-/**
- * Check rate limit for an IP/key
- * @returns true if allowed, false if rate limited
- */
-export function checkRateLimit(
+/** Fallback in-memory (misma lógica que antes) */
+function checkRateLimitInMemory(
     key: string,
-    maxAttempts: number = 5,
-    windowMs: number = 15 * 60 * 1000 // 15 minutes
+    maxAttempts: number,
+    windowMs: number
 ): { allowed: boolean; remaining: number; resetIn: number } {
     const now = Date.now();
 
-    // Safety valve: if store gets too large (DDoS), force cleanup
+    // Safety valve contra DDoS
     if (rateLimitStore.size > 5000) {
-        console.warn(`[RateLimit] ⚠️ Store size ${rateLimitStore.size} exceeds threshold. Forcing cleanup.`);
+        console.warn(`[RateLimit] Store size ${rateLimitStore.size} exceeds threshold. Forcing cleanup.`);
         for (const [k, v] of rateLimitStore.entries()) {
             if (v.resetTime < now) rateLimitStore.delete(k);
         }
-        // If still too large after cleanup, clear oldest 50%
         if (rateLimitStore.size > 5000) {
             const entries = [...rateLimitStore.entries()].sort((a, b) => a[1].firstAttempt - b[1].firstAttempt);
             const toRemove = Math.floor(entries.length / 2);
@@ -131,34 +133,56 @@ export function checkRateLimit(
     const record = rateLimitStore.get(key);
 
     if (!record || record.resetTime < now) {
-        // New window
         rateLimitStore.set(key, { count: 1, resetTime: now + windowMs, firstAttempt: now });
         return { allowed: true, remaining: maxAttempts - 1, resetIn: windowMs };
     }
 
     if (record.count >= maxAttempts) {
-        // Log potential attack
-        console.warn(`[RateLimit] 🚫 Blocked: ${key} (${record.count} attempts in ${Math.round((now - record.firstAttempt) / 1000)}s)`);
-        return {
-            allowed: false,
-            remaining: 0,
-            resetIn: record.resetTime - now,
-        };
+        console.warn(`[RateLimit] Blocked: ${key} (${record.count} attempts in ${Math.round((now - record.firstAttempt) / 1000)}s)`);
+        return { allowed: false, remaining: 0, resetIn: record.resetTime - now };
     }
 
     record.count++;
-    return {
-        allowed: true,
-        remaining: maxAttempts - record.count,
-        resetIn: record.resetTime - now,
-    };
+    return { allowed: true, remaining: maxAttempts - record.count, resetIn: record.resetTime - now };
 }
 
 /**
- * Reset rate limit for a key (e.g., after successful login)
+ * Check rate limit — Redis primario, in-memory fallback.
+ * ASYNC: todos los callers deben usar await.
  */
-export function resetRateLimit(key: string): void {
-    rateLimitStore.delete(key);
+export async function checkRateLimit(
+    key: string,
+    maxAttempts: number = 5,
+    windowMs: number = 15 * 60 * 1000
+): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
+    // Intentar Redis primero
+    const redisResult = await redisRateLimitIncr(key, windowMs);
+
+    if (redisResult !== null) {
+        // Redis respondió — usar sus datos
+        const { count, ttl } = redisResult;
+        const allowed = count <= maxAttempts;
+        if (!allowed) {
+            console.warn(`[RateLimit:Redis] Blocked: ${key} (${count}/${maxAttempts})`);
+        }
+        return {
+            allowed,
+            remaining: Math.max(0, maxAttempts - count),
+            resetIn: ttl,
+        };
+    }
+
+    // Redis no disponible — fallback in-memory
+    return checkRateLimitInMemory(key, maxAttempts, windowMs);
+}
+
+/**
+ * Reset rate limit (e.g., después de login exitoso).
+ * Limpia en Redis Y en in-memory para consistencia.
+ */
+export async function resetRateLimit(key: string): Promise<void> {
+    await redisRateLimitReset(key);
+    rateLimitStore.delete(key); // También limpiar local por si acaso
 }
 
 /**

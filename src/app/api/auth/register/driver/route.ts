@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
     // Rate limit: max 5 registrations per 15 minutes per IP
-    const limited = applyRateLimit(request, "auth:register:driver", 5, 15 * 60_000);
+    const limited = await applyRateLimit(request, "auth:register:driver", 5, 15 * 60_000);
     if (limited) return limited;
 
     try {

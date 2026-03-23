@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
-    const limited = applyRateLimit(request, "autocomplete", 60, 60_000);
+    const limited = await applyRateLimit(request, "autocomplete", 60, 60_000);
     if (limited) return limited;
 
     try {

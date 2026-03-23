@@ -7,7 +7,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const limited = applyRateLimit(request, "ops:coupons:update", 30, 60_000);
+  const limited = await applyRateLimit(request, "ops:coupons:update", 30, 60_000);
   if (limited) return limited;
 
   try {
@@ -78,7 +78,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const limited = applyRateLimit(request, "ops:coupons:delete", 20, 60_000);
+  const limited = await applyRateLimit(request, "ops:coupons:delete", 20, 60_000);
   if (limited) return limited;
 
   try {

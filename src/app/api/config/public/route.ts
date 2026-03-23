@@ -15,7 +15,7 @@ const PUBLIC_KEYS = new Set([
 ]);
 
 export async function GET(request: Request) {
-    const limited = applyRateLimit(request, "config:public", 30, 60_000);
+    const limited = await applyRateLimit(request, "config:public", 30, 60_000);
     if (limited) return limited;
 
     const { searchParams } = new URL(request.url);

@@ -6,7 +6,7 @@ import { MOOVER_LEVELS } from "@/lib/moover-level";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
-    const limited = applyRateLimit(request, "config:levels", 30, 60_000);
+    const limited = await applyRateLimit(request, "config:levels", 30, 60_000);
     if (limited) return limited;
 
     try {

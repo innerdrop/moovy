@@ -1,6 +1,6 @@
 // Rate limiting helper for API routes
-// Uses the existing checkRateLimit from security.ts
-// Usage: const limited = applyRateLimit(request, "orders:create", 10, 60_000);
+// Redis-backed con fallback automático a in-memory
+// Usage: const limited = await applyRateLimit(request, "orders:create", 10, 60_000);
 //        if (limited) return limited; // Returns 429 response automatically
 
 import { NextResponse } from "next/server";
@@ -22,21 +22,23 @@ function getClientIp(request: Request): string {
  * Apply rate limiting to an API route.
  * Returns null if allowed, or a 429 NextResponse if rate limited.
  *
+ * ASYNC — requiere await en todos los callers.
+ *
  * @param request - The incoming request
  * @param prefix - A namespace for this limiter (e.g. "orders:create", "search")
  * @param maxAttempts - Max requests allowed in the window
  * @param windowMs - Time window in milliseconds (default 60s)
  */
-export function applyRateLimit(
+export async function applyRateLimit(
     request: Request,
     prefix: string,
     maxAttempts: number = 30,
     windowMs: number = 60_000
-): NextResponse | null {
+): Promise<NextResponse | null> {
     const ip = getClientIp(request);
     const key = `${prefix}:${ip}`;
 
-    const { allowed, remaining, resetIn } = checkRateLimit(key, maxAttempts, windowMs);
+    const { allowed, remaining, resetIn } = await checkRateLimit(key, maxAttempts, windowMs);
 
     if (!allowed) {
         return NextResponse.json(

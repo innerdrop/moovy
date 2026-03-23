@@ -108,6 +108,7 @@ MP: MP_ACCESS_TOKEN, MP_PUBLIC_KEY, MP_WEBHOOK_SECRET, MP_APP_ID
 Email: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ADMIN_EMAIL
 Push: NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
 Maps: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
+Redis: REDIS_URL (opcional — si no está, rate limiter usa in-memory con fallback automático)
 
 ## Scripts
 start.ps1: crear rama | finish.ps1: cerrar rama y merge a develop | publish.ps1: push + dump DB
@@ -149,6 +150,7 @@ servicios, verificar que la versión y el estado sigan vigentes.
 | PostGIS | ✅ Docker local | v3.4 | Geolocalización de drivers, cálculo de distancias | 2026-03-21 |
 | Pino (logger) | ✅ Con fallback | v9 | Logging estructurado en API routes | 2026-03-21 |
 | Sharp | ✅ Funcional | v0.33 | Compresión de imágenes en uploads | 2026-03-21 |
+| Redis (ioredis) | 🟡 Opcional | v5.10 | Rate limiting persistente. Sin REDIS_URL cae a in-memory | 2026-03-23 |
 
 ### NPM: dependencias clave y versiones
 | Paquete | Versión | Notas |
@@ -163,6 +165,7 @@ servicios, verificar que la versión y el estado sigan vigentes.
 | bcryptjs | 2.x | Hash de passwords |
 | zod | 3.x | Validación de schemas |
 | zustand | 4.x | State management (cart, favorites, toast, points) |
+| ioredis | 5.x | Rate limiting persistente, fallback automático a in-memory |
 
 ### Protocolo de actualización
 1. Al inicio de cada sesión larga: verificar si hay deprecaciones conocidas en los servicios principales (Google, MP, Next.js)

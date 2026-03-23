@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 7
+Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 6
 Última actualización: 2026-03-23
 
 ## P0 — Sin esto no se lanza
@@ -99,8 +99,8 @@ Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 7
 - [x] Logger estructurado (Pino) — `src/lib/logger.ts` — L ✅ 2026-03-21
   Child loggers por módulo, 62 calls en orders/webhooks/assignment/email. JSON en prod, pretty en dev.
 
-- [ ] Migrar rate limiter a Redis — `src/lib/rate-limit.ts` — M
-  Hoy es in-memory, se resetea con cada deploy. Redis persiste y escala.
+- [x] Migrar rate limiter a Redis — `src/lib/security.ts`, `src/lib/redis.ts` — M ✅ 2026-03-23
+  ioredis 5.x con fallback automático a in-memory. Redis primario (INCR atómico + PEXPIRE), in-memory si Redis no está. REDIS_URL opcional. 22 callers actualizados a async.
 
 - [x] Encriptación at-rest para CUIT/CBU — `src/lib/encryption.ts` — M ✅ 2026-03-21
   AES-256-GCM en merchant/seller/driver registration y APIs. Backward compatible. Dev key fallback.

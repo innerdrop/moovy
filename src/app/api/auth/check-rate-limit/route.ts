@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
         // Check rate limit for this email
         const rateLimitKey = `login:${email}`;
-        const rateCheck = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
+        const rateCheck = await checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
 
         if (!rateCheck.allowed) {
             // Calculate remaining seconds until reset

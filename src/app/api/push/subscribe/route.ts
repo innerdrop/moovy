@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
-    const limited = applyRateLimit(request, "push:subscribe", 10, 60_000);
+    const limited = await applyRateLimit(request, "push:subscribe", 10, 60_000);
     if (limited) return limited;
 
     try {

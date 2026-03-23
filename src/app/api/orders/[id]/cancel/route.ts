@@ -15,7 +15,7 @@ export async function POST(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const limited = applyRateLimit(request, "orders:cancel", 10, 60_000);
+    const limited = await applyRateLimit(request, "orders:cancel", 10, 60_000);
     if (limited) return limited;
 
     const session = await auth();

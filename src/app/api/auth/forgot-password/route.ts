@@ -6,7 +6,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
     // Rate limit: max 5 password resets per 15 minutes per IP
-    const limited = applyRateLimit(request, "auth:forgot-password", 5, 15 * 60_000);
+    const limited = await applyRateLimit(request, "auth:forgot-password", 5, 15 * 60_000);
     if (limited) return limited;
 
     try {

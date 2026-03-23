@@ -5,7 +5,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 // GET /api/reviews?type=merchant&id=xxx  or  type=seller&id=xxx  or  type=driver&id=xxx
 export async function GET(request: NextRequest) {
-    const limited = applyRateLimit(request, "reviews:list", 20, 60_000);
+    const limited = await applyRateLimit(request, "reviews:list", 20, 60_000);
     if (limited) return limited;
 
     const session = await auth();

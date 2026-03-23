@@ -27,7 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                     // Rate limit login attempts per email
                     const rateLimitKey = `login:${email.toLowerCase()}`;
-                    const rateCheck = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
+                    const rateCheck = await checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
                     if (!rateCheck.allowed) {
                         console.warn(`[Auth] Rate limited: ${email} (reset in ${Math.round(rateCheck.resetIn / 1000)}s)`);
                         throw new Error("Demasiados intentos. Intentá de nuevo en unos minutos.");
@@ -72,7 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     console.log("[Auth] Login successful for:", user.email, "Role:", user.role);
 
                     // Reset rate limit on successful login
-                    resetRateLimit(rateLimitKey);
+                    await resetRateLimit(rateLimitKey);
 
                     const merchant = await prisma.merchant.findFirst({
                         where: { ownerId: user.id },

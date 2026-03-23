@@ -27,6 +27,7 @@
     "@types/nodemailer": "^7.0.5",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.4",
+    "ioredis": "^5.10.1",
     "isomorphic-dompurify": "^2.35.0",
     "lucide-react": "^0.562.0",
     "mercadopago": "^2.12.0",

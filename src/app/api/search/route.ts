@@ -5,7 +5,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
     // Rate limit: max 30 searches per minute per IP
-    const limited = applyRateLimit(request, "search", 30, 60_000);
+    const limited = await applyRateLimit(request, "search", 30, 60_000);
     if (limited) return limited;
 
     try {

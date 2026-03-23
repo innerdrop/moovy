@@ -29,7 +29,7 @@ function validateMagicBytes(buf: Buffer): boolean {
 
 export async function POST(request: Request) {
     // Rate limit: max 10 uploads per minute per IP
-    const limited = applyRateLimit(request, "upload", 10, 60_000);
+    const limited = await applyRateLimit(request, "upload", 10, 60_000);
     if (limited) return limited;
 
     try {

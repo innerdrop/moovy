@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
-  const limited = applyRateLimit(request, "ops:coupons", 30, 60_000);
+  const limited = await applyRateLimit(request, "ops:coupons", 30, 60_000);
   if (limited) return limited;
 
   try {
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, "ops:coupons:create", 20, 60_000);
+  const limited = await applyRateLimit(request, "ops:coupons:create", 20, 60_000);
   if (limited) return limited;
 
   try {

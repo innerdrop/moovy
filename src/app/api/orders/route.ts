@@ -31,7 +31,7 @@ function generateOrderNumber(): string {
 // POST - Create a new order
 export async function POST(request: Request) {
     // Rate limit: max 10 orders per minute per IP
-    const limited = applyRateLimit(request, "orders:create", 10, 60_000);
+    const limited = await applyRateLimit(request, "orders:create", 10, 60_000);
     if (limited) return limited;
 
     const start = Date.now();

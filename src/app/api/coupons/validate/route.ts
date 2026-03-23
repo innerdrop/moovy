@@ -5,7 +5,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   // Rate limit: max 20 validations per minute per IP
-  const limited = applyRateLimit(request, "coupons:validate", 20, 60_000);
+  const limited = await applyRateLimit(request, "coupons:validate", 20, 60_000);
   if (limited) return limited;
 
   try {
