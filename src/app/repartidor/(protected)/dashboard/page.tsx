@@ -40,6 +40,7 @@ import EarningsView from "@/components/rider/views/EarningsView";
 import SupportView from "@/components/rider/views/SupportView";
 import ProfileView from "@/components/rider/views/ProfileView";
 import SettingsView from "@/components/rider/views/SettingsView";
+import OrderChatPanel from "@/components/orders/OrderChatPanel";
 
 // Dynamic imports for heavy components
 const RiderMiniMap = dynamic(() => import("@/components/rider/RiderMiniMap"), {
@@ -615,6 +616,16 @@ export default function RiderDashboard() {
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* Chat con comprador */}
+                                            <OrderChatPanel
+                                                orderId={pedidoActivo.orderId}
+                                                orderNumber={pedidoActivo.orderNumber}
+                                                chatType="BUYER_DRIVER"
+                                                counterpartName={pedidoActivo.nombreCliente || "Comprador"}
+                                                userRole="driver"
+                                                compact
+                                            />
 
                                             {/* SwipeToConfirm */}
                                             <SwipeToConfirm
