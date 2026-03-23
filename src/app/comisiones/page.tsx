@@ -463,7 +463,7 @@ export default function ComisionesPage() {
         <section className="px-4 py-12 max-w-6xl mx-auto">
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-8 md:p-12 text-white">
             <div className="flex items-start gap-4 mb-6">
-              <Zap className="w-8 h-8 flex-shrink-0 mt-1" />
+              <MoovyIconInstantPay className="w-8 h-8 flex-shrink-0 mt-1" />
               <div>
                 <h3 className="text-3xl font-bold mb-2">Tarifa Fundador 🚀</h3>
                 <p className="text-red-100">
