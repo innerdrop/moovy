@@ -195,13 +195,13 @@ export default function MarketplacePage() {
                     {/* Title row */}
                     <div className="flex items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl font-extrabold leading-tight text-white sm:text-2xl lg:text-3xl">
+                            <h1 className="text-2xl font-black leading-tight text-white sm:text-3xl lg:text-4xl tracking-tight">
                                 Marketplace
                                 <span className="ml-2 bg-gradient-to-r from-purple-200 to-fuchsia-200 bg-clip-text text-transparent">
                                     Ushuaia
                                 </span>
                             </h1>
-                            <p className="mt-1 text-xs text-white/50 sm:text-sm">
+                            <p className="mt-1.5 text-sm text-white/70 sm:text-base font-semibold">
                                 Comprá y vendé entre vecinos. Publicar es gratis.
                             </p>
                         </div>
@@ -215,7 +215,7 @@ export default function MarketplacePage() {
                     </div>
 
                     {/* Stats row */}
-                    <div className="mt-3 flex items-center gap-4 text-[11px] text-white/40 sm:gap-6 sm:text-xs">
+                    <div className="mt-3 flex items-center gap-4 text-xs text-white/50 sm:gap-6 sm:text-sm">
                         <span className="flex items-center gap-1">
                             <TrendingUp className="h-3 w-3 text-green-400" />
                             <strong className="font-bold text-white/70">{heroTotal || "…"}</strong> publicaciones
@@ -368,7 +368,7 @@ export default function MarketplacePage() {
                             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
                                 <Flame className="h-3 w-3 text-white" />
                             </div>
-                            <h2 className="text-sm font-extrabold text-gray-800">Destacados</h2>
+                            <h2 className="text-base font-bold text-gray-800 sm:text-lg">Destacados</h2>
                             <span className="text-[10px] font-medium text-purple-400 bg-purple-50 px-2 py-0.5 rounded-full">
                                 Mejores vendedores
                             </span>
@@ -405,7 +405,7 @@ export default function MarketplacePage() {
                 {/* ═══════ MAIN RESULTS ═══════ */}
                 <section className="mt-1 pb-8">
                     {!loading && listings.length > 0 && (
-                        <h2 className="mb-3 text-sm font-extrabold text-gray-800">
+                        <h2 className="mb-3 text-base font-bold text-gray-800 sm:text-lg">
                             {isSearching
                                 ? `Resultados para "${search}"`
                                 : categoryId
@@ -427,7 +427,7 @@ export default function MarketplacePage() {
                                 <PackageSearch className="h-12 w-12 text-purple-400" />
                             </div>
 
-                            <h3 className="text-lg font-extrabold text-gray-800">
+                            <h3 className="text-xl font-bold text-gray-800 sm:text-2xl">
                                 {isSearching
                                     ? `No hay resultados para "${search}"`
                                     : hasActiveFilters
@@ -516,7 +516,7 @@ export default function MarketplacePage() {
                                     className={`my-8 overflow-hidden rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] p-5 shadow-lg lg:flex lg:items-center lg:justify-between lg:p-8 transition-all duration-700 ${sellCtaVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
                                 >
                                     <div className="relative z-10">
-                                        <h3 className="text-lg font-extrabold text-white lg:text-xl">
+                                        <h3 className="text-xl font-bold text-white lg:text-2xl">
                                             ¿Tenés algo para vender?
                                         </h3>
                                         <p className="mt-1 text-sm text-white/50">
