@@ -183,6 +183,8 @@ servicios, verificar que la versión y el estado sigan vigentes.
 6. Al cerrar rama: actualizar CLAUDE.md + PROJECT_STATUS.md en el commit
 7. Rutas con paréntesis: `git add "src/app/(store)/page.tsx"` (PowerShell requiere comillas)
 8. Al dar comandos de cierre de rama o cualquier comando git: SIEMPRE especificar en qué rama debe estar posicionado Mauro antes de ejecutar. Formato: "Posicionate en la rama `nombre-rama`" + luego el comando. Aplica para finish.ps1, commits, cherry-pick, merge, o cualquier operación git.
+9. Al cerrar rama: SIEMPRE dar el comando completo de cierre (commit + checkout develop + merge + delete branch) en vez de solo `.\scripts\finish.ps1`. El finish.ps1 pide input interactivo. Formato: commit con mensaje descriptivo → checkout develop → merge con mensaje → delete branch.
+10. PowerShell NO soporta `&&`. SIEMPRE separar comandos con `;` o dar cada comando en línea separada. NUNCA usar `&&` en comandos para Mauro.
 
 ## Mentalidad CEO/CTO
 
