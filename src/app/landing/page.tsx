@@ -191,8 +191,7 @@ function HeroSlide({ slide, isActive }: { slide: SlideConfig; isActive: boolean 
 
                     {/* Title */}
                     <h1
-                        className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] mb-6 tracking-tight"
-                        style={{ fontFamily: "'Arista', sans-serif" }}
+                        className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold leading-[0.95] mb-6 tracking-tight"
                     >
                         {slide.title}
                         <br />

@@ -6,7 +6,9 @@ import Providers from "@/components/Providers";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import WebVitalsReporter from "@/components/analytics/WebVitalsReporter";
 
-// Nunito — primary body font (variable, 200-1000 weights)
+// Nunito — única font del producto (variable, 200-1000 weights)
+// Terminales redondeadas = calidez. Geométrica = profesionalismo.
+// Misma calidad que TT Norms Pro (DoorDash) pero gratis.
 const nunito = localFont({
   src: [
     {
@@ -17,29 +19,6 @@ const nunito = localFont({
   variable: "--font-nunito",
   display: "swap",
   weight: "200 1000",
-});
-
-// Arista 2.0 — display/headline font
-const arista = localFont({
-  src: [
-    {
-      path: "../../public/fonts/Arista2.0-Light.ttf",
-      style: "normal",
-      weight: "300",
-    },
-    {
-      path: "../../public/fonts/Arista2.0.ttf",
-      style: "normal",
-      weight: "400",
-    },
-    {
-      path: "../../public/fonts/Arista2.0-Fat.ttf",
-      style: "normal",
-      weight: "700",
-    },
-  ],
-  variable: "--font-arista",
-  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -102,7 +81,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
-      <body className={`${nunito.variable} ${arista.variable} font-sans antialiased`}>
+      <body className={`${nunito.variable} font-sans antialiased`}>
         <ServiceWorkerRegistrar />
         <WebVitalsReporter />
         <Providers>

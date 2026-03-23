@@ -20,30 +20,8 @@
   src: url('/fonts/Nunito-Variable.ttf') format('truetype');
 }
 
-/* ===== ARISTA 2.0 — DISPLAY/HEADLINE FONT ===== */
-@font-face {
-  font-family: 'Arista';
-  font-style: normal;
-  font-weight: 300;
-  font-display: swap;
-  src: url('/fonts/Arista2.0-Light.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Arista';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/Arista2.0.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Arista';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/Arista2.0-Fat.ttf') format('truetype');
-}
+/* Arista 2.0 removed — display font doesn't scale across 50+ screens.
+   Nunito handles all hierarchy via weight contrast (400-800). */
 
 /* ===== MOOVY - COLOR SCHEME ===== */
 :root {
@@ -131,7 +109,6 @@
   --color-foreground: var(--foreground);
   --color-moovy: var(--moovy-red);
   --font-sans: var(--font-nunito), 'Nunito', system-ui, sans-serif;
-  --font-display: var(--font-arista), 'Arista', sans-serif;
   --font-brand: 'Junegull', sans-serif;
 }
 
@@ -229,21 +206,73 @@ body {
   padding-bottom: calc(4rem + env(safe-area-inset-bottom));
 }
 
-/* ===== TYPOGRAPHY ===== */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-arista), 'Arista', sans-serif;
-  font-weight: 400;
+/* ===== TYPOGRAPHY SCALE =====
+   Single font (Nunito) — hierarchy via weight + size + spacing.
+   Same approach as DoorDash (TT Norms), Uber Eats (Uber Move), Glovo.
+   ────────────────────────────────────────────────────────────── */
+
+/* Headlines: ExtraBold (800) con tracking tight para impacto */
+h1 {
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* Utility classes for type scale */
+.text-display {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.text-headline {
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
-/* Display font utility class */
-.font-display {
-  font-family: var(--font-arista), 'Arista', sans-serif;
+.text-label {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.text-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.text-badge {
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.text-meta {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  letter-spacing: 0.01em;
 }
 
 /* ===== BUTTON STYLES ===== */
