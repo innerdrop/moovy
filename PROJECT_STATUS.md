@@ -184,3 +184,4 @@ Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 6
 - [x] Página /terminos (Términos y Condiciones — 14 cláusulas, Ley 24.240 + 25.326) — 2026-03-23
 - [x] Página /comisiones (transparencia de tarifas, comparación vs competencia) — 2026-03-23
 - [x] Dashboard analytics avanzado OPS (KPIs negocio/merchants/drivers/buyers, API por período) — 2026-03-23
+- [x] Auditoría pre-lanzamiento: bypass admin, puntos cancel, comisión rejected, deliveryFee negativo, passwords admin, rating hardcodeado, Facebook link, acento, cupón atómico, indexes DB — 2026-03-23
