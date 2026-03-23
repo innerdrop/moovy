@@ -10,7 +10,9 @@ export default function AdminSoportePage() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [newOperatorEmail, setNewOperatorEmail] = useState("");
+    const [newOperatorPassword, setNewOperatorPassword] = useState("");
     const [newOperatorName, setNewOperatorName] = useState("");
+    const [operatorError, setOperatorError] = useState("");
     const [newCannedForm, setNewCannedForm] = useState({
         shortcut: "",
         title: "",
@@ -65,13 +67,38 @@ export default function AdminSoportePage() {
 
     const handleCreateOperator = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newOperatorEmail || !newOperatorName) return;
+        setOperatorError("");
+        if (!newOperatorEmail || !newOperatorName || !newOperatorPassword) return;
+
+        if (newOperatorPassword.length < 8) {
+            setOperatorError("La contraseña debe tener al menos 8 caracteres");
+            return;
+        }
 
         try {
             setLoading(true);
-            // First find user by email - you'd need a separate endpoint or use admin search
-            // For now, show error message
-            alert("Funcionalidad en desarrollo - usa el panel admin para crear operadores");
+            const res = await fetch("/api/admin/support/operators", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: newOperatorEmail,
+                    password: newOperatorPassword,
+                    displayName: newOperatorName,
+                })
+            });
+
+            if (res.ok) {
+                await loadOperators();
+                setNewOperatorEmail("");
+                setNewOperatorPassword("");
+                setNewOperatorName("");
+                alert("Operador creado exitosamente. Ya puede iniciar sesión en /soporte/login");
+            } else {
+                const data = await res.json();
+                setOperatorError(data.error || "Error al crear operador");
+            }
+        } catch {
+            setOperatorError("Error de conexión");
         } finally {
             setLoading(false);
         }
@@ -233,17 +260,15 @@ export default function AdminSoportePage() {
 
                             <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold mb-4">Crear Operador</h3>
-                                <form onSubmit={handleCreateOperator} className="space-y-4 max-w-md">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Email del usuario</label>
-                                        <input
-                                            type="email"
-                                            value={newOperatorEmail}
-                                            onChange={(e) => setNewOperatorEmail(e.target.value)}
-                                            placeholder="operador@moovy.com"
-                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
-                                        />
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Crea una cuenta nueva para el operador. No necesita ser un cliente existente de MOOVY.
+                                </p>
+                                {operatorError && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                        {operatorError}
                                     </div>
+                                )}
+                                <form onSubmit={handleCreateOperator} className="space-y-4 max-w-md">
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Nombre para mostrar</label>
                                         <input
@@ -251,12 +276,37 @@ export default function AdminSoportePage() {
                                             value={newOperatorName}
                                             onChange={(e) => setNewOperatorName(e.target.value)}
                                             placeholder="Juan García"
+                                            required
                                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            value={newOperatorEmail}
+                                            onChange={(e) => setNewOperatorEmail(e.target.value)}
+                                            placeholder="operador@moovy.com"
+                                            required
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Contraseña</label>
+                                        <input
+                                            type="password"
+                                            value={newOperatorPassword}
+                                            onChange={(e) => setNewOperatorPassword(e.target.value)}
+                                            placeholder="Mínimo 8 caracteres"
+                                            required
+                                            minLength={8}
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">El operador usará este email y contraseña para ingresar en /soporte/login</p>
+                                    </div>
                                     <button
                                         type="submit"
-                                        disabled={loading}
+                                        disabled={loading || !newOperatorEmail || !newOperatorName || !newOperatorPassword}
                                         className="w-full bg-[#e60012] text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
                                     >
                                         {loading ? "Creando..." : "Crear Operador"}
