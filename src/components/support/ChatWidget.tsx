@@ -5,6 +5,15 @@ import { useSession } from "next-auth/react";
 import { ChatBubbleIcon } from "./ChatBubbleIcon";
 import { SupportChat } from "@/types/support";
 
+function OnlineIndicator() {
+    return (
+        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-green-500 border-2 border-white" />
+        </span>
+    );
+}
+
 export function ChatWidget() {
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
@@ -160,31 +169,32 @@ export function ChatWidget() {
         }
     };
 
-    // If not logged in and no active chat, show pre-chat form
-    if (!session?.user && !activeChat) {
+    // If not logged in, show login prompt
+    if (!session?.user) {
         return (
             <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40">
                 {/* Bubble button */}
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className={`w-14 h-14 rounded-full bg-[#e60012] text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center ${
+                    className={`relative w-14 h-14 rounded-full bg-[#e60012] text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center ${
                         isOpen ? "scale-125" : "hover:scale-110"
                     }`}
                     aria-label="Abrir chat de soporte"
                 >
                     <ChatBubbleIcon className="w-7 h-7" />
+                    {isOnline && <OnlineIndicator />}
                 </button>
 
                 {/* Chat window */}
                 {isOpen && (
-                    <div className="absolute bottom-20 right-0 w-96 max-w-[calc(100vw-32px)] bg-white rounded-lg shadow-2xl flex flex-col h-96 md:h-[500px] animate-in slide-in-from-bottom-5">
+                    <div className="absolute bottom-20 right-0 w-96 max-w-[calc(100vw-32px)] bg-white rounded-lg shadow-2xl flex flex-col animate-in slide-in-from-bottom-5">
                         {/* Header */}
                         <div className="bg-[#e60012] text-white p-4 rounded-t-lg">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="font-semibold">Soporte MOOVY</h3>
                                     <p className="text-sm opacity-90">
-                                        {isOnline ? "🟢 En línea" : "⚫ Fuera de línea"}
+                                        {isOnline ? "En línea" : "Fuera de línea"}
                                     </p>
                                 </div>
                                 <button
@@ -196,39 +206,25 @@ export function ChatWidget() {
                             </div>
                         </div>
 
-                        {/* Body */}
-                        <div className="flex-1 flex flex-col overflow-hidden p-4">
-                            <div className="flex-1 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-4xl mb-3">👋</div>
-                                    <p className="font-semibold mb-2">
-                                        {isOnline ? "¡Hola! Estamos aquí para ayudarte" : "Estamos fuera de línea"}
-                                    </p>
-                                    <p className="text-sm text-gray-600 mb-4">
-                                        {isOnline
-                                            ? "Escribe tu mensaje y nos pondremos en contacto"
-                                            : "Dejanos tu mensaje y te responderemos pronto"}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Input */}
-                            <div className="border-t pt-4 space-y-3">
-                                <textarea
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    placeholder="Escribí tu consulta..."
-                                    className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#e60012]"
-                                    rows={2}
-                                />
-                                <button
-                                    onClick={() => handleCreateChat("otro")}
-                                    disabled={loading || !message.trim()}
-                                    className="w-full bg-[#e60012] text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                                >
-                                    {loading ? "Enviando..." : "Enviar mensaje"}
-                                </button>
-                            </div>
+                        {/* Body - Login prompt */}
+                        <div className="p-6 text-center">
+                            <div className="text-4xl mb-3">💬</div>
+                            <p className="font-semibold mb-2">¿Necesitás ayuda?</p>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Iniciá sesión para chatear con nuestro equipo de soporte.
+                            </p>
+                            <a
+                                href="/login"
+                                className="inline-block w-full bg-[#e60012] text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium text-center"
+                            >
+                                Iniciar sesión
+                            </a>
+                            <a
+                                href="/registro"
+                                className="inline-block w-full mt-2 text-sm text-[#e60012] hover:underline"
+                            >
+                                ¿No tenés cuenta? Registrate
+                            </a>
                         </div>
                     </div>
                 )}
@@ -248,11 +244,13 @@ export function ChatWidget() {
                 aria-label="Chat de soporte"
             >
                 <ChatBubbleIcon className="w-7 h-7" />
-                {chats.some(c => (c.unreadCount || 0) > 0) && (
+                {chats.some(c => (c.unreadCount || 0) > 0) ? (
                     <span className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                         {chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
                     </span>
-                )}
+                ) : isOnline ? (
+                    <OnlineIndicator />
+                ) : null}
             </button>
 
             {/* Chat window */}

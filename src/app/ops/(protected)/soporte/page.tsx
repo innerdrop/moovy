@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { SupportOperator, CannedResponse } from "@/types/support";
 
 export default function AdminSoportePage() {
@@ -8,11 +8,11 @@ export default function AdminSoportePage() {
     const [operators, setOperators] = useState<SupportOperator[]>([]);
     const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>([]);
     const [stats, setStats] = useState<any>(null);
-    const [chats, setChats] = useState<any[]>([]);
-    const [chatFilter, setChatFilter] = useState("");
     const [loading, setLoading] = useState(false);
     const [newOperatorEmail, setNewOperatorEmail] = useState("");
+    const [newOperatorPassword, setNewOperatorPassword] = useState("");
     const [newOperatorName, setNewOperatorName] = useState("");
+    const [operatorError, setOperatorError] = useState("");
     const [newCannedForm, setNewCannedForm] = useState({
         shortcut: "",
         title: "",
@@ -59,28 +59,21 @@ export default function AdminSoportePage() {
         }
     };
 
-    const loadChats = useCallback(async () => {
-        try {
-            const url = chatFilter
-                ? `/api/admin/support/chats?status=${chatFilter}`
-                : "/api/admin/support/chats";
-            const res = await fetch(url);
-            if (res.ok) setChats(await res.json());
-        } catch (error) {
-            console.error("Error loading chats:", error);
-        }
-    }, [chatFilter]);
-
     useEffect(() => {
         loadOperators();
         loadCanned();
         loadStats();
-        loadChats();
-    }, [loadChats]);
+    }, []);
 
     const handleCreateOperator = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newOperatorEmail || !newOperatorName) return;
+        setOperatorError("");
+        if (!newOperatorEmail || !newOperatorName || !newOperatorPassword) return;
+
+        if (newOperatorPassword.length < 8) {
+            setOperatorError("La contraseña debe tener al menos 8 caracteres");
+            return;
+        }
 
         try {
             setLoading(true);
@@ -89,6 +82,7 @@ export default function AdminSoportePage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     email: newOperatorEmail,
+                    password: newOperatorPassword,
                     displayName: newOperatorName,
                 })
             });
@@ -96,14 +90,15 @@ export default function AdminSoportePage() {
             if (res.ok) {
                 await loadOperators();
                 setNewOperatorEmail("");
+                setNewOperatorPassword("");
                 setNewOperatorName("");
+                alert("Operador creado exitosamente. Ya puede iniciar sesión en /soporte/login");
             } else {
                 const data = await res.json();
-                alert(data.error || "Error al crear operador");
+                setOperatorError(data.error || "Error al crear operador");
             }
-        } catch (error) {
-            console.error("Error creating operator:", error);
-            alert("Error de conexión");
+        } catch {
+            setOperatorError("Error de conexión");
         } finally {
             setLoading(false);
         }
@@ -220,87 +215,8 @@ export default function AdminSoportePage() {
 
                 {/* Tab: Chats */}
                 {tab === "chats" && (
-                    <div className="p-6 space-y-4">
-                        {/* Filters */}
-                        <div className="flex gap-2 flex-wrap">
-                            {[
-                                { value: "", label: "Todos" },
-                                { value: "waiting", label: "En espera" },
-                                { value: "active", label: "Activos" },
-                                { value: "resolved", label: "Resueltos" },
-                                { value: "closed", label: "Cerrados" },
-                            ].map((f) => (
-                                <button
-                                    key={f.value}
-                                    onClick={() => setChatFilter(f.value)}
-                                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
-                                        chatFilter === f.value
-                                            ? "bg-[#e60012] text-white"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                    }`}
-                                >
-                                    {f.label}
-                                </button>
-                            ))}
-                            <button
-                                onClick={loadChats}
-                                className="ml-auto px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
-                            >
-                                Actualizar
-                            </button>
-                        </div>
-
-                        {/* Chat list */}
-                        {chats.length === 0 ? (
-                            <p className="text-gray-500 py-8 text-center">No hay conversaciones{chatFilter ? ` con estado "${chatFilter}"` : ""}</p>
-                        ) : (
-                            <div className="space-y-2">
-                                {chats.map((chat: any) => {
-                                    const lastMsg = chat.messages?.[0];
-                                    const statusColors: Record<string, string> = {
-                                        waiting: "bg-yellow-100 text-yellow-700",
-                                        active: "bg-blue-100 text-blue-700",
-                                        resolved: "bg-green-100 text-green-700",
-                                        closed: "bg-gray-100 text-gray-600",
-                                    };
-                                    const statusLabels: Record<string, string> = {
-                                        waiting: "En espera",
-                                        active: "Activo",
-                                        resolved: "Resuelto",
-                                        closed: "Cerrado",
-                                    };
-                                    return (
-                                        <div key={chat.id} className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition">
-                                            <div className="w-10 h-10 rounded-full bg-[#e60012]/10 flex items-center justify-center text-[#e60012] font-bold text-sm flex-shrink-0">
-                                                {chat.user?.name?.charAt(0)?.toUpperCase() || "?"}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-medium text-gray-900 truncate">{chat.user?.name || chat.user?.email || "Usuario"}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[chat.status] || "bg-gray-100 text-gray-600"}`}>
-                                                        {statusLabels[chat.status] || chat.status}
-                                                    </span>
-                                                    {chat.category && (
-                                                        <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">{chat.category}</span>
-                                                    )}
-                                                </div>
-                                                {lastMsg && (
-                                                    <p className="text-sm text-gray-500 truncate">
-                                                        {lastMsg.isFromAdmin ? "Operador: " : ""}{lastMsg.content}
-                                                    </p>
-                                                )}
-                                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                                                    <span>{chat._count?.messages || 0} mensajes</span>
-                                                    {chat.operator && <span>Op: {chat.operator.displayName}</span>}
-                                                    <span>{new Date(chat.lastMessageAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
-                                                    {chat.rating && <span>⭐ {chat.rating}/5</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                    <div className="p-6">
+                        <p className="text-gray-600">Ver conversaciones en el portal de soporte operadores</p>
                     </div>
                 )}
 
@@ -344,17 +260,15 @@ export default function AdminSoportePage() {
 
                             <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold mb-4">Crear Operador</h3>
-                                <form onSubmit={handleCreateOperator} className="space-y-4 max-w-md">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Email del usuario</label>
-                                        <input
-                                            type="email"
-                                            value={newOperatorEmail}
-                                            onChange={(e) => setNewOperatorEmail(e.target.value)}
-                                            placeholder="operador@moovy.com"
-                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
-                                        />
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Crea una cuenta nueva para el operador. No necesita ser un cliente existente de MOOVY.
+                                </p>
+                                {operatorError && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                        {operatorError}
                                     </div>
+                                )}
+                                <form onSubmit={handleCreateOperator} className="space-y-4 max-w-md">
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Nombre para mostrar</label>
                                         <input
@@ -362,12 +276,37 @@ export default function AdminSoportePage() {
                                             value={newOperatorName}
                                             onChange={(e) => setNewOperatorName(e.target.value)}
                                             placeholder="Juan García"
+                                            required
                                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            value={newOperatorEmail}
+                                            onChange={(e) => setNewOperatorEmail(e.target.value)}
+                                            placeholder="operador@moovy.com"
+                                            required
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Contraseña</label>
+                                        <input
+                                            type="password"
+                                            value={newOperatorPassword}
+                                            onChange={(e) => setNewOperatorPassword(e.target.value)}
+                                            placeholder="Mínimo 8 caracteres"
+                                            required
+                                            minLength={8}
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">El operador usará este email y contraseña para ingresar en /soporte/login</p>
+                                    </div>
                                     <button
                                         type="submit"
-                                        disabled={loading}
+                                        disabled={loading || !newOperatorEmail || !newOperatorName || !newOperatorPassword}
                                         className="w-full bg-[#e60012] text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
                                     >
                                         {loading ? "Creando..." : "Crear Operador"}
