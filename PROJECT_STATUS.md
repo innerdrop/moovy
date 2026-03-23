@@ -1,6 +1,6 @@
 # Moovy — Tareas pendientes
-Score: 97/100 | P0: 2 tareas | P1: 0 | P2: 8
-Última actualización: 2026-03-21
+Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 7
+Última actualización: 2026-03-23
 
 ## P0 — Sin esto no se lanza
 
@@ -126,8 +126,8 @@ Score: 97/100 | P0: 2 tareas | P1: 0 | P2: 8
 - [ ] Historial de ubicación del driver — `src/app/api/driver/location/route.ts` — S
   Guardar trace GPS para disputas y optimización de rutas.
 
-- [ ] Dashboard analytics avanzado — `src/app/ops/(protected)/analytics/page.tsx` — L
-  Cohortes, retención, CAC, LTV, funnel de conversión.
+- [x] Dashboard analytics avanzado — `src/app/ops/(protected)/analytics/page.tsx` — L ✅ 2026-03-23
+  API /api/admin/analytics con métricas por período (hoy/semana/mes). KPIs: revenue, ticket promedio, cancelación, payment split. Rankings de comercios y drivers. Métricas de buyers activos y retención. Auto-refresh 60s.
 
 - [ ] Programa de fidelización para merchants — API + UI — M
   Beneficios por volumen, destacado en home, badge premium.
@@ -180,3 +180,7 @@ Score: 97/100 | P0: 2 tareas | P1: 0 | P2: 8
 - [x] Encriptación AES-256-GCM para CUIT/CBU (6 APIs) — 2026-03-21
 - [x] Web Vitals (LCP/INP/CLS/FCP/TTFB + API + admin page) — 2026-03-21
 - [x] Sistema de cupones (schema + validate + checkout + admin CRUD) — 2026-03-21
+- [x] Página /quienes-somos (About Us — confianza, misión, valores, cómo funciona) — 2026-03-23
+- [x] Página /terminos (Términos y Condiciones — 14 cláusulas, Ley 24.240 + 25.326) — 2026-03-23
+- [x] Página /comisiones (transparencia de tarifas, comparación vs competencia) — 2026-03-23
+- [x] Dashboard analytics avanzado OPS (KPIs negocio/merchants/drivers/buyers, API por período) — 2026-03-23
