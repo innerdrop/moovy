@@ -70,6 +70,7 @@ model User {
   favorites          Favorite[]
   auditLogs          AuditLog[]             @relation("AuditLogs")
   couponUsages       CouponUsage[]
+  supportOperator    SupportOperator?
 }
 
 model UserRole {
@@ -625,25 +626,74 @@ model SupportChat {
   id            String           @id @default(cuid())
   userId        String
   merchantId    String?
+  operatorId    String?
   subject       String?
-  status        String           @default("open")
+  category      String?          // "pedido", "pago", "cuenta", "comercio", "repartidor", "otro"
+  status        String           @default("waiting") // waiting, active, resolved, closed
+  priority      String           @default("normal")  // low, normal, high, urgent
+  rating        Int?             // 1-5 post-chat rating
+  ratingComment String?
   lastMessageAt DateTime         @default(now())
+  resolvedAt    DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   user          User             @relation("UserSupportChats", fields: [userId], references: [id], onDelete: Cascade)
+  operator      SupportOperator? @relation(fields: [operatorId], references: [id])
   messages      SupportMessage[]
+
+  @@index([userId])
+  @@index([operatorId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model SupportMessage {
-  id          String      @id @default(cuid())
-  chatId      String
-  senderId    String
-  content     String
-  isFromAdmin Boolean     @default(false)
-  isRead      Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  chat        SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender      User        @relation("SupportMessageSender", fields: [senderId], references: [id])
+  id              String      @id @default(cuid())
+  chatId          String
+  senderId        String
+  content         String
+  isFromAdmin     Boolean     @default(false)
+  isSystem        Boolean     @default(false) // system messages like "operator joined"
+  isRead          Boolean     @default(false)
+  attachmentUrl   String?
+  attachmentType  String?     // "image", "file"
+  createdAt       DateTime    @default(now())
+  chat            SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender          User        @relation("SupportMessageSender", fields: [senderId], references: [id])
+
+  @@index([chatId])
+  @@index([createdAt])
+}
+
+model SupportOperator {
+  id          String        @id @default(cuid())
+  userId      String        @unique
+  displayName String
+  isActive    Boolean       @default(true)  // admin can enable/disable
+  isOnline    Boolean       @default(false) // operator toggles
+  maxChats    Int           @default(5)     // max concurrent chats
+  lastSeenAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats       SupportChat[]
+
+  @@index([isActive, isOnline])
+}
+
+model CannedResponse {
+  id        String   @id @default(cuid())
+  shortcut  String   @unique // e.g. "/saludo", "/horario", "/pago"
+  title     String            // display name: "Saludo inicial"
+  content   String            // full response text
+  category  String            // "general", "pedido", "pago", "cuenta", "cierre"
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
 }
 
 model OrderBackup {
