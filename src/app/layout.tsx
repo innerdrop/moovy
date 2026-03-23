@@ -1,30 +1,45 @@
 // Root Layout - Layout Principal
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import WebVitalsReporter from "@/components/analytics/WebVitalsReporter";
 
-// DM Sans — self-hosted variable font (100-900 weights, no CDN dependency)
-const dmSans = localFont({
+// Nunito — primary body font (variable, 200-1000 weights)
+const nunito = localFont({
   src: [
     {
-      path: "../../public/fonts/DM-Sans-Variable.woff2",
+      path: "../../public/fonts/Nunito-Variable.ttf",
       style: "normal",
     },
   ],
-  variable: "--font-dm-sans",
+  variable: "--font-nunito",
   display: "swap",
-  weight: "100 900",
+  weight: "200 1000",
 });
 
-// Jakarta Sans as fallback
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-jakarta",
+// Arista 2.0 — display/headline font
+const arista = localFont({
+  src: [
+    {
+      path: "../../public/fonts/Arista2.0-Light.ttf",
+      style: "normal",
+      weight: "300",
+    },
+    {
+      path: "../../public/fonts/Arista2.0.ttf",
+      style: "normal",
+      weight: "400",
+    },
+    {
+      path: "../../public/fonts/Arista2.0-Fat.ttf",
+      style: "normal",
+      weight: "700",
+    },
+  ],
+  variable: "--font-arista",
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -87,7 +102,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
       </head>
-      <body className={`${dmSans.variable} ${jakarta.variable} font-sans antialiased`}>
+      <body className={`${nunito.variable} ${arista.variable} font-sans antialiased`}>
         <ServiceWorkerRegistrar />
         <WebVitalsReporter />
         <Providers>

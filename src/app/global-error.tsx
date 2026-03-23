@@ -15,7 +15,7 @@ export default function GlobalError({
 
     return (
         <html lang="es">
-            <body style={{ margin: 0, fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+            <body style={{ margin: 0, fontFamily: "'Nunito', -apple-system, BlinkMacSystemFont, sans-serif" }}>
                 <div style={{
                     minHeight: "100vh",
                     background: "#f9fafb",

@@ -192,7 +192,7 @@ function HeroSlide({ slide, isActive }: { slide: SlideConfig; isActive: boolean 
                     {/* Title */}
                     <h1
                         className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] mb-6 tracking-tight"
-                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                        style={{ fontFamily: "'Arista', sans-serif" }}
                     >
                         {slide.title}
                         <br />
@@ -651,7 +651,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="border-t border-white/10 pt-4 sm:pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/40 max-w-5xl mx-auto">
-                        <p>© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '8px' }}>™</sup>. Hecho en el Fin del Mundo.</p>
+                        <p>© {new Date().getFullYear()} <span style={{ fontFamily: "'Junegull', sans-serif" }}>MOOVY</span><sup style={{ fontFamily: "'Nunito', sans-serif", fontSize: '8px' }}>™</sup>. Hecho en el Fin del Mundo.</p>
                         <p>Ushuaia, Tierra del Fuego</p>
                     </div>
                 </div>

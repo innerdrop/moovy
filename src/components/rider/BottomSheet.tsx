@@ -352,7 +352,7 @@ export default function BottomSheet({
                 willChange: "transform",
                 opacity: state === "hidden" ? 0 : 1,
                 paddingBottom: "env(safe-area-inset-bottom)",
-                fontFamily: "var(--font-sans), 'Plus Jakarta Sans', sans-serif",
+                fontFamily: "var(--font-sans), 'Nunito', sans-serif",
             }}
         >
             {/* ── Red branded header / Nav strip ── */}

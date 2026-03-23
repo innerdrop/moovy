@@ -11,23 +11,38 @@
   src: url('/fonts/Junegull-Regular.otf') format('opentype');
 }
 
-/* ===== DM SANS — SELF-HOSTED VARIABLE FONT ===== */
+/* ===== NUNITO — PRIMARY BODY FONT (VARIABLE) ===== */
 @font-face {
-  font-family: 'DM Sans';
+  font-family: 'Nunito';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 200 1000;
   font-display: swap;
-  src: url('/fonts/DM-Sans-Variable.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url('/fonts/Nunito-Variable.ttf') format('truetype');
+}
+
+/* ===== ARISTA 2.0 — DISPLAY/HEADLINE FONT ===== */
+@font-face {
+  font-family: 'Arista';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/Arista2.0-Light.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'DM Sans';
+  font-family: 'Arista';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 400;
   font-display: swap;
-  src: url('/fonts/DM-Sans-Variable-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  src: url('/fonts/Arista2.0.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Arista';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Arista2.0-Fat.ttf') format('truetype');
 }
 
 /* ===== MOOVY - COLOR SCHEME ===== */
@@ -115,7 +130,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-moovy: var(--moovy-red);
-  --font-sans: var(--font-dm-sans), 'DM Sans', var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: var(--font-nunito), 'Nunito', system-ui, sans-serif;
+  --font-display: var(--font-arista), 'Arista', sans-serif;
   --font-brand: 'Junegull', sans-serif;
 }
 
@@ -134,7 +150,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-dm-sans), 'DM Sans', var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--font-nunito), 'Nunito', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   padding-top: env(safe-area-inset-top);
@@ -220,8 +236,14 @@ h3,
 h4,
 h5,
 h6 {
+  font-family: var(--font-arista), 'Arista', sans-serif;
   font-weight: 700;
   line-height: 1.2;
+}
+
+/* Display font utility class */
+.font-display {
+  font-family: var(--font-arista), 'Arista', sans-serif;
 }
 
 /* ===== BUTTON STYLES ===== */
@@ -297,7 +319,7 @@ h6 {
   border: 1px solid var(--gray-300);
   border-radius: 0.5rem;
   font-size: 1rem;
-  font-family: var(--font-dm-sans), 'DM Sans', var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--font-nunito), 'Nunito', system-ui, sans-serif;
   transition: all 0.2s ease;
   background: var(--white);
   color: var(--gray-800);
@@ -1120,7 +1142,7 @@ h6 {
   border: 1px solid var(--gray-200);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   margin-top: 4px;
-  font-family: var(--font-dm-sans), 'DM Sans', var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--font-nunito), 'Nunito', system-ui, sans-serif;
   background: var(--white);
 }
 
