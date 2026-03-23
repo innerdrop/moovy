@@ -55,24 +55,26 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        const { userId, displayName, maxChats } = await request.json();
+        const { userId, email, displayName, maxChats } = await request.json();
 
-        if (!userId || !displayName) {
+        if ((!userId && !email) || !displayName) {
             return NextResponse.json(
-                { error: "userId y displayName son requeridos" },
+                { error: "email (o userId) y displayName son requeridos" },
                 { status: 400 }
             );
         }
 
-        // Check user exists
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        // Find user by email or id
+        const user = email
+            ? await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
+            : await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
-            return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+            return NextResponse.json({ error: "No se encontró un usuario con ese email. El usuario debe tener una cuenta registrada en MOOVY." }, { status: 404 });
         }
 
         // Check operator doesn't already exist
         const existing = await (prisma as any).supportOperator.findUnique({
-            where: { userId }
+            where: { userId: user.id }
         });
         if (existing) {
             return NextResponse.json({ error: "Este usuario ya es un operador" }, { status: 400 });
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
 
         const operator = await (prisma as any).supportOperator.create({
             data: {
-                userId,
+                userId: user.id,
                 displayName,
                 maxChats: maxChats || 5,
                 isActive: true,
