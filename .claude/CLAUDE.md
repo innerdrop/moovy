@@ -179,6 +179,7 @@ servicios, verificar que la versión y el estado sigan vigentes.
 5. Ignorar 3 errores pre-existentes: `--incremental`, `session.user` ×2
 6. Al cerrar rama: actualizar CLAUDE.md + PROJECT_STATUS.md en el commit
 7. Rutas con paréntesis: `git add "src/app/(store)/page.tsx"` (PowerShell requiere comillas)
+8. Al dar comandos de cierre de rama o cualquier comando git: SIEMPRE especificar en qué rama debe estar posicionado Mauro antes de ejecutar. Formato: "Posicionate en la rama `nombre-rama`" + luego el comando. Aplica para finish.ps1, commits, cherry-pick, merge, o cualquier operación git.
 
 ## Mentalidad CEO/CTO
 
