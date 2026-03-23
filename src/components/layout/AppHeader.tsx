@@ -8,7 +8,6 @@ import { ShoppingBag, MapPin, User, Package, X, ChevronRight, Bell, Search, Load
 import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
-import AppSwitcher from "@/components/home/AppSwitcher";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -195,9 +194,8 @@ export default function AppHeader({
 
                 {/* Mobile Header - Single clean row */}
                 <div className="lg:hidden flex items-center justify-between h-14 px-4">
-                    {/* Left: App Switcher + Greeting or Logo */}
+                    {/* Left: Greeting or Login */}
                     <div className="flex items-center gap-2">
-                        <AppSwitcher />
                         {isLoggedIn && firstName ? (
                             <Link href="/mi-perfil" className="flex items-center gap-1.5">
                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
@@ -292,9 +290,8 @@ export default function AppHeader({
 
                 {/* Desktop Header */}
                 <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto border-b border-gray-100">
-                    {/* Left: App Switcher + Logo + User */}
+                    {/* Left: Logo + User */}
                     <div className="flex items-center gap-3 flex-shrink-0">
-                        <AppSwitcher />
                         <Link href="/" className="flex-shrink-0">
                             <Image
                                 src={isMarketplace ? "/logo-moovy-purple.svg" : "/logo-moovy.svg"}
