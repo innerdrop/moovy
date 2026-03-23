@@ -185,6 +185,8 @@ model Product {
   favorites         Favorite[]
   packageCategoryId String?
   packageCategory   PackageCategory? @relation(fields: [packageCategoryId], references: [id])
+
+  @@index([merchantId])
 }
 
 model ProductCategory {
@@ -296,6 +298,8 @@ model Order {
   orderChats          OrderChat[]
 
   @@index([status])
+  @@index([paymentStatus])
+  @@index([deliveryStatus])
   @@index([driverId])
   @@index([userId])
   @@index([createdAt])
@@ -356,6 +360,7 @@ model SubOrder {
   items               OrderItem[]
 
   @@index([status])
+  @@index([paymentStatus])
   @@index([sellerId])
   @@index([merchantId])
 }

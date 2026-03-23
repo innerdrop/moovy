@@ -81,6 +81,14 @@ export async function POST(request: Request) {
 
         const isMultiVendor = (groups && groups.length > 1) || false;
 
+        // Validate deliveryFee is not negative (fraud prevention)
+        if (deliveryFee !== undefined && deliveryFee !== null && deliveryFee < 0) {
+            return NextResponse.json(
+                { error: "El costo de envío no puede ser negativo" },
+                { status: 400 }
+            );
+        }
+
         // Calculate subtotal
         const subtotal = items.reduce(
             (sum: number, item: { price: number; quantity: number }) =>
@@ -415,29 +423,36 @@ export async function POST(request: Request) {
             // Don't fail the order if points fail, but log it
         }
 
-        // Record coupon usage
+        // Record coupon usage atomically to prevent race conditions
         if (validCouponCode) {
             try {
-                const coupon = await prisma.coupon.findUnique({
-                    where: { code: validCouponCode },
-                    select: { id: true },
+                await prisma.$transaction(async (txCoupon) => {
+                    const coupon = await txCoupon.coupon.findUnique({
+                        where: { code: validCouponCode },
+                        select: { id: true, maxUses: true, usedCount: true },
+                    });
+
+                    if (coupon) {
+                        // Double-check maxUses inside transaction to prevent exceeding limit
+                        if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+                            throw new Error("Cupón agotado durante el procesamiento del pedido");
+                        }
+
+                        await txCoupon.couponUsage.create({
+                            data: {
+                                couponId: coupon.id,
+                                userId: session.user.id,
+                                orderId: order.id,
+                            },
+                        });
+
+                        // Increment used count atomically
+                        await txCoupon.coupon.update({
+                            where: { id: coupon.id },
+                            data: { usedCount: { increment: 1 } },
+                        });
+                    }
                 });
-
-                if (coupon) {
-                    await prisma.couponUsage.create({
-                        data: {
-                            couponId: coupon.id,
-                            userId: session.user.id,
-                            orderId: order.id,
-                        },
-                    });
-
-                    // Increment used count
-                    await prisma.coupon.update({
-                        where: { id: coupon.id },
-                        data: { usedCount: { increment: 1 } },
-                    });
-                }
             } catch (couponError) {
                 orderLogger.error({ orderId: order.id, couponCode, error: couponError }, "Error recording coupon usage for order");
             }

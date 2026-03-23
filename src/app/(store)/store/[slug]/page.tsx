@@ -12,7 +12,7 @@ async function getMerchant(slug: string) {
             products: {
                 where: { isActive: true },
                 include: {
-                    // If we had categories relation in Product, we would include it. 
+                    // If we had categories relation in Product, we would include it.
                     // Looking at schema, Product has categories through ProductCategory
                     categories: {
                         include: {
@@ -21,6 +21,9 @@ async function getMerchant(slug: string) {
                     },
                     images: true
                 }
+            },
+            _count: {
+                select: { reviews: true }
             }
         }
     });
@@ -113,8 +116,8 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 py-3 border-t border-gray-50">
                         <div className="flex items-center gap-1.5">
                             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                            <span className="font-bold text-gray-900">4.8</span>
-                            <span className="text-gray-400">(120+)</span>
+                            <span className="font-bold text-gray-900">{merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}</span>
+                            {merchant._count.reviews > 0 && <span className="text-gray-400">({merchant._count.reviews})</span>}
                         </div>
                         <div className="flex items-center gap-1.5">
                             <Clock className="w-4 h-4 text-gray-400" />

@@ -89,7 +89,7 @@ export default async function ComerciosDashboardPage() {
                         <Clock className="w-5 h-5 text-amber-700" />
                     </div>
                     <div className="flex-1">
-                        <span className="font-bold block">Accion Requerida</span>
+                        <span className="font-bold block">Acción Requerida</span>
                         <span className="text-sm opacity-90">Tienes {pendingOrdersCount} pedido{pendingOrdersCount > 1 ? 's' : ''} pendiente{pendingOrdersCount > 1 ? 's' : ''} para gestionar.</span>
                     </div>
                     <span className="text-amber-600 font-bold hidden sm:inline">Ver pedidos &rarr;</span>

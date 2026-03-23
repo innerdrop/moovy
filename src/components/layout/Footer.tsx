@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-    Facebook,
     Instagram,
     Mail,
     Phone,
@@ -33,7 +32,6 @@ export default function Footer() {
                         </p>
                         <div className="flex gap-3">
                             <SocialLink href="https://instagram.com/somosmoovy" icon={Instagram} label="Instagram" />
-                            <SocialLink href="#" icon={Facebook} label="Facebook" />
                         </div>
                     </div>
 
