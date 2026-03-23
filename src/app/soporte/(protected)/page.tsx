@@ -19,7 +19,7 @@ export default function SoporteDashboard() {
     const [showTransferMenu, setShowTransferMenu] = useState(false);
     const [otherOperators, setOtherOperators] = useState<SupportOperator[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const refreshIntervalRef = useRef<NodeJS.Timeout>();
+    const refreshIntervalRef = useRef<NodeJS.Timeout>(null);
 
     // Load operator chats
     const loadChats = async () => {

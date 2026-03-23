@@ -24,35 +24,35 @@ export async function GET(request: NextRequest) {
         });
 
         // Count by period
-        const todayChats = allChats.filter(c => c.createdAt >= startOfToday).length;
-        const weekChats = allChats.filter(c => c.createdAt >= startOfWeek).length;
-        const monthChats = allChats.filter(c => c.createdAt >= startOfMonth).length;
+        const todayChats = allChats.filter((c: any) => c.createdAt >= startOfToday).length;
+        const weekChats = allChats.filter((c: any) => c.createdAt >= startOfWeek).length;
+        const monthChats = allChats.filter((c: any) => c.createdAt >= startOfMonth).length;
 
         // Status breakdown
         const byStatus = {
-            waiting: allChats.filter(c => c.status === "waiting").length,
-            active: allChats.filter(c => c.status === "active").length,
-            resolved: allChats.filter(c => c.status === "resolved").length,
-            closed: allChats.filter(c => c.status === "closed").length
+            waiting: allChats.filter((c: any) => c.status === "waiting").length,
+            active: allChats.filter((c: any) => c.status === "active").length,
+            resolved: allChats.filter((c: any) => c.status === "resolved").length,
+            closed: allChats.filter((c: any) => c.status === "closed").length
         };
 
         // Category breakdown
         const byCategory: Record<string, number> = {};
-        allChats.forEach(chat => {
+        allChats.forEach((chat: any) => {
             const cat = chat.category || "otro";
             byCategory[cat] = (byCategory[cat] || 0) + 1;
         });
 
         // Average rating
-        const ratedChats = allChats.filter(c => c.rating !== null);
+        const ratedChats = allChats.filter((c: any) => c.rating !== null);
         const avgRating = ratedChats.length > 0
-            ? ratedChats.reduce((sum, c) => sum + (c.rating || 0), 0) / ratedChats.length
+            ? ratedChats.reduce((sum: number, c: any) => sum + (c.rating || 0), 0) / ratedChats.length
             : 0;
 
         // Average resolution time
-        const resolvedChats = allChats.filter(c => c.resolvedAt && c.createdAt);
+        const resolvedChats = allChats.filter((c: any) => c.resolvedAt && c.createdAt);
         const avgResolutionMinutes = resolvedChats.length > 0
-            ? resolvedChats.reduce((sum, c) => {
+            ? resolvedChats.reduce((sum: number, c: any) => {
                 const time = (c.resolvedAt!.getTime() - c.createdAt.getTime()) / (1000 * 60);
                 return sum + time;
             }, 0) / resolvedChats.length

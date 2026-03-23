@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { loginAction } from "@/lib/auth-actions";
+import { loginAction } from "./actions";
 
 export const metadata = {
     title: "Soporte - Login",
@@ -33,7 +33,7 @@ export default async function SoporteLoginPage() {
                 </div>
 
                 {/* Form */}
-                <form action={loginAction} className="bg-white rounded-lg shadow-xl p-8 space-y-6">
+                <form action={loginAction as any} className="bg-white rounded-lg shadow-xl p-8 space-y-6">
                     <input type="hidden" name="redirectTo" value="/soporte" />
 
                     <div>

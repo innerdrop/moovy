@@ -404,7 +404,7 @@ export default function AdminSoportePage() {
                                             {Object.entries(stats.byStatus).map(([status, count]) => (
                                                 <div key={status} className="flex justify-between text-sm">
                                                     <span className="capitalize text-gray-600">{status}</span>
-                                                    <span className="font-medium">{count}</span>
+                                                    <span className="font-medium">{String(count)}</span>
                                                 </div>
                                             ))}
                                         </div>

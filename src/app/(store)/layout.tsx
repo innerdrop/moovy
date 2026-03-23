@@ -10,7 +10,6 @@ import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ChatWidget } from "@/components/support/ChatWidget";
-import WhatsAppButton from "@/components/layout/WhatsAppButton";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
@@ -186,11 +185,8 @@ export default function StoreLayout({
             {/* Sidebars y Modales */}
             <CartSidebar />
 
-            {/* WhatsApp Support Button */}
-            {/* Support Chat Widget */}
+            {/* Live Chat Support Widget */}
             <ChatWidget />
-
-            <WhatsAppButton />
 
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}
