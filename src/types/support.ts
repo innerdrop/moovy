@@ -46,7 +46,6 @@ export interface SupportMessage {
   sender?: {
     id: string;
     name?: string;
-    displayName?: string;
     role?: string;
   };
 }

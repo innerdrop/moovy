@@ -40,7 +40,7 @@ export async function GET(
                 messages: {
                     include: {
                         sender: {
-                            select: { id: true, name: true, displayName: true, role: true }
+                            select: { id: true, name: true, role: true }
                         }
                     },
                     orderBy: { createdAt: "asc" }
@@ -124,7 +124,7 @@ export async function POST(
             },
             include: {
                 sender: {
-                    select: { id: true, name: true, displayName: true }
+                    select: { id: true, name: true }
                 }
             }
         });

@@ -509,9 +509,9 @@ export function ChatWidget() {
                                                         : "bg-[#e60012] text-white rounded-br-md"
                                                 }`}
                                             >
-                                                {msg.isFromAdmin && msg.sender?.displayName && (
+                                                {msg.isFromAdmin && activeChat.operator?.displayName && (
                                                     <p className="text-xs font-semibold text-[#e60012] mb-0.5">
-                                                        {msg.sender.displayName}
+                                                        {activeChat.operator.displayName}
                                                     </p>
                                                 )}
                                                 <p className="whitespace-pre-wrap">{msg.content}</p>
