@@ -1,0 +1,187 @@
+================================================================================
+                    MOOVY API AUDIT - EXECUTIVE SUMMARY
+================================================================================
+Date: 2026-03-23
+Scope: 182 API routes across Next.js 16 delivery application
+Auditor: Senior Backend Engineer
+
+================================================================================
+                              KEY FINDINGS
+================================================================================
+
+TOTAL ISSUES FOUND: 20
+  - CRITICAL: 3 (data loss / compromise risks)
+  - HIGH: 8 (auth / data access violations)
+  - MEDIUM: 7 (validation / consistency gaps)
+  - LOW: 2 (code quality improvements)
+
+================================================================================
+                        CRITICAL ISSUES (MUST FIX)
+================================================================================
+
+1. ORDER CANCELLATION CAN CAUSE STOCK LOSS
+   File: /src/app/api/orders/[id]/route.ts (lines 337-351)
+   Risk: Stock counter goes negative in race conditions
+   Fix: Add pre-flight stock validation before refund
+
+2. ADMIN CAN DELETE OTHER ADMINS
+   File: /src/app/api/admin/users/route.ts (lines 193-195)
+   Risk: Checks user.role="ADMIN" instead of UserRole.role="ADMIN"
+   Fix: Check UserRole table where role="ADMIN"
+
+3. DELETED USERS STILL VISIBLE IN ADMIN PANEL
+   File: /src/app/api/admin/users/route.ts (lines 19-30)
+   Risk: No deletedAt filter on user queries
+   Fix: Add where: { deletedAt: null } to all user findMany queries
+
+================================================================================
+                      HIGH SEVERITY ISSUES (URGENT)
+================================================================================
+
+4. DEBUG ENDPOINTS EXPOSE SESSION TOKENS
+   Files: /src/app/api/debug-session/route.ts, /src/app/api/debug-cookies/route.ts
+   Risk: Unauthenticated access to auth tokens
+   Fix: Disable in production or add strict auth checks
+
+5. INCONSISTENT ADMIN AUTH CHECKS
+   Files: Multiple /src/app/api/admin/* routes
+   Risk: Email-based fallback ("admin@moovy.com") is weak
+   Fix: Standardize on hasAnyRole(session, ["ADMIN"]) only
+
+6. USERS CAN VIEW DELETED ORDERS
+   File: /src/app/api/orders/route.ts GET
+   Risk: No deletedAt filter allows deleted orders to be queried
+   Fix: Add deletedAt: null to where clause
+
+7. DRIVER CAN UPDATE ANOTHER DRIVER'S LOCATION
+   File: /src/app/api/driver/location/route.ts
+   Risk: No authorization check between driverId param and session user
+   Fix: Verify session.user.id owns the driver being updated
+
+8. DELETED MERCHANTS/DRIVERS STILL QUERYABLE
+   Files: /src/app/api/admin/merchants/route.ts, /src/app/api/admin/drivers/route.ts
+   Risk: Soft-delete not applied to admin list endpoints
+   Fix: Add deletedAt: null to all admin GET routes
+
+9. USER CAN DELETE ANOTHER USER'S ADDRESS
+   File: /src/app/api/profile/addresses/[id]/route.ts
+   Risk: No ownership check on DELETE
+   Fix: Verify address.userId === session.user.id before delete
+
+10. MP WEBHOOK IDEMPOTENCY RACE CONDITION
+    File: /src/app/api/webhooks/mercadopago/route.ts (lines 43-51)
+    Risk: Double-processing possible if two webhooks arrive concurrently
+    Fix: Use deterministic event ID + atomic transaction
+
+11. MERCHANT CAN SEE OTHER MERCHANTS' ORDERS
+    File: /src/app/api/merchant/orders/route.ts (line 32)
+    Risk: Edge case where merchantIds=[] allows "NONE" filter to return orders
+    Fix: Return empty set if merchant has no stores
+
+================================================================================
+                    MEDIUM SEVERITY ISSUES (THIS SPRINT)
+================================================================================
+
+12. ADMIN PATCH ROUTES ACCEPT ARBITRARY FIELDS
+    File: /src/app/api/admin/merchants/route.ts (lines 62-89)
+    Risk: No validation; could update sensitive fields like mpAccessToken
+    Fix: Add Zod schema validation whitelisting allowed fields
+
+13. PASSWORD POLICY INCONSISTENT
+    Files: /src/app/api/admin/drivers/route.ts (6 chars) vs /src/app/api/auth/register/ (8 chars)
+    Risk: Weak passwords on admin-created accounts
+    Fix: Use validatePasswordStrength() everywhere
+
+14. ADMIN DRIVER CREATION IGNORES VEHICLE TYPE
+    File: /src/app/api/admin/drivers/route.ts (lines 41-104)
+    Risk: vehicleType input param ignored; defaults always set to "MOTO"
+    Fix: Validate vehicleType and licensePlate based on vehicle type
+
+15. NO PAGINATION ON ADMIN ENDPOINTS
+    File: /src/app/api/admin/orders/route.ts and others
+    Risk: Loading thousands of records could cause OOM
+    Fix: Add limit/offset pagination (max 100 per page)
+
+16. INVALID REFERRAL CODES SILENTLY IGNORED
+    File: /src/app/api/auth/register/route.ts (lines 75-88)
+    Risk: User doesn't know if referral code is invalid (UX issue)
+    Fix: Return 400 error if code is invalid and was provided
+
+17. MISSING RATE LIMITS ON CRITICAL ADMIN ROUTES
+    Files: All /src/app/api/admin/* routes, /src/app/api/payments/*
+    Risk: Could enable brute force attacks, MP quota abuse
+    Fix: Add rate limiting (admin=5/min, payments=10/min)
+
+================================================================================
+                      SOFT-DELETE COVERAGE AUDIT
+================================================================================
+
+Routes NOT Filtering Soft-Deleted Records (MUST FIX):
+  🔴 /api/orders GET (users see deleted orders)
+  🔴 /api/admin/users GET (deleted users visible)
+  🔴 /api/admin/drivers GET (deleted drivers visible)
+  🔴 /api/products GET (deleted products visible)
+  🔴 /api/admin/merchants GET (architectural: merchants don't have deletedAt field)
+
+Routes CORRECTLY Filtering:
+  ✅ /api/orders/[id] GET
+  ✅ /api/listings GET
+  ✅ /api/profile/addresses GET (with @ts-ignore - fragile)
+
+FIX: Add "where: { deletedAt: null }" to all findMany/findUnique queries
+     that users should not see deleted records from.
+
+================================================================================
+                    ESTIMATED FIX TIMELINE
+================================================================================
+
+Priority 1 (CRITICAL - Do Today): 2-3 hours
+  - Fix 3 critical stock/admin/deleted-users issues
+
+Priority 2 (HIGH - This Week): 4-6 hours
+  - Fix auth checks, soft-deletes, ownership validations
+
+Priority 3 (MEDIUM - Before Full Launch): 3-4 hours
+  - Add validation, rate limits, pagination, polish
+
+TOTAL REMEDIATION: 9-13 hours
+
+================================================================================
+                         DEPLOYMENT RECOMMENDATION
+================================================================================
+
+⛔ DO NOT DEPLOY TO PRODUCTION
+
+   At minimum, before any production release, resolve:
+   1. CRITICAL issues 1-3 (stock loss, admin deletion, user visibility)
+   2. HIGH issues 4-11 (all auth/data access violations)
+
+   Medium issues can be addressed in follow-up release if timeline is critical,
+   but should not be deferred more than 1-2 sprints.
+
+================================================================================
+                          POSITIVE FINDINGS
+================================================================================
+
+✅ STRENGTHS:
+  - HMAC webhook validation correctly implemented
+  - Rate limiting present on registration/order/search routes
+  - Transactions used appropriately for multi-table updates
+  - Error handling with try/catch across all routes
+  - Input validation with Zod on critical paths (orders, auth)
+  - Status codes are consistent (400/401/403/404/500)
+  - No direct SQL injection risks (Prisma parameterized queries)
+  - Good logging with structured logger (pino)
+
+================================================================================
+                           NEXT STEPS
+================================================================================
+
+1. Triage the 3 CRITICAL issues immediately
+2. Assign HIGH issues to the current sprint
+3. Review /API_AUDIT_REPORT.md for detailed remediation steps
+4. Run tests after each fix (especially stock/payment flows)
+5. Schedule security review after fixes are implemented
+6. Consider adding pre-deployment API security tests to CI/CD
+
+================================================================================

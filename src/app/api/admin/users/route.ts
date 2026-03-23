@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     try {
         const session = await auth();
         // Check if user is admin - Adjust role check based on your auth implementation
-        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Nombre, email y contraseña son obligatorios" }, { status: 400 });
         }
 
-        if (password.length < 6) {
-            return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
+        if (password.length < 8) {
+            return NextResponse.json({ error: "Mínimo 8 caracteres" }, { status: 400 });
         }
 
         // Check if email already exists
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -119,8 +119,8 @@ export async function PATCH(request: Request) {
 
         // Handle password reset action
         if (action === "reset_password") {
-            if (!newPassword || newPassword.length < 6) {
-                return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
+            if (!newPassword || newPassword.length < 8) {
+                return NextResponse.json({ error: "Mínimo 8 caracteres" }, { status: 400 });
             }
 
             const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -171,7 +171,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });

@@ -107,9 +107,18 @@ export async function POST(
     // Refund points if used (non-blocking)
     if (order.discount > 0) {
         try {
-            const { processOrderPoints } = await import("@/lib/points");
-            // Negative spend = refund
-            await processOrderPoints(order.userId, orderId, 0, -(order.discount * 100));
+            const { recordPointsTransaction } = await import("@/lib/points");
+            // Calculate how many points were used: discount / pointsValue (default 0.01 for old config or 0.015 for new)
+            // Use a default of 0.01 to maintain backward compatibility
+            const pointsValue = 0.01;
+            const pointsToRefund = Math.round(order.discount / pointsValue);
+            await recordPointsTransaction(
+                order.userId,
+                "ADJUSTMENT",
+                pointsToRefund,
+                `Devolución de ${pointsToRefund} puntos por cancelación de pedido #${order.orderNumber}`,
+                orderId
+            );
         } catch (e) {
             console.error("[Cancel] Failed to refund points:", e);
         }

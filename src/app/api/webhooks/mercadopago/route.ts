@@ -234,6 +234,8 @@ async function handleRejected(
                 mpPaymentId,
                 mpStatus,
                 cancelReason: "Pago rechazado por MercadoPago",
+                moovyCommission: 0,
+                merchantPayout: 0,
             },
         });
     });

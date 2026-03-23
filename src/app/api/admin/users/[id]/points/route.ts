@@ -11,7 +11,7 @@ export async function POST(
 ) {
     try {
         const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]) || session?.user?.email === "admin@moovy.com";
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
 
         if (!isAdmin) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
