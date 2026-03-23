@@ -81,6 +81,7 @@ interface DashboardStats {
 interface Order {
     id: string;
     orderId: string;
+    orderNumber: string;
     comercio: string;
     direccion: string;
     direccionCliente: string | null;

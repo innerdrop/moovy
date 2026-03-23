@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Verify user is participant in the order
-        const order = await prisma.order.findUnique({
+        const order = await (prisma as any).order.findUnique({
             where: { id: orderId },
             select: {
                 id: true, orderNumber: true, status: true, userId: true,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get order with participants
-        const order = await prisma.order.findUnique({
+        const order = await (prisma as any).order.findUnique({
             where: { id: orderId },
             include: {
                 merchant: { select: { userId: true, businessName: true } },
