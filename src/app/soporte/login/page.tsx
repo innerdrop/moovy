@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { loginAction } from "./actions";
 
 export const metadata = {
@@ -10,8 +11,23 @@ export const metadata = {
 export default async function SoporteLoginPage() {
     const session = await auth();
 
+    // Solo redirigir si está logueado Y es operador activo
+    // Si está logueado pero NO es operador, mostrar el form con mensaje de error
+    let notOperator = false;
     if (session?.user) {
-        redirect("/soporte");
+        const userId = (session.user as any).id;
+        const operator = await (prisma as any).supportOperator.findUnique({
+            where: { userId }
+        });
+
+        if (operator?.isActive) {
+            redirect("/soporte");
+        }
+
+        // Está logueado pero no es operador — mostrar aviso
+        if (session.user) {
+            notOperator = true;
+        }
     }
 
     return (
@@ -31,6 +47,13 @@ export default async function SoporteLoginPage() {
                     <h1 className="text-3xl font-bold text-white mb-2">MOOVY Soporte</h1>
                     <p className="text-slate-300">Portal de operadores de soporte</p>
                 </div>
+
+                {notOperator && (
+                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                        Tu cuenta no tiene permisos de operador de soporte.
+                        Contactá al administrador para que te habilite el acceso.
+                    </div>
+                )}
 
                 {/* Form */}
                 <form action={loginAction as any} className="bg-white rounded-lg shadow-xl p-8 space-y-6">
