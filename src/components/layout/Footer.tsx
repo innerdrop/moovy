@@ -46,7 +46,7 @@ export default function Footer() {
                             <li><FooterLink href="/puntos">Programa MOOVER</FooterLink></li>
                             <li><FooterLink href="/repartidor/registro">Ser Repartidor</FooterLink></li>
                             <li><FooterLink href="/comercio/registro">Registrar Comercio</FooterLink></li>
-                            <li><FooterLink href="/quienes-somos">Quiénes Somos</FooterLink></li>
+                            <li><FooterLink href="/nosotros">Quiénes Somos</FooterLink></li>
                             <li><FooterLink href="/comisiones">Tarifas</FooterLink></li>
                             <li><FooterLink href="/ayuda">Centro de Ayuda</FooterLink></li>
                         </ul>
