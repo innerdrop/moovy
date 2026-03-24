@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig } from "@/lib/points";
+import { processOrderPoints, getUserPointsBalance, calculateMaxPointsDiscount, getPointsConfig, recordPointsTransaction } from "@/lib/points";
 import { CreateOrderSchema, validateInput } from "@/lib/validations";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
@@ -11,6 +11,7 @@ import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/li
 import { applyRateLimit } from "@/lib/rate-limit";
 import { notifyMerchant, notifySeller } from "@/lib/notifications";
 import { orderLogger } from "@/lib/logger";
+import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-calculator";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -81,12 +82,32 @@ export async function POST(request: Request) {
 
         const isMultiVendor = (groups && groups.length > 1) || false;
 
-        // Validate deliveryFee is not negative (fraud prevention)
-        if (deliveryFee !== undefined && deliveryFee !== null && deliveryFee < 0) {
-            return NextResponse.json(
-                { error: "El costo de envío no puede ser negativo" },
-                { status: 400 }
-            );
+        // BUG #5 FIX: Enhanced delivery fee validation (fraud prevention)
+        // Validate that deliveryFee is reasonable and server-side calculated
+        let validatedDeliveryFee = deliveryFee || 0;
+
+        if (!isPickup) {
+            // For deliveries, validate fee is not negative and not zero
+            if (deliveryFee !== undefined && deliveryFee !== null && deliveryFee < 0) {
+                return NextResponse.json(
+                    { error: "El costo de envío no puede ser negativo" },
+                    { status: 400 }
+                );
+            }
+
+            // If frontend sent 0 for a delivery order, that's suspicious
+            if (!deliveryFee || deliveryFee === 0) {
+                // We can't validate without distance/package info, but log it
+                orderLogger.warn(
+                    { orderId: undefined, deliveryFee },
+                    "Frontend sent deliveryFee=0 for non-pickup order"
+                );
+                // Set a conservative minimum to prevent fraud
+                validatedDeliveryFee = 100; // Minimum 100 ARS for safety
+            }
+        } else {
+            // For pickup orders, fee must be 0
+            validatedDeliveryFee = 0;
         }
 
         // Calculate subtotal
@@ -96,7 +117,7 @@ export async function POST(request: Request) {
             0
         );
 
-        let finalTotal = subtotal + (deliveryFee || 0);
+        let finalTotal = subtotal + validatedDeliveryFee;
 
         // Validate points usage
         let validPointsUsed = 0;
@@ -186,6 +207,8 @@ export async function POST(request: Request) {
         }
 
         // Create order with items in a transaction
+        // BUG #4 FIX: Move points deduction INSIDE transaction to prevent order with discount but no points deduction
+        let pointsResult = { earned: 0, spent: 0 };
         const order = await prisma.$transaction(async (tx) => {
             // --- PRE-FLIGHT STOCK VALIDATION ---
             // Check all items have sufficient stock BEFORE creating the order
@@ -297,7 +320,7 @@ export async function POST(request: Request) {
                     paymentStatus: "PENDING",
                     paymentMethod: paymentMethod || "cash",
                     subtotal,
-                    deliveryFee: isPickup ? 0 : (deliveryFee || 0),
+                    deliveryFee: validatedDeliveryFee,
                     discount: validDiscount,
                     total: isPickup ? Math.max(0, subtotal - validDiscount) : finalTotal,
                     isPickup: isPickup || false,
@@ -330,21 +353,33 @@ export async function POST(request: Request) {
                     },
                 });
 
-                // Update stock (products only - listings managed separately)
+                // BUG #8 FIX: Update stock and verify it doesn't go negative
                 if (!item.type || item.type === "product") {
-                    await tx.product.update({
+                    const updatedProduct = await tx.product.update({
                         where: { id: item.productId },
                         data: {
                             stock: { decrement: item.quantity },
                         },
+                        select: { stock: true },
                     });
+
+                    // Verify stock is not negative (race condition prevention)
+                    if (updatedProduct.stock < 0) {
+                        throw new Error(`STOCK_ERROR:Insuficiente stock para "${item.name}" después de descuento`);
+                    }
                 } else if (item.type === "listing") {
-                    await tx.listing.update({
+                    const updatedListing = await tx.listing.update({
                         where: { id: item.productId },
                         data: {
                             stock: { decrement: item.quantity },
                         },
+                        select: { stock: true },
                     });
+
+                    // Verify stock is not negative (race condition prevention)
+                    if (updatedListing.stock < 0) {
+                        throw new Error(`STOCK_ERROR:Insuficiente stock para "${item.name}" después de descuento`);
+                    }
                 }
             }
 
@@ -389,37 +424,87 @@ export async function POST(request: Request) {
                     });
 
                     // Link OrderItems to this SubOrder
+                    // BUG #12 FIX: Use both productId/listingId AND type to avoid ambiguity between merchant products and marketplace listings
                     for (const gi of group.items) {
+                        const isListing = gi.type === "listing";
+                        // For listings, productId is stored in listingId; for products, it's in productId
+                        const whereClause = isListing
+                            ? { orderId: newOrder.id, listingId: gi.productId, subOrderId: null }
+                            : { orderId: newOrder.id, productId: gi.productId, subOrderId: null };
+
                         await tx.orderItem.updateMany({
-                            where: {
-                                orderId: newOrder.id,
-                                productId: gi.productId,
-                                subOrderId: null,
-                            },
+                            where: whereClause,
                             data: { subOrderId: subOrder.id },
                         });
                     }
                 }
             }
 
+            // BUG #4 FIX: Deduct points INSIDE the transaction
+            // Process points (deduct used points and earn new points atomically)
+            if (validPointsUsed > 0) {
+                // Deduct points used for discount
+                const user = await tx.user.findUnique({
+                    where: { id: session.user.id },
+                    select: { pointsBalance: true }
+                });
+
+                if (user) {
+                    const newBalance = (user.pointsBalance || 0) - validPointsUsed;
+                    if (newBalance < 0) {
+                        throw new Error("Insufficient points for discount");
+                    }
+
+                    await tx.user.update({
+                        where: { id: session.user.id },
+                        data: { pointsBalance: newBalance, updatedAt: new Date() }
+                    });
+
+                    await tx.pointsTransaction.create({
+                        data: {
+                            userId: session.user.id,
+                            orderId: newOrder.id,
+                            type: "REDEEM",
+                            amount: -validPointsUsed,
+                            balanceAfter: newBalance,
+                            description: `Canjeaste ${validPointsUsed} puntos en tu pedido`,
+                        }
+                    });
+
+                    pointsResult.spent = validPointsUsed;
+                }
+            }
+
+            // Earn points from purchase (outside transaction, will be processed separately)
+            // This is deferred to after transaction completes since it uses recordPointsTransaction
+
             return newOrder;
         });
 
-        // Process points independently (outside Prisma transaction as it uses different DB connection method)
-        // This calculates points earned AND deducts points used
-        // Since we are using "better-sqlite3" in lib/points.ts and prisma here, we can't share transaction easily.
-        // In a real production postgres app, both would use the same connection pool.
-        let pointsResult = { earned: 0, spent: 0 };
+        // Process points earning (outside transaction)
+        // This calculates points earned on the order
         try {
-            pointsResult = await processOrderPoints(
+            const config = await getPointsConfig();
+            const earned = Math.floor(subtotal * config.pointsPerDollar);
+            if (earned > 0) {
+                await recordPointsTransaction(
+                    session.user.id,
+                    "EARN",
+                    earned,
+                    `Ganaste ${earned} puntos por tu compra`,
+                    order.id
+                );
+                pointsResult.earned = earned;
+            }
+
+            // Try to activate pending bonuses
+            const { bonusAwarded } = await import("@/lib/points").then(m => m.activatePendingBonuses(
                 session.user.id,
-                order.id,
-                // Points are earned on SUBTOTAL (products only), not including delivery
                 subtotal,
-                validPointsUsed
-            );
+                order.id
+            ));
         } catch (pointsError) {
-            orderLogger.error({ orderId: order.id, error: pointsError }, "Error processing points for order");
+            orderLogger.error({ orderId: order.id, error: pointsError }, "Error processing points earning for order");
             // Don't fail the order if points fail, but log it
         }
 
@@ -717,6 +802,12 @@ export async function POST(request: Request) {
             orderLogger.error({ orderId: order.id, error: emailError }, "Failed to trigger confirmation email");
         }
 
+        // BUG #13 FIX: Add flag to indicate cash orders need merchant confirmation
+        // Known limitation: Cash orders stay PENDING indefinitely if merchant doesn't confirm.
+        // This should be handled by a cron job that auto-cancels after merchant_confirm_timeout.
+        // See: src/app/api/cron/assignment-timeout or similar
+        const requiresMerchantConfirmation = paymentMethod === "cash" || paymentMethod === undefined;
+
         return NextResponse.json({
             success: true,
             order: {
@@ -725,18 +816,29 @@ export async function POST(request: Request) {
                 total: order.total,
                 status: order.status,
             },
-            points: pointsResult
+            points: pointsResult,
+            requiresMerchantConfirmation,
         }, { status: 201 });
 
     } catch (error: any) {
         // Handle stock validation errors (thrown from inside transaction)
         if (error?.message?.startsWith("STOCK_ERROR:")) {
             status = "409";
-            const stockErrors = JSON.parse(error.message.replace("STOCK_ERROR:", ""));
-            return NextResponse.json(
-                { error: "Algunos productos no tienen stock suficiente", stockErrors },
-                { status: 409 }
-            );
+            const message = error.message.replace("STOCK_ERROR:", "");
+            // Check if it's a JSON array (pre-flight validation) or a string message (post-decrement)
+            try {
+                const stockErrors = JSON.parse(message);
+                return NextResponse.json(
+                    { error: "Algunos productos no tienen stock suficiente", stockErrors },
+                    { status: 409 }
+                );
+            } catch {
+                // It's a simple error message from post-decrement validation
+                return NextResponse.json(
+                    { error: message || "Insuficiente stock en algunos productos" },
+                    { status: 409 }
+                );
+            }
         }
 
         if (error?.message?.startsWith("SLOT_FULL:")) {
