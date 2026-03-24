@@ -281,6 +281,248 @@ Posibles causas de fracaso a prevenir:
 
 Cada decisión debe reducir la probabilidad de al menos una de estas.
 
+## Roles permanentes (cubrir en cada tarea)
+
+Cada cambio en Moovy pasa por un board de directores virtuales. No son
+preguntas retóricas: son filtros obligatorios que se ejecutan ANTES de
+dar por terminada cualquier tarea. Si un rol detecta un problema, la
+tarea NO está completa.
+
+### Protocolo de activación
+
+No todos los roles aplican a toda tarea. Regla:
+- PRODUCTO, ARQUITECTURA, QA, SEGURIDAD → SIEMPRE, en cada tarea sin excepción
+- UX → si hay componente visual o interacción de usuario
+- PAGOS, FINANZAS → si toca Order, SubOrder, Payment, comisiones, delivery fee, puntos, cupones, o cualquier campo monetario
+- LOGÍSTICA → si toca Order, Driver, PendingAssignment, delivery, tracking
+- COMUNICACIONES → si un evento afecta a buyer, merchant, driver o seller
+- SOPORTE → si cambia un flujo que el usuario puede necesitar reclamar
+- LEGAL → si cambia cómo se recolectan datos, procesan pagos, o condiciones del servicio
+- INFRA → si toca config, env vars, Docker, deploy, cron, o servicios externos
+- PERFORMANCE → si toca queries, listas, imágenes, o endpoints de alto tráfico
+- MONITOREO → si hay operación que puede fallar silenciosamente
+- MARKETING, CONTENIDO → si hay texto visible al usuario final
+- GOOGLE PLAY → si cambia permisos, datos recolectados, o privacidad
+- GO-TO-MARKET → en features nuevas o cambios de flujo principales
+- ONBOARDING → si afecta la primera experiencia de merchant, driver o seller
+
+### Los roles
+
+**PRODUCTO** — Director de Producto
+¿Funciona end-to-end? Recorré mentalmente el flujo completo del usuario
+afectado (buyer/merchant/driver/seller/admin). Si tocás checkout, recorré
+desde "agregar al carrito" hasta "pedido entregado + calificación". No
+alcanza con que compile: tiene que tener sentido como experiencia. Verificá
+que no rompés flujos adyacentes (ej: si cambiás Order, ¿SubOrder sigue
+funcionando? ¿El tracking se actualiza? ¿El admin lo ve?).
+
+**ARQUITECTURA** — CTO
+¿Sigue los patrones del proyecto? Verificar:
+- API routes en src/app/api/ con validación Zod + auth check + try/catch + logger
+- Prisma queries con select/include explícito (NUNCA select * implícito)
+- Transacciones serializables para operaciones atómicas (ratings, puntos, cupones, stock)
+- Componentes: Server Components por defecto, "use client" solo si hay interactividad
+- Zustand solo para estado cross-component (cart, favorites, toast, pointsCelebration)
+- NUNCA Prisma migrate dev, solo db push
+- Si es patrón nuevo que no existe en el proyecto: documentar en "Decisiones tomadas" con fecha y razonamiento
+
+**UX** — Director de Experiencia
+¿Es responsive? ¿Tiene los 4 estados obligatorios?
+1. Loading (skeleton o spinner, no pantalla en blanco)
+2. Error (mensaje claro en español argentino, acción de retry)
+3. Vacío (ilustración o texto amigable, CTA para siguiente acción)
+4. Éxito (feedback visual, toast o redirect según contexto)
+Verificar en mobile-first (Ushuaia = mucho celular). Touch targets mínimo
+44px. Textos legibles sin zoom. Colores: rojo #e60012 (MOOVY), violeta
+#7C3AED (marketplace). Font: Plus Jakarta Sans. Sin jerga técnica en
+textos al usuario. Accesibilidad: alt en imágenes, labels en forms,
+contraste WCAG AA.
+
+**QA** — Director de Calidad
+¿Se puede romper? Pensar como un usuario malicioso Y como un usuario
+distraído. Verificar:
+- Input vacío, null, undefined, string donde va número
+- Race conditions (stock negativo, doble pago, doble asignación de driver)
+- Límites: pedido de $0, cantidad negativa, cupón expirado, merchant cerrado
+- Permisos: ¿un buyer puede acceder a rutas de merchant? ¿un driver puede ver datos de otro driver?
+- Concurrencia: ¿qué pasa si 2 drivers aceptan el mismo pedido al mismo tiempo?
+- Timeouts: ¿qué pasa si MP no responde? ¿Si el merchant no confirma? ¿Si el driver pierde conexión?
+- Rollback: si falla a mitad de proceso, ¿queda en estado inconsistente?
+
+**LOGÍSTICA** — Director de Operaciones
+Si toca pedidos o delivery, verificar la cadena completa:
+- Order status flow: PENDING → CONFIRMED → PREPARING → READY → PICKED_UP → DELIVERED (+ CANCELLED/REJECTED en cualquier punto)
+- PendingAssignment: ¿el ciclo de asignación respeta timeout/retry? ¿AssignmentLog registra cada intento?
+- PostGIS: ¿la query de drivers cercanos es correcta? ¿Haversine fallback funciona si PostGIS falla?
+- Tracking: ¿GPS polling cada 10s actualiza? ¿Socket.IO emite a los rooms correctos?
+- Scheduled delivery: ¿slot validado vs schedule del vendor? ¿Capacidad 15/slot respetada?
+- Multi-vendor: ¿SubOrders se crean correctamente? ¿Cada merchant ve solo su parte?
+
+**PAGOS** — Director Financiero (CERO TOLERANCIA A ERRORES)
+Si toca dinero en CUALQUIER forma, aplicar estas verificaciones matemáticas:
+```
+subtotal = Σ(item.price × item.quantity) por cada SubOrder
+descuento_puntos = min(puntos_usados × 0.01, subtotal × 0.50)
+delivery_fee = calcularDeliveryFee(distancia) // NUNCA hardcodeado
+comision_moovy = subtotal × commissionRate // 0.08 merchant, 0.12 seller
+pago_repartidor = delivery_fee × riderCommissionPercent // default 0.80
+total = subtotal - descuento_puntos + delivery_fee
+```
+Verificar que:
+- Webhook MP valida monto pagado vs total (tolerancia $1, ver src/app/api/webhooks/mercadopago)
+- Idempotencia usa eventId determinístico (NUNCA UUID random)
+- Stock se restaura si pago es rechazado/reembolsado
+- Refund automático funciona cuando merchant rechaza pedido pagado
+- Montos nunca son negativos (validar server-side, no confiar en el client)
+- TODOS los cálculos monetarios son server-side (el frontend solo muestra)
+- Decimal precision: usar Math.round(x * 100) / 100 para centavos
+
+**PUNTOS MOOVER** — Subdirector Financiero (CERO TOLERANCIA A ERRORES)
+Los puntos son dinero disfrazado. Un bug acá = regalar plata o enfurecer
+usuarios. Verificar:
+- Earn: 1 punto por $1 gastado. Se otorgan SOLO cuando el pedido pasa a DELIVERED, NUNCA antes
+- Burn: $0.01 por punto. Máximo 50% del subtotal como descuento
+- Signup bonus: 100 puntos. Se otorgan una sola vez (verificar que no se duplique)
+- Referral: 200 puntos al referidor + 100 al referido. Verificar que el referido sea nuevo
+- Transacción atómica: earn/burn dentro de $transaction serializable
+- Balance NUNCA negativo (validar server-side antes de descontar)
+- Si se cancela un pedido que usó puntos: DEVOLVER los puntos gastados
+- Si se cancela un pedido que otorgó puntos: REVERTIR los puntos ganados
+- PointsConfig: respetar configuración dinámica, no valores hardcodeados
+- Nivel del usuario: recalcular después de cada earn/burn
+
+**COMUNICACIONES** — Director de Comunicaciones
+Si un evento afecta al usuario, DEBE haber notificación. Matriz obligatoria:
+| Evento | Email | Push | Socket.IO | In-app |
+|--------|-------|------|-----------|--------|
+| Nuevo pedido (merchant) | ✅ | ✅ | ✅ | — |
+| Pedido confirmado (buyer) | ✅ | ✅ | ✅ | — |
+| Driver asignado (buyer) | — | ✅ | ✅ | — |
+| Pedido entregado (buyer) | ✅ | ✅ | ✅ | toast |
+| Pedido cancelado/rechazado | ✅ | ✅ | ✅ | — |
+| Refund procesado (buyer) | ✅ | ✅ | — | — |
+| Rating recibido (merchant/driver) | — | ✅ | — | — |
+| Puntos acreditados (buyer) | — | — | — | celebration |
+Si falta alguna notificación para un evento que tocás, agregarla.
+Textos en español argentino. Sin anglicismos innecesarios.
+
+**SOPORTE** — Director de Atención al Cliente
+¿El usuario puede reportar un problema en este flujo? Verificar:
+- Chat de pedido disponible para el estado actual (buyer↔merchant, buyer↔driver)
+- Soporte MOOVY accesible desde la pantalla afectada
+- Si hay error, el mensaje le dice al usuario QUÉ HACER, no solo qué falló
+- Canned responses actualizadas si el flujo cambia
+- Si es un flujo de dinero: el reclamo debe poder escalar a admin/ops
+
+**SEGURIDAD** — Director de Seguridad (SIEMPRE ACTIVO)
+En cada endpoint y cada página, verificar:
+- Auth: ¿session válida? ¿getServerSession() o middleware protege la ruta?
+- Autorización: ¿el rol correcto? Un COMERCIO no puede ver datos de otro COMERCIO (IDOR)
+- Validación: Zod en TODOS los inputs del body/query. NUNCA confiar en el client
+- Rate limiting: ¿el endpoint tiene rate limit apropiado? (ver src/lib/rate-limit.ts)
+- SQL injection: Prisma parametriza, pero verificar $queryRaw si se usa
+- XSS: ¿hay dangerouslySetInnerHTML? Si sí, sanitizar
+- CSRF: verificar origin en mutations sensibles
+- Uploads: magic bytes + extensión + 10MB max + sharp compression
+- Tokens: timing-safe comparison para cron/webhook secrets
+- Logging: operaciones sensibles (refund, delete, reassign, export) deben ir al audit log
+
+**INFRA** — Director de Infraestructura
+¿Funciona en el VPS de Hostinger? Verificar:
+- Variables de entorno: ¿se necesita nueva env var? Documentarla en "Variables de entorno"
+- Docker: ¿PostGIS sigue corriendo en puerto 5436?
+- Servicios externos: ¿se agregó una API nueva? Documentar en "Dependencias externas"
+- Memory: ¿la operación puede causar OOM? (ej: queries sin paginación, uploads grandes)
+- CORS: si toca Socket.IO, verificar whitelist
+- Cron: si hay tarea programada, verificar CRON_SECRET
+
+**PERFORMANCE** — Director de Rendimiento
+¿Es eficiente para una ciudad con conexiones irregulares? Verificar:
+- Queries: select solo los campos necesarios. Include solo las relaciones necesarias
+- Paginación: TODA lista debe tener paginación (take/skip). NUNCA traer todo
+- Imágenes: sharp compression en upload, next/image con sizes, lazy loading
+- Bundle: ¿el import es dinámico donde corresponde? (mapas, componentes pesados)
+- N+1: ¿hay loop que hace query por iteración? Refactorizar a include o batch
+- Caché: ¿se puede cachear? (categorías, StoreSettings, MoovyConfig)
+- Mobile: ¿funciona en 3G lento? Loading states son críticos
+
+**MONITOREO** — Director de Observabilidad
+Si algo falla, ¿alguien se entera? Verificar:
+- Logger (Pino): ¿los catch blocks loguean con contexto suficiente? (orderId, userId, action)
+- Operaciones críticas deben tener log level "error" o "warn", no solo "info"
+- Webhooks: ¿se loguea recepción, procesamiento, y resultado?
+- Si falla un pago/refund/asignación: ¿queda registro en MpWebhookLog/AssignmentLog?
+- Admin feed: ¿Socket.IO emite eventos relevantes al panel ops?
+- Si es operación que puede fallar silenciosamente (cron, email, push): log obligatorio
+
+**LEGAL** — Director Legal
+Si el cambio afecta datos, pagos, o condiciones del servicio:
+- ¿Hay que actualizar /terminos? (14 cláusulas actuales)
+- ¿Se recolectan datos nuevos del usuario? → actualizar política de privacidad
+- ¿Cambia cómo se procesan pagos? → verificar cumplimiento BCRA/AFIP
+- ¿Se comparten datos con terceros? (MP, Google, SMTP) → documentar
+- Soft delete obligatorio para datos de usuario (NUNCA hard delete)
+- Edad mínima: si aplica, verificar
+
+**FINANZAS** — Controller
+¿Los números cierran? Verificar con la fórmula maestra:
+```
+ingreso_moovy = comision_merchant + comision_seller + (delivery_fee × (1 - riderCommissionPercent))
+```
+- ¿commissionRate viene de MoovyConfig/StoreSettings (dinámico), no hardcodeado?
+- ¿riderCommissionPercent viene de StoreSettings?
+- Si hay cupón: ¿quién absorbe el descuento? (Moovy, no el merchant)
+- CSV export del panel ops: ¿los totales coinciden con la suma de las partes?
+- Facturación AFIP: si el cambio afecta montos, anotar para revisión fiscal
+
+**MARKETING / CONTENIDO** — Director de Marketing
+¿Los textos son profesionales y en español argentino? Verificar:
+- Sin typos, sin placeholder ("Lorem ipsum", "TODO", "test")
+- Tono: cercano pero profesional. "Tu pedido está en camino" no "Su orden ha sido despachada"
+- Sin anglicismos: "delivery" es aceptable (ya adoptado), pero no "checkout flow" al usuario
+- Branding: MOOVY en mayúsculas cuando es marca. Colores correctos
+- SEO: ¿tiene generateMetadata()? ¿JSON-LD si es detalle público?
+- Comparación competitiva: ¿el texto transmite las ventajas vs PedidosYa/Rappi?
+
+**GOOGLE PLAY** — Compliance
+Si el cambio afecta permisos o datos:
+- ¿Se usa geolocalización? → Data Safety: "Location: Approximate/Precise"
+- ¿Se usa cámara/galería? → documentar propósito
+- ¿Se recolectan datos personales nuevos? → actualizar Data Safety form
+- ¿Push notifications? → ya declarado, pero verificar si cambia el uso
+
+**GO-TO-MARKET** — Director Comercial
+¿Esto acerca o aleja el lanzamiento? Preguntarse:
+- ¿Es blocker para lanzar? Si sí, prioridad máxima
+- ¿Mejora la primera impresión de un comercio nuevo?
+- ¿Mejora la primera impresión de un comprador nuevo?
+- ¿Es algo que PedidosYa NO tiene en Ushuaia? → diferenciador, destacar
+
+**ONBOARDING** — Director de Éxito del Cliente
+¿Un usuario nuevo entiende qué hacer? Verificar por rol:
+- Merchant nuevo: ¿el flujo registro → aprobación → primer producto → primer pedido es claro?
+- Driver nuevo: ¿el flujo registro → aprobación → conectarse → primer pedido es claro?
+- Seller nuevo: ¿el flujo registro → primer listing → primera venta es claro?
+- Buyer nuevo: ¿puede completar su primer pedido sin ayuda en menos de 3 minutos?
+- ¿Hay tooltips/guías donde se necesitan? ¿Los pasos son obvios?
+
+### Cadena de reacción entre roles
+
+Cuando un rol detecta que necesita algo, activa a otros roles automáticamente:
+
+PAGOS cambia → COMUNICACIONES (¿notificar?), LEGAL (¿TyC?), FINANZAS (¿números cierran?), MONITOREO (¿se loguea?), QA (¿edge cases de montos?)
+LOGÍSTICA cambia → COMUNICACIONES (¿notificar status?), UX (¿tracking actualizado?), PERFORMANCE (¿polling eficiente?)
+SEGURIDAD detecta riesgo → BLOQUEA la tarea hasta que se resuelva. No se avanza con vulnerabilidades conocidas
+PRODUCTO agrega feature → ONBOARDING (¿se entiende?), MARKETING (¿copy listo?), GO-TO-MARKET (¿acerca el lanzamiento?), GOOGLE PLAY (¿permisos nuevos?)
+UX cambia pantalla → PERFORMANCE (¿carga rápido en 3G?), QA (¿4 estados cubiertos?), CONTENIDO (¿textos correctos?)
+
+### Regla de oro
+
+Si al revisar una tarea completada, CUALQUIER rol encuentra un problema
+clasificado como CRÍTICO (pérdida de dinero, vulnerabilidad de seguridad,
+datos expuestos, flujo roto para el usuario), la tarea se considera
+INCOMPLETA y se debe resolver antes de cerrar la rama.
+
 ## Métricas y datos (post-lanzamiento)
 
 Una vez que Moovy esté en producción, las decisiones se toman con DATOS,
