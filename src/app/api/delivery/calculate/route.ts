@@ -199,14 +199,14 @@ export async function POST(request: Request) {
                     "Distance Matrix API failed, using Haversine fallback"
                 );
                 // Fallback to Haversine (straight line) if API fails
-                distanceKm = calculateDistance(originLat, originLng, String(lat), String(lng));
+                distanceKm = calculateDistance(originLat, originLng, lat, lng);
             }
         } catch (e) {
             deliveryLogger.error(
                 { error: e instanceof Error ? e.message : String(e) },
                 "Error calling Distance Matrix API"
             );
-            distanceKm = calculateDistance(originLat, originLng, String(lat), String(lng));
+            distanceKm = calculateDistance(originLat, originLng, lat, lng);
         }
 
         const deliverySettings: DeliverySettings = {
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
             originLng,
         };
 
-        const result = calculateDeliveryCost(distanceKm, deliverySettings, String(orderTotal));
+        const result = calculateDeliveryCost(distanceKm, deliverySettings, orderTotal);
 
         return NextResponse.json({
             ...result,
