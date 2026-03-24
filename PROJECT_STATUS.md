@@ -1,6 +1,6 @@
 # Moovy — Tareas pendientes
-Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 6
-Última actualización: 2026-03-23
+Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 6
+Última actualización: 2026-03-24
 
 ## P0 — Sin esto no se lanza
 
@@ -185,3 +185,4 @@ Score: 98/100 | P0: 2 tareas | P1: 0 | P2: 6
 - [x] Página /comisiones (transparencia de tarifas, comparación vs competencia) — 2026-03-23
 - [x] Dashboard analytics avanzado OPS (KPIs negocio/merchants/drivers/buyers, API por período) — 2026-03-23
 - [x] Auditoría pre-lanzamiento: bypass admin, puntos cancel, comisión rejected, deliveryFee negativo, passwords admin, rating hardcodeado, Facebook link, acento, cupón atómico, indexes DB — 2026-03-23
+- [x] Auditoría exhaustiva checkout: webhook MP (monto+idempotencia), merchant (approval+isOpen+schedule+minOrder+radius), cupón (maxUsesPerUser+tx), refund MP, portal merchant, delivery fee — 2026-03-24

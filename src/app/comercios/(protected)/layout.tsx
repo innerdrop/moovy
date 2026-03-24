@@ -2,6 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasAnyRole, getUserRoles } from "@/lib/auth-utils";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -25,6 +26,23 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     // Security Check — use hasAnyRole (not legacy session.user.role)
     if (!session || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
         redirect("/comercios/login");
+    }
+
+    // AUDIT FIX 2.4: Verify merchant is approved before allowing portal access
+    // Admins bypass this check
+    if (!hasAnyRole(session, ["ADMIN"])) {
+        const merchant = await prisma.merchant.findFirst({
+            where: { ownerId: (session.user as any).id },
+            select: { approvalStatus: true },
+        });
+
+        if (!merchant) {
+            redirect("/comercios/login");
+        }
+
+        if (merchant.approvalStatus !== "APPROVED") {
+            redirect("/comercios/pendiente-aprobacion");
+        }
     }
 
     const userRoles = getUserRoles(session);
