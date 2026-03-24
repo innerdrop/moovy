@@ -37,8 +37,26 @@ export async function PUT(request: Request) {
                 id: true,
                 availabilityStatus: true,
                 isOnline: true,
+                latitude: true,
+                longitude: true,
             },
         });
+
+        // BUG FIX #1: Update PostGIS ubicacion when driver goes online
+        if (driver.isOnline) {
+            if (!driver.latitude || !driver.longitude) {
+                return NextResponse.json(
+                    { error: "Debes habilitar ubicación GPS antes de conectarte" },
+                    { status: 400 }
+                );
+            }
+            // Update PostGIS ubicacion field with driver's current coordinates
+            await prisma.$executeRaw`
+                UPDATE "Driver"
+                SET ubicacion = ST_SetSRID(ST_MakePoint(${driver.longitude}, ${driver.latitude}), 4326)
+                WHERE id = ${driver.id}
+            `;
+        }
 
         return NextResponse.json({
             success: true,

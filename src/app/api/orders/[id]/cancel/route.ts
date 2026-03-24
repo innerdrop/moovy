@@ -104,13 +104,14 @@ export async function POST(
         }
     });
 
+    // BUG #16 FIX: Read PointsConfig from database instead of hardcoding pointsValue
     // Refund points if used (non-blocking)
     if (order.discount > 0) {
         try {
-            const { recordPointsTransaction } = await import("@/lib/points");
-            // Calculate how many points were used: discount / pointsValue (default 0.01 for old config or 0.015 for new)
-            // Use a default of 0.01 to maintain backward compatibility
-            const pointsValue = 0.01;
+            const { recordPointsTransaction, getPointsConfig } = await import("@/lib/points");
+            // Get actual points configuration from database
+            const pointsConfig = await getPointsConfig();
+            const pointsValue = pointsConfig?.pointsValue ?? 0.01;
             const pointsToRefund = Math.round(order.discount / pointsValue);
             await recordPointsTransaction(
                 order.userId,

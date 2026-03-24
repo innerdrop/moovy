@@ -1,12 +1,38 @@
 // API Route: Calculate Delivery Cost (with geocoding)
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance, calculateDeliveryCost, DeliverySettings } from "@/lib/delivery";
+import { deliveryLogger } from "@/lib/logger";
+
+const DeliveryCalcSchema = z.object({
+    destinationLat: z.number().optional(),
+    destinationLng: z.number().optional(),
+    address: z.object({
+        street: z.string(),
+        number: z.string().optional(),
+        city: z.string().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+    }).optional(),
+    merchantId: z.string().min(1, "merchantId requerido"),
+    orderTotal: z.number().min(0).optional(),
+});
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { destinationLat, destinationLng, address, merchantId, orderTotal = 0 } = body;
+        const validation = DeliveryCalcSchema.safeParse(body);
+
+        if (!validation.success) {
+            const message = validation.error.issues[0]?.message || "Datos inválidos";
+            return NextResponse.json(
+                { success: false, error: message },
+                { status: 400 }
+            );
+        }
+
+        const { destinationLat, destinationLng, address, merchantId, orderTotal = 0 } = validation.data;
 
         // Extract lat/lng from root or nested address object
         let lat = destinationLat || address?.latitude;
@@ -57,24 +83,13 @@ export async function POST(request: Request) {
         let originLng: number | null = null;
         let originAddress: string | null = null;
 
-        if (!merchantId) {
-            console.error("[DeliveryCalc] No merchantId provided in request");
-            return NextResponse.json({
-                distanceKm: 0,
-                totalCost: 0,
-                isWithinRange: false,
-                isFreeDelivery: false,
-                message: "No se pudo identificar el comercio para calcular el envío.",
-            });
-        }
-
         const merchant = await prisma.merchant.findUnique({
             where: { id: merchantId },
             select: { latitude: true, longitude: true, address: true, name: true }
         });
 
         if (!merchant) {
-            console.error(`[DeliveryCalc] Merchant not found for ID: ${merchantId}`);
+            deliveryLogger.warn({ merchantId }, "Merchant not found");
             return NextResponse.json({
                 distanceKm: 0,
                 totalCost: 0,
@@ -98,10 +113,16 @@ export async function POST(request: Request) {
             originLat = merchant.latitude as number;
             originLng = merchant.longitude as number;
             originAddress = merchant.address || merchant.name;
-            console.log(`[DeliveryCalc] Origin set from merchant coordinates: ${merchant.name} (${originLat}, ${originLng})`);
+            deliveryLogger.info(
+                { merchantId, merchantName: merchant.name, lat: originLat, lng: originLng },
+                "Origin set from merchant coordinates"
+            );
         } else if (merchant.address) {
             // Try to geocode merchant address if coords are missing or invalid
-            console.log(`[DeliveryCalc] Merchant lacks valid coordinates, geocoding address: ${merchant.address}`);
+            deliveryLogger.info(
+                { merchantId, address: merchant.address },
+                "Merchant lacks valid coordinates, geocoding"
+            );
             const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
             const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(merchant.address + ", Ushuaia, Argentina")}&key=${apiKey}`;
 
@@ -113,15 +134,24 @@ export async function POST(request: Request) {
                     originLat = geoData.results[0].geometry.location.lat;
                     originLng = geoData.results[0].geometry.location.lng;
                     originAddress = merchant.address;
-                    console.log(`[DeliveryCalc] Merchant geocoded to: ${originLat}, ${originLng}`);
+                    deliveryLogger.info(
+                        { merchantId, lat: originLat, lng: originLng },
+                        "Merchant geocoded successfully"
+                    );
                 }
             } catch (geoErr) {
-                console.error("[DeliveryCalc] Geocoding error for merchant:", geoErr);
+                deliveryLogger.error(
+                    { merchantId, error: geoErr instanceof Error ? geoErr.message : String(geoErr) },
+                    "Geocoding error for merchant"
+                );
             }
         }
 
         if (!originLat || !originLng) {
-            console.error(`[DeliveryCalc] Could not determine origin for merchant: ${merchant.name}`);
+            deliveryLogger.error(
+                { merchantId, merchantName: merchant.name },
+                "Could not determine origin for merchant"
+            );
             return NextResponse.json({
                 distanceKm: 0,
                 totalCost: 0,
@@ -131,7 +161,10 @@ export async function POST(request: Request) {
             });
         }
 
-        console.log(`[DeliveryCalc] Final Points -> Origin: ${originLat},${originLng} | Dest: ${lat},${lng}`);
+        deliveryLogger.debug(
+            { originLat, originLng, destinationLat: lat, destinationLng: lng },
+            "Calculating delivery"
+        );
 
         // --- REAL ROAD DISTANCE: Google Distance Matrix ---
         let distanceKm = 0;
@@ -143,7 +176,10 @@ export async function POST(request: Request) {
             // Build Distance Matrix URL with explicit driving mode
             const distUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLng}&destinations=${lat},${lng}&mode=driving&units=metric&key=${apiKey}`;
 
-            console.log(`[DeliveryCalc] Requesting distance from ${originAddress} to destination...`);
+            deliveryLogger.debug(
+                { origin: originAddress },
+                "Requesting distance matrix"
+            );
 
             const distRes = await fetch(distUrl);
             const distData = await distRes.json();
@@ -153,15 +189,24 @@ export async function POST(request: Request) {
                 const distanceMeters = distData.rows[0].elements[0].distance.value;
                 distanceKm = distanceMeters / 1000;
                 isRealRoadDistance = true;
-                console.log(`[DeliveryCalc] Real road distance: ${distanceKm.toFixed(2)} km`);
+                deliveryLogger.info(
+                    { distanceKm: parseFloat(distanceKm.toFixed(2)), source: "google-distance-matrix" },
+                    "Road distance calculated"
+                );
             } else {
-                console.warn(`[DeliveryCalc] Distance Matrix failed (${distData.status}), using fallback.`);
+                deliveryLogger.warn(
+                    { status: distData.status },
+                    "Distance Matrix API failed, using Haversine fallback"
+                );
                 // Fallback to Haversine (straight line) if API fails
-                distanceKm = calculateDistance(originLat, originLng, parseFloat(lat), parseFloat(lng));
+                distanceKm = calculateDistance(originLat, originLng, String(lat), String(lng));
             }
         } catch (e) {
-            console.error("[DeliveryCalc] Critical error calling Distance Matrix:", e);
-            distanceKm = calculateDistance(originLat, originLng, parseFloat(lat), parseFloat(lng));
+            deliveryLogger.error(
+                { error: e instanceof Error ? e.message : String(e) },
+                "Error calling Distance Matrix API"
+            );
+            distanceKm = calculateDistance(originLat, originLng, String(lat), String(lng));
         }
 
         const deliverySettings: DeliverySettings = {
@@ -175,7 +220,7 @@ export async function POST(request: Request) {
             originLng,
         };
 
-        const result = calculateDeliveryCost(distanceKm, deliverySettings, parseFloat(orderTotal));
+        const result = calculateDeliveryCost(distanceKm, deliverySettings, String(orderTotal));
 
         return NextResponse.json({
             ...result,
@@ -190,8 +235,12 @@ export async function POST(request: Request) {
                 : "Lo sentimos, la dirección está fuera de nuestra zona de delivery",
         });
     } catch (error) {
-        console.error("Error calculating delivery:", error);
+        deliveryLogger.error(
+            { error: error instanceof Error ? error.message : String(error) },
+            "Error calculating delivery"
+        );
         return NextResponse.json({
+            success: false,
             distanceKm: 0,
             totalCost: 0,
             isWithinRange: false,

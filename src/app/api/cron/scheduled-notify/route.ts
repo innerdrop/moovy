@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { notifyBuyer } from "@/lib/notifications";
 import { startAssignmentCycle } from "@/lib/assignment-engine";
+import { cronLogger } from "@/lib/logger";
 
 /** Read a MoovyConfig value by key with default fallback */
 async function getConfigValue(key: string, defaultValue: string): Promise<string> {
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
                         body: `Tenés un pedido programado para las ${slotTime}. Confirmalo ahora.`,
                         url: "/vendedor/pedidos",
                         tag: `scheduled-remind-${order.id}`,
-                    }).catch((err) => console.error("[ScheduledNotify] Push error:", err));
+                    }).catch((err) => cronLogger.error({ error: err }, "Push error notifying seller"));
 
                     const room = sub.sellerId
                         ? `seller:${sub.sellerId}`
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
                         orderId: order.id,
                         orderNumber: order.orderNumber,
                         scheduledSlotStart: order.scheduledSlotStart?.toISOString(),
-                    }).catch((err) => console.error("[ScheduledNotify] Socket error:", err));
+                    }).catch((err) => cronLogger.error({ error: err }, "Socket error notifying seller"));
                 }
             }
 
@@ -136,7 +137,7 @@ export async function POST(request: Request) {
 
             // Notify buyer
             notifyBuyer(order.userId, "SCHEDULED_CANCELLED", order.orderNumber, { orderId: order.id }).catch((err) =>
-                console.error("[ScheduledNotify] Buyer push error:", err)
+                cronLogger.error({ error: err }, "Buyer push error")
             );
 
             // Notify admin
@@ -144,7 +145,7 @@ export async function POST(request: Request) {
                 orderId: order.id,
                 orderNumber: order.orderNumber,
                 reason: "Vendedor no confirmó pedido programado",
-            }).catch((err) => console.error("[ScheduledNotify] Admin socket error:", err));
+            }).catch((err) => cronLogger.error({ error: err }, "Admin socket error"));
 
             // TODO: If paymentMethod === "mercadopago" and payment was captured, trigger refund via MP API
 
@@ -179,9 +180,9 @@ export async function POST(request: Request) {
 
             const result = await startAssignmentCycle(order.id);
             if (result.success) {
-                console.log(`[ScheduledNotify] Assignment started for scheduled order ${order.orderNumber}`);
+                cronLogger.info({ orderNumber: order.orderNumber }, "Assignment started for scheduled order");
             } else {
-                console.warn(`[ScheduledNotify] Assignment failed for ${order.orderNumber}: ${result.error}`);
+                cronLogger.warn({ orderNumber: order.orderNumber, error: result.error }, "Assignment failed for scheduled order");
             }
 
             assigned++;
@@ -195,9 +196,12 @@ export async function POST(request: Request) {
             timestamp: now.toISOString(),
         });
     } catch (error) {
-        console.error("[ScheduledNotify] Error:", error);
+        cronLogger.error(
+            { error: error instanceof Error ? error.message : String(error) },
+            "Error processing scheduled orders"
+        );
         return NextResponse.json(
-            { error: "Error al procesar pedidos programados" },
+            { success: false, error: "Error al procesar pedidos programados" },
             { status: 500 }
         );
     }

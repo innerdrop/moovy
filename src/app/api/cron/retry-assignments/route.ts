@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { startAssignmentCycle } from "@/lib/assignment-engine";
 import { verifyBearerToken } from "@/lib/env-validation";
+import { cronLogger } from "@/lib/logger";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -18,7 +19,7 @@ async function emitSocket(event: string, room: string, data: Record<string, unkn
             Authorization: `Bearer ${process.env.CRON_SECRET}`,
         },
         body: JSON.stringify({ event, room, data }),
-    }).catch((err) => console.error("[Socket] emit error:", err));
+    }).catch((err) => cronLogger.error({ error: err }, "Socket emit error"));
 }
 
 async function notifyAdminOfStuckOrder(orderId: string, orderNumber: string, reason: string): Promise<void> {
@@ -34,7 +35,7 @@ async function notifyAdminOfStuckOrder(orderId: string, orderNumber: string, rea
             orderNumber,
             reason,
             timestamp: new Date().toISOString(),
-        }).catch(console.error);
+        }).catch((err) => cronLogger.error({ error: err }, "Failed to notify admin of stuck order"));
     }
 
     // Also emit to admin_orders room
@@ -43,7 +44,7 @@ async function notifyAdminOfStuckOrder(orderId: string, orderNumber: string, rea
         orderNumber,
         reason,
         timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    }).catch((err) => cronLogger.error({ error: err }, "Failed to notify admin_orders"));
 }
 
 export async function POST(req: NextRequest) {
@@ -106,8 +107,9 @@ export async function POST(req: NextRequest) {
             // If we've already attempted this order MAX_RETRIES times via this cron, escalate
             // Count only recent attempts (from when it became CONFIRMED and stuck)
             if (assignmentLogs.length >= MAX_RETRIES) {
-                console.log(
-                    `[RetryAssignments] Order ${order.orderNumber} has reached max retries (${assignmentLogs.length} attempts). Escalating to admin.`
+                cronLogger.warn(
+                    { orderId: order.id, orderNumber: order.orderNumber, attempts: assignmentLogs.length },
+                    `Order has reached max retries. Escalating to admin.`
                 );
 
                 // Notify admin
@@ -123,26 +125,30 @@ export async function POST(req: NextRequest) {
             }
 
             // Attempt to restart the assignment cycle
-            console.log(
-                `[RetryAssignments] Retrying assignment for order ${order.orderNumber} (attempt ${assignmentLogs.length + 1}/${MAX_RETRIES})`
+            cronLogger.info(
+                { orderId: order.id, orderNumber: order.orderNumber, attempt: assignmentLogs.length + 1, maxRetries: MAX_RETRIES },
+                `Retrying assignment for order`
             );
 
             const result = await startAssignmentCycle(order.id);
 
             if (result.success) {
-                console.log(
-                    `[RetryAssignments] Successfully restarted assignment for order ${order.orderNumber} with driver ${result.driverId}`
+                cronLogger.info(
+                    { orderId: order.id, orderNumber: order.orderNumber, driverId: result.driverId },
+                    `Successfully restarted assignment`
                 );
                 retried++;
             } else {
-                console.log(
-                    `[RetryAssignments] Failed to restart assignment for order ${order.orderNumber}: ${result.error}`
+                cronLogger.error(
+                    { orderId: order.id, orderNumber: order.orderNumber, error: result.error },
+                    `Failed to restart assignment`
                 );
 
                 // If no drivers are available even on retry, escalate immediately
                 if (result.error?.includes("repartidores disponibles")) {
-                    console.log(
-                        `[RetryAssignments] No drivers available for order ${order.orderNumber}. Escalating to admin.`
+                    cronLogger.warn(
+                        { orderId: order.id, orderNumber: order.orderNumber },
+                        `No drivers available. Escalating to admin.`
                     );
 
                     await notifyAdminOfStuckOrder(
@@ -164,9 +170,12 @@ export async function POST(req: NextRequest) {
             message: `Processed ${stuckOrders.length} stuck orders. Retried: ${retried}, Escalated: ${escalated}`,
         });
     } catch (error) {
-        console.error("[RetryAssignments] Error:", error);
+        cronLogger.error(
+            { error: error instanceof Error ? error.message : String(error) },
+            "Error processing assignment retries"
+        );
         return NextResponse.json(
-            { error: "Error processing assignment retries", details: String(error) },
+            { success: false, error: "Error processing assignment retries" },
             { status: 500 }
         );
     }

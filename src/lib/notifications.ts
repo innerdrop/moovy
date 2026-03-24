@@ -24,6 +24,10 @@ function formatMoney(amount: number): string {
 type MessageBuilder = { title: string; body: (n: string, ctx: NotifyContext) => string };
 
 const STATUS_MESSAGES: Record<string, MessageBuilder> = {
+    PAYMENT_REJECTED: {
+        title: '❌ Pago rechazado',
+        body: (n) => `Tu pago para el pedido ${n} fue rechazado. Por favor intentá nuevamente.`,
+    },
     CONFIRMED: {
         title: '✅ Pedido confirmado',
         body: (n, ctx) =>

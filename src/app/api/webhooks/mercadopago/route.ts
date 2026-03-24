@@ -74,19 +74,42 @@ export async function POST(request: NextRequest) {
 
         // Find order by external_reference (= order.id)
         const orderId = mpPayment.external_reference;
-        const order = await prisma.order.findUnique({
+
+        // BUG #17 FIX: Implement retry mechanism if order doesn't exist yet
+        // MP may send webhook before order is created in DB (race condition)
+        let order = await prisma.order.findUnique({
             where: { id: orderId },
             include: {
                 items: { select: { id: true, productId: true, name: true, price: true, quantity: true } },
                 subOrders: { select: { id: true, merchantId: true, sellerId: true } },
-                user: { select: { name: true, email: true } },
+                user: { select: { id: true, name: true, email: true } },
                 address: { select: { street: true, number: true, apartment: true, city: true } },
             },
         });
 
         if (!order) {
-            paymentLogger.error({ orderId }, "Order not found");
-            return NextResponse.json({ received: true });
+            // Retry once after 2 seconds
+            paymentLogger.warn({ orderId, dataId }, "Order not found on first attempt, retrying after 2s...");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            order = await prisma.order.findUnique({
+                where: { id: orderId },
+                include: {
+                    items: { select: { id: true, productId: true, name: true, price: true, quantity: true } },
+                    subOrders: { select: { id: true, merchantId: true, sellerId: true } },
+                    user: { select: { id: true, name: true, email: true } },
+                    address: { select: { street: true, number: true, apartment: true, city: true } },
+                },
+            });
+
+            if (!order) {
+                // Still not found - return 404 so MP retries later
+                paymentLogger.error({ orderId, dataId }, "Order still not found after retry - returning 404 for MP to retry");
+                return NextResponse.json(
+                    { error: "Order not found, will retry", orderId },
+                    { status: 404 }
+                );
+            }
         }
 
         const paymentStatus = mpPayment.status || "unknown";
@@ -154,7 +177,7 @@ interface OrderWithRelations {
     isPickup: boolean;
     items: Array<{ id: string; productId: string | null; listingId?: string | null; name: string; price: number; quantity: number }>;
     subOrders: Array<{ id: string; merchantId: string | null; sellerId: string | null }>;
-    user: { name: string | null; email: string | null };
+    user: { id: string; name: string | null; email: string | null };
     address: { street: string; number: string; apartment: string | null; city: string | null } | null;
 }
 
@@ -174,6 +197,64 @@ async function handleApproved(
             paidAt: new Date(),
         },
     });
+
+    // BUG #14 FIX: Notify merchant via socket when payment is confirmed
+    // so they see the order immediately instead of waiting for manual confirmation
+    try {
+        const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+        const headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.CRON_SECRET}`,
+        };
+
+        // Fetch merchant info if single-vendor order
+        const subOrders = await prisma.subOrder.findMany({
+            where: { orderId: order.id },
+            select: { merchantId: true, sellerId: true }
+        });
+
+        // Emit to each merchant/seller in the order
+        for (const sub of subOrders) {
+            if (sub.merchantId) {
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        event: "payment_confirmed",
+                        room: `merchant:${sub.merchantId}`,
+                        data: {
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            status: "CONFIRMED",
+                        },
+                    }),
+                }).catch((err) => {
+                    paymentLogger.error({ orderId: order.id, merchantId: sub.merchantId, error: err }, "Failed to notify merchant of payment confirmation");
+                });
+            }
+            if (sub.sellerId) {
+                await fetch(`${socketUrl}/emit`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        event: "payment_confirmed",
+                        room: `seller:${sub.sellerId}`,
+                        data: {
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            status: "CONFIRMED",
+                        },
+                    }),
+                }).catch((err) => {
+                    paymentLogger.error({ orderId: order.id, sellerId: sub.sellerId, error: err }, "Failed to notify seller of payment confirmation");
+                });
+            }
+        }
+    } catch (notifError) {
+        paymentLogger.error({ orderId: order.id, error: notifError }, "Error notifying vendors of payment confirmation");
+    }
 
     // Socket emit to vendors and admin
     await emitPaymentEvent("payment_confirmed", order);
@@ -210,20 +291,32 @@ async function handleRejected(
     mpPaymentId: string,
     mpStatus: string
 ) {
+    // BUG #9 FIX: Only restore stock if order is still in early states (PENDING/CONFIRMED)
+    // If already PREPARING or beyond, stock was already consumed — manual intervention required
+    const shouldRestoreStock = ["PENDING", "CONFIRMED", "AWAITING_PAYMENT", "SCHEDULED"].includes(order.status);
+
     // Restore stock and cancel order in transaction
     await prisma.$transaction(async (tx) => {
-        for (const item of order.items) {
-            if (item.listingId) {
-                await tx.listing.update({
-                    where: { id: item.listingId },
-                    data: { stock: { increment: item.quantity } },
-                });
-            } else if (item.productId) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: { stock: { increment: item.quantity } },
-                });
+        if (shouldRestoreStock) {
+            for (const item of order.items) {
+                if (item.listingId) {
+                    await tx.listing.update({
+                        where: { id: item.listingId },
+                        data: { stock: { increment: item.quantity } },
+                    });
+                } else if (item.productId) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { stock: { increment: item.quantity } },
+                    });
+                }
             }
+        } else {
+            // Log warning if stock cannot be restored due to advanced state
+            paymentLogger.warn(
+                { orderId: order.id, orderStatus: order.status, mpPaymentId },
+                "Payment rejected but order in advanced state (PREPARING/DELIVERING) — stock NOT restored. Manual intervention may be required."
+            );
         }
 
         await tx.order.update({
@@ -242,6 +335,18 @@ async function handleRejected(
 
     // Socket emit
     await emitPaymentEvent("payment_failed", order);
+
+    // BUG #15 FIX: Send push notification to buyer when payment is rejected
+    try {
+        const { notifyBuyer } = await import("@/lib/notifications");
+        await notifyBuyer(order.user.id, "PAYMENT_REJECTED", order.orderNumber, {
+            orderId: order.id,
+        }).catch((err) => {
+            paymentLogger.error({ orderId: order.id, error: err }, "Failed to send push notification to buyer about payment rejection");
+        });
+    } catch (notifError) {
+        paymentLogger.error({ orderId: order.id, error: notifError }, "Error attempting to notify buyer of payment rejection");
+    }
 }
 
 // ─── Socket Helper ───────────────────────────────────────────────────────────

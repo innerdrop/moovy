@@ -149,21 +149,22 @@ export default function VendedorPedidosPage() {
         return () => clearInterval(id);
     }, [loadOrders]);
 
-    async function handleConfirmScheduled(subOrderId: string) {
+    async function handleConfirmOrder(subOrderId: string) {
         setConfirmingId(subOrderId);
         try {
-            const res = await fetch(`/api/seller/orders/${subOrderId}/confirm-scheduled`, {
+            const res = await fetch(`/api/seller/orders/${subOrderId}/confirm`, {
                 method: "POST",
             });
             if (res.ok) {
                 // Reload orders to reflect updated status
                 loadOrders();
+                toast.success("Pedido confirmado");
             } else {
                 const data = await res.json();
                 toast.error(data.error || "Error al confirmar el pedido");
             }
         } catch (error) {
-            console.error("Error confirming scheduled order:", error);
+            console.error("Error confirming order:", error);
             toast.error("Error al confirmar el pedido");
         } finally {
             setConfirmingId(null);
@@ -220,7 +221,9 @@ export default function VendedorPedidosPage() {
                         };
 
                         const isScheduled = order.order.deliveryType === "SCHEDULED";
-                        const isUnconfirmed = isScheduled && !order.order.scheduledConfirmedAt && orderStatus !== "CANCELLED";
+                        const isImmediate = order.order.deliveryType === "IMMEDIATE";
+                        const isUnconfirmedScheduled = isScheduled && !order.order.scheduledConfirmedAt && orderStatus !== "CANCELLED";
+                        const isUnconfirmedImmediate = isImmediate && order.status === "PENDING" && orderStatus !== "CANCELLED";
 
                         return (
                             <div
@@ -248,7 +251,7 @@ export default function VendedorPedidosPage() {
                                 {/* Scheduled delivery info */}
                                 {isScheduled && order.order.scheduledSlotStart && (
                                     <div className={`mb-3 p-3 rounded-lg border ${
-                                        isUnconfirmed
+                                        isUnconfirmedScheduled
                                             ? "bg-amber-50 border-amber-200"
                                             : "bg-violet-50 border-violet-200"
                                     }`}>
@@ -263,10 +266,10 @@ export default function VendedorPedidosPage() {
                                             </span>
                                         </div>
 
-                                        {isUnconfirmed && (
+                                        {isUnconfirmedScheduled && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleConfirmScheduled(order.id)}
+                                                onClick={() => handleConfirmOrder(order.id)}
                                                 disabled={confirmingId === order.id}
                                                 className="mt-2 w-full py-2 px-4 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
@@ -293,6 +296,36 @@ export default function VendedorPedidosPage() {
                                                 })}
                                             </p>
                                         )}
+                                    </div>
+                                )}
+
+                                {/* Immediate delivery confirmation */}
+                                {isUnconfirmedImmediate && (
+                                    <div className="mb-3 p-3 rounded-lg border bg-amber-50 border-amber-200">
+                                        <div className="flex items-center gap-2 text-sm mb-2">
+                                            <Clock className="w-4 h-4 text-amber-500" />
+                                            <span className="font-semibold text-gray-800">
+                                                Entrega inmediata
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleConfirmOrder(order.id)}
+                                            disabled={confirmingId === order.id}
+                                            className="w-full py-2 px-4 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {confirmingId === order.id ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Confirmando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    Confirmar pedido
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 )}
 

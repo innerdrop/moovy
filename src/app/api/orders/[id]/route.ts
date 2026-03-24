@@ -7,6 +7,7 @@ import { startAssignmentCycle } from "@/lib/assignment-engine";
 import { sendOrderReadyNotification } from "@/lib/push";
 import { notifyBuyer } from "@/lib/notifications";
 import { UpdateOrderSchema, validateInput } from "@/lib/validations";
+import { orderLogger } from "@/lib/logger";
 
 // GET - Get single order details
 export async function GET(
@@ -44,8 +45,11 @@ export async function GET(
 
         return NextResponse.json(order);
     } catch (error) {
-        console.error("Error fetching order:", error);
-        return NextResponse.json({ error: "Error al obtener el pedido" }, { status: 500 });
+        orderLogger.error(
+            { error: error instanceof Error ? error.message : String(error) },
+            "Error fetching order"
+        );
+        return NextResponse.json({ success: false, error: "Error al obtener el pedido" }, { status: 500 });
     }
 }
 
@@ -199,15 +203,15 @@ export async function PATCH(
                         })
                     });
                 }
-                console.log(`[Socket-Emit] Status ${data.status} broadcasted to ${rooms.length} rooms`);
+                orderLogger.info({ status: data.status, rooms: rooms.length }, "Status broadcasted to rooms");
             } catch (e) {
-                console.error("[Socket-Emit] Failed to broadcast status change:", e);
+                orderLogger.error({ error: e instanceof Error ? e.message : String(e) }, "Failed to broadcast status change");
             }
 
             // Push notification to buyer (fire-and-forget)
             if (existingOrder?.userId) {
                 notifyBuyer(existingOrder.userId, data.status, existingOrder.orderNumber || '', { orderId: existingOrder.id })
-                    .catch(err => console.error('[Push] Buyer notification error:', err));
+                    .catch(err => orderLogger.error({ error: err }, "Buyer push notification error"));
             }
         }
 
@@ -225,7 +229,7 @@ export async function PATCH(
                     })
                 });
             } catch (e) {
-                console.error("[Socket-Emit] Failed to notify picked up:", e);
+                orderLogger.error({ error: e instanceof Error ? e.message : String(e) }, "Failed to emit PICKED_UP status");
             }
         }
 
@@ -249,10 +253,10 @@ export async function PATCH(
                         where: { id: order.driverId },
                         data: { availabilityStatus: "DISPONIBLE" }
                     });
-                    console.log(`[Order] Driver ${order.driverId} freed after delivery of ${order.orderNumber}`);
+                    orderLogger.info({ driverId: order.driverId, orderNumber: order.orderNumber }, "Driver freed after delivery");
                 }
             } catch (e) {
-                console.error("[Socket-Emit] Failed to notify delivery or free driver:", e);
+                orderLogger.error({ error: e instanceof Error ? e.message : String(e) }, "Failed to notify delivery or free driver");
             }
         }
 
@@ -261,9 +265,9 @@ export async function PATCH(
             // Fire and forget - don't block the response
             startAssignmentCycle(id).then((result) => {
                 if (result.success) {
-                    console.log(`[Auto-assign] Order ${order.orderNumber} offered to driver ${result.driverId}`);
+                    orderLogger.info({ orderId: id, orderNumber: order.orderNumber, driverId: result.driverId }, "Order offered to driver");
                 } else {
-                    console.log(`[Auto-assign] Order ${order.orderNumber}: ${result.error}`);
+                    orderLogger.warn({ orderId: id, orderNumber: order.orderNumber, error: result.error }, "Assignment failed");
                 }
             });
         }
@@ -275,9 +279,9 @@ export async function PATCH(
             if (!activePending || activePending.status !== "WAITING") {
                 startAssignmentCycle(id).then((result) => {
                     if (result.success) {
-                        console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber} offered to driver ${result.driverId}`);
+                        orderLogger.info({ orderId: id, orderNumber: order.orderNumber, driverId: result.driverId }, "READY safety net: Order offered to driver");
                     } else {
-                        console.log(`[Auto-assign] READY safety net: Order ${order.orderNumber}: ${result.error}`);
+                        orderLogger.warn({ orderId: id, orderNumber: order.orderNumber, error: result.error }, "READY safety net: Assignment failed");
                     }
                 });
             }
@@ -290,13 +294,16 @@ export async function PATCH(
                 order.merchant?.name || 'Comercio',
                 order.orderNumber,
                 id
-            ).catch(err => console.error('[Push] Order ready notification error:', err));
+            ).catch(err => orderLogger.error({ error: err }, "Order ready push notification error"));
         }
 
         return NextResponse.json(order);
     } catch (error) {
-        console.error("Error updating order:", error);
-        return NextResponse.json({ error: "Error al actualizar el pedido" }, { status: 500 });
+        orderLogger.error(
+            { error: error instanceof Error ? error.message : String(error) },
+            "Error updating order"
+        );
+        return NextResponse.json({ success: false, error: "Error al actualizar el pedido" }, { status: 500 });
     }
 }
 
@@ -373,12 +380,15 @@ export async function DELETE(
         // Push notification to buyer about cancellation (fire-and-forget)
         if (order.userId) {
             notifyBuyer(order.userId, 'CANCELLED', order.orderNumber, { orderId: order.id })
-                .catch(err => console.error('[Push] Buyer cancel notification error:', err));
+                .catch(err => orderLogger.error({ error: err }, "Buyer cancel push notification error"));
         }
 
         return NextResponse.json({ success: true, message: "Pedido cancelado" });
     } catch (error) {
-        console.error("Error cancelling order:", error);
-        return NextResponse.json({ error: "Error al cancelar el pedido" }, { status: 500 });
+        orderLogger.error(
+            { error: error instanceof Error ? error.message : String(error) },
+            "Error cancelling order"
+        );
+        return NextResponse.json({ success: false, error: "Error al cancelar el pedido" }, { status: 500 });
     }
 }
