@@ -1,5 +1,5 @@
 // MercadoPago SDK Singleton + Helpers
-import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
+import { MercadoPagoConfig, Preference, Payment, MerchantOrder } from "mercadopago";
 import crypto from "crypto";
 
 const globalForMp = global as unknown as { mpClient: MercadoPagoConfig };
@@ -263,4 +263,54 @@ export async function createVendorPreference(
     const vendorConfig = new MercadoPagoConfig({ accessToken: vendorAccessToken });
     const vendorPref = new Preference(vendorConfig);
     return vendorPref.create({ body });
+}
+
+// ─── Refund ─────────────────────────────────────────────────────────────────
+
+/**
+ * AUDIT FIX 2.3: Create a full refund for a MercadoPago payment.
+ * Uses the MP REST API directly since the SDK v2 Refund class may not be available.
+ * @returns The refund response from MP, or null if the refund failed.
+ */
+export async function createRefund(mpPaymentId: string): Promise<{
+    id: number;
+    status: string;
+    amount: number;
+} | null> {
+    const accessToken = process.env.MP_ACCESS_TOKEN;
+    if (!accessToken) {
+        console.error("[MP Refund] No MP_ACCESS_TOKEN configured");
+        return null;
+    }
+
+    try {
+        const res = await fetch(
+            `https://api.mercadopago.com/v1/payments/${mpPaymentId}/refunds`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({}), // Empty body = full refund
+            }
+        );
+
+        if (!res.ok) {
+            const errorBody = await res.text();
+            console.error(`[MP Refund] Failed for payment ${mpPaymentId}: ${res.status} ${errorBody}`);
+            return null;
+        }
+
+        const refundData = await res.json();
+        console.log(`[MP Refund] Success for payment ${mpPaymentId}: refund ID ${refundData.id}`);
+        return {
+            id: refundData.id,
+            status: refundData.status,
+            amount: refundData.amount,
+        };
+    } catch (err) {
+        console.error(`[MP Refund] Error for payment ${mpPaymentId}:`, err);
+        return null;
+    }
 }

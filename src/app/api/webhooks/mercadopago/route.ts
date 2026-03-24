@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing signature" }, { status: 401 });
         }
 
-        // V-015 FIX: Idempotency — use crypto UUID as fallback instead of Date.now()
-        const crypto = await import("crypto");
-        const eventId = xRequestId || `payment-${dataId}-${crypto.randomUUID()}`;
+        // AUDIT FIX 1.6: Idempotency — fallback uses deterministic key based on dataId
+        // Previous: crypto.randomUUID() → never matched duplicates. Now: payment-{dataId} is stable.
+        const eventId = xRequestId || `payment-${dataId}`;
         const existing = await prisma.mpWebhookLog.findUnique({
             where: { eventId },
         });
@@ -135,6 +135,46 @@ export async function POST(request: NextRequest) {
                 rawPayload: body,
             },
         });
+
+        // AUDIT FIX 1.1: Validate payment amount matches order total
+        // Prevents confirming an order when MP reports a different amount (fraud/error)
+        const mpAmount = mpPayment.transaction_amount;
+        if (typeof mpAmount === "number" && mpAmount > 0) {
+            const amountDiff = Math.abs(mpAmount - order.total);
+            // Allow $1 tolerance for rounding
+            if (amountDiff > 1) {
+                paymentLogger.error(
+                    { orderId: order.id, orderTotal: order.total, mpAmount, diff: amountDiff, mpPaymentId },
+                    "CRITICAL: Payment amount mismatch — order NOT confirmed"
+                );
+                // Still record the payment but flag it — do NOT confirm the order
+                await prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        mpStatus: "amount_mismatch",
+                        mpPaymentId,
+                    },
+                });
+                // Mark webhook processed to avoid reprocessing
+                await prisma.mpWebhookLog.update({
+                    where: { eventId },
+                    data: { processed: true },
+                });
+                return NextResponse.json({
+                    received: true,
+                    error: "amount_mismatch",
+                    expected: order.total,
+                    received_amount: mpAmount,
+                });
+            }
+        } else if (paymentStatus === "approved") {
+            // If MP sends approved without a valid transaction_amount, reject
+            paymentLogger.error(
+                { orderId: order.id, mpAmount, mpPaymentId },
+                "CRITICAL: Approved payment without valid transaction_amount"
+            );
+            return NextResponse.json({ received: true, error: "missing_amount" });
+        }
 
         // Handle payment status
         if (paymentStatus === "approved") {

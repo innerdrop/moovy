@@ -95,15 +95,43 @@ export async function POST(request: Request) {
                 );
             }
 
-            // If frontend sent 0 for a delivery order, that's suspicious
+            // AUDIT FIX 2.5: Reject delivery orders with no delivery fee instead of hardcoding
+            // Previous: silently set to 100 ARS. Now: require frontend to send a calculated fee.
             if (!deliveryFee || deliveryFee === 0) {
-                // We can't validate without distance/package info, but log it
-                orderLogger.warn(
-                    { orderId: undefined, deliveryFee },
-                    "Frontend sent deliveryFee=0 for non-pickup order"
-                );
-                // Set a conservative minimum to prevent fraud
-                validatedDeliveryFee = 100; // Minimum 100 ARS for safety
+                // Try server-side calculation if distance is available
+                if (distanceKm && distanceKm > 0) {
+                    try {
+                        const serverFee = calculateShippingCost({
+                            distanceKm,
+                            packageCategory: "MEDIUM",
+                            shipmentTypeCode: "STANDARD",
+                            orderTotal: 0, // Not yet calculated — just need base fee
+                            freeDeliveryMinimum: null,
+                        });
+                        if (serverFee && serverFee.total > 0) {
+                            validatedDeliveryFee = serverFee.total;
+                            orderLogger.info(
+                                { distanceKm, calculatedFee: serverFee.total },
+                                "Server-side delivery fee calculation for missing frontend fee"
+                            );
+                        } else {
+                            return NextResponse.json(
+                                { error: "No se pudo calcular el costo de envío. Intentá de nuevo." },
+                                { status: 400 }
+                            );
+                        }
+                    } catch {
+                        return NextResponse.json(
+                            { error: "Error al calcular el costo de envío. Intentá de nuevo." },
+                            { status: 400 }
+                        );
+                    }
+                } else {
+                    return NextResponse.json(
+                        { error: "Se requiere el costo de envío para pedidos con delivery" },
+                        { status: 400 }
+                    );
+                }
             }
         } else {
             // For pickup orders, fee must be 0
@@ -178,17 +206,106 @@ export async function POST(request: Request) {
         if (merchantId) {
             const merchant = await prisma.merchant.findUnique({
                 where: { id: merchantId },
-                select: { commissionRate: true }
+                select: {
+                    commissionRate: true,
+                    approvalStatus: true,
+                    isOpen: true,
+                    minOrderAmount: true,
+                    deliveryRadiusKm: true,
+                    businessName: true,
+                    scheduleEnabled: true,
+                    scheduleJson: true,
+                }
             });
 
-            if (merchant) {
-                const rate = merchant.commissionRate || defaultMerchantCommission;
-                moovyCommission = subtotal * (rate / 100);
-                merchantPayout = subtotal - moovyCommission;
+            if (!merchant) {
+                return NextResponse.json(
+                    { error: "Comercio no encontrado" },
+                    { status: 404 }
+                );
             }
+
+            // AUDIT FIX 1.2: Validate merchant is approved
+            if (merchant.approvalStatus !== "APPROVED") {
+                orderLogger.warn(
+                    { merchantId, approvalStatus: merchant.approvalStatus },
+                    "Order attempt on non-approved merchant"
+                );
+                return NextResponse.json(
+                    { error: "Este comercio no está habilitado para recibir pedidos" },
+                    { status: 403 }
+                );
+            }
+
+            // AUDIT FIX 1.3: Validate merchant is open
+            if (!merchant.isOpen) {
+                return NextResponse.json(
+                    { error: `${merchant.businessName || "El comercio"} está cerrado en este momento` },
+                    { status: 400 }
+                );
+            }
+
+            // AUDIT FIX 1.3b: Validate merchant schedule for immediate orders
+            if (deliveryType !== "SCHEDULED" && merchant.scheduleEnabled && merchant.scheduleJson) {
+                try {
+                    const schedule = JSON.parse(merchant.scheduleJson);
+                    const now = new Date();
+                    const jsDay = now.getDay();
+                    const scheduleDay = jsDay === 0 ? "7" : String(jsDay);
+                    const daySchedule = schedule[scheduleDay];
+
+                    if (!daySchedule) {
+                        return NextResponse.json(
+                            { error: `${merchant.businessName || "El comercio"} no opera hoy` },
+                            { status: 400 }
+                        );
+                    }
+
+                    const currentHour = now.getHours();
+                    const currentMin = now.getMinutes();
+                    const [openH, openM] = daySchedule.open.split(":").map(Number);
+                    const [closeH, closeM] = daySchedule.close.split(":").map(Number);
+                    const currentMinutes = currentHour * 60 + currentMin;
+                    const openMinutes = openH * 60 + (openM || 0);
+                    const closeMinutes = closeH * 60 + (closeM || 0);
+
+                    if (currentMinutes < openMinutes || currentMinutes >= closeMinutes) {
+                        return NextResponse.json(
+                            { error: `${merchant.businessName || "El comercio"} está fuera de horario (${daySchedule.open}-${daySchedule.close})` },
+                            { status: 400 }
+                        );
+                    }
+                } catch {
+                    // Invalid schedule JSON — skip validation, log warning
+                    orderLogger.warn({ merchantId }, "Invalid scheduleJson, skipping schedule validation");
+                }
+            }
+
+            // AUDIT FIX 2.2: Validate minimum order amount
+            if (merchant.minOrderAmount && subtotal < merchant.minOrderAmount) {
+                return NextResponse.json(
+                    { error: `El pedido mínimo para ${merchant.businessName || "este comercio"} es de $${merchant.minOrderAmount}` },
+                    { status: 400 }
+                );
+            }
+
+            // AUDIT FIX 2.1: Validate delivery radius
+            if (!isPickup && merchant.deliveryRadiusKm && distanceKm) {
+                if (distanceKm > merchant.deliveryRadiusKm) {
+                    return NextResponse.json(
+                        { error: `Tu dirección está fuera del radio de entrega de ${merchant.businessName || "este comercio"} (máx ${merchant.deliveryRadiusKm}km)` },
+                        { status: 400 }
+                    );
+                }
+            }
+
+            const rate = merchant.commissionRate || defaultMerchantCommission;
+            moovyCommission = subtotal * (rate / 100);
+            merchantPayout = subtotal - moovyCommission;
         }
 
-        // Validate coupon if provided (before transaction to fail fast)
+        // AUDIT FIX 1.4+1.5: Pre-validate coupon with maxUsesPerUser check
+        // Actual recording moved inside main transaction to prevent race conditions
         let validCouponCode: string | undefined;
         if (couponCode) {
             try {
@@ -197,8 +314,26 @@ export async function POST(request: Request) {
                     const now = new Date();
                     const notExpired = !coupon.validUntil || coupon.validUntil > now;
                     const notExhausted = !coupon.maxUses || coupon.usedCount < coupon.maxUses;
-                    if (notExpired && notExhausted) {
+
+                    // Check per-user limit
+                    let perUserOk = true;
+                    if (coupon.maxUsesPerUser) {
+                        const userUsageCount = await prisma.couponUsage.count({
+                            where: {
+                                couponId: coupon.id,
+                                userId: session.user.id,
+                            },
+                        });
+                        perUserOk = userUsageCount < coupon.maxUsesPerUser;
+                    }
+
+                    if (notExpired && notExhausted && perUserOk) {
                         validCouponCode = couponCode;
+                    } else if (!perUserOk) {
+                        orderLogger.info(
+                            { couponCode, userId: session.user.id },
+                            "Coupon per-user limit reached"
+                        );
                     }
                 }
             } catch (e) {
@@ -475,8 +610,44 @@ export async function POST(request: Request) {
                 }
             }
 
-            // Earn points from purchase (outside transaction, will be processed separately)
-            // This is deferred to after transaction completes since it uses recordPointsTransaction
+            // AUDIT FIX 1.5: Record coupon usage INSIDE the main transaction
+            // Prevents race condition where two orders use the same coupon simultaneously
+            if (validCouponCode) {
+                const coupon = await tx.coupon.findUnique({
+                    where: { code: validCouponCode },
+                    select: { id: true, maxUses: true, usedCount: true, maxUsesPerUser: true },
+                });
+
+                if (coupon) {
+                    // Double-check limits inside transaction (serializable guarantee)
+                    if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+                        orderLogger.warn({ couponCode: validCouponCode }, "Coupon exhausted during transaction");
+                    } else {
+                        // Double-check per-user limit inside transaction
+                        let perUserOk = true;
+                        if (coupon.maxUsesPerUser) {
+                            const userUsageCount = await tx.couponUsage.count({
+                                where: { couponId: coupon.id, userId: session.user.id },
+                            });
+                            perUserOk = userUsageCount < coupon.maxUsesPerUser;
+                        }
+
+                        if (perUserOk) {
+                            await tx.couponUsage.create({
+                                data: {
+                                    couponId: coupon.id,
+                                    userId: session.user.id,
+                                    orderId: newOrder.id,
+                                },
+                            });
+                            await tx.coupon.update({
+                                where: { id: coupon.id },
+                                data: { usedCount: { increment: 1 } },
+                            });
+                        }
+                    }
+                }
+            }
 
             return newOrder;
         });
@@ -508,40 +679,8 @@ export async function POST(request: Request) {
             // Don't fail the order if points fail, but log it
         }
 
-        // Record coupon usage atomically to prevent race conditions
-        if (validCouponCode) {
-            try {
-                await prisma.$transaction(async (txCoupon) => {
-                    const coupon = await txCoupon.coupon.findUnique({
-                        where: { code: validCouponCode },
-                        select: { id: true, maxUses: true, usedCount: true },
-                    });
-
-                    if (coupon) {
-                        // Double-check maxUses inside transaction to prevent exceeding limit
-                        if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
-                            throw new Error("Cupón agotado durante el procesamiento del pedido");
-                        }
-
-                        await txCoupon.couponUsage.create({
-                            data: {
-                                couponId: coupon.id,
-                                userId: session.user.id,
-                                orderId: order.id,
-                            },
-                        });
-
-                        // Increment used count atomically
-                        await txCoupon.coupon.update({
-                            where: { id: coupon.id },
-                            data: { usedCount: { increment: 1 } },
-                        });
-                    }
-                });
-            } catch (couponError) {
-                orderLogger.error({ orderId: order.id, couponCode, error: couponError }, "Error recording coupon usage for order");
-            }
-        }
+        // AUDIT FIX 1.5: Coupon usage recording moved inside main transaction above
+        // This eliminates the race condition where order gets discount but coupon isn't recorded
 
         // --- MERCADOPAGO: Create preference and return early ---
         if (paymentMethod === "mercadopago") {
