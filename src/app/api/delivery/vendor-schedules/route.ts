@@ -20,11 +20,12 @@ interface ScheduleDay {
 
 type Schedule = Record<string, ScheduleDay | null>;
 
-// Default schedules
+// Default schedules — DEBEN coincidir con SettingsForm DEFAULT_SCHEDULE
+// Mon-Fri: 09:00-21:00, Sat: 10:00-14:00, Sun: cerrado
 const DEFAULT_MERCHANT_HOURS = "09:00";
-const DEFAULT_MERCHANT_CLOSE = "22:00";
-const DEFAULT_SELLER_HOURS = "08:00";
-const DEFAULT_SELLER_CLOSE = "22:00";
+const DEFAULT_MERCHANT_CLOSE = "21:00";
+const DEFAULT_SELLER_HOURS = "09:00";
+const DEFAULT_SELLER_CLOSE = "21:00";
 
 export async function POST(request: NextRequest) {
   try {
@@ -176,19 +177,16 @@ export async function POST(request: NextRequest) {
 /**
  * Get default schedule for a vendor type
  */
-function getDefaultSchedule(type: "merchant" | "seller"): Schedule {
-  const open = type === "merchant" ? DEFAULT_MERCHANT_HOURS : DEFAULT_SELLER_HOURS;
-  const close =
-    type === "merchant" ? DEFAULT_MERCHANT_CLOSE : DEFAULT_SELLER_CLOSE;
-
+function getDefaultSchedule(_type: "merchant" | "seller"): Schedule {
+  // Debe coincidir con DEFAULT_SCHEDULE en SettingsForm.tsx
   return {
-    "1": { open, close },
-    "2": { open, close },
-    "3": { open, close },
-    "4": { open, close },
-    "5": { open, close },
-    "6": { open, close },
-    "7": { open, close }
+    "1": { open: "09:00", close: "21:00" }, // Lunes
+    "2": { open: "09:00", close: "21:00" }, // Martes
+    "3": { open: "09:00", close: "21:00" }, // Miércoles
+    "4": { open: "09:00", close: "21:00" }, // Jueves
+    "5": { open: "09:00", close: "21:00" }, // Viernes
+    "6": { open: "10:00", close: "14:00" }, // Sábado
+    "7": null                                // Domingo cerrado
   };
 }
 

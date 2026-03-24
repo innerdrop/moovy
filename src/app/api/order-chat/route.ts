@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
             select: {
                 id: true, orderNumber: true, status: true, userId: true,
                 merchantId: true, driverId: true,
-                merchant: { select: { userId: true } },
+                merchant: { select: { ownerId: true } },
                 subOrders: {
                     select: {
                         sellerId: true,
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
         // Check user is a participant
         const isBuyer = order.userId === userId;
-        const isMerchant = order.merchant?.userId === userId;
+        const isMerchant = order.merchant?.ownerId === userId;
         const isDriver = order.driverId === userId;
         const isSeller = order.subOrders.some((so: any) => so.seller?.userId === userId);
 
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         const order = await (prisma as any).order.findUnique({
             where: { id: orderId },
             include: {
-                merchant: { select: { userId: true, businessName: true } },
+                merchant: { select: { ownerId: true, businessName: true } },
                 driver: { select: { userId: true, user: { select: { name: true } } } },
                 subOrders: {
                     include: {
@@ -135,11 +135,11 @@ export async function POST(request: NextRequest) {
         let participantBId: string; // counterpart
 
         if (chatType === "BUYER_MERCHANT") {
-            if (!order.merchant?.userId) {
+            if (!order.merchant?.ownerId) {
                 return NextResponse.json({ error: "Este pedido no tiene comercio asignado" }, { status: 400 });
             }
             participantAId = order.userId;
-            participantBId = order.merchant.userId;
+            participantBId = order.merchant.ownerId;
         } else if (chatType === "BUYER_DRIVER") {
             if (!order.driver?.userId) {
                 return NextResponse.json({ error: "Este pedido no tiene repartidor asignado" }, { status: 400 });

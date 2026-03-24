@@ -41,9 +41,9 @@ interface TimeSlotPickerProps {
 
 const SLOT_HOURS = 2;
 
-/** Default schedule if no vendor schedule provided (backward compatible) */
+/** Default schedule si no hay vendor schedule — alineado con SettingsForm */
 const DEFAULT_OPEN = "09:00";
-const DEFAULT_CLOSE = "22:00";
+const DEFAULT_CLOSE = "21:00";
 
 function parseHour(time: string): number {
     const [h, m] = time.split(":").map(Number);

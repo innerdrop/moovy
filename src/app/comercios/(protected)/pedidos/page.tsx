@@ -63,9 +63,10 @@ const CANCELLATION_REASONS = [
 ];
 
 /** Countdown timer showing remaining time before auto-cancel */
-function PendingCountdown({ createdAt, timeoutSeconds = 300 }: { createdAt: string; timeoutSeconds?: number }) {
+function PendingCountdown({ createdAt, timeoutSeconds = 300, onExpire }: { createdAt: string; timeoutSeconds?: number; onExpire?: () => void }) {
     const [remaining, setRemaining] = useState("");
     const [urgent, setUrgent] = useState(false);
+    const [expired, setExpired] = useState(false);
 
     useEffect(() => {
         const created = new Date(createdAt).getTime();
@@ -76,6 +77,10 @@ function PendingCountdown({ createdAt, timeoutSeconds = 300 }: { createdAt: stri
             if (diff <= 0) {
                 setRemaining("Expirado");
                 setUrgent(true);
+                if (!expired) {
+                    setExpired(true);
+                    onExpire?.();
+                }
                 return;
             }
             const mins = Math.floor(diff / 60000);
@@ -87,12 +92,12 @@ function PendingCountdown({ createdAt, timeoutSeconds = 300 }: { createdAt: stri
         tick();
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
-    }, [createdAt]);
+    }, [createdAt, timeoutSeconds]);
 
     return (
-        <div className={`flex items-center gap-1.5 text-xs font-medium mb-3 ${urgent ? "text-red-600" : "text-yellow-600"}`}>
+        <div className={`flex items-center gap-1.5 text-xs font-medium mb-3 ${expired ? "text-gray-400" : urgent ? "text-red-600" : "text-yellow-600"}`}>
             <Clock className="w-3.5 h-3.5" />
-            <span>Tiempo para confirmar: {remaining}</span>
+            <span>{expired ? "Tiempo expirado — pedido será cancelado automáticamente" : `Tiempo para confirmar: ${remaining}`}</span>
         </div>
     );
 }
@@ -101,6 +106,7 @@ export default function ComercioPedidosPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
+    const [expiredOrders, setExpiredOrders] = useState<Set<string>>(new Set());
     const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
@@ -510,12 +516,16 @@ export default function ComercioPedidosPage() {
 
                                     {/* Timeout countdown for PENDING */}
                                     {isPending && (
-                                        <PendingCountdown createdAt={order.createdAt} timeoutSeconds={confirmTimeout} />
+                                        <PendingCountdown
+                                            createdAt={order.createdAt}
+                                            timeoutSeconds={confirmTimeout}
+                                            onExpire={() => setExpiredOrders(prev => new Set(prev).add(order.id))}
+                                        />
                                     )}
 
                                     {/* Action Buttons */}
                                     <div className="flex gap-2">
-                                        {order.status === "PENDING" && (
+                                        {order.status === "PENDING" && !expiredOrders.has(order.id) && (
                                             <button
                                                 onClick={() => confirmOrder(order.id)}
                                                 disabled={isUpdating}

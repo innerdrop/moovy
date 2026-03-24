@@ -54,6 +54,7 @@ export async function POST(
                 userId: true,
                 orderNumber: true,
                 total: true,
+                createdAt: true,
                 merchant: { select: { name: true } },
             },
         });
@@ -70,6 +71,20 @@ export async function POST(
         if (order.status !== "PENDING") {
             return NextResponse.json(
                 { error: `No se puede confirmar un pedido en estado ${order.status}` },
+                { status: 400 }
+            );
+        }
+
+        // Validar que no haya expirado el tiempo de confirmación
+        const timeoutConfig = await prisma.moovyConfig.findUnique({
+            where: { key: "merchant_confirm_timeout_seconds" },
+        });
+        const timeoutSeconds = parseInt(timeoutConfig?.value ?? "300", 10);
+        const deadline = new Date(order.createdAt).getTime() + timeoutSeconds * 1000;
+
+        if (Date.now() > deadline) {
+            return NextResponse.json(
+                { error: "El tiempo para confirmar este pedido ha expirado" },
                 { status: 400 }
             );
         }
