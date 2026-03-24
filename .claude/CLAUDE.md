@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-03-23
+Última actualización: 2026-03-24
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -75,6 +75,10 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Uploads: magic bytes + extensión + 10MB max + sharp compression
 - Audit log: refund, reassign, export, delete
 - HMAC: MP webhook siempre validado, debug endpoints deshabilitados
+- Webhook MP: validación de monto (tolerance $1), idempotencia determinística, refund automático
+- Order creation: merchant approvalStatus + isOpen + schedule + minOrderAmount + deliveryRadiusKm
+- Cupones: maxUsesPerUser + registro atómico dentro de transaction principal
+- Portal merchant: redirect a /pendiente-aprobacion si no APPROVED
 
 ## Decisiones tomadas
 - Auth: JWT 7 días, credentials-only (no OAuth social)
@@ -89,6 +93,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Scheduled delivery: capacidad 15 pedidos por slot, slots 2h dinámicos según horario real del vendor, min 1.5h anticipación, max 48h. Backend valida slot vs schedule. Sellers configuran su propio schedule de despacho
 - Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
 - Google Places: Decisión 2026-03-21: AddressAutocomplete usa Places API (New) Data API como primario (AutocompleteSuggestion.fetchAutocompleteSuggestions) con fallback a Geocoding API. Session tokens para optimización de billing. Auto-detecta disponibilidad de la API. Ver sección "Dependencias externas"
+- Auditoría checkout 2026-03-24: Webhook MP ahora valida monto pagado vs total orden (tolerancia $1). Idempotencia usa eventId determinístico. Order creation valida approvalStatus, isOpen, horario, minOrderAmount, deliveryRadiusKm, maxUsesPerUser de cupón. Cupón se registra dentro de $transaction. Refund automático vía API REST cuando merchant rechaza pedido pagado. Portal merchant protegido por approvalStatus. Delivery fee se calcula server-side si falta (no se hardcodea).
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
