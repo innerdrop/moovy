@@ -7,14 +7,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAnyRole } from "@/lib/auth-utils";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 const opsLogger = logger.child({ context: "ops-merchant-loyalty-tiers-update" });
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
 
@@ -26,7 +27,7 @@ export async function PUT(
     const { minOrdersPerMonth, commissionRate, badgeText, badgeColor, benefitsJson } = body;
 
     const updated = await prisma.merchantLoyaltyConfig.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         minOrdersPerMonth: minOrdersPerMonth ?? undefined,
         commissionRate: commissionRate ?? undefined,
@@ -36,11 +37,11 @@ export async function PUT(
       },
     });
 
-    opsLogger.info({ tierId: params.id, updated }, "Tier config updated");
+    opsLogger.info({ tierId: id, updated }, "Tier config updated");
 
     return NextResponse.json(updated);
   } catch (error) {
-    opsLogger.error({ error, tierId: params.id }, "Error updating tier");
+    opsLogger.error({ error, tierId: id }, "Error updating tier");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
