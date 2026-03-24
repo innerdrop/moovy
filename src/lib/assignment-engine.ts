@@ -47,10 +47,16 @@ const SCORE_THRESHOLDS: { max: number; category: string }[] = [
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Read a MoovyConfig value by key */
-async function getConfig(key: string): Promise<string> {
+/** Read a MoovyConfig value by key (returns defaultValue if not found) */
+async function getConfig(key: string, defaultValue?: string): Promise<string> {
     const config = await prisma.moovyConfig.findUnique({ where: { key } });
-    if (!config) throw new Error(`MoovyConfig key "${key}" not found`);
+    if (!config) {
+        if (defaultValue !== undefined) {
+            deliveryLogger.warn({ key, defaultValue }, "MoovyConfig key not found, using default");
+            return defaultValue;
+        }
+        throw new Error(`MoovyConfig key "${key}" not found`);
+    }
     return config.value;
 }
 
@@ -168,7 +174,7 @@ export async function findNextEligibleDriver(
     requiredVehicles: string[],
     excludeDriverIds: string[]
 ): Promise<DriverWithDistance | null> {
-    const ratingRadiusStr = await getConfig("assignment_rating_radius_meters");
+    const ratingRadiusStr = await getConfig("assignment_rating_radius_meters", "300");
     const ratingRadius = parseInt(ratingRadiusStr, 10) || 300;
 
     const searchRadiusStr = await getConfig("driver_search_radius_meters").catch(() => "50000");
@@ -342,7 +348,7 @@ export async function startAssignmentCycle(
         });
 
         // Read timeout from config
-        const timeoutStr = await getConfig("driver_response_timeout_seconds");
+        const timeoutStr = await getConfig("driver_response_timeout_seconds", "20");
         const timeoutSeconds = parseInt(timeoutStr, 10) || 20;
         const expiresAt = new Date(Date.now() + timeoutSeconds * 1000);
 
@@ -455,7 +461,9 @@ export async function startAssignmentCycle(
 
         return { success: true, driverId: driver.id };
     } catch (error) {
-        deliveryLogger.error({ error }, "Error starting assignment cycle");
+        const errMsg = error instanceof Error ? error.message : String(error);
+        const errStack = error instanceof Error ? error.stack : undefined;
+        deliveryLogger.error({ error: errMsg, stack: errStack }, "Error starting assignment cycle");
         return { success: false, error: "Error interno al asignar repartidor" };
     }
 }
@@ -1005,7 +1013,7 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
         select: { merchantId: true },
     });
     if (orderForMerchant?.merchantId) {
-        emitSocket("order_unassignable", `merchant_${orderForMerchant.merchantId}`, { orderId, orderNumber }).catch((err) =>
+        emitSocket("order_unassignable", `merchant:${orderForMerchant.merchantId}`, { orderId, orderNumber }).catch((err) =>
             deliveryLogger.error({ error: err }, "Socket merchant unassignable error")
         );
     }

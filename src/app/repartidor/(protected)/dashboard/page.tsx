@@ -572,6 +572,7 @@ export default function RiderDashboard() {
                                                     <h2 className="text-[22px] font-extrabold tracking-tight text-[var(--rider-text)] uppercase leading-none">
                                                         {pedidoActivo.estado === "picked_up" ? "Entrega en curso"
                                                             : pedidoActivo.estado === "driver_arrived" ? "Esperando pedido"
+                                                            : pedidoActivo.estado === "ready" ? "Ir al comercio"
                                                             : "Ir al comercio"}
                                                     </h2>
                                                 </div>
@@ -585,7 +586,7 @@ export default function RiderDashboard() {
                                             <div className="bg-gray-50 dark:bg-[#22252f] rounded-[24px] p-4 border border-gray-100 dark:border-white/10">
                                                 <div className="flex items-start gap-4">
                                                     <div className="flex flex-col items-center gap-1 mt-1">
-                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${pedidoActivo.estado === "driver_assigned" ? "bg-blue-500" : pedidoActivo.estado === "driver_arrived" ? "bg-amber-500" : "bg-gray-300"}`} />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${["ready", "driver_assigned"].includes(pedidoActivo.estado) ? "bg-blue-500" : pedidoActivo.estado === "driver_arrived" ? "bg-amber-500" : "bg-gray-300"}`} />
                                                         <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200" />
                                                         <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${pedidoActivo.estado === "driver_arrived" ? "bg-blue-500" : pedidoActivo.estado === "picked_up" ? "bg-blue-500" : "bg-gray-300"}`} />
                                                         <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200" />
@@ -631,21 +632,23 @@ export default function RiderDashboard() {
                                             {/* SwipeToConfirm */}
                                             <SwipeToConfirm
                                                 label={
-                                                    pedidoActivo.estado === "driver_assigned"
+                                                    pedidoActivo.estado === "ready"
+                                                        ? "Deslizá → Llegué"
+                                                        : pedidoActivo.estado === "driver_assigned"
                                                         ? "Deslizá → Llegué"
                                                         : pedidoActivo.estado === "driver_arrived"
                                                         ? "Deslizá → Recogí"
                                                         : "Deslizá → Entregado"
                                                 }
                                                 bgColor={
-                                                    pedidoActivo.estado === "driver_assigned"
+                                                    pedidoActivo.estado === "ready" || pedidoActivo.estado === "driver_assigned"
                                                         ? "bg-amber-500"
                                                         : pedidoActivo.estado === "driver_arrived"
                                                         ? "bg-blue-600"
                                                         : "bg-[var(--rider-online)]"
                                                 }
                                                 shadowColor={
-                                                    pedidoActivo.estado === "driver_assigned"
+                                                    pedidoActivo.estado === "ready" || pedidoActivo.estado === "driver_assigned"
                                                         ? "shadow-amber-500/30"
                                                         : pedidoActivo.estado === "driver_arrived"
                                                         ? "shadow-blue-500/30"
@@ -654,7 +657,8 @@ export default function RiderDashboard() {
                                                 disabled={advancingStatus}
                                                 onConfirm={async () => {
                                                     const nextStatus =
-                                                        pedidoActivo.estado === "driver_assigned" ? "DRIVER_ARRIVED"
+                                                        pedidoActivo.estado === "ready" ? "DRIVER_ARRIVED"
+                                                        : pedidoActivo.estado === "driver_assigned" ? "DRIVER_ARRIVED"
                                                         : pedidoActivo.estado === "driver_arrived" ? "PICKED_UP"
                                                         : "DELIVERED";
                                                     const successMsg =
@@ -700,11 +704,15 @@ export default function RiderDashboard() {
                     ═══════════════════════════════════════════════ */}
                     {!isMapExpanded && (
                         <div
-                            className="pb-24 animate-in fade-in duration-500"
+                            className="animate-in fade-in duration-500"
                             onTouchStart={handlePullStart}
                             onTouchMove={handlePullMove}
                             onTouchEnd={handlePullEnd}
-                            style={{ transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined, transition: pullDistance === 0 ? 'transform 0.3s ease' : 'none' }}
+                            style={{
+                                paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))',
+                                transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
+                                transition: pullDistance === 0 ? 'transform 0.3s ease' : 'none'
+                            }}
                         >
                             {/* Pull-to-refresh indicator */}
                             {(pullDistance > 0 || isRefreshing) && (
@@ -897,9 +905,9 @@ export default function RiderDashboard() {
                     {(() => {
                         const visibleOffers = (pedidosPendientes || []).filter(p => !dismissedOfferIds.has(p.id));
                         return visibleOffers.length > 0 ? (
-                            <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                            <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
                                 <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]" />
-                                <div className="relative z-10 w-full max-w-md mx-4 mb-6 animate-[slideUp_0.4s_cubic-bezier(0.32,0.72,0,1)]">
+                                <div className="relative z-10 w-full max-w-md mx-4 mb-2 animate-[slideUp_0.4s_cubic-bezier(0.32,0.72,0,1)]">
                                     {visibleOffers.map((pedido) => (
                                         <div key={pedido.id} className="bg-white dark:bg-[#1a1d27] rounded-[28px] p-6 shadow-2xl relative overflow-hidden">
                                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400 animate-pulse" />

@@ -69,7 +69,7 @@ export async function GET(request: Request) {
             where: {
                 driverId: driver.id,
                 status: {
-                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
+                    in: ["READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
                 }
             }
         });
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
             where: {
                 driverId: driver.id,
                 status: {
-                    in: ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
+                    in: ["READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
                 }
             },
             include: {

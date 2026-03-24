@@ -88,7 +88,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
     };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-[fadeIn_0.2s_ease-out]" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
             <div className="bg-white dark:bg-[#1a1d27] rounded-t-[28px] sm:rounded-[28px] sm:mx-4 max-w-md w-full p-6 shadow-2xl animate-[slideUp_0.3s_cubic-bezier(0.32,0.72,0,1)]">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">

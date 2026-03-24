@@ -106,8 +106,8 @@ export default function BottomSheet({
     const getTranslateY = useCallback((s: SheetState): string => {
         switch (s) {
             case "expanded": return "15%";
-            case "mid": return "calc(100% - 320px)";
-            case "minimized": return "calc(100% - 160px)";
+            case "mid": return "calc(100% - 320px - max(80px, env(safe-area-inset-bottom)))";
+            case "minimized": return "calc(100% - 160px - max(80px, env(safe-area-inset-bottom)))";
             case "hidden": return "100%";
         }
     }, []);

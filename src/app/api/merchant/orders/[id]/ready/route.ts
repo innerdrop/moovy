@@ -95,13 +95,13 @@ export async function POST(
 
         // Socket notifications
         const socketData = { orderId, status: "READY", orderNumber: order.orderNumber };
-        emitSocket("order_status_changed", `merchant_${order.merchantId}`, socketData).catch(console.error);
-        emitSocket("order_status_changed", "admin_orders", socketData).catch(console.error);
+        emitSocket("order_status_changed", `merchant:${order.merchantId}`, socketData).catch(console.error);
+        emitSocket("order_status_changed", "admin:orders", socketData).catch(console.error);
         if (order.driverId) {
-            emitSocket("order_status_changed", `driver_${order.driverId}`, socketData).catch(console.error);
+            emitSocket("order_status_changed", `driver:${order.driverId}`, socketData).catch(console.error);
         }
         if (order.userId) {
-            emitSocket("order_status_changed", `customer_${order.userId}`, socketData).catch(console.error);
+            emitSocket("order_status_changed", `customer:${order.userId}`, socketData).catch(console.error);
         }
 
         return NextResponse.json({ success: true, status: "READY" });

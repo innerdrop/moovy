@@ -145,10 +145,10 @@ export async function POST(
 
         // Socket notifications
         const socketData = { orderId, status: "PREPARING", orderNumber: order.orderNumber };
-        emitSocket("order_status_changed", `merchant_${order.merchantId}`, socketData).catch(console.error);
-        emitSocket("order_status_changed", "admin_orders", socketData).catch(console.error);
+        emitSocket("order_status_changed", `merchant:${order.merchantId}`, socketData).catch(console.error);
+        emitSocket("order_status_changed", "admin:orders", socketData).catch(console.error);
         if (order.userId) {
-            emitSocket("order_status_changed", `customer_${order.userId}`, socketData).catch(console.error);
+            emitSocket("order_status_changed", `customer:${order.userId}`, socketData).catch(console.error);
         }
 
         // Still return 200 to merchant (order IS confirmed, assignment is pending)

@@ -210,7 +210,7 @@ export default function SupportView({ onBack, onChatRead }: SupportViewProps) {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto pb-24">
+                        <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
                             {chats.length === 0 ? (
                                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     <MessageCircle className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
@@ -297,7 +297,7 @@ export default function SupportView({ onBack, onChatRead }: SupportViewProps) {
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-3 bg-gray-100 dark:bg-[#0f1117]">
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100 dark:bg-[#0f1117]" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom) + 1rem)' }}>
                                     {selectedChat.messages.map((msg) => (
                                         <div key={msg.id} className={`flex ${msg.isFromAdmin ? 'justify-start' : 'justify-end'}`}>
                                             <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${msg.isFromAdmin ? 'bg-white dark:bg-[#1a1d27] shadow-sm' : 'bg-[#e60012] text-white'
