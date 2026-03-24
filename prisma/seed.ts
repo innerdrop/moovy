@@ -53,6 +53,7 @@ async function main() {
     await safeDelete(prisma.storeSettings);
     await safeDelete(prisma.moovyConfig);
     await safeDelete(prisma.pointsConfig);
+    await safeDelete(prisma.merchantLoyaltyConfig);
 
     console.log("✅ Base de datos limpia");
 
@@ -89,6 +90,82 @@ async function main() {
             maxCategoriesHome: 10,
         },
     });
+
+    // ==================== MERCHANT LOYALTY CONFIG ====================
+    console.log("\n🎯 Creando Configuración de Lealtad de Comercios...");
+    await Promise.all([
+        prisma.merchantLoyaltyConfig.upsert({
+            where: { tier: "BRONCE" },
+            update: {},
+            create: {
+                tier: "BRONCE",
+                minOrdersPerMonth: 0,
+                commissionRate: 8,
+                badgeText: "Estándar",
+                badgeColor: "gray",
+                benefitsJson: JSON.stringify(["Cobrá instantáneamente", "Acceso al dashboard"]),
+                displayOrder: 1,
+            },
+        }),
+        prisma.merchantLoyaltyConfig.upsert({
+            where: { tier: "PLATA" },
+            update: {},
+            create: {
+                tier: "PLATA",
+                minOrdersPerMonth: 31,
+                commissionRate: 7,
+                badgeText: "Popular",
+                badgeColor: "blue",
+                benefitsJson: JSON.stringify([
+                    "1% menos en comisiones",
+                    "Mejor posición en listados",
+                    "Soporte prioritario",
+                    "Acceso a analytics avanzado"
+                ]),
+                displayOrder: 2,
+            },
+        }),
+        prisma.merchantLoyaltyConfig.upsert({
+            where: { tier: "ORO" },
+            update: {},
+            create: {
+                tier: "ORO",
+                minOrdersPerMonth: 81,
+                commissionRate: 6,
+                badgeText: "Destacado",
+                badgeColor: "yellow",
+                benefitsJson: JSON.stringify([
+                    "2% menos en comisiones",
+                    "Banner en la home",
+                    "Mayor visibilidad en búsqueda",
+                    "Soporte VIP",
+                    "Reportes diarios"
+                ]),
+                displayOrder: 3,
+            },
+        }),
+        prisma.merchantLoyaltyConfig.upsert({
+            where: { tier: "DIAMANTE" },
+            update: {},
+            create: {
+                tier: "DIAMANTE",
+                minOrdersPerMonth: 151,
+                commissionRate: 5,
+                badgeText: "Elite",
+                badgeColor: "purple",
+                benefitsJson: JSON.stringify([
+                    "3% menos en comisiones",
+                    "Banner premium en home",
+                    "Prioridad máxima en búsqueda",
+                    "Dedicated account manager",
+                    "Reportes en tiempo real",
+                    "Acceso a features beta"
+                ]),
+                displayOrder: 4,
+            },
+        }),
+    ]);
+    console.log("   ✅ Configuración de Lealtad creada");
 
     // ==================== CATEGORIES ====================
     console.log("\n📂 Creando Categorías...");

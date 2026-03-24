@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-03-24
+Última actualización: 2026-03-24 (P2 batch: chat driver, GPS history, fidelización)
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -31,6 +31,8 @@ PackagePurchase → B2B paquetes de catálogo para comercios
 Payment/MpWebhookLog → registro de pagos MP con idempotency
 PendingAssignment/AssignmentLog → ciclo de asignación de repartidores
 StoreSettings/MoovyConfig/PointsConfig → config dinámica singleton
+DriverLocationHistory → GPS trace por orden (batch save, cleanup 30d, admin trace)
+MerchantLoyaltyConfig → tiers de fidelización (BRONCE/PLATA/ORO/DIAMANTE, comisión dinámica)
 
 ## Módulos
 ✅ Auth — NextAuth v5 JWT, multi-rol, rate limit login, password policy 8+ chars
@@ -55,7 +57,9 @@ StoreSettings/MoovyConfig/PointsConfig → config dinámica singleton
 ✅ Páginas institucionales — /quienes-somos, /terminos (14 cláusulas), /comisiones (transparencia + comparación)
 ✅ Analytics OPS — Dashboard con KPIs negocio/merchants/drivers/buyers, API por período, auto-refresh
 ✅ Soporte MOOVY — Chat live con operadores, auto-asignación, mensaje sistema, canned responses, portal operador
-✅ Chat de Pedido — Comprador↔Comercio, Comprador↔Vendedor, Comprador↔Repartidor, respuestas rápidas por rol
+✅ Chat de Pedido — Comprador↔Comercio, Comprador↔Vendedor, Comprador↔Repartidor, respuestas rápidas por rol + contexto delivery (distancia/ETA/proximidad) + read receipts
+✅ Historial GPS Driver — DriverLocationHistory batch save, auto-persist con orden activa, admin trace, cron cleanup 30d
+✅ Fidelización Merchants — 4 tiers (BRONCE 8% → DIAMANTE 5%), comisión dinámica, widget dashboard, badge público, admin panel, cron diario
 🔴 Tests — Vitest configurado pero 0 tests escritos
 🔴 MP producción — Solo credenciales TEST, falta activar en MP
 🔴 Split payments — SubOrder tiene mpTransferId pero split real no implementado
@@ -94,6 +98,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Delete account: doble confirmación (escribir ELIMINAR), POST /api/profile/delete (soft delete)
 - Google Places: Decisión 2026-03-21: AddressAutocomplete usa Places API (New) Data API como primario (AutocompleteSuggestion.fetchAutocompleteSuggestions) con fallback a Geocoding API. Session tokens para optimización de billing. Auto-detecta disponibilidad de la API. Ver sección "Dependencias externas"
 - Auditoría checkout 2026-03-24: Webhook MP ahora valida monto pagado vs total orden (tolerancia $1). Idempotencia usa eventId determinístico. Order creation valida approvalStatus, isOpen, horario, minOrderAmount, deliveryRadiusKm, maxUsesPerUser de cupón. Cupón se registra dentro de $transaction. Refund automático vía API REST cuando merchant rechaza pedido pagado. Portal merchant protegido por approvalStatus. Delivery fee se calcula server-side si falta (no se hardcodea).
+- Fidelización merchants 2026-03-24: Comisión dinámica por tier (BRONCE 8%, PLATA 7%, ORO 6%, DIAMANTE 5%) calculada por volumen de pedidos DELIVERED en últimos 30 días. getEffectiveCommission() reemplaza el 8% hardcodeado en order creation. Tiers configurables desde admin. Cron diario recalcula. Diferenciador vs PedidosYa (ellos cobran 25-30% fijo).
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig

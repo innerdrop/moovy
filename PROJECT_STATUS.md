@@ -1,5 +1,5 @@
 # Moovy — Tareas pendientes
-Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 6
+Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
 Última actualización: 2026-03-24
 
 ## P0 — Sin esto no se lanza
@@ -120,32 +120,47 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 6
 - [x] Sistema de cupones/descuentos — schema + API + checkout + admin — M ✅ 2026-03-21
   Coupon + CouponUsage models. Validate API, CouponInput en checkout, admin CRUD en /ops/cupones. % o fijo, límites, fechas.
 
-- [ ] Chat en tiempo real buyer-driver — Socket.IO + UI — M
-  Para coordinar entrega (portería, timbre, referencias).
+- [x] Chat en tiempo real buyer-driver — Socket.IO + UI — M ✅ 2026-03-24
+  Quick replies de delivery (12 opciones por fase), contexto de ubicación en header (distancia+ETA), read receipts, UI amber para driver, mobile-first 44px touch targets. Nuevo endpoint /api/orders/[id]/delivery-context. Lib: delivery-chat.ts (Haversine+ETA+proximidad).
 
-- [ ] Historial de ubicación del driver — `src/app/api/driver/location/route.ts` — S
-  Guardar trace GPS para disputas y optimización de rutas.
+- [x] Historial de ubicación del driver — `src/app/api/driver/location/` — S ✅ 2026-03-24
+  Schema DriverLocationHistory (lat/lng/accuracy/speed/heading/timestamp). Batch POST /api/driver/location/history (max 100 pts, rate limit 10/min). Auto-save en location/route.ts cuando driver tiene orden activa. Admin trace: GET /api/admin/orders/[id]/location-trace (distancia total + duración). Cron cleanup 30 días.
 
 - [x] Dashboard analytics avanzado — `src/app/ops/(protected)/analytics/page.tsx` — L ✅ 2026-03-23
   API /api/admin/analytics con métricas por período (hoy/semana/mes). KPIs: revenue, ticket promedio, cancelación, payment split. Rankings de comercios y drivers. Métricas de buyers activos y retención. Auto-refresh 60s.
 
-- [ ] Programa de fidelización para merchants — API + UI — M
-  Beneficios por volumen, destacado en home, badge premium.
+- [x] Programa de fidelización para merchants — API + UI + admin — M ✅ 2026-03-24
+  4 tiers: BRONCE (8%), PLATA (7%), ORO (6%), DIAMANTE (5%) — comisión dinámica por volumen de pedidos/mes. Schema: MerchantLoyaltyConfig + campos loyaltyTier/loyaltyOrderCount en Merchant. Servicio: merchant-loyalty.ts (cálculo tier, comisión efectiva, widget data). Cron diario /api/cron/update-merchant-tiers. Widget en dashboard merchant (tier + progreso + beneficios). Badge público MerchantBadge.tsx. Admin: /ops/lealtad-comercios (ver tiers, editar config, recalcular). Comisión en order creation ahora usa getEffectiveCommission() dinámico. Seed de 4 tiers.
 
 ## Backlog futuro (P3/P4)
+
+### Revenue directo (detectado en análisis 2026-03-24)
+- Surge pricing (recargo hora pico + clima extremo) — M — Est: +$1-2k/mes
+- Promoted listings (merchants pagan por posicionamiento) — S — Est: +$1-5k/mes
+- Suscripción delivery pass (envío gratis por $X/mes) — M — Est: +$15-50k/mes
+- Cross-selling en checkout (productos complementarios) — M — Est: +15-25% ticket
+- Recuperación de carritos abandonados (email/push 2h después) — M — Est: +5-10% conversión
+- Descuentos bulk B2B (hoteles, oficinas, hospitales) — M
+
+### Eficiencia operativa
+- Batched deliveries (agrupar pedidos misma ruta) — L — Est: -30% costo driver
+- Smart assignment (heading-aware, no solo distancia) — M — Est: -15min ETA
+- Auto-aprobación merchants (CUIT válido + docs OK) — S
+- Alertas predictivas de stock bajo para merchants — S
+
+### Plataforma
 - Pago con QR en punto de venta
 - Integración con sistemas POS de comercios
 - API pública para integraciones terceros
 - Multi-idioma (inglés para turistas)
 - IA para recomendaciones personalizadas
 - Programa de embajadores/influencers
-- Delivery programado con slots precisos
-- Gestión de inventario avanzada (alertas stock bajo)
-- Panel de analytics para merchants
+- Gestión de inventario avanzada
 - Sistema de disputas/mediación automatizado
 - Facturación electrónica AFIP
 - Revocación de sesiones JWT (token blacklist)
 - Play Integrity API para Android
+- Página de referidos con UI de compartir (WhatsApp/SMS/copy)
 
 ## Completadas
 - [x] Dashboard merchant con KPIs reales (6 KPI cards, API stats endpoint) — 2026-03-21
@@ -186,3 +201,6 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 6
 - [x] Dashboard analytics avanzado OPS (KPIs negocio/merchants/drivers/buyers, API por período) — 2026-03-23
 - [x] Auditoría pre-lanzamiento: bypass admin, puntos cancel, comisión rejected, deliveryFee negativo, passwords admin, rating hardcodeado, Facebook link, acento, cupón atómico, indexes DB — 2026-03-23
 - [x] Auditoría exhaustiva checkout: webhook MP (monto+idempotencia), merchant (approval+isOpen+schedule+minOrder+radius), cupón (maxUsesPerUser+tx), refund MP, portal merchant, delivery fee — 2026-03-24
+- [x] Chat buyer-driver mejorado (quick replies delivery, contexto ubicación, read receipts, delivery-context API) — 2026-03-24
+- [x] Historial ubicación driver (DriverLocationHistory, batch save, admin trace, cron cleanup 30d) — 2026-03-24
+- [x] Programa fidelización merchants (4 tiers BRONCE→DIAMANTE, comisión dinámica 5-8%, widget, badge, admin, cron) — 2026-03-24

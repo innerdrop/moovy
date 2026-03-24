@@ -78,10 +78,25 @@ export const SELLER_QUICK_RESPONSES: QuickResponse[] = [
 ];
 
 export const DRIVER_QUICK_RESPONSES: QuickResponse[] = [
-    { id: "d1", label: "En camino", message: "Estoy en camino a retirar tu pedido" },
-    { id: "d2", label: "En el comercio", message: "Ya llegué al comercio, esperando tu pedido" },
-    { id: "d3", label: "Pedido retirado", message: "Ya retiré tu pedido, voy en camino" },
-    { id: "d4", label: "Llegué", message: "Llegué a tu dirección" },
-    { id: "d5", label: "No encuentro", message: "No encuentro la dirección, ¿podés darme alguna referencia?" },
-    { id: "d6", label: "Demora en comercio", message: "El comercio está demorando un poco, te aviso cuando salga" },
+    // Pickup phase
+    { id: "d1", label: "En camino al comercio", message: "Estoy en camino a retirar tu pedido" },
+    { id: "d2", label: "Llegué al comercio", message: "Ya llegué al comercio, esperando tu pedido" },
+    { id: "d3", label: "Pedido retirado", message: "Ya retiré tu pedido, voy en camino a tu domicilio" },
+
+    // Delivery phase
+    { id: "d4", label: "Estoy cerca (5 min)", message: "Estoy a 5 minutos de tu dirección" },
+    { id: "d5", label: "Llegué a la puerta", message: "Llegué a tu dirección. Toco timbre en un momento" },
+
+    // Building/access issues
+    { id: "d6", label: "¿Piso/Apto?", message: "¿Cuál es tu número de piso/apartamento?" },
+    { id: "d7", label: "Portería cerrada", message: "La portería está cerrada, ¿cómo entro?" },
+    { id: "d8", label: "No veo portero", message: "No veo portero automático, ¿a qué nombre está el timbre?" },
+
+    // Driver status
+    { id: "d9", label: "No encuentro la dirección", message: "No encuentro la dirección, ¿podés darme alguna referencia?" },
+    { id: "d10", label: "Demora en comercio", message: "El comercio está demorando un poco, te aviso cuando salga" },
+    { id: "d11", label: "Problema de navegación", message: "Tuve un inconveniente en el camino, pero estoy en marcha de nuevo" },
+
+    // Buyer requests
+    { id: "d12", label: "Confirmando dirección", message: "¿Vos sos? (confirmando que encontré el lugar correcto)" },
 ];
