@@ -89,11 +89,21 @@ export async function POST(
             );
         }
 
-        // Update status to PREPARING
-        await prisma.order.update({
-            where: { id: orderId },
+        // BUG FIX #6: Use conditional update to prevent race condition
+        const updateResult = await prisma.order.updateMany({
+            where: {
+                id: orderId,
+                status: "PENDING"  // Only update if currently PENDING
+            },
             data: { status: "PREPARING" },
         });
+
+        if (updateResult.count === 0) {
+            return NextResponse.json(
+                { error: "Order already confirmed or cancelled" },
+                { status: 400 }
+            );
+        }
 
         // Notify buyer
         notifyBuyer(order.userId, "PREPARING", order.orderNumber, {
@@ -102,10 +112,36 @@ export async function POST(
             orderId: order.id,
         }).catch(console.error);
 
-        // Start driver assignment cycle
-        startAssignmentCycle(orderId).catch((err) =>
-            console.error("[Confirm] Error starting assignment:", err)
-        );
+        // BUG FIX #2: Don't silently swallow assignment errors
+        let assignmentError: Error | null = null;
+        try {
+            const assignmentResult = await startAssignmentCycle(orderId);
+            if (!assignmentResult.success) {
+                assignmentError = new Error(assignmentResult.error || "Unknown assignment error");
+                console.error("[Confirm] Assignment failed:", assignmentResult.error);
+
+                // Notify admin/ops about the failed assignment so they can investigate
+                // The retry-assignments cron job will pick this up and retry
+                emitSocket("assignment_failed", "admin:orders", {
+                    orderId,
+                    orderNumber: order.orderNumber,
+                    reason: assignmentResult.error,
+                    timestamp: new Date().toISOString(),
+                }).catch(console.error);
+            }
+        } catch (err) {
+            assignmentError = err instanceof Error ? err : new Error(String(err));
+            console.error("[Confirm] Error starting assignment cycle:", assignmentError);
+
+            // Notify admin/ops about the error so they can investigate
+            // The retry-assignments cron job will pick this up and retry
+            emitSocket("assignment_failed", "admin:orders", {
+                orderId,
+                orderNumber: order.orderNumber,
+                reason: assignmentError.message,
+                timestamp: new Date().toISOString(),
+            }).catch(console.error);
+        }
 
         // Socket notifications
         const socketData = { orderId, status: "PREPARING", orderNumber: order.orderNumber };
@@ -115,7 +151,12 @@ export async function POST(
             emitSocket("order_status_changed", `customer_${order.userId}`, socketData).catch(console.error);
         }
 
-        return NextResponse.json({ success: true, status: "PREPARING" });
+        // Still return 200 to merchant (order IS confirmed, assignment is pending)
+        return NextResponse.json({
+            success: true,
+            status: "PREPARING",
+            assignmentPending: assignmentError != null
+        });
     } catch (error) {
         console.error("[Merchant Confirm] Error:", error);
         return NextResponse.json({ error: "Error al confirmar el pedido" }, { status: 500 });

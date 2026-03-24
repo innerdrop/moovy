@@ -44,49 +44,65 @@ export async function POST(
             return NextResponse.json({ error: "El pedido debe estar entregado para calificar" }, { status: 400 });
         }
 
-        // Check if already rated
-        if (order.driverRating) {
-            return NextResponse.json({ error: "Ya calificaste este pedido" }, { status: 400 });
-        }
-
         // Check if there's a driver
         if (!order.driverId) {
             return NextResponse.json({ error: "Este pedido no tiene repartidor asignado" }, { status: 400 });
         }
 
-        // Update order with rating and mark as COMPLETED
-        await prisma.order.update({
-            where: { id: orderId },
-            data: {
-                driverRating: rating,
-                ratingComment: comment || null,
-                ratedAt: new Date(),
-                status: "COMPLETED"
+        // V-017 FIX: Atomic transaction to prevent race condition and division by zero
+        const result = await prisma.$transaction(async (tx) => {
+            // Re-check inside transaction to prevent TOCTOU race condition
+            const freshOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                select: { driverRating: true }
+            });
+
+            if (freshOrder?.driverRating) {
+                throw new Error("ALREADY_RATED");
             }
-        });
 
-        // Update driver's average rating
-        const driverOrders = await prisma.order.findMany({
-            where: {
-                driverId: order.driverId,
-                driverRating: { not: null }
-            },
-            select: { driverRating: true }
-        });
+            // Update order with rating and mark as COMPLETED
+            await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    driverRating: rating,
+                    ratingComment: comment || null,
+                    ratedAt: new Date(),
+                    status: "COMPLETED"
+                }
+            });
 
-        const avgRating = driverOrders.reduce((sum, o) => sum + (o.driverRating || 0), 0) / driverOrders.length;
+            // Update driver's average rating
+            const driverOrders = await tx.order.findMany({
+                where: {
+                    driverId: order.driverId,
+                    driverRating: { not: null }
+                },
+                select: { driverRating: true }
+            });
 
-        await prisma.driver.update({
-            where: { id: order.driverId },
-            data: { rating: avgRating }
-        });
+            // Fix division by zero: if no previous ratings, just use the new rating
+            const avgRating = driverOrders.length > 0
+                ? driverOrders.reduce((sum, o) => sum + (o.driverRating || 0), 0) / driverOrders.length
+                : rating;
+
+            await tx.driver.update({
+                where: { id: order.driverId! },
+                data: { rating: avgRating }
+            });
+
+            return avgRating;
+        }, { isolationLevel: "Serializable" });
 
         return NextResponse.json({
             success: true,
             message: "¡Gracias por tu calificación!",
-            newDriverRating: avgRating.toFixed(1)
+            newDriverRating: result.toFixed(1)
         });
     } catch (error) {
+        if (error instanceof Error && error.message === "ALREADY_RATED") {
+            return NextResponse.json({ error: "Ya calificaste este pedido" }, { status: 400 });
+        }
         console.error("Error rating order:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }

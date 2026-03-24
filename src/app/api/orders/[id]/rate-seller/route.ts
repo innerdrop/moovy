@@ -89,7 +89,10 @@ export async function POST(
                 select: { sellerRating: true }
             });
 
-            const avgRating = sellerOrders.reduce((sum, o) => sum + (o.sellerRating || 0), 0) / sellerOrders.length;
+            // Fix division by zero: if no previous ratings, just use the new rating
+            const avgRating = sellerOrders.length > 0
+                ? sellerOrders.reduce((sum, o) => sum + (o.sellerRating || 0), 0) / sellerOrders.length
+                : rating;
 
             await tx.sellerProfile.update({
                 where: { id: sellerId },

@@ -77,7 +77,10 @@ export async function POST(
                 select: { merchantRating: true }
             });
 
-            const avgRating = merchantOrders.reduce((sum, o) => sum + (o.merchantRating || 0), 0) / merchantOrders.length;
+            // Fix division by zero: if no previous ratings, just use the new rating
+            const avgRating = merchantOrders.length > 0
+                ? merchantOrders.reduce((sum, o) => sum + (o.merchantRating || 0), 0) / merchantOrders.length
+                : rating;
 
             await tx.merchant.update({
                 where: { id: order.merchantId! },

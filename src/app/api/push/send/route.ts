@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import webpush from "web-push";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { socketLogger } from "@/lib/logger";
+
+const PushSendSchema = z.object({
+    userId: z.string().min(1, "userId requerido"),
+    title: z.string().min(1, "title requerido"),
+    body: z.string().min(1, "body requerido"),
+    data: z.record(z.string(), z.any()).optional(),
+});
 
 // Configurar VAPID keys (solo una vez al arrancar)
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
@@ -24,20 +33,23 @@ export async function POST(req: NextRequest) {
 
     if (!internalToken || authHeader !== `Bearer ${internalToken}`) {
       return NextResponse.json(
-        { error: "No autorizado" },
+        { success: false, error: "No autorizado" },
         { status: 401 }
       );
     }
 
     const body = await req.json();
-    const { userId, title, body: notificationBody, data } = body;
+    const validation = PushSendSchema.safeParse(body);
 
-    if (!userId || !title || !notificationBody) {
+    if (!validation.success) {
+      const message = validation.error.issues[0]?.message || "Datos inválidos";
       return NextResponse.json(
-        { error: "Faltan campos requeridos: userId, title, body" },
+        { success: false, error: message },
         { status: 400 }
       );
     }
+
+    const { userId, title, body: notificationBody, data } = validation.data;
 
     // Obtener todas las suscripciones del usuario
     const subscriptions = await prisma.pushSubscription.findMany({
@@ -46,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     if (subscriptions.length === 0) {
       return NextResponse.json(
-        { message: "Usuario no tiene suscripciones activas" },
+        { success: true, sent: 0, failed: 0, total: 0, message: "Usuario no tiene suscripciones activas" },
         { status: 200 }
       );
     }
@@ -79,7 +91,10 @@ export async function POST(req: NextRequest) {
             await prisma.pushSubscription.delete({
               where: { id: sub.id },
             });
-            console.log(`[PUSH] Deleted expired subscription: ${sub.endpoint}`);
+            socketLogger.info(
+              { endpoint: sub.endpoint },
+              "Deleted expired push subscription"
+            );
           }
           return { success: false, endpoint: sub.endpoint, error: error.message };
         }
@@ -89,6 +104,11 @@ export async function POST(req: NextRequest) {
     const successful = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.filter((r) => r.status === "rejected").length;
 
+    socketLogger.info(
+      { userId, sent: successful, failed, total: subscriptions.length },
+      "Push notifications sent"
+    );
+
     return NextResponse.json({
       success: true,
       sent: successful,
@@ -96,9 +116,12 @@ export async function POST(req: NextRequest) {
       total: subscriptions.length,
     });
   } catch (error) {
-    console.error("[PUSH SEND ERROR]", error);
+    socketLogger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Error sending push notifications"
+    );
     return NextResponse.json(
-      { error: "Error al enviar notificación" },
+      { success: false, error: "Error al enviar notificación" },
       { status: 500 }
     );
   }
