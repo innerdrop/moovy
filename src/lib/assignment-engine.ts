@@ -421,7 +421,7 @@ export async function startAssignmentCycle(
         const shipmentType = getShipmentType(orderCategory.shipmentTypeCode);
 
         // Socket event to driver
-        emitSocket("new_delivery_offer", `driver:${driver.id}`, {
+        emitSocket("orden_pendiente", `driver:${driver.id}`, {
             orderId,
             orderNumber: order.orderNumber,
             merchantName: order.merchant.name || "Comercio",
@@ -653,7 +653,7 @@ export async function processExpiredAssignments(): Promise<number> {
             assignment.orderId
         ).catch((err) => deliveryLogger.error({ error: err }, "Push cascade error"));
 
-        emitSocket("new_delivery_offer", `driver:${nextDriver.id}`, {
+        emitSocket("orden_pendiente", `driver:${nextDriver.id}`, {
             orderId: assignment.orderId,
             orderNumber: assignment.order.orderNumber,
             merchantName: assignment.order.merchant.name || "Comercio",
@@ -943,7 +943,7 @@ export async function driverRejectOrder(
             orderId
         ).catch((err) => deliveryLogger.error({ error: err }, "Push reject-cascade error"));
 
-        emitSocket("new_delivery_offer", `driver:${nextDriver.id}`, {
+        emitSocket("orden_pendiente", `driver:${nextDriver.id}`, {
             orderId,
             orderNumber: pending.order.orderNumber,
             merchantName: pending.order.merchant.name || "Comercio",

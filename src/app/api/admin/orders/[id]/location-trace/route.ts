@@ -10,8 +10,9 @@ const logger = createRequestLogger("location-trace");
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user?.id) {
@@ -26,7 +27,7 @@ export async function GET(
             );
         }
 
-        const orderId = params.id;
+        const orderId = id;
 
         // Fetch order details
         const order = await prisma.order.findUnique({
@@ -160,7 +161,7 @@ export async function GET(
         });
     } catch (error) {
         logger.error(
-            { error, orderId: params.id },
+            { error, orderId: id },
             "Error retrieving location trace"
         );
         return NextResponse.json(
