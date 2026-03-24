@@ -115,7 +115,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 -mt-14 max-w-4xl mx-auto w-full space-y-4 pb-24">
+            <div className="flex-1 overflow-y-auto px-4 -mt-14 max-w-4xl mx-auto w-full space-y-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
                 {/* Profile Card */}
                 <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-6 shadow-sm text-center">
                     {editMode ? (

@@ -100,10 +100,10 @@ export async function POST(
 
         // Socket notifications
         const socketData = { orderId, orderNumber: order.orderNumber };
-        emitSocket("order_cancelled", `merchant_${order.merchantId}`, socketData).catch(console.error);
-        emitSocket("order_cancelled", "admin_orders", socketData).catch(console.error);
+        emitSocket("order_cancelled", `merchant:${order.merchantId}`, socketData).catch(console.error);
+        emitSocket("order_cancelled", "admin:orders", socketData).catch(console.error);
         if (order.userId) {
-            emitSocket("order_cancelled", `customer_${order.userId}`, socketData).catch(console.error);
+            emitSocket("order_cancelled", `customer:${order.userId}`, socketData).catch(console.error);
         }
 
         // AUDIT FIX 2.3: Refund MercadoPago payment when merchant rejects

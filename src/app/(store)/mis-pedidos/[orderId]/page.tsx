@@ -182,7 +182,7 @@ export default function OrderDetailPage() {
     const canCancel = order && ["PENDING", "CONFIRMED"].includes(order.status);
     const isDelivered = order?.status === "DELIVERED";
     const isCancelled = order?.status === "CANCELLED";
-    const showMap = isActive && ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status || "");
+    const showMap = isActive && ["READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status || "");
 
     const currentStepIdx = useMemo(() => {
         if (!order) return -1;

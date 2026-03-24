@@ -92,7 +92,7 @@ function useInterpolatedPosition(target: { lat: number; lng: number } | null) {
 }
 
 
-function OrderTrackingMiniMap({
+function OrderTrackingMiniMapInner({
     orderId,
     orderStatus,
     merchantLat,
@@ -442,6 +442,44 @@ function OrderTrackingMiniMap({
             )}
         </div>
     );
+}
+
+// ── WRAPPER: Ensure Google Maps API is loaded before rendering ──
+function OrderTrackingMiniMap(props: OrderTrackingMiniMapProps) {
+    const { isLoaded, loadError } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+        libraries,
+        language: 'es',
+        region: 'AR'
+    });
+
+    if (loadError) {
+        return (
+            <div style={{ height: props.height || '180px' }} className="rounded-xl flex items-center justify-center bg-red-50 border border-red-100">
+                <div className="text-center p-4">
+                    <p className="text-sm font-bold text-red-600 mb-2">Se ha producido un error.</p>
+                    <p className="text-xs text-red-500 mb-3">No se pudo cargar Google Maps.</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="text-xs text-red-600 underline hover:text-red-700 font-semibold"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isLoaded) {
+        return (
+            <div style={{ height: props.height || '180px' }} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm animate-pulse bg-gray-100 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
+            </div>
+        );
+    }
+
+    return <OrderTrackingMiniMapInner {...props} />;
 }
 
 export default React.memo(OrderTrackingMiniMap);

@@ -107,7 +107,7 @@ export default function SettingsView({ onBack }: SettingsViewProps) {
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 py-6 space-y-6 pb-24">
+            <div className="max-w-md mx-auto px-4 py-6 space-y-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
 
                 {/* ── APARIENCIA ── */}
                 <section>

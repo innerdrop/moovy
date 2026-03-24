@@ -91,7 +91,7 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-6 pb-24 max-w-4xl mx-auto w-full space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 py-6 max-w-4xl mx-auto w-full space-y-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin text-[#e60012]" />
