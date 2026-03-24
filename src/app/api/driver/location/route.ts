@@ -91,6 +91,42 @@ export async function PUT(request: Request) {
                 WHERE id = ${driver.id}
             `;
 
+            // Save to location history if driver has an active order
+            // Don't save idle locations to reduce storage (only save when delivering)
+            try {
+                const activeOrder = await prisma.order.findFirst({
+                    where: {
+                        driverId: driver.id,
+                        status: { notIn: ["CANCELLED", "DELIVERED"] },
+                        deletedAt: null,
+                    },
+                    select: { id: true, deliveryStatus: true },
+                    orderBy: { createdAt: "desc" },
+                });
+
+                if (activeOrder) {
+                    // Save location point with associated order
+                    await prisma.driverLocationHistory.create({
+                        data: {
+                            driverId: driver.id,
+                            orderId: activeOrder.id,
+                            latitude,
+                            longitude,
+                            accuracy: null,
+                            speed: null,
+                            heading: null,
+                            timestamp: new Date(),
+                        },
+                    });
+                }
+            } catch (historyError) {
+                // Log error but don't fail the location update
+                console.error(
+                    "[LocationHistory] Failed to save history:",
+                    historyError
+                );
+            }
+
             return NextResponse.json({
                 updated: true,
                 message: "Ubicación actualizada correctamente con PostGIS",

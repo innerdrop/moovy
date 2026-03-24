@@ -198,7 +198,7 @@ export async function POST(request: Request) {
             );
         }
 
-        // Calculate commission (read default from MoovyConfig)
+        // Calculate commission using loyalty program (dynamic rates)
         let moovyCommission = 0;
         let merchantPayout = 0;
         const defaultMerchantCommission = parseFloat(await getConfigValue("default_merchant_commission_pct", "8"));
@@ -215,6 +215,7 @@ export async function POST(request: Request) {
                     businessName: true,
                     scheduleEnabled: true,
                     scheduleJson: true,
+                    loyaltyTier: true,
                 }
             });
 
@@ -299,9 +300,17 @@ export async function POST(request: Request) {
                 }
             }
 
-            const rate = merchant.commissionRate || defaultMerchantCommission;
+            // MERCHANT LOYALTY: Get effective commission from loyalty tier
+            const { getEffectiveCommission } = await import("@/lib/merchant-loyalty");
+            const loyaltyRate = await getEffectiveCommission(merchantId);
+            const rate = loyaltyRate || merchant.commissionRate || defaultMerchantCommission;
             moovyCommission = subtotal * (rate / 100);
             merchantPayout = subtotal - moovyCommission;
+
+            orderLogger.info(
+                { merchantId, tier: merchant.loyaltyTier, rate, moovyCommission, merchantPayout },
+                "Commission calculated with loyalty tier"
+            );
         }
 
         // AUDIT FIX 1.4+1.5: Pre-validate coupon with maxUsesPerUser check

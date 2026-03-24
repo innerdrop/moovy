@@ -33,6 +33,7 @@ import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
 import RateSellerModal from "@/components/orders/RateSellerModal";
 import OrderChatPanel from "@/components/orders/OrderChatPanel";
+import { buildDeliveryContext } from "@/lib/delivery-chat";
 import dynamic from "next/dynamic";
 
 const OrderTrackingMiniMap = dynamic(() => import("@/components/orders/OrderTrackingMiniMap"), {
@@ -129,6 +130,7 @@ export default function OrderDetailPage() {
     const [showSellerRating, setShowSellerRating] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [driverLocation, setDriverLocation] = useState<any>(null);
 
     // Fetch order
     useEffect(() => {
@@ -158,6 +160,24 @@ export default function OrderDetailPage() {
         }, 10000);
         return () => clearInterval(id);
     }, [isActive, orderId]);
+
+    // Fetch delivery context for active driver deliveries
+    useEffect(() => {
+        if (!order?.driver || !isActive || !orderId) return;
+        
+        const fetchContext = async () => {
+            try {
+                const res = await fetch(`/api/orders/${orderId}/delivery-context`);
+                if (res.ok) {
+                    setDriverLocation(await res.json());
+                }
+            } catch { /* silent */ }
+        };
+        
+        fetchContext();
+        const id = setInterval(fetchContext, 15000); // Update every 15s
+        return () => clearInterval(id);
+    }, [order?.driver, isActive, orderId]);
 
     const canCancel = order && ["PENDING", "CONFIRMED"].includes(order.status);
     const isDelivered = order?.status === "DELIVERED";
@@ -463,6 +483,7 @@ export default function OrderDetailPage() {
                         counterpartName={order.driver.user.name}
                         userRole="buyer"
                         compact
+                        driverLocation={driverLocation}
                     />
                 )}
 

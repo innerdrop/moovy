@@ -296,6 +296,7 @@ model Order {
   scheduledConfirmedAt DateTime?
   couponCode          String?
   orderChats          OrderChat[]
+  locationHistory     DriverLocationHistory[]
 
   @@index([status])
   @@index([paymentStatus])
@@ -422,6 +423,10 @@ model Merchant {
   approvedAt       DateTime?
   rejectionReason  String?
   ubicacion        Unsupported("geography")?
+  // Merchant Loyalty Program
+  loyaltyTier      String                    @default("BRONCE") // BRONCE | PLATA | ORO | DIAMANTE
+  loyaltyOrderCount Int                      @default(0) // Orders in current 30-day period
+  loyaltyUpdatedAt DateTime                  @default(now()) // Last time tier was recalculated
   owner            User                      @relation(fields: [ownerId], references: [id])
   acquiredProducts MerchantAcquiredProduct[]
   categories       MerchantCategory[]
@@ -434,6 +439,22 @@ model Merchant {
   @@index([isActive])
   @@index([ownerId])
   @@index([approvalStatus])
+  @@index([loyaltyTier])
+}
+
+model MerchantLoyaltyConfig {
+  id                String   @id @default(cuid())
+  tier              String   @unique // BRONCE | PLATA | ORO | DIAMANTE
+  minOrdersPerMonth Int // Minimum orders to qualify
+  commissionRate    Float // Commission % (e.g., 8, 7, 6, 5)
+  badgeText         String // "Destacado", "Popular", "Elite"
+  badgeColor        String   @default("gray") // bg color: gray, blue, yellow, purple
+  benefitsJson      String   @default("{}") // JSON array of benefit descriptions
+  displayOrder      Int      @default(0) // For UI ordering
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tier])
 }
 
 model Driver {
@@ -467,13 +488,34 @@ model Driver {
   rejectionReason    String?
   ubicacion          Unsupported("geography")?
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders             Order[]
-  subOrders          SubOrder[]
-  assignmentLogs     AssignmentLog[]
+  orders              Order[]
+  subOrders           SubOrder[]
+  assignmentLogs      AssignmentLog[]
+  locationHistory     DriverLocationHistory[]
 
   @@index([isOnline])
   @@index([isActive])
   @@index([approvalStatus])
+}
+
+model DriverLocationHistory {
+  id        String   @id @default(cuid())
+  driverId  String
+  orderId   String?  // nullable — track even when idle
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  speed     Float?
+  heading   Float?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([driverId, createdAt])
+  @@index([orderId, createdAt])
+  @@index([timestamp])
 }
 
 model SellerProfile {
