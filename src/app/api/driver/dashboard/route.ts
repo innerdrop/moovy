@@ -109,9 +109,9 @@ export async function GET(request: Request) {
         const DEFAULT_LNG_ACTIVE = -68.3030;
 
         const formattedActiveOrders = activeOrders.map(order => {
-            // Determine relevant address based on status
+            // Determine relevant address based on delivery status
             // If picked up, we need to go to customer. Before that, we are going to merchant.
-            const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(order.status);
+            const isPickedUp = ["PICKED_UP", "IN_DELIVERY"].includes(order.status) || order.deliveryStatus === "PICKED_UP";
 
             let displayAddress = order.merchant?.address || "Comercio";
             let displayLabel = "Retirar en";
@@ -134,6 +134,7 @@ export async function GET(request: Request) {
                 direccionCliente: order.address ? `${order.address.street} ${order.address.number}` : null,
                 labelDireccion: displayLabel,
                 estado: order.status.toLowerCase(),
+                deliveryStatus: order.deliveryStatus || null, // Actual delivery tracking field
                 hora: order.updatedAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
                 // Navigation coordinates (for Google Maps button)
                 navLat,

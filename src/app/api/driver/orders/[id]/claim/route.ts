@@ -55,18 +55,18 @@ export async function POST(
             return NextResponse.json({ error: "Este pedido ya fue tomado por otro conductor" }, { status: 400 });
         }
 
-        // Claim the order
+        // Claim the order — set both status and deliveryStatus to DRIVER_ASSIGNED
         await prisma.order.update({
             where: { id: orderId },
             data: {
                 driverId: driver.id,
-                status: "IN_DELIVERY",
+                status: "DRIVER_ASSIGNED",
                 deliveryStatus: "DRIVER_ASSIGNED",
             },
         });
 
-        // Notify buyer that order is in delivery
-        notifyBuyer(order.userId, "IN_DELIVERY", order.orderNumber, {
+        // Notify buyer that driver was assigned
+        notifyBuyer(order.userId, "DRIVER_ASSIGNED", order.orderNumber, {
             total: order.total,
             orderId: order.id,
         }).catch(err => console.error("[Push] Buyer notification error:", err));

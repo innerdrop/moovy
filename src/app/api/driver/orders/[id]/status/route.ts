@@ -6,6 +6,9 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { socketEmitToRooms } from "@/lib/socket-emit";
+import logger from "@/lib/logger";
+
+const statusLogger = logger.child({ context: "driver-delivery-status" });
 
 export async function PATCH(
     request: Request,
@@ -54,10 +57,28 @@ export async function PATCH(
             DELIVERED: [],
         };
 
+        // Use deliveryStatus field; fallback to DRIVER_ASSIGNED if not set
         const currentDeliveryStatus = order.deliveryStatus || "DRIVER_ASSIGNED";
         const allowedNextStates = validTransitions[currentDeliveryStatus] || [];
 
+        statusLogger.info({
+            orderId,
+            orderStatus: order.status,
+            currentDeliveryStatus,
+            rawDeliveryStatus: order.deliveryStatus,
+            requestedNext: deliveryStatus,
+            allowed: allowedNextStates,
+        }, "Delivery status transition attempt");
+
         if (!allowedNextStates.includes(deliveryStatus)) {
+            statusLogger.warn({
+                orderId,
+                orderStatus: order.status,
+                currentDeliveryStatus,
+                rawDeliveryStatus: order.deliveryStatus,
+                requestedNext: deliveryStatus,
+                allowed: allowedNextStates,
+            }, "Invalid delivery status transition");
             return NextResponse.json(
                 {
                     error: `Transición inválida: ${currentDeliveryStatus} → ${deliveryStatus}`,
@@ -68,11 +89,15 @@ export async function PATCH(
             );
         }
 
-        // Update status
+        // Update delivery status AND sync order.status to match
         const updateData: any = { deliveryStatus };
 
-        // If marked as delivered, update order status and timestamp
-        if (deliveryStatus === "DELIVERED") {
+        // Keep order.status in sync with deliveryStatus for consistency
+        if (deliveryStatus === "DRIVER_ARRIVED") {
+            updateData.status = "DRIVER_ARRIVED";
+        } else if (deliveryStatus === "PICKED_UP") {
+            updateData.status = "PICKED_UP";
+        } else if (deliveryStatus === "DELIVERED") {
             updateData.status = "DELIVERED";
             updateData.deliveredAt = new Date();
 

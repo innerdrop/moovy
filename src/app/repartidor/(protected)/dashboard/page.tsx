@@ -87,6 +87,7 @@ interface Order {
     direccionCliente: string | null;
     labelDireccion: string;
     estado: string;
+    deliveryStatus: string | null;
     hora: string;
     navLat: number;
     navLng: number;
@@ -632,34 +633,35 @@ export default function RiderDashboard() {
                                             {/* SwipeToConfirm */}
                                             <SwipeToConfirm
                                                 label={
-                                                    pedidoActivo.estado === "ready"
+                                                    (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
                                                         ? "Deslizá → Llegué"
-                                                        : pedidoActivo.estado === "driver_assigned"
-                                                        ? "Deslizá → Llegué"
-                                                        : pedidoActivo.estado === "driver_arrived"
+                                                        : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
                                                         ? "Deslizá → Recogí"
+                                                        : pedidoActivo.deliveryStatus === "PICKED_UP"
+                                                        ? "Deslizá → Entregado"
                                                         : "Deslizá → Entregado"
                                                 }
                                                 bgColor={
-                                                    pedidoActivo.estado === "ready" || pedidoActivo.estado === "driver_assigned"
+                                                    (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
                                                         ? "bg-amber-500"
-                                                        : pedidoActivo.estado === "driver_arrived"
+                                                        : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
                                                         ? "bg-blue-600"
                                                         : "bg-[var(--rider-online)]"
                                                 }
                                                 shadowColor={
-                                                    pedidoActivo.estado === "ready" || pedidoActivo.estado === "driver_assigned"
+                                                    (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
                                                         ? "shadow-amber-500/30"
-                                                        : pedidoActivo.estado === "driver_arrived"
+                                                        : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
                                                         ? "shadow-blue-500/30"
                                                         : "shadow-green-500/30"
                                                 }
                                                 disabled={advancingStatus}
                                                 onConfirm={async () => {
+                                                    // Use deliveryStatus (delivery tracking field) for transitions, NOT order.status
+                                                    const ds = pedidoActivo.deliveryStatus || "DRIVER_ASSIGNED";
                                                     const nextStatus =
-                                                        pedidoActivo.estado === "ready" ? "DRIVER_ARRIVED"
-                                                        : pedidoActivo.estado === "driver_assigned" ? "DRIVER_ARRIVED"
-                                                        : pedidoActivo.estado === "driver_arrived" ? "PICKED_UP"
+                                                        ds === "DRIVER_ASSIGNED" ? "DRIVER_ARRIVED"
+                                                        : ds === "DRIVER_ARRIVED" ? "PICKED_UP"
                                                         : "DELIVERED";
                                                     const successMsg =
                                                         nextStatus === "DRIVER_ARRIVED" ? "Llegaste al comercio"

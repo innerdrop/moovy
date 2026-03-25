@@ -21,7 +21,10 @@ import {
     MessageSquare,
     AlertTriangle,
     RotateCcw,
-    Repeat
+    Repeat,
+    Ban,
+    ShieldAlert,
+    Lock
 } from "lucide-react";
 
 interface Order {
@@ -95,6 +98,13 @@ export default function AdminOrderDetailPage() {
     const [drivers, setDrivers] = useState<Array<{ id: string; user: { name: string }; vehicleType: string; isOnline: boolean }>>([]);
     const [selectedDriver, setSelectedDriver] = useState("");
     const [reassigning, setReassigning] = useState(false);
+
+    // Admin cancel state
+    const [showCancel, setShowCancel] = useState(false);
+    const [cancelPassword, setCancelPassword] = useState("");
+    const [cancelReason, setCancelReason] = useState("");
+    const [cancelling, setCancelling] = useState(false);
+    const [cancelError, setCancelError] = useState("");
 
     useEffect(() => {
         async function fetchOrder() {
@@ -238,6 +248,45 @@ export default function AdminOrderDetailPage() {
             console.error("Error:", error);
         } finally {
             setReassigning(false);
+        }
+    };
+
+    const handleAdminCancel = async () => {
+        if (!cancelPassword) {
+            setCancelError("Ingresá tu contraseña");
+            return;
+        }
+        setCancelling(true);
+        setCancelError("");
+        try {
+            const res = await fetch(`/api/admin/orders/${orderId}/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    password: cancelPassword,
+                    reason: cancelReason || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                // Refresh order data
+                const orderRes = await fetch(`/api/orders/${orderId}`);
+                if (orderRes.ok) {
+                    const updated = await orderRes.json();
+                    setOrder(updated);
+                    setAdminNotes(updated.adminNotes || "");
+                }
+                setShowCancel(false);
+                setCancelPassword("");
+                setCancelReason("");
+            } else {
+                setCancelError(data.error || "Error al cancelar");
+            }
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            setCancelError("Error de conexión");
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -549,6 +598,26 @@ export default function AdminOrderDetailPage() {
                             )}
                         </div>
                     </div>
+
+                    {/* Admin Cancel Button */}
+                    {order.status !== "CANCELLED" && order.status !== "REJECTED" && order.status !== "DELIVERED" && (
+                        <div className="bg-white rounded-xl p-6 shadow-sm border border-red-100">
+                            <h2 className="font-bold text-red-700 mb-3 flex items-center gap-2">
+                                <ShieldAlert className="w-5 h-5" />
+                                Zona de Peligro
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-3">
+                                Cancelar el pedido desde cualquier estado. Se liberará el repartidor, se restaurará el stock y se devolverán los puntos usados.
+                            </p>
+                            <button
+                                onClick={() => { setShowCancel(true); setCancelError(""); setCancelPassword(""); setCancelReason(""); }}
+                                className="w-full py-2.5 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
+                            >
+                                <Ban className="w-4 h-4" />
+                                Cancelar Pedido
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -584,6 +653,81 @@ export default function AdminOrderDetailPage() {
                             <button onClick={() => setShowReassign(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancelar</button>
                             <button onClick={handleReassign} disabled={!selectedDriver || reassigning} className="flex-1 py-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition disabled:opacity-50 flex items-center justify-center gap-2">
                                 {reassigning ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Cancel Modal */}
+            {showCancel && order && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <h3 className="font-bold text-lg text-red-700 mb-4 flex items-center gap-2">
+                            <Ban className="w-5 h-5" />
+                            Cancelar Pedido #{order.orderNumber}
+                        </h3>
+
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <p className="text-sm text-red-800 font-medium">Esta acción:</p>
+                            <ul className="text-sm text-red-700 mt-1 space-y-1">
+                                <li>• Cancela el pedido desde estado <strong>{statusOptions.find(s => s.value === order.status)?.label || order.status}</strong></li>
+                                {order.driverId && <li>• Libera al repartidor asignado</li>}
+                                <li>• Restaura el stock de los productos</li>
+                                <li>• Notifica al comprador{order.merchant ? " y al comercio" : ""}</li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Motivo de cancelación (opcional)
+                                </label>
+                                <textarea
+                                    value={cancelReason}
+                                    onChange={(e) => setCancelReason(e.target.value)}
+                                    className="input w-full resize-none"
+                                    rows={2}
+                                    placeholder="Ej: Producto agotado, solicitud del cliente..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                                    <Lock className="w-3.5 h-3.5" />
+                                    Contraseña de administrador
+                                </label>
+                                <input
+                                    type="password"
+                                    value={cancelPassword}
+                                    onChange={(e) => { setCancelPassword(e.target.value); setCancelError(""); }}
+                                    className="input w-full"
+                                    placeholder="Ingresá tu contraseña para confirmar"
+                                    autoComplete="off"
+                                />
+                            </div>
+                        </div>
+
+                        {cancelError && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-700 font-medium">
+                                {cancelError}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCancel(false)}
+                                className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium"
+                            >
+                                Volver
+                            </button>
+                            <button
+                                onClick={handleAdminCancel}
+                                disabled={cancelling || !cancelPassword}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                            >
+                                {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                                Cancelar Pedido
                             </button>
                         </div>
                     </div>
