@@ -399,6 +399,8 @@ export function calculateDeliveryFeeWithConfig(
 ): {
   fee: number;
   breakdown: { concept: string; amount: number }[];
+  riderEarnings: number;
+  moovyEarnings: number;
 } {
   const zoneKey = zone || "ZONA_A";
   const zoneMult = config.zoneMultipliers[zoneKey] ?? 1.0;

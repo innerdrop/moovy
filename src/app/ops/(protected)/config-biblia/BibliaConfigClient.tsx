@@ -712,10 +712,10 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <NumInput label="Timeout confirmación merchant" name="merchantConfirmTimeoutSec" value={config.timeouts.merchantConfirmTimeoutSec}
-            onChange={(n, v) => updateField("timeouts", n, v)} suffix="seg"
+            onChange={(n, v) => updateField("timeouts", n, v)} unit="seg"
             info="Segundos que tiene el merchant para confirmar un pedido antes de que se cancele automáticamente." />
           <NumInput label="Timeout respuesta driver" name="driverResponseTimeoutSec" value={config.timeouts.driverResponseTimeoutSec}
-            onChange={(n, v) => updateField("timeouts", n, v)} suffix="seg"
+            onChange={(n, v) => updateField("timeouts", n, v)} unit="seg"
             info="Segundos que tiene el driver para aceptar o rechazar un pedido antes de pasar al siguiente." />
         </div>
       </Section>
