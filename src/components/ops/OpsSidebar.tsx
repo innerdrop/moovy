@@ -31,6 +31,7 @@ import {
     Paintbrush,
     Upload,
     Mail,
+    BookOpen,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -76,6 +77,7 @@ const navSections: NavSection[] = [
     {
         title: "Finanzas",
         items: [
+            { href: "/ops/config-biblia", icon: BookOpen, label: "Biblia Financiera" },
             { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
             { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
             { href: "/ops/ventas-paquetes", icon: Package, label: "Ventas B2B" },

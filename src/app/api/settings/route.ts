@@ -86,6 +86,31 @@ export async function PUT(request: Request) {
         // Hero slider interval (value comes from ConfigForm already in milliseconds)
         if (data.heroSliderInterval) updateData.heroSliderInterval = parseInt(data.heroSliderInterval);
 
+        // === OPS CONFIG: Biblia Financiera fields ===
+        // Zone & Climate
+        if (data.zoneMultipliersJson !== undefined) updateData.zoneMultipliersJson = data.zoneMultipliersJson;
+        if (data.climateMultipliersJson !== undefined) updateData.climateMultipliersJson = data.climateMultipliersJson;
+        if (data.activeClimateCondition !== undefined) updateData.activeClimateCondition = data.activeClimateCondition;
+        if (data.operationalCostPercent !== undefined) updateData.operationalCostPercent = parseFloat(data.operationalCostPercent);
+        // Commission defaults
+        if (data.defaultMerchantCommission !== undefined) updateData.defaultMerchantCommission = parseFloat(data.defaultMerchantCommission);
+        if (data.defaultSellerCommission !== undefined) updateData.defaultSellerCommission = parseFloat(data.defaultSellerCommission);
+        // Cash Protocol
+        if (data.cashMpOnlyDeliveries !== undefined) updateData.cashMpOnlyDeliveries = parseInt(data.cashMpOnlyDeliveries);
+        if (data.cashLimitL1 !== undefined) updateData.cashLimitL1 = parseFloat(data.cashLimitL1);
+        if (data.cashLimitL2 !== undefined) updateData.cashLimitL2 = parseFloat(data.cashLimitL2);
+        if (data.cashLimitL3 !== undefined) updateData.cashLimitL3 = parseFloat(data.cashLimitL3);
+        // Scheduled Delivery
+        if (data.maxOrdersPerSlot !== undefined) updateData.maxOrdersPerSlot = parseInt(data.maxOrdersPerSlot);
+        if (data.slotDurationMinutes !== undefined) updateData.slotDurationMinutes = parseInt(data.slotDurationMinutes);
+        if (data.minAnticipationHours !== undefined) updateData.minAnticipationHours = parseFloat(data.minAnticipationHours);
+        if (data.maxAnticipationHours !== undefined) updateData.maxAnticipationHours = parseFloat(data.maxAnticipationHours);
+        if (data.operatingHoursStart !== undefined) updateData.operatingHoursStart = data.operatingHoursStart;
+        if (data.operatingHoursEnd !== undefined) updateData.operatingHoursEnd = data.operatingHoursEnd;
+        // Timeouts
+        if (data.merchantConfirmTimeoutSec !== undefined) updateData.merchantConfirmTimeoutSec = parseInt(data.merchantConfirmTimeoutSec);
+        if (data.driverResponseTimeoutSec !== undefined) updateData.driverResponseTimeoutSec = parseInt(data.driverResponseTimeoutSec);
+
         // Promo Banner (Slide Publicitario)
         if (typeof data.promoBannerEnabled === "boolean") updateData.promoBannerEnabled = data.promoBannerEnabled;
         if (data.promoBannerTitle !== undefined) updateData.promoBannerTitle = data.promoBannerTitle || "";

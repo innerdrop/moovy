@@ -19,6 +19,35 @@ async function getConfigValue(key: string, fallback: string): Promise<string> {
     return config?.value ?? fallback;
 }
 
+// Read OPS config from StoreSettings (Biblia Financiera)
+async function getOpsSettings() {
+    const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } });
+    const s = settings as any;
+    return {
+        defaultMerchantCommission: s?.defaultMerchantCommission ?? 8,
+        defaultSellerCommission: s?.defaultSellerCommission ?? 12,
+        riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
+        maxOrdersPerSlot: s?.maxOrdersPerSlot ?? 15,
+        slotDurationMinutes: s?.slotDurationMinutes ?? 120,
+        minAnticipationHours: s?.minAnticipationHours ?? 1.5,
+        maxAnticipationHours: s?.maxAnticipationHours ?? 48,
+        operatingHoursStart: s?.operatingHoursStart ?? "09:00",
+        operatingHoursEnd: s?.operatingHoursEnd ?? "22:00",
+        merchantConfirmTimeoutSec: s?.merchantConfirmTimeoutSec ?? 300,
+        driverResponseTimeoutSec: s?.driverResponseTimeoutSec ?? 60,
+        // Delivery fee config
+        zoneMultipliers: (() => { try { return JSON.parse(s?.zoneMultipliersJson ?? "{}"); } catch { return { ZONA_A: 1.0, ZONA_B: 1.15, ZONA_C: 1.35 }; } })(),
+        climateMultipliers: (() => { try { return JSON.parse(s?.climateMultipliersJson ?? "{}"); } catch { return { normal: 1.0, lluvia: 1.10, nieve: 1.15, extremo: 1.25 }; } })(),
+        activeClimateCondition: s?.activeClimateCondition ?? "normal",
+        operationalCostPercent: s?.operationalCostPercent ?? 5,
+        // Cash protocol
+        cashMpOnlyDeliveries: s?.cashMpOnlyDeliveries ?? 10,
+        cashLimitL1: s?.cashLimitL1 ?? 15000,
+        cashLimitL2: s?.cashLimitL2 ?? 25000,
+        cashLimitL3: s?.cashLimitL3 ?? 40000,
+    };
+}
+
 // Helper to generate order number (MOV-XXXX format)
 function generateOrderNumber(): string {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Avoid confusing chars like 0/O, 1/I
@@ -82,6 +111,9 @@ export async function POST(request: Request) {
 
         const isMultiVendor = (groups && groups.length > 1) || false;
 
+        // Load OPS config from Biblia Financiera (StoreSettings) — single DB read for all config
+        const opsSettings = await getOpsSettings();
+
         // BUG #5 FIX: Enhanced delivery fee validation (fraud prevention)
         // Validate that deliveryFee is reasonable and server-side calculated
         let validatedDeliveryFee = deliveryFee || 0;
@@ -133,6 +165,20 @@ export async function POST(request: Request) {
                     );
                 }
             }
+            // Apply climate multiplier from Biblia Financiera if active condition is not normal
+            const climateCond = opsSettings.activeClimateCondition || "normal";
+            const climateMultiplier = opsSettings.climateMultipliers[climateCond] ?? 1.0;
+            if (climateMultiplier !== 1.0 && validatedDeliveryFee > 0) {
+                const originalFee = validatedDeliveryFee;
+                validatedDeliveryFee = Math.round(validatedDeliveryFee * climateMultiplier);
+                orderLogger.info(
+                    { originalFee, climateCondition: climateCond, multiplier: climateMultiplier, adjustedFee: validatedDeliveryFee },
+                    "Climate multiplier applied to delivery fee"
+                );
+            }
+
+            // Apply operational cost surcharge (% of subtotal added to delivery fee)
+            // Will be recalculated after subtotal is known — deferred below
         } else {
             // For pickup orders, fee must be 0
             validatedDeliveryFee = 0;
@@ -144,6 +190,19 @@ export async function POST(request: Request) {
                 sum + item.price * item.quantity,
             0
         );
+
+        // Apply operational cost surcharge (% of subtotal added to delivery fee) — Biblia Financiera
+        if (!isPickup && validatedDeliveryFee > 0) {
+            const opCostPct = opsSettings.operationalCostPercent || 0;
+            if (opCostPct > 0) {
+                const opSurcharge = Math.round(subtotal * (opCostPct / 100));
+                validatedDeliveryFee += opSurcharge;
+                orderLogger.info(
+                    { opCostPct, subtotal, opSurcharge, newDeliveryFee: validatedDeliveryFee },
+                    "Operational cost surcharge applied to delivery fee"
+                );
+            }
+        }
 
         let finalTotal = subtotal + validatedDeliveryFee;
 
@@ -199,9 +258,10 @@ export async function POST(request: Request) {
         }
 
         // Calculate commission using loyalty program (dynamic rates)
+        // Reads from StoreSettings (Biblia Financiera) instead of MoovyConfig key-value
         let moovyCommission = 0;
         let merchantPayout = 0;
-        const defaultMerchantCommission = parseFloat(await getConfigValue("default_merchant_commission_pct", "8"));
+        const defaultMerchantCommission = opsSettings.defaultMerchantCommission;
 
         if (merchantId) {
             const merchant = await prisma.merchant.findUnique({
@@ -415,8 +475,8 @@ export async function POST(request: Request) {
                     },
                 });
 
-                // Max 15 orders per 2-hour slot (configurable via MoovyConfig if needed)
-                const MAX_ORDERS_PER_SLOT = 15;
+                // Configurable via Biblia Financiera OPS panel (StoreSettings.maxOrdersPerSlot)
+                const MAX_ORDERS_PER_SLOT = opsSettings.maxOrdersPerSlot;
                 if (existingOrdersInSlot >= MAX_ORDERS_PER_SLOT) {
                     throw new Error("SLOT_FULL:El horario seleccionado ya no tiene disponibilidad. Por favor elegí otro horario.");
                 }
@@ -548,8 +608,8 @@ export async function POST(request: Request) {
                         groupCommission = groupSubtotal * (rate / 100);
                         groupPayout = groupSubtotal - groupCommission;
                     } else if (group.sellerId) {
-                        // Seller commission from config
-                        const sellerRate = parseFloat(await getConfigValue("default_seller_commission_pct", "10"));
+                        // Seller commission from Biblia Financiera (StoreSettings)
+                        const sellerRate = opsSettings.defaultSellerCommission;
                         groupCommission = groupSubtotal * (sellerRate / 100);
                         groupPayout = groupSubtotal - groupCommission;
                     }

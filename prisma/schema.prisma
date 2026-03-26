@@ -623,6 +623,34 @@ model StoreSettings {
   promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
   promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
   riderCommissionPercent Float   @default(80)
+
+  // === OPS CONFIG: Delivery Zones & Climate (Biblia Financiera) ===
+  zoneMultipliersJson      String  @default("{\"ZONA_A\":1.0,\"ZONA_B\":1.15,\"ZONA_C\":1.35}")
+  climateMultipliersJson   String  @default("{\"normal\":1.0,\"lluvia\":1.10,\"nieve\":1.15,\"extremo\":1.25}")
+  activeClimateCondition   String  @default("normal")
+  operationalCostPercent   Float   @default(5)
+
+  // === OPS CONFIG: Commission defaults ===
+  defaultMerchantCommission Float  @default(8)
+  defaultSellerCommission   Float  @default(12)
+
+  // === OPS CONFIG: Cash Protocol ===
+  cashMpOnlyDeliveries     Int     @default(10)
+  cashLimitL1              Float   @default(15000)
+  cashLimitL2              Float   @default(25000)
+  cashLimitL3              Float   @default(40000)
+
+  // === OPS CONFIG: Scheduled Delivery ===
+  maxOrdersPerSlot         Int     @default(15)
+  slotDurationMinutes      Int     @default(120)
+  minAnticipationHours     Float   @default(1.5)
+  maxAnticipationHours     Float   @default(48)
+  operatingHoursStart      String  @default("09:00")
+  operatingHoursEnd        String  @default("22:00")
+
+  // === OPS CONFIG: Timeouts ===
+  merchantConfirmTimeoutSec Int    @default(300)
+  driverResponseTimeoutSec  Int    @default(60)
 }
 
 model PointsConfig {
@@ -636,6 +664,11 @@ model PointsConfig {
   referralBonus        Int      @default(200)
   reviewBonus          Int      @default(10)
   pointsExpireDays     Int?
+  refereeBonus         Int      @default(100)
+  minPurchaseForBonus  Float    @default(5000)
+  minReferralPurchase  Float    @default(8000)
+  tierWindowDays       Int      @default(90)
+  tierConfigJson       String?
   updatedAt            DateTime @updatedAt
 }
 
@@ -1093,4 +1126,18 @@ model OrderChatMessage {
 
   @@index([chatId, createdAt])
   @@index([senderId])
+}
+
+model ConfigAuditLog {
+  id            String   @id @default(cuid())
+  adminUserId   String
+  adminEmail    String   @default("")
+  configType    String   // STORE_SETTINGS, POINTS_CONFIG, MERCHANT_LOYALTY, MOOVY_CONFIG
+  fieldChanged  String   // field name or "bulk_update"
+  oldValue      String   @default("") // JSON stringified
+  newValue      String   @default("") // JSON stringified
+  createdAt     DateTime @default(now())
+
+  @@index([configType, createdAt])
+  @@index([adminUserId])
 }
