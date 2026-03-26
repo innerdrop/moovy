@@ -69,6 +69,8 @@ ALTER TABLE IF EXISTS ONLY public."Favorite" DROP CONSTRAINT IF EXISTS "Favorite
 ALTER TABLE IF EXISTS ONLY public."Favorite" DROP CONSTRAINT IF EXISTS "Favorite_merchantId_fkey";
 ALTER TABLE IF EXISTS ONLY public."Favorite" DROP CONSTRAINT IF EXISTS "Favorite_listingId_fkey";
 ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."DriverLocationHistory" DROP CONSTRAINT IF EXISTS "DriverLocationHistory_orderId_fkey";
+ALTER TABLE IF EXISTS ONLY public."DriverLocationHistory" DROP CONSTRAINT IF EXISTS "DriverLocationHistory_driverId_fkey";
 ALTER TABLE IF EXISTS ONLY public."DeliveryRate" DROP CONSTRAINT IF EXISTS "DeliveryRate_categoryId_fkey";
 ALTER TABLE IF EXISTS ONLY public."CouponUsage" DROP CONSTRAINT IF EXISTS "CouponUsage_userId_fkey";
 ALTER TABLE IF EXISTS ONLY public."CouponUsage" DROP CONSTRAINT IF EXISTS "CouponUsage_couponId_fkey";
@@ -141,8 +143,11 @@ DROP INDEX IF EXISTS public."MoovyConfig_key_key";
 DROP INDEX IF EXISTS public."Merchant_slug_key";
 DROP INDEX IF EXISTS public."Merchant_ownerId_idx";
 DROP INDEX IF EXISTS public."Merchant_mpUserId_key";
+DROP INDEX IF EXISTS public."Merchant_loyaltyTier_idx";
 DROP INDEX IF EXISTS public."Merchant_isActive_idx";
 DROP INDEX IF EXISTS public."Merchant_approvalStatus_idx";
+DROP INDEX IF EXISTS public."MerchantLoyaltyConfig_tier_key";
+DROP INDEX IF EXISTS public."MerchantLoyaltyConfig_tier_idx";
 DROP INDEX IF EXISTS public."MerchantCategory_merchantId_categoryId_key";
 DROP INDEX IF EXISTS public."MerchantAcquiredProduct_merchantId_productId_key";
 DROP INDEX IF EXISTS public."Listing_sellerId_idx";
@@ -156,12 +161,17 @@ DROP INDEX IF EXISTS public."Driver_userId_key";
 DROP INDEX IF EXISTS public."Driver_isOnline_idx";
 DROP INDEX IF EXISTS public."Driver_isActive_idx";
 DROP INDEX IF EXISTS public."Driver_approvalStatus_idx";
+DROP INDEX IF EXISTS public."DriverLocationHistory_timestamp_idx";
+DROP INDEX IF EXISTS public."DriverLocationHistory_orderId_createdAt_idx";
+DROP INDEX IF EXISTS public."DriverLocationHistory_driverId_createdAt_idx";
 DROP INDEX IF EXISTS public."DeliveryRate_categoryId_key";
 DROP INDEX IF EXISTS public."Coupon_isActive_idx";
 DROP INDEX IF EXISTS public."Coupon_code_key";
 DROP INDEX IF EXISTS public."Coupon_code_idx";
 DROP INDEX IF EXISTS public."CouponUsage_userId_idx";
 DROP INDEX IF EXISTS public."CouponUsage_couponId_idx";
+DROP INDEX IF EXISTS public."ConfigAuditLog_configType_createdAt_idx";
+DROP INDEX IF EXISTS public."ConfigAuditLog_adminUserId_idx";
 DROP INDEX IF EXISTS public."Category_slug_key";
 DROP INDEX IF EXISTS public."Category_name_key";
 DROP INDEX IF EXISTS public."CartItem_userId_productId_variantId_key";
@@ -205,6 +215,7 @@ ALTER TABLE IF EXISTS ONLY public."OrderBackup" DROP CONSTRAINT IF EXISTS "Order
 ALTER TABLE IF EXISTS ONLY public."MpWebhookLog" DROP CONSTRAINT IF EXISTS "MpWebhookLog_pkey";
 ALTER TABLE IF EXISTS ONLY public."MoovyConfig" DROP CONSTRAINT IF EXISTS "MoovyConfig_pkey";
 ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_pkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantLoyaltyConfig" DROP CONSTRAINT IF EXISTS "MerchantLoyaltyConfig_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_pkey";
 ALTER TABLE IF EXISTS ONLY public."Listing" DROP CONSTRAINT IF EXISTS "Listing_pkey";
@@ -212,9 +223,11 @@ ALTER TABLE IF EXISTS ONLY public."ListingImage" DROP CONSTRAINT IF EXISTS "List
 ALTER TABLE IF EXISTS ONLY public."HeroSlide" DROP CONSTRAINT IF EXISTS "HeroSlide_pkey";
 ALTER TABLE IF EXISTS ONLY public."Favorite" DROP CONSTRAINT IF EXISTS "Favorite_pkey";
 ALTER TABLE IF EXISTS ONLY public."Driver" DROP CONSTRAINT IF EXISTS "Driver_pkey";
+ALTER TABLE IF EXISTS ONLY public."DriverLocationHistory" DROP CONSTRAINT IF EXISTS "DriverLocationHistory_pkey";
 ALTER TABLE IF EXISTS ONLY public."DeliveryRate" DROP CONSTRAINT IF EXISTS "DeliveryRate_pkey";
 ALTER TABLE IF EXISTS ONLY public."Coupon" DROP CONSTRAINT IF EXISTS "Coupon_pkey";
 ALTER TABLE IF EXISTS ONLY public."CouponUsage" DROP CONSTRAINT IF EXISTS "CouponUsage_pkey";
+ALTER TABLE IF EXISTS ONLY public."ConfigAuditLog" DROP CONSTRAINT IF EXISTS "ConfigAuditLog_pkey";
 ALTER TABLE IF EXISTS ONLY public."Category" DROP CONSTRAINT IF EXISTS "Category_pkey";
 ALTER TABLE IF EXISTS ONLY public."CartItem" DROP CONSTRAINT IF EXISTS "CartItem_pkey";
 ALTER TABLE IF EXISTS ONLY public."CannedResponse" DROP CONSTRAINT IF EXISTS "CannedResponse_pkey";
@@ -251,6 +264,7 @@ DROP TABLE IF EXISTS public."OrderBackup";
 DROP TABLE IF EXISTS public."Order";
 DROP TABLE IF EXISTS public."MpWebhookLog";
 DROP TABLE IF EXISTS public."MoovyConfig";
+DROP TABLE IF EXISTS public."MerchantLoyaltyConfig";
 DROP TABLE IF EXISTS public."MerchantCategory";
 DROP TABLE IF EXISTS public."MerchantAcquiredProduct";
 DROP TABLE IF EXISTS public."Merchant";
@@ -258,10 +272,12 @@ DROP TABLE IF EXISTS public."ListingImage";
 DROP TABLE IF EXISTS public."Listing";
 DROP TABLE IF EXISTS public."HeroSlide";
 DROP TABLE IF EXISTS public."Favorite";
+DROP TABLE IF EXISTS public."DriverLocationHistory";
 DROP TABLE IF EXISTS public."Driver";
 DROP TABLE IF EXISTS public."DeliveryRate";
 DROP TABLE IF EXISTS public."CouponUsage";
 DROP TABLE IF EXISTS public."Coupon";
+DROP TABLE IF EXISTS public."ConfigAuditLog";
 DROP TABLE IF EXISTS public."Category";
 DROP TABLE IF EXISTS public."CartItem";
 DROP TABLE IF EXISTS public."CannedResponse";
@@ -516,6 +532,24 @@ CREATE TABLE public."Category" (
 ALTER TABLE public."Category" OWNER TO postgres;
 
 --
+-- Name: ConfigAuditLog; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."ConfigAuditLog" (
+    id text NOT NULL,
+    "adminUserId" text NOT NULL,
+    "adminEmail" text DEFAULT ''::text NOT NULL,
+    "configType" text NOT NULL,
+    "fieldChanged" text NOT NULL,
+    "oldValue" text DEFAULT ''::text NOT NULL,
+    "newValue" text DEFAULT ''::text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."ConfigAuditLog" OWNER TO postgres;
+
+--
 -- Name: Coupon; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -610,6 +644,26 @@ CREATE TABLE public."Driver" (
 
 
 ALTER TABLE public."Driver" OWNER TO postgres;
+
+--
+-- Name: DriverLocationHistory; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."DriverLocationHistory" (
+    id text NOT NULL,
+    "driverId" text NOT NULL,
+    "orderId" text,
+    latitude double precision NOT NULL,
+    longitude double precision NOT NULL,
+    accuracy double precision,
+    speed double precision,
+    heading double precision,
+    "timestamp" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."DriverLocationHistory" OWNER TO postgres;
 
 --
 -- Name: Favorite; Type: TABLE; Schema: public; Owner: postgres
@@ -747,7 +801,10 @@ CREATE TABLE public."Merchant" (
     "approvalStatus" text DEFAULT 'PENDING'::text NOT NULL,
     "approvedAt" timestamp(3) without time zone,
     "rejectionReason" text,
-    ubicacion public.geography
+    ubicacion public.geography,
+    "loyaltyOrderCount" integer DEFAULT 0 NOT NULL,
+    "loyaltyTier" text DEFAULT 'BRONCE'::text NOT NULL,
+    "loyaltyUpdatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -780,6 +837,26 @@ CREATE TABLE public."MerchantCategory" (
 
 
 ALTER TABLE public."MerchantCategory" OWNER TO postgres;
+
+--
+-- Name: MerchantLoyaltyConfig; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."MerchantLoyaltyConfig" (
+    id text NOT NULL,
+    tier text NOT NULL,
+    "minOrdersPerMonth" integer NOT NULL,
+    "commissionRate" double precision NOT NULL,
+    "badgeText" text NOT NULL,
+    "badgeColor" text DEFAULT 'gray'::text NOT NULL,
+    "benefitsJson" text DEFAULT '{}'::text NOT NULL,
+    "displayOrder" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."MerchantLoyaltyConfig" OWNER TO postgres;
 
 --
 -- Name: MoovyConfig; Type: TABLE; Schema: public; Owner: postgres
@@ -1077,7 +1154,12 @@ CREATE TABLE public."PointsConfig" (
     "referralBonus" integer DEFAULT 200 NOT NULL,
     "reviewBonus" integer DEFAULT 10 NOT NULL,
     "pointsExpireDays" integer,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "minPurchaseForBonus" double precision DEFAULT 5000 NOT NULL,
+    "minReferralPurchase" double precision DEFAULT 8000 NOT NULL,
+    "refereeBonus" integer DEFAULT 100 NOT NULL,
+    "tierConfigJson" text,
+    "tierWindowDays" integer DEFAULT 90 NOT NULL
 );
 
 
@@ -1317,7 +1399,25 @@ CREATE TABLE public."StoreSettings" (
     "promoBannerSubtitle" text DEFAULT '2x1 en locales seleccionados de 20hs a 23hs.'::text NOT NULL,
     "promoBannerTitle" text DEFAULT 'Noches de
 Pizza & Pelis'::text NOT NULL,
-    "riderCommissionPercent" double precision DEFAULT 80 NOT NULL
+    "riderCommissionPercent" double precision DEFAULT 80 NOT NULL,
+    "activeClimateCondition" text DEFAULT 'normal'::text NOT NULL,
+    "cashLimitL1" double precision DEFAULT 15000 NOT NULL,
+    "cashLimitL2" double precision DEFAULT 25000 NOT NULL,
+    "cashLimitL3" double precision DEFAULT 40000 NOT NULL,
+    "cashMpOnlyDeliveries" integer DEFAULT 10 NOT NULL,
+    "climateMultipliersJson" text DEFAULT '{"normal":1.0,"lluvia":1.10,"nieve":1.15,"extremo":1.25}'::text NOT NULL,
+    "defaultMerchantCommission" double precision DEFAULT 8 NOT NULL,
+    "defaultSellerCommission" double precision DEFAULT 12 NOT NULL,
+    "driverResponseTimeoutSec" integer DEFAULT 60 NOT NULL,
+    "maxAnticipationHours" double precision DEFAULT 48 NOT NULL,
+    "maxOrdersPerSlot" integer DEFAULT 15 NOT NULL,
+    "merchantConfirmTimeoutSec" integer DEFAULT 300 NOT NULL,
+    "minAnticipationHours" double precision DEFAULT 1.5 NOT NULL,
+    "operatingHoursEnd" text DEFAULT '22:00'::text NOT NULL,
+    "operatingHoursStart" text DEFAULT '09:00'::text NOT NULL,
+    "operationalCostPercent" double precision DEFAULT 5 NOT NULL,
+    "slotDurationMinutes" integer DEFAULT 120 NOT NULL,
+    "zoneMultipliersJson" text DEFAULT '{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}'::text NOT NULL
 );
 
 
@@ -1500,6 +1600,7 @@ COPY public."AuditLog" (id, action, "entityType", "entityId", "userId", details,
 --
 
 COPY public."CannedResponse" (id, shortcut, title, content, category, "sortOrder", "isActive", "createdAt", "updatedAt") FROM stdin;
+cmn4xnvey0000sttbm9xg7rsv	/saludo	Buenos dias!	Hola! Me gustar├¡a saber en qu├⌐ te puedo ayudar el d├¡a de hoy?	general	0	t	2026-03-24 18:13:29.672	2026-03-24 18:13:29.672
 \.
 
 
@@ -1529,6 +1630,15 @@ cmn0pgvy7000810eplzuozvpk	Bebidas	bebidas	\N	\N	t	5	BOTH	2026-03-21 19:13:02.105
 
 
 --
+-- Data for Name: ConfigAuditLog; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."ConfigAuditLog" (id, "adminUserId", "adminEmail", "configType", "fieldChanged", "oldValue", "newValue", "createdAt") FROM stdin;
+cmn6z7rz30000y236zdjy9hvr	cmn0pgvwf000010epggulhpgv	admin@somosmoovy.com	STORE_SETTINGS	timeouts	{"merchantConfirmTimeoutSec":300,"driverResponseTimeoutSec":60}	{"merchantConfirmTimeoutSec":300,"driverResponseTimeoutSec":20}	2026-03-26 04:32:30.303
+\.
+
+
+--
 -- Data for Name: Coupon; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1549,6 +1659,11 @@ COPY public."CouponUsage" (id, "couponId", "userId", "orderId", "createdAt") FRO
 --
 
 COPY public."DeliveryRate" (id, "categoryId", "basePriceArs", "pricePerKmArs", "isActive", "createdAt", "updatedAt") FROM stdin;
+cmn4wezef000mksg2alnl4w0p	cmn4wezd6000gksg2psrgimig	300	80	t	2026-03-24 17:38:35.32	2026-03-24 17:38:35.32
+cmn4wezf7000oksg23syf5dg8	cmn4wezdf000hksg20laifcy1	400	100	t	2026-03-24 17:38:35.347	2026-03-24 17:38:35.347
+cmn4wezfg000qksg21u7uh21d	cmn4wezdk000iksg2n1zp0doj	600	130	t	2026-03-24 17:38:35.356	2026-03-24 17:38:35.356
+cmn4wezfo000sksg2h850jmdb	cmn4wezdp000jksg2b1hvo5xg	900	180	t	2026-03-24 17:38:35.364	2026-03-24 17:38:35.364
+cmn4wezfx000uksg2su5tk8ux	cmn4wezdy000kksg2vxilkxph	1500	250	t	2026-03-24 17:38:35.373	2026-03-24 17:38:35.373
 \.
 
 
@@ -1557,8 +1672,16 @@ COPY public."DeliveryRate" (id, "categoryId", "basePriceArs", "pricePerKmArs", "
 --
 
 COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "licenciaUrl", "seguroUrl", "vtvUrl", "dniFrenteUrl", "dniDorsoUrl", "acceptedTermsAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", ubicacion) FROM stdin;
-cmn0pgw0f001c10eplrwqp05q	cmn0pgw0c001910epgep8s9t9	MOTO	\N	\N	\N	\N	ABC 123	\N	\N	\N	\N	\N	\N	\N	t	t	0	\N	2026-03-21 19:13:02.223	2026-03-21 21:40:44.793	DISPONIBLE	2026-03-24 02:17:36.942	-54.83090684217085	-68.35046596260645	APPROVED	\N	\N	0101000020E610000060F0C9086E1651C0BE92C8275B6A4BC0
-cmn3zjqw7001ozbsr0yewc9iy	cmn3ze631001ezbsrowh7mtoj	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	f	0	\N	2026-03-24 02:18:30.247	2026-03-24 02:19:25.244	FUERA_DE_SERVICIO	\N	\N	\N	APPROVED	2026-03-24 02:19:25.243	\N	\N
+cmn3zjqw7001ozbsr0yewc9iy	cmn3ze631001ezbsrowh7mtoj	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	f	0	\N	2026-03-24 02:18:30.247	2026-03-25 02:42:37.709	DISPONIBLE	\N	\N	\N	APPROVED	2026-03-24 02:19:25.243	\N	\N
+cmn0pgw0f001c10eplrwqp05q	cmn0pgw0c001910epgep8s9t9	MOTO	\N	\N	\N	\N	ABC 123	\N	\N	\N	\N	\N	\N	\N	t	t	0	\N	2026-03-21 19:13:02.223	2026-03-25 02:42:37.709	DISPONIBLE	2026-03-25 02:37:40.398	-54.83070319553021	-68.3504299084042	APPROVED	\N	\N	0101000020E6100000B90891716D1651C013BE787B546A4BC0
+\.
+
+
+--
+-- Data for Name: DriverLocationHistory; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."DriverLocationHistory" (id, "driverId", "orderId", latitude, longitude, accuracy, speed, heading, "timestamp", "createdAt") FROM stdin;
 \.
 
 
@@ -1598,8 +1721,8 @@ COPY public."ListingImage" (id, "listingId", url, "order") FROM stdin;
 -- Data for Name: Merchant; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion) FROM stdin;
-cmn0pgvyn000e10ep68gshzgr	Burger Ushuaia	burger-ushuaia	Las mejores hamburguesas del fin del mundo	\N	\N	t	t	f	\N	t	comercio@somosmoovy.com	+54 9 2901 553173	San Mart├¡n 500, Ushuaia	\N	\N	5	30	45	0	0	\N	\N	\N	\N	\N	\N	Hamburguesas	cmn0pgvyj000b10ep2u77j0im	2026-03-21 19:13:02.159	2026-03-21 19:13:02.159	\N	\N	\N	\N	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N
+COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "loyaltyOrderCount", "loyaltyTier", "loyaltyUpdatedAt") FROM stdin;
+cmn0pgvyn000e10ep68gshzgr	Burger Ushuaia	burger-ushuaia	Las mejores hamburguesas del fin del mundo	/uploads/products/1774366853111-IMG_0104.webp	\N	t	t	t	{"1":{"open":"09:00","close":"21:00"},"2":{"open":"09:00","close":"21:00"},"3":{"open":"09:00","close":"21:00"},"4":{"open":"09:00","close":"21:00"},"5":{"open":"09:00","close":"21:00"},"6":{"open":"10:00","close":"14:00"},"7":null}	t	comercio@somosmoovy.com	+54 9 2901 553173	Avenida San Mart├¡n 1100	-54.80848820000001	-68.31312	5	30	45	0	0	\N	\N	\N	\N	\N	\N	Restaurante	cmn0pgvyj000b10ep2u77j0im	2026-03-21 19:13:02.159	2026-03-24 15:40:57.507	\N	\N	\N	Burger Ushuaia	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	0	BRONCE	2026-03-24 15:27:07.275
 \.
 
 
@@ -1620,12 +1743,39 @@ COPY public."MerchantCategory" (id, "merchantId", "categoryId", "createdAt") FRO
 
 
 --
+-- Data for Name: MerchantLoyaltyConfig; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."MerchantLoyaltyConfig" (id, tier, "minOrdersPerMonth", "commissionRate", "badgeText", "badgeColor", "benefitsJson", "displayOrder", "createdAt", "updatedAt") FROM stdin;
+cmn7i6zs30006uu0l9f4uf96w	BRONCE	0	8	Comercio	gray	["Comisi├│n est├índar 8%","Soporte por chat"]	0	2026-03-26 13:23:46.468	2026-03-26 13:23:46.468
+cmn7i6zsd0007uu0l17248co8	PLATA	50	7	Destacado	blue	["Comisi├│n reducida 7%","Soporte prioritario","Badge visible para compradores"]	1	2026-03-26 13:23:46.477	2026-03-26 13:23:46.477
+cmn7i6zsh0008uu0laupc0yjp	ORO	150	6	Popular	yellow	["Comisi├│n reducida 6%","Soporte VIP","Posici├│n destacada en b├║squeda","Badge dorado"]	2	2026-03-26 13:23:46.482	2026-03-26 13:23:46.482
+cmn7i6zsl0009uu0luo9a3nl6	DIAMANTE	300	5	Elite	purple	["Comisi├│n m├¡nima 5%","Account manager dedicado","Primera posici├│n en categor├¡a","Badge diamante","Acceso a analytics avanzados"]	3	2026-03-26 13:23:46.486	2026-03-26 13:23:46.486
+\.
+
+
+--
 -- Data for Name: MoovyConfig; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public."MoovyConfig" (id, key, value, description, "updatedAt") FROM stdin;
+cmn4wezad0006ksg23mz6csle	default_merchant_commission_pct	8	Comisi├│n MOOVY a comercios (%)	2026-03-24 17:38:35.174
+cmn4wezas0007ksg20u94vytk	default_seller_commission_pct	12	Comisi├│n MOOVY a vendedores marketplace (%)	2026-03-24 17:38:35.188
+cmn4wezb40008ksg2q4n387jm	merchant_confirm_timeout_seconds	300	Timeout para que el comercio confirme (seg)	2026-03-24 17:38:35.201
+cmn4wezbm000aksg2qib6qsv6	max_assignment_attempts	5	M├íximo intentos de asignaci├│n de driver	2026-03-24 17:38:35.219
+cmn4wezbx000bksg2osovdnhr	points_per_dollar	1	Puntos por peso gastado	2026-03-24 17:38:35.229
+cmn4wezc3000cksg215to5497	signup_bonus	100	Puntos bonus por registro	2026-03-24 17:38:35.235
+cmn4wezc8000dksg2pboi5hok	referral_bonus	200	Puntos bonus por referir	2026-03-24 17:38:35.241
+cmn4wezcj000eksg2d5sm5nf5	min_points_to_redeem	100	M├¡nimo de puntos para canjear	2026-03-24 17:38:35.251
+cmn4wezcr000fksg2bfs99ysr	max_discount_percent	50	M├íximo % de descuento con puntos	2026-03-24 17:38:35.259
 cmn3orj5z000dchpmq27gbwcg	hero_title	Todo Ushuaia en\ntu puerta.	Hero config: hero_title	2026-03-23 21:23:34.256
 cmn3orj6r000ichpm55ki2vg0	hero_bg_image		Hero config: hero_bg_image	2026-03-23 21:23:34.257
+cmn7i6zmn0000uu0l37f9vav0	assignment_rating_radius_meters	3000	Radio (metros) dentro del cual se priorizan repartidores por rating en el assignment engine	2026-03-26 13:23:46.272
+cmn7i6zov0001uu0lp9mdq3c2	max_delivery_distance_km	15	Distancia m├íxima en km entre comercio y cliente para aceptar delivery	2026-03-26 13:23:46.351
+cmn7i6zph0002uu0lpv2pzn5p	min_order_amount_ars	1000	Monto m├¡nimo del carrito para poder hacer delivery	2026-03-26 13:23:46.373
+cmn7i6zqg0003uu0l908petb2	scheduled_notify_before_minutes	30	Minutos antes de la hora programada para notificar al repartidor	2026-03-26 13:23:46.409
+cmn7i6zqs0004uu0lxwhimxhg	scheduled_cancel_if_no_confirm_minutes	30	Minutos sin confirmaci├│n del comercio antes de cancelar pedido programado	2026-03-26 13:23:46.42
+cmn4wezbb0009ksg2n7f4yq87	driver_response_timeout_seconds	20	Timeout para que el driver acepte oferta (seg)	2026-03-26 13:23:46.447
 cmn3orj62000gchpm32q25rh1	hero_bg_gradient	linear-gradient(135deg, #a3000c 0%, #cc000f 25%, #e60012 50%, #ff1a2e 75%, #ff4d5e 100%)	Hero config: hero_bg_gradient	2026-03-23 21:23:34.257
 cmn3orj74000lchpmmqwecfzj	hero_search_placeholder	┬┐Qu├⌐ quer├⌐s pedir?	Hero config: hero_search_placeholder	2026-03-23 21:23:34.26
 cmn3orj75000mchpmr5d5gokq	hero_cta_link		Hero config: hero_cta_link	2026-03-23 21:23:34.258
@@ -1650,14 +1800,6 @@ COPY public."MpWebhookLog" (id, "eventId", "eventType", "resourceId", processed,
 --
 
 COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode") FROM stdin;
-cmn0rub6g0004k4eicbzf7ee8	MOV-A9ZW	cmn0pgw0k001d10epk4ld8bzq	cmn0pgw0n001g10epoytlshz2	cmn0pgvyn000e10ep68gshzgr	CANCELLED	\N	PENDING	cash	5500	0	0	5500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-21 20:19:27.64	2026-03-22 17:08:10.602	El comercio no confirm├│ el pedido a tiempo	f	\N	5060	440	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	2026-03-22 17:08:10.595	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn0sa09w000fk4eiq1tb74yf	MOV-SJ9S	cmn0pgw0k001d10epk4ld8bzq	cmn0pgw0n001g10epoytlshz2	cmn0pgvyn000e10ep68gshzgr	CANCELLED	\N	PENDING	cash	1500	0	0	1500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-21 20:31:40.004	2026-03-22 17:08:10.602	El comercio no confirm├│ el pedido a tiempo	f	\N	1380	120	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	2026-03-22 17:08:10.595	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn0ttzdz000rk4ei9r1ul1pu	MOV-J57L	cmn0pgw0k001d10epk4ld8bzq	cmn0pgw0n001g10epoytlshz2	cmn0pgvyn000e10ep68gshzgr	CANCELLED	\N	PENDING	cash	16500	0	0	16500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-21 21:15:11.591	2026-03-22 17:08:10.602	El comercio no confirm├│ el pedido a tiempo	f	\N	15180	1320	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	2026-03-22 17:08:10.595	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn0u2wd80012k4eixj6pmkyb	MOV-7DR3	cmn0pgw0k001d10epk4ld8bzq	cmn0pgw0n001g10epoytlshz2	cmn0pgvyn000e10ep68gshzgr	CANCELLED	\N	PENDING	cash	5500	0	0	5500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-21 21:22:07.579	2026-03-22 17:08:10.602	El comercio no confirm├│ el pedido a tiempo	f	\N	5060	440	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	2026-03-22 17:08:10.595	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn0ub6rm001dk4eiiawr7ff1	MOV-YHNT	cmn0pgw0k001d10epk4ld8bzq	cmn0pgw0n001g10epoytlshz2	cmn0pgvyn000e10ep68gshzgr	READY	\N	PENDING	cash	1500	0	0	1500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-21 21:28:34.306	2026-03-22 17:08:10.602	\N	f	\N	1380	120	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	2026-03-22 17:08:10.595	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn3yqegm000szbsr2vkanw5h	MOV-JE8S	cmn0pgw0k001d10epk4ld8bzq	cmn0x52ux0002hrc6y19bcrq3	cmn0pgvyn000e10ep68gshzgr	READY	\N	PENDING	cash	5500	0	0	5500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-24 01:55:41.11	2026-03-24 01:56:31.205	\N	f	\N	5060	440	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn3yph9s000hzbsrvog9smeg	MOV-8KQB	cmn0pgw0k001d10epk4ld8bzq	cmn0x52ux0002hrc6y19bcrq3	cmn0pgvyn000e10ep68gshzgr	CANCELLED	\N	PENDING	cash	5500	0	0	5500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-24 01:54:58.095	2026-03-24 02:00:37.402	El comercio no confirm├│ el pedido a tiempo	f	\N	5060	440	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
-cmn3z2vw40013zbsr8f3v9d5q	MOV-SVXH	cmn0pgw0k001d10epk4ld8bzq	cmn0x52ux0002hrc6y19bcrq3	cmn0pgvyn000e10ep68gshzgr	READY	\N	PENDING	cash	5500	0	0	5500	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-03-24 02:05:23.572	2026-03-24 02:08:06.546	\N	f	\N	5060	440	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N
 \.
 
 
@@ -1690,14 +1832,6 @@ COPY public."OrderChatMessage" (id, "chatId", "senderId", content, "isRead", "is
 --
 
 COPY public."OrderItem" (id, "orderId", "productId", "listingId", name, price, quantity, "variantName", subtotal, "subOrderId", "packageCategoryName") FROM stdin;
-cmn0rub6w0006k4eiw3t6olb8	cmn0rub6g0004k4eicbzf7ee8	cmn0pgvyw000g10epjrpq4iu1	\N	Hamburguesa Cl├ísica	5500	1	\N	5500	cmn0rub7c0008k4ei3ao84zmf	\N
-cmn0sa0cc000hk4ei6kbsbn3b	cmn0sa09w000fk4eiq1tb74yf	cmn0pgw03001410eptx02ubzu	\N	Coca Cola 500ml	1500	1	\N	1500	cmn0sa0dk000jk4eiunf497fe	\N
-cmn0ttzfe000tk4eiqcdrckc7	cmn0ttzdz000rk4ei9r1ul1pu	cmn0pgvyw000g10epjrpq4iu1	\N	Hamburguesa Cl├ísica	5500	3	\N	16500	cmn0ttzhm000vk4ei87zfm2uf	\N
-cmn0u2wdi0014k4eiloswgmxt	cmn0u2wd80012k4eixj6pmkyb	cmn0pgvyw000g10epjrpq4iu1	\N	Hamburguesa Cl├ísica	5500	1	\N	5500	cmn0u2wdv0016k4ei43cq01vh	\N
-cmn0ub6rr001fk4ei6p4erx94	cmn0ub6rm001dk4eiiawr7ff1	cmn0pgw03001410eptx02ubzu	\N	Coca Cola 500ml	1500	1	\N	1500	cmn0ub6s6001hk4eiheiu3jfs	\N
-cmn3ypha5000jzbsr51oz63zh	cmn3yph9s000hzbsrvog9smeg	cmn0pgvyw000g10epjrpq4iu1	\N	Hamburguesa Cl├ísica	5500	1	\N	5500	cmn3yphap000lzbsr5d8n12hu	\N
-cmn3yqegv000uzbsryq260010	cmn3yqegm000szbsr2vkanw5h	cmn0pgvyw000g10epjrpq4iu1	\N	Hamburguesa Cl├ísica	5500	1	\N	5500	cmn3yqehc000wzbsrphdzdzjq	\N
-cmn3z2vwb0015zbsru57b6obs	cmn3z2vw40013zbsr8f3v9d5q	cmn0pgvyw000g10epjrpq4iu1	\N	Hamburguesa Cl├ísica	5500	1	\N	5500	cmn3z2vwq0017zbsr9mq04t64	\N
 \.
 
 
@@ -1706,6 +1840,11 @@ cmn3z2vwb0015zbsru57b6obs	cmn3z2vw40013zbsr8f3v9d5q	cmn0pgvyw000g10epjrpq4iu1	\N
 --
 
 COPY public."PackageCategory" (id, name, "maxWeightGrams", "maxLengthCm", "maxWidthCm", "maxHeightCm", "volumeScore", "allowedVehicles", "isActive", "displayOrder", "createdAt", "updatedAt") FROM stdin;
+cmn4wezd6000gksg2psrgimig	MICRO	500	20	15	10	1	{BIKE,MOTO,CAR,TRUCK}	t	1	2026-03-24 17:38:35.275	2026-03-24 17:38:35.275
+cmn4wezdf000hksg20laifcy1	SMALL	2000	35	25	20	3	{BIKE,MOTO,CAR,TRUCK}	t	2	2026-03-24 17:38:35.284	2026-03-24 17:38:35.284
+cmn4wezdk000iksg2n1zp0doj	MEDIUM	5000	50	40	30	6	{MOTO,CAR,TRUCK}	t	3	2026-03-24 17:38:35.288	2026-03-24 17:38:35.288
+cmn4wezdp000jksg2b1hvo5xg	LARGE	15000	80	60	50	10	{CAR,TRUCK}	t	4	2026-03-24 17:38:35.294	2026-03-24 17:38:35.294
+cmn4wezdy000kksg2vxilkxph	XL	50000	120	80	80	20	{TRUCK}	t	5	2026-03-24 17:38:35.302	2026-03-24 17:38:35.302
 \.
 
 
@@ -1714,6 +1853,9 @@ COPY public."PackageCategory" (id, name, "maxWeightGrams", "maxLengthCm", "maxWi
 --
 
 COPY public."PackagePricingTier" (id, name, "minItems", "maxItems", "pricePerItem", "totalPrice", "isActive", "order", "createdAt") FROM stdin;
+cmn4wezgb000vksg2u43ebewy	Pack x10	1	10	150	1500	t	1	2026-03-24 17:38:35.388
+cmn4wezgn000wksg2wrxjr8pa	Pack x25	11	25	120	3000	t	2	2026-03-24 17:38:35.399
+cmn4wezgw000xksg20604d5ii	Pack x50	26	50	90	4500	t	3	2026-03-24 17:38:35.408
 \.
 
 
@@ -1745,7 +1887,8 @@ COPY public."PendingAssignment" (id, "orderId", "currentDriverId", "attemptNumbe
 -- Data for Name: PointsConfig; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "updatedAt") FROM stdin;
+COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "updatedAt", "minPurchaseForBonus", "minReferralPurchase", "refereeBonus", "tierConfigJson", "tierWindowDays") FROM stdin;
+points_config	1	0	0.01	100	50	100	200	10	\N	2026-03-24 17:38:35.163	5000	8000	100	\N	90
 \.
 
 
@@ -1754,14 +1897,6 @@ COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "poin
 --
 
 COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balanceAfter", description, "createdAt") FROM stdin;
-cmn0rub88000bk4eifbu34piy	cmn0pgw0k001d10epk4ld8bzq	cmn0rub6g0004k4eicbzf7ee8	EARN	5500	5500	Ganaste 5500 puntos por tu compra	2026-03-21 20:19:27.704
-cmn0sa0e9000mk4eivbtil7gx	cmn0pgw0k001d10epk4ld8bzq	cmn0sa09w000fk4eiq1tb74yf	EARN	1500	7000	Ganaste 1500 puntos por tu compra	2026-03-21 20:31:40.162
-cmn0ttzn5000yk4ei7txl68lr	cmn0pgw0k001d10epk4ld8bzq	cmn0ttzdz000rk4ei9r1ul1pu	EARN	16500	23500	Ganaste 16500 puntos por tu compra	2026-03-21 21:15:11.921
-cmn0u2weo0019k4ei5tzq3y6b	cmn0pgw0k001d10epk4ld8bzq	cmn0u2wd80012k4eixj6pmkyb	EARN	5500	29000	Ganaste 5500 puntos por tu compra	2026-03-21 21:22:07.633
-cmn0ub6sz001kk4eik2906pbw	cmn0pgw0k001d10epk4ld8bzq	cmn0ub6rm001dk4eiiawr7ff1	EARN	1500	30500	Ganaste 1500 puntos por tu compra	2026-03-21 21:28:34.355
-cmn3yphes000ozbsrcq2ogar4	cmn0pgw0k001d10epk4ld8bzq	cmn3yph9s000hzbsrvog9smeg	EARN	5500	36000	Ganaste 5500 puntos por tu compra	2026-03-24 01:54:58.276
-cmn3yqei3000zzbsr5fsz6wsn	cmn0pgw0k001d10epk4ld8bzq	cmn3yqegm000szbsr2vkanw5h	EARN	5500	41500	Ganaste 5500 puntos por tu compra	2026-03-24 01:55:41.164
-cmn3z2vxm001azbsr2tjwmtvo	cmn0pgw0k001d10epk4ld8bzq	cmn3z2vw40013zbsr8f3v9d5q	EARN	5500	47000	Ganaste 5500 puntos por tu compra	2026-03-24 02:05:23.626
 \.
 
 
@@ -1773,8 +1908,8 @@ COPY public."Product" (id, name, slug, description, "merchantId", price, "costPr
 cmn0pgvza000m10epvgzb32xp	Hamburguesa Doble	burger-ushuaia-hamburguesa-doble	\N	cmn0pgvyn000e10ep68gshzgr	7500	4500	100	5	t	f	2026-03-21 19:13:02.182	2026-03-21 19:13:02.182	\N
 cmn0pgvzk000s10epio10nlg1	Hamburguesa Veggie	burger-ushuaia-hamburguesa-veggie	\N	cmn0pgvyn000e10ep68gshzgr	5000	3000	100	5	t	f	2026-03-21 19:13:02.193	2026-03-21 19:13:02.193	\N
 cmn0pgvzv000y10eput4tyvyz	Papas Fritas	burger-ushuaia-papas-fritas	\N	cmn0pgvyn000e10ep68gshzgr	2500	1500	100	5	t	f	2026-03-21 19:13:02.204	2026-03-21 19:13:02.204	\N
-cmn0pgw03001410eptx02ubzu	Coca Cola 500ml	burger-ushuaia-coca-cola-500ml	\N	cmn0pgvyn000e10ep68gshzgr	1500	900	98	5	t	f	2026-03-21 19:13:02.212	2026-03-21 21:28:34.319	\N
-cmn0pgvyw000g10epjrpq4iu1	Hamburguesa Cl├ísica	burger-ushuaia-hamburguesa-cl├ísica	\N	cmn0pgvyn000e10ep68gshzgr	5500	3300	92	5	t	f	2026-03-21 19:13:02.168	2026-03-24 02:05:23.585	\N
+cmn0pgw03001410eptx02ubzu	Coca Cola 500ml	burger-ushuaia-coca-cola-500ml	\N	cmn0pgvyn000e10ep68gshzgr	1500	900	92	5	t	f	2026-03-21 19:13:02.212	2026-03-24 15:44:36.791	\N
+cmn0pgvyw000g10epjrpq4iu1	Hamburguesa Cl├ísica	burger-ushuaia-hamburguesa-cl├ísica	\N	cmn0pgvyn000e10ep68gshzgr	5500	3300	86	5	t	f	2026-03-21 19:13:02.168	2026-03-24 17:42:02.233	\N
 \.
 
 
@@ -1833,7 +1968,6 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 --
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "updatedAt") FROM stdin;
-cmn3z7por001bzbsr8cahaio0	cmn0pgw0k001d10epk4ld8bzq	[{"id": "cmn0pgvza000m10epvgzb32xp-default-1774318147755", "name": "Hamburguesa Doble", "type": "product", "image": "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400", "price": 7500, "quantity": 1, "productId": "cmn0pgvza000m10epvgzb32xp", "merchantId": "cmn0pgvyn000e10ep68gshzgr"}]	\N	2026-03-24 02:09:08.811	2026-03-24 02:09:08.811
 \.
 
 
@@ -1858,8 +1992,8 @@ cmn3zgcd9001lzbsrud87doc7	cmn3ze631001ezbsrowh7mtoj	Alnaar	Comida Arabe	\N	875cb
 -- Data for Name: StoreSettings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "riderCommissionPercent") FROM stdin;
-settings	t	Estamos cerrados. ??Volvemos pronto!	f	??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.	1200	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-03-21 19:13:02.089	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	10	t	5000	/productos?categoria=pizzas	Ver locales	t	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	80
+COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "riderCommissionPercent", "activeClimateCondition", "cashLimitL1", "cashLimitL2", "cashLimitL3", "cashMpOnlyDeliveries", "climateMultipliersJson", "defaultMerchantCommission", "defaultSellerCommission", "driverResponseTimeoutSec", "maxAnticipationHours", "maxOrdersPerSlot", "merchantConfirmTimeoutSec", "minAnticipationHours", "operatingHoursEnd", "operatingHoursStart", "operationalCostPercent", "slotDurationMinutes", "zoneMultipliersJson") FROM stdin;
+settings	t	Estamos cerrados. ??Volvemos pronto!	f	??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.	1200	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-03-26 04:32:30.289	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	10	t	5000	/productos?categoria=pizzas	Ver locales	t	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	80	normal	15000	25000	40000	10	{"normal":1.0,"lluvia":1.10,"nieve":1.15,"extremo":1.25}	8	12	20	48	15	300	1.5	22:00	09:00	5	120	{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}
 \.
 
 
@@ -1868,14 +2002,6 @@ settings	t	Estamos cerrados. ??Volvemos pronto!	f	??Volvemos pronto! Estamos tra
 --
 
 COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt") FROM stdin;
-cmn0rub7c0008k4ei3ao84zmf	cmn0rub6g0004k4eicbzf7ee8	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	5500	0	0	5500	\N	440	5060	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-21 20:19:27.673	2026-03-21 20:19:27.673	\N	PENDING	\N
-cmn0sa0dk000jk4eiunf497fe	cmn0sa09w000fk4eiq1tb74yf	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	1500	0	0	1500	\N	120	1380	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-21 20:31:40.136	2026-03-21 20:31:40.136	\N	PENDING	\N
-cmn0ttzhm000vk4ei87zfm2uf	cmn0ttzdz000rk4ei9r1ul1pu	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	16500	0	0	16500	\N	1320	15180	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-21 21:15:11.723	2026-03-21 21:15:11.723	\N	PENDING	\N
-cmn0u2wdv0016k4ei43cq01vh	cmn0u2wd80012k4eixj6pmkyb	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	5500	0	0	5500	\N	440	5060	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-21 21:22:07.603	2026-03-21 21:22:07.603	\N	PENDING	\N
-cmn0ub6s6001hk4eiheiu3jfs	cmn0ub6rm001dk4eiiawr7ff1	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	1500	0	0	1500	\N	120	1380	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-21 21:28:34.326	2026-03-21 21:28:34.326	\N	PENDING	\N
-cmn3yphap000lzbsr5d8n12hu	cmn3yph9s000hzbsrvog9smeg	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	5500	0	0	5500	\N	440	5060	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-24 01:54:58.129	2026-03-24 01:54:58.129	\N	PENDING	\N
-cmn3yqehc000wzbsrphdzdzjq	cmn3yqegm000szbsr2vkanw5h	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	5500	0	0	5500	\N	440	5060	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-24 01:55:41.136	2026-03-24 01:55:41.136	\N	PENDING	\N
-cmn3z2vwq0017zbsr9mq04t64	cmn3z2vw40013zbsr8f3v9d5q	cmn0pgvyn000e10ep68gshzgr	\N	PENDING	5500	0	0	5500	\N	440	5060	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-03-24 02:05:23.594	2026-03-24 02:05:23.594	\N	PENDING	\N
 \.
 
 
@@ -1901,7 +2027,6 @@ cmn3kmggj0009bf2225jl0a9v	cmn3kmggj0007bf229jkw823k	cmn0pgw0k001d10epk4ld8bzq	No
 cmn3knbpx000bbf22hsrt31lq	cmn3kmggj0007bf229jkw823k	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo) se uni├│ al chat	t	f	2026-03-23 19:21:22.966	\N	\N	t
 cmn3knbq7000dbf22d5s6svbm	cmn3kmggj0007bf229jkw823k	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo) se uni├│ al chat	t	f	2026-03-23 19:21:22.976	\N	\N	t
 cmn3m8e6m0004b4xf8v5tm3hn	cmn3m8e6m0001b4xf6yo3edij	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo) es tu operador asignado. En un momento te atiende, Cliente Demo.	t	f	2026-03-23 20:05:45.546	\N	\N	t
-cmn3nbm280004frpleka1za7f	cmn3nbm280001frplbehbon0n	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo) es tu operador asignado. En un momento te atiende, Cliente Demo.	t	f	2026-03-23 20:36:15.344	\N	\N	t
 cmn3m8e6m0003b4xf4iv1qklb	cmn3m8e6m0001b4xf6yo3edij	cmn0pgw0k001d10epk4ld8bzq	No me llegan los puntos	f	t	2026-03-23 20:05:45.546	\N	\N	f
 cmn3nbm280003frpljgmwuomn	cmn3nbm280001frplbehbon0n	cmn0pgw0k001d10epk4ld8bzq	Hola!	f	t	2026-03-23 20:36:15.344	\N	\N	f
 cmn3o8ldz0004chpmprcf9cel	cmn3o8ldz0001chpm1a3y4mp5	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo) es tu operador asignado. En un momento te atiende, Cliente Demo.	t	t	2026-03-23 21:01:54.115	\N	\N	t
@@ -1914,6 +2039,7 @@ cmn3ykajy000azbsrg0mnanvy	cmn3ykajy0007zbsrdtl9x17t	cmn3ygv3u0001zbsr6lkzqkuc	Iy
 cmn3ykajy0009zbsrrs8pg1sh	cmn3ykajy0007zbsrdtl9x17t	cmn0pgw0k001d10epk4ld8bzq	No se acredit├│ mi pago	f	t	2026-03-24 01:50:56.11	\N	\N	f
 cmn3ykrqm000czbsr4oj78n60	cmn3ykajy0007zbsrdtl9x17t	cmn3ygv3u0001zbsr6lkzqkuc	Hola mi amor hermoso	t	t	2026-03-24 01:51:18.382	\N	\N	f
 cmn3yl0zy000ezbsriheaaui2	cmn3ykajy0007zbsrdtl9x17t	cmn0pgw0k001d10epk4ld8bzq	Hola!!	f	t	2026-03-24 01:51:30.382	\N	\N	f
+cmn3nbm280004frpleka1za7f	cmn3nbm280001frplbehbon0n	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo) es tu operador asignado. En un momento te atiende, Cliente Demo.	t	t	2026-03-23 20:36:15.344	\N	\N	t
 \.
 
 
@@ -1922,8 +2048,8 @@ cmn3yl0zy000ezbsriheaaui2	cmn3ykajy0007zbsrdtl9x17t	cmn0pgw0k001d10epk4ld8bzq	Ho
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
-cmn3ygv4h0005zbsr2dc8l62s	cmn3ygv3u0001zbsr6lkzqkuc	Iyad	t	t	5	2026-03-24 01:50:39.641	2026-03-24 01:48:16.145	2026-03-24 01:50:39.642
 cmn3k7fvw0005bf22o0gkd4tn	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo)	t	t	5	2026-03-24 01:50:41.413	2026-03-23 19:09:01.869	2026-03-24 01:50:41.414
+cmn3ygv4h0005zbsr2dc8l62s	cmn3ygv3u0001zbsr6lkzqkuc	Iyad	f	t	5	2026-03-24 01:50:39.641	2026-03-24 01:48:16.145	2026-03-24 18:12:31.367
 \.
 
 
@@ -1932,13 +2058,14 @@ cmn3k7fvw0005bf22o0gkd4tn	cmn3k7fv40001bf2215pyris2	Maria (Zona PIipo)	t	t	5	202
 --
 
 COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "resetToken", "resetTokenExpiry", "deletedAt") FROM stdin;
-cmn3ygv3u0001zbsr6lkzqkuc	operador1@somosmoovy.com	$2b$12$reuthjkxq7jyo4yYNq9d2u4UxgjRofmA0KSjtkbPHl2P/TnllD3YK	Iyad	\N	\N	\N	USER	\N	\N	0	0	f	cmn3ygv3u0002zbsrws7tm8hw	\N	2026-03-24 01:48:16.121	2026-03-24 01:49:02.107	\N	\N	\N	\N	\N
-cmn0pgw0c001910epgep8s9t9	rider@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Repartidor Demo	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmn0pgw0c001a10epkob0eve5	\N	2026-03-21 19:13:02.22	2026-03-24 02:03:15.952	\N	\N	\N	\N	\N
-cmn0pgw0k001d10epk4ld8bzq	cliente@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Cliente Demo	\N	\N	\N	CLIENT	\N	\N	47000	0	t	cmn0pgw0k001e10epwb1kkkyf	\N	2026-03-21 19:13:02.228	2026-03-24 02:05:23.617	\N	\N	\N	\N	\N
-cmn3ze631001ezbsrowh7mtoj	ing.iyad@gmail.com	$2b$10$pX0fMhcAPjBmVUNVZnb1UOaHR3MAIpi8Rm8XakM5wcuO1IB18gMCW	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	0	100	f	MOV-E2HN	\N	2026-03-24 02:14:09.997	2026-03-24 02:14:10.386	2026-03-24 02:14:09.995	2026-03-24 02:14:09.995	\N	\N	\N
-cmn0pgvyj000b10ep2u77j0im	comercio@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Burger Ushuaia	\N	\N	\N	MERCHANT	\N	\N	0	0	f	cmn0pgvyj000c10epqzsa56vh	\N	2026-03-21 19:13:02.155	2026-03-21 21:30:07.909	\N	\N	\N	\N	\N
-cmn0pgvwf000010epggulhpgv	admin@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	0	0	f	cmn0pgvwf000110epi5mbqxxu	\N	2026-03-21 19:13:02.079	2026-03-24 02:19:04.756	\N	\N	\N	\N	\N
-cmn3k7fv40001bf2215pyris2	operador@somosmoovy.com	$2b$12$JnfS1fQnAh3DsUsvCfBpa.DtAtsqtrr6qoR0TkH3bfTYjCzhHzBry	Maria (Zona PIipo)	\N	\N	\N	USER	\N	\N	0	0	f	cmn3k7fv40002bf22tjmab0w5	\N	2026-03-23 19:09:01.839	2026-03-23 20:06:30.89	\N	\N	\N	\N	\N
+cmn3ygv3u0001zbsr6lkzqkuc	operador1@somosmoovy.com	$2b$12$reuthjkxq7jyo4yYNq9d2u4UxgjRofmA0KSjtkbPHl2P/TnllD3YK	Iyad	\N	\N	\N	USER	\N	\N	100	0	f	cmn3ygv3u0002zbsrws7tm8hw	\N	2026-03-24 01:48:16.121	2026-03-25 02:42:37.722	\N	\N	\N	\N	\N
+cmn0pgw0c001910epgep8s9t9	rider@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Repartidor Demo	\N	\N	\N	DRIVER	\N	\N	100	0	f	cmn0pgw0c001a10epkob0eve5	\N	2026-03-21 19:13:02.22	2026-03-25 02:42:37.722	\N	\N	\N	\N	\N
+cmn3ze631001ezbsrowh7mtoj	ing.iyad@gmail.com	$2b$10$pX0fMhcAPjBmVUNVZnb1UOaHR3MAIpi8Rm8XakM5wcuO1IB18gMCW	Iyad Marmoud	Iyad	Marmoud	+54 2901611605	USER	\N	\N	100	100	f	MOV-E2HN	\N	2026-03-24 02:14:09.997	2026-03-25 02:42:37.722	2026-03-24 02:14:09.995	2026-03-24 02:14:09.995	\N	\N	\N
+cmn3k7fv40001bf2215pyris2	operador@somosmoovy.com	$2b$12$JnfS1fQnAh3DsUsvCfBpa.DtAtsqtrr6qoR0TkH3bfTYjCzhHzBry	Maria (Zona PIipo)	\N	\N	\N	USER	\N	\N	100	0	f	cmn3k7fv40002bf22tjmab0w5	\N	2026-03-23 19:09:01.839	2026-03-25 02:42:37.722	\N	\N	\N	\N	\N
+cmn0pgvyj000b10ep2u77j0im	comercio@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	 				MERCHANT	\N	\N	100	0	f	cmn0pgvyj000c10epqzsa56vh	\N	2026-03-21 19:13:02.155	2026-03-25 02:42:37.722	\N	\N	\N	\N	\N
+cmn4wez9a0000ksg2w5985ob8	somosmoovy@gmail.com	$2b$12$lEuq.hpPc91y/1X.O0.OXOwR4ghQTBqMujO3u.Z5Zktkue/zjIoPe	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	100	0	f	cmn4wez9a0001ksg2tfo8lqe0	\N	2026-03-24 17:38:35.135	2026-03-25 02:42:37.722	\N	\N	\N	\N	\N
+cmn0pgw0k001d10epk4ld8bzq	cliente@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Cliente Demo	\N	\N	\N	CLIENT	\N	\N	100	0	t	cmn0pgw0k001e10epwb1kkkyf	\N	2026-03-21 19:13:02.228	2026-03-25 02:42:37.722	\N	\N	\N	\N	\N
+cmn0pgvwf000010epggulhpgv	admin@somosmoovy.com	$2b$10$gBEkHwLXfAgtK0R/oYWyreYgviqXgw8AvoVc/loShLtT8IBPyjeke	Admin MOOVY	\N	\N	\N	ADMIN	\N	\N	100	0	f	cmn0pgvwf000110epi5mbqxxu	\N	2026-03-21 19:13:02.079	2026-03-25 11:40:22.707	\N	\N	\N	\N	\N
 \.
 
 
@@ -1952,6 +2079,8 @@ cmn3ygv3u0003zbsrkk0b3aai	cmn3ygv3u0001zbsr6lkzqkuc	ADMIN	t	2026-03-24 01:48:16.
 cmn3ze636001gzbsr49b7datz	cmn3ze631001ezbsrowh7mtoj	USER	t	2026-03-24 02:14:10.002
 cmn3zgc8d001jzbsr3h6at1h2	cmn3ze631001ezbsrowh7mtoj	SELLER	t	2026-03-24 02:15:51.277
 cmn3zjqwd001qzbsr5vnskd8m	cmn3ze631001ezbsrowh7mtoj	DRIVER	t	2026-03-24 02:18:30.254
+cmn4wez9i0003ksg2kpsr0npy	cmn4wez9a0000ksg2w5985ob8	ADMIN	t	2026-03-24 17:38:35.142
+cmn4wez9o0005ksg2sp9047d9	cmn4wez9a0000ksg2w5985ob8	USER	t	2026-03-24 17:38:35.148
 \.
 
 
@@ -2012,6 +2141,14 @@ ALTER TABLE ONLY public."Category"
 
 
 --
+-- Name: ConfigAuditLog ConfigAuditLog_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ConfigAuditLog"
+    ADD CONSTRAINT "ConfigAuditLog_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: CouponUsage CouponUsage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2033,6 +2170,14 @@ ALTER TABLE ONLY public."Coupon"
 
 ALTER TABLE ONLY public."DeliveryRate"
     ADD CONSTRAINT "DeliveryRate_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: DriverLocationHistory DriverLocationHistory_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."DriverLocationHistory"
+    ADD CONSTRAINT "DriverLocationHistory_pkey" PRIMARY KEY (id);
 
 
 --
@@ -2089,6 +2234,14 @@ ALTER TABLE ONLY public."MerchantAcquiredProduct"
 
 ALTER TABLE ONLY public."MerchantCategory"
     ADD CONSTRAINT "MerchantCategory_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: MerchantLoyaltyConfig MerchantLoyaltyConfig_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."MerchantLoyaltyConfig"
+    ADD CONSTRAINT "MerchantLoyaltyConfig_pkey" PRIMARY KEY (id);
 
 
 --
@@ -2424,6 +2577,20 @@ CREATE UNIQUE INDEX "Category_slug_key" ON public."Category" USING btree (slug);
 
 
 --
+-- Name: ConfigAuditLog_adminUserId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ConfigAuditLog_adminUserId_idx" ON public."ConfigAuditLog" USING btree ("adminUserId");
+
+
+--
+-- Name: ConfigAuditLog_configType_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ConfigAuditLog_configType_createdAt_idx" ON public."ConfigAuditLog" USING btree ("configType", "createdAt");
+
+
+--
 -- Name: CouponUsage_couponId_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2463,6 +2630,27 @@ CREATE INDEX "Coupon_isActive_idx" ON public."Coupon" USING btree ("isActive");
 --
 
 CREATE UNIQUE INDEX "DeliveryRate_categoryId_key" ON public."DeliveryRate" USING btree ("categoryId");
+
+
+--
+-- Name: DriverLocationHistory_driverId_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "DriverLocationHistory_driverId_createdAt_idx" ON public."DriverLocationHistory" USING btree ("driverId", "createdAt");
+
+
+--
+-- Name: DriverLocationHistory_orderId_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "DriverLocationHistory_orderId_createdAt_idx" ON public."DriverLocationHistory" USING btree ("orderId", "createdAt");
+
+
+--
+-- Name: DriverLocationHistory_timestamp_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "DriverLocationHistory_timestamp_idx" ON public."DriverLocationHistory" USING btree ("timestamp");
 
 
 --
@@ -2557,6 +2745,20 @@ CREATE UNIQUE INDEX "MerchantCategory_merchantId_categoryId_key" ON public."Merc
 
 
 --
+-- Name: MerchantLoyaltyConfig_tier_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "MerchantLoyaltyConfig_tier_idx" ON public."MerchantLoyaltyConfig" USING btree (tier);
+
+
+--
+-- Name: MerchantLoyaltyConfig_tier_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "MerchantLoyaltyConfig_tier_key" ON public."MerchantLoyaltyConfig" USING btree (tier);
+
+
+--
 -- Name: Merchant_approvalStatus_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2568,6 +2770,13 @@ CREATE INDEX "Merchant_approvalStatus_idx" ON public."Merchant" USING btree ("ap
 --
 
 CREATE INDEX "Merchant_isActive_idx" ON public."Merchant" USING btree ("isActive");
+
+
+--
+-- Name: Merchant_loyaltyTier_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "Merchant_loyaltyTier_idx" ON public."Merchant" USING btree ("loyaltyTier");
 
 
 --
@@ -3082,6 +3291,22 @@ ALTER TABLE ONLY public."CouponUsage"
 
 ALTER TABLE ONLY public."DeliveryRate"
     ADD CONSTRAINT "DeliveryRate_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES public."PackageCategory"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: DriverLocationHistory DriverLocationHistory_driverId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."DriverLocationHistory"
+    ADD CONSTRAINT "DriverLocationHistory_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES public."Driver"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: DriverLocationHistory DriverLocationHistory_orderId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."DriverLocationHistory"
+    ADD CONSTRAINT "DriverLocationHistory_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES public."Order"(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
