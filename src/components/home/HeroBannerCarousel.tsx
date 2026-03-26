@@ -100,12 +100,12 @@ export default function HeroBannerCarousel({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Slides container */}
-      <div className="relative w-full">
+      {/* Aspect ratio container — slides are absolute inside this */}
+      <div className="relative w-full pt-[100%] sm:pt-[66.67%] lg:pt-[34.72%]">
         {validSlides.map((s, idx) => (
           <div
             key={s.id}
-            className="absolute inset-0 w-full transition-opacity duration-500 ease-in-out"
+            className="absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out"
             style={{
               opacity: idx === current ? 1 : 0,
               pointerEvents: idx === current ? "auto" : "none",
@@ -116,7 +116,6 @@ export default function HeroBannerCarousel({
               className="block w-full h-full"
               aria-label={s.title}
             >
-              {/* Picture element for responsive images */}
               <picture className="block w-full h-full">
                 {s.imageDesktop && (
                   <source
@@ -126,11 +125,10 @@ export default function HeroBannerCarousel({
                 )}
                 {s.imageMobile && (
                   <source
-                    media="(min-width: 640px)"
+                    media="(max-width: 639px)"
                     srcSet={s.imageMobile}
                   />
                 )}
-                {/* Fallback for older browsers and mobile */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={s.imageMobile || s.imageDesktop || s.image || ""}
@@ -143,9 +141,6 @@ export default function HeroBannerCarousel({
           </div>
         ))}
       </div>
-
-      {/* Aspect ratio padding for desktop and mobile */}
-      <div className="relative pt-[66.67%] lg:pt-[34.72%] bg-gray-900" />
 
       {/* Navigation controls - only show if multiple slides */}
       {showControls && (
