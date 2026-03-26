@@ -144,11 +144,10 @@ type DeliveryRateItem = {
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
+// Campos que solo viven en MoovyConfig (assignment engine, crons).
+// Timeouts y comisiones se manejan desde Biblia Financiera (StoreSettings)
+// y se sincronizan automáticamente a MoovyConfig al guardar.
 const GLOBAL_CONFIG_FIELDS = [
-  { key: "driver_response_timeout_seconds", label: "Timeout respuesta driver", unit: "seg", min: 10, max: 60 },
-  { key: "merchant_confirm_timeout_seconds", label: "Timeout confirmación comercio", unit: "seg", min: 10, max: 300 },
-  { key: "seller_commission_pct", label: "Comisión vendedor", unit: "%", min: 0, max: 100 },
-  { key: "driver_commission_pct", label: "Comisión repartidor", unit: "%", min: 0, max: 100 },
   { key: "max_delivery_distance_km", label: "Distancia máx. delivery", unit: "km", min: 1, max: 200 },
   { key: "min_order_amount_ars", label: "Monto mínimo pedido", unit: "ARS", min: 0, max: 999999 },
   { key: "max_assignment_attempts", label: "Intentos máx. asignación", unit: "", min: 1, max: 20 },
@@ -158,14 +157,7 @@ const GLOBAL_CONFIG_FIELDS = [
 ];
 
 const GLOBAL_CONFIG_INFO: Record<string, string> = {
-  driver_response_timeout_seconds:
-    "Tiempo máximo (en segundos) que un repartidor tiene para aceptar o rechazar un pedido antes de que se le pase al siguiente. Un valor bajo (15-20s) mantiene la asignación rápida; un valor alto (40-60s) da más tiempo al repartidor.",
-  merchant_confirm_timeout_seconds:
-    "Tiempo máximo (en segundos) que el comercio tiene para confirmar un pedido nuevo. Si no confirma en este tiempo, el pedido se cancela automáticamente. Para restaurantes se recomienda 120-180s; para tiendas 60-120s.",
-  seller_commission_pct:
-    "Porcentaje que MOOVY cobra a los vendedores del Marketplace sobre cada venta. Se descuenta del pago al vendedor. Valor estándar: 10%.",
-  driver_commission_pct:
-    "Porcentaje que MOOVY cobra a los repartidores sobre sus ganancias de delivery. Valor estándar: 0% (los drivers cobran la tarifa completa de entrega).",
+  // Timeouts y comisiones movidos a Biblia Financiera (con sync automático a MoovyConfig)
   max_delivery_distance_km:
     "Distancia máxima en kilómetros entre el comercio y el cliente para aceptar un pedido con delivery. Pedidos que excedan esta distancia solo podrán ser retiro en local. Para Ushuaia se recomienda 15-25km.",
   min_order_amount_ars:
@@ -846,6 +838,16 @@ export default function ConfigLogisticaPage() {
           saving={savingConfigs}
           onSave={saveGlobalConfig}
         >
+          <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3">
+            <Info className="w-5 h-5 text-blue-500 flex-shrink-0" />
+            <p className="text-sm text-blue-700">
+              <strong>Timeouts, comisiones y delivery</strong> se configuran desde la{" "}
+              <a href="/ops/config-biblia" className="underline font-bold hover:text-blue-900">
+                Biblia Financiera
+              </a>
+              . Los cambios se sincronizan automáticamente.
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {GLOBAL_CONFIG_FIELDS.map((field) => (
               <div key={field.key} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white transition-colors">

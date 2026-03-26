@@ -81,7 +81,7 @@ const navSections: NavSection[] = [
             { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
             { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
             { href: "/ops/ventas-paquetes", icon: Package, label: "Ventas B2B" },
-            { href: "/ops/puntos", icon: Gift, label: "Puntos" },
+            { href: "/ops/lealtad-comercios", icon: Gift, label: "Lealtad Comercios" },
         ],
     },
     {
