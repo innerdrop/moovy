@@ -79,13 +79,21 @@ export async function POST(request: Request) {
             );
         }
 
+        // Support custom maxWidth via query string (for hero banners etc.)
+        const url = new URL(request.url);
+        const maxWidthParam = url.searchParams.get("maxWidth");
+        const subfolder = url.searchParams.get("folder") || "products";
+        // Validate subfolder to prevent path traversal
+        const safeFolder = subfolder.replace(/[^a-zA-Z0-9_-]/g, "");
+        const maxWidth = maxWidthParam ? Math.min(Math.max(parseInt(maxWidthParam, 10) || 1200, 200), 3000) : 1200;
+
         // Process image with sharp:
-        // 1. Resize to max 1200px width (maintaining aspect ratio)
+        // 1. Resize to max width (maintaining aspect ratio)
         // 2. Convert to WebP format
         // 3. Compress to 80% quality
         // 4. Remove EXIF/metadata
         const optimizedBuffer = await sharp(originalBuffer)
-            .resize(1200, null, {
+            .resize(maxWidth, null, {
                 withoutEnlargement: true,  // Don't upscale small images
                 fit: 'inside'
             })
@@ -98,7 +106,7 @@ export async function POST(request: Request) {
         const filename = `${Date.now()}-${baseName}.webp`;
 
         // Ensure directory exists
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+        const uploadDir = path.join(process.cwd(), "public", "uploads", safeFolder);
 
         try {
             await mkdir(uploadDir, { recursive: true });
@@ -114,7 +122,7 @@ export async function POST(request: Request) {
         }
 
         // Return the public URL
-        const imageUrl = `/uploads/products/${filename}`;
+        const imageUrl = `/uploads/${safeFolder}/${filename}`;
         return NextResponse.json({ url: imageUrl });
 
     } catch (error) {

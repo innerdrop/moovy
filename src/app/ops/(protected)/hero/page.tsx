@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -8,7 +8,7 @@ import {
   Trash2,
   Edit2,
   Upload,
-  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -35,6 +35,8 @@ export default function HeroPage() {
   const [uploading, setUploading] = useState<{
     [key: string]: boolean;
   }>({});
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -80,7 +82,9 @@ export default function HeroPage() {
     formDataToSend.append("file", file);
 
     try {
-      const res = await fetch("/api/upload", {
+      // Hero banners: use wider max width (1920px) and dedicated folder
+      const maxWidth = fieldName === "imageDesktop" ? 1920 : 1200;
+      const res = await fetch(`/api/upload?maxWidth=${maxWidth}&folder=slides`, {
         method: "POST",
         body: formDataToSend,
       });
@@ -351,54 +355,36 @@ export default function HeroPage() {
                   {/* Desktop Image */}
                   <div>
                     <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                      <input
+                        ref={desktopInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => handleImageUpload(e, "imageDesktop")}
+                        className="hidden"
+                      />
                       <div className="text-center">
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        {uploading[`${editingId || "new"}-imageDesktop`] ? (
+                          <Loader2 className="w-8 h-8 text-[#e60012] mx-auto mb-3 animate-spin" />
+                        ) : (
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        )}
                         <h4 className="font-semibold text-gray-900 mb-1">
                           Banner Desktop
                         </h4>
                         <p className="text-xs text-gray-500 mb-4">
-                          1440 × 500 px | WebP/JPG | Máx 300 KB
+                          1440 × 500 px | WebP/JPG/PNG | Máx 10 MB
                         </p>
 
-                        <label className="inline-block">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) =>
-                              handleImageUpload(e, "imageDesktop")
-                            }
-                            disabled={
-                              uploading[`${editingId || "new"}-imageDesktop`]
-                            }
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              (e.target as HTMLLabelElement)
-                                .querySelector("input")
-                                ?.click();
-                            }}
-                            disabled={
-                              uploading[`${editingId || "new"}-imageDesktop`]
-                            }
-                            className="px-4 py-2 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition disabled:opacity-50"
-                          >
-                            {uploading[`${editingId || "new"}-imageDesktop`]
-                              ? "Subiendo..."
-                              : "Seleccionar imagen"}
-                          </button>
-                        </label>
-
-                        <a
-                          href="https://www.canva.com/design/create?width=1440&height=500&units=px"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-[#e60012] font-semibold text-sm mt-3 hover:underline"
+                        <button
+                          type="button"
+                          onClick={() => desktopInputRef.current?.click()}
+                          disabled={uploading[`${editingId || "new"}-imageDesktop`]}
+                          className="px-4 py-2 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition disabled:opacity-50"
                         >
-                          Diseñar en Canva
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
+                          {uploading[`${editingId || "new"}-imageDesktop`]
+                            ? "Subiendo..."
+                            : "Seleccionar imagen"}
+                        </button>
                       </div>
 
                       {formData.imageDesktop && (
@@ -410,12 +396,10 @@ export default function HeroPage() {
                           />
                           <button
                             type="button"
-                            onClick={() =>
-                              setFormData({
-                                ...formData,
-                                imageDesktop: null,
-                              })
-                            }
+                            onClick={() => {
+                              setFormData({ ...formData, imageDesktop: null });
+                              if (desktopInputRef.current) desktopInputRef.current.value = "";
+                            }}
                             className="mt-2 text-red-600 text-sm font-semibold hover:underline"
                           >
                             Eliminar imagen
@@ -428,54 +412,36 @@ export default function HeroPage() {
                   {/* Mobile Image */}
                   <div>
                     <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                      <input
+                        ref={mobileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => handleImageUpload(e, "imageMobile")}
+                        className="hidden"
+                      />
                       <div className="text-center">
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        {uploading[`${editingId || "new"}-imageMobile`] ? (
+                          <Loader2 className="w-8 h-8 text-[#e60012] mx-auto mb-3 animate-spin" />
+                        ) : (
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        )}
                         <h4 className="font-semibold text-gray-900 mb-1">
                           Banner Mobile
                         </h4>
                         <p className="text-xs text-gray-500 mb-4">
-                          800 × 800 px | WebP/JPG | Máx 300 KB
+                          800 × 800 px | WebP/JPG/PNG | Máx 10 MB
                         </p>
 
-                        <label className="inline-block">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) =>
-                              handleImageUpload(e, "imageMobile")
-                            }
-                            disabled={
-                              uploading[`${editingId || "new"}-imageMobile`]
-                            }
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              (e.target as HTMLLabelElement)
-                                .querySelector("input")
-                                ?.click();
-                            }}
-                            disabled={
-                              uploading[`${editingId || "new"}-imageMobile`]
-                            }
-                            className="px-4 py-2 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition disabled:opacity-50"
-                          >
-                            {uploading[`${editingId || "new"}-imageMobile`]
-                              ? "Subiendo..."
-                              : "Seleccionar imagen"}
-                          </button>
-                        </label>
-
-                        <a
-                          href="https://www.canva.com/design/create?width=800&height=800&units=px"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-[#e60012] font-semibold text-sm mt-3 hover:underline"
+                        <button
+                          type="button"
+                          onClick={() => mobileInputRef.current?.click()}
+                          disabled={uploading[`${editingId || "new"}-imageMobile`]}
+                          className="px-4 py-2 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition disabled:opacity-50"
                         >
-                          Diseñar en Canva
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
+                          {uploading[`${editingId || "new"}-imageMobile`]
+                            ? "Subiendo..."
+                            : "Seleccionar imagen"}
+                        </button>
                       </div>
 
                       {formData.imageMobile && (
@@ -489,12 +455,10 @@ export default function HeroPage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() =>
-                              setFormData({
-                                ...formData,
-                                imageMobile: null,
-                              })
-                            }
+                            onClick={() => {
+                              setFormData({ ...formData, imageMobile: null });
+                              if (mobileInputRef.current) mobileInputRef.current.value = "";
+                            }}
                             className="mt-2 w-full text-red-600 text-sm font-semibold hover:underline"
                           >
                             Eliminar imagen
