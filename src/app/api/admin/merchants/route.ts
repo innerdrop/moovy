@@ -1,16 +1,16 @@
 // API Route: Admin Merchants Management
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 
 // GET - Fetch all merchants with filters
 export async function GET(request: Request) {
     try {
         const session = await auth();
-        const userRole = (session?.user as any)?.role;
 
-        if (!session || userRole !== "ADMIN") {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        if (!hasAnyRole(session, ["ADMIN"])) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -59,21 +59,52 @@ export async function GET(request: Request) {
     }
 }
 
-// PATCH - Update merchant
+// Allowed fields for admin merchant update (whitelist to prevent injection)
+const ALLOWED_MERCHANT_UPDATE_FIELDS = new Set([
+    "name",
+    "description",
+    "email",
+    "phone",
+    "address",
+    "image",
+    "logo",
+    "isActive",
+    "isVerified",
+    "approvalStatus",
+    "approvedAt",
+    "rejectionReason",
+    "minOrderAmount",
+    "deliveryRadiusKm",
+    "commissionRate",
+    "schedule",
+]);
+
+// PATCH - Update merchant (whitelist-protected)
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
-        const userRole = (session?.user as any)?.role;
 
-        if (!session || userRole !== "ADMIN") {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        if (!hasAnyRole(session, ["ADMIN"])) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
         const data = await request.json();
-        const { id, ...updateData } = data;
+        const { id, ...rawData } = data;
 
         if (!id) {
             return NextResponse.json({ error: "ID requerido" }, { status: 400 });
+        }
+
+        // Filter to only allowed fields
+        const updateData: Record<string, any> = {};
+        for (const [key, value] of Object.entries(rawData)) {
+            if (ALLOWED_MERCHANT_UPDATE_FIELDS.has(key)) {
+                updateData[key] = value;
+            }
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ error: "No se proporcionaron campos válidos para actualizar" }, { status: 400 });
         }
 
         const updated = await prisma.merchant.update({

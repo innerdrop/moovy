@@ -74,11 +74,21 @@ export async function POST(
             );
         }
 
-        // Update status to READY
-        await prisma.order.update({
-            where: { id: orderId },
+        // Atomic conditional update to prevent race condition
+        const updateResult = await prisma.order.updateMany({
+            where: {
+                id: orderId,
+                status: { in: readyableStatuses },
+            },
             data: { status: "READY" },
         });
+
+        if (updateResult.count === 0) {
+            return NextResponse.json(
+                { error: "El pedido ya cambió de estado" },
+                { status: 409 }
+            );
+        }
 
         // Notify assigned driver if exists
         if (order.driverId) {

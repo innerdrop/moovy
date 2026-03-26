@@ -432,20 +432,14 @@ async function main() {
   console.log("");
 
   if (failed.length > 0) {
-    console.log("⚠️  HAY PROBLEMAS DE CONFIGURACIÓN QUE PUEDEN CAUSAR PÉRDIDA DE DINERO");
-    console.log("   Revisá los tests fallidos y corregí antes de operar.\n");
+    console.log("⚠️  HAY PROBLEMAS DE CONFIGURACIÓN. Ejecutá: npx tsx scripts/fix-ops-config.ts");
     process.exit(1);
   } else {
-    console.log("✅ Todas las configuraciones son válidas y consistentes.\n");
-    process.exit(0);
+    console.log("✅ Todas las validaciones pasaron correctamente");
   }
 }
 
-main()
-  .catch((e) => {
-    console.error("Error fatal:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((err) => {
+  console.error("Error fatal:", err);
+  process.exit(1);
+});

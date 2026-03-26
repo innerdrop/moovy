@@ -58,6 +58,6 @@ export async function POST(request: Request) {
         return NextResponse.json(updatedConfig);
     } catch (error) {
         console.error("[DEPRECATED] Error updating points config:", error);
-        return NextResponse.json({ error: "Error al actualizar configuración" }, { status: 500 });
+        return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }
 }

@@ -27,14 +27,22 @@ export async function GET() {
         const merchantIds = merchants.map(m => m.id);
 
         // If ADMIN, show all orders. If MERCHANT, filter by their stores.
-        const where = hasAnyRole(session, ["ADMIN"])
-            ? {}
-            : { merchantId: { in: merchantIds.length > 0 ? merchantIds : ["NONE"] } };
+        // Always exclude soft-deleted orders
+        const isAdmin = hasAnyRole(session, ["ADMIN"]);
+        const where = isAdmin
+            ? { deletedAt: null }
+            : {
+                  merchantId: { in: merchantIds.length > 0 ? merchantIds : ["NONE"] },
+                  deletedAt: null,
+              };
 
         const orders = await prisma.order.findMany({
             where,
             include: {
                 items: true,
+                subOrders: isAdmin ? undefined : {
+                    where: { merchantId: { in: merchantIds } },
+                },
                 address: { select: { street: true, number: true, city: true } },
                 user: { select: { name: true, phone: true } },
                 driver: { select: { user: { select: { name: true, phone: true } } } },

@@ -195,15 +195,16 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "No se pueden eliminar usuarios admin" }, { status: 400 });
         }
 
-        // Delete users
-        await prisma.user.deleteMany({
-            where: { id: { in: userIds } }
+        // Soft delete users (set deletedAt instead of hard delete)
+        await prisma.user.updateMany({
+            where: { id: { in: userIds } },
+            data: { deletedAt: new Date() }
         });
 
         return NextResponse.json({
             success: true,
             deleted: userIds.length,
-            message: `${userIds.length} usuario(s) eliminado(s)`
+            message: `${userIds.length} usuario(s) desactivado(s)`
         });
     } catch (error) {
         console.error("Error deleting users:", error);

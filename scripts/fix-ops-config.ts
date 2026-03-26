@@ -371,19 +371,16 @@ async function main() {
 
   console.log(`\n══════════════════════════════════════════════════════════`);
   if (errors === 0) {
-    console.log("✅ TODAS LAS CONFIGURACIONES SON VÁLIDAS Y CONSISTENTES.");
-    console.log("   El panel OPS está listo para operar.\n");
+    console.log("✅ TODAS LAS CONFIGURACIONES ESTÁN CORRECTAS");
   } else {
-    console.log(`❌ ${errors} PROBLEMAS PERSISTEN. Revisá los errores arriba.\n`);
+    console.log(`❌ ${errors} error(es) persisten después de las correcciones`);
+    console.log("   Revisá manualmente los problemas reportados arriba");
     process.exit(1);
   }
+  console.log(`══════════════════════════════════════════════════════════\n`);
 }
 
-main()
-  .catch((e) => {
-    console.error("Error fatal:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((err) => {
+  console.error("Error fatal:", err);
+  process.exit(1);
+});

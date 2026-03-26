@@ -38,12 +38,27 @@ export async function PUT(request: Request) {
         // Get driver record
         const driver = await prisma.driver.findUnique({
             where: { userId: session.user.id },
+            select: {
+                id: true,
+                latitude: true,
+                longitude: true,
+                lastLocationAt: true,
+                approvalStatus: true,
+                isActive: true,
+            },
         });
 
         if (!driver) {
             return NextResponse.json(
                 { error: "Perfil de repartidor no encontrado" },
                 { status: 404 }
+            );
+        }
+
+        if (driver.approvalStatus !== "APPROVED") {
+            return NextResponse.json(
+                { error: "Tu solicitud está pendiente de aprobación" },
+                { status: 403 }
             );
         }
 

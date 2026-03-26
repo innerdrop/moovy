@@ -1,5 +1,6 @@
 // API Route: Driver Claim Order
-// Allows a driver to claim an available order
+// Allows an APPROVED driver to claim an available READY order
+// Uses transaction to prevent race condition (two drivers claiming same order)
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
@@ -16,48 +17,42 @@ export async function POST(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
-        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        if (!hasAnyRole(session, ["DRIVER"])) {
+            return NextResponse.json({ error: "Solo repartidores pueden tomar pedidos" }, { status: 403 });
         }
 
         const { id: orderId } = await params;
 
-        // Get or create driver record
-        let driver = await prisma.driver.findUnique({
+        // Verify driver exists, is approved, and is active
+        const driver = await prisma.driver.findUnique({
             where: { userId: session.user.id },
+            select: { id: true, approvalStatus: true, isActive: true, isOnline: true },
         });
 
         if (!driver) {
-            // Auto-create driver record if user has DRIVER role
-            driver = await prisma.driver.create({
-                data: {
-                    userId: session.user.id,
-                    isActive: true,
-                    isOnline: true,
-                },
-            });
+            return NextResponse.json({ error: "Perfil de repartidor no encontrado. Registrate primero." }, { status: 404 });
         }
 
-        // Check if order is available
-        const order = await prisma.order.findUnique({
-            where: { id: orderId },
-        });
-
-        if (!order) {
-            return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+        if (driver.approvalStatus !== "APPROVED") {
+            return NextResponse.json(
+                { error: "Tu solicitud está pendiente de aprobación" },
+                { status: 403 }
+            );
         }
 
-        if (order.status !== "READY") {
-            return NextResponse.json({ error: "Este pedido no está listo para retiro" }, { status: 400 });
+        if (!driver.isActive) {
+            return NextResponse.json({ error: "Tu cuenta está desactivada" }, { status: 403 });
         }
 
-        if (order.driverId) {
-            return NextResponse.json({ error: "Este pedido ya fue tomado por otro conductor" }, { status: 400 });
-        }
-
-        // Claim the order — set both status and deliveryStatus to DRIVER_ASSIGNED
-        await prisma.order.update({
-            where: { id: orderId },
+        // Atomic claim using updateMany with condition to prevent race condition
+        // Only updates if order is READY and has no driver assigned
+        const result = await prisma.order.updateMany({
+            where: {
+                id: orderId,
+                status: "READY",
+                driverId: null,
+                deletedAt: null,
+            },
             data: {
                 driverId: driver.id,
                 status: "DRIVER_ASSIGNED",
@@ -65,11 +60,37 @@ export async function POST(
             },
         });
 
-        // Notify buyer that driver was assigned
-        notifyBuyer(order.userId, "DRIVER_ASSIGNED", order.orderNumber, {
-            total: order.total,
-            orderId: order.id,
-        }).catch(err => console.error("[Push] Buyer notification error:", err));
+        if (result.count === 0) {
+            // Check why it failed — order doesn't exist, wrong status, or already claimed
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+                select: { status: true, driverId: true, deletedAt: true },
+            });
+
+            if (!order || order.deletedAt) {
+                return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+            }
+            if (order.driverId) {
+                return NextResponse.json({ error: "Este pedido ya fue tomado por otro repartidor" }, { status: 409 });
+            }
+            return NextResponse.json(
+                { error: `Este pedido no está disponible (estado: ${order.status})` },
+                { status: 400 }
+            );
+        }
+
+        // Fetch order data for notification
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: { userId: true, orderNumber: true, id: true, total: true },
+        });
+
+        if (order) {
+            notifyBuyer(order.userId, "DRIVER_ASSIGNED", order.orderNumber, {
+                total: order.total,
+                orderId: order.id,
+            }).catch(err => console.error("[Push] Buyer notification error:", err));
+        }
 
         return NextResponse.json({ success: true, message: "Pedido asignado correctamente" });
     } catch (error) {

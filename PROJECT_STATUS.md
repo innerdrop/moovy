@@ -1,6 +1,6 @@
 # Moovy — Tareas pendientes
 Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
-Última actualización: 2026-03-24
+Última actualización: 2026-03-26
 
 ## P0 — Sin esto no se lanza
 
@@ -48,7 +48,27 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
   ✅ Indicadores Offline/En vivo innecesarios (removidos)
   ✅ Celebración puntos con glow azul fuera de branding (rediseñada)
   ✅ Tracking page con BottomSheet feo (rediseñado completo)
-  Pendiente: completar flows 2 (comercio), 3 (repartidor), 4 (admin)
+  Flow 2 (comercio) — code review completo 2026-03-26:
+  ✅ Race condition en merchant/orders/ready (updateMany condicional)
+  ✅ Merchant orders excluyen pedidos soft-deleted (deletedAt filter)
+  ✅ Merchant orders incluyen subOrders filtradas por merchantId (multi-vendor privacy)
+  ⚠️ Merchant orders: take:50 hardcoded, sin paginación (aceptable pre-lanzamiento)
+  ⚠️ merchantId no existe en session.user — afecta import/packages (ver nota)
+  Flow 3 (repartidor) — code review completo 2026-03-26:
+  ✅ CRITICAL: toggle-status sin hasAnyRole ni approvalStatus check (corregido)
+  ✅ CRITICAL: toggle-status sin Zod — "false" string coercionaba a true (corregido)
+  ✅ CRITICAL: claim endpoint auto-creaba driver sin registro (eliminado)
+  ✅ CRITICAL: claim endpoint sin protección de race condition (updateMany atómico)
+  ✅ HIGH: location endpoint sin approval check (corregido)
+  ⚠️ Password policy frontend 6 chars vs 8 en CLAUDE.md (fix pendiente)
+  Flow 4 (admin/ops) — code review completo 2026-03-26:
+  ✅ CRITICAL: puntos/page.tsx truncado con redirect incompleto (corregido)
+  ✅ CRITICAL: points/config/route.ts truncado (corregido)
+  ✅ CRITICAL: scripts truncados fix-ops-config.ts y validate-ops-config.ts (corregidos)
+  ✅ HIGH: admin users DELETE hacía hard delete (convertido a soft delete)
+  ✅ HIGH: admin merchants usaba legacy role check (migrado a hasAnyRole)
+  ✅ HIGH: admin merchants PATCH sin whitelist de campos (whitelist agregado)
+  Pendiente: smoke test visual en navegador (Mauro)
 
 ## P1 — Sin esto los usuarios se van
 
@@ -204,3 +224,4 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
 - [x] Chat buyer-driver mejorado (quick replies delivery, contexto ubicación, read receipts, delivery-context API) — 2026-03-24
 - [x] Historial ubicación driver (DriverLocationHistory, batch save, admin trace, cron cleanup 30d) — 2026-03-24
 - [x] Programa fidelización merchants (4 tiers BRONCE→DIAMANTE, comisión dinámica 5-8%, widget, badge, admin, cron) — 2026-03-24
+- [x] Smoke test code review flows 2/3/4: 12 bugs críticos/altos corregidos (driver approval gating, race conditions, admin soft delete, whitelist PATCH, syntax errors, scripts truncados) — 2026-03-26
