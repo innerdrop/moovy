@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, MessageCircle } from "lucide-react";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
@@ -61,8 +61,21 @@ export default function QuienesSomosPage() {
         }}
       />
 
+      {/* Back Navigation */}
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Link
+            href="/"
+            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <span className="font-semibold text-gray-900">Nosotros</span>
+        </div>
+      </div>
+
       {/* ===== HERO ===== */}
-      <section className="relative bg-white pt-20 pb-20 lg:pt-28 lg:pb-28 border-b border-gray-100">
+      <section className="relative bg-white pt-16 pb-20 lg:pt-24 lg:pb-28 border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-6">
