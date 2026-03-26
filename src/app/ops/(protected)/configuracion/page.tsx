@@ -1,12 +1,8 @@
 // Admin Configuration Page - Configuración de la Tienda (Premium Dashboard Design)
 import { prisma } from "@/lib/prisma";
-import { formatPrice } from "@/lib/delivery";
 import {
     Settings,
-    Store,
-    Truck,
     DollarSign,
-    MapPin,
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
 import { Switch } from "./Switch";
@@ -350,214 +346,26 @@ export default async function ConfigurationPage() {
                     </div>
                 </div>
 
-                {/* Full Width: Delivery Tools */}
+                {/* Full Width: Redirect to Biblia Financiera */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-slate-100 relative overflow-hidden group">
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-32 bg-navy/[0.02] -mt-16 rounded-[100%] group-hover:h-40 transition-all duration-500" />
-
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                    <a href="/ops/config-biblia" className="block bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-slate-100 hover:border-red-200 hover:shadow-md transition-all group">
+                        <div className="flex items-center justify-between">
                             <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20">
-                                    <Truck className="w-8 h-8 text-white" />
+                                <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20">
+                                    <DollarSign className="w-8 h-8 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black text-gray-900 leading-none italic">Logística de Delivery</h2>
-                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 bg-moovy rounded-full" />
-                                        Cálculo inteligente de tarifas
+                                    <h2 className="text-2xl font-black text-gray-900 leading-none italic">Logística, Delivery y Finanzas</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1.5">
+                                        Configurá tarifas, zonas, clima, comisiones y más desde la Biblia Financiera
                                     </p>
                                 </div>
                             </div>
-
-                            {/* Fast Action Cost Preview */}
-                            <div className="bg-slate-50 border border-slate-100 rounded-2xl px-6 py-3 flex items-center gap-4">
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Costo base hoy</p>
-                                    <p className="text-xl font-black text-gray-900 leading-none">
-                                        ${settings?.baseDeliveryFee || 500}
-                                    </p>
-                                </div>
-                                <div className="w-px h-8 bg-slate-200" />
-                                <div className="text-right">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Envío Gratis desde</p>
-                                    <p className="text-xl font-black text-moovy leading-none">
-                                        {settings?.freeDeliveryMinimum ? `$${settings.freeDeliveryMinimum}` : "Desactivado"}
-                                    </p>
-                                </div>
-                            </div>
+                            <span className="text-red-500 font-black text-sm group-hover:translate-x-1 transition-transform">
+                                Ir a Biblia Financiera →
+                            </span>
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                                    <DollarSign className="w-3 h-3" />
-                                    Precio Nafta (L)
-                                </label>
-                                <div className="relative group">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-black">$</span>
-                                    <input
-                                        type="number"
-                                        defaultValue={settings?.fuelPricePerLiter || 1200}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
-                                        name="fuelPricePerLiter"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                                    <Store className="w-3 h-3" />
-                                    Consumo L/KM
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={settings?.fuelConsumptionPerKm || 0.06}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
-                                    name="fuelConsumptionPerKm"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                                    <Settings className="w-3 h-3" />
-                                    Factor Mantenimiento
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={settings?.maintenanceFactor || 1.35}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
-                                    name="maintenanceFactor"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                                    <MapPin className="w-3 h-3" />
-                                    Distancia Máx (KM)
-                                </label>
-                                <input
-                                    type="number"
-                                    defaultValue={settings?.maxDeliveryDistance || 15}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all hover:bg-white"
-                                    name="maxDeliveryDistance"
-                                />
-                            </div>
-
-                            <div className="space-y-2 lg:col-span-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">
-                                    <DollarSign className="w-3 h-3" />
-                                    Configurador Envío Gratis
-                                </label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-black">$</span>
-                                        <input
-                                            type="number"
-                                            defaultValue={settings?.baseDeliveryFee || 500}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-navy focus:outline-none transition-all group-hover:bg-white"
-                                            name="baseDeliveryFee"
-                                            placeholder="Base"
-                                        />
-                                    </div>
-                                    <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-moovy/30 font-black">$</span>
-                                        <input
-                                            type="number"
-                                            defaultValue={settings?.freeDeliveryMinimum || ""}
-                                            className="w-full bg-moovy/5 border border-moovy/10 rounded-2xl pl-10 pr-4 py-4 text-lg font-black text-moovy focus:ring-2 focus:ring-moovy focus:outline-none transition-all group-hover:bg-white"
-                                            placeholder="Umbral"
-                                            name="freeDeliveryMinimum"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Rider Commission Section */}
-                        <div className="mt-8 p-6 bg-green-50 border border-green-100 rounded-[2rem] relative overflow-hidden">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                                    <span className="text-xl">🏍️</span>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-gray-900 leading-none">Ganancia del Rider</h3>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Porcentaje del envío que cobra el repartidor</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-green-700 uppercase tracking-widest mb-1.5 pl-1">
-                                        Comisión Rider (%)
-                                    </label>
-                                    <div className="relative group">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            step="1"
-                                            defaultValue={(settings as any)?.riderCommissionPercent ?? 80}
-                                            className="w-full bg-white border border-green-200 rounded-2xl px-5 py-4 text-lg font-black text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all group-hover:bg-green-50/50"
-                                            name="riderCommissionPercent"
-                                        />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-black">%</span>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-white rounded-2xl border border-green-100 flex flex-col justify-center">
-                                    <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Rider gana</p>
-                                    <p className="text-xl font-black text-green-700">
-                                        {(settings as any)?.riderCommissionPercent ?? 80}% del envío
-                                    </p>
-                                </div>
-
-                                <div className="p-4 bg-white rounded-2xl border border-green-100 flex flex-col justify-center">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Moovy retiene</p>
-                                    <p className="text-xl font-black text-gray-900">
-                                        {100 - ((settings as any)?.riderCommissionPercent ?? 80)}% del envío
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-10 p-6 bg-navy text-white rounded-[2rem] shadow-xl shadow-navy/20 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 -mr-24 -mt-24 rounded-full" />
-                            <h3 className="text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-3">
-                                <span className="w-2 h-2 bg-moovy rounded-full animate-pulse" />
-                                Simulador de Costos (Envío 5 KM)
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-900-light uppercase tracking-widest mb-1 opacity-60">Distancia</p>
-                                    <p className="text-xl font-black">5 KM <span className="text-xs font-normal opacity-40">(10km I/V)</span></p>
-                                </div>
-                                <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-bold text-gray-900-light uppercase tracking-widest mb-1 opacity-60">Nafta Estimada</p>
-                                    <p className="text-xl font-black">${Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200))}</p>
-                                </div>
-                                <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-black text-moovy uppercase tracking-widest mb-1">Cliente paga</p>
-                                    <p className="text-2xl font-black text-moovy">
-                                        ${Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35))}
-                                    </p>
-                                </div>
-                                <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Rider gana</p>
-                                    <p className="text-2xl font-black text-green-400">
-                                        ${Math.round(Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35)) * ((settings as any)?.riderCommissionPercent ?? 80) / 100)}
-                                    </p>
-                                </div>
-                                <div className="border-l border-white/10 pl-6">
-                                    <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">Moovy gana</p>
-                                    <p className="text-2xl font-black text-yellow-400">
-                                        ${Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35)) - Math.round(Math.ceil((Math.round(10 * 0.06 * (settings?.fuelPricePerLiter || 1200)) + (settings?.baseDeliveryFee || 500)) * (settings?.maintenanceFactor || 1.35)) * ((settings as any)?.riderCommissionPercent ?? 80) / 100)}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    </a>
                 </div>
 
             </div>
