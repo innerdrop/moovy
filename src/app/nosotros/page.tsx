@@ -110,15 +110,15 @@ export default function QuienesSomosPage() {
 
           <div className="space-y-8 text-gray-700 leading-relaxed">
             <p className="text-lg md:text-xl text-gray-900 font-medium">
-              Nos cansamos de ver cómo grandes plataformas le cobran el 25, 30% a los comercios de nuestro barrio.
+              Sabíamos que los comercios de nuestro barrio merecían algo mejor. Comisiones justas, sin letra chica.
             </p>
 
             <p>
-              Nos cansamos de ver cómo retienen la plata por una, dos, tres semanas mientras el comercio necesita pagar gastos hoy.
+              Sabíamos que retener la plata de un comercio por semanas no estaba bien. Que un negocio necesita su dinero hoy, no en un mes.
             </p>
 
             <p>
-              Nos cansamos de ver cómo pequeños negocios que llevan años en Ushuaia se quedan sin poder vender online porque no tienen el tamaño que piden las grandes plataformas.
+              Sabíamos que los negocios chicos que llevan años en Ushuaia merecen las mismas oportunidades de vender online que cualquier cadena grande.
             </p>
 
             <p>
@@ -145,7 +145,7 @@ export default function QuienesSomosPage() {
                 Pago instantáneo
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Los comercios cobran al instante. Sin retenciones, sin esperas. Diferente a PedidosYa, que puede retener dinero por semanas. Vos vendés, vos cobrás. Así de simple.
+                Los comercios cobran al instante. Sin retenciones, sin esperas, sin intermediarios que decidan cuándo te llega tu plata. Vos vendés, vos cobrás. Así de simple.
               </p>
             </div>
 
@@ -368,15 +368,15 @@ export default function QuienesSomosPage() {
             </Link>
             <Link
               href="/comercio/registro"
-              className="inline-flex items-center justify-center gap-2 bg-white/20 text-white px-8 py-3 rounded-lg font-bold hover:bg-white/30 transition border border-white/40"
+              className="inline-flex items-center justify-center gap-2 bg-white/20 text-white px-8 py-3 rounded-lg font-bold hover:bg-white/30 transition border border-white/30"
             >
-              Registra tu comercio
+              Registra tu Comercio
+              <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

@@ -452,7 +452,7 @@ export default function AppHeader({
                                 { href: "/tiendas", label: "Comercios" },
                                 { href: "/marketplace", label: "Marketplace" },
                                 { href: "/puntos", label: "MOOVER" },
-                                { href: "/quienes-somos", label: "Quiénes somos" },
+                                { href: "/nosotros", label: "Nosotros" },
                                 { href: "/comisiones", label: "Tarifas" },
                             ].map((link) => {
                                 const isLinkActive = link.href === "/"

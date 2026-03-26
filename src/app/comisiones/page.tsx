@@ -22,7 +22,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Tarifas y Comisiones | MOOVY",
-  description: "Conocé nuestras tarifas transparentes. Comisiones bajas, sin letra chica. Pago instantáneo a comercios. Mejor que PedidosYa y Rappi.",
+  description: "Conocé nuestras tarifas transparentes. Comisiones bajas, sin letra chica. Pago instantáneo a comercios.",
   keywords: "tarifas, comisiones, precios, MOOVY, delivery, marketplace",
   openGraph: {
     title: "Tarifas y Comisiones Transparentes | MOOVY",
@@ -111,64 +111,15 @@ const pricingCards = [
   },
 ];
 
-// Comparison Data
-const comparisonData = [
-  {
-    metric: "Comisión Comercio",
-    moovy: "8%",
-    pedidosya: "25-30%",
-    rappi: "25-30%",
-    winner: "moovy",
-  },
-  {
-    metric: "Tarifa Fundador",
-    moovy: "5% (10 primeros)",
-    pedidosya: "–",
-    rappi: "–",
-    winner: "moovy",
-  },
-  {
-    metric: "Pago a Comercios",
-    moovy: "Instantáneo",
-    pedidosya: "7-15 días",
-    rappi: "7-15 días",
-    winner: "moovy",
-  },
-  {
-    metric: "Retención de Dinero",
-    moovy: "0%",
-    pedidosya: "Sí (7-15 días)",
-    rappi: "Sí (7-15 días)",
-    winner: "moovy",
-  },
-  {
-    metric: "Cargo al Comprador",
-    moovy: "$0",
-    pedidosya: "$50-100",
-    rappi: "$50-100",
-    winner: "moovy",
-  },
-  {
-    metric: "% Repartidor",
-    moovy: "80%",
-    pedidosya: "60-70%",
-    rappi: "60-70%",
-    winner: "moovy",
-  },
-  {
-    metric: "Soporte Humano",
-    moovy: "WhatsApp",
-    pedidosya: "Chat bot",
-    rappi: "Chat bot",
-    winner: "moovy",
-  },
-  {
-    metric: "Respuesta Soporte",
-    moovy: "< 30 min",
-    pedidosya: "Horas/días",
-    rappi: "Horas/días",
-    winner: "moovy",
-  },
+// Our commitments data (no competitor comparisons)
+const commitments = [
+  { metric: "Comisión Comercio", value: "8%", detail: "Sin cargos ocultos ni sorpresas" },
+  { metric: "Tarifa Fundador", value: "5%", detail: "Primeros 10 comercios por categoría, 12 meses" },
+  { metric: "Pago a Comercios", value: "Instantáneo", detail: "El dinero es tuyo desde que se confirma la venta" },
+  { metric: "Retención de Dinero", value: "0%", detail: "Nunca retenemos un peso" },
+  { metric: "Cargo al Comprador", value: "$0", detail: "Sin cargos extra por usar MOOVY" },
+  { metric: "% para Repartidor", value: "80%", detail: "Del delivery fee, para quien hace el trabajo" },
+  { metric: "Soporte", value: "WhatsApp", detail: "Personas reales, respuesta en menos de 30 minutos" },
 ];
 
 // FAQ Data
@@ -297,7 +248,7 @@ export default function ComisionesPage() {
                 <div className="text-center">
                   <p className="text-gray-600 text-sm font-medium mb-1">Comercios</p>
                   <p className="text-3xl font-bold text-red-600">8%</p>
-                  <p className="text-xs text-gray-500">vs 25-30% competencia</p>
+                  <p className="text-xs text-gray-500">la más baja del mercado</p>
                 </div>
                 <div className="text-center">
                   <p className="text-gray-600 text-sm font-medium mb-1">Pago</p>
@@ -362,96 +313,25 @@ export default function ComisionesPage() {
           </div>
         </section>
 
-        {/* Comparison Table */}
+        {/* Our Commitments */}
         <section className="px-4 py-12 bg-gray-50">
-          <div className="max-w-6xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-              MOOVY vs Competencia
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3 text-center">
+              Nuestros Compromisos
             </h3>
+            <p className="text-gray-600 text-center mb-10 max-w-xl mx-auto">
+              Números claros, sin letra chica. Así trabajamos.
+            </p>
 
-            {/* Desktop Table */}
-            <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-100 border-b">
-                      <th className="px-6 py-4 text-left font-bold text-gray-900 text-sm">
-                        Métrica
-                      </th>
-                      <th className="px-6 py-4 text-center font-bold text-red-600 text-sm bg-red-50">
-                        MOOVY
-                      </th>
-                      <th className="px-6 py-4 text-center font-bold text-gray-600 text-sm">
-                        PedidosYa
-                      </th>
-                      <th className="px-6 py-4 text-center font-bold text-gray-600 text-sm">
-                        Rappi
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparisonData.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className={`border-b ${
-                          idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                        }`}
-                      >
-                        <td className="px-6 py-4 font-semibold text-gray-900 text-sm">
-                          {row.metric}
-                        </td>
-                        <td className="px-6 py-4 text-center text-green-600 font-bold text-sm bg-green-50">
-                          <div className="flex items-center justify-center gap-2">
-                            <CheckCircle2 className="w-4 h-4" />
-                            {row.moovy}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-center text-gray-600 text-sm">
-                          {row.pedidosya === "–" ? (
-                            <span className="text-gray-400">–</span>
-                          ) : (
-                            row.pedidosya
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-center text-gray-600 text-sm">
-                          {row.rappi === "–" ? (
-                            <span className="text-gray-400">–</span>
-                          ) : (
-                            row.rappi
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-4">
-              {comparisonData.map((row, idx) => (
-                <div key={idx} className="bg-white rounded-xl p-4 border border-gray-200">
-                  <h4 className="font-bold text-gray-900 mb-3">{row.metric}</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm">MOOVY</span>
-                      <div className="flex items-center gap-1 text-green-600 font-bold">
-                        <CheckCircle2 className="w-4 h-4" />
-                        {row.moovy}
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm">PedidosYa</span>
-                      <span className="text-gray-600 text-sm">
-                        {row.pedidosya === "–" ? "–" : row.pedidosya}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm">Rappi</span>
-                      <span className="text-gray-600 text-sm">
-                        {row.rappi === "–" ? "–" : row.rappi}
-                      </span>
-                    </div>
+            <div className="space-y-4">
+              {commitments.map((item, idx) => (
+                <div key={idx} className="bg-white rounded-xl p-5 lg:p-6 border border-gray-100 flex items-center gap-6">
+                  <div className="text-2xl lg:text-3xl font-black text-[#e60012] min-w-[80px] lg:min-w-[100px] text-center">
+                    {item.value}
+                  </div>
+                  <div className="flex-1 border-l border-gray-100 pl-6">
+                    <p className="font-bold text-gray-900">{item.metric}</p>
+                    <p className="text-sm text-gray-600">{item.detail}</p>
                   </div>
                 </div>
               ))}
@@ -566,7 +446,7 @@ export default function ComisionesPage() {
               {
                 icon: <MoovyIconFairFees className="w-8 h-8" />,
                 title: "Comisiones Bajas",
-                desc: "8% en lugar de 25-30%. La diferencia se nota en tu flujo de caja.",
+                desc: "8% de comisión. Sin cargos ocultos. La diferencia se nota en tu flujo de caja.",
               },
               {
                 icon: <MoovyIconHumanSupport className="w-8 h-8" />,

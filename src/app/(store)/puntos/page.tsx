@@ -1566,30 +1566,10 @@ export default function PuntosPage() {
                                     </p>
                                     <div className="mt-3 pt-3 border-t border-amber-200">
                                         <p className="text-xs text-amber-600">
-                                            📅 Se reinicia el 1° del próximo mes
+                                            Puntos ganados por referidos este mes
                                         </p>
                                     </div>
                                 </div>
-
-                                {/* All time */}
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-600">
-                                            Total histórico
-                                        </span>
-                                        <span className="text-xl font-bold text-gray-900">
-                                            +{pointsFromReferrals}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500">
-                                        {friendsInvited} amigos invitados en total
-                                    </p>
-                                </div>
-
-                                <p className="text-xs text-gray-400 text-center">
-                                    Ganás 500 puntos cuando tu amigo hace su primera compra de
-                                    $8,000+
-                                </p>
                             </div>
                         </div>
                     </div>
