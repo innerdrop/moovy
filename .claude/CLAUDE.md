@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-03-24 (P2 batch: chat driver, GPS history, fidelización)
+Última actualización: 2026-03-26 (consolidación OPS panel, Biblia Financiera single source of truth)
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -99,6 +99,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Google Places: Decisión 2026-03-21: AddressAutocomplete usa Places API (New) Data API como primario (AutocompleteSuggestion.fetchAutocompleteSuggestions) con fallback a Geocoding API. Session tokens para optimización de billing. Auto-detecta disponibilidad de la API. Ver sección "Dependencias externas"
 - Auditoría checkout 2026-03-24: Webhook MP ahora valida monto pagado vs total orden (tolerancia $1). Idempotencia usa eventId determinístico. Order creation valida approvalStatus, isOpen, horario, minOrderAmount, deliveryRadiusKm, maxUsesPerUser de cupón. Cupón se registra dentro de $transaction. Refund automático vía API REST cuando merchant rechaza pedido pagado. Portal merchant protegido por approvalStatus. Delivery fee se calcula server-side si falta (no se hardcodea).
 - Fidelización merchants 2026-03-24: Comisión dinámica por tier (BRONCE 8%, PLATA 7%, ORO 6%, DIAMANTE 5%) calculada por volumen de pedidos DELIVERED en últimos 30 días. getEffectiveCommission() reemplaza el 8% hardcodeado en order creation. Tiers configurables desde admin. Cron diario recalcula. Diferenciador vs PedidosYa (ellos cobran 25-30% fijo).
+- Consolidación OPS 2026-03-26: Biblia Financiera es la ÚNICA fuente de verdad para parámetros financieros. /ops/puntos redirige a Biblia. /api/settings/ bloqueado para campos financieros (solo UI/store). configuracion-logistica mantiene solo campos de asignación/logística (MoovyConfig). Biblia sincroniza automáticamente timeouts y comisiones a MoovyConfig para que assignment-engine y crons los lean. Script validate-ops-config.ts verifica integridad. /api/admin/points/config/ marcado como deprecated (proxy a points-config canónico).
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
@@ -123,6 +124,16 @@ Redis: REDIS_URL (opcional — si no está, rate limiter usa in-memory con fallb
 ## Scripts
 start.ps1: crear rama | finish.ps1: cerrar rama y merge a develop | publish.ps1: push + dump DB
 devmain.ps1: deploy a producción | sync.ps1: pull develop
+validate-ops-config.ts: validación de integridad del panel OPS (9 tests: settings, puntos, moovyconfig, biblia, sync, tiers, audit, fórmula, duplicados)
+fix-ops-config.ts: corrige configs faltantes (PointsConfig, MoovyConfig keys, sync timeouts, loyalty tiers) + re-verifica
+
+## Regla de testing obligatorio
+Cada feature que toque parámetros financieros, de asignación, o configurables DEBE incluir:
+1. Script de verificación que pruebe lectura/escritura/rangos contra la DB real (no mocks)
+2. Simulación financiera si toca dinero: subtotal + delivery fee + comisiones + puntos deben cuadrar
+3. Detección de conflictos: verificar que no haya dos sistemas escribiendo el mismo parámetro con valores distintos
+4. Pre-deploy: `npx tsx scripts/validate-ops-config.ts` bloquea si hay errores
+5. Antes de escribir código que referencie modelos de Prisma: LEER el schema para verificar nombres exactos de campos
 
 ## Dependencias externas y servicios de terceros
 

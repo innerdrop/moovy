@@ -239,6 +239,22 @@ export async function updateCommissionConfig(
     update: updateData,
     create: { id: "settings", ...updateData },
   });
+
+  // Sync commission fields to MoovyConfig for any legacy consumers
+  const syncMap: Record<string, number | undefined> = {
+    seller_commission_pct: data.defaultSellerCommission,
+    driver_commission_pct: data.riderCommissionPercent !== undefined
+      ? Math.round((100 - data.riderCommissionPercent) * 100) / 100
+      : undefined,
+  };
+  for (const [key, value] of Object.entries(syncMap)) {
+    if (value === undefined) continue;
+    await prisma.moovyConfig.upsert({
+      where: { key },
+      update: { value: String(value) },
+      create: { key, value: String(value), description: `Synced from Biblia Financiera` },
+    });
+  }
 }
 
 /**
@@ -346,6 +362,20 @@ export async function updateTimeoutConfig(
     update: updateData,
     create: { id: "settings", ...updateData },
   });
+
+  // Sync timeout fields to MoovyConfig for assignment-engine and cron consumers
+  const syncMap: Record<string, number | undefined> = {
+    merchant_confirm_timeout_seconds: data.merchantConfirmTimeoutSec,
+    driver_response_timeout_seconds: data.driverResponseTimeoutSec,
+  };
+  for (const [key, value] of Object.entries(syncMap)) {
+    if (value === undefined) continue;
+    await prisma.moovyConfig.upsert({
+      where: { key },
+      update: { value: String(value) },
+      create: { key, value: String(value), description: `Synced from Biblia Financiera` },
+    });
+  }
 }
 
 /**
