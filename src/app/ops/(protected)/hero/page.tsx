@@ -573,4 +573,32 @@ export default function HeroPage() {
               <Plus className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-600 font-semibold mb-2">
-    
+              No hay banners todavía
+            </p>
+            <p className="text-sm text-gray-400">
+              Creá tu primer banner con el botón &quot;Nuevo Banner&quot;
+            </p>
+          </div>
+        )}
+
+        {/* Info */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="font-bold text-blue-900 mb-2">Medidas recomendadas</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-blue-800">
+            <div>
+              <p className="font-semibold">Desktop</p>
+              <p>1440 × 480 px (ratio 3:1)</p>
+            </div>
+            <div>
+              <p className="font-semibold">Mobile</p>
+              <p>1080 × 420 px (ratio 2.5:1)</p>
+            </div>
+          </div>
+          <p className="text-xs text-blue-600 mt-3">
+            Formato: JPG, PNG o WebP. Se convierte automáticamente a WebP optimizado.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
