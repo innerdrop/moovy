@@ -372,7 +372,7 @@ export default function HeroPage() {
                           Banner Desktop
                         </h4>
                         <p className="text-xs text-gray-500 mb-4">
-                          1440 × 500 px | WebP/JPG/PNG | Máx 10 MB
+                          1440 × 480 px | WebP/JPG/PNG | Máx 10 MB
                         </p>
 
                         <button
@@ -429,7 +429,7 @@ export default function HeroPage() {
                           Banner Mobile
                         </h4>
                         <p className="text-xs text-gray-500 mb-4">
-                          800 × 800 px | WebP/JPG/PNG | Máx 10 MB
+                          1080 × 420 px | WebP/JPG/PNG | Máx 10 MB
                         </p>
 
                         <button
@@ -573,21 +573,4 @@ export default function HeroPage() {
               <Plus className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-600 font-semibold mb-2">
-              Sin banners aún
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Crea tu primer banner para que aparezca en la página de inicio
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 bg-[#e60012] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#cc000f] transition"
-            >
-              <Plus className="w-4 h-4" />
-              Crear Banner
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+    

@@ -100,8 +100,8 @@ export default function HeroBannerCarousel({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Aspect ratio container — slides are absolute inside this */}
-      <div className="relative w-full pt-[100%] sm:pt-[66.67%] lg:pt-[34.72%]">
+      {/* Aspect ratio: mobile 2.5:1 (slim), tablet 2.8:1, desktop 3:1 */}
+      <div className="relative w-full pt-[40%] sm:pt-[36%] lg:pt-[33.33%]">
         {validSlides.map((s, idx) => (
           <div
             key={s.id}
