@@ -289,7 +289,7 @@ export default function AppHeader({
                 </div>
 
                 {/* Desktop Header */}
-                <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto border-b border-gray-100">
+                <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">
                     {/* Left: Logo + User */}
                     <div className="flex items-center gap-3 flex-shrink-0">
                         <Link href="/" className="flex-shrink-0">
@@ -440,6 +440,55 @@ export default function AppHeader({
                                 </span>
                             )}
                         </button>
+                    </div>
+                </div>
+
+                {/* Desktop Secondary Navigation */}
+                <div className="hidden lg:block border-t border-gray-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <nav className="flex items-center gap-1 h-11">
+                            {[
+                                { href: "/", label: "Inicio" },
+                                { href: "/tiendas", label: "Comercios" },
+                                { href: "/marketplace", label: "Marketplace" },
+                                { href: "/puntos", label: "MOOVER" },
+                                { href: "/quienes-somos", label: "Quiénes somos" },
+                                { href: "/comisiones", label: "Tarifas" },
+                            ].map((link) => {
+                                const isLinkActive = link.href === "/"
+                                    ? pathname === "/"
+                                    : pathname?.startsWith(link.href);
+                                const isMP = link.href === "/marketplace";
+                                return (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                            isLinkActive
+                                                ? isMP
+                                                    ? "bg-[#7C3AED]/10 text-[#7C3AED]"
+                                                    : "bg-[#e60012]/10 text-[#e60012]"
+                                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        {link.label}
+                                    </Link>
+                                );
+                            })}
+                            <div className="flex-1" />
+                            {isLoggedIn && (
+                                <Link
+                                    href="/mis-pedidos"
+                                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                        pathname?.startsWith("/mis-pedidos")
+                                            ? "bg-[#e60012]/10 text-[#e60012]"
+                                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    Mis Pedidos
+                                </Link>
+                            )}
+                        </nav>
                     </div>
                 </div>
             </header>

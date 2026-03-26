@@ -13,7 +13,7 @@ import { ChatWidget } from "@/components/support/ChatWidget";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
-import MobileOnlyGuard from "@/components/ui/MobileOnlyGuard";
+// MobileOnlyGuard removed — desktop now has full responsive layout
 
 const SPLASH_SHOWN_KEY = "moovy_splash_v5";
 
@@ -144,8 +144,8 @@ export default function StoreLayout({
                         ))}
                     </div>
                 </main>
-                {/* Bottom nav skeleton */}
-                <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100">
+                {/* Bottom nav skeleton — hidden on desktop */}
+                <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 lg:hidden">
                     <div className="flex items-center justify-around h-full px-6">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <div key={i} className="w-8 h-8 bg-gray-100 rounded-full shimmer" />
@@ -158,7 +158,6 @@ export default function StoreLayout({
 
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
-        <MobileOnlyGuard mode="warn">
         <div className={`min-h-screen flex flex-col bg-gray-50 overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}>
             {/* Scroll to top on navigation */}
             <ScrollToTop />
@@ -171,7 +170,7 @@ export default function StoreLayout({
             />
 
             {/* Contenido scrollable — solo esta zona se mueve */}
-            <main className="flex-1 pt-14 pb-20">
+            <main className="flex-1 pt-14 lg:pt-[6.75rem] pb-20 lg:pb-0">
                 <PullToRefresh>
                     {children}
                 </PullToRefresh>
@@ -191,6 +190,5 @@ export default function StoreLayout({
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}
         </div>
-        </MobileOnlyGuard>
     );
 }
