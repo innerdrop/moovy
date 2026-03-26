@@ -123,17 +123,19 @@ model Address {
 }
 
 model HeroSlide {
-  id         String   @id @default(cuid())
-  title      String
-  subtitle   String
-  buttonText String
-  buttonLink String
-  gradient   String   @default("from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]")
-  image      String?
-  isActive   Boolean  @default(true)
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  title        String          // kept for alt text / accessibility
+  subtitle     String          // kept for SEO
+  buttonText   String          // kept for optional CTA overlay
+  buttonLink   String          // link when clicking the banner
+  gradient     String   @default("from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]")
+  image        String?         // legacy field
+  imageDesktop String?         // NEW: 1440x500 WebP banner for desktop
+  imageMobile  String?         // NEW: 800x800 WebP banner for mobile
+  isActive     Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Category {

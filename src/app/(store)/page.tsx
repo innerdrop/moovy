@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 import Link from "next/link";
 import { ArrowRight, Store } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import HeroStatic from "@/components/home/HeroStatic";
+import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
+import SearchBarHero from "@/components/home/SearchBarHero";
 import HeroSliderNew from "@/components/home/HeroSliderNew";
 import SocialProofBar from "@/components/home/SocialProofBar";
 // HowItWorks removed — replaced by banner slot
@@ -173,18 +174,6 @@ function MaintenanceView() {
 // MAIN STORE VIEW
 // ============================================
 
-async function getHeroConfig() {
-  try {
-    const configs = await prisma.moovyConfig.findMany({
-      where: { key: { startsWith: "hero_" } },
-    });
-    const result: Record<string, string> = {};
-    for (const c of configs) result[c.key] = c.value;
-    return Object.keys(result).length > 0 ? result : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 async function LiveStoreView() {
   const settings = await prisma.storeSettings
@@ -200,7 +189,6 @@ async function LiveStoreView() {
     totalDelivered,
     activeMerchants,
     openMerchants,
-    heroConfig,
   ] = await Promise.all([
     getCategories(settings?.maxCategoriesHome ?? 8),
     getMerchants(),
@@ -210,7 +198,6 @@ async function LiveStoreView() {
     getTotalDelivered(),
     getActiveMerchantCount(),
     getOpenMerchantCount(),
-    getHeroConfig(),
   ]);
 
   const slideInterval = settings?.heroSliderInterval ?? 5000;
@@ -229,14 +216,15 @@ async function LiveStoreView() {
 
   return (
     <div>
-      {/* 1. Hero Estático con buscador — config dinámica desde OPS */}
-      <HeroStatic
-        totalDelivered={totalDelivered}
-        config={heroConfig as any}
-        activeMerchants={activeMerchants}
-      />
+      {/* 1. Hero Banner Carousel */}
+      {sliderEnabled && slides.length > 0 && (
+        <HeroBannerCarousel slides={slides as any} slideInterval={slideInterval} />
+      )}
 
-      {/* 2. Categorías — sin título, protagonistas (no reveal — above the fold) */}
+      {/* 2. Search Bar */}
+      <SearchBarHero />
+
+      {/* 3. Categorías — sin título, protagonistas (no reveal — above the fold) */}
       <section className="relative py-5 lg:py-8 bg-white">
         <CategoryGrid categories={categories} />
       </section>

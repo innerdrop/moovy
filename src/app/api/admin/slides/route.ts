@@ -41,6 +41,8 @@ export async function POST(request: Request) {
                 buttonLink: data.buttonLink || "/productos",
                 gradient: data.gradient || "from-[#e60012] via-[#ff2a3a] to-[#ff6b6b]",
                 image: data.image || null,
+                ...(data.imageDesktop ? { imageDesktop: data.imageDesktop } : {}),
+                ...(data.imageMobile ? { imageMobile: data.imageMobile } : {}),
                 isActive: data.isActive !== false,
                 order: newOrder,
             },

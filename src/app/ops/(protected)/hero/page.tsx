@@ -1,526 +1,629 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Edit2,
+  Upload,
+  ExternalLink,
+} from "lucide-react";
+import Link from "next/link";
 
-interface HeroConfig {
-  hero_title: string;
-  hero_subtitle: string;
-  hero_cta_text: string;
-  hero_cta_link: string;
-  hero_bg_color: string;
-  hero_bg_gradient: string;
-  hero_bg_image: string;
-  hero_search_enabled: boolean;
-  hero_search_placeholder: string;
-  hero_person_enabled: boolean;
-  hero_person_image: string;
-  hero_stats_enabled: boolean;
+interface Slide {
+  id: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink: string;
+  imageDesktop: string | null;
+  imageMobile: string | null;
+  isActive: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const defaultConfig: HeroConfig = {
-  hero_title: "Bienvenido a MOOVY",
-  hero_subtitle: "Compra en los mejores comercios de Ushuaia",
-  hero_cta_text: "Explorar tienda",
-  hero_cta_link: "/productos",
-  hero_bg_color: "#e60012",
-  hero_bg_gradient: "linear-gradient(135deg, #e60012 0%, #a3000c 100%)",
-  hero_bg_image: "",
-  hero_search_enabled: true,
-  hero_search_placeholder: "Busca productos...",
-  hero_person_enabled: false,
-  hero_person_image: "",
-  hero_stats_enabled: true,
-};
-
-export default function HeroConfigPage() {
-  const [config, setConfig] = useState<HeroConfig>(defaultConfig);
+export default function HeroPage() {
+  const router = useRouter();
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [uploading, setUploading] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: "",
+    subtitle: "",
+    buttonText: "Ver más",
+    buttonLink: "/productos",
+    imageDesktop: "" as string | null,
+    imageMobile: "" as string | null,
+    isActive: true,
+  });
 
   useEffect(() => {
-    fetchConfig();
+    fetchSlides();
   }, []);
 
-  const fetchConfig = async () => {
+  const fetchSlides = async () => {
     try {
-      const response = await fetch("/api/config/hero");
-      if (response.ok) {
-        const data = await response.json();
-        setConfig({ ...defaultConfig, ...data });
+      const res = await fetch("/api/admin/slides");
+      if (res.ok) {
+        const data = await res.json();
+        setSlides(data);
       }
     } catch (error) {
-      console.error("Error fetching hero config:", error);
+      console.error("Error fetching slides:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (
-    field: keyof HeroConfig,
-    value: string | boolean
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    fieldName: "imageDesktop" | "imageMobile"
   ) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
-  };
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleSave = async () => {
-    setSaving(true);
+    // Show upload indicator
+    const uploadKey = `${editingId || "new"}-${fieldName}`;
+    setUploading((prev) => ({ ...prev, [uploadKey]: true }));
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("file", file);
+
     try {
-      const response = await fetch("/api/config/hero", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataToSend,
       });
 
-      if (response.ok) {
-        setToastMessage("Cambios guardados exitosamente");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+      if (res.ok) {
+        const data = await res.json();
+        setFormData((prev) => ({
+          ...prev,
+          [fieldName]: data.url,
+        }));
       } else {
-        setToastMessage("Error al guardar los cambios");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+        const error = await res.json();
+        alert(`Error al subir imagen: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error saving config:", error);
-      setToastMessage("Error al guardar los cambios");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      console.error("Error uploading image:", error);
+      alert("Error al subir imagen");
     } finally {
-      setSaving(false);
+      setUploading((prev) => ({ ...prev, [uploadKey]: false }));
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate required fields
+    if (!formData.title.trim()) {
+      alert("El título es requerido");
+      return;
+    }
+
+    if (!formData.imageDesktop && !formData.imageMobile) {
+      alert("Debes subir al menos una imagen (desktop o mobile)");
+      return;
+    }
+
+    try {
+      const url = editingId
+        ? `/api/admin/slides`
+        : `/api/admin/slides`;
+
+      const method = editingId ? "PATCH" : "POST";
+      const body = editingId
+        ? { ...formData, id: editingId }
+        : formData;
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        resetForm();
+        fetchSlides();
+        setShowForm(false);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error saving slide:", error);
+      alert("Error al guardar slide");
+    }
+  };
+
+  const handleEdit = (slide: Slide) => {
+    setFormData({
+      title: slide.title,
+      subtitle: slide.subtitle,
+      buttonText: slide.buttonText,
+      buttonLink: slide.buttonLink,
+      imageDesktop: slide.imageDesktop,
+      imageMobile: slide.imageMobile,
+      isActive: slide.isActive,
+    });
+    setEditingId(slide.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás seguro de que querés eliminar este slide?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/slides?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        fetchSlides();
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error deleting slide:", error);
+      alert("Error al eliminar slide");
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      subtitle: "",
+      buttonText: "Ver más",
+      buttonLink: "/productos",
+      imageDesktop: null,
+      imageMobile: null,
+      isActive: true,
+    });
+    setEditingId(null);
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 font-semibold">Cargando configuración...</p>
+          <div className="w-12 h-12 border-4 border-[#e60012] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
-            <Wand2 className="w-6 h-6 text-red-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black text-gray-900">Configurar Hero</h1>
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">
-              Personaliza la sección hero de tu tienda
-            </p>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/ops"
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-black text-gray-900">
+                  Banners de Inicio
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  Gestiona los banners de imagen que aparecen en la página de
+                  inicio
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                resetForm();
+                setShowForm(!showForm);
+              }}
+              className="flex items-center gap-2 bg-[#e60012] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#cc000f] transition"
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Banner
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* Left Column: Form (60%) */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Contenido Section */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <span className="text-lg">📝</span>
-              </div>
-              <h2 className="text-lg font-black text-gray-900">Contenido</h2>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Form */}
+        {showForm && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+            <h2 className="text-2xl font-black text-gray-900 mb-6">
+              {editingId ? "Editar Banner" : "Nuevo Banner"}
+            </h2>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                  Título Principal
-                </label>
-                <textarea
-                  value={config.hero_title}
-                  onChange={(e) => handleInputChange("hero_title", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all resize-none"
-                  rows={2}
-                  placeholder="Bienvenido a MOOVY"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                  Subtítulo
-                </label>
-                <input
-                  type="text"
-                  value={config.hero_subtitle}
-                  onChange={(e) =>
-                    handleInputChange("hero_subtitle", e.target.value)
-                  }
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                  placeholder="Compra en los mejores comercios"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Text Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                    Texto del Botón
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Título *
                   </label>
                   <input
                     type="text"
-                    value={config.hero_cta_text}
+                    value={formData.title}
                     onChange={(e) =>
-                      handleInputChange("hero_cta_text", e.target.value)
+                      setFormData({ ...formData, title: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                    placeholder="Explorar tienda"
+                    placeholder="Ej: Pedí ahora"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Para accesibilidad y SEO
+                  </p>
                 </div>
+
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                    Link del Botón
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Subtítulo
                   </label>
                   <input
                     type="text"
-                    value={config.hero_cta_link}
+                    value={formData.subtitle}
                     onChange={(e) =>
-                      handleInputChange("hero_cta_link", e.target.value)
+                      setFormData({ ...formData, subtitle: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                    placeholder="/productos"
+                    placeholder="Ej: Envío rápido a Ushuaia"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Para SEO (meta description)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Texto del botón
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.buttonText}
+                    onChange={(e) =>
+                      setFormData({ ...formData, buttonText: e.target.value })
+                    }
+                    placeholder="Ej: Explorar"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                   />
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Apariencia Section */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                <span className="text-lg">🎨</span>
-              </div>
-              <h2 className="text-lg font-black text-gray-900">Apariencia</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-end gap-4">
-                <div className="flex-1">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                    Color de Fondo
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Link del botón
                   </label>
-                  <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={formData.buttonLink}
+                    onChange={(e) =>
+                      setFormData({ ...formData, buttonLink: e.target.value })
+                    }
+                    placeholder="Ej: /productos"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-3">
                     <input
-                      type="color"
-                      value={config.hero_bg_color}
+                      type="checkbox"
+                      checked={formData.isActive}
                       onChange={(e) =>
-                        handleInputChange("hero_bg_color", e.target.value)
+                        setFormData({
+                          ...formData,
+                          isActive: e.target.checked,
+                        })
                       }
-                      className="w-16 h-12 rounded-xl border border-slate-100 cursor-pointer"
+                      className="w-5 h-5 text-[#e60012] rounded"
                     />
-                    <input
-                      type="text"
-                      value={config.hero_bg_color}
-                      onChange={(e) =>
-                        handleInputChange("hero_bg_color", e.target.value)
-                      }
-                      className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                      placeholder="#e60012"
-                    />
-                  </div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      Activo
+                    </span>
+                  </label>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                  Gradiente CSS (opcional)
-                </label>
-                <textarea
-                  value={config.hero_bg_gradient}
-                  onChange={(e) =>
-                    handleInputChange("hero_bg_gradient", e.target.value)
-                  }
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all resize-none"
-                  rows={2}
-                  placeholder="linear-gradient(135deg, #e60012 0%, #a3000c 100%)"
-                />
-                <p className="text-[10px] text-slate-400 mt-1 pl-1">
-                  Ejemplo: linear-gradient(135deg, #e60012 0%, #a3000c 100%)
-                </p>
-              </div>
+              {/* Image Upload Section */}
+              <div className="border-t pt-8">
+                <h3 className="text-xl font-black text-gray-900 mb-6">
+                  Imágenes del Banner
+                </h3>
 
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                  URL de Imagen de Fondo (opcional)
-                </label>
-                <input
-                  type="text"
-                  value={config.hero_bg_image}
-                  onChange={(e) =>
-                    handleInputChange("hero_bg_image", e.target.value)
-                  }
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                />
-                <p className="text-[10px] text-slate-400 mt-1 pl-1">
-                  Se superpone al color/gradiente
-                </p>
-              </div>
-            </div>
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Desktop Image */}
+                  <div>
+                    <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        <h4 className="font-semibold text-gray-900 mb-1">
+                          Banner Desktop
+                        </h4>
+                        <p className="text-xs text-gray-500 mb-4">
+                          1440 × 500 px | WebP/JPG | Máx 300 KB
+                        </p>
 
-          {/* Buscador Section */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                  <span className="text-lg">🔍</span>
-                </div>
-                <h2 className="text-lg font-black text-gray-900">Buscador</h2>
-              </div>
-              <button
-                onClick={() =>
-                  handleInputChange(
-                    "hero_search_enabled",
-                    !config.hero_search_enabled
-                  )
-                }
-                className={`w-14 h-8 rounded-full transition-all ${
-                  config.hero_search_enabled ? "bg-green-500" : "bg-gray-300"
-                } flex items-center p-1`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white transition-transform ${
-                    config.hero_search_enabled ? "translate-x-6" : ""
-                  }`}
-                />
-              </button>
-            </div>
+                        <label className="inline-block">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              handleImageUpload(e, "imageDesktop")
+                            }
+                            disabled={
+                              uploading[`${editingId || "new"}-imageDesktop`]
+                            }
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              (e.target as HTMLLabelElement)
+                                .querySelector("input")
+                                ?.click();
+                            }}
+                            disabled={
+                              uploading[`${editingId || "new"}-imageDesktop`]
+                            }
+                            className="px-4 py-2 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition disabled:opacity-50"
+                          >
+                            {uploading[`${editingId || "new"}-imageDesktop`]
+                              ? "Subiendo..."
+                              : "Seleccionar imagen"}
+                          </button>
+                        </label>
 
-            {config.hero_search_enabled && (
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                  Texto del Placeholder
-                </label>
-                <input
-                  type="text"
-                  value={config.hero_search_placeholder}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "hero_search_placeholder",
-                      e.target.value
-                    )
-                  }
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none"
-                  placeholder="Busca productos..."
-                />
-              </div>
-            )}
-          </div>
+                        <a
+                          href="https://www.canva.com/design/create?width=1440&height=500&units=px"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-[#e60012] font-semibold text-sm mt-3 hover:underline"
+                        >
+                          Diseñar en Canva
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
 
-          {/* Persona Section */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                  <span className="text-lg">👤</span>
-                </div>
-                <h2 className="text-lg font-black text-gray-900">Persona</h2>
-              </div>
-              <button
-                onClick={() =>
-                  handleInputChange(
-                    "hero_person_enabled",
-                    !config.hero_person_enabled
-                  )
-                }
-                className={`w-14 h-8 rounded-full transition-all ${
-                  config.hero_person_enabled ? "bg-green-500" : "bg-gray-300"
-                } flex items-center p-1`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white transition-transform ${
-                    config.hero_person_enabled ? "translate-x-6" : ""
-                  }`}
-                />
-              </button>
-            </div>
-
-            {config.hero_person_enabled && (
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                  URL de la Imagen
-                </label>
-                <input
-                  type="text"
-                  value={config.hero_person_image}
-                  onChange={(e) =>
-                    handleInputChange("hero_person_image", e.target.value)
-                  }
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  placeholder="https://ejemplo.com/persona.png"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Estadísticas Section */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                  <span className="text-lg">📊</span>
-                </div>
-                <h2 className="text-lg font-black text-gray-900">
-                  Estadísticas
-                </h2>
-              </div>
-              <button
-                onClick={() =>
-                  handleInputChange(
-                    "hero_stats_enabled",
-                    !config.hero_stats_enabled
-                  )
-                }
-                className={`w-14 h-8 rounded-full transition-all ${
-                  config.hero_stats_enabled ? "bg-green-500" : "bg-gray-300"
-                } flex items-center p-1`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white transition-transform ${
-                    config.hero_stats_enabled ? "translate-x-6" : ""
-                  }`}
-                />
-              </button>
-            </div>
-            <p className="text-[10px] text-slate-400 font-medium">
-              Muestra un banner con estadísticas como "X pedidos hoy"
-            </p>
-          </div>
-
-          {/* Save Button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-black py-4 rounded-2xl transition-all text-lg"
-          >
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </button>
-        </div>
-
-        {/* Right Column: Preview (40%) */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 sticky top-6">
-            <h3 className="text-lg font-black text-gray-900 mb-4">
-              Vista Previa
-            </h3>
-
-            {/* Preview Container */}
-            <div
-              className="relative w-full rounded-2xl overflow-hidden bg-gray-200 aspect-video flex flex-col justify-between p-6 text-white"
-              style={{
-                background: config.hero_bg_gradient
-                  ? config.hero_bg_gradient
-                  : config.hero_bg_color,
-                backgroundImage: config.hero_bg_image
-                  ? `url(${config.hero_bg_image})`
-                  : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {/* Overlay for better text readability */}
-              <div className="absolute inset-0 bg-black/20" />
-
-              {/* Content */}
-              <div className="relative z-10">
-                {/* Title */}
-                <h1 className="text-2xl font-black mb-2 line-clamp-2">
-                  {config.hero_title || "Título aquí"}
-                </h1>
-
-                {/* Subtitle */}
-                <p className="text-sm font-medium opacity-90 mb-4 line-clamp-2">
-                  {config.hero_subtitle || "Subtítulo aquí"}
-                </p>
-
-                {/* Search Bar */}
-                {config.hero_search_enabled && (
-                  <div className="mb-4">
-                    <div className="bg-white rounded-lg px-4 py-2 flex items-center gap-2 w-full max-w-xs">
-                      <span className="text-gray-400">🔍</span>
-                      <input
-                        type="text"
-                        disabled
-                        placeholder={config.hero_search_placeholder}
-                        className="flex-1 bg-transparent text-gray-700 text-sm outline-none placeholder-gray-400"
-                      />
+                      {formData.imageDesktop && (
+                        <div className="mt-4 pt-4 border-t">
+                          <img
+                            src={formData.imageDesktop}
+                            alt="Desktop preview"
+                            className="w-full h-auto rounded-lg max-h-48 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                imageDesktop: null,
+                              })
+                            }
+                            className="mt-2 text-red-600 text-sm font-semibold hover:underline"
+                          >
+                            Eliminar imagen
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {/* CTA Button */}
-                {config.hero_cta_text && (
-                  <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition-all">
-                    {config.hero_cta_text}
-                  </button>
-                )}
+                  {/* Mobile Image */}
+                  <div>
+                    <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                        <h4 className="font-semibold text-gray-900 mb-1">
+                          Banner Mobile
+                        </h4>
+                        <p className="text-xs text-gray-500 mb-4">
+                          800 × 800 px | WebP/JPG | Máx 300 KB
+                        </p>
+
+                        <label className="inline-block">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              handleImageUpload(e, "imageMobile")
+                            }
+                            disabled={
+                              uploading[`${editingId || "new"}-imageMobile`]
+                            }
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              (e.target as HTMLLabelElement)
+                                .querySelector("input")
+                                ?.click();
+                            }}
+                            disabled={
+                              uploading[`${editingId || "new"}-imageMobile`]
+                            }
+                            className="px-4 py-2 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition disabled:opacity-50"
+                          >
+                            {uploading[`${editingId || "new"}-imageMobile`]
+                              ? "Subiendo..."
+                              : "Seleccionar imagen"}
+                          </button>
+                        </label>
+
+                        <a
+                          href="https://www.canva.com/design/create?width=800&height=800&units=px"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-[#e60012] font-semibold text-sm mt-3 hover:underline"
+                        >
+                          Diseñar en Canva
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+
+                      {formData.imageMobile && (
+                        <div className="mt-4 pt-4 border-t">
+                          <div className="w-32 mx-auto">
+                            <img
+                              src={formData.imageMobile}
+                              alt="Mobile preview"
+                              className="w-full h-auto rounded-lg max-h-48 object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                imageMobile: null,
+                              })
+                            }
+                            className="mt-2 w-full text-red-600 text-sm font-semibold hover:underline"
+                          >
+                            Eliminar imagen
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Bottom indicators */}
-              <div className="relative z-10 space-y-2">
-                {config.hero_person_enabled && (
-                  <div className="flex items-center gap-2 text-xs font-bold bg-white/20 px-3 py-1 rounded-lg w-fit backdrop-blur-sm">
-                    <span>👤</span>
-                    <span>Persona habilitada</span>
-                  </div>
-                )}
-
-                {config.hero_stats_enabled && (
-                  <div className="flex items-center gap-2 text-xs font-bold bg-white/20 px-3 py-1 rounded-lg w-fit backdrop-blur-sm">
-                    <span>📊</span>
-                    <span>Estadísticas visibles</span>
-                  </div>
-                )}
+              {/* Form Actions */}
+              <div className="flex gap-3 pt-8 border-t">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#e60012] text-white py-3 rounded-xl font-bold hover:bg-[#cc000f] transition"
+                >
+                  {editingId ? "Actualizar Banner" : "Crear Banner"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    resetForm();
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition"
+                >
+                  Cancelar
+                </button>
               </div>
-            </div>
-
-            {/* Config Summary */}
-            <div className="mt-6 space-y-2 text-[10px] text-slate-400">
-              <p>
-                <span className="font-bold">Color:</span> {config.hero_bg_color}
-              </p>
-              <p className="truncate">
-                <span className="font-bold">Gradiente:</span>{" "}
-                {config.hero_bg_gradient
-                  ? config.hero_bg_gradient.substring(0, 50) + "..."
-                  : "Ninguno"}
-              </p>
-              <p>
-                <span className="font-bold">Buscador:</span>{" "}
-                {config.hero_search_enabled ? "Sí" : "No"}
-              </p>
-              <p>
-                <span className="font-bold">Persona:</span>{" "}
-                {config.hero_person_enabled ? "Sí" : "No"}
-              </p>
-              <p>
-                <span className="font-bold">Estadísticas:</span>{" "}
-                {config.hero_stats_enabled ? "Sí" : "No"}
-              </p>
-            </div>
+            </form>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-green-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg animate-pulse">
-          {toastMessage}
-        </div>
-      )}
+        {/* Slides List */}
+        {slides.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {slides.map((slide) => (
+              <div
+                key={slide.id}
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition"
+              >
+                {/* Thumbnail */}
+                <div className="aspect-video bg-gray-100 overflow-hidden relative">
+                  {slide.imageMobile || slide.imageDesktop ? (
+                    <img
+                      src={slide.imageMobile || slide.imageDesktop || ""}
+                      alt={slide.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      Sin imagen
+                    </div>
+                  )}
+                  {!slide.isActive && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">
+                        Inactivo
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-900 truncate">
+                    {slide.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 truncate">
+                    {slide.subtitle}
+                  </p>
+
+                  {/* Badges */}
+                  <div className="flex gap-2 mt-3 mb-4">
+                    {slide.imageDesktop && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-semibold">
+                        Desktop
+                      </span>
+                    )}
+                    {slide.imageMobile && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-semibold">
+                        Mobile
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(slide)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold text-sm"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(slide.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-semibold text-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-600 font-semibold mb-2">
+              Sin banners aún
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Crea tu primer banner para que aparezca en la página de inicio
+            </p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 bg-[#e60012] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#cc000f] transition"
+            >
+              <Plus className="w-4 h-4" />
+              Crear Banner
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
