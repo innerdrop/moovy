@@ -186,7 +186,7 @@ export default function MpReturnPage() {
                             Ir a mis pedidos
                         </Link>
                         <a
-                            href="https://wa.me/5492901531773?text=Hola%2C%20mi%20pago%20está%20pendiente%20de%20confirmación"
+                            href="https://wa.me/5492901553173?text=Hola%2C%20mi%20pago%20está%20pendiente%20de%20confirmación"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-gray-500 underline"

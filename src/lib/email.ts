@@ -404,7 +404,7 @@ export async function sendMerchantRejectionEmail(email: string, businessName: st
         <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
             Pod&eacute;s corregir los datos indicados y volver a registrarte, o contactarnos por WhatsApp si ten&eacute;s preguntas.
         </p>
-        ${emailButton('Contactar soporte', `https://wa.me/5492901000000`, 'blue')}
+        ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
     `);
 
     return sendEmail({ to: email, subject: `Solicitud de comercio ${businessName} — MOOVY`, html, tag: 'merchant_rejected' });
@@ -423,7 +423,7 @@ export async function sendDriverRejectionEmail(email: string, firstName: string,
         <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
             Pod&eacute;s corregir la documentaci&oacute;n indicada y volver a registrarte, o contactarnos por WhatsApp si ten&eacute;s preguntas.
         </p>
-        ${emailButton('Contactar soporte', `https://wa.me/5492901000000`, 'blue')}
+        ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
     `);
 
     return sendEmail({ to: email, subject: 'Solicitud de repartidor — MOOVY', html, tag: 'driver_rejected' });

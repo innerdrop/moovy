@@ -32,7 +32,7 @@ export default function ContactoPage() {
                                 <h2 className="text-xl font-bold text-gray-900 mb-6">Información de Contacto</h2>
 
                                 <div className="space-y-5">
-                                    <a href="https://wa.me/5492901531773" target="_blank" rel="noopener noreferrer"
+                                    <a href="https://wa.me/5492901553173" target="_blank" rel="noopener noreferrer"
                                         className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
                                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                                             <MessageCircle className="w-5 h-5 text-green-600" />
@@ -96,7 +96,7 @@ export default function ContactoPage() {
 
                                 <div className="space-y-4">
                                     <a
-                                        href="https://wa.me/5492901531773?text=Hola!%20Quiero%20consultar%20sobre%20MOOVY"
+                                        href="https://wa.me/5492901553173?text=Hola!%20Quiero%20consultar%20sobre%20MOOVY"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center justify-center gap-3 w-full py-4 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"

@@ -217,7 +217,7 @@ export default function AyudaPage() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <a
-                            href="https://wa.me/5492901531773?text=Hola!%20Necesito%20ayuda%20con%20MOOVY"
+                            href="https://wa.me/5492901553173?text=Hola!%20Necesito%20ayuda%20con%20MOOVY"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-2 py-3 bg-white text-green-600 font-semibold rounded-xl hover:bg-green-50 transition"

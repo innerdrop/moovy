@@ -75,7 +75,7 @@ export default function Footer() {
                             </li>
                             <li className="flex items-center gap-2">
                                 <Phone className="w-4 h-4 text-[#e60012] shrink-0" />
-                                <a href="https://wa.me/5492901531773" target="_blank" className="hover:text-white transition">
+                                <a href="https://wa.me/5492901553173" target="_blank" className="hover:text-white transition">
                                     WhatsApp
                                 </a>
                             </li>

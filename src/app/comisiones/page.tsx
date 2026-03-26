@@ -641,7 +641,7 @@ export default function ComisionesPage() {
             Escribinos por WhatsApp. Respondemos en menos de 30 minutos.
           </p>
           <a
-            href="https://wa.me/541234567890"
+            href="https://wa.me/5492901553173"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary inline-flex items-center gap-2"

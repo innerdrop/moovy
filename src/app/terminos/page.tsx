@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TerminosPage() {
   const lastUpdated = "22 de marzo de 2026";
-  const whatsappNumber = "5492901000000";
+  const whatsappNumber = "5492901553173";
 
   return (
     <main className="min-h-screen bg-white">
