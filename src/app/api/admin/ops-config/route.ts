@@ -401,19 +401,17 @@ export async function PUT(request: Request) {
     const updatedConfig = await getFullOpsConfig();
     logger.info(
       { email: adminEmail, section },
-      "OPS config section updated successfully"
+      "OPS config section updated"
     );
+
     return NextResponse.json({
       message: "Configuración actualizada",
       config: updatedConfig,
     });
-  } catch (error) {
-    logger.error(
-      { error: (error as Error).message },
-      "OPS config PUT error"
-    );
+  } catch (error: any) {
+    logger.error({ error: error?.message }, "Error updating OPS config");
     return NextResponse.json(
-      { error: "Error al actualizar configuración: " + (error as Error).message },
+      { error: "Error al actualizar: " + (error?.message || "Error desconocido") },
       { status: 500 }
     );
   }

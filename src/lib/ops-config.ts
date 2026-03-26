@@ -443,20 +443,35 @@ export function calculateDeliveryFeeWithConfig(
       amount: Math.round(withMaintenance * (zoneMult - 1)),
     });
   }
+
   if (climateMult !== 1.0) {
     breakdown.push({
-      concept: `Clima ${config.activeClimateCondition} (×${climateMult})`,
-      amount: Math.round(
-        withMaintenance * zoneMult * (climateMult - 1),
-      ),
+      concept: `Clima (×${climateMult})`,
+      amount: Math.round(withMaintenance * zoneMult * (climateMult - 1)),
     });
   }
+
   if (operationalCost > 0) {
     breakdown.push({
-      concept: `Costo operativo (${config.operationalCostPercent}%)`,
+      concept: `Costo operacional (${config.operationalCostPercent}% sobre $${subtotal})`,
       amount: Math.round(operationalCost),
     });
   }
 
-  return { fee, breakdown };
+  breakdown.push({
+    concept: "TOTAL tarifa delivery",
+    amount: fee,
+  });
+
+  // Rider earnings: 80% of final fee (default from StoreSettings.riderCommissionPercent)
+  const riderEarnings = Math.round(fee * 0.8);
+  // Moovy earnings: remaining 20%
+  const moovyEarnings = fee - riderEarnings;
+
+  return {
+    fee,
+    breakdown,
+    riderEarnings,
+    moovyEarnings,
+  };
 }
