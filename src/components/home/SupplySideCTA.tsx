@@ -33,16 +33,16 @@ const cards = [
 
 export default function SupplySideCTA() {
     return (
-        <section className="py-8 px-4">
-            <h2 className="text-xl font-extrabold text-gray-900 text-center mb-1">
+        <section className="py-8 lg:py-12 xl:py-14 px-4 md:px-6 lg:px-8">
+            <h2 className="text-xl lg:text-2xl xl:text-3xl font-extrabold text-gray-900 text-center mb-1">
                 Crecemos juntos
             </h2>
-            <p className="text-sm text-gray-500 text-center mb-5">
+            <p className="text-sm lg:text-base text-gray-500 text-center mb-5 lg:mb-8">
                 Sumate al ecosistema MOOVY en Ushuaia
             </p>
 
             <div
-                className="flex gap-3 overflow-x-auto scrollbar-hide md:grid md:grid-cols-3 md:gap-4 max-w-4xl mx-auto"
+                className="flex gap-3 overflow-x-auto scrollbar-hide md:grid md:grid-cols-3 md:gap-4 lg:max-w-6xl mx-auto"
                 style={{ scrollbarWidth: "none" }}
             >
                 {cards.map((card) => {

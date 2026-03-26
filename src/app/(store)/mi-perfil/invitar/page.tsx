@@ -181,8 +181,8 @@ export default function InvitarAmigosPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header */}
-            <div className="bg-gradient-to-br from-[#e60012] via-[#ff2a3a] to-[#ff6b6b] text-white pt-8 pb-10 px-4">
-                <div className="max-w-md mx-auto">
+            <div className="bg-gradient-to-br from-[#e60012] via-[#ff2a3a] to-[#ff6b6b] text-white pt-8 lg:pt-12 pb-10 lg:pb-16 px-4 lg:px-6 xl:px-8">
+                <div className="max-w-md mx-auto lg:max-w-7xl">
                     <Link href="/mi-perfil" className="inline-flex items-center gap-1 text-white/80 text-sm mb-4 hover:text-white transition">
                         <ArrowLeft className="w-4 h-4" />
                         Mi Perfil
@@ -199,7 +199,7 @@ export default function InvitarAmigosPage() {
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 -mt-4 space-y-4">
+            <div className="max-w-md mx-auto lg:max-w-7xl px-4 lg:px-6 xl:px-8 -mt-4 lg:-mt-6 space-y-4 lg:space-y-6">
 
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
@@ -208,7 +208,7 @@ export default function InvitarAmigosPage() {
                 ) : (
                     <>
                         {/* Stats Cards */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
                             <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 text-center">
                                 <Users className="w-5 h-5 text-[#e60012] mx-auto mb-1" />
                                 <p className="text-xl font-bold text-gray-900">

@@ -109,10 +109,23 @@ function RegistrationForm() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-start bg-gray-50 px-4 py-8 min-h-screen">
-            <div className="w-full max-w-lg animate-fadeIn">
+        <div className="flex flex-col items-center justify-start bg-gray-50 px-4 py-8 lg:py-12 min-h-screen lg:bg-white">
+            <div className="w-full max-w-lg lg:max-w-2xl animate-fadeIn lg:flex lg:items-center lg:gap-12">
+                {/* Left side branding (desktop only) */}
+                <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:flex-1">
+                    <div className="text-center">
+                        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#e60012] to-[#ff1a2e] flex items-center justify-center mb-6 shadow-lg">
+                            <span className="text-white text-4xl font-bold">M</span>
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-3">Bienvenido a MOOVY</h2>
+                        <p className="text-gray-600 max-w-xs">La forma más rápida y confiable de recibir lo que necesitas en Ushuaia</p>
+                    </div>
+                </div>
+
+                {/* Right side form wrapper */}
+                <div className="w-full lg:flex-1">
                 {/* Header */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-8 lg:text-left">
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Crear Cuenta</h1>
                     <p className="text-gray-600 mt-2 text-lg">Unite a la comunidad de delivery más patagónica</p>
                 </div>
@@ -138,7 +151,7 @@ function RegistrationForm() {
                 )}
 
                 {/* Form Card */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl lg:rounded-3xl shadow-xl lg:shadow-none border border-gray-100 p-6 sm:p-8 lg:p-0">
                     <form onSubmit={handleSubmit} className="space-y-5">
 
                         {/* Name Fields Row */}
@@ -357,11 +370,12 @@ function RegistrationForm() {
                 </div>
 
                 {/* Back to Home */}
-                <div className="text-center mt-8 mb-4">
+                <div className="text-center mt-8 mb-4 lg:text-left">
                     <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-800 transition font-medium">
                         <ArrowLeft className="w-4 h-4" />
                         Volver a la tienda
                     </Link>
+                </div>
                 </div>
             </div>
         </div>

@@ -79,16 +79,16 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
         <div className="min-h-screen bg-gray-50">
             {/* Header con fondo sutil */}
             <div className="bg-white border-b border-gray-100">
-                <div className="container mx-auto px-4 py-5">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-[#e60012] flex items-center justify-center shadow-sm">
-                            <ShoppingBag className="w-5 h-5 text-white" />
+                <div className="mx-auto max-w-7xl px-4 lg:px-6 xl:px-8 py-5 lg:py-6">
+                    <div className="flex items-center gap-3 mb-4 lg:mb-5">
+                        <div className="w-10 h-10 rounded-xl bg-[#e60012] flex items-center justify-center shadow-sm lg:w-12 lg:h-12">
+                            <ShoppingBag className="w-5 h-5 text-white lg:w-6 lg:h-6" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-black text-gray-900">
+                            <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black text-gray-900">
                                 {currentCategory ? cleanEncoding(currentCategory.name) : "Todos los Productos"}
                             </h1>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs lg:text-sm text-gray-500">
                                 {products.length} {products.length === 1 ? "producto" : "productos"} disponibles
                             </p>
                         </div>
@@ -99,7 +99,7 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
 
             {/* Category chips — horizontal scroll */}
             <div className="bg-white border-b border-gray-100 sticky top-14 z-20">
-                <div className="container mx-auto px-4">
+                <div className="mx-auto max-w-7xl px-4 lg:px-6 xl:px-8">
                     <div className="flex gap-2 overflow-x-auto py-3 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
                         <Link
                             href="/productos"
@@ -127,24 +127,24 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
             </div>
 
             {/* Content */}
-            <div className="container mx-auto px-4 py-5">
+            <div className="mx-auto max-w-7xl px-4 lg:px-6 xl:px-8 py-5 lg:py-6">
                 {/* Search notice */}
                 {params.buscar && (
-                    <div className="bg-red-50 border border-red-100 px-4 py-3 rounded-xl mb-5 flex items-center justify-between">
-                        <p className="text-sm text-gray-700">
+                    <div className="bg-red-50 border border-red-100 px-4 py-3 rounded-xl mb-5 flex items-center justify-between lg:mb-6">
+                        <p className="text-sm lg:text-base text-gray-700">
                             Resultados para: <strong className="text-gray-900">{params.buscar}</strong>
                         </p>
-                        <Link href="/productos" className="text-xs font-semibold text-[#e60012] hover:underline ml-3">
+                        <Link href="/productos" className="text-xs font-semibold text-[#e60012] hover:underline ml-3 lg:text-sm">
                             Limpiar
                         </Link>
                     </div>
                 )}
 
                 {/* Desktop layout: sidebar + grid */}
-                <div className="flex gap-6">
+                <div className="flex gap-6 lg:gap-8">
                     {/* Desktop sidebar */}
-                    <aside className="hidden lg:block w-56 flex-shrink-0">
-                        <div className="bg-white rounded-2xl p-5 shadow-sm sticky top-32 border border-gray-100">
+                    <aside className="hidden lg:block w-56 flex-shrink-0 xl:w-64">
+                        <div className="bg-white rounded-2xl p-5 shadow-sm sticky top-32 border border-gray-100 xl:p-6">
                             <h2 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">
                                 <Filter className="w-4 h-4 text-[#e60012]" />
                                 Categorías
@@ -181,23 +181,23 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                     {/* Products grid */}
                     <div className="flex-1">
                         {products.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4 xl:gap-5">
                                 {products.map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-20">
-                                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                                    <Package className="w-10 h-10 text-gray-300" />
+                            <div className="text-center py-20 lg:py-24">
+                                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 lg:w-24 lg:h-24">
+                                    <Package className="w-10 h-10 text-gray-300 lg:w-12 lg:h-12" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-700 mb-1">
+                                <h3 className="text-lg font-bold text-gray-700 mb-1 lg:text-2xl">
                                     No encontramos productos
                                 </h3>
-                                <p className="text-sm text-gray-500 mb-4">
+                                <p className="text-sm text-gray-500 mb-4 lg:text-base">
                                     {params.buscar ? "Intentá con otra búsqueda" : "No hay productos en esta categoría"}
                                 </p>
-                                <Link href="/productos" className="text-sm font-semibold text-[#e60012] hover:underline">
+                                <Link href="/productos" className="text-sm font-semibold text-[#e60012] hover:underline lg:text-base">
                                     Ver todos los productos
                                 </Link>
                             </div>

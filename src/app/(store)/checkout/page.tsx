@@ -517,37 +517,37 @@ export default function CheckoutPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 pb-32">
-            <div className="max-w-4xl mx-auto">
+        <div className="container mx-auto px-4 py-8 pb-32 lg:px-6 xl:px-8">
+            <div className="max-w-7xl mx-auto">
                 {/* Back Link */}
                 <Link
                     href="/productos"
-                    className="inline-flex items-center text-gray-600 hover:text-moovy mb-6"
+                    className="inline-flex items-center text-gray-600 hover:text-moovy mb-6 lg:text-base lg:mb-8"
                 >
                     <ChevronLeft className="w-5 h-5 mr-1" />
                     Seguir comprando
                 </Link>
 
-                <h1 className="text-3xl font-bold text-navy mb-8">Checkout</h1>
+                <h1 className="text-3xl font-bold text-navy mb-8 lg:text-4xl lg:mb-10">Checkout</h1>
 
                 {/* Steps */}
-                <div className="flex mb-8">
+                <div className="flex mb-8 gap-4 lg:gap-6 lg:mb-10">
                     {[1, 2, 3].map((s) => (
                         <div
                             key={s}
-                            className={`flex-1 text-center pb-4 border-b-2 ${step >= s ? "border-moovy text-moovy" : "border-gray-200 text-gray-400"
+                            className={`flex-1 text-center pb-4 border-b-2 lg:text-base lg:pb-6 ${step >= s ? "border-moovy text-moovy" : "border-gray-200 text-gray-400"
                                 }`}
                         >
-                            <span className="font-semibold">
+                            <span className="font-semibold lg:font-bold">
                                 {s === 1 ? "Método" : s === 2 ? (deliveryMethod === "home" ? "Envío" : "Confirmar") : "Pago"}
                             </span>
                         </div>
                     ))}
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-8">
+                <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-3 space-y-6">
                         {/* Step 1: Delivery Method & Address */}
                         {step === 1 && (
                             <div className="space-y-6">
@@ -562,13 +562,13 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
 
-                                <div className="bg-white rounded-xl p-6 shadow-sm">
-                                    <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                        <Truck className="w-5 h-5 text-moovy" />
+                                <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md">
+                                    <h2 className="text-xl lg:text-2xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
+                                        <Truck className="w-5 h-5 lg:w-6 lg:h-6 text-moovy" />
                                         Método de Entrega
                                     </h2>
 
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="grid grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
                                         <button
                                             onClick={() => setDeliveryMethod("home")}
                                             disabled={!hasDrivers}
@@ -774,7 +774,7 @@ export default function CheckoutPage() {
                                             }
                                         }}
                                         disabled={deliveryMethod === "home" && (!address.street || !address.number)}
-                                        className="btn-primary w-full py-3 mt-4"
+                                        className="btn-primary w-full py-3 lg:py-4 lg:text-base lg:font-semibold mt-4 lg:mt-6"
                                     >
                                         Continuar
                                     </button>
@@ -784,21 +784,21 @@ export default function CheckoutPage() {
 
                         {/* Step 2: Delivery */}
                         {step === 2 && (
-                            <div className="bg-white rounded-xl p-6 shadow-sm">
-                                <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                    <Truck className="w-5 h-5 text-moovy" />
+                            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md">
+                                <h2 className="text-xl lg:text-2xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
+                                    <Truck className="w-5 h-5 lg:w-6 lg:h-6 text-moovy" />
                                     Costo de Envío
                                 </h2>
 
-                                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                    <p className="font-medium">Entregar en:</p>
-                                    <p className="text-gray-600">
+                                <div className="mb-4 lg:mb-6 p-4 lg:p-5 bg-gray-50 rounded-lg lg:rounded-xl">
+                                    <p className="font-medium lg:text-base">Entregar en:</p>
+                                    <p className="text-gray-600 lg:text-base">
                                         {address.street} {address.number}
                                         {address.floor ? `, ${address.floor}` : ""}
                                     </p>
                                     <button
                                         onClick={() => setStep(1)}
-                                        className="text-moovy text-sm hover:underline mt-1"
+                                        className="text-moovy text-sm lg:text-base hover:underline mt-1 lg:mt-2"
                                     >
                                         Cambiar dirección
                                     </button>
@@ -843,17 +843,17 @@ export default function CheckoutPage() {
                                     </div>
                                 ) : null}
 
-                                <div className="flex gap-4 mt-6">
+                                <div className="flex gap-4 lg:gap-6 mt-6 lg:mt-8">
                                     <button
                                         onClick={() => setStep(1)}
-                                        className="btn-outline flex-1"
+                                        className="btn-outline flex-1 lg:py-4 lg:text-base lg:font-semibold"
                                     >
                                         Atrás
                                     </button>
                                     <button
                                         onClick={() => setStep(3)}
                                         disabled={!deliveryResult?.isWithinRange}
-                                        className="btn-primary flex-1"
+                                        className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold"
                                     >
                                         Continuar
                                     </button>
@@ -863,15 +863,15 @@ export default function CheckoutPage() {
 
                         {/* Step 3: Payment */}
                         {step === 3 && (
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-xl p-6 shadow-sm">
-                                    <h2 className="text-xl font-bold text-navy mb-4 flex items-center gap-2">
-                                        <CreditCard className="w-5 h-5 text-moovy" />
+                            <div className="space-y-6 lg:space-y-8">
+                                <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md">
+                                    <h2 className="text-xl lg:text-2xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
+                                        <CreditCard className="w-5 h-5 lg:w-6 lg:h-6 text-moovy" />
                                         Método de Pago
                                     </h2>
 
                                     {/* POINTS WIDGET */}
-                                    <div className="mb-6">
+                                    <div className="mb-6 lg:mb-8">
                                         <PointsWidget
                                             orderTotal={subtotal}
                                             pointsApplied={pointsUsed}
@@ -883,12 +883,12 @@ export default function CheckoutPage() {
                                     </div>
 
                                     {/* Delivery Type: Immediate vs Scheduled */}
-                                    <div className="mb-6">
-                                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                            <Calendar className="w-4 h-4" />
+                                    <div className="mb-6 lg:mb-8">
+                                        <h3 className="text-sm lg:text-base font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
+                                            <Calendar className="w-4 h-4 lg:w-5 lg:h-5" />
                                             Tipo de entrega
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-3 lg:mb-4">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -942,8 +942,8 @@ export default function CheckoutPage() {
                                         )}
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
+                                    <div className="space-y-3 lg:space-y-4">
+                                        <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
                                             }`}>
                                             <input
                                                 type="radio"
@@ -954,12 +954,12 @@ export default function CheckoutPage() {
                                                 className="sr-only"
                                             />
                                             <div className="flex-1">
-                                                <span className="font-semibold">💵 Efectivo</span>
-                                                <p className="text-sm text-gray-600">Pagás al recibir el pedido</p>
+                                                <span className="font-semibold lg:text-lg">💵 Efectivo</span>
+                                                <p className="text-sm lg:text-base text-gray-600">Pagás al recibir el pedido</p>
                                             </div>
                                         </label>
 
-                                        <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
+                                        <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
                                             }`}>
                                             <input
                                                 type="radio"
@@ -970,23 +970,23 @@ export default function CheckoutPage() {
                                                 className="sr-only"
                                             />
                                             <div className="flex-1">
-                                                <span className="font-semibold">💳 Mercado Pago</span>
-                                                <p className="text-sm text-gray-600">Tarjeta, débito, MP wallet y más</p>
+                                                <span className="font-semibold lg:text-lg">💳 Mercado Pago</span>
+                                                <p className="text-sm lg:text-base text-gray-600">Tarjeta, débito, MP wallet y más</p>
                                             </div>
                                         </label>
                                     </div>
 
-                                    <div className="flex gap-4 mt-6">
+                                    <div className="flex gap-4 lg:gap-6 mt-6 lg:mt-8">
                                         <button
                                             onClick={() => setStep(isPickup ? 1 : 2)}
-                                            className="btn-outline flex-1"
+                                            className="btn-outline flex-1 lg:py-4 lg:text-base lg:font-semibold"
                                         >
                                             Atrás
                                         </button>
                                         <button
                                             onClick={handleSubmitOrder}
                                             disabled={isSubmitting || (deliveryType === "SCHEDULED" && !scheduledSlotStart)}
-                                            className="btn-primary flex-1 flex items-center justify-center gap-2"
+                                            className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold flex items-center justify-center gap-2"
                                         >
                                             <span className="flex items-center gap-2">
                                                 {isSubmitting ? (
@@ -1006,44 +1006,44 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Order Summary */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-xl p-6 shadow-sm sticky top-24">
-                            <h3 className="text-lg font-bold text-navy mb-4 flex items-center gap-2">
-                                <ShoppingBag className="w-5 h-5 text-moovy" />
+                    <div className="lg:col-span-2">
+                        <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md lg:sticky lg:top-28">
+                            <h3 className="text-lg lg:text-xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
+                                <ShoppingBag className="w-5 h-5 lg:w-6 lg:h-6 text-moovy" />
                                 Tu Pedido
                             </h3>
 
                             {groups.map((group) => (
-                                <div key={group.vendorId} className="mb-3">
+                                <div key={group.vendorId} className="mb-3 lg:mb-4">
                                     <div className="flex items-center gap-1.5 mb-1">
                                         {group.vendorType === "seller" ? (
-                                            <User className="w-3.5 h-3.5 text-emerald-600" />
+                                            <User className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-emerald-600" />
                                         ) : (
-                                            <Store className="w-3.5 h-3.5 text-[#e60012]" />
+                                            <Store className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[#e60012]" />
                                         )}
-                                        <span className="text-xs font-semibold text-gray-500">{group.vendorName}</span>
+                                        <span className="text-xs lg:text-sm font-semibold text-gray-500">{group.vendorName}</span>
                                     </div>
                                     <ul className="divide-y">
                                         {group.items.map((item) => (
-                                            <li key={item.id} className="py-2 flex justify-between">
+                                            <li key={item.id} className="py-2 lg:py-3 flex justify-between">
                                                 <div>
-                                                    <p className="font-medium text-sm">{item.name}</p>
-                                                    <p className="text-xs text-gray-500">x{item.quantity}</p>
+                                                    <p className="font-medium text-sm lg:text-base">{item.name}</p>
+                                                    <p className="text-xs lg:text-sm text-gray-500">x{item.quantity}</p>
                                                 </div>
-                                                <p className="font-medium text-sm">{formatPrice(item.price * item.quantity)}</p>
+                                                <p className="font-medium text-sm lg:text-base">{formatPrice(item.price * item.quantity)}</p>
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
                             ))}
 
-                            <div className="border-t pt-4 space-y-2">
-                                <div className="flex justify-between text-sm">
+                            <div className="border-t pt-4 lg:pt-6 space-y-2 lg:space-y-3">
+                                <div className="flex justify-between text-sm lg:text-base">
                                     <span>Subtotal</span>
                                     <span>{formatPrice(subtotal)}</span>
                                 </div>
                                 {deliveryResult?.isWithinRange && (
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex justify-between text-sm lg:text-base">
                                         <span>Envío</span>
                                         <span className={deliveryResult.isFreeDelivery ? "text-green-600" : ""}>
                                             {deliveryResult.isFreeDelivery
@@ -1053,12 +1053,12 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
                                 {discountAmount > 0 && (
-                                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                                    <div className="flex justify-between text-sm lg:text-base text-green-600 font-medium">
                                         <span>Descuento (Puntos)</span>
                                         <span>-{formatPrice(discountAmount)}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-xl font-bold border-t pt-3">
+                                <div className="flex justify-between text-xl lg:text-2xl font-bold border-t pt-3 lg:pt-4">
                                     <span>Total</span>
                                     <span className="text-moovy">
                                         {formatPrice(finalTotal)}

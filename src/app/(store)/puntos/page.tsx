@@ -488,9 +488,10 @@ export default function PuntosPage() {
 
     // ========== MOOVER DASHBOARD PARA USUARIOS LOGUEADOS ==========
     return (
-        <div className="pb-24">
+        <div className="pb-24 px-4 lg:px-6 xl:px-8">
+            <div className="max-w-7xl mx-auto">
             {/* MOOVER Hero Card */}
-            <div className="bg-gradient-to-br from-[#a3000c] via-[#e60012] to-[#ff1a2e] mx-4 mt-4 rounded-2xl p-6 text-white relative overflow-hidden">
+            <div className="bg-gradient-to-br from-[#a3000c] via-[#e60012] to-[#ff1a2e] rounded-2xl p-6 lg:p-10 text-white relative overflow-hidden mt-4 lg:mt-8">
                 {/* Decorative elements */}
                 <div className="absolute top-0 right-0 opacity-10">
                     <Crown className="w-32 h-32" />
@@ -1112,6 +1113,7 @@ export default function PuntosPage() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

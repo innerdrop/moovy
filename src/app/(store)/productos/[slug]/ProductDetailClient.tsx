@@ -373,10 +373,10 @@ export default function ProductDetailClient() {
             </div>
 
             {/* ═══════ DESKTOP: Two-column layout ═══════ */}
-            <div className="hidden lg:block container mx-auto px-4 py-8">
+            <div className="hidden lg:block mx-auto max-w-7xl px-4 xl:px-6 2xl:px-8 py-8 lg:py-10 xl:py-12">
                 {/* Breadcrumb */}
-                <nav className="mb-6">
-                    <ol className="flex items-center gap-2 text-sm text-gray-500">
+                <nav className="mb-6 lg:mb-8">
+                    <ol className="flex items-center gap-2 text-sm text-gray-500 xl:text-base">
                         <li><Link href="/" className="hover:text-[#e60012] transition">Inicio</Link></li>
                         <li>/</li>
                         <li><Link href="/productos" className="hover:text-[#e60012] transition">Productos</Link></li>
@@ -387,11 +387,11 @@ export default function ProductDetailClient() {
                             </>
                         )}
                         <li>/</li>
-                        <li className="text-gray-900 font-medium truncate max-w-[200px]">{product.name}</li>
+                        <li className="text-gray-900 font-medium truncate max-w-[200px] lg:max-w-sm">{product.name}</li>
                     </ol>
                 </nav>
 
-                <div className="grid lg:grid-cols-2 gap-10">
+                <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 xl:gap-16">
                     {/* Images */}
                     <div className="space-y-4">
                         <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden relative">
@@ -429,14 +429,14 @@ export default function ProductDetailClient() {
                     {/* Info */}
                     <div className="flex flex-col">
                         {category && (
-                            <Link href={`/productos?categoria=${category.slug}`} className="text-[#e60012] text-sm font-medium hover:underline mb-2">
+                            <Link href={`/productos?categoria=${category.slug}`} className="text-[#e60012] text-sm font-medium hover:underline mb-2 lg:text-base lg:mb-3">
                                 {category.name}
                             </Link>
                         )}
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-                        <div className="flex items-center gap-3 mb-4">
+                        <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-2 lg:mb-4">{product.name}</h1>
+                        <div className="flex items-center gap-3 mb-4 lg:mb-6 lg:gap-6">
                             <div>
-                                <p className="text-3xl font-bold text-[#e60012]">{formatPrice(product.price)}</p>
+                                <p className="text-3xl lg:text-4xl xl:text-5xl font-bold text-[#e60012]">{formatPrice(product.price)}</p>
                                 <p className="text-xs text-amber-600 font-medium mt-0.5 flex items-center gap-1">
                                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                                     +{Math.floor(product.price)} puntos MOOVER con esta compra
@@ -451,43 +451,43 @@ export default function ProductDetailClient() {
                         </div>
 
                         {inStock ? (
-                            <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium mb-4">
+                            <span className="flex items-center gap-1.5 text-sm lg:text-base text-green-600 font-medium mb-4 lg:mb-6">
                                 <Check className="w-4 h-4" /> En stock ({product.stock} disponibles)
                             </span>
                         ) : (
-                            <span className="flex items-center gap-1.5 text-sm text-red-600 font-medium mb-4">
+                            <span className="flex items-center gap-1.5 text-sm lg:text-base text-red-600 font-medium mb-4 lg:mb-6">
                                 <AlertCircle className="w-4 h-4" /> Sin stock
                             </span>
                         )}
 
                         {product.description && (
-                            <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
+                            <p className="text-gray-600 mb-6 lg:mb-8 leading-relaxed lg:text-lg">{product.description}</p>
                         )}
 
                         {/* Quantity + CTA */}
                         {inStock && (
-                            <div className="space-y-4 mb-6">
-                                <div className="flex items-center gap-4">
-                                    <span className="text-gray-700 font-medium">Cantidad:</span>
-                                    <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-1">
-                                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition" disabled={quantity <= 1}>
-                                            <Minus className="w-4 h-4" />
+                            <div className="space-y-4 mb-6 lg:mb-8 lg:space-y-5">
+                                <div className="flex items-center gap-4 lg:gap-6">
+                                    <span className="text-gray-700 font-medium lg:text-lg">Cantidad:</span>
+                                    <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-1 lg:p-1.5">
+                                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition lg:w-11 lg:h-11" disabled={quantity <= 1}>
+                                            <Minus className="w-4 h-4 lg:w-5 lg:h-5" />
                                         </button>
-                                        <span className="w-10 text-center font-semibold">{quantity}</span>
-                                        <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition" disabled={quantity >= product.stock}>
-                                            <Plus className="w-4 h-4" />
+                                        <span className="w-10 text-center font-semibold lg:w-12 lg:text-lg">{quantity}</span>
+                                        <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition lg:w-11 lg:h-11" disabled={quantity >= product.stock}>
+                                            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 lg:gap-4">
                                     <button
                                         onClick={handleAddToCart}
                                         disabled={addedToCart}
-                                        className={`flex-1 py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition shadow-md ${addedToCart ? "bg-green-500" : "bg-[#e60012] hover:bg-[#cc000f]"}`}
+                                        className={`flex-1 py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition shadow-md lg:py-4 lg:text-lg ${addedToCart ? "bg-green-500" : "bg-[#e60012] hover:bg-[#cc000f]"}`}
                                     >
-                                        {addedToCart ? <><Check className="w-5 h-5" /> ¡Agregado!</> : <><ShoppingCart className="w-5 h-5" /> Agregar al carrito</>}
+                                        {addedToCart ? <><Check className="w-5 h-5 lg:w-6 lg:h-6" /> ¡Agregado!</> : <><ShoppingCart className="w-5 h-5 lg:w-6 lg:h-6" /> Agregar al carrito</>}
                                     </button>
-                                    <button onClick={handleAddAndGoToCart} className="flex-1 py-3.5 rounded-xl font-semibold border-2 border-[#e60012] text-[#e60012] hover:bg-red-50 transition">
+                                    <button onClick={handleAddAndGoToCart} className="flex-1 py-3.5 rounded-xl font-semibold border-2 border-[#e60012] text-[#e60012] hover:bg-red-50 transition lg:py-4 lg:text-lg">
                                         Comprar ahora
                                     </button>
                                 </div>
@@ -496,25 +496,25 @@ export default function ProductDetailClient() {
 
                         {/* Merchant card */}
                         {merchant && (
-                            <Link href={`/tienda/${merchant.slug}`} className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-6 hover:shadow-md transition group">
-                                <div className="w-14 h-14 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
+                            <Link href={`/tienda/${merchant.slug}`} className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl p-4 lg:p-5 mb-6 lg:mb-8 hover:shadow-md transition group">
+                                <div className="w-14 h-14 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0 lg:w-16 lg:h-16">
                                     {merchant.image ? (
                                         <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center"><Store className="w-6 h-6 text-gray-400" /></div>
+                                        <div className="w-full h-full flex items-center justify-center"><Store className="w-6 h-6 text-gray-400 lg:w-8 lg:h-8" /></div>
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                        <p className="font-semibold text-gray-900 group-hover:text-[#e60012] transition">{merchant.name}</p>
-                                        {merchant.isVerified && <Shield className="w-4 h-4 text-blue-500" />}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <p className="font-semibold text-gray-900 group-hover:text-[#e60012] transition lg:text-lg">{merchant.name}</p>
+                                        {merchant.isVerified && <Shield className="w-4 h-4 text-blue-500 lg:w-5 lg:h-5" />}
                                         {merchant.isOpen ? (
-                                            <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">ABIERTO</span>
+                                            <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full lg:text-xs lg:px-3">ABIERTO</span>
                                         ) : (
-                                            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">CERRADO</span>
+                                            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full lg:text-xs lg:px-3">CERRADO</span>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                                    <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 lg:text-sm">
                                         {merchant.rating && (
                                             <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-500 fill-amber-500" />{merchant.rating.toFixed(1)}</span>
                                         )}
@@ -522,22 +522,22 @@ export default function ProductDetailClient() {
                                         {merchant.address && <span className="flex items-center gap-0.5 truncate"><MapPin className="w-3 h-3" />{merchant.address}</span>}
                                     </div>
                                 </div>
-                                <ChevronRight className="w-5 h-5 text-gray-300" />
+                                <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
                             </Link>
                         )}
 
                         {/* Payment & Delivery info */}
-                        <div className="space-y-3 pt-4 border-t border-gray-100">
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <Truck className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <div className="space-y-3 pt-4 lg:pt-6 border-t border-gray-100 lg:space-y-4">
+                            <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
+                                <Truck className="w-4 h-4 text-green-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Envío a todo Ushuaia — {merchant?.deliveryFee ? `$${merchant.deliveryFee.toLocaleString("es-AR")}` : "consultar"}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <CreditCard className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
+                                <CreditCard className="w-4 h-4 text-blue-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Mercado Pago — tarjeta, débito o dinero en cuenta</span>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <Banknote className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                            <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
+                                <Banknote className="w-4 h-4 text-emerald-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Efectivo al recibir</span>
                             </div>
                         </div>

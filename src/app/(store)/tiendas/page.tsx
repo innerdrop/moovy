@@ -36,11 +36,11 @@ export default async function TiendasPage() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <div className="bg-white border-b border-gray-100">
-                <div className="container mx-auto px-4 py-6">
-                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
+                <div className="mx-auto max-w-7xl px-4 lg:px-6 xl:px-8 py-6 lg:py-8">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900">
                         Comercios en Ushuaia
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm lg:text-base text-gray-500 mt-1">
                         {merchants.length} {merchants.length === 1 ? "comercio" : "comercios"} disponibles
                         {openCount > 0 && (
                             <span className="text-green-600 font-semibold"> · {openCount} {openCount === 1 ? "abierto" : "abiertos"} ahora</span>
@@ -50,9 +50,9 @@ export default async function TiendasPage() {
             </div>
 
             {/* Grid */}
-            <div className="container mx-auto px-4 py-6">
+            <div className="mx-auto max-w-7xl px-4 lg:px-6 xl:px-8 py-6 lg:py-8">
                 {merchants.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-6">
                         {merchants.map((merchant) => (
                             <MerchantCard key={merchant.id} merchant={merchant} />
                         ))}

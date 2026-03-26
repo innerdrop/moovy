@@ -132,9 +132,9 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
 
     return (
         <div className="mp-page min-h-screen">
-            <div className="mx-auto max-w-5xl px-4 py-4 lg:py-6">
+            <div className="mx-auto max-w-7xl px-4 lg:px-6 xl:px-8 py-4 lg:py-6 xl:py-8">
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-xs text-purple-400 mb-4">
+                <div className="flex items-center gap-2 text-xs text-purple-400 mb-4 lg:mb-6 lg:text-sm">
                     <Link href="/marketplace" className="hover:text-[#7C3AED] transition flex items-center gap-1">
                         <ArrowLeft className="w-3.5 h-3.5" />
                         Marketplace
@@ -148,10 +148,10 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
                         </>
                     )}
                     <span className="text-purple-300">/</span>
-                    <span className="text-gray-500 truncate max-w-[200px]">{listing.title}</span>
+                    <span className="text-gray-500 truncate max-w-[200px] lg:max-w-sm">{listing.title}</span>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
+                <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 xl:gap-16">
                     {/* ═══════ GALLERY ═══════ */}
                     <div className="space-y-2.5">
                         {/* Main Image with swipe */}
@@ -247,18 +247,18 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
                         )}
 
                         {/* Title */}
-                        <h1 className="text-xl lg:text-2xl font-extrabold text-gray-900 leading-tight">
+                        <h1 className="text-xl lg:text-3xl xl:text-4xl font-extrabold text-gray-900 leading-tight">
                             {listing.title}
                         </h1>
 
                         {/* Price + Share */}
-                        <div className="flex items-center justify-between">
-                            <p className="mp-gradient-text text-3xl font-extrabold">
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="mp-gradient-text text-3xl lg:text-4xl xl:text-5xl font-extrabold">
                                 ${listing.price.toLocaleString("es-AR")}
                             </p>
                             <button
                                 onClick={handleShare}
-                                className="flex items-center gap-1.5 rounded-xl border border-purple-200/50 px-3 py-1.5 text-xs font-medium text-purple-500 transition hover:bg-purple-50 active:scale-95"
+                                className="flex items-center gap-1.5 rounded-xl border border-purple-200/50 px-3 py-1.5 text-xs font-medium text-purple-500 transition hover:bg-purple-50 active:scale-95 lg:px-4 lg:py-2 lg:text-sm"
                             >
                                 <Share2 className="w-3.5 h-3.5" />
                                 Compartir
@@ -283,7 +283,7 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
                         <button
                             onClick={handleAddToCart}
                             disabled={listing.stock === 0}
-                            className={`w-full rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 shadow-lg active:scale-[0.98] ${
+                            className={`w-full rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 shadow-lg active:scale-[0.98] lg:py-4 lg:text-base ${
                                 added
                                     ? "bg-green-500 text-white shadow-green-300/30"
                                     : listing.stock === 0
@@ -371,22 +371,22 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
 
                 {/* ═══════ MÁS DE ESTE VENDEDOR ═══════ */}
                 {relatedListings.length > 0 && (
-                    <section className="mt-10 mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2">
-                                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-100">
+                    <section className="mt-10 mb-6 lg:mt-12 lg:mb-8">
+                        <div className="flex items-center justify-between mb-3 lg:mb-4">
+                            <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2 lg:text-lg">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-100 lg:h-7 lg:w-7">
                                     <Package className="h-3 w-3 text-[#7C3AED]" />
                                 </span>
                                 Más de {sellerName}
                             </h2>
                             <Link
                                 href={`/marketplace/vendedor/${listing.seller.id}`}
-                                className="text-xs font-semibold text-[#7C3AED] flex items-center gap-1 hover:gap-2 transition-all"
+                                className="text-xs font-semibold text-[#7C3AED] flex items-center gap-1 hover:gap-2 transition-all lg:text-sm"
                             >
                                 Ver todo <ChevronRight className="w-3.5 h-3.5" />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
                             {relatedListings.map((item, i) => (
                                 <div key={item.id} className={`mp-stagger mp-stagger-${i + 1}`}>
                                     <ListingCard listing={item} showAddButton variant="marketplace" />

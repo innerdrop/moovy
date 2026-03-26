@@ -229,11 +229,11 @@ export default function MisPedidosPage() {
     // ─── Main View ───
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 pt-5 pb-24">
+            <div className="container mx-auto px-4 lg:px-6 xl:px-8 pt-5 lg:pt-8 pb-24">
 
                 {/* Title row */}
-                <div className="mb-5">
-                    <h1 className="text-xl font-black text-gray-900">Mis pedidos</h1>
+                <div className="mb-5 lg:mb-8">
+                    <h1 className="text-xl lg:text-3xl font-black text-gray-900">Mis pedidos</h1>
                 </div>
 
                 {/* Tabs — pill style matching the rest of the site */}
@@ -283,7 +283,7 @@ export default function MisPedidosPage() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 lg:space-y-4">
                         {filtered.map((order, idx) => {
                             const st = statusConfig[order.status] || statusConfig.PENDING;
                             const isActive = activeStatuses.includes(order.status);

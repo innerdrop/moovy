@@ -224,7 +224,7 @@ function BuscarContent() {
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Search Header */}
             <div className="bg-white sticky top-0 z-30 border-b border-gray-100 shadow-sm">
-                <div className="flex items-center gap-3 px-4 py-3">
+                <div className="flex items-center gap-3 px-4 lg:px-6 xl:px-8 py-3 max-w-7xl mx-auto">
                     <button
                         onClick={() => router.back()}
                         className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition"
@@ -253,7 +253,7 @@ function BuscarContent() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex px-4 gap-1">
+                <div className="flex px-4 lg:px-6 xl:px-8 gap-1 max-w-7xl mx-auto w-full">
                     <button
                         onClick={() => handleTabChange("comercios")}
                         className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border-b-2 transition ${
@@ -289,7 +289,7 @@ function BuscarContent() {
                 </div>
             </div>
 
-            <div className="px-4 py-4">
+            <div className="px-4 lg:px-6 xl:px-8 py-4 lg:py-6 max-w-7xl mx-auto">
                 {/* Loading */}
                 {loading && (
                     <div className="flex items-center justify-center py-16">
@@ -377,7 +377,7 @@ function BuscarContent() {
                                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
                                     Comercios ({merchants.length})
                                 </h3>
-                                <div className="space-y-2">
+                                <div className="space-y-2 lg:space-y-3">
                                     {merchants.map((m) => (
                                         <Link
                                             key={m.id}
@@ -435,7 +435,7 @@ function BuscarContent() {
                                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
                                     Productos ({productTotal})
                                 </h3>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
                                     {products.map((p) => (
                                         <Link
                                             key={p.id}

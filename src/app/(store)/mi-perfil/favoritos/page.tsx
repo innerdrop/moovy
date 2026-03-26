@@ -68,8 +68,8 @@ export default function FavoritosPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
-                <div className="max-w-md mx-auto flex items-center gap-3">
+            <div className="bg-white border-b border-gray-100 px-4 lg:px-6 xl:px-8 py-4 lg:py-6 sticky top-0 z-10">
+                <div className="max-w-md mx-auto lg:max-w-7xl flex items-center gap-3">
                     <Link href="/mi-perfil" className="p-2 -ml-2 rounded-full hover:bg-gray-100">
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </Link>
@@ -78,8 +78,8 @@ export default function FavoritosPage() {
             </div>
 
             {/* Tabs */}
-            <div className="bg-white border-b border-gray-100 sticky top-[60px] z-10">
-                <div className="max-w-md mx-auto flex">
+            <div className="bg-white border-b border-gray-100 sticky top-[60px] lg:top-[76px] z-10">
+                <div className="max-w-md mx-auto lg:max-w-7xl flex px-4 lg:px-6 xl:px-8">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
@@ -108,7 +108,7 @@ export default function FavoritosPage() {
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 py-4">
+            <div className="max-w-md mx-auto lg:max-w-7xl px-4 lg:px-6 xl:px-8 py-4 lg:py-6">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-16">
                         <div className="w-8 h-8 border-2 border-gray-200 border-t-[#e60012] rounded-full animate-spin" />
@@ -150,7 +150,7 @@ export default function FavoritosPage() {
                         {/* Products Tab */}
                         {activeTab === "products" && (
                             data.products.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
                                     {data.products.map((p: any) => (
                                         <ProductCard
                                             key={p.id}
@@ -176,7 +176,7 @@ export default function FavoritosPage() {
                         {/* Listings Tab */}
                         {activeTab === "listings" && (
                             data.listings.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
                                     {data.listings.map((l: any) => (
                                         <ListingCard
                                             key={l.id}

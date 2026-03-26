@@ -74,7 +74,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     if (categories.length === 0) return null;
 
     return (
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <h2 className="text-xl lg:text-2xl font-black text-gray-900 mb-4">
                 Explorá por categorías
             </h2>
@@ -82,9 +82,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                 .catscroll { -ms-overflow-style: none; scrollbar-width: none; }
                 .catscroll::-webkit-scrollbar { display: none; }
             `}</style>
+            {/* Mobile: horizontal scroll */}
             <div
                 ref={scrollRef}
-                className="catscroll overflow-x-auto py-1 px-4"
+                className="catscroll lg:hidden overflow-x-auto py-1 px-4"
                 onTouchStart={pause}
                 onTouchEnd={resume}
                 onMouseEnter={pause}
@@ -108,6 +109,25 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                         </Link>
                     ))}
                 </div>
+            </div>
+            {/* Desktop: grid */}
+            <div className="hidden lg:grid lg:grid-cols-6 xl:grid-cols-8 gap-4 lg:gap-5">
+                {categories.map((cat) => (
+                    <Link
+                        key={cat.id}
+                        href={`/productos?categoria=${cat.slug}`}
+                        className="flex-shrink-0 group"
+                    >
+                        <div className="flex flex-col items-center gap-1.5">
+                            <div className="w-[80px] h-[80px] lg:w-[90px] lg:h-[90px] rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center group-hover:bg-gray-200 group-hover:scale-105 transition-all duration-200">
+                                <CategoryImage cat={cat} />
+                            </div>
+                            <span className="text-xs font-bold text-gray-800 group-hover:text-[#e60012] transition-colors text-center leading-tight w-full truncate">
+                                {cat.name}
+                            </span>
+                        </div>
+                    </Link>
+                ))}
             </div>
         </div>
     );

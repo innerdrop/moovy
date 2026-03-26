@@ -216,9 +216,9 @@ export default function HeroStatic({
       )}
 
       {/* ── CONTENIDO ── */}
-      <div className="relative z-10 container mx-auto px-4 pt-4 pb-16 md:pt-8 md:pb-20 lg:pt-12 lg:pb-24">
+      <div className="relative z-10 container mx-auto px-4 md:px-6 lg:px-8 pt-4 pb-16 md:pt-8 md:pb-20 lg:pt-12 lg:pb-24">
         <div className="lg:flex lg:items-center lg:justify-between">
-          <div className="max-w-2xl mx-auto lg:mx-0">
+          <div className="max-w-2xl mx-auto lg:mx-0 lg:flex-1">
             {/* Headline — dynamic from config */}
             <h1 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-tight mb-2 font-black" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.15)" }}>
               {cfg.hero_title.split("\n").map((line, i) => (
@@ -257,7 +257,7 @@ export default function HeroStatic({
             {cfg.hero_search_enabled === "true" && (
             <div
               ref={dropdownRef}
-              className="relative max-w-md z-20"
+              className="relative max-w-md lg:max-w-xl xl:max-w-2xl z-20"
               data-hero-search
             >
               {/* Persona — detrás del search bar, manos sobre la caja */}

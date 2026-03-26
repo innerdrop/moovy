@@ -207,9 +207,9 @@ export default function TimeSlotPicker({ onSelect, selectedStart, vendorSchedule
 
     if (loading) {
         return (
-            <div className="text-center py-4">
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Cargando horarios disponibles...</p>
+            <div className="text-center py-4 lg:py-6">
+                <div className="w-5 h-5 lg:w-6 lg:h-6 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin mx-auto mb-2 lg:mb-3" />
+                <p className="text-sm lg:text-base text-gray-400">Cargando horarios disponibles...</p>
             </div>
         );
     }
@@ -218,15 +218,15 @@ export default function TimeSlotPicker({ onSelect, selectedStart, vendorSchedule
     const allClosed = dayGroups.length === 0;
 
     return (
-        <div className="space-y-4">
-            <p className="text-sm text-gray-500">
+        <div className="space-y-4 lg:space-y-6">
+            <p className="text-sm lg:text-base text-gray-500">
                 Elegí un horario de entrega en las próximas 48 horas
             </p>
 
             {allClosed && (
-                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-amber-800">
+                <div className="flex items-start gap-3 p-3 lg:p-4 bg-amber-50 border border-amber-200 rounded-lg lg:rounded-xl">
+                    <AlertCircle className="w-5 h-5 lg:w-6 lg:h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm lg:text-base text-amber-800">
                         No hay horarios de entrega programada disponibles en las próximas 48 horas para este vendedor. Podés elegir entrega inmediata.
                     </p>
                 </div>
@@ -234,10 +234,10 @@ export default function TimeSlotPicker({ onSelect, selectedStart, vendorSchedule
 
             {dayGroups.map((group) => (
                 <div key={group.date}>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2 capitalize">
+                    <h4 className="text-sm lg:text-base font-semibold text-gray-700 mb-2 lg:mb-3 capitalize">
                         {group.label}
                     </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-3">
                         {group.slots.map((slot) => {
                             const isoStart = slot.start.toISOString();
                             const isSelected = selectedStart === isoStart;
@@ -248,9 +248,9 @@ export default function TimeSlotPicker({ onSelect, selectedStart, vendorSchedule
                                     type="button"
                                     onClick={() => onSelect(isoStart, slot.end.toISOString())}
                                     className={`
-                                        px-3 py-2.5 rounded-lg text-sm font-medium transition-all border
+                                        px-3 py-2.5 lg:px-4 lg:py-3 rounded-lg lg:rounded-xl text-sm lg:text-base font-medium lg:font-semibold transition-all border
                                         ${isSelected
-                                            ? "bg-red-500 text-white border-red-500 shadow-md"
+                                            ? "bg-red-500 text-white border-red-500 shadow-md lg:shadow-lg"
                                             : "bg-white text-gray-700 border-gray-200 hover:border-red-300 hover:bg-red-50"
                                         }
                                     `}

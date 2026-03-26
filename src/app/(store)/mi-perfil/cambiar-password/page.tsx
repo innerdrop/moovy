@@ -89,8 +89,8 @@ export default function CambiarPasswordPage() {
     if (success) {
         return (
             <div className="min-h-screen bg-gray-50 pb-24">
-                <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
-                    <div className="max-w-md mx-auto flex items-center gap-3">
+                <div className="bg-white border-b border-gray-100 px-4 lg:px-6 xl:px-8 py-4 lg:py-6 sticky top-0 z-10">
+                    <div className="max-w-md mx-auto lg:max-w-2xl flex items-center gap-3">
                         <Link href="/mi-perfil/datos" className="p-2 -ml-2 rounded-full hover:bg-gray-100">
                             <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </Link>
@@ -132,7 +132,7 @@ export default function CambiarPasswordPage() {
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 py-6">
+            <div className="max-w-md mx-auto lg:max-w-2xl px-4 lg:px-6 xl:px-8 py-6 lg:py-8">
                 {/* Security Info */}
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-start gap-3">
                     <Shield className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />

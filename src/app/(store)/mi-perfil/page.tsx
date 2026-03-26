@@ -175,8 +175,8 @@ export default function ProfilePage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header / Profile Summary */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4">
-                <div className="max-w-md mx-auto">
+            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 lg:pt-12 lg:pb-8">
+                <div className="max-w-md mx-auto lg:max-w-7xl lg:flex lg:items-start lg:gap-8">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-16 h-16 rounded-full bg-[#e60012] flex items-center justify-center text-white text-2xl font-bold shadow-md">
                             {session?.user?.name?.charAt(0).toUpperCase() || <User />}
@@ -195,8 +195,13 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 mt-6 space-y-6">
+            <div className="max-w-md mx-auto lg:max-w-7xl px-4 mt-6 lg:mt-0 space-y-6 lg:flex lg:gap-8 lg:flex-1">
+                {/* Desktop Sidebar Navigation */}
+                <nav className="hidden lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 lg:space-y-4">
+                </nav>
 
+                {/* Content wrapper for flex layout */}
+                <div className="lg:flex-1 space-y-6">
                 {/* 1. My Account Section */}
                 <section>
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mi Cuenta</h3>
@@ -475,6 +480,7 @@ export default function ProfilePage() {
                 <p className="text-center text-[10px] text-gray-400 pb-4">
                     Versión 1.0.0 • Hecho con ❤️ en Ushuaia
                 </p>
+                </div>
             </div>
 
             {/* Delete Account Confirmation Modal */}

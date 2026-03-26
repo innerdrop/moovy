@@ -256,14 +256,14 @@ export default function OrderDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50">
-                <div className="bg-white border-b px-4 py-4 flex items-center gap-3">
+                <div className="bg-white border-b px-4 lg:px-6 xl:px-8 py-4 lg:py-6 flex items-center gap-3">
                     <div className="w-9 h-9 bg-gray-100 rounded-full animate-pulse" />
                     <div className="flex-1">
                         <div className="h-4 w-36 bg-gray-200 rounded animate-pulse mb-1.5" />
                         <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
                     </div>
                 </div>
-                <div className="container mx-auto px-4 pt-5 space-y-4">
+                <div className="container mx-auto px-4 lg:px-6 xl:px-8 pt-5 lg:pt-8 space-y-4 lg:space-y-6">
                     <div className="h-24 bg-white rounded-xl border border-gray-100 animate-pulse" />
                     <div className="h-48 bg-white rounded-xl border border-gray-100 animate-pulse" />
                     <div className="h-64 bg-white rounded-xl border border-gray-100 animate-pulse" />
@@ -295,7 +295,7 @@ export default function OrderDetailPage() {
         <div className="min-h-screen bg-gray-50 pb-32">
             {/* ── Header ── */}
             <div className="bg-white sticky top-0 z-30 border-b border-gray-100">
-                <div className="container mx-auto px-4 py-3 flex items-center gap-3">
+                <div className="container mx-auto px-4 lg:px-6 xl:px-8 py-3 lg:py-4 flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
                         className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition active:scale-95"
@@ -321,7 +321,7 @@ export default function OrderDetailPage() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 pt-5 space-y-4">
+            <div className="container mx-auto px-4 lg:px-6 xl:px-8 pt-5 lg:pt-8 space-y-4 lg:space-y-6">
 
                 {/* ── Status Hero ── */}
                 <div className={`rounded-xl p-4 ${isCancelled ? "bg-gray-100" : isDelivered ? "bg-green-50" : "bg-gradient-to-r from-red-50 to-orange-50"}`}>

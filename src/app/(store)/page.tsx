@@ -237,7 +237,7 @@ async function LiveStoreView() {
       />
 
       {/* 2. Categorías — sin título, protagonistas (no reveal — above the fold) */}
-      <section className="relative py-5 bg-white">
+      <section className="relative py-5 lg:py-8 bg-white">
         <CategoryGrid categories={categories} />
       </section>
 
@@ -251,8 +251,8 @@ async function LiveStoreView() {
 
       {/* 6. Comercios en Ushuaia */}
       <AnimateIn animation="reveal">
-      <section className="py-6 lg:py-8 bg-gray-50">
-        <div className="container mx-auto px-4">
+      <section className="py-6 lg:py-10 xl:py-12 bg-gray-50">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl lg:text-2xl font-black text-gray-900">
               Comercios en Ushuaia
@@ -309,8 +309,8 @@ async function LiveStoreView() {
 
       {/* 7. Productos — Lo más pedido */}
       <AnimateIn animation="reveal" delay={100}>
-      <section className="py-8 lg:py-10 bg-white border-t border-gray-100">
-        <div className="container mx-auto px-4">
+      <section className="py-8 lg:py-12 xl:py-14 bg-white border-t border-gray-100">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl lg:text-2xl font-black text-gray-900">
               Lo más pedido
@@ -324,7 +324,7 @@ async function LiveStoreView() {
           </div>
 
           {featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 lg:gap-4">
               {featuredProducts.map((product) => (
                 <HomeProductCard key={product.id} product={product} />
               ))}
@@ -344,8 +344,8 @@ async function LiveStoreView() {
       {/* 8. Marketplace */}
       {recentListings.length > 0 && (
         <AnimateIn animation="reveal-scale">
-        <section className="py-8 lg:py-10 bg-gray-50 border-t border-gray-100">
-          <div className="container mx-auto px-4">
+        <section className="py-8 lg:py-12 xl:py-14 bg-gray-50 border-t border-gray-100">
+          <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
             {/* Marketplace hero banner — immersive gradient */}
             <div className="relative overflow-hidden rounded-3xl mb-6">
               {/* Background */}
@@ -404,7 +404,7 @@ async function LiveStoreView() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 lg:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4">
               {recentListings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
