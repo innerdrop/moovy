@@ -9,7 +9,7 @@ export default function SocialProofBar({ totalDelivered, activeMerchants }: Soci
     if (totalDelivered === 0 && activeMerchants === 0) return null;
 
     return (
-        <div className="bg-gray-50 border-y border-gray-200">
+        <div className="bg-white">
             <div className="container mx-auto px-4 py-2.5 flex items-center justify-center gap-5 flex-wrap">
                 {totalDelivered > 0 && (
                     <div className="flex items-center gap-2 text-xs sm:text-sm">

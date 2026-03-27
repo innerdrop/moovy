@@ -103,7 +103,7 @@ export default function StoreLayout({
     // Loading: show skeleton layout (header + content + bottom nav placeholder)
     if (isLoading) {
         return (
-            <div className="min-h-screen flex flex-col bg-gray-50">
+            <div className="min-h-screen flex flex-col bg-white">
                 {/* Header skeleton */}
                 <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
                     <div className="h-1 bg-gradient-to-r from-[#e60012] via-[#ff1a2e] to-[#e60012]" />
@@ -158,7 +158,7 @@ export default function StoreLayout({
 
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
-        <div className={`min-h-screen flex flex-col bg-gray-50 overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}>
+        <div className={`min-h-screen flex flex-col bg-white overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}>
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 

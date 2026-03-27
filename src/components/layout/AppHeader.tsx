@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, User, Package, X, ChevronRight, Bell, Search, Loader2, Store, ArrowLeft } from "lucide-react";
+import { ShoppingBag, MapPin, Package, X, ChevronRight, Bell, Search, Loader2, Store, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -194,7 +194,7 @@ export default function AppHeader({
 
                 {/* Mobile Header - Single clean row */}
                 <div className="lg:hidden flex items-center justify-between h-14 px-4">
-                    {/* Left: Greeting or Login */}
+                    {/* Left: Location or Greeting */}
                     <div className="flex items-center gap-2">
                         {isLoggedIn && firstName ? (
                             <Link href="/mi-perfil" className="flex items-center gap-1.5">
@@ -204,9 +204,10 @@ export default function AppHeader({
                                 <span className="text-sm font-semibold hidden xs:inline text-gray-900">{firstName}</span>
                             </Link>
                         ) : (
-                            <Link href="/login" className="text-sm font-medium text-gray-500 hover:text-[#e60012] transition">
-                                Ingresar
-                            </Link>
+                            <div className="flex items-center gap-1 text-gray-600">
+                                <MapPin className={`w-4 h-4 ${isMarketplace ? "text-[#7C3AED]" : "text-[#e60012]"}`} />
+                                <span className="text-sm font-medium">Ushuaia</span>
+                            </div>
                         )}
                     </div>
 
@@ -290,7 +291,7 @@ export default function AppHeader({
 
                 {/* Desktop Header */}
                 <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">
-                    {/* Left: Logo + User */}
+                    {/* Left: Logo + Location/User */}
                     <div className="flex items-center gap-3 flex-shrink-0">
                         <Link href="/" className="flex-shrink-0">
                             <Image
@@ -310,18 +311,9 @@ export default function AppHeader({
                                 <span className="text-sm font-semibold text-gray-900">{firstName}</span>
                             </Link>
                         ) : (
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium">
-                                    <MapPin className="w-3.5 h-3.5 text-[#e60012]" />
-                                    Ushuaia
-                                </div>
-                                <Link
-                                    href="/login"
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:border-[#e60012] hover:text-[#e60012] transition text-sm font-medium"
-                                >
-                                    <User className="w-4 h-4" />
-                                    Ingresar
-                                </Link>
+                            <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium">
+                                <MapPin className={`w-3.5 h-3.5 ${isMarketplace ? "text-[#7C3AED]" : "text-[#e60012]"}`} />
+                                Ushuaia
                             </div>
                         )}
                     </div>

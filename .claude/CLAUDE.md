@@ -281,6 +281,36 @@ MOOVY debe atacar CADA una de esas debilidades:
 - Atención personalizada a cada comercio
 - Visibilidad equitativa para comercios chicos
 
+### Regla de marca: NUNCA mencionar competidores (Decisión 2026-03-27)
+
+**MOOVY es un movimiento, no una comparación.**
+
+Regla absoluta para TODO contenido visible al usuario (páginas, emails,
+textos en la app, soporte, marketing, redes sociales, documentación pública):
+
+1. NUNCA nombrar competidores (PedidosYa, Rappi, Uber Eats, iFood, etc.)
+   en ningún texto, página, componente o comunicación visible al usuario
+2. NUNCA hacer comparaciones directas ("a diferencia de X", "mejor que Y",
+   "mientras otros cobran Z%")
+3. Se pueden hacer referencias genéricas al rubro ("otras plataformas de
+   delivery", "el mercado actual") pero sin nombrar empresas específicas
+4. Filosofía Apple: no mencionamos a Samsung. Somos mejores, punto.
+   El usuario lo descubre solo
+
+**USO INTERNO PERMITIDO:** El análisis de competencia de arriba es para
+decisiones internas de producto y estrategia. Sirve para saber QUÉ
+debilidades atacar, pero NUNCA se exponen al público.
+
+**Cómo comunicar ventajas sin comparar:**
+- MAL: "A diferencia de PedidosYa, cobramos menos comisión"
+- BIEN: "Comisiones desde el 8% — las más bajas del mercado"
+- MAL: "Mientras otros retienen tu dinero por semanas..."
+- BIEN: "Cobrás al instante. Cada venta, cada vez"
+- MAL: "Nuestro soporte es mejor que el de Rappi"
+- BIEN: "Soporte humano en Ushuaia. Te contestamos en minutos"
+
+MOOVY no necesita hablar de otros. MOOVY habla de lo que hace bien.
+
 ### Visión pre-mortem
 
 Antes de cada decisión grande, hacé un pre-mortem:
