@@ -624,6 +624,7 @@ model StoreSettings {
   promoBannerImage      String?
   promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
   promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
+  promoBannerCtaPosition String  @default("abajo-izquierda")
   riderCommissionPercent Float   @default(80)
 
   // === OPS CONFIG: Delivery Zones & Climate (Biblia Financiera) ===
@@ -1119,39 +1120,4 @@ model OrderChat {
   participantB  User               @relation("OrderChatParticipantB", fields: [participantBId], references: [id])
   messages      OrderChatMessage[]
 
-  @@unique([orderId, chatType, participantAId, participantBId])
-  @@index([orderId])
-  @@index([participantAId])
-  @@index([participantBId])
-  @@index([status])
-}
-
-model OrderChatMessage {
-  id          String    @id @default(cuid())
-  chatId      String
-  senderId    String
-  content     String
-  isRead      Boolean   @default(false)
-  isSystem    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-
-  chat        OrderChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender      User      @relation("OrderChatMessageSender", fields: [senderId], references: [id])
-
-  @@index([chatId, createdAt])
-  @@index([senderId])
-}
-
-model ConfigAuditLog {
-  id            String   @id @default(cuid())
-  adminUserId   String
-  adminEmail    String   @default("")
-  configType    String   // STORE_SETTINGS, POINTS_CONFIG, MERCHANT_LOYALTY, MOOVY_CONFIG
-  fieldChanged  String   // field name or "bulk_update"
-  oldValue      String   @default("") // JSON stringified
-  newValue      String   @default("") // JSON stringified
-  createdAt     DateTime @default(now())
-
-  @@index([configType, createdAt])
-  @@index([adminUserId])
-}
+  @@unique([orderId, chatType, partic

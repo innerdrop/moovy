@@ -213,6 +213,7 @@ async function LiveStoreView() {
     buttonText: (settings as any)?.promoBannerButtonText || undefined,
     buttonLink: (settings as any)?.promoBannerButtonLink || undefined,
     image: (settings as any)?.promoBannerImage || null,
+    ctaPosition: (settings as any)?.promoBannerCtaPosition || "abajo-izquierda",
   } : null;
 
   return (

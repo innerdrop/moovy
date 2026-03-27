@@ -100,6 +100,7 @@ export async function PUT(request: Request) {
         if (data.promoBannerButtonText !== undefined) updateData.promoBannerButtonText = data.promoBannerButtonText || "";
         if (data.promoBannerButtonLink !== undefined) updateData.promoBannerButtonLink = data.promoBannerButtonLink || "";
         if (data.promoBannerImage !== undefined) updateData.promoBannerImage = data.promoBannerImage || null;
+        if (data.promoBannerCtaPosition !== undefined) updateData.promoBannerCtaPosition = data.promoBannerCtaPosition || "abajo-izquierda";
 
         // Optional float (can be null)
         if (data.freeDeliveryMinimum) {
