@@ -138,15 +138,15 @@ export default function SearchBarHero() {
   }, []);
 
   return (
-    <section className="relative bg-white">
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 lg:py-8">
-        {/* Search bar - centered with max width */}
+    <section className="relative bg-transparent -mt-6 z-20">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 pb-4 pt-0">
+        {/* Search bar - centered, overlapping banner */}
         <div
           ref={dropdownRef}
-          className="relative mx-auto max-w-2xl lg:-mt-6 z-20"
+          className="relative mx-auto max-w-2xl"
         >
           <form onSubmit={handleSubmit} className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-gray-100 to-gray-50 rounded-2xl blur" />
+            <div className="absolute -inset-1 bg-white/60 rounded-2xl blur" />
             <div className="relative flex items-center bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-100">
               <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
               <input

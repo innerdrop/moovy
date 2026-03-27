@@ -100,8 +100,8 @@ export default function HeroBannerCarousel({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Aspect ratio: mobile 2.5:1 (slim), tablet 2.8:1, desktop 3:1 */}
-      <div className="relative w-full pt-[40%] sm:pt-[36%] lg:pt-[33.33%]">
+      {/* Aspect ratio: mobile 16:9, tablet 2.8:1, desktop 3:1 */}
+      <div className="relative w-full pt-[56.25%] sm:pt-[40%] lg:pt-[33.33%]">
         {validSlides.map((s, idx) => (
           <div
             key={s.id}
@@ -172,14 +172,4 @@ export default function HeroBannerCarousel({
                 className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-all ${
                   idx === current
                     ? "bg-white w-6 md:w-8"
-                    : "bg-white/50 hover:bg-white/75"
-                }`}
-                aria-label={`Ir a slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+                    : "bg-white/50 hover:b
