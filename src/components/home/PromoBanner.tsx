@@ -13,16 +13,17 @@ interface PromoBannerProps {
 }
 
 // Map position string to Tailwind classes
+// In flex-col: justify-* = vertical axis, items-* = horizontal axis
 const positionClasses: Record<string, string> = {
-    "arriba-izquierda": "items-start justify-start",
-    "arriba-centro": "items-start justify-center text-center",
-    "arriba-derecha": "items-start justify-end text-right",
-    "centro-izquierda": "items-center justify-start",
-    "centro": "items-center justify-center text-center",
-    "centro-derecha": "items-center justify-end text-right",
-    "abajo-izquierda": "items-end justify-start",
-    "abajo-centro": "items-end justify-center text-center",
-    "abajo-derecha": "items-end justify-end text-right",
+    "arriba-izquierda": "justify-start items-start",
+    "arriba-centro": "justify-start items-center text-center",
+    "arriba-derecha": "justify-start items-end text-right",
+    "centro-izquierda": "justify-center items-start",
+    "centro": "justify-center items-center text-center",
+    "centro-derecha": "justify-center items-end text-right",
+    "abajo-izquierda": "justify-end items-start",
+    "abajo-centro": "justify-end items-center text-center",
+    "abajo-derecha": "justify-end items-end text-right",
 };
 
 export default function PromoBanner({
@@ -34,14 +35,11 @@ export default function PromoBanner({
     image = null,
     ctaPosition = "abajo-izquierda",
 }: PromoBannerProps) {
-    // Don't render if disabled
     if (!enabled) return null;
 
-    // If no image and no text content, don't render
     const hasText = title.trim() || subtitle.trim() || buttonText.trim();
     if (!image && !hasText) return null;
 
-    // Parse title for line breaks (handles both real newlines and escaped \\n)
     const titleLines = title
         ? title.includes("\\n")
             ? title.split("\\n")
@@ -49,13 +47,12 @@ export default function PromoBanner({
         : [];
 
     const posClass = positionClasses[ctaPosition] || positionClasses["abajo-izquierda"];
-    const isCenter = ctaPosition.includes("centro") && !ctaPosition.includes("izquierda") && !ctaPosition.includes("derecha");
+    const isCenter = ctaPosition === "arriba-centro" || ctaPosition === "centro" || ctaPosition === "abajo-centro";
     const isRight = ctaPosition.includes("derecha");
 
     return (
         <section className="px-3 md:px-8 lg:px-16 py-3 md:py-6 max-w-7xl mx-auto">
             <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl">
-                {/* Background Image — original colors, no overlay */}
                 {image && (
                     <div className="absolute inset-0">
                         <Image
@@ -68,7 +65,6 @@ export default function PromoBanner({
                     </div>
                 )}
 
-                {/* Background Pattern (only if no image) */}
                 {!image && (
                     <div className="absolute inset-0 opacity-20">
                         <div className="absolute top-0 right-0 w-40 md:w-64 h-40 md:h-64 bg-orange-500 rounded-full blur-3xl -mr-20 md:-mr-32 -mt-20 md:-mt-32" />
@@ -76,11 +72,10 @@ export default function PromoBanner({
                     </div>
                 )}
 
-                {/* Content — positioned according to ctaPosition */}
                 {hasText ? (
                     <div className={`flex flex-col p-6 md:p-10 lg:p-12 relative z-10 min-h-[180px] md:min-h-[220px] ${posClass}`}>
-                        <div className={`${isCenter ? "items-center" : isRight ? "items-end" : "items-start"} flex flex-col`}>
-                            {(titleLines.length > 0 && titleLines.some(l => l.trim())) && (
+                        <div className={`flex flex-col ${isCenter ? "items-center" : isRight ? "items-end" : "items-start"}`}>
+                            {titleLines.length > 0 && titleLines.some(l => l.trim()) && (
                                 <h3 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-2 md:mb-3 drop-shadow-lg">
                                     {titleLines.map((line, i) => (
                                         <span key={i}>
@@ -107,7 +102,6 @@ export default function PromoBanner({
                         </div>
                     </div>
                 ) : (
-                    /* Image only — no text overlay, just maintain aspect ratio */
                     <div className="relative w-full aspect-[3/1] md:aspect-[4/1]" />
                 )}
             </div>
