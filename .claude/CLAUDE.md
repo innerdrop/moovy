@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-03-26 (smoke test flows 2/3/4: 12 fixes seguridad + race conditions)
+Última actualización: 2026-03-27 (marketing & publicidad + sidebar OPS reorganizado)
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -60,6 +60,7 @@ MerchantLoyaltyConfig → tiers de fidelización (BRONCE/PLATA/ORO/DIAMANTE, com
 ✅ Chat de Pedido — Comprador↔Comercio, Comprador↔Vendedor, Comprador↔Repartidor, respuestas rápidas por rol + contexto delivery (distancia/ETA/proximidad) + read receipts
 ✅ Historial GPS Driver — DriverLocationHistory batch save, auto-persist con orden activa, admin trace, cron cleanup 30d
 ✅ Fidelización Merchants — 4 tiers (BRONCE 8% → DIAMANTE 5%), comisión dinámica, widget dashboard, badge público, admin panel, cron diario
+✅ Publicidad — Espacios publicitarios (Hero, Banner Promo, Destacados, Productos), precios en Biblia Financiera, sección Marketing en OPS
 🔴 Tests — Vitest configurado pero 0 tests escritos
 🔴 MP producción — Solo credenciales TEST, falta activar en MP
 🔴 Split payments — SubOrder tiene mpTransferId pero split real no implementado
@@ -100,6 +101,9 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Auditoría checkout 2026-03-24: Webhook MP ahora valida monto pagado vs total orden (tolerancia $1). Idempotencia usa eventId determinístico. Order creation valida approvalStatus, isOpen, horario, minOrderAmount, deliveryRadiusKm, maxUsesPerUser de cupón. Cupón se registra dentro de $transaction. Refund automático vía API REST cuando merchant rechaza pedido pagado. Portal merchant protegido por approvalStatus. Delivery fee se calcula server-side si falta (no se hardcodea).
 - Fidelización merchants 2026-03-24: Comisión dinámica por tier (BRONCE 8%, PLATA 7%, ORO 6%, DIAMANTE 5%) calculada por volumen de pedidos DELIVERED en últimos 30 días. getEffectiveCommission() reemplaza el 8% hardcodeado en order creation. Tiers configurables desde admin. Cron diario recalcula. Diferenciador vs PedidosYa (ellos cobran 25-30% fijo).
 - Consolidación OPS 2026-03-26: Biblia Financiera es la ÚNICA fuente de verdad para parámetros financieros. /ops/puntos redirige a Biblia. /api/settings/ bloqueado para campos financieros (solo UI/store). configuracion-logistica mantiene solo campos de asignación/logística (MoovyConfig). Biblia sincroniza automáticamente timeouts y comisiones a MoovyConfig para que assignment-engine y crons los lean. Script validate-ops-config.ts verifica integridad. /api/admin/points/config/ marcado como deprecated (proxy a points-config canónico).
+- Publicidad 2026-03-27: Espacios publicitarios como fuente de revenue desde día 1. Precios en Biblia Financiera (Platino $150K, Destacado $95K, Premium $55K, Hero $250K, Banner $180K, Producto $25K). Descuento 50% lanzamiento. Sidebar OPS reorganizado con sección Marketing. Destacados como subsección premium en home con 3 tiers (Platino/Destacado/Premium). REGLA: jamás mencionar competidores en contenido visible al usuario.
+- Sidebar OPS reorganizado 2026-03-27: Nueva sección "Marketing" (Hero Banners, Banner Promo, Destacados). Paquetes B2B separados de Catálogo. Banner Promo movido de Configuración a Marketing. Eliminado ruido y duplicados.
+- Dólar referencia 2026-03-27: USD 1 = ARS 1.450. Todos los precios de publicidad en ARS.
 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
@@ -110,6 +114,14 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Radio de entrega: configurable por merchant (deliveryRadiusKm, default 5km)
 - Timeout merchant: configurable (merchant_confirm_timeout en MoovyConfig)
 - Timeout driver: configurable (driver_response_timeout en MoovyConfig)
+- Publicidad Platino: $150.000/mes — posición #1 garantizada + push + badge premium
+- Publicidad Destacado: $95.000/mes — top 3 + featured en categorías
+- Publicidad Premium: $55.000/mes — badge + posición preferencial
+- Hero Banner: $250.000/mes — max 3 slots, full-width above the fold
+- Banner Promocional: $180.000/mes — full-width con CTA
+- Producto Destacado: $25.000/mes por producto — max 12 slots
+- Descuento lanzamiento: 50% primeros 3 meses
+- Cotización referencia: USD 1 = ARS 1.450
 
 ## Variables de entorno
 DB: DATABASE_URL, SHADOW_DATABASE_URL
@@ -667,11 +679,4 @@ antes de empezar a trabajar:
 1. Leé este archivo y PROJECT_STATUS.md antes de hacer cualquier cosa
 2. Trabajá las tareas en orden de PROJECT_STATUS.md
 3. Commiteá seguido con mensajes claros
-4. Cuando completes tareas, marcalas [x] en PROJECT_STATUS.md
-5. Si tomás decisiones de arquitectura, agregalas a "Decisiones tomadas"
-6. Al cierre actualizá la fecha de este archivo
-7. Antes de implementar algo nuevo, pasalo por los filtros de "Mentalidad CEO/CTO"
-8. Si hay items en "Decisiones pendientes del fundador", recordárselos a Mauro PRIMERO
-9. Cada decisión estratégica importante, documentala en "Decisiones tomadas" con la fecha y el razonamiento
-10. Si detectás una nueva posible causa de fracaso, agregala al pre-mortem
-11. Post-lanzamiento: si Mauro te pasa datos de métricas, analizalos ANTES de seguir con tareas normales y ajustá prioridades según los datos
+4. Cuando complete

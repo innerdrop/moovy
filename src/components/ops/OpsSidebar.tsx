@@ -31,6 +31,9 @@ import {
     Upload,
     Mail,
     BookOpen,
+    Radio,
+    Megaphone,
+    Star,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -47,7 +50,7 @@ const navSections: NavSection[] = [
         title: "Operaciones",
         items: [
             { href: "/ops/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-            { href: "/ops/live", icon: Activity, label: "En Vivo", badge: "🔴" },
+            { href: "/ops/live", icon: Radio, label: "En Vivo", badge: "🔴" },
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
         ],
@@ -67,10 +70,23 @@ const navSections: NavSection[] = [
             { href: "/ops/productos", icon: Store, label: "Productos" },
             { href: "/ops/moderacion", icon: Shield, label: "Moderación" },
             { href: "/ops/categorias", icon: Tag, label: "Categorías" },
-            { href: "/ops/catalogo-paquetes", icon: Package, label: "Paquetes" },
-            { href: "/ops/precios-paquetes", icon: DollarSign, label: "Precios B2B" },
             { href: "/ops/import-productos", icon: Upload, label: "Importar" },
+        ],
+    },
+    {
+        title: "Marketing",
+        items: [
             { href: "/ops/hero", icon: ImageIcon, label: "Hero Banners" },
+            { href: "/ops/banner-promo", icon: Megaphone, label: "Banner Promo" },
+            { href: "/ops/destacados", icon: Star, label: "Destacados" },
+        ],
+    },
+    {
+        title: "Paquetes B2B",
+        items: [
+            { href: "/ops/catalogo-paquetes", icon: Package, label: "Catálogo" },
+            { href: "/ops/precios-paquetes", icon: DollarSign, label: "Precios" },
+            { href: "/ops/ventas-paquetes", icon: Package, label: "Ventas" },
         ],
     },
     {
@@ -79,8 +95,7 @@ const navSections: NavSection[] = [
             { href: "/ops/config-biblia", icon: BookOpen, label: "Biblia Financiera" },
             { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
             { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
-            { href: "/ops/ventas-paquetes", icon: Package, label: "Ventas B2B" },
-            { href: "/ops/lealtad-comercios", icon: Gift, label: "Lealtad Comercios" },
+            { href: "/ops/lealtad-comercios", icon: Gift, label: "Lealtad" },
         ],
     },
     {

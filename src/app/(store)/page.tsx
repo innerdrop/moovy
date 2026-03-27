@@ -26,6 +26,7 @@ import ListingCard from "@/components/store/ListingCard";
 import Footer from "@/components/layout/Footer";
 import HomeProductCard from "@/components/home/HomeProductCard";
 import PromoBanner from "@/components/home/PromoBanner";
+import DestacadosSection from "@/components/home/DestacadosSection";
 import AnimateIn from "@/components/ui/AnimateIn";
 
 // Configuration
@@ -231,6 +232,9 @@ async function LiveStoreView() {
 
       {/* 4. Banner Promocional configurable desde OPS */}
       {bannerProps && <PromoBanner {...bannerProps} />}
+
+      {/* 5. Comercios Destacados */}
+      <DestacadosSection />
 
       {/* 6. Comercios en Ushuaia */}
       <AnimateIn animation="reveal">

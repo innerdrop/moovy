@@ -1,6 +1,6 @@
 # Moovy — Tareas pendientes
 Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
-Última actualización: 2026-03-26
+Última actualización: 2026-03-27
 
 ## P0 — Sin esto no se lanza
 
@@ -225,3 +225,11 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
 - [x] Historial ubicación driver (DriverLocationHistory, batch save, admin trace, cron cleanup 30d) — 2026-03-24
 - [x] Programa fidelización merchants (4 tiers BRONCE→DIAMANTE, comisión dinámica 5-8%, widget, badge, admin, cron) — 2026-03-24
 - [x] Smoke test code review flows 2/3/4: 12 bugs críticos/altos corregidos (driver approval gating, race conditions, admin soft delete, whitelist PATCH, syntax errors, scripts truncados) — 2026-03-26
+
+### 2026-03-27 — Marketing & Publicidad
+- ✅ Sección "Destacados" en home page (3 tiers: Platino/Destacado/Premium)
+- ✅ Sidebar OPS reorganizado: nueva sección "Marketing"
+- ✅ Campos de publicidad en Biblia Financiera (precios configurables)
+- ✅ Regla de marca: NUNCA mencionar competidores (documentado en CLAUDE.md)
+- ✅ Header: MapPin + Ushuaia reemplaza "Ingresar" (rama anterior mergeada)
+- ✅ Fondos blancos uniformes en toda la home
