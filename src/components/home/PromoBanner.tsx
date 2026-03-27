@@ -50,11 +50,13 @@ export default function PromoBanner({
     const isCenter = ctaPosition === "arriba-centro" || ctaPosition === "centro" || ctaPosition === "abajo-centro";
     const isRight = ctaPosition.includes("derecha");
 
+    const href = buttonLink?.trim() || "/";
+
     return (
         <section className="px-3 md:px-8 lg:px-16 py-3 md:py-6 max-w-7xl mx-auto">
-            <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl">
+            <Link href={href} className="block relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl group cursor-pointer hover:shadow-2xl transition-shadow">
                 {/* When image exists, fixed aspect ratio container + object-cover */}
-                {/* Standard: 1200×400px (3:1). Design the image at that size */}
+                {/* Standard: 1200x400px (3:1). Design the image at that size */}
                 {image ? (
                     <>
                         <div className="relative w-full aspect-[3/1]">
@@ -64,7 +66,7 @@ export default function PromoBanner({
                                 fill
                                 priority
                                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 1200px"
-                                className="object-cover"
+                                className="object-cover group-hover:scale-[1.02] transition-transform duration-300"
                             />
                         </div>
                         {/* Text overlay — absolute on top of the image */}
@@ -87,13 +89,10 @@ export default function PromoBanner({
                                         </p>
                                     )}
                                     {buttonText.trim() && (
-                                        <Link
-                                            href={buttonLink || "/"}
-                                            className="inline-flex items-center gap-1 md:gap-2 bg-white/20 backdrop-blur-sm text-white px-3 md:px-5 py-1.5 md:py-2.5 rounded-full text-xs md:text-sm font-medium border border-white/30 hover:bg-white/30 transition-all"
-                                        >
+                                        <span className="inline-flex items-center gap-1 md:gap-2 bg-white/20 backdrop-blur-sm text-white px-3 md:px-5 py-1.5 md:py-2.5 rounded-full text-xs md:text-sm font-medium border border-white/30 group-hover:bg-white/30 transition-all">
                                             {buttonText}
                                             <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                        </Link>
+                                        </span>
                                     )}
                                 </div>
                             </div>
@@ -124,19 +123,16 @@ export default function PromoBanner({
                                     </p>
                                 )}
                                 {buttonText.trim() && (
-                                    <Link
-                                        href={buttonLink || "/"}
-                                        className="inline-flex items-center gap-1 md:gap-2 bg-white/20 backdrop-blur-sm text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base font-medium border border-white/30 hover:bg-white/30 transition-all"
-                                    >
+                                    <span className="inline-flex items-center gap-1 md:gap-2 bg-white/20 backdrop-blur-sm text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base font-medium border border-white/30 group-hover:bg-white/30 transition-all">
                                         {buttonText}
                                         <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-                                    </Link>
+                                    </span>
                                 )}
                             </div>
                         </div>
                     </>
                 )}
-            </div>
+            </Link>
         </section>
     );
 }
