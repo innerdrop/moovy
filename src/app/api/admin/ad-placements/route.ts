@@ -53,6 +53,4 @@ export async function GET(request: NextRequest) {
         placements,
         total,
         page,
-        totalPages: Math.ceil(total / limit),
-    });
-}
+ 

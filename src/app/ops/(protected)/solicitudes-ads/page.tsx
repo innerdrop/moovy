@@ -383,16 +383,4 @@ export default function SolicitudesAdsPage() {
                                             disabled={actionLoading === `${p.id}-cancel`}
                                             className="flex items-center gap-1.5 px-4 py-2 bg-white text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-50 transition disabled:opacity-50"
                                         >
-                                            <Ban className="w-3.5 h-3.5" />
-                                            Cancelar anuncio
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
-}
+                            
