@@ -53,6 +53,10 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
             setShowAuthModal(true);
             return;
         }
+        // Si ya estamos en la misma página, scroll al inicio
+        if (pathname === item.href || (item.href === "/" && pathname === "/")) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
         closeCart();
     };
 

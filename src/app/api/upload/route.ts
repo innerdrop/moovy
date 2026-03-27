@@ -126,7 +126,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ url: imageUrl });
 
     } catch (error) {
-        console.error("Upload error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-    }
-}
+        consol
