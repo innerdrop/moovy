@@ -15,6 +15,7 @@ import {
     MessageCircle,
     DollarSign,
     Star,
+    Megaphone,
 } from "lucide-react";
 
 import SupportNavBadge, { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
@@ -53,6 +54,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         { href: "/comercios/productos", icon: Package, label: "Productos" },
         { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
         { href: "/comercios/pagos", icon: DollarSign, label: "Pagos" },
+        { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
         { href: "/comercios/resenas", icon: Star, label: "Reseñas" },
         // Soporte is handled separately via SupportNavBadge component
         { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },

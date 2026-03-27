@@ -433,6 +433,7 @@ model Merchant {
   acquiredProducts MerchantAcquiredProduct[]
   categories       MerchantCategory[]
   packagePurchases PackagePurchase[]
+  adPlacements     AdPlacement[]
   orders           Order[]
   products         Product[]
   subOrders        SubOrder[]
@@ -909,6 +910,45 @@ model PackagePricingTier {
   isActive    Boolean @default(true)
   order       Int     @default(0)
   createdAt   DateTime @default(now())
+}
+
+// Publicidad — registro de compras/solicitudes de espacios publicitarios por comercios
+model AdPlacement {
+  id              String    @id @default(cuid())
+  merchantId      String
+  // Tipo de espacio publicitario
+  type            String    // DESTACADO_PLATINO | DESTACADO_DESTACADO | DESTACADO_PREMIUM | HERO_BANNER | BANNER_PROMO | PRODUCTO
+  // Estado del ciclo de vida
+  status          String    @default("PENDING") // PENDING | APPROVED | ACTIVE | EXPIRED | CANCELLED | REJECTED
+  // Período de vigencia
+  startsAt        DateTime?
+  endsAt          DateTime?
+  // Facturación
+  amount          Float     // Monto a cobrar (con descuento si aplica)
+  originalAmount  Float?    // Monto original sin descuento
+  currency        String    @default("ARS")
+  // Pago
+  paymentStatus   String    @default("pending") // pending | approved | rejected | refunded
+  paymentMethod   String?   // mercadopago | transfer | cash | free | promo
+  mpPreferenceId  String?
+  mpPaymentId     String?
+  mpExternalRef   String?   @unique
+  // Notas
+  notes           String?   // Notas del comercio al solicitar
+  adminNotes      String?   // Notas internas del admin
+  rejectionReason String?   // Motivo si fue rechazado
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  approvedAt      DateTime?
+  activatedAt     DateTime?
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([type])
+  @@index([paymentStatus])
 }
 
 model Payment {
