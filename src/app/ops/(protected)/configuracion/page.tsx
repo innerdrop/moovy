@@ -160,6 +160,18 @@ export default async function ConfigurationPage() {
                                 />
                             </div>
 
+                            <div className="flex items-center justify-between p-5 bg-red-50/20 rounded-2xl border border-red-50">
+                                <div>
+                                    <h3 className="font-extrabold text-gray-900 text-sm">Flechas de Navegación</h3>
+                                    <p className="text-[10px] text-slate-400 font-medium">Mostrar flechas ← → en el slider</p>
+                                </div>
+                                <Switch
+                                    name="heroSliderShowArrows"
+                                    defaultChecked={(settings as any)?.heroSliderShowArrows ?? true}
+                                    activeColor="bg-red-500"
+                                />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4 pt-2">
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">

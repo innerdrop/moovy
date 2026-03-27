@@ -203,6 +203,7 @@ async function LiveStoreView() {
 
   const slideInterval = settings?.heroSliderInterval ?? 5000;
   const sliderEnabled = (settings as any)?.heroSliderEnabled ?? true;
+  const sliderShowArrows = (settings as any)?.heroSliderShowArrows ?? true;
 
   // Banner /Tienda settings
   const bannerEnabled = (settings as any)?.promoBannerEnabled ?? false;
@@ -220,7 +221,7 @@ async function LiveStoreView() {
     <div>
       {/* 1. Hero Banner Carousel */}
       {sliderEnabled && slides.length > 0 && (
-        <HeroBannerCarousel slides={slides as any} slideInterval={slideInterval} />
+        <HeroBannerCarousel slides={slides as any} slideInterval={slideInterval} showArrows={sliderShowArrows} />
       )}
 
       {/* 2. Search Bar */}

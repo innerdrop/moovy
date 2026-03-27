@@ -18,11 +18,13 @@ interface Slide {
 interface HeroBannerCarouselProps {
   slides: Slide[];
   slideInterval?: number; // milliseconds
+  showArrows?: boolean;
 }
 
 export default function HeroBannerCarousel({
   slides,
   slideInterval = 5000,
+  showArrows = true,
 }: HeroBannerCarouselProps) {
   // Don't render if no slides or no images
   const validSlides = slides.filter(
@@ -149,25 +151,27 @@ export default function HeroBannerCarousel({
       {/* Navigation controls - only show if multiple slides */}
       {showControls && (
         <>
-          {/* Previous button */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 p-2 md:p-3 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
-            aria-label="Slide anterior"
-          >
-            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
+          {/* Arrow buttons — togglable from OPS panel */}
+          {showArrows && (
+            <>
+              <button
+                onClick={prevSlide}
+                className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 p-2 md:p-3 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                aria-label="Slide anterior"
+              >
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 p-2 md:p-3 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                aria-label="Siguiente slide"
+              >
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+            </>
+          )}
 
-          {/* Next button */}
-          <button
-            onClick={nextSlide}
-            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 p-2 md:p-3 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
-            aria-label="Siguiente slide"
-          >
-            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
-
-          {/* Dot indicators */}
+          {/* Dot indicators — always visible for orientation */}
           <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-10 flex gap-2">
             {validSlides.map((_, idx) => (
               <button

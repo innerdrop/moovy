@@ -60,6 +60,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
 
             // Hero Slider
             heroSliderEnabled: formData.get("heroSliderEnabled") === "on",
+            heroSliderShowArrows: formData.get("heroSliderShowArrows") === "on",
             heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
 
             // Promo Banner — moved to dedicated /ops/banner-promo page

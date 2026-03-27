@@ -54,6 +54,7 @@ export async function PUT(request: Request) {
         if (typeof data.showRepartidoresCard === "boolean") updateData.showRepartidoresCard = data.showRepartidoresCard;
         if (typeof data.showComerciosCard === "boolean") updateData.showComerciosCard = data.showComerciosCard;
         if (typeof data.heroSliderEnabled === "boolean") updateData.heroSliderEnabled = data.heroSliderEnabled;
+        if (typeof data.heroSliderShowArrows === "boolean") updateData.heroSliderShowArrows = data.heroSliderShowArrows;
 
         // Strings
         if (data.closedMessage !== undefined) updateData.closedMessage = data.closedMessage || "";
