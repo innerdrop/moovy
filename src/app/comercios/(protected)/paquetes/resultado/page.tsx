@@ -30,7 +30,7 @@ function ResultContent() {
                 } catch {}
             };
             checkStatus();
-            const interval = setInterval(checkStatus, 3000);
+            const interval = setInterval(checkStatus, 8000);
             return () => clearInterval(interval);
         }
     }, [status, ref, isFree]);

@@ -207,8 +207,8 @@ export default function ComercioPedidosPage() {
 
     useEffect(() => {
         loadOrders();
-        // Fallback polling every 10 seconds
-        const intervalId = setInterval(() => loadOrders(true), 10000);
+        // Fallback polling cada 60s (Socket.IO es el canal primario)
+        const intervalId = setInterval(() => loadOrders(true), 60000);
         return () => clearInterval(intervalId);
     }, [loadOrders]);
 
