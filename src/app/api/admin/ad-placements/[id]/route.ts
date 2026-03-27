@@ -17,7 +17,7 @@ const updateSchema = z.object({
     rejectionReason: z.string().max(500).optional(),
     // Para activate: período de vigencia
     durationDays: z.number().min(1).max(365).optional(),
-    paymentMethod: z.enum(["mercadopago", "transfer", "cash", "free", "promo"]).optional(),
+    paymentMethod: z.enum(["mercadopago", "transfer"]).optional(),
 });
 
 // PATCH — Admin aprueba, activa, rechaza o cancela un placement

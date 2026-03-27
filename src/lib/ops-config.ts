@@ -73,6 +73,12 @@ export interface AdvertisingConfig {
   adMaxHeroBannerSlots: number;
   adMaxDestacadosSlots: number;
   adMaxProductosSlots: number;
+  adMinDurationDays: number;
+  adDiscount3Months: number;
+  adDiscount6Months: number;
+  adPaymentMethods: string;
+  adCancellation48hFullRefund: boolean;
+  adCancellationAdminFeePercent: number;
 }
 
 export interface MerchantTierConfig {
@@ -194,6 +200,12 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       adMaxHeroBannerSlots: (settings as any)?.adMaxHeroBannerSlots ?? 3,
       adMaxDestacadosSlots: (settings as any)?.adMaxDestacadosSlots ?? 8,
       adMaxProductosSlots: (settings as any)?.adMaxProductosSlots ?? 12,
+      adMinDurationDays: (settings as any)?.adMinDurationDays ?? 7,
+      adDiscount3Months: (settings as any)?.adDiscount3Months ?? 10,
+      adDiscount6Months: (settings as any)?.adDiscount6Months ?? 20,
+      adPaymentMethods: (settings as any)?.adPaymentMethods ?? '["mercadopago","transferencia"]',
+      adCancellation48hFullRefund: (settings as any)?.adCancellation48hFullRefund ?? true,
+      adCancellationAdminFeePercent: (settings as any)?.adCancellationAdminFeePercent ?? 10,
     },
     merchantTiers: loyaltyTiers.map((t) => ({
       tier: t.tier,
@@ -432,6 +444,18 @@ export async function updateAdvertisingConfig(
     updateData.adMaxDestacadosSlots = data.adMaxDestacadosSlots;
   if (data.adMaxProductosSlots !== undefined)
     updateData.adMaxProductosSlots = data.adMaxProductosSlots;
+  if (data.adMinDurationDays !== undefined)
+    updateData.adMinDurationDays = data.adMinDurationDays;
+  if (data.adDiscount3Months !== undefined)
+    updateData.adDiscount3Months = data.adDiscount3Months;
+  if (data.adDiscount6Months !== undefined)
+    updateData.adDiscount6Months = data.adDiscount6Months;
+  if (data.adPaymentMethods !== undefined)
+    updateData.adPaymentMethods = data.adPaymentMethods;
+  if (data.adCancellation48hFullRefund !== undefined)
+    updateData.adCancellation48hFullRefund = data.adCancellation48hFullRefund;
+  if (data.adCancellationAdminFeePercent !== undefined)
+    updateData.adCancellationAdminFeePercent = data.adCancellationAdminFeePercent;
 
   await prisma.storeSettings.upsert({
     where: { id: "settings" },

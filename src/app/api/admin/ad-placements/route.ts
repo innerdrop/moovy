@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status"); // filtrar por status
+    const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
                 },
             },
             orderBy: [
-                { status: "asc" }, // PENDING primero
+                { status: "asc" },
                 { createdAt: "desc" },
             ],
             take: limit,
@@ -53,4 +53,6 @@ export async function GET(request: NextRequest) {
         placements,
         total,
         page,
- 
+        totalPages: Math.ceil(total / limit),
+    });
+}

@@ -668,6 +668,12 @@ model StoreSettings {
   adMaxHeroBannerSlots   Int     @default(3)
   adMaxDestacadosSlots   Int     @default(8)
   adMaxProductosSlots    Int     @default(12)
+  adMinDurationDays      Int     @default(7)
+  adDiscount3Months      Int     @default(10)
+  adDiscount6Months      Int     @default(20)
+  adPaymentMethods       String  @default("[\"mercadopago\",\"transferencia\"]")
+  adCancellation48hFullRefund Boolean @default(true)
+  adCancellationAdminFeePercent Int @default(10)
 }
 
 model PointsConfig {

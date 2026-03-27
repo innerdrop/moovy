@@ -773,6 +773,25 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
             onChange={(n, v) => updateField("advertising", n, v)} min={1} max={100} unit="slots"
             info="Cantidad máxima de productos destacados simultáneos" />
         </div>
+        
+        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider pt-4 border-t border-slate-200">Descuentos por contrato</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NumInput label="Duración mínima de contrato" name="adMinDurationDays" value={config.advertising.adMinDurationDays}
+            onChange={(n, v) => updateField("advertising", n, v)} min={1} max={90} unit="días"
+            info="Duración mínima requerida para contratar publicidad" />
+          <NumInput label="Descuento contrato 3 meses" name="adDiscount3Months" value={config.advertising.adDiscount3Months}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={50} step={1} unit="%"
+            info="Descuento aplicable a contratos de 3 meses" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NumInput label="Descuento contrato 6 meses" name="adDiscount6Months" value={config.advertising.adDiscount6Months}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={70} step={1} unit="%"
+            info="Descuento aplicable a contratos de 6 meses" />
+          <NumInput label="Cargo admin por cancelación tardía" name="adCancellationAdminFeePercent" value={config.advertising.adCancellationAdminFeePercent}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={50} step={1} unit="%"
+            info="Porcentaje de cargo si se cancela fuera de las 48 horas" />
+        </div>
       </Section>
 
     </div>

@@ -210,9 +210,90 @@ export default function TerminosComercioPage() {
                         </p>
                     </section>
 
-                    {/* 11. Contacto */}
+                    {/* 11. Servicios de Publicidad y Posicionamiento */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Contacto</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Servicios de Publicidad y Posicionamiento</h2>
+                        <p className="text-gray-600 mb-4">
+                            MOOVY ofrece espacios publicitarios dentro de la plataforma como servicio
+                            opcional para los Comercios adheridos (&quot;Servicios de Publicidad&quot;). La contratación
+                            de estos servicios es voluntaria y no condiciona la permanencia del Comercio en la plataforma.
+                        </p>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.1 Tipos de espacios publicitarios</h3>
+                        <p className="text-gray-600 mb-4">
+                            MOOVY dispone de los siguientes espacios publicitarios, sujetos a disponibilidad:
+                            Comercio Platino (posición destacada #1 en la sección de Destacados),
+                            Comercio Destacado (posición entre los primeros 3 en la sección de Destacados),
+                            Comercio Premium (badge premium y posición preferencial),
+                            Hero Banner (banner rotativo principal en la página de inicio),
+                            Banner Promocional (banner de ancho completo con imagen y texto personalizado),
+                            y Producto Destacado (posicionamiento individual de productos en la sección de productos).
+                            Los precios, características y ubicación de cada espacio se informan en la sección
+                            &quot;Publicidad&quot; del panel del Comercio y pueden ser actualizados por MOOVY con aviso previo.
+                        </p>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.2 Contratación y pago</h3>
+                        <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
+                            <li>El Comercio solicita el espacio deseado desde su panel de administración</li>
+                            <li>MOOVY evalúa la solicitud y podrá aprobarla o rechazarla a su exclusivo criterio</li>
+                            <li>Una vez aprobada, el pago se realiza mediante MercadoPago (con activación inmediata) o transferencia bancaria (con activación tras confirmación del pago por parte de MOOVY)</li>
+                            <li>El servicio se activa una vez confirmado el pago y tiene una duración determinada según el plan contratado</li>
+                            <li>Los precios se expresan en pesos argentinos (ARS) e incluyen IVA cuando corresponda</li>
+                            <li>MOOVY podrá ofrecer descuentos promocionales de lanzamiento u ofertas especiales a su discreción</li>
+                        </ul>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.3 Duración y renovación</h3>
+                        <p className="text-gray-600 mb-4">
+                            Cada contratación publicitaria tiene una duración definida al momento de la activación.
+                            Al vencimiento del período contratado, el espacio publicitario se desactiva automáticamente.
+                            No existe renovación automática: el Comercio deberá realizar una nueva solicitud
+                            si desea continuar con el servicio. MOOVY enviará una notificación de próximo
+                            vencimiento con al menos 7 (siete) días de anticipación.
+                        </p>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.4 Contenido publicitario</h3>
+                        <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
+                            <li>El Comercio es responsable del contenido, imágenes y textos que proporcione para su publicidad</li>
+                            <li>MOOVY se reserva el derecho de rechazar, suspender o remover cualquier contenido publicitario
+                                que considere inapropiado, engañoso, ofensivo, o que infrinja derechos de terceros</li>
+                            <li>El contenido publicitario debe cumplir con la legislación argentina vigente en materia de
+                                publicidad, defensa del consumidor y lealtad comercial</li>
+                            <li>Queda prohibida la publicidad de productos o servicios ilegales, discriminatorios o que
+                                promuevan actividades perjudiciales para la salud</li>
+                        </ul>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.5 Cancelación y reembolsos</h3>
+                        <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
+                            <li>El Comercio puede solicitar la cancelación de un servicio publicitario activo en cualquier momento</li>
+                            <li>Si la cancelación se realiza dentro de las primeras 48 horas de activación,
+                                se reembolsará el 100% del monto abonado</li>
+                            <li>Si la cancelación se solicita después de las 48 horas, se realizará un reembolso
+                                proporcional a los días no utilizados, descontando un cargo administrativo del 10%</li>
+                            <li>MOOVY podrá cancelar un servicio publicitario en cualquier momento si el Comercio
+                                incumple estos Términos, sin derecho a reembolso</li>
+                            <li>Los reembolsos se procesan dentro de los 10 (diez) días hábiles siguientes a la solicitud</li>
+                        </ul>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.6 Limitación de garantías</h3>
+                        <p className="text-gray-600 mb-4">
+                            Los Servicios de Publicidad incrementan la visibilidad del Comercio dentro de la plataforma,
+                            pero MOOVY no garantiza un volumen determinado de ventas, visitas, clics o conversiones
+                            como resultado de la contratación. Las métricas de rendimiento se proporcionan a título
+                            informativo y no constituyen compromiso de resultados.
+                        </p>
+
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">11.7 Disponibilidad de espacios</h3>
+                        <p className="text-gray-600 mb-4">
+                            Los espacios publicitarios son limitados. MOOVY asigna los espacios por orden de solicitud
+                            y aprobación. Cuando todos los espacios de un tipo estén ocupados, el Comercio quedará en
+                            lista de espera y será notificado cuando se libere una posición. MOOVY se reserva el derecho
+                            de modificar la cantidad de espacios disponibles por tipo.
+                        </p>
+                    </section>
+
+                    {/* 12. Contacto */}
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">12. Contacto</h2>
                         <p className="text-gray-600">
                             Para consultas sobre estos términos: <br />
                             <strong>Email:</strong> legal@somosmoovy.com <br />

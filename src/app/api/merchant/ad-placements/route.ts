@@ -54,6 +54,7 @@ const createSchema = z.object({
         "PRODUCTO",
     ]),
     notes: z.string().max(500).optional(),
+    paymentMethod: z.enum(["mercadopago", "transferencia"]).default("mercadopago"),
 });
 
 // GET — Merchant ve sus placements
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    const { type, notes } = parsed.data;
+    const { type, notes, paymentMethod } = parsed.data;
     const typeConfig = AD_TYPE_CONFIG[type];
 
     // Verificar que no tenga una solicitud pendiente o activa del mismo tipo
@@ -189,15 +190,17 @@ export async function POST(request: NextRequest) {
             status: "PENDING",
             amount,
             originalAmount: discountPercent > 0 ? originalAmount : null,
+            paymentMethod,
             notes: notes || null,
         },
     });
 
     // TODO: Notificar al admin por Socket.IO / email
-    console.log(`[ad-placement] Nueva solicitud: ${merchant.name} → ${type} ($${amount})`);
+    console.log(`[ad-placement] Nueva solicitud: ${merchant.name} → ${type} ($${amount}) via ${paymentMethod}`);
 
-    return NextResponse.json({
-        placement,
-        message: `Solicitud enviada. Te contactaremos para coordinar el pago.`,
-    }, { status: 201 });
+    const message = paymentMethod === "mercadopago"
+        ? "Solicitud enviada. Una vez aprobada, te enviaremos el link de pago de MercadoPago para activación inmediata."
+        : "Solicitud enviada. Una vez aprobada, te indicaremos los datos para transferencia. Tu anuncio se activa cuando confirmemos el pago.";
+
+    return NextResponse.json({ placement, message }, { status: 201 });
 }
