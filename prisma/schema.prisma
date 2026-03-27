@@ -674,6 +674,13 @@ model StoreSettings {
   adPaymentMethods       String  @default("[\"mercadopago\",\"transferencia\"]")
   adCancellation48hFullRefund Boolean @default(true)
   adCancellationAdminFeePercent Int @default(10)
+
+  // Datos bancarios para transferencias (publicidad y otros)
+  bankName           String  @default("")
+  bankAccountHolder  String  @default("")
+  bankCbu            String  @default("")
+  bankAlias          String  @default("")
+  bankCuit           String  @default("")
 }
 
 model PointsConfig {

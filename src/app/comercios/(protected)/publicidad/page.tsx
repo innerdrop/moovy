@@ -19,6 +19,8 @@ import {
   ChevronUp,
   Calendar,
   TrendingUp,
+  Copy,
+  Building2,
 } from "lucide-react";
 
 interface AdPlacement {
@@ -32,6 +34,7 @@ interface AdPlacement {
   notes: string | null;
   rejectionReason: string | null;
   paymentStatus: string;
+  paymentMethod: string;
   createdAt: string;
 }
 
@@ -221,6 +224,83 @@ interface RequestModalProps {
   onClose: () => void;
   onConfirm: (notes: string, paymentMethod: string) => void;
   isLoading: boolean;
+}
+
+function BankInfoCard({ bankInfo, amount }: { bankInfo: { bankName: string; bankAccountHolder: string; bankCbu: string; bankAlias: string; bankCuit: string }; amount: number }) {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(field);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const formatPrice = (n: number) =>
+    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-3 space-y-3">
+      <div className="flex items-center gap-2 text-blue-800">
+        <Building2 className="w-4 h-4" />
+        <span className="text-xs font-bold uppercase tracking-wide">Datos para transferencia</span>
+      </div>
+
+      <div className="space-y-2">
+        {bankInfo.bankName && (
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-blue-700">Banco</span>
+            <span className="text-xs font-semibold text-blue-900">{bankInfo.bankName}</span>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-blue-700">Titular</span>
+          <span className="text-xs font-semibold text-blue-900">{bankInfo.bankAccountHolder}</span>
+        </div>
+        {bankInfo.bankCbu && (
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-xs text-blue-700">CBU</span>
+            <button
+              onClick={() => copyToClipboard(bankInfo.bankCbu, "cbu")}
+              className="flex items-center gap-1.5 text-xs font-mono font-semibold text-blue-900 hover:text-blue-700 transition"
+            >
+              {bankInfo.bankCbu}
+              <Copy className="w-3 h-3 flex-shrink-0" />
+              {copied === "cbu" && <span className="text-[10px] text-green-600 font-sans">Copiado</span>}
+            </button>
+          </div>
+        )}
+        {bankInfo.bankAlias && (
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-xs text-blue-700">Alias</span>
+            <button
+              onClick={() => copyToClipboard(bankInfo.bankAlias, "alias")}
+              className="flex items-center gap-1.5 text-xs font-mono font-semibold text-blue-900 hover:text-blue-700 transition"
+            >
+              {bankInfo.bankAlias}
+              <Copy className="w-3 h-3 flex-shrink-0" />
+              {copied === "alias" && <span className="text-[10px] text-green-600 font-sans">Copiado</span>}
+            </button>
+          </div>
+        )}
+        {bankInfo.bankCuit && (
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-blue-700">CUIT</span>
+            <span className="text-xs font-semibold text-blue-900">{bankInfo.bankCuit}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="pt-2 border-t border-blue-200">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-bold text-blue-800">Monto a transferir</span>
+          <span className="text-sm font-black text-blue-900">{formatPrice(amount)}</span>
+        </div>
+        <p className="text-[10px] text-blue-600 mt-1">
+          Incluí tu nombre de comercio en el concepto de la transferencia para que podamos identificarla rápidamente.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function RequestModal({
@@ -473,7 +553,7 @@ export default function PublicidadPage() {
     );
   }
 
-  const { placements, pricing, adTypes, settings } = data;
+  const { placements, pricing, adTypes, settings, bankInfo } = data;
   const discountPercent = settings?.adLaunchDiscountPercent ?? 0;
 
   const activePlacements = placements.filter((p) => p.status === "ACTIVE");
@@ -840,10 +920,18 @@ export default function PublicidadPage() {
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mb-2">
-                    {p.status === "APPROVED"
+                    {p.status === "APPROVED" && p.paymentMethod === "transferencia"
+                      ? "Aprobada — realizá la transferencia para activar tu anuncio"
+                      : p.status === "APPROVED"
                       ? "Aprobada — coordinando pago con el equipo MOOVY"
                       : "Nuestro equipo está revisando tu solicitud"}
                   </p>
+
+                  {/* Card datos bancarios para transferencia APPROVED */}
+                  {p.status === "APPROVED" && p.paymentMethod === "transferencia" && bankInfo && (
+                    <BankInfoCard bankInfo={bankInfo} amount={p.amount} />
+                  )}
+
                   <div className="flex items-baseline justify-between pt-2 border-t border-gray-200">
                     <span className="text-xs text-gray-500">Monto:</span>
                     <div className="text-right">

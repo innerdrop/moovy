@@ -794,6 +794,43 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
         </div>
       </Section>
 
+      {/* Datos Bancarios para Transferencias */}
+      <Section title="Datos Bancarios" icon="🏦" description="Información que se muestra a comercios cuando eligen pagar por transferencia">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
+            <input type="text" value={config.advertising.bankName || ""} onChange={(e) => updateField("advertising", "bankName", e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="Ej: Banco Nación, Brubank, Mercado Pago" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Titular de la cuenta</label>
+            <input type="text" value={config.advertising.bankAccountHolder || ""} onChange={(e) => updateField("advertising", "bankAccountHolder", e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="Nombre completo del titular" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">CBU</label>
+            <input type="text" value={config.advertising.bankCbu || ""} onChange={(e) => updateField("advertising", "bankCbu", e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="22 dígitos" maxLength={22} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Alias</label>
+            <input type="text" value={config.advertising.bankAlias || ""} onChange={(e) => updateField("advertising", "bankAlias", e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="Ej: moovy.publicidad" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
+            <input type="text" value={config.advertising.bankCuit || ""} onChange={(e) => updateField("advertising", "bankCuit", e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="XX-XXXXXXXX-X" maxLength={13} />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">Estos datos se muestran automáticamente a los comercios cuando eligen transferencia como método de pago para publicidad.</p>
+      </Section>
+
     </div>
   );
 }

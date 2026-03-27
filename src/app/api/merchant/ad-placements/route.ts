@@ -95,6 +95,11 @@ export async function GET(request: NextRequest) {
             adMaxHeroBannerSlots: true,
             adMaxDestacadosSlots: true,
             adMaxProductosSlots: true,
+            bankName: true,
+            bankAccountHolder: true,
+            bankCbu: true,
+            bankAlias: true,
+            bankCuit: true,
         },
     });
 
@@ -104,6 +109,15 @@ export async function GET(request: NextRequest) {
         pricing[type] = (settings as any)?.[config.priceField] ?? 0;
     }
 
+    // Datos bancarios para transferencias (solo si hay CBU configurado)
+    const bankInfo = settings?.bankCbu ? {
+        bankName: settings.bankName || "",
+        bankAccountHolder: settings.bankAccountHolder || "",
+        bankCbu: settings.bankCbu || "",
+        bankAlias: settings.bankAlias || "",
+        bankCuit: settings.bankCuit || "",
+    } : null;
+
     return NextResponse.json({
         placements,
         settings: {
@@ -111,6 +125,7 @@ export async function GET(request: NextRequest) {
         },
         adTypes: AD_TYPE_CONFIG,
         pricing,
+        bankInfo,
     });
 }
 

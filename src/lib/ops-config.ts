@@ -79,6 +79,12 @@ export interface AdvertisingConfig {
   adPaymentMethods: string;
   adCancellation48hFullRefund: boolean;
   adCancellationAdminFeePercent: number;
+  // Datos bancarios para transferencias
+  bankName: string;
+  bankAccountHolder: string;
+  bankCbu: string;
+  bankAlias: string;
+  bankCuit: string;
 }
 
 export interface MerchantTierConfig {
@@ -206,6 +212,11 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       adPaymentMethods: (settings as any)?.adPaymentMethods ?? '["mercadopago","transferencia"]',
       adCancellation48hFullRefund: (settings as any)?.adCancellation48hFullRefund ?? true,
       adCancellationAdminFeePercent: (settings as any)?.adCancellationAdminFeePercent ?? 10,
+      bankName: (settings as any)?.bankName ?? "",
+      bankAccountHolder: (settings as any)?.bankAccountHolder ?? "",
+      bankCbu: (settings as any)?.bankCbu ?? "",
+      bankAlias: (settings as any)?.bankAlias ?? "",
+      bankCuit: (settings as any)?.bankCuit ?? "",
     },
     merchantTiers: loyaltyTiers.map((t) => ({
       tier: t.tier,
@@ -456,6 +467,11 @@ export async function updateAdvertisingConfig(
     updateData.adCancellation48hFullRefund = data.adCancellation48hFullRefund;
   if (data.adCancellationAdminFeePercent !== undefined)
     updateData.adCancellationAdminFeePercent = data.adCancellationAdminFeePercent;
+  if (data.bankName !== undefined) updateData.bankName = data.bankName;
+  if (data.bankAccountHolder !== undefined) updateData.bankAccountHolder = data.bankAccountHolder;
+  if (data.bankCbu !== undefined) updateData.bankCbu = data.bankCbu;
+  if (data.bankAlias !== undefined) updateData.bankAlias = data.bankAlias;
+  if (data.bankCuit !== undefined) updateData.bankCuit = data.bankCuit;
 
   await prisma.storeSettings.upsert({
     where: { id: "settings" },
