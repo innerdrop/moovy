@@ -259,7 +259,7 @@ export default function PromoBannerPage() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Imagen del banner</h2>
               <p className="text-sm text-gray-500 mb-4">
-                Subí la imagen con el diseño completo. Se muestra con los colores originales, sin filtros ni superposiciones.
+                Diseñá la imagen a <strong className="text-gray-700">1200 × 400 px</strong> (ratio 3:1). Se muestra con los colores originales, sin filtros.
               </p>
 
               {settings.promoBannerImage ? (
@@ -309,9 +309,15 @@ export default function PromoBannerPage() {
                 className="hidden"
               />
 
-              <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
-                <p className="text-xs text-blue-700">
-                  <strong>Medida recomendada:</strong> 1200×400 px (ratio 3:1). La imagen se muestra tal cual la subís, sin degradados ni filtros.
+              <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2">
+                <p className="text-sm font-bold text-blue-800">Medidas obligatorias</p>
+                <div className="text-xs text-blue-700 space-y-1">
+                  <p><strong>Tamaño:</strong> 1200 × 400 px (ratio 3:1)</p>
+                  <p><strong>Formato:</strong> WebP o PNG (se comprime automáticamente a WebP)</p>
+                  <p><strong>Peso máximo:</strong> 10 MB (se optimiza al subir)</p>
+                </div>
+                <p className="text-xs text-blue-600 pt-1 border-t border-blue-100">
+                  Diseñá siempre a 1200×400. La imagen se muestra sin filtros ni recortes. Si tiene otro ratio, se recortará para encajar.
                 </p>
               </div>
             </div>

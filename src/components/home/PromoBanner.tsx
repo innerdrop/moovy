@@ -53,7 +53,8 @@ export default function PromoBanner({
     return (
         <section className="px-3 md:px-8 lg:px-16 py-3 md:py-6 max-w-7xl mx-auto">
             <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl">
-                {/* When image exists, it defines the container size via aspect ratio */}
+                {/* When image exists, fixed aspect ratio container + object-cover */}
+                {/* Standard: 1200×400px (3:1). Design the image at that size */}
                 {image ? (
                     <>
                         <div className="relative w-full aspect-[3/1]">
@@ -62,7 +63,8 @@ export default function PromoBanner({
                                 alt={title || "Promoción"}
                                 fill
                                 priority
-                                className="object-contain"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 1200px"
+                                className="object-cover"
                             />
                         </div>
                         {/* Text overlay — absolute on top of the image */}
