@@ -62,6 +62,19 @@ export interface TimeoutConfig {
   driverResponseTimeoutSec: number;
 }
 
+export interface AdvertisingConfig {
+  adPricePlatino: number;
+  adPriceDestacado: number;
+  adPricePremium: number;
+  adPriceHeroBanner: number;
+  adPriceBannerPromo: number;
+  adPriceProducto: number;
+  adLaunchDiscountPercent: number;
+  adMaxHeroBannerSlots: number;
+  adMaxDestacadosSlots: number;
+  adMaxProductosSlots: number;
+}
+
 export interface MerchantTierConfig {
   tier: string;
   minOrdersPerMonth: number;
@@ -79,6 +92,7 @@ export interface FullOpsConfig {
   cashProtocol: CashProtocolConfig;
   scheduledDelivery: ScheduledDeliveryConfig;
   timeouts: TimeoutConfig;
+  advertising: AdvertisingConfig;
   merchantTiers: MerchantTierConfig[];
 }
 
@@ -168,6 +182,18 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
     timeouts: {
       merchantConfirmTimeoutSec: (settings as any)?.merchantConfirmTimeoutSec ?? 300,
       driverResponseTimeoutSec: (settings as any)?.driverResponseTimeoutSec ?? 60,
+    },
+    advertising: {
+      adPricePlatino: (settings as any)?.adPricePlatino ?? 150000,
+      adPriceDestacado: (settings as any)?.adPriceDestacado ?? 95000,
+      adPricePremium: (settings as any)?.adPricePremium ?? 55000,
+      adPriceHeroBanner: (settings as any)?.adPriceHeroBanner ?? 250000,
+      adPriceBannerPromo: (settings as any)?.adPriceBannerPromo ?? 180000,
+      adPriceProducto: (settings as any)?.adPriceProducto ?? 25000,
+      adLaunchDiscountPercent: (settings as any)?.adLaunchDiscountPercent ?? 50,
+      adMaxHeroBannerSlots: (settings as any)?.adMaxHeroBannerSlots ?? 3,
+      adMaxDestacadosSlots: (settings as any)?.adMaxDestacadosSlots ?? 8,
+      adMaxProductosSlots: (settings as any)?.adMaxProductosSlots ?? 12,
     },
     merchantTiers: loyaltyTiers.map((t) => ({
       tier: t.tier,
@@ -376,6 +402,42 @@ export async function updateTimeoutConfig(
       create: { key, value: String(value), description: `Synced from Biblia Financiera` },
     });
   }
+}
+
+/**
+ * Update advertising config
+ */
+export async function updateAdvertisingConfig(
+  data: Partial<AdvertisingConfig>,
+): Promise<void> {
+  const updateData: any = {};
+
+  if (data.adPricePlatino !== undefined)
+    updateData.adPricePlatino = data.adPricePlatino;
+  if (data.adPriceDestacado !== undefined)
+    updateData.adPriceDestacado = data.adPriceDestacado;
+  if (data.adPricePremium !== undefined)
+    updateData.adPricePremium = data.adPricePremium;
+  if (data.adPriceHeroBanner !== undefined)
+    updateData.adPriceHeroBanner = data.adPriceHeroBanner;
+  if (data.adPriceBannerPromo !== undefined)
+    updateData.adPriceBannerPromo = data.adPriceBannerPromo;
+  if (data.adPriceProducto !== undefined)
+    updateData.adPriceProducto = data.adPriceProducto;
+  if (data.adLaunchDiscountPercent !== undefined)
+    updateData.adLaunchDiscountPercent = data.adLaunchDiscountPercent;
+  if (data.adMaxHeroBannerSlots !== undefined)
+    updateData.adMaxHeroBannerSlots = data.adMaxHeroBannerSlots;
+  if (data.adMaxDestacadosSlots !== undefined)
+    updateData.adMaxDestacadosSlots = data.adMaxDestacadosSlots;
+  if (data.adMaxProductosSlots !== undefined)
+    updateData.adMaxProductosSlots = data.adMaxProductosSlots;
+
+  await prisma.storeSettings.upsert({
+    where: { id: "settings" },
+    update: updateData,
+    create: { id: "settings", ...updateData },
+  });
 }
 
 /**

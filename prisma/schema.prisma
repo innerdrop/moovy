@@ -653,6 +653,18 @@ model StoreSettings {
   // === OPS CONFIG: Timeouts ===
   merchantConfirmTimeoutSec Int    @default(300)
   driverResponseTimeoutSec  Int    @default(60)
+
+  // === OPS CONFIG: Advertising Pricing (Biblia Financiera) ===
+  adPricePlatino         Float   @default(150000)
+  adPriceDestacado       Float   @default(95000)
+  adPricePremium         Float   @default(55000)
+  adPriceHeroBanner      Float   @default(250000)
+  adPriceBannerPromo     Float   @default(180000)
+  adPriceProducto        Float   @default(25000)
+  adLaunchDiscountPercent Float  @default(50)
+  adMaxHeroBannerSlots   Int     @default(3)
+  adMaxDestacadosSlots   Int     @default(8)
+  adMaxProductosSlots    Int     @default(12)
 }
 
 model PointsConfig {

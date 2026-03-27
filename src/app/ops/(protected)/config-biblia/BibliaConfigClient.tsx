@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import {
   Truck, DollarSign, Gift, Banknote, Clock, Calendar,
   Shield, ChevronDown, ChevronUp, Save, AlertTriangle,
-  CheckCircle, Info, Calculator, Snowflake, CloudRain, Sun, Zap,
+  CheckCircle, Info, Calculator, Snowflake, CloudRain, Sun, Zap, Megaphone,
 } from "lucide-react";
 import type { FullOpsConfig } from "@/lib/ops-config";
 
@@ -14,7 +14,7 @@ interface Props {
   initialConfig: FullOpsConfig;
 }
 
-type SectionKey = "delivery" | "commissions" | "points" | "cashProtocol" | "scheduledDelivery" | "timeouts";
+type SectionKey = "delivery" | "commissions" | "points" | "cashProtocol" | "scheduledDelivery" | "timeouts" | "advertising";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────────
 
@@ -717,6 +717,61 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
           <NumInput label="Timeout respuesta driver" name="driverResponseTimeoutSec" value={config.timeouts.driverResponseTimeoutSec}
             onChange={(n, v) => updateField("timeouts", n, v)} unit="seg"
             info="Segundos que tiene el driver para aceptar o rechazar un pedido antes de pasar al siguiente." />
+        </div>
+      </Section>
+
+      {/* ═══ ADVERTISING ═══ */}
+      <Section
+        title="📢 Publicidad y Destacados"
+        subtitle="Tarifas, slots, descuentos de lanzamiento"
+        icon={Megaphone}
+        color="violet"
+        sectionKey="advertising"
+        expanded={expanded === "advertising"}
+        onToggle={() => toggle("advertising")}
+        dirty={dirty.has("advertising")}
+        saving={saving === "advertising"}
+        onSave={() => saveSection("advertising")}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NumInput label="Platino — Precio mensual" name="adPricePlatino" value={config.advertising.adPricePlatino}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={500000} unit="ARS"
+            info="Posición #1 garantizada + push + badge premium" />
+          <NumInput label="Destacado — Precio mensual" name="adPriceDestacado" value={config.advertising.adPriceDestacado}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={500000} unit="ARS"
+            info="Top 3 + featured en categorías" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NumInput label="Premium — Precio mensual" name="adPricePremium" value={config.advertising.adPricePremium}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={500000} unit="ARS"
+            info="Badge + posición preferencial" />
+          <NumInput label="Hero Banner — Precio mensual" name="adPriceHeroBanner" value={config.advertising.adPriceHeroBanner}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={500000} unit="ARS"
+            info="Full-width, above the fold" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NumInput label="Banner Promocional — Precio mensual" name="adPriceBannerPromo" value={config.advertising.adPriceBannerPromo}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={500000} unit="ARS"
+            info="Banner con CTA" />
+          <NumInput label="Producto Destacado — Precio mensual" name="adPriceProducto" value={config.advertising.adPriceProducto}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={500000} unit="ARS"
+            info="Por producto individual" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <NumInput label="Descuento de lanzamiento" name="adLaunchDiscountPercent" value={config.advertising.adLaunchDiscountPercent}
+            onChange={(n, v) => updateField("advertising", n, v)} min={0} max={100} step={1} unit="%"
+            info="Aplicar a primeros comercios" />
+          <NumInput label="Máx. slots Hero Banner" name="adMaxHeroBannerSlots" value={config.advertising.adMaxHeroBannerSlots}
+            onChange={(n, v) => updateField("advertising", n, v)} min={1} max={20} unit="slots"
+            info="Cantidad máxima de banners hero simultáneos" />
+          <NumInput label="Máx. slots Destacados" name="adMaxDestacadosSlots" value={config.advertising.adMaxDestacadosSlots}
+            onChange={(n, v) => updateField("advertising", n, v)} min={1} max={50} unit="slots"
+            info="Cantidad máxima de comercios destacados simultáneos" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          <NumInput label="Máx. slots Productos" name="adMaxProductosSlots" value={config.advertising.adMaxProductosSlots}
+            onChange={(n, v) => updateField("advertising", n, v)} min={1} max={100} unit="slots"
+            info="Cantidad máxima de productos destacados simultáneos" />
         </div>
       </Section>
 
