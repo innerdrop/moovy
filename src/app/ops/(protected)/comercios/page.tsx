@@ -4,6 +4,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 import {
     Building2,
     Search,
@@ -105,16 +107,17 @@ export default function ComerciosPage() {
     }, [search]);
 
     const handleApprove = async (id: string) => {
+        const ok = await confirm({ title: "Aprobar comercio", message: "El comercio podrá empezar a operar de inmediato. ¿Confirmar aprobación?", confirmLabel: "Aprobar", variant: "default" });
+        if (!ok) return;
         setActionLoading(id);
         try {
             const res = await fetch(`/api/admin/merchants/${id}/approve`, { method: "PUT" });
             if (res.ok) {
-                setSuccessMessage("Comercio aprobado exitosamente");
-                setTimeout(() => setSuccessMessage(null), 3000);
+                toast.success("Comercio aprobado exitosamente");
                 fetchMerchants();
             }
         } catch (error) {
-            console.error("Error approving merchant:", error);
+            toast.error("Error al aprobar comercio");
         } finally {
             setActionLoading(null);
         }
@@ -130,8 +133,7 @@ export default function ComerciosPage() {
                 body: JSON.stringify({ reason: rejectReason || undefined }),
             });
             if (res.ok) {
-                setSuccessMessage("Comercio rechazado");
-                setTimeout(() => setSuccessMessage(null), 3000);
+                toast.success("Comercio rechazado");
                 setRejectModal(null);
                 setRejectReason("");
                 fetchMerchants();

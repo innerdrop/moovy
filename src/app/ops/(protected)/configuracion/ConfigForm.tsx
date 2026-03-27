@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { Save, Loader2 } from "lucide-react";
+import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 
 interface ConfigFormProps {
     children: React.ReactNode;
@@ -10,26 +12,27 @@ interface ConfigFormProps {
 
 export default function ConfigForm({ children, initialSettings }: ConfigFormProps) {
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const ok = await confirm({
+            title: "Guardar configuración",
+            message: "Los cambios se aplicarán de inmediato en la tienda. ¿Confirmar?",
+            confirmLabel: "Guardar",
+            variant: "warning",
+        });
+        if (!ok) return;
+
         setSaving(true);
-        setMessage(null);
 
         const formData = new FormData(formRef.current!);
 
-        // Build settings object from form
-        // Checkboxes in HTML: if checked, they are present in FormData as "on"
-        // If not checked, they are NOT present in FormData.
         const settings: any = {
-            // Maintenance mode
             isMaintenanceMode: formData.get("isMaintenanceMode") === "on",
             tiendaMaintenance: formData.get("tiendaMaintenance") === "on",
             maintenanceMessage: formData.get("maintenanceMessage") || "",
-
-            // Promo Popup
             promoPopupEnabled: formData.get("promoPopupEnabled") === "on",
             promoPopupTitle: formData.get("promoPopupTitle") || "",
             promoPopupMessage: formData.get("promoPopupMessage") || "",
@@ -37,11 +40,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             promoPopupLink: formData.get("promoPopupLink") || "",
             promoPopupButtonText: formData.get("promoPopupButtonText") || "",
             promoPopupDismissable: formData.get("promoPopupDismissable") === "on",
-
-            // Home visibility
             maxCategoriesHome: formData.get("maxCategoriesHome"),
-
-            // Hero Slider
             heroSliderEnabled: formData.get("heroSliderEnabled") === "on",
             heroSliderShowArrows: formData.get("heroSliderShowArrows") === "on",
             heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
@@ -55,17 +54,15 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             });
 
             if (res.ok) {
-                setMessage({ type: "success", text: "✅ Configuración guardada correctamente" });
+                toast.success("Configuración guardada correctamente");
             } else {
                 const data = await res.json();
-                setMessage({ type: "error", text: data.error || "Error al guardar" });
+                toast.error(data.error || "Error al guardar");
             }
-        } catch (error) {
-            setMessage({ type: "error", text: "Error de conexión" });
+        } catch {
+            toast.error("Error de conexión");
         } finally {
             setSaving(false);
-            // Clear message after 3 seconds
-            setTimeout(() => setMessage(null), 3000);
         }
     };
 
@@ -73,17 +70,6 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
             {children}
 
-            {/* Message */}
-            {message && (
-                <div className={`p-4 rounded-lg ${message.type === "success"
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : "bg-red-50 text-red-700 border border-red-200"
-                    }`}>
-                    {message.text}
-                </div>
-            )}
-
-            {/* Save Button */}
             <div className="flex justify-end">
                 <button
                     type="submit"

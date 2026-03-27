@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 import {
   Megaphone,
   CheckCircle,
@@ -640,7 +642,7 @@ export default function SolicitudesAdsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("ALL");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  // Toast global + ConfirmModal (no more inline messages)
   const [durationDays, setDurationDays] = useState<number>(30);
   const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
   const [paymentMethods, setPaymentMethods] = useState<Record<string, string>>({});
@@ -665,9 +667,19 @@ export default function SolicitudesAdsPage() {
     fetchData();
   }, [fetchData]);
 
+  const ACTION_LABELS: Record<string, { title: string; msg: string; variant: "danger" | "warning" | "default" }> = {
+    approve: { title: "Aprobar solicitud", msg: "¿Aprobar esta solicitud de publicidad?", variant: "default" },
+    activate: { title: "Activar anuncio", msg: "El anuncio se hará visible de inmediato. ¿Confirmar?", variant: "warning" },
+    reject: { title: "Rechazar solicitud", msg: "¿Rechazar esta solicitud? Esta acción no se puede deshacer.", variant: "danger" },
+    cancel: { title: "Cancelar anuncio", msg: "¿Cancelar este anuncio activo? Se desactivará de inmediato.", variant: "danger" },
+  };
+
   const handleAction = async (id: string, action: string, extra?: Record<string, any>) => {
+    const labels = ACTION_LABELS[action] || { title: "Confirmar acción", msg: `¿Ejecutar "${action}"?`, variant: "warning" as const };
+    const ok = await confirm({ title: labels.title, message: labels.msg, confirmLabel: labels.title, variant: labels.variant });
+    if (!ok) return;
+
     setActionLoading(`${id}-${action}`);
-    setMessage(null);
 
     try {
       const res = await fetch(`/api/admin/ad-placements/${id}`, {
@@ -679,16 +691,15 @@ export default function SolicitudesAdsPage() {
       const result = await res.json();
 
       if (res.ok) {
-        setMessage({ type: "success", text: result.message || "Acción completada" });
+        toast.success(result.message || "Acción completada");
         fetchData();
       } else {
-        setMessage({ type: "error", text: result.error || "Error" });
+        toast.error(result.error || "Error");
       }
     } catch {
-      setMessage({ type: "error", text: "Error de conexión" });
+      toast.error("Error de conexión");
     } finally {
       setActionLoading(null);
-      setTimeout(() => setMessage(null), 5000);
     }
   };
 
@@ -712,19 +723,6 @@ export default function SolicitudesAdsPage() {
           Administrá solicitudes, espacios y revenue publicitario en la plataforma
         </p>
       </div>
-
-      {/* Message */}
-      {message && (
-        <div
-          className={`p-4 rounded-xl text-sm font-medium border ${
-            message.type === "success"
-              ? "bg-green-50 text-green-700 border-green-200"
-              : "bg-red-50 text-red-700 border-red-200"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
 
       {/* Stats Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -6,6 +6,8 @@ import {
     ChevronLeft, Gift, Save, Loader2, AlertCircle, CheckCircle,
     User, Package, MapPin, Phone, Mail, Calendar, ShoppingBag
 } from "lucide-react";
+import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 import { formatPrice } from "@/lib/delivery";
 
 interface UserData {
@@ -89,7 +91,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         }
     };
 
-    const handleAdjustment = async (e: React.FormEvent) => {
+    const handleAdjustment = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setMessage(null);
         setProcessing(true);
@@ -103,6 +105,14 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
 
         const finalAmount = adjustmentType === "ADD" ? amount : -amount;
 
+        const ok = await confirm({
+            title: adjustmentType === "ADD" ? "Sumar puntos" : "Restar puntos",
+            message: `¿${adjustmentType === "ADD" ? "Sumar" : "Restar"} ${amount} puntos a este usuario?`,
+            confirmLabel: "Confirmar",
+            variant: adjustmentType === "SUBTRACT" ? "danger" : "default",
+        });
+        if (!ok) { setProcessing(false); return; }
+
         try {
             const res = await fetch(`/api/admin/users/${userId}/points`, {
                 method: "POST",
@@ -115,15 +125,15 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
             });
 
             if (res.ok) {
-                setMessage({ type: "success", text: "Puntos ajustados correctamente." });
+                toast.success("Puntos ajustados correctamente");
                 setAdjustmentAmount("");
                 setAdjustmentReason("");
                 fetchUser();
             } else {
-                setMessage({ type: "error", text: "Error al ajustar puntos." });
+                toast.error("Error al ajustar puntos");
             }
         } catch (error) {
-            setMessage({ type: "error", text: "Error de conexión." });
+            toast.error("Error de conexión");
         } finally {
             setProcessing(false);
         }

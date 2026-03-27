@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { confirm } from "@/store/confirm";
 import {
     ChevronLeft,
     Loader2,
@@ -147,6 +148,8 @@ export default function DestacadosPage() {
 
     // Handle update merchant premium
     const handleUpdate = async (merchantId: string) => {
+        const ok = await confirm({ title: "Actualizar destacado", message: "¿Confirmar cambios en el estado premium del comercio?", confirmLabel: "Actualizar", variant: "warning" });
+        if (!ok) return;
         setUpdating(merchantId);
         try {
             const payload: any = {

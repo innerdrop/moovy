@@ -16,6 +16,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast as globalToast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 import {
   Settings,
   Package,
@@ -427,9 +429,8 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function ConfigLogisticaPage() {
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const showToast = useCallback((message: string, type: "success" | "error") => {
-    setToast({ message, type });
+    type === "success" ? globalToast.success(message) : globalToast.error(message);
   }, []);
 
   // Active tab
@@ -573,6 +574,8 @@ export default function ConfigLogisticaPage() {
 
   // ─── Save: Global Config ───────────────────────────────────────────────
   async function saveGlobalConfig() {
+    const ok = await confirm({ title: "Guardar configuración global", message: "Estos cambios afectan el motor logístico en producción. ¿Confirmar?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingConfigs(true);
     try {
       for (const field of GLOBAL_CONFIG_FIELDS) {
@@ -602,6 +605,8 @@ export default function ConfigLogisticaPage() {
 
   // ─── Save: Categories ──────────────────────────────────────────────────
   async function saveCategories() {
+    const ok = await confirm({ title: "Guardar categorías", message: "¿Guardar cambios en categorías de paquete?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingCategories(true);
     try {
       for (const [id, fields] of Object.entries(editedCategories)) {
@@ -626,6 +631,8 @@ export default function ConfigLogisticaPage() {
 
   // ─── Save: Rates ───────────────────────────────────────────────────────
   async function saveRates() {
+    const ok = await confirm({ title: "Guardar tarifas", message: "¿Guardar cambios en tarifas de envío?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingRates(true);
     try {
       for (const [id, fields] of Object.entries(editedRates)) {
@@ -650,6 +657,8 @@ export default function ConfigLogisticaPage() {
 
   // ─── Save: Shipment Types ─────────────────────────────────────────────
   async function saveShipmentTypes() {
+    const ok = await confirm({ title: "Guardar tipos de envío", message: "¿Confirmar cambios en tipos de envío?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingShipment(true);
     try {
       const res = await fetch("/api/ops/config/shipment-types", {
@@ -671,6 +680,8 @@ export default function ConfigLogisticaPage() {
 
   // ─── Save: Vehicle Speeds ─────────────────────────────────────────────
   async function saveVehicleSpeeds() {
+    const ok = await confirm({ title: "Guardar velocidades", message: "¿Confirmar cambios en velocidades de vehículo?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingSpeeds(true);
     try {
       const res = await fetch("/api/ops/config/vehicle-speeds", {
@@ -693,6 +704,8 @@ export default function ConfigLogisticaPage() {
   // ─── Save: Priority Queue ─────────────────────────────────────────────
   async function savePriorityConfig() {
     if (!priorityConfig) return;
+    const ok = await confirm({ title: "Guardar prioridad", message: "¿Confirmar cambios en cola de prioridad?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingPriority(true);
     try {
       const res = await fetch("/api/ops/config/priority-queue", {
@@ -715,6 +728,8 @@ export default function ConfigLogisticaPage() {
   // ─── Save: ETA Calculator ─────────────────────────────────────────────
   async function saveETAConfig() {
     if (!etaConfig) return;
+    const ok = await confirm({ title: "Guardar ETA", message: "¿Confirmar cambios en configuración de ETA?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingETA(true);
     try {
       const res = await fetch("/api/ops/config/eta-calculator", {
@@ -736,6 +751,8 @@ export default function ConfigLogisticaPage() {
 
   // ─── Save: Shipping Defaults ──────────────────────────────────────────
   async function saveShippingDefaults() {
+    const ok = await confirm({ title: "Guardar tarifas por defecto", message: "¿Confirmar cambios en tarifas por defecto?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSavingShippingDef(true);
     try {
       const res = await fetch("/api/ops/config/shipping-defaults", {
@@ -803,8 +820,6 @@ export default function ConfigLogisticaPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">

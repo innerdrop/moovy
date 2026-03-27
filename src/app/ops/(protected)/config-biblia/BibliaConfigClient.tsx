@@ -4,8 +4,10 @@ import { useState, useCallback } from "react";
 import {
   Truck, DollarSign, Gift, Banknote, Clock, Calendar,
   Shield, ChevronDown, ChevronUp, Save, AlertTriangle,
-  CheckCircle, Info, Calculator, Snowflake, CloudRain, Sun, Zap, Megaphone,
+  Info, Calculator, Snowflake, CloudRain, Sun, Zap, Megaphone,
 } from "lucide-react";
+import { toast as globalToast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 import type { FullOpsConfig } from "@/lib/ops-config";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -17,18 +19,6 @@ interface Props {
 type SectionKey = "delivery" | "commissions" | "points" | "cashProtocol" | "scheduledDelivery" | "timeouts" | "advertising";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────────
-
-function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
-  return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-white font-bold text-sm animate-in slide-in-from-bottom-5 ${
-      type === "success" ? "bg-green-600" : "bg-red-600"
-    }`}>
-      {type === "success" ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">&times;</button>
-    </div>
-  );
-}
 
 // ─── Info Tooltip ──────────────────────────────────────────────────────────────
 
@@ -298,13 +288,6 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
   const [expanded, setExpanded] = useState<SectionKey | null>("delivery");
   const [dirty, setDirty] = useState<Set<SectionKey>>(new Set());
   const [saving, setSaving] = useState<SectionKey | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  const showToast = useCallback((message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  }, []);
-
   const toggle = (key: SectionKey) => setExpanded((prev) => (prev === key ? null : key));
 
   const updateField = useCallback((section: SectionKey, field: string, value: number | string) => {
@@ -316,6 +299,8 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
   }, []);
 
   const saveSection = useCallback(async (section: SectionKey) => {
+    const ok = await confirm({ title: "Guardar sección", message: "Los cambios en la Biblia Financiera se aplican de inmediato. ¿Confirmar?", confirmLabel: "Guardar", variant: "warning" });
+    if (!ok) return;
     setSaving(section);
     try {
       const res = await fetch("/api/admin/ops-config", {
@@ -332,13 +317,13 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
         next.delete(section);
         return next;
       });
-      showToast("Configuración guardada correctamente", "success");
+      globalToast.success("Configuración guardada correctamente");
     } catch (err: any) {
-      showToast(err.message || "Error al guardar", "error");
+      globalToast.error(err.message || "Error al guardar");
     } finally {
       setSaving(null);
     }
-  }, [config, showToast]);
+  }, [config]);
 
   // Helper to update nested zone/climate multipliers
   const updateMultiplier = (section: "delivery", mapKey: "zoneMultipliers" | "climateMultipliers", subKey: string, value: number) => {
@@ -354,8 +339,6 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
 
   return (
     <div className="space-y-4">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
       {/* ═══ DELIVERY ═══ */}
       <Section
         title="Delivery & Logística"
