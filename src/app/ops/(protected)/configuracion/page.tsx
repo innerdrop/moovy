@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
 import { Switch } from "./Switch";
-import PromoBannerImageUpload from "./PromoBannerImageUpload";
+// PromoBannerImageUpload moved to dedicated /ops/banner-promo page
 
 async function getSettings() {
     try {
@@ -278,72 +278,24 @@ export default async function ConfigurationPage() {
                         </div>
                     </div>
 
-                    {/* Banner Card Section */}
-                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                    {/* Banner Promo — Moved to dedicated page */}
+                    <a href="/ops/banner-promo" className="block bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:border-pink-200 hover:shadow-md transition-all group relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
-
-                        <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center">
                                     <span className="text-2xl">⚡</span>
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black text-gray-900 leading-none">Banner /Tienda</h2>
-                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Banner horizontal</p>
+                                    <h2 className="text-xl font-black text-gray-900 leading-none">Banner Promocional</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Configurá el banner horizontal de la tienda</p>
                                 </div>
                             </div>
-                            <Switch
-                                name="promoBannerEnabled"
-                                defaultChecked={(settings as any)?.promoBannerEnabled ?? true}
-                                activeColor="bg-pink-500"
-                            />
+                            <span className="text-pink-500 font-black text-sm group-hover:translate-x-1 transition-transform">
+                                Ir a Banner Promo →
+                            </span>
                         </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Título (con \n)</label>
-                                <input
-                                    type="text"
-                                    defaultValue={(settings as any)?.promoBannerTitle ?? "Noches de\nPizza & Pelis"}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                                    name="promoBannerTitle"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Subtítulo</label>
-                                <input
-                                    type="text"
-                                    defaultValue={(settings as any)?.promoBannerSubtitle ?? "2x1 en locales seleccionados de 20hs a 23hs."}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                                    name="promoBannerSubtitle"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Texto Botón</label>
-                                    <input
-                                        type="text"
-                                        defaultValue={(settings as any)?.promoBannerButtonText ?? "Ver locales"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                                        name="promoBannerButtonText"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Link Botón</label>
-                                    <input
-                                        type="text"
-                                        defaultValue={(settings as any)?.promoBannerButtonLink ?? "/productos?categoria=pizzas"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                                        name="promoBannerButtonLink"
-                                    />
-                                </div>
-                            </div>
-                            <PromoBannerImageUpload
-                                currentImage={(settings as any)?.promoBannerImage}
-                                name="promoBannerImage"
-                            />
-                        </div>
-                    </div>
+                    </a>
                 </div>
 
                 {/* Full Width: Redirect to Biblia Financiera */}

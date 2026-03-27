@@ -62,13 +62,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             heroSliderEnabled: formData.get("heroSliderEnabled") === "on",
             heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
 
-            // Promo Banner (Slide Publicitario)
-            promoBannerEnabled: formData.get("promoBannerEnabled") === "on",
-            promoBannerTitle: formData.get("promoBannerTitle") || "",
-            promoBannerSubtitle: formData.get("promoBannerSubtitle") || "",
-            promoBannerButtonText: formData.get("promoBannerButtonText") || "",
-            promoBannerButtonLink: formData.get("promoBannerButtonLink") || "",
-            promoBannerImage: formData.get("promoBannerImage") || "",
+            // Promo Banner — moved to dedicated /ops/banner-promo page
         };
 
         try {
