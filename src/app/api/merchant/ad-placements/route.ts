@@ -198,6 +198,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
         placement,
-        message: "Solicitud enviada. Nuestro equipo la revisará y te contactará para coordinar el pago.",
+        message: `Solicitud enviada. Te contactaremos para coordinar el pago.`,
     }, { status: 201 });
 }

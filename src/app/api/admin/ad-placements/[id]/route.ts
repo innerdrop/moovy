@@ -194,8 +194,11 @@ export async function PATCH(
             return cancelled;
         });
 
+        // TODO: Enviar email/push al comercio
+        console.log(`[ad-placement] Cancelado: ${placement.merchant.name} → ${placement.type}`);
+
         return NextResponse.json({ placement: updated, message: "Solicitud cancelada." });
     }
 
-    return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 });
+    return NextResponse.json({ error: "Acción no válida" }, { status: 400 });
 }

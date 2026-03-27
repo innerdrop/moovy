@@ -419,7 +419,7 @@ export default function PublicidadPage() {
                                             {p.rejectionReason && ` — ${p.rejectionReason}`}
                                         </p>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusCfg.color}`}>
+                                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusCfg.bg} ${statusCfg.text}`}>
                                         {statusCfg.label}
                                     </span>
                                 </div>

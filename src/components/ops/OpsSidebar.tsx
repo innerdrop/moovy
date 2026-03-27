@@ -34,6 +34,7 @@ import {
     Radio,
     Megaphone,
     Star,
+    ClipboardList,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -76,6 +77,7 @@ const navSections: NavSection[] = [
     {
         title: "Marketing",
         items: [
+            { href: "/ops/solicitudes-ads", icon: ClipboardList, label: "Solicitudes Ads" },
             { href: "/ops/hero", icon: ImageIcon, label: "Hero Banners" },
             { href: "/ops/banner-promo", icon: Megaphone, label: "Banner Promo" },
             { href: "/ops/destacados", icon: Star, label: "Destacados" },

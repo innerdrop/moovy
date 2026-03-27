@@ -49,5 +49,10 @@ export async function GET(request: NextRequest) {
         prisma.adPlacement.count({ where }),
     ]);
 
-    return NextResponse.json({ placements, total, page, limit });
+    return NextResponse.json({
+        placements,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+    });
 }
