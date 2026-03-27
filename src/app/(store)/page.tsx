@@ -15,7 +15,7 @@ import { ArrowRight, Store } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
 import SearchBarHero from "@/components/home/SearchBarHero";
-import HeroSliderNew from "@/components/home/HeroSliderNew";
+// HeroSliderNew removed — replaced by HeroBannerCarousel in section 1
 import SocialProofBar from "@/components/home/SocialProofBar";
 // HowItWorks removed — replaced by banner slot
 import CategoryGrid from "@/components/home/CategoryGrid";
@@ -229,12 +229,7 @@ async function LiveStoreView() {
         <CategoryGrid categories={categories} />
       </section>
 
-      {/* 4. Banner Publicitario OPS (posición premium — monetizable) */}
-      {sliderEnabled && slides.length > 0 && (
-        <HeroSliderNew slides={slides} slideInterval={slideInterval} />
-      )}
-
-      {/* 5. Banner Promocional configurable desde OPS */}
+      {/* 4. Banner Promocional configurable desde OPS */}
       {bannerProps && <PromoBanner {...bannerProps} />}
 
       {/* 6. Comercios en Ushuaia */}
