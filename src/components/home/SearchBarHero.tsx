@@ -257,4 +257,16 @@ export default function SearchBarHero() {
                     );
                     setShowDropdown(false);
                   }}
-                  className="w-full px-4 py-3 text-center text-base font-semibold te
+                  className="w-full px-4 py-3 text-center text-base font-semibold text-[#e60012] hover:bg-red-50 transition-colors"
+                >
+                  Ver todos los resultados
+                </button>
+              )}
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  </section>
+  );
+}
