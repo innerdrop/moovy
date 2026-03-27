@@ -95,51 +95,55 @@ export default function HeroBannerCarousel({
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-[#e60012]"
+      className="relative w-full overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Aspect ratio: mobile 16:9, tablet 2.8:1, desktop 3:1. bg-white below image */}
-      <div className="relative w-full pt-[56.25%] sm:pt-[40%] lg:pt-[33.33%] bg-white">
-        {validSlides.map((s, idx) => (
-          <div
-            key={s.id}
-            className="absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out"
-            style={{
-              opacity: idx === current ? 1 : 0,
-              pointerEvents: idx === current ? "auto" : "none",
-            }}
-          >
-            <Link
-              href={s.buttonLink}
-              className="block w-full h-full"
-              aria-label={s.title}
+      {/* Image determines its own height — no fixed aspect ratio */}
+      <div className="relative w-full">
+        {validSlides.map((s, idx) => {
+          const isFirst = idx === 0;
+          return (
+            <div
+              key={s.id}
+              className={isFirst ? "relative w-full" : "absolute inset-0 w-full h-full"}
+              style={{
+                opacity: idx === current ? 1 : 0,
+                pointerEvents: idx === current ? "auto" : "none",
+                transition: "opacity 500ms ease-in-out",
+              }}
             >
-              <picture className="block w-full h-full">
-                {s.imageDesktop && (
-                  <source
-                    media="(min-width: 1024px)"
-                    srcSet={s.imageDesktop}
+              <Link
+                href={s.buttonLink}
+                className="block w-full"
+                aria-label={s.title}
+              >
+                <picture className="block w-full">
+                  {s.imageDesktop && (
+                    <source
+                      media="(min-width: 1024px)"
+                      srcSet={s.imageDesktop}
+                    />
+                  )}
+                  {s.imageMobile && (
+                    <source
+                      media="(max-width: 639px)"
+                      srcSet={s.imageMobile}
+                    />
+                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.imageMobile || s.imageDesktop || s.image || ""}
+                    alt={s.title}
+                    className="w-full block"
+                    loading={idx === 0 ? "eager" : "lazy"}
                   />
-                )}
-                {s.imageMobile && (
-                  <source
-                    media="(max-width: 639px)"
-                    srcSet={s.imageMobile}
-                  />
-                )}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={s.imageMobile || s.imageDesktop || s.image || ""}
-                  alt={s.title}
-                  className="w-full h-full object-contain block"
-                  loading={idx === 0 ? "eager" : "lazy"}
-                />
-              </picture>
-            </Link>
-          </div>
-        ))}
+                </picture>
+              </Link>
+            </div>
+          );
+        })}
       </div>
 
       {/* Navigation controls - only show if multiple slides */}

@@ -145,9 +145,8 @@ export default function SearchBarHero() {
           ref={dropdownRef}
           className="relative mx-auto max-w-2xl"
         >
-          <form onSubmit={handleSubmit} className="relative">
-            <div className="absolute -inset-1 bg-white/60 rounded-2xl blur" />
-            <div className="relative flex items-center bg-white rounded-2xl shadow-xl shadow-black/10">
+          <form onSubmit={handleSubmit}>
+            <div className="flex items-center bg-white rounded-2xl shadow-lg shadow-black/8">
               <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
               <input
                 ref={inputRef}
