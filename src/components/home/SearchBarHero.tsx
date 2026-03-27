@@ -264,7 +264,6 @@ export default function SearchBarHero() {
               )}
             </div>
           )}
-        </form>
       </div>
     </div>
   </section>
