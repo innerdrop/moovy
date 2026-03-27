@@ -172,4 +172,14 @@ export default function HeroBannerCarousel({
                 className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-all ${
                   idx === current
                     ? "bg-white w-6 md:w-8"
-                    : "bg-white/50 hover:b
+                    : "bg-white/50 hover:bg-white/75"
+                }`}
+                aria-label={`Ir a slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
