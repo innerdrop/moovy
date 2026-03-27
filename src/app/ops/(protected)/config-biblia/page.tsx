@@ -12,13 +12,13 @@ export default async function BibliaConfigPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
-            <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20 not-italic">
-              <BookOpen className="w-7 h-7 text-white" />
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
             Biblia Financiera
           </h1>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2 ml-1">
+          <p className="text-sm text-gray-500 mt-1">
             Configuración completa de parámetros operativos y financieros
           </p>
         </div>

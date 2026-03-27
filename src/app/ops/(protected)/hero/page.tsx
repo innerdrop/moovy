@@ -225,7 +225,7 @@ export default function HeroPage() {
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </Link>
               <div>
-                <h1 className="text-3xl font-black text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900">
                   Banners de Inicio
                 </h1>
                 <p className="text-sm text-gray-500 mt-1">

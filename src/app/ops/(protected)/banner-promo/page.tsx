@@ -199,7 +199,7 @@ export default function PromoBannerPage() {
             <Link href="/ops">
               <ArrowLeft className="w-6 h-6 text-gray-600 hover:text-gray-900" />
             </Link>
-            <h1 className="text-2xl font-black text-gray-900">Banner Promocional</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Banner Promocional</h1>
           </div>
           <button
             onClick={handleSave}

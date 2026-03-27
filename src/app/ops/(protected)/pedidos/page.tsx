@@ -211,7 +211,7 @@ export default function AdminPedidosPage() {
             </div>
 
             {/* Search & Date Filters */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
@@ -272,14 +272,14 @@ export default function AdminPedidosPage() {
 
             {/* Orders List */}
             {orders.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-slate-100">
+                <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
                     <Package className="w-20 h-20 text-slate-200 mx-auto mb-4" />
                     <p className="text-slate-400 font-medium text-lg">No hay pedidos registrados</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     {/* Select All / Bulk Actions */}
-                    <div className="px-4 py-3 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                    <div className="px-4 py-3 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                         <label className="flex items-center gap-3 cursor-pointer">
                             <input
                                 type="checkbox"
@@ -307,9 +307,9 @@ export default function AdminPedidosPage() {
                     </div>
 
                     {/* Desktop View */}
-                    <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+                    <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                         <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-100">
+                            <thead className="bg-slate-50 border-b border-gray-100">
                                 <tr>
                                     <th className="p-4 w-12"></th>
                                     <th className="text-left p-4 font-bold text-gray-900 text-xs uppercase tracking-widest">Pedido</th>
@@ -368,7 +368,7 @@ export default function AdminPedidosPage() {
                                             <td className="p-4 text-right">
                                                 <Link
                                                     href={`/ops/pedidos/${order.id}`}
-                                                    className="inline-flex items-center justify-center w-10 h-10 bg-slate-50 text-slate-400 hover:text-moovy hover:bg-red-50 rounded-xl transition-all border border-slate-100"
+                                                    className="inline-flex items-center justify-center w-10 h-10 bg-slate-50 text-slate-400 hover:text-moovy hover:bg-red-50 rounded-xl transition-all border border-gray-100"
                                                 >
                                                     <ChevronRight className="w-5 h-5" />
                                                 </Link>
@@ -389,7 +389,7 @@ export default function AdminPedidosPage() {
                             return (
                                 <div
                                     key={order.id}
-                                    className={`bg-white rounded-2xl shadow-sm border p-4 transition-all relative overflow-hidden ${isSelected ? "border-moovy ring-1 ring-moovy bg-red-50/20" : "border-slate-100"}`}
+                                    className={`bg-white rounded-xl shadow-sm border p-4 transition-all relative overflow-hidden ${isSelected ? "border-moovy ring-1 ring-moovy bg-red-50/20" : "border-gray-100"}`}
                                 >
                                     {/* Action Row */}
                                     <div className="flex items-center justify-between mb-4">
@@ -411,7 +411,7 @@ export default function AdminPedidosPage() {
                                     </div>
 
                                     {/* Content */}
-                                    <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                                    <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 rounded-xl border border-gray-100">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-moovy border border-slate-200 shadow-sm font-black text-sm">
                                             {(order.user.name || order.user.email).charAt(0).toUpperCase()}
                                         </div>
@@ -450,7 +450,7 @@ export default function AdminPedidosPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                     <p className="text-sm text-slate-500">
                         Mostrando página {page} de {totalPages} ({totalOrders} pedidos)
                     </p>

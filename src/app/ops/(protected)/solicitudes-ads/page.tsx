@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Megaphone,
-  CheckCircle2,
+  CheckCircle,
   Clock,
   XCircle,
   AlertCircle,
@@ -13,15 +13,16 @@ import {
   ThumbsDown,
   Ban,
   Phone,
-  Store,
+  Building2,
   Calendar,
   DollarSign,
   Filter,
   ChevronDown,
   ChevronUp,
   TrendingUp,
-  Eye,
-  ImageIcon,
+  CreditCard,
+  ExternalLink,
+  MessageCircle,
 } from "lucide-react";
 
 interface Merchant {
@@ -164,12 +165,42 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-  PENDING: { label: "Pendiente", icon: Clock, color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-  APPROVED: { label: "Aprobada", icon: ThumbsUp, color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-  ACTIVE: { label: "Activo", icon: CheckCircle2, color: "text-green-700", bg: "bg-green-50 border-green-200" },
-  EXPIRED: { label: "Expirado", icon: AlertCircle, color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
-  CANCELLED: { label: "Cancelado", icon: Ban, color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
-  REJECTED: { label: "Rechazado", icon: XCircle, color: "text-red-700", bg: "bg-red-50 border-red-200" },
+  PENDING: {
+    label: "Pendiente",
+    icon: Clock,
+    color: "text-amber-700",
+    bg: "bg-amber-50 border-amber-200",
+  },
+  APPROVED: {
+    label: "Aprobada",
+    icon: ThumbsUp,
+    color: "text-blue-700",
+    bg: "bg-blue-50 border-blue-200",
+  },
+  ACTIVE: {
+    label: "Activo",
+    icon: CheckCircle,
+    color: "text-green-700",
+    bg: "bg-green-50 border-green-200",
+  },
+  EXPIRED: {
+    label: "Expirado",
+    icon: AlertCircle,
+    color: "text-gray-500",
+    bg: "bg-gray-50 border-gray-200",
+  },
+  CANCELLED: {
+    label: "Cancelado",
+    icon: Ban,
+    color: "text-gray-500",
+    bg: "bg-gray-50 border-gray-200",
+  },
+  REJECTED: {
+    label: "Rechazado",
+    icon: XCircle,
+    color: "text-red-700",
+    bg: "bg-red-50 border-red-200",
+  },
 };
 
 const FILTER_OPTIONS = ["ALL", "PENDING", "APPROVED", "ACTIVE", "EXPIRED", "CANCELLED", "REJECTED"] as const;
@@ -179,7 +210,11 @@ function formatPrice(amount: number): string {
 }
 
 function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(date).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function daysRemaining(endsAt: string): number {
@@ -191,55 +226,69 @@ function AdGuideSection() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition"
       >
         <div className="flex items-center gap-3">
-          <Eye className="w-5 h-5 text-gray-600" />
-          <h3 className="text-sm font-bold text-gray-900">Guía de Espacios Publicitarios</h3>
+          <Megaphone className="w-5 h-5 text-gray-600" />
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Guía de Espacios Publicitarios</h3>
         </div>
-        {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+        {expanded ? (
+          <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        )}
       </button>
 
       {expanded && (
-        <div className="border-t border-slate-100 px-6 py-4 space-y-4">
-          <p className="text-xs text-gray-600 mb-6">
-            Esta tabla muestra dónde aparece cada espacio publicitario, sus especificaciones técnicas y capacidad.
+        <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+          <p className="text-xs text-gray-500">
+            Esta tabla muestra dónde aparece cada espacio publicitario, sus especificaciones técnicas y capacidad máxima.
           </p>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-3 font-bold text-gray-700">Tipo</th>
-                  <th className="text-left py-2 px-3 font-bold text-gray-700">Ubicación</th>
-                  <th className="text-left py-2 px-3 font-bold text-gray-700">Formato</th>
-                  <th className="text-right py-2 px-3 font-bold text-gray-700">Precio/mes</th>
-                  <th className="text-center py-2 px-3 font-bold text-gray-700">Máx. Slots</th>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-3 font-semibold text-gray-900 uppercase tracking-wider text-xs">
+                    Tipo
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-gray-900 uppercase tracking-wider text-xs">
+                    Ubicación
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-gray-900 uppercase tracking-wider text-xs">
+                    Formato
+                  </th>
+                  <th className="text-right py-2 px-3 font-semibold text-gray-900 uppercase tracking-wider text-xs">
+                    Precio/mes
+                  </th>
+                  <th className="text-center py-2 px-3 font-semibold text-gray-900 uppercase tracking-wider text-xs">
+                    Máx. Slots
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {Object.values(AD_TYPES).map((type) => (
-                  <tr key={type.id} className="border-b border-slate-100 hover:bg-gray-50">
+                  <tr key={type.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${TYPE_COLORS[type.id]}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[type.id]}`}>
                         {type.label}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-gray-600">{type.location}</td>
-                    <td className="py-3 px-3 text-gray-600">{type.format}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatPrice(type.price)}</td>
-                    <td className="py-3 px-3 text-center text-gray-600">{type.maxSlots}</td>
+                    <td className="py-3 px-3 text-xs text-gray-700">{type.location}</td>
+                    <td className="py-3 px-3 text-xs text-gray-700">{type.format}</td>
+                    <td className="py-3 px-3 text-right font-bold text-gray-900 text-xs">{formatPrice(type.price)}</td>
+                    <td className="py-3 px-3 text-center text-xs text-gray-700">{type.maxSlots}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-900 mt-4">
-            <p className="font-bold mb-1">Nota:</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-900">
+            <p className="font-semibold mb-1">Nota importante:</p>
             <p>
               Los precios mostrados incluyen el descuento de lanzamiento del 50% para los primeros 3 meses. Después de ese
               período, los precios regresan a la tarifa estándar.
@@ -287,43 +336,45 @@ function AdPlacementCard({
     : 0;
 
   return (
-    <div key={placement.id} className={`border rounded-2xl p-5 ${statusCfg.bg}`}>
+    <div key={placement.id} className={`border rounded-xl p-5 shadow-sm bg-white ${statusCfg.bg}`}>
       {/* Top row - Merchant info and Status */}
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
             {placement.merchant.image ? (
-              <img src={placement.merchant.image} alt="" className="w-full h-full object-cover" />
+              <img src={placement.merchant.image} alt={placement.merchant.name} className="w-full h-full object-cover" />
             ) : (
-              <Store className="w-6 h-6 text-gray-400" />
+              <Building2 className="w-6 h-6 text-gray-400" />
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-gray-900 truncate">{placement.merchant.name}</h3>
+            <h3 className="text-sm font-bold text-gray-900 truncate">{placement.merchant.name}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${typeColor}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${typeColor}`}>
                 {TYPE_LABELS[placement.type] || placement.type}
               </span>
               <span className="text-xs text-gray-500">{formatDate(placement.createdAt)}</span>
             </div>
           </div>
         </div>
-        <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${statusCfg.color}`}>
+        <span
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 whitespace-nowrap ${statusCfg.color}`}
+        >
           <StatusIcon className="w-3.5 h-3.5" />
           {statusCfg.label}
         </span>
       </div>
 
       {/* Info row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-xs text-gray-600">
-        <div className="flex items-center gap-1">
-          <DollarSign className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 text-xs text-gray-700">
+        <div className="flex items-start gap-2">
+          <DollarSign className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-600" />
+          <div>
             <span className="font-bold text-gray-900">{formatPrice(placement.amount)}</span>/mes
             {placement.originalAmount && (
               <span className="line-through text-gray-400 ml-1 block text-xs">{formatPrice(placement.originalAmount)}</span>
             )}
-          </span>
+          </div>
         </div>
 
         {placement.merchant.whatsappNumber && (
@@ -331,26 +382,31 @@ function AdPlacementCard({
             href={`https://wa.me/${placement.merchant.whatsappNumber.replace(/\D/g, "")}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-green-600 hover:underline"
+            className="flex items-center gap-2 text-green-600 hover:underline"
           >
-            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+            <Phone className="w-4 h-4 flex-shrink-0" />
             WhatsApp
           </a>
         )}
         {placement.merchant.phone && !placement.merchant.whatsappNumber && (
-          <span className="flex items-center gap-1">
-            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="flex items-center gap-2">
+            <Phone className="w-4 h-4 flex-shrink-0" />
             {placement.merchant.phone}
           </span>
         )}
 
-        {placement.paymentMethod && <span className="text-gray-500">Pago: {placement.paymentMethod}</span>}
+        {placement.paymentMethod && (
+          <span className="flex items-center gap-2 text-gray-600">
+            <CreditCard className="w-4 h-4 flex-shrink-0" />
+            {placement.paymentMethod}
+          </span>
+        )}
       </div>
 
       {/* Dates and progress */}
       {placement.startsAt && placement.endsAt && (
         <div className="mb-4">
-          <div className={`text-xs ${isExpiringSoon ? "text-red-600 font-bold" : "text-gray-600"}`}>
+          <div className={`text-xs ${isExpiringSoon ? "text-red-600 font-semibold" : "text-gray-600"}`}>
             {formatDate(placement.startsAt)} → {formatDate(placement.endsAt)}
             {placement.status === "ACTIVE" && ` (${daysLeft} días restantes)`}
           </div>
@@ -362,24 +418,24 @@ function AdPlacementCard({
         </div>
       )}
 
-      {/* Notes */}
+      {/* Notes sections */}
       {placement.notes && (
-        <div className="mb-3 p-3 bg-white/50 rounded-xl border border-white">
-          <p className="text-xs font-bold text-gray-700 mb-1">Nota del comercio:</p>
-          <p className="text-xs text-gray-600">{placement.notes}</p>
+        <div className="mb-3 p-3 bg-white rounded-xl border border-gray-100">
+          <p className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-1">Nota del comercio</p>
+          <p className="text-xs text-gray-700">{placement.notes}</p>
         </div>
       )}
 
       {placement.rejectionReason && (
-        <div className="mb-3 p-3 bg-red-50 rounded-xl border border-red-200">
-          <p className="text-xs font-bold text-red-900 mb-1">Motivo del rechazo:</p>
+        <div className="mb-3 p-3 bg-red-50 rounded-xl border border-red-100">
+          <p className="text-xs font-semibold text-red-900 uppercase tracking-wider mb-1">Motivo del rechazo</p>
           <p className="text-xs text-red-700">{placement.rejectionReason}</p>
         </div>
       )}
 
       {placement.adminNotes && (
-        <div className="mb-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-          <p className="text-xs font-bold text-blue-900 mb-1">Nota admin:</p>
+        <div className="mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+          <p className="text-xs font-semibold text-blue-900 uppercase tracking-wider mb-1">Nota admin</p>
           <p className="text-xs text-blue-700">{placement.adminNotes}</p>
         </div>
       )}
@@ -389,16 +445,16 @@ function AdPlacementCard({
         {/* PENDING Status */}
         {placement.status === "PENDING" && (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={() => onAction(placement.id, "approve")}
                 disabled={actionLoading === `${placement.id}-approve`}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50 min-h-[44px]"
               >
                 {actionLoading === `${placement.id}-approve` ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <ThumbsUp className="w-3.5 h-3.5" />
+                  <ThumbsUp className="w-4 h-4" />
                 )}
                 Aprobar
               </button>
@@ -407,29 +463,29 @@ function AdPlacementCard({
                 onClick={() =>
                   onAction(placement.id, "activate", {
                     durationDays,
-                    paymentMethod: paymentMethods[placement.id] || "transfer",
+                    paymentMethod: paymentMethods[placement.id] || "Transferencia",
                     adminNotes: adminNotes[placement.id] || "",
                   })
                 }
                 disabled={actionLoading === `${placement.id}-activate`}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-700 transition disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2 bg-green-600 text-white text-xs font-semibold rounded-xl hover:bg-green-700 transition disabled:opacity-50 min-h-[44px]"
               >
                 {actionLoading === `${placement.id}-activate` ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-4 h-4" />
                 )}
                 Activar Directo
               </button>
             </div>
 
             {/* Duration selector for activation */}
-            <div className="flex items-center gap-2 bg-white/50 rounded-lg p-2">
-              <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-white rounded-xl p-3 border border-gray-200">
+              <Calendar className="w-4 h-4 text-gray-600 flex-shrink-0" />
               <select
                 value={durationDays}
                 onChange={(e) => setDurationDays(parseInt(e.target.value))}
-                className="flex-1 bg-transparent border-0 text-xs font-bold text-gray-900 focus:outline-none"
+                className="flex-1 bg-transparent border-0 text-xs font-semibold text-gray-900 focus:outline-none cursor-pointer"
               >
                 <option value={7}>7 días</option>
                 <option value={15}>15 días</option>
@@ -440,15 +496,15 @@ function AdPlacementCard({
             </div>
 
             {/* Payment method selector */}
-            <div className="flex items-center gap-2 bg-white/50 rounded-lg p-2">
-              <DollarSign className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-white rounded-xl p-3 border border-gray-200">
+              <CreditCard className="w-4 h-4 text-gray-600 flex-shrink-0" />
               <select
-                value={paymentMethods[placement.id] || "transfer"}
+                value={paymentMethods[placement.id] || "Transferencia"}
                 onChange={(e) => setPaymentMethods({ ...paymentMethods, [placement.id]: e.target.value })}
-                className="flex-1 bg-transparent border-0 text-xs font-bold text-gray-900 focus:outline-none"
+                className="flex-1 bg-transparent border-0 text-xs font-semibold text-gray-900 focus:outline-none cursor-pointer"
               >
-                <option value="transfer">Transferencia</option>
-                <option value="mercadopago">MercadoPago</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="MercadoPago">MercadoPago</option>
               </select>
             </div>
 
@@ -457,7 +513,7 @@ function AdPlacementCard({
               value={adminNotes[placement.id] || ""}
               onChange={(e) => setAdminNotes({ ...adminNotes, [placement.id]: e.target.value })}
               placeholder="Notas admin (opcional)..."
-              className="w-full text-xs font-medium p-2 bg-white/50 rounded-lg border-0 focus:outline-none focus:ring-1 focus:ring-gray-300 resize-none"
+              className="w-full text-xs font-medium p-3 bg-white rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
               rows={2}
             />
 
@@ -466,7 +522,7 @@ function AdPlacementCard({
               value={rejectionReasons[placement.id] || ""}
               onChange={(e) => setRejectionReasons({ ...rejectionReasons, [placement.id]: e.target.value })}
               placeholder="Razón del rechazo..."
-              className="w-full text-xs font-medium p-2 bg-white/50 rounded-lg border-0 focus:outline-none focus:ring-1 focus:ring-red-300 resize-none"
+              className="w-full text-xs font-medium p-3 bg-white rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-red-400 resize-none"
               rows={2}
             />
 
@@ -477,12 +533,12 @@ function AdPlacementCard({
                 })
               }
               disabled={actionLoading === `${placement.id}-reject`}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-50 transition disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2 bg-white text-red-600 text-xs font-semibold rounded-xl border border-red-200 hover:bg-red-50 transition disabled:opacity-50 min-h-[44px]"
             >
               {actionLoading === `${placement.id}-reject` ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <ThumbsDown className="w-3.5 h-3.5" />
+                <ThumbsDown className="w-4 h-4" />
               )}
               Rechazar
             </button>
@@ -492,22 +548,22 @@ function AdPlacementCard({
         {/* APPROVED Status */}
         {placement.status === "APPROVED" && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={() =>
                   onAction(placement.id, "activate", {
                     durationDays,
-                    paymentMethod: paymentMethods[placement.id] || "transfer",
+                    paymentMethod: paymentMethods[placement.id] || "Transferencia",
                     adminNotes: adminNotes[placement.id] || "",
                   })
                 }
                 disabled={actionLoading === `${placement.id}-activate`}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-700 transition disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2 bg-green-600 text-white text-xs font-semibold rounded-xl hover:bg-green-700 transition disabled:opacity-50 min-h-[44px]"
               >
                 {actionLoading === `${placement.id}-activate` ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-4 h-4" />
                 )}
                 Activar ({durationDays}d)
               </button>
@@ -515,27 +571,27 @@ function AdPlacementCard({
               <button
                 onClick={() => onAction(placement.id, "cancel")}
                 disabled={actionLoading === `${placement.id}-cancel`}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-gray-600 text-xs font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2 bg-white text-gray-600 text-xs font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 transition disabled:opacity-50 min-h-[44px]"
               >
                 {actionLoading === `${placement.id}-cancel` ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Ban className="w-3.5 h-3.5" />
+                  <Ban className="w-4 h-4" />
                 )}
                 Cancelar
               </button>
             </div>
 
             {/* Payment method selector */}
-            <div className="flex items-center gap-2 bg-white/50 rounded-lg p-2">
-              <DollarSign className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-white rounded-xl p-3 border border-gray-200">
+              <CreditCard className="w-4 h-4 text-gray-600 flex-shrink-0" />
               <select
-                value={paymentMethods[placement.id] || "transfer"}
+                value={paymentMethods[placement.id] || "Transferencia"}
                 onChange={(e) => setPaymentMethods({ ...paymentMethods, [placement.id]: e.target.value })}
-                className="flex-1 bg-transparent border-0 text-xs font-bold text-gray-900 focus:outline-none"
+                className="flex-1 bg-transparent border-0 text-xs font-semibold text-gray-900 focus:outline-none cursor-pointer"
               >
-                <option value="transfer">Transferencia</option>
-                <option value="mercadopago">MercadoPago</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="MercadoPago">MercadoPago</option>
               </select>
             </div>
 
@@ -544,7 +600,7 @@ function AdPlacementCard({
               value={adminNotes[placement.id] || ""}
               onChange={(e) => setAdminNotes({ ...adminNotes, [placement.id]: e.target.value })}
               placeholder="Notas admin (opcional)..."
-              className="w-full text-xs font-medium p-2 bg-white/50 rounded-lg border-0 focus:outline-none focus:ring-1 focus:ring-gray-300 resize-none"
+              className="w-full text-xs font-medium p-3 bg-white rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
               rows={2}
             />
           </div>
@@ -555,20 +611,22 @@ function AdPlacementCard({
           <button
             onClick={() => onAction(placement.id, "cancel")}
             disabled={actionLoading === `${placement.id}-cancel`}
-            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-50 transition disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2 bg-white text-red-600 text-xs font-semibold rounded-xl border border-red-200 hover:bg-red-50 transition disabled:opacity-50 min-h-[44px]"
           >
             {actionLoading === `${placement.id}-cancel` ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Ban className="w-3.5 h-3.5" />
+              <Ban className="w-4 h-4" />
             )}
             Cancelar Publicidad
           </button>
         )}
 
         {/* EXPIRED, CANCELLED, REJECTED - No actions */}
-        {(placement.status === "EXPIRED" || placement.status === "CANCELLED" || placement.status === "REJECTED") && (
-          <div className="p-3 bg-gray-50 rounded-lg text-center text-xs text-gray-600">
+        {(placement.status === "EXPIRED" ||
+          placement.status === "CANCELLED" ||
+          placement.status === "REJECTED") && (
+          <div className="p-3 bg-gray-50 rounded-xl text-center text-xs text-gray-600">
             No hay acciones disponibles para este estado
           </div>
         )}
@@ -641,27 +699,27 @@ export default function SolicitudesAdsPage() {
   const potentialRevenue = Object.values(AD_TYPES).reduce((sum, type) => sum + type.price * type.maxSlots, 0);
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#e60012] to-[#cc000f] flex items-center justify-center shadow-lg not-italic">
-            <Megaphone className="w-7 h-7 text-white" />
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-sm">
+            <Megaphone className="w-6 h-6 text-white" />
           </div>
           Gestión de Publicidad
         </h1>
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2 ml-1">
-          Administrá solicitudes, espacios y revenue publicitario
+        <p className="text-sm text-gray-500 mt-1">
+          Administrá solicitudes, espacios y revenue publicitario en la plataforma
         </p>
       </div>
 
       {/* Message */}
       {message && (
         <div
-          className={`p-4 rounded-2xl text-sm font-medium ${
+          className={`p-4 rounded-xl text-sm font-medium border ${
             message.type === "success"
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "bg-red-50 text-red-700 border border-red-200"
+              ? "bg-green-50 text-green-700 border-green-200"
+              : "bg-red-50 text-red-700 border-red-200"
           }`}
         >
           {message.text}
@@ -669,48 +727,44 @@ export default function SolicitudesAdsPage() {
       )}
 
       {/* Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Pending */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Solicitudes Pendientes</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Solicitudes Pendientes</p>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-3xl font-black text-gray-900">{pendingCount}</p>
+          <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
           <p className="text-xs text-gray-500 mt-2">Esperando aprobación</p>
         </div>
 
         {/* Active */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Espacios Activos</p>
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Espacios Activos</p>
+            <CheckCircle className="w-4 h-4 text-green-500" />
           </div>
-          <p className="text-3xl font-black text-gray-900">{activeCount}</p>
+          <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
           <p className="text-xs text-gray-500 mt-2">En circulación ahora</p>
         </div>
 
         {/* Monthly Revenue */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Revenue Mensual</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Revenue Mensual</p>
             <DollarSign className="w-4 h-4 text-blue-500" />
           </div>
-          <p className="text-3xl font-black text-gray-900">
-            <span className="text-lg">{formatPrice(totalRevenue)}</span>
-          </p>
+          <p className="text-2xl font-bold text-gray-900">{formatPrice(totalRevenue)}</p>
           <p className="text-xs text-gray-500 mt-2">Ingresos por publicidad</p>
         </div>
 
         {/* Potential Revenue */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Revenue Potencial</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Revenue Potencial</p>
             <TrendingUp className="w-4 h-4 text-purple-500" />
           </div>
-          <p className="text-3xl font-black text-gray-900">
-            <span className="text-lg">{formatPrice(potentialRevenue)}</span>
-          </p>
+          <p className="text-2xl font-bold text-gray-900">{formatPrice(potentialRevenue)}</p>
           <p className="text-xs text-gray-500 mt-2">Si todos los slots vendidos</p>
         </div>
       </div>
@@ -719,7 +773,7 @@ export default function SolicitudesAdsPage() {
       <AdGuideSection />
 
       {/* Filters */}
-      <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl p-4 border border-slate-100">
+      <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
         <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
         {FILTER_OPTIONS.map((f) => (
           <button
@@ -728,8 +782,10 @@ export default function SolicitudesAdsPage() {
               setFilter(f);
               setLoading(true);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              filter === f ? "bg-[#e60012] text-white" : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+            className={`px-3 py-2 rounded-xl text-xs font-medium transition min-h-[44px] flex items-center ${
+              filter === f
+                ? "bg-red-600 text-white"
+                : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
             }`}
           >
             {f === "ALL" ? "Todos" : STATUS_CONFIG[f]?.label || f}
@@ -739,16 +795,16 @@ export default function SolicitudesAdsPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center justify-center py-16">
+        <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
         </div>
       )}
 
       {/* Empty State */}
       {!loading && placements.length === 0 && (
-        <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
+        <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
           <Megaphone className="w-16 h-16 mx-auto mb-4 opacity-20" />
-          <p className="font-bold text-gray-700 text-lg">No hay solicitudes de publicidad</p>
+          <p className="font-bold text-gray-900 text-lg">No hay solicitudes de publicidad</p>
           <p className="text-sm text-gray-500 mt-2">Cuando un comercio solicite un espacio, aparecerá acá.</p>
         </div>
       )}

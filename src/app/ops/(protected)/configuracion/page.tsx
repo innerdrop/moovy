@@ -34,13 +34,13 @@ export default async function ConfigurationPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
-                        <div className="w-12 h-12 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20 not-italic">
-                            <Settings className="w-7 h-7 text-white" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
+                            <Settings className="w-5 h-5 text-white" />
                         </div>
                         Configuración
                     </h1>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2 ml-1">Panel de control global del sistema</p>
+                    <p className="text-sm text-gray-500 mt-1">Panel de control global del sistema</p>
                 </div>
             </div>
 
@@ -49,7 +49,7 @@ export default async function ConfigurationPage() {
                 {/* Left Column: Maintenance & Visibility */}
                 <div className="space-y-8">
                     {/* Maintenance Mode Section */}
-                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                    <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
                         <div className="flex items-center gap-4 mb-8">
@@ -100,7 +100,7 @@ export default async function ConfigurationPage() {
                                 </label>
                                 <textarea
                                     defaultValue={settings?.maintenanceMessage || ""}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all resize-none"
+                                    className="w-full bg-slate-50 border border-gray-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all resize-none"
                                     rows={2}
                                     placeholder="¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia."
                                     name="maintenanceMessage"
@@ -110,7 +110,7 @@ export default async function ConfigurationPage() {
                     </div>
 
                     {/* Visibility Section */}
-                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                    <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
                         <div className="flex items-center gap-4 mb-8">
@@ -149,7 +149,7 @@ export default async function ConfigurationPage() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 pt-2">
-                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100">
                                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
                                         Categorías en Home
                                     </label>
@@ -158,7 +158,7 @@ export default async function ConfigurationPage() {
                                         min="1"
                                         max="50"
                                         defaultValue={settings?.maxCategoriesHome ?? 6}
-                                        className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 font-black text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 font-black text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                         name="maxCategoriesHome"
                                     />
                                 </div>
@@ -187,7 +187,7 @@ export default async function ConfigurationPage() {
                 {/* Right Column: Promos & Branding */}
                 <div className="space-y-8">
                     {/* Promo Popup Section */}
-                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                    <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
 
                         <div className="flex items-center justify-between mb-8">
@@ -214,7 +214,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupTitle || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         placeholder="¡Super Oferta!"
                                         name="promoPopupTitle"
                                     />
@@ -223,7 +223,7 @@ export default async function ConfigurationPage() {
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Mensaje</label>
                                     <textarea
                                         defaultValue={settings?.promoPopupMessage || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all resize-none"
+                                        className="w-full bg-slate-50 border border-gray-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all resize-none"
                                         rows={2}
                                         placeholder="Aprovecha 20% OFF..."
                                         name="promoPopupMessage"
@@ -236,7 +236,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupButtonText || "Ver más"}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         name="promoPopupButtonText"
                                     />
                                 </div>
@@ -245,7 +245,7 @@ export default async function ConfigurationPage() {
                                     <input
                                         type="text"
                                         defaultValue={settings?.promoPopupLink || ""}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                        className="w-full bg-slate-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         placeholder="/tienda"
                                         name="promoPopupLink"
                                     />
@@ -267,7 +267,7 @@ export default async function ConfigurationPage() {
                     </div>
 
                     {/* Banner Promo — Moved to dedicated page */}
-                    <a href="/ops/banner-promo" className="block bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:border-pink-200 hover:shadow-md transition-all group relative overflow-hidden">
+                    <a href="/ops/banner-promo" className="block bg-white rounded-xl p-8 shadow-sm border border-gray-100 hover:border-pink-200 hover:shadow-md transition-all group relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -288,7 +288,7 @@ export default async function ConfigurationPage() {
 
                 {/* Full Width: Redirect to Biblia Financiera */}
                 <div className="lg:col-span-2">
-                    <a href="/ops/config-biblia" className="block bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-slate-100 hover:border-red-200 hover:shadow-md transition-all group">
+                    <a href="/ops/config-biblia" className="block bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-gray-100 hover:border-red-200 hover:shadow-md transition-all group">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-5">
                                 <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20">

@@ -252,7 +252,7 @@ export default function DestacadosPage() {
                         </Link>
                         <div className="flex items-center gap-2">
                             <Crown className="w-6 h-6 text-amber-600" />
-                            <h1 className="text-3xl font-bold text-gray-900">
+                            <h1 className="text-2xl font-bold text-gray-900">
                                 Comercios Destacados
                             </h1>
                         </div>
@@ -264,7 +264,7 @@ export default function DestacadosPage() {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     {/* Slots Card */}
-                    <div className="bg-white rounded-lg border border-amber-200 p-6">
+                    <div className="bg-white rounded-xl border border-amber-200 p-6">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600 font-medium">
