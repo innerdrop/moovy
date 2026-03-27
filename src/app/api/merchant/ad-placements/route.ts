@@ -98,7 +98,20 @@ export async function GET(request: NextRequest) {
         },
     });
 
-    return NextResponse.json({ placements, settings, adTypes: AD_TYPE_CONFIG });
+    // Armar pricing como mapeo tipo → precio
+    const pricing: Record<string, number> = {};
+    for (const [type, config] of Object.entries(AD_TYPE_CONFIG)) {
+        pricing[type] = (settings as any)?.[config.priceField] ?? 0;
+    }
+
+    return NextResponse.json({
+        placements,
+        settings: {
+            adLaunchDiscountPercent: settings?.adLaunchDiscountPercent ?? 0,
+        },
+        adTypes: AD_TYPE_CONFIG,
+        pricing,
+    });
 }
 
 // POST — Merchant solicita un espacio publicitario

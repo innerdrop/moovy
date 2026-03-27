@@ -55,7 +55,7 @@ const TYPE_ICONS: Record<string, any> = {
   DESTACADO_PREMIUM: Sparkles,
   HERO_BANNER: ImageIcon,
   BANNER_PROMO: Megaphone,
-  PRODUCTO_DESTACADO: ShoppingBag,
+  PRODUCTO: ShoppingBag,
 };
 
 const TYPE_COLORS: Record<
@@ -92,7 +92,7 @@ const TYPE_COLORS: Record<
     text: "text-purple-700",
     badge: "bg-purple-100 text-purple-800",
   },
-  PRODUCTO_DESTACADO: {
+  PRODUCTO: {
     bg: "bg-green-50",
     border: "border-green-200",
     text: "text-green-700",
@@ -111,7 +111,7 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
     "Banner principal rotativo — Full-width en la parte superior de la home. Tu imagen promocional (1200x500px) con texto y botón de acción.",
   BANNER_PROMO:
     "Banner promocional — Full-width debajo de las categorías. Imagen personalizada (1200x400px) con texto overlay y CTA.",
-  PRODUCTO_DESTACADO:
+  PRODUCTO:
     "Sección 'Lo más pedido' — Tu producto aparece con badge 'Destacado' en la grid de productos populares de la home.",
 };
 
@@ -146,7 +146,7 @@ const TYPE_BENEFITS: Record<string, string[]> = {
     "Ideal para promociones, ofertas y lanzamientos",
     "CTA directo a tu comercio",
   ],
-  PRODUCTO_DESTACADO: [
+  PRODUCTO: [
     "Tu producto en la sección 'Lo más pedido'",
     "Badge 'Destacado' llamativo en la grilla",
     "Hasta 12 productos simultáneos en catálogo",
@@ -584,7 +584,7 @@ export default function PublicidadPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activePlacements.map((p) => {
-              const colors = TYPE_COLORS[p.type] || TYPE_COLORS.PRODUCTO_DESTACADO;
+              const colors = TYPE_COLORS[p.type] || TYPE_COLORS.PRODUCTO;
               const Icon = TYPE_ICONS[p.type] || ShoppingBag;
               const days = p.endsAt ? daysRemaining(p.endsAt) : 0;
               const totalDays = p.startsAt && p.endsAt
@@ -668,7 +668,7 @@ export default function PublicidadPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {Object.entries(adTypes).map(([type, config]) => {
             const colors =
-              TYPE_COLORS[type] || TYPE_COLORS.PRODUCTO_DESTACADO;
+              TYPE_COLORS[type] || TYPE_COLORS.PRODUCTO;
             const Icon = TYPE_ICONS[type] || ShoppingBag;
             const originalPrice = pricing[type] ?? 0;
             const finalPrice =
@@ -821,7 +821,7 @@ export default function PublicidadPage() {
               const statusCfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.PENDING;
               const StatusIcon = statusCfg.icon;
               const colors =
-                TYPE_COLORS[p.type] || TYPE_COLORS.PRODUCTO_DESTACADO;
+                TYPE_COLORS[p.type] || TYPE_COLORS.PRODUCTO;
 
               return (
                 <div
@@ -964,7 +964,7 @@ export default function PublicidadPage() {
           <p className="text-xs text-blue-700">
             Para más información, consultá nuestros{" "}
             <a
-              href="/terminos-comercio#publicidad"
+              href="/terminos-comercio"
               className="font-bold underline hover:text-blue-800"
             >
               términos y condiciones de publicidad
@@ -986,8 +986,8 @@ export default function PublicidadPage() {
                 )
               : pricing[selectedType] ?? 0
           }
-          originalPrice={pricing[selectedType] ?? null}
-          config={adTypes[selectedType]}
+          originalPrice={discountPercent > 0 ? (pricing[selectedType] ?? null) : null}
+          config={adTypes[selectedType] || { label: selectedType, priceField: "" }}
           isOpen={modalOpen}
           onClose={() => {
             setModalOpen(false);
