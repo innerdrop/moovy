@@ -78,10 +78,11 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                 <HeartButton type="merchant" itemId={merchant.id} className="absolute bottom-3 right-3" />
             </div>
 
-            <div className="p-4">
-                <div className="flex justify-between items-start mb-1">
-                    <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-gray-900 text-xl group-hover:text-[#e60012] transition line-clamp-1">
+            <div className="p-3">
+                {/* Nombre + rating */}
+                <div className="flex justify-between items-start gap-2 mb-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <h3 className="font-bold text-gray-900 text-base group-hover:text-[#e60012] transition truncate">
                             {cleanEncoding(merchant.name)}
                         </h3>
                         {merchant.isPremium ? (
@@ -90,32 +91,36 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                             <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
                         )}
                     </div>
-                    <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded text-sm font-semibold">
+                    <div className="flex items-center gap-1 text-xs font-semibold text-gray-600 flex-shrink-0">
                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                         <span>{merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}</span>
                     </div>
                 </div>
 
-                <p className="text-gray-500 text-base line-clamp-2 mb-3 min-h-[44px]">
+                {/* Descripción */}
+                <p className="text-gray-400 text-sm line-clamp-1 mb-2">
                     {cleanEncoding(merchant.description || "Sin descripción")}
                 </p>
 
-                <div className="flex items-center gap-4 text-sm text-gray-500 border-t border-gray-100 pt-3">
-                    <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min</span>
+                {/* Info de delivery — dos filas limpias */}
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate max-w-[120px]">{cleanEncoding(merchant.address || "Ushuaia")}</span>
+                        </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="truncate max-w-[100px]">{cleanEncoding(merchant.address || "Ushuaia")}</span>
-                    </div>
-                    <div className="ml-auto font-medium text-gray-900">
+                    <span className="font-semibold flex-shrink-0">
                         {merchant.deliveryFee === 0 ? (
-                            <span className="text-green-600">Envío Gratis</span>
+                            <span className="text-green-600">Envío gratis</span>
                         ) : (
-                            `$${merchant.deliveryFee}`
+                            <span className="text-gray-700">${merchant.deliveryFee}</span>
                         )}
-                    </div>
+                    </span>
                 </div>
             </div>
         </Link>
