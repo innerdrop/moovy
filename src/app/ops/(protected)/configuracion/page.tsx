@@ -124,30 +124,6 @@ export default async function ConfigurationPage() {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between p-5 bg-blue-50/30 rounded-2xl border border-blue-50">
-                                <div>
-                                    <h3 className="font-extrabold text-gray-900 text-sm">Registro Repartidores</h3>
-                                    <p className="text-[10px] text-slate-400 font-medium">Mostrar tarjeta en landing</p>
-                                </div>
-                                <Switch
-                                    name="showRepartidoresCard"
-                                    defaultChecked={settings?.showRepartidoresCard ?? true}
-                                    activeColor="bg-blue-500"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between p-5 bg-blue-50/30 rounded-2xl border border-blue-50">
-                                <div>
-                                    <h3 className="font-extrabold text-gray-900 text-sm">Registro Comercios</h3>
-                                    <p className="text-[10px] text-slate-400 font-medium">Mostrar tarjeta en landing</p>
-                                </div>
-                                <Switch
-                                    name="showComerciosCard"
-                                    defaultChecked={settings?.showComerciosCard ?? true}
-                                    activeColor="bg-blue-500"
-                                />
-                            </div>
-
                             <div className="flex items-center justify-between p-5 bg-red-50/30 rounded-2xl border border-red-50">
                                 <div>
                                     <h3 className="font-extrabold text-gray-900 text-sm">Slider Promocional</h3>

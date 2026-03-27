@@ -24,25 +24,10 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
         // Checkboxes in HTML: if checked, they are present in FormData as "on"
         // If not checked, they are NOT present in FormData.
         const settings: any = {
-
             // Maintenance mode
             isMaintenanceMode: formData.get("isMaintenanceMode") === "on",
             tiendaMaintenance: formData.get("tiendaMaintenance") === "on",
             maintenanceMessage: formData.get("maintenanceMessage") || "",
-
-            // Delivery
-            fuelPricePerLiter: formData.get("fuelPricePerLiter"),
-            fuelConsumptionPerKm: formData.get("fuelConsumptionPerKm"),
-            baseDeliveryFee: formData.get("baseDeliveryFee"),
-            maintenanceFactor: formData.get("maintenanceFactor"),
-            freeDeliveryMinimum: formData.get("freeDeliveryMinimum"),
-            maxDeliveryDistance: formData.get("maxDeliveryDistance"),
-            riderCommissionPercent: formData.get("riderCommissionPercent"),
-
-            // Contact
-            whatsappNumber: formData.get("whatsappNumber"),
-            phone: formData.get("phone"),
-            email: formData.get("email"),
 
             // Promo Popup
             promoPopupEnabled: formData.get("promoPopupEnabled") === "on",
@@ -53,17 +38,13 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             promoPopupButtonText: formData.get("promoPopupButtonText") || "",
             promoPopupDismissable: formData.get("promoPopupDismissable") === "on",
 
-            // Landing cards
-            showRepartidoresCard: formData.get("showRepartidoresCard") === "on",
-            showComerciosCard: formData.get("showComerciosCard") === "on",
+            // Home visibility
             maxCategoriesHome: formData.get("maxCategoriesHome"),
 
             // Hero Slider
             heroSliderEnabled: formData.get("heroSliderEnabled") === "on",
             heroSliderShowArrows: formData.get("heroSliderShowArrows") === "on",
             heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
-
-            // Promo Banner — moved to dedicated /ops/banner-promo page
         };
 
         try {

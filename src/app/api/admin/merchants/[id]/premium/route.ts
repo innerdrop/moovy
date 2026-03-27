@@ -77,6 +77,29 @@ export async function PATCH(
             );
         }
 
+        // Validate slot limits when activating premium
+        if (updateData.isPremium === true) {
+            const settings = await prisma.storeSettings.findUnique({
+                where: { id: "settings" },
+                select: { adMaxDestacadosSlots: true },
+            });
+            const maxSlots = settings?.adMaxDestacadosSlots ?? 8;
+
+            const currentPremiumCount = await prisma.merchant.count({
+                where: {
+                    isPremium: true,
+                    id: { not: id }, // Excluir el merchant actual
+                },
+            });
+
+            if (currentPremiumCount >= maxSlots) {
+                return NextResponse.json(
+                    { error: `Límite alcanzado: máximo ${maxSlots} comercios destacados permitidos. Desactivá uno antes de agregar otro.` },
+                    { status: 409 }
+                );
+            }
+        }
+
         // Update merchant
         const merchant = await prisma.merchant.update({
             where: { id },
