@@ -147,7 +147,7 @@ export default function SearchBarHero() {
         >
           <form onSubmit={handleSubmit} className="relative">
             <div className="absolute -inset-1 bg-white/60 rounded-2xl blur" />
-            <div className="relative flex items-center bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-100">
+            <div className="relative flex items-center bg-white rounded-2xl shadow-xl shadow-black/10">
               <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
               <input
                 ref={inputRef}

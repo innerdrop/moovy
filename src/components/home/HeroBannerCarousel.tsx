@@ -95,7 +95,7 @@ export default function HeroBannerCarousel({
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-gray-900"
+      className="relative w-full overflow-hidden bg-[#e60012]"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -133,7 +133,7 @@ export default function HeroBannerCarousel({
                 <img
                   src={s.imageMobile || s.imageDesktop || s.image || ""}
                   alt={s.title}
-                  className="w-full h-full object-cover block"
+                  className="w-full h-full object-contain block"
                   loading={idx === 0 ? "eager" : "lazy"}
                 />
               </picture>
