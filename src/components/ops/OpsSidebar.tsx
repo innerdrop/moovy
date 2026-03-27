@@ -28,7 +28,6 @@ import {
     Shield,
     TrendingUp,
     Archive,
-    Paintbrush,
     Upload,
     Mail,
     BookOpen,
@@ -88,7 +87,6 @@ const navSections: NavSection[] = [
         title: "Sistema",
         items: [
             { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
-            { href: "/ops/hero", icon: Paintbrush, label: "Hero Builder" },
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
             { href: "/ops/backups", icon: Archive, label: "Backups" },
@@ -115,7 +113,9 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
         if (href === "/ops/dashboard") {
             return pathname === "/ops/dashboard" || pathname === "/ops";
         }
-        return pathname.startsWith(href);
+        // Match exacto o con sub-ruta (ej: /ops/comercios/123)
+        // Evita que /ops/hero pinte /ops/hero-builder también
+        return pathname === href || pathname.startsWith(href + "/");
     };
 
     return (
