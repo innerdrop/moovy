@@ -29,12 +29,12 @@ interface Listing {
     images: { url: string; order: number }[];
     category: { id: string; name: string; slug: string } | null;
     // Auction fields
-    listingType?: string;
-    auctionStatus?: string;
-    auctionEndsAt?: string;
+    listingType?: string | null;
+    auctionStatus?: string | null;
+    auctionEndsAt?: string | null;
     startingPrice?: number | null;
     currentBid?: number | null;
-    totalBids?: number;
+    totalBids?: number | null;
     auctionWinnerId?: string | null;
 }
 

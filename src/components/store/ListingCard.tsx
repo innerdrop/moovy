@@ -34,12 +34,12 @@ interface ListingCardProps {
         soldCount?: number;
         favCount?: number;
         // Campos de subasta
-        listingType?: string;
-        auctionStatus?: string;
-        auctionEndsAt?: string;
+        listingType?: string | null;
+        auctionStatus?: string | null;
+        auctionEndsAt?: string | Date | null;
         currentBid?: number | null;
         startingPrice?: number | null;
-        totalBids?: number;
+        totalBids?: number | null;
     };
     showAddButton?: boolean;
     /** "marketplace" applies purple accent; default keeps red */
@@ -47,7 +47,7 @@ interface ListingCardProps {
 }
 
 /** Hook para countdown en subastas */
-function useCountdown(endsAt?: string | null) {
+function useCountdown(endsAt?: string | Date | null) {
     const [timeLeft, setTimeLeft] = useState("");
 
     useEffect(() => {
