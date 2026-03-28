@@ -775,10 +775,10 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
             onChange={(n, v) => updateField("advertising", n, v)} min={0} max={50} step={1} unit="%"
             info="Porcentaje de cargo si se cancela fuera de las 48 horas" />
         </div>
-      </Section>
 
-      {/* Datos Bancarios para Transferencias */}
-      <Section title="Datos Bancarios" icon="🏦" description="Información que se muestra a comercios cuando eligen pagar por transferencia">
+        {/* Datos bancarios para transferencias */}
+        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider pt-4 border-t border-slate-200">Datos bancarios para transferencias</p>
+        <p className="text-xs text-gray-500 -mt-2 mb-2">Se muestran a comercios cuando eligen pagar por transferencia</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
@@ -811,7 +811,6 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
               placeholder="XX-XXXXXXXX-X" maxLength={13} />
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-3">Estos datos se muestran automáticamente a los comercios cuando eligen transferencia como método de pago para publicidad.</p>
       </Section>
 
     </div>
