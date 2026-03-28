@@ -52,6 +52,13 @@ interface Pricing {
   settings: {
     adLaunchDiscountPercent?: number;
   };
+  bankInfo: {
+    bankName: string;
+    bankAccountHolder: string;
+    bankCbu: string;
+    bankAlias: string;
+    bankCuit: string;
+  } | null;
 }
 
 const TYPE_ICONS: Record<string, any> = {
