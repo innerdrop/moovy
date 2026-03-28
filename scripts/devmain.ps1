@@ -172,4 +172,7 @@ if ($errorSummary.Count -gt 0) {
     Write-Host "--------------------------------------" -ForegroundColor Red
     Write-Host "`nRevisá los fallos arriba mencionados." -ForegroundColor Yellow
 } else {
-    Write-Ho
+    Write-Host "`n[OK] Todo se ejecutó sin problemas." -ForegroundColor Green
+    Write-Host "Tu app está actualizada en: https://somosmoovy.com" -ForegroundColor Gray
+}
+Write-Host ""
