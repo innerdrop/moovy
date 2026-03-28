@@ -71,20 +71,9 @@ export default function ProfilePage() {
         if (session?.user) {
             if (hasSeller) setSellerStatus("ACTIVE");
             // Check driver status
+            // Only check driver profile if user has DRIVER role
+            // Avoids 404 noise in console for regular users
             if (hasDriver) {
-                fetch("/api/driver/profile")
-                    .then(res => {
-                        if (res.ok) return res.json();
-                        return null;
-                    })
-                    .then(data => {
-                        if (data) {
-                            setDriverStatus(data.isActive ? "ACTIVE" : "PENDING_VERIFICATION");
-                        }
-                    })
-                    .catch(() => { });
-            } else {
-                // Also check for users who applied but aren't in roles[] yet
                 fetch("/api/driver/profile")
                     .then(res => {
                         if (res.ok) return res.json();

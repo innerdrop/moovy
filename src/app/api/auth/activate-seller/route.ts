@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { encryptSellerData } from "@/lib/fiscal-crypto";
+import { encryptSellerData, decryptSellerData } from "@/lib/fiscal-crypto";
 
 // POST - Activate SELLER role for authenticated user
 export async function POST(request: NextRequest) {
@@ -45,6 +45,28 @@ export async function POST(request: NextRequest) {
                 { error: "Ya tenés el rol de vendedor" },
                 { status: 409 }
             );
+        }
+
+        // Check if CUIT is already registered by another seller
+        // CUIT is encrypted in DB (non-deterministic AES-256-GCM), so we decrypt and compare
+        if (body.cuit) {
+            const normalizedCuit = body.cuit.replace(/\D/g, ""); // strip dashes for comparison
+            const allSellers = await prisma.sellerProfile.findMany({
+                where: { cuit: { not: null } },
+                select: { userId: true, cuit: true },
+            });
+            const duplicateSeller = allSellers.find((s) => {
+                if (!s.cuit || s.userId === userId) return false;
+                const decrypted = decryptSellerData({ cuit: s.cuit });
+                const decryptedNormalized = (decrypted.cuit || "").replace(/\D/g, "");
+                return decryptedNormalized === normalizedCuit;
+            });
+            if (duplicateSeller) {
+                return NextResponse.json(
+                    { error: "Este CUIT ya está registrado por otro vendedor" },
+                    { status: 409 }
+                );
+            }
         }
 
         // Create seller role + SellerProfile in transaction

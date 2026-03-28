@@ -45,7 +45,7 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
     };
 
     return (
-        <Link href={`/tienda/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover-lift tap-bounce border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'}`}>
+        <Link href={`/tienda/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover-lift tap-bounce border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'} ${!merchant.isOpen ? 'opacity-75' : ''}`}>
             <div className="relative aspect-video bg-gray-100">
                 {/* Image placeholder or real image */}
                 {merchant.image ? (
@@ -56,23 +56,17 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
                     </div>
                 )}
 
-                {/* Status Badge (Open/Closed) */}
-                <div className={`absolute top-3 right-3 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-md transition-all duration-300 ${merchant.isOpen
-                    ? "bg-green-500/90 hover:bg-green-500"
-                    : "bg-gray-500/90 hover:bg-gray-600"
-                    }`}>
-                    {merchant.isOpen ? "ABIERTO" : "CERRADO"}
-                </div>
-
-                {/* Premium Badge - Priority over Verified */}
-                {merchant.isPremium ? (
-                    getPremiumBadge()
-                ) : merchant.isVerified && (
-                    <div className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
-                        <BadgeCheck className="w-3 h-3" />
-                        Verificado
+                {/* Closed overlay — open is the default state, no badge needed */}
+                {!merchant.isOpen && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                        <span className="text-white text-sm font-bold bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
+                            Cerrado
+                        </span>
                     </div>
                 )}
+
+                {/* Premium Badge — paid placement, deserves visibility */}
+                {merchant.isPremium && getPremiumBadge()}
 
                 {/* Favorite Heart */}
                 <HeartButton type="merchant" itemId={merchant.id} className="absolute bottom-3 right-3" />
