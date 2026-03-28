@@ -13,19 +13,23 @@ interface VendorScheduleRequest {
   vendorIds: VendorId[];
 }
 
-interface ScheduleDay {
-  open: string;
-  close: string;
+/** Un rango horario dentro de un día */
+interface TimeRange {
+  open: string;  // "09:00"
+  close: string; // "13:00"
 }
 
-type Schedule = Record<string, ScheduleDay | null>;
+/**
+ * Schedule normalizado: cada día es un array de TimeRange o null (cerrado).
+ * Formato en DB puede ser:
+ *   Legacy:  { "1": { "open": "09:00", "close": "21:00" } }
+ *   Nuevo:   { "1": [{ "open": "09:00", "close": "13:00" }, { "open": "16:00", "close": "20:30" }] }
+ *   Cerrado: { "7": null }
+ */
+type NormalizedSchedule = Record<string, TimeRange[] | null>;
 
-// Default schedules — DEBEN coincidir con SettingsForm DEFAULT_SCHEDULE
-// Mon-Fri: 09:00-21:00, Sat: 10:00-14:00, Sun: cerrado
-const DEFAULT_MERCHANT_HOURS = "09:00";
-const DEFAULT_MERCHANT_CLOSE = "21:00";
-const DEFAULT_SELLER_HOURS = "09:00";
-const DEFAULT_SELLER_CLOSE = "21:00";
+/** Formato que devuelve la API al cliente (mismo formato normalizado) */
+export type VendorScheduleResponse = NormalizedSchedule;
 
 export async function POST(request: NextRequest) {
   try {
@@ -127,25 +131,24 @@ export async function POST(request: NextRequest) {
     const parsedSchedules: Array<{
       name: string;
       type: "merchant" | "seller";
-      schedule: Schedule;
+      schedule: NormalizedSchedule;
     }> = [];
 
     for (const vendor of vendorData) {
-      let schedule: Schedule = {};
+      let schedule: NormalizedSchedule;
 
       // Siempre usar el schedule configurado del comercio si existe,
       // independientemente de scheduleEnabled (que controla si ofrece
       // entrega programada, no los horarios de operación)
       if (vendor.scheduleJson) {
         try {
-          schedule = JSON.parse(vendor.scheduleJson);
+          const raw = JSON.parse(vendor.scheduleJson);
+          schedule = normalizeSchedule(raw);
         } catch {
-          // If JSON is invalid, use defaults
-          schedule = getDefaultSchedule(vendor.type);
+          schedule = getDefaultSchedule();
         }
       } else {
-        // No schedule configured at all, use defaults
-        schedule = getDefaultSchedule(vendor.type);
+        schedule = getDefaultSchedule();
       }
 
       parsedSchedules.push({
@@ -178,74 +181,161 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Get default schedule for a vendor type
+ * Normaliza el schedule de la DB (legacy o nuevo) a formato array.
+ * Legacy: { "1": { open, close } } → { "1": [{ open, close }] }
+ * Nuevo:  { "1": [{ open, close }, ...] } → sin cambio
+ * null:   { "7": null } → sin cambio
  */
-function getDefaultSchedule(_type: "merchant" | "seller"): Schedule {
-  // Debe coincidir con DEFAULT_SCHEDULE en SettingsForm.tsx
-  return {
-    "1": { open: "09:00", close: "21:00" }, // Lunes
-    "2": { open: "09:00", close: "21:00" }, // Martes
-    "3": { open: "09:00", close: "21:00" }, // Miércoles
-    "4": { open: "09:00", close: "21:00" }, // Jueves
-    "5": { open: "09:00", close: "21:00" }, // Viernes
-    "6": { open: "10:00", close: "14:00" }, // Sábado
-    "7": null                                // Domingo cerrado
-  };
+function normalizeSchedule(raw: Record<string, unknown>): NormalizedSchedule {
+  const normalized: NormalizedSchedule = {};
+
+  for (let day = 1; day <= 7; day++) {
+    const key = day.toString();
+    const value = raw[key];
+
+    if (value === null || value === undefined) {
+      normalized[key] = null;
+      continue;
+    }
+
+    // Nuevo formato: ya es un array
+    if (Array.isArray(value)) {
+      const ranges: TimeRange[] = value
+        .filter((r): r is TimeRange =>
+          r !== null &&
+          typeof r === "object" &&
+          typeof (r as TimeRange).open === "string" &&
+          typeof (r as TimeRange).close === "string"
+        )
+        .sort((a, b) => a.open.localeCompare(b.open));
+
+      normalized[key] = ranges.length > 0 ? ranges : null;
+      continue;
+    }
+
+    // Legacy formato: objeto { open, close }
+    if (
+      typeof value === "object" &&
+      typeof (value as TimeRange).open === "string" &&
+      typeof (value as TimeRange).close === "string"
+    ) {
+      normalized[key] = [{ open: (value as TimeRange).open, close: (value as TimeRange).close }];
+      continue;
+    }
+
+    // Formato desconocido → cerrado
+    normalized[key] = null;
+  }
+
+  return normalized;
 }
 
 /**
- * Compute intersection of all vendor schedules
- * For each day: if ANY vendor is closed, the day is null
- * Otherwise: latest open time and earliest close time
+ * Get default schedule (Mon-Fri 09:00-21:00, Sat 10:00-14:00, Sun cerrado)
+ */
+function getDefaultSchedule(): NormalizedSchedule {
+  return {
+    "1": [{ open: "09:00", close: "21:00" }],
+    "2": [{ open: "09:00", close: "21:00" }],
+    "3": [{ open: "09:00", close: "21:00" }],
+    "4": [{ open: "09:00", close: "21:00" }],
+    "5": [{ open: "09:00", close: "21:00" }],
+    "6": [{ open: "10:00", close: "14:00" }],
+    "7": null
+  };
+}
+
+function parseHour(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h + (m || 0) / 60;
+}
+
+/**
+ * Compute intersection of all vendor schedules (multi-turno aware).
+ * Para cada día: si CUALQUIER vendor está cerrado, el día es null.
+ * Si hay un solo vendor: se devuelve su schedule tal cual.
+ * Si hay múltiples vendors: se intersectan los rangos de cada vendor.
+ * La intersección produce rangos donde TODOS los vendors están abiertos.
  */
 function computeScheduleIntersection(
   vendorSchedules: Array<{
     name: string;
     type: "merchant" | "seller";
-    schedule: Schedule;
+    schedule: NormalizedSchedule;
   }>
-): Schedule {
-  const result: Schedule = {};
+): NormalizedSchedule {
+  if (vendorSchedules.length === 0) return getDefaultSchedule();
+  if (vendorSchedules.length === 1) return vendorSchedules[0].schedule;
 
-  // Iterate through days 1-7
+  const result: NormalizedSchedule = {};
+
   for (let day = 1; day <= 7; day++) {
     const dayKey = day.toString();
-    const daySchedules: ScheduleDay[] = [];
 
-    // Collect all schedules for this day
+    // Check if any vendor is closed
+    let anyClosed = false;
+    const allRanges: TimeRange[][] = [];
+
     for (const vendor of vendorSchedules) {
-      const daySchedule = vendor.schedule[dayKey];
-      if (daySchedule === null) {
-        // If any vendor is closed on this day, the entire day is closed
-        result[dayKey] = null;
+      const dayRanges = vendor.schedule[dayKey];
+      if (!dayRanges || dayRanges.length === 0) {
+        anyClosed = true;
         break;
       }
-      if (daySchedule) {
-        daySchedules.push(daySchedule);
-      }
+      allRanges.push(dayRanges);
     }
 
-    // If no vendor is closed on this day, compute the intersection
-    if (result[dayKey] !== null && daySchedules.length === vendorSchedules.length) {
-      // Find latest open time and earliest close time
-      const openTimes = daySchedules.map((s) => s.open).sort();
-      const closeTimes = daySchedules.map((s) => s.close).sort();
+    if (anyClosed) {
+      result[dayKey] = null;
+      continue;
+    }
 
-      const latestOpen = openTimes[openTimes.length - 1];
-      const earliestClose = closeTimes[0];
+    // Intersect all vendor ranges for this day
+    // Start with the first vendor's ranges, then intersect with each subsequent
+    let currentRanges = allRanges[0];
 
-      // Validate that intersection makes sense
-      if (latestOpen < earliestClose) {
-        result[dayKey] = {
-          open: latestOpen,
-          close: earliestClose
-        };
-      } else {
-        // No valid intersection, close the day
-        result[dayKey] = null;
+    for (let i = 1; i < allRanges.length; i++) {
+      currentRanges = intersectRangeArrays(currentRanges, allRanges[i]);
+      if (currentRanges.length === 0) break;
+    }
+
+    result[dayKey] = currentRanges.length > 0 ? currentRanges : null;
+  }
+
+  return result;
+}
+
+/**
+ * Intersect two arrays of time ranges.
+ * Returns ranges where BOTH arrays have coverage.
+ */
+function intersectRangeArrays(a: TimeRange[], b: TimeRange[]): TimeRange[] {
+  const result: TimeRange[] = [];
+
+  for (const rangeA of a) {
+    for (const rangeB of b) {
+      const startA = parseHour(rangeA.open);
+      const endA = parseHour(rangeA.close);
+      const startB = parseHour(rangeB.open);
+      const endB = parseHour(rangeB.close);
+
+      const overlapStart = Math.max(startA, startB);
+      const overlapEnd = Math.min(endA, endB);
+
+      if (overlapStart < overlapEnd) {
+        // Format back to HH:MM
+        const openH = Math.floor(overlapStart);
+        const openM = Math.round((overlapStart - openH) * 60);
+        const closeH = Math.floor(overlapEnd);
+        const closeM = Math.round((overlapEnd - closeH) * 60);
+
+        result.push({
+          open: `${String(openH).padStart(2, "0")}:${String(openM).padStart(2, "0")}`,
+          close: `${String(closeH).padStart(2, "0")}:${String(closeM).padStart(2, "0")}`
+        });
       }
     }
   }
 
-  return result;
+  return result.sort((a, b) => a.open.localeCompare(b.open));
 }

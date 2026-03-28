@@ -1,11 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Save, Loader2 } from "lucide-react";
+import { Clock, Save, Loader2, Plus, Trash2 } from "lucide-react";
 import { updateSellerSchedule } from "@/app/vendedor/actions";
 
-type DaySchedule = { open: string; close: string } | null;
-type WeekSchedule = Record<string, DaySchedule>;
+/** Un rango horario (turno) dentro de un día */
+interface TimeRange {
+    open: string;
+    close: string;
+}
+
+/** Schedule semanal: cada día es un array de turnos o null (cerrado) */
+type WeekSchedule = Record<string, TimeRange[] | null>;
 
 const DAY_NAMES: Record<string, string> = {
     "1": "Lunes",
@@ -17,15 +23,42 @@ const DAY_NAMES: Record<string, string> = {
     "7": "Domingo",
 };
 
+const MAX_SHIFTS_PER_DAY = 3;
+
 const DEFAULT_SCHEDULE: WeekSchedule = {
-    "1": { open: "09:00", close: "20:00" },
-    "2": { open: "09:00", close: "20:00" },
-    "3": { open: "09:00", close: "20:00" },
-    "4": { open: "09:00", close: "20:00" },
-    "5": { open: "09:00", close: "20:00" },
-    "6": { open: "10:00", close: "14:00" },
+    "1": [{ open: "09:00", close: "20:00" }],
+    "2": [{ open: "09:00", close: "20:00" }],
+    "3": [{ open: "09:00", close: "20:00" }],
+    "4": [{ open: "09:00", close: "20:00" }],
+    "5": [{ open: "09:00", close: "20:00" }],
+    "6": [{ open: "10:00", close: "14:00" }],
     "7": null,
 };
+
+/**
+ * Normaliza un schedule de la DB (legacy o nuevo) al formato array.
+ * Legacy: { "1": { open, close } } → { "1": [{ open, close }] }
+ */
+function normalizeScheduleFromDb(raw: Record<string, unknown>): WeekSchedule {
+    const result: WeekSchedule = {};
+    for (let d = 1; d <= 7; d++) {
+        const key = d.toString();
+        const val = raw[key];
+        if (val === null || val === undefined) {
+            result[key] = null;
+        } else if (Array.isArray(val)) {
+            result[key] = val.filter(
+                (r): r is TimeRange =>
+                    r && typeof r === "object" && typeof r.open === "string" && typeof r.close === "string"
+            );
+        } else if (typeof val === "object" && "open" in (val as object) && "close" in (val as object)) {
+            result[key] = [{ open: (val as TimeRange).open, close: (val as TimeRange).close }];
+        } else {
+            result[key] = null;
+        }
+    }
+    return result;
+}
 
 interface ScheduleSectionProps {
     initialScheduleEnabled: boolean;
@@ -36,7 +69,9 @@ export default function ScheduleSection({ initialScheduleEnabled, initialSchedul
     const [scheduleEnabled, setScheduleEnabled] = useState(initialScheduleEnabled);
     const [schedule, setSchedule] = useState<WeekSchedule>(() => {
         try {
-            return initialScheduleJson ? JSON.parse(initialScheduleJson) : DEFAULT_SCHEDULE;
+            if (!initialScheduleJson) return DEFAULT_SCHEDULE;
+            const raw = JSON.parse(initialScheduleJson);
+            return normalizeScheduleFromDb(raw);
         } catch {
             return DEFAULT_SCHEDULE;
         }
@@ -64,17 +99,39 @@ export default function ScheduleSection({ initialScheduleEnabled, initialSchedul
         setSavingSchedule(false);
     };
 
-    const updateDaySchedule = (day: string, field: "open" | "close", value: string) => {
-        setSchedule((prev) => ({
-            ...prev,
-            [day]: { ...(prev[day] || { open: "09:00", close: "20:00" }), [field]: value },
-        }));
+    const updateShift = (day: string, shiftIndex: number, field: "open" | "close", value: string) => {
+        setSchedule((prev) => {
+            const shifts = [...(prev[day] || [{ open: "09:00", close: "20:00" }])];
+            shifts[shiftIndex] = { ...shifts[shiftIndex], [field]: value };
+            return { ...prev, [day]: shifts };
+        });
+    };
+
+    const addShift = (day: string) => {
+        setSchedule((prev) => {
+            const existing = prev[day] || [];
+            if (existing.length >= MAX_SHIFTS_PER_DAY) return prev;
+            const lastClose = existing.length > 0 ? existing[existing.length - 1].close : "13:00";
+            const [h] = lastClose.split(":").map(Number);
+            const newOpen = `${String(Math.min(h + 2, 22)).padStart(2, "0")}:00`;
+            const newClose = `${String(Math.min(h + 5, 23)).padStart(2, "0")}:00`;
+            return { ...prev, [day]: [...existing, { open: newOpen, close: newClose }] };
+        });
+    };
+
+    const removeShift = (day: string, shiftIndex: number) => {
+        setSchedule((prev) => {
+            const existing = prev[day] || [];
+            if (existing.length <= 1) return prev;
+            const updated = existing.filter((_, i) => i !== shiftIndex);
+            return { ...prev, [day]: updated };
+        });
     };
 
     const toggleDay = (day: string) => {
         setSchedule((prev) => ({
             ...prev,
-            [day]: prev[day] ? null : { open: "09:00", close: "20:00" },
+            [day]: prev[day] ? null : [{ open: "09:00", close: "20:00" }],
         }));
     };
 
@@ -126,54 +183,78 @@ export default function ScheduleSection({ initialScheduleEnabled, initialSchedul
             {scheduleEnabled && (
                 <div className="space-y-3 pt-2">
                     <p className="text-xs text-gray-600">
-                        Selecciona los días y horarios en que puedes recibir retiros. Fuera de estos horarios
-                        mostrarás como no disponible.
+                        Selecciona los días y horarios en que puedes recibir retiros. Podés agregar turnos partidos (ej: mañana y tarde).
                     </p>
 
                     {Object.entries(DAY_NAMES).map(([day, name]) => {
-                        const daySchedule = schedule[day];
-                        const isOpen = daySchedule !== null;
+                        const shifts = schedule[day];
+                        const isOpen = shifts !== null && shifts !== undefined;
 
                         return (
-                            <div key={day} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleDay(day)}
-                                    className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${
-                                        isOpen
-                                            ? "bg-violet-600 border-violet-600 text-white"
-                                            : "border-gray-300 hover:border-gray-400"
-                                    }`}
-                                >
-                                    {isOpen && <span className="text-xs font-bold">✓</span>}
-                                </button>
+                            <div key={day} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleDay(day)}
+                                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+                                            isOpen
+                                                ? "bg-violet-600 border-violet-600 text-white"
+                                                : "border-gray-300 hover:border-gray-400"
+                                        }`}
+                                    >
+                                        {isOpen && <span className="text-xs font-bold">&#10003;</span>}
+                                    </button>
 
-                                <span
-                                    className={`w-20 text-sm font-medium ${
-                                        isOpen ? "text-gray-900" : "text-gray-400"
-                                    }`}
-                                >
-                                    {name}
-                                </span>
+                                    <span
+                                        className={`w-20 text-sm font-medium ${
+                                            isOpen ? "text-gray-900" : "text-gray-400"
+                                        }`}
+                                    >
+                                        {name}
+                                    </span>
 
-                                {isOpen ? (
-                                    <div className="flex items-center gap-2 flex-1">
+                                    {!isOpen && (
+                                        <span className="text-sm text-gray-400 italic ml-auto">No disponible</span>
+                                    )}
+                                </div>
+
+                                {isOpen && shifts && shifts.map((shift, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 ml-8">
                                         <input
                                             type="time"
-                                            value={daySchedule?.open || "09:00"}
-                                            onChange={(e) => updateDaySchedule(day, "open", e.target.value)}
+                                            value={shift.open}
+                                            onChange={(e) => updateShift(day, idx, "open", e.target.value)}
                                             className="input w-24 text-sm py-1"
                                         />
                                         <span className="text-gray-400 text-sm">a</span>
                                         <input
                                             type="time"
-                                            value={daySchedule?.close || "20:00"}
-                                            onChange={(e) => updateDaySchedule(day, "close", e.target.value)}
+                                            value={shift.close}
+                                            onChange={(e) => updateShift(day, idx, "close", e.target.value)}
                                             className="input w-24 text-sm py-1"
                                         />
+                                        {shifts.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeShift(day, idx)}
+                                                className="text-red-400 hover:text-red-600 transition p-1"
+                                                title="Eliminar turno"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
-                                ) : (
-                                    <span className="text-sm text-gray-400 italic ml-auto">No disponible</span>
+                                ))}
+
+                                {isOpen && shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
+                                    <button
+                                        type="button"
+                                        onClick={() => addShift(day)}
+                                        className="ml-8 text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1 transition"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        Agregar turno
+                                    </button>
                                 )}
                             </div>
                         );

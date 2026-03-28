@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen, updateMerchantSchedule } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User, Link2, Unlink, AlertTriangle, CheckCircle, Calendar } from "lucide-react";
+import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User, Link2, Unlink, AlertTriangle, CheckCircle, Calendar, Plus, Trash2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface SettingsFormProps {
@@ -34,8 +34,14 @@ interface SettingsFormProps {
     };
 }
 
-type DaySchedule = { open: string; close: string } | null;
-type WeekSchedule = Record<string, DaySchedule>;
+/** Un rango horario (turno) dentro de un día */
+interface TimeRange {
+    open: string;
+    close: string;
+}
+
+/** Schedule semanal: cada día es un array de turnos o null (cerrado) */
+type WeekSchedule = Record<string, TimeRange[] | null>;
 
 const DAY_NAMES: Record<string, string> = {
     "1": "Lunes",
@@ -47,15 +53,42 @@ const DAY_NAMES: Record<string, string> = {
     "7": "Domingo",
 };
 
+const MAX_SHIFTS_PER_DAY = 3;
+
 const DEFAULT_SCHEDULE: WeekSchedule = {
-    "1": { open: "09:00", close: "21:00" },
-    "2": { open: "09:00", close: "21:00" },
-    "3": { open: "09:00", close: "21:00" },
-    "4": { open: "09:00", close: "21:00" },
-    "5": { open: "09:00", close: "21:00" },
-    "6": { open: "10:00", close: "14:00" },
+    "1": [{ open: "09:00", close: "21:00" }],
+    "2": [{ open: "09:00", close: "21:00" }],
+    "3": [{ open: "09:00", close: "21:00" }],
+    "4": [{ open: "09:00", close: "21:00" }],
+    "5": [{ open: "09:00", close: "21:00" }],
+    "6": [{ open: "10:00", close: "14:00" }],
     "7": null,
 };
+
+/**
+ * Normaliza un schedule de la DB (legacy o nuevo) al formato array.
+ * Legacy: { "1": { open, close } } → { "1": [{ open, close }] }
+ */
+function normalizeScheduleFromDb(raw: Record<string, unknown>): WeekSchedule {
+    const result: WeekSchedule = {};
+    for (let d = 1; d <= 7; d++) {
+        const key = d.toString();
+        const val = raw[key];
+        if (val === null || val === undefined) {
+            result[key] = null;
+        } else if (Array.isArray(val)) {
+            result[key] = val.filter(
+                (r): r is TimeRange =>
+                    r && typeof r === "object" && typeof r.open === "string" && typeof r.close === "string"
+            );
+        } else if (typeof val === "object" && "open" in (val as object) && "close" in (val as object)) {
+            result[key] = [{ open: (val as TimeRange).open, close: (val as TimeRange).close }];
+        } else {
+            result[key] = null;
+        }
+    }
+    return result;
+}
 
 const CATEGORIES = [
     "Restaurante",
@@ -88,7 +121,9 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
     const [scheduleEnabled, setScheduleEnabled] = useState(merchant.scheduleEnabled);
     const [schedule, setSchedule] = useState<WeekSchedule>(() => {
         try {
-            return merchant.scheduleJson ? JSON.parse(merchant.scheduleJson) : DEFAULT_SCHEDULE;
+            if (!merchant.scheduleJson) return DEFAULT_SCHEDULE;
+            const raw = JSON.parse(merchant.scheduleJson);
+            return normalizeScheduleFromDb(raw);
         } catch {
             return DEFAULT_SCHEDULE;
         }
@@ -163,17 +198,40 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
         setSavingSchedule(false);
     };
 
-    const updateDaySchedule = (day: string, field: "open" | "close", value: string) => {
-        setSchedule((prev) => ({
-            ...prev,
-            [day]: { ...(prev[day] || { open: "09:00", close: "21:00" }), [field]: value },
-        }));
+    const updateShift = (day: string, shiftIndex: number, field: "open" | "close", value: string) => {
+        setSchedule((prev) => {
+            const shifts = [...(prev[day] || [{ open: "09:00", close: "21:00" }])];
+            shifts[shiftIndex] = { ...shifts[shiftIndex], [field]: value };
+            return { ...prev, [day]: shifts };
+        });
+    };
+
+    const addShift = (day: string) => {
+        setSchedule((prev) => {
+            const existing = prev[day] || [];
+            if (existing.length >= MAX_SHIFTS_PER_DAY) return prev;
+            // Default new shift: starts 2h after last shift ends
+            const lastClose = existing.length > 0 ? existing[existing.length - 1].close : "13:00";
+            const [h] = lastClose.split(":").map(Number);
+            const newOpen = `${String(Math.min(h + 2, 22)).padStart(2, "0")}:00`;
+            const newClose = `${String(Math.min(h + 5, 23)).padStart(2, "0")}:00`;
+            return { ...prev, [day]: [...existing, { open: newOpen, close: newClose }] };
+        });
+    };
+
+    const removeShift = (day: string, shiftIndex: number) => {
+        setSchedule((prev) => {
+            const existing = prev[day] || [];
+            if (existing.length <= 1) return prev; // No remover el último turno, usar toggleDay
+            const updated = existing.filter((_, i) => i !== shiftIndex);
+            return { ...prev, [day]: updated };
+        });
     };
 
     const toggleDay = (day: string) => {
         setSchedule((prev) => ({
             ...prev,
-            [day]: prev[day] ? null : { open: "09:00", close: "21:00" },
+            [day]: prev[day] ? null : [{ open: "09:00", close: "21:00" }],
         }));
     };
 
@@ -514,43 +572,72 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                 {scheduleEnabled && (
                     <div className="space-y-3">
                         {Object.entries(DAY_NAMES).map(([day, name]) => {
-                            const daySchedule = schedule[day];
-                            const isOpen = daySchedule !== null;
+                            const shifts = schedule[day];
+                            const isOpen = shifts !== null && shifts !== undefined;
 
                             return (
-                                <div key={day} className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleDay(day)}
-                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${isOpen ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}
-                                    >
-                                        {isOpen && <span className="text-xs font-bold">&#10003;</span>}
-                                    </button>
-                                    <span className={`w-24 text-sm font-medium ${isOpen ? "text-gray-900" : "text-gray-400"}`}>
-                                        {name}
-                                    </span>
-                                    {isOpen ? (
-                                        <div className="flex items-center gap-2">
+                                <div key={day} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleDay(day)}
+                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition flex-shrink-0 ${isOpen ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}
+                                        >
+                                            {isOpen && <span className="text-xs font-bold">&#10003;</span>}
+                                        </button>
+                                        <span className={`w-24 text-sm font-medium ${isOpen ? "text-gray-900" : "text-gray-400"}`}>
+                                            {name}
+                                        </span>
+                                        {!isOpen && (
+                                            <span className="text-sm text-gray-400 italic ml-auto">Cerrado</span>
+                                        )}
+                                    </div>
+
+                                    {isOpen && shifts && shifts.map((shift, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 ml-8">
                                             <input
                                                 type="time"
-                                                value={daySchedule?.open || "09:00"}
-                                                onChange={(e) => updateDaySchedule(day, "open", e.target.value)}
-                                                className="input w-32 text-sm"
+                                                value={shift.open}
+                                                onChange={(e) => updateShift(day, idx, "open", e.target.value)}
+                                                className="input w-28 text-sm"
                                             />
                                             <span className="text-gray-400 text-sm">a</span>
                                             <input
                                                 type="time"
-                                                value={daySchedule?.close || "21:00"}
-                                                onChange={(e) => updateDaySchedule(day, "close", e.target.value)}
-                                                className="input w-32 text-sm"
+                                                value={shift.close}
+                                                onChange={(e) => updateShift(day, idx, "close", e.target.value)}
+                                                className="input w-28 text-sm"
                                             />
+                                            {shifts.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeShift(day, idx)}
+                                                    className="text-red-400 hover:text-red-600 transition p-1"
+                                                    title="Eliminar turno"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <span className="text-sm text-gray-400 italic">Cerrado</span>
+                                    ))}
+
+                                    {isOpen && shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
+                                        <button
+                                            type="button"
+                                            onClick={() => addShift(day)}
+                                            className="ml-8 text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                            Agregar turno
+                                        </button>
                                     )}
                                 </div>
                             );
                         })}
+
+                        <p className="text-xs text-gray-400 mt-1">
+                            Podés configurar turnos partidos (ej: mañana y tarde) con el botón &quot;Agregar turno&quot;.
+                        </p>
 
                         <div className="flex justify-end pt-2">
                             <button

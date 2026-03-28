@@ -15,20 +15,17 @@ interface DayGroup {
     slots: TimeSlot[];
 }
 
-/**
- * Vendor schedule for a single day.
- * null = closed that day.
- */
-interface DaySchedule {
+/** Un rango horario dentro de un día */
+interface TimeRange {
     open: string; // "09:00"
     close: string; // "21:00"
 }
 
 /**
- * Weekly schedule: keys "1" (Monday) to "7" (Sunday).
- * Value is DaySchedule or null (closed).
+ * Schedule del vendor: cada día es un array de TimeRange, un objeto legacy, o null (cerrado).
+ * La API ya normaliza a arrays, pero el componente acepta ambos formatos por robustez.
  */
-export type VendorSchedule = Record<string, DaySchedule | null>;
+export type VendorSchedule = Record<string, TimeRange[] | TimeRange | null>;
 
 interface TimeSlotPickerProps {
     onSelect: (slotStart: string, slotEnd: string) => void;
@@ -41,9 +38,8 @@ interface TimeSlotPickerProps {
 
 const SLOT_HOURS = 2;
 
-/** Default schedule si no hay vendor schedule — alineado con SettingsForm */
-const DEFAULT_OPEN = "09:00";
-const DEFAULT_CLOSE = "21:00";
+/** Default schedule si no hay vendor schedule */
+const DEFAULT_RANGES: TimeRange[] = [{ open: "09:00", close: "21:00" }];
 
 function parseHour(time: string): number {
     const [h, m] = time.split(":").map(Number);
@@ -73,9 +69,21 @@ function getDayLabel(date: Date, today: Date): string {
  * Get the JS day-of-week (0=Sun..6=Sat) converted to schedule format (1=Mon..7=Sun)
  */
 function jsToScheduleDay(jsDay: number): string {
-    // JS: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-    // Schedule: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
     return jsDay === 0 ? "7" : String(jsDay);
+}
+
+/**
+ * Normaliza un valor de día a array de TimeRange.
+ * Acepta: TimeRange[] | TimeRange | null → TimeRange[] | null
+ */
+function normalizeDayRanges(value: TimeRange[] | TimeRange | null | undefined): TimeRange[] | null {
+    if (!value) return null;
+    if (Array.isArray(value)) return value.length > 0 ? value : null;
+    // Legacy: objeto { open, close }
+    if (typeof value === "object" && "open" in value && "close" in value) {
+        return [value];
+    }
+    return null;
 }
 
 function generateSlots(vendorSchedule?: VendorSchedule | null): DayGroup[] {
@@ -90,113 +98,120 @@ function generateSlots(vendorSchedule?: VendorSchedule | null): DayGroup[] {
 
     const endLimit = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-    // Get schedule for a specific day
-    const getScheduleForDay = (date: Date): { openHour: number; closeHour: number } | null => {
+    // Get schedule ranges for a specific day
+    const getRangesForDay = (date: Date): TimeRange[] | null => {
         const scheduleKey = jsToScheduleDay(date.getDay());
 
         if (vendorSchedule) {
-            const daySchedule = vendorSchedule[scheduleKey];
-            if (!daySchedule) return null; // Vendor closed this day
-            return {
-                openHour: parseHour(daySchedule.open),
-                closeHour: parseHour(daySchedule.close),
-            };
+            return normalizeDayRanges(vendorSchedule[scheduleKey]);
         }
 
-        // Default: 9-22 every day
-        return {
-            openHour: parseHour(DEFAULT_OPEN),
-            closeHour: parseHour(DEFAULT_CLOSE),
-        };
+        return DEFAULT_RANGES;
     };
 
-    // Initialize cursor to first valid position
-    const firstDaySchedule = getScheduleForDay(cursor);
-    if (firstDaySchedule) {
-        if (cursor.getHours() < firstDaySchedule.openHour) {
-            cursor.setHours(Math.ceil(firstDaySchedule.openHour));
-        }
-        if (cursor.getHours() >= firstDaySchedule.closeHour) {
-            cursor.setDate(cursor.getDate() + 1);
-            cursor.setHours(0); // Will be adjusted in loop
-        }
-    }
-
-    // Round to even hour for clean slots
-    if (cursor.getHours() % SLOT_HOURS !== 0) {
-        cursor.setHours(cursor.getHours() + (SLOT_HOURS - (cursor.getHours() % SLOT_HOURS)));
-    }
-
     let iterations = 0;
-    const MAX_ITERATIONS = 200; // Safety valve
+    const MAX_ITERATIONS = 300;
 
     while (cursor < endLimit && iterations < MAX_ITERATIONS) {
         iterations++;
-        const daySchedule = getScheduleForDay(cursor);
+        const ranges = getRangesForDay(cursor);
 
         // Day is closed - skip to next day
-        if (!daySchedule) {
+        if (!ranges || ranges.length === 0) {
             cursor.setDate(cursor.getDate() + 1);
-            cursor.setHours(0);
-            // Find next day's open hour
-            const nextSchedule = getScheduleForDay(cursor);
-            if (nextSchedule) {
-                cursor.setHours(Math.ceil(nextSchedule.openHour));
-                if (cursor.getHours() % SLOT_HOURS !== 0) {
-                    cursor.setHours(cursor.getHours() + (SLOT_HOURS - (cursor.getHours() % SLOT_HOURS)));
-                }
-            }
+            cursor.setHours(0, 0, 0, 0);
             continue;
         }
 
-        const { openHour, closeHour } = daySchedule;
+        const cursorHour = cursor.getHours() + cursor.getMinutes() / 60;
 
-        // Before opening - move to opening
-        if (cursor.getHours() < openHour) {
-            cursor.setHours(Math.ceil(openHour));
+        // Find which range the cursor falls in or the next range after cursor
+        let currentRange: TimeRange | null = null;
+        let nextRangeAfterCursor: TimeRange | null = null;
+
+        for (const range of ranges) {
+            const openH = parseHour(range.open);
+            const closeH = parseHour(range.close);
+
+            if (cursorHour >= openH && cursorHour < closeH) {
+                currentRange = range;
+                break;
+            }
+            if (openH > cursorHour && !nextRangeAfterCursor) {
+                nextRangeAfterCursor = range;
+            }
+        }
+
+        // Cursor is before all ranges today — jump to first available range
+        if (!currentRange && nextRangeAfterCursor) {
+            const openH = parseHour(nextRangeAfterCursor.open);
+            cursor.setHours(Math.floor(openH), Math.round((openH % 1) * 60), 0, 0);
+            // Round up to even hour for clean slots
             if (cursor.getHours() % SLOT_HOURS !== 0) {
                 cursor.setHours(cursor.getHours() + (SLOT_HOURS - (cursor.getHours() % SLOT_HOURS)));
             }
             continue;
         }
 
-        // Past closing - move to next day
-        if (cursor.getHours() >= closeHour) {
+        // Cursor is past all ranges today — move to next day
+        if (!currentRange && !nextRangeAfterCursor) {
             cursor.setDate(cursor.getDate() + 1);
-            cursor.setHours(0);
-            const nextSchedule = getScheduleForDay(cursor);
-            if (nextSchedule) {
-                cursor.setHours(Math.ceil(nextSchedule.openHour));
-                if (cursor.getHours() % SLOT_HOURS !== 0) {
-                    cursor.setHours(cursor.getHours() + (SLOT_HOURS - (cursor.getHours() % SLOT_HOURS)));
-                }
-            }
+            cursor.setHours(0, 0, 0, 0);
             continue;
         }
 
-        const slotStart = new Date(cursor);
-        const slotEnd = new Date(cursor);
-        slotEnd.setHours(slotEnd.getHours() + SLOT_HOURS);
+        // We're inside a range — generate a slot if it fits
+        if (currentRange) {
+            const closeH = parseHour(currentRange.close);
 
-        // Only add if slot end doesn't exceed closing time
-        if (slotEnd.getHours() <= closeHour || (slotEnd.getHours() === closeHour && slotEnd.getMinutes() === 0)) {
-            const dateKey = slotStart.toISOString().split("T")[0];
-            if (!groups.has(dateKey)) {
-                groups.set(dateKey, {
-                    label: getDayLabel(slotStart, now),
-                    date: dateKey,
-                    slots: [],
+            // Round cursor to even hour if not already
+            if (cursor.getHours() % SLOT_HOURS !== 0) {
+                cursor.setHours(cursor.getHours() + (SLOT_HOURS - (cursor.getHours() % SLOT_HOURS)));
+                continue; // Re-evaluate after rounding
+            }
+
+            const slotStart = new Date(cursor);
+            const slotEnd = new Date(cursor);
+            slotEnd.setHours(slotEnd.getHours() + SLOT_HOURS);
+
+            const slotEndHour = slotEnd.getHours() + slotEnd.getMinutes() / 60;
+
+            // Only add if slot end doesn't exceed closing time of this range
+            if (slotEndHour <= closeH) {
+                const dateKey = slotStart.toISOString().split("T")[0];
+                if (!groups.has(dateKey)) {
+                    groups.set(dateKey, {
+                        label: getDayLabel(slotStart, now),
+                        date: dateKey,
+                        slots: [],
+                    });
+                }
+
+                groups.get(dateKey)!.slots.push({
+                    start: slotStart,
+                    end: slotEnd,
+                    label: `${formatTime(slotStart)} - ${formatTime(slotEnd)}`,
                 });
             }
 
-            groups.get(dateKey)!.slots.push({
-                start: slotStart,
-                end: slotEnd,
-                label: `${formatTime(slotStart)} - ${formatTime(slotEnd)}`,
-            });
-        }
+            // Move cursor forward
+            cursor.setHours(cursor.getHours() + SLOT_HOURS);
 
-        cursor.setHours(cursor.getHours() + SLOT_HOURS);
+            // If cursor is now past this range's close, check for next range
+            const newCursorHour = cursor.getHours() + cursor.getMinutes() / 60;
+            if (newCursorHour >= closeH) {
+                // Find next range after current close
+                const nextRange = ranges.find(r => parseHour(r.open) >= closeH);
+                if (nextRange) {
+                    const nextOpenH = parseHour(nextRange.open);
+                    cursor.setHours(Math.floor(nextOpenH), Math.round((nextOpenH % 1) * 60), 0, 0);
+                } else {
+                    // No more ranges today → next day
+                    cursor.setDate(cursor.getDate() + 1);
+                    cursor.setHours(0, 0, 0, 0);
+                }
+            }
+        }
     }
 
     return Array.from(groups.values());
