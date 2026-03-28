@@ -25,7 +25,7 @@ export async function PATCH(
         }
 
         const merchant = await prisma.merchant.findFirst({
-            where: { userId: session.user.id },
+            where: { ownerId: session.user.id },
             select: { id: true },
         });
 

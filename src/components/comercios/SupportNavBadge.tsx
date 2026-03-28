@@ -45,7 +45,7 @@ export default function SupportNavBadge() {
     );
 }
 
-export function SupportNavBadgeMobile() {
+export function SupportNavBadgeMobile({ variant = "bar" }: { variant?: "bar" | "menu" }) {
     const [unreadCount, setUnreadCount] = useState(0);
 
     const fetchNotifications = async () => {
@@ -65,6 +65,30 @@ export function SupportNavBadgeMobile() {
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    if (variant === "menu") {
+        return (
+            <Link
+                href="/comercios/soporte"
+                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            >
+                <div className="relative">
+                    <MessageCircle className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 bg-red-500 text-white text-[7px] font-black rounded-full border border-white">
+                            {unreadCount}
+                        </span>
+                    )}
+                </div>
+                <span className="text-sm font-medium">Soporte</span>
+                {unreadCount > 0 && (
+                    <span className="ml-auto flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-black rounded-full">
+                        {unreadCount}
+                    </span>
+                )}
+            </Link>
+        );
+    }
 
     return (
         <Link

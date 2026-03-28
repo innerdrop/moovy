@@ -18,7 +18,8 @@ import {
     Megaphone,
 } from "lucide-react";
 
-import SupportNavBadge, { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
+import SupportNavBadge from "@/components/comercios/SupportNavBadge";
+import MobileMoreMenu from "@/components/comercios/MobileMoreMenu";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
@@ -48,12 +49,14 @@ export default async function ComerciosLayout({ children }: { children: React.Re
 
     const userRoles = getUserRoles(session);
 
+    // Primeros 4 = bottom bar mobile. El resto va en menú "Más"
     const navItems = [
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/productos", icon: Package, label: "Productos" },
-        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
         { href: "/comercios/pagos", icon: DollarSign, label: "Pagos" },
+        // --- Los siguientes van en sidebar desktop + menú "Más" mobile ---
+        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
         { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
         { href: "/comercios/resenas", icon: Star, label: "Reseñas" },
         // Soporte is handled separately via SupportNavBadge component
@@ -163,40 +166,22 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                 {children}
             </main>
 
-            {/* Mobile Bottom Navigation - Identical to Client Style */}
+            {/* Mobile Bottom Navigation — max 5 items (4 principales + Más) */}
             <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                 <div className="flex items-center justify-between h-16 px-2 max-w-md mx-auto relative text-center">
-                    {navItems.map((item) => {
-                        if (item.href === "/comercios/configuracion") {
-                            return (
-                                <React.Fragment key="support-mobile-wrapper">
-                                    <SupportNavBadgeMobile key="soporte-nav-mobile" />
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
-                                    >
-                                        <item.icon className="w-6 h-6 mb-0.5" />
-                                        <span className="text-[10px] font-medium leading-tight">
-                                            {item.label}
-                                        </span>
-                                    </Link>
-                                </React.Fragment>
-                            );
-                        }
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
-                            >
-                                <item.icon className="w-6 h-6 mb-0.5" />
-                                <span className="text-[10px] font-medium leading-tight">
-                                    {item.label}
-                                </span>
-                            </Link>
-                        );
-                    })}
+                    {navItems.slice(0, 4).map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors"
+                        >
+                            <item.icon className="w-6 h-6 mb-0.5" />
+                            <span className="text-[10px] font-medium leading-tight">
+                                {item.label}
+                            </span>
+                        </Link>
+                    ))}
+                    <MobileMoreMenu />
                 </div>
                 {/* Safe area padding for iPhones with notch */}
                 <div className="h-[env(safe-area-inset-bottom)] bg-white" />
