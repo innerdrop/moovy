@@ -22,6 +22,8 @@ import {
   Copy,
   Building2,
 } from "lucide-react";
+import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 
 interface AdPlacement {
   id: string;
@@ -476,6 +478,7 @@ export default function PublicidadPage() {
   } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -533,6 +536,36 @@ export default function PublicidadPage() {
     } finally {
       setRequesting(null);
       setTimeout(() => setMessage(null), 5000);
+    }
+  };
+
+  const handleCancelPlacement = async (placementId: string) => {
+    const ok = await confirm({
+      title: "Cancelar solicitud",
+      message: "¿Cancelar esta solicitud de publicidad? Podrás solicitar un nuevo espacio cuando quieras.",
+      confirmLabel: "Sí, cancelar",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    setCancellingId(placementId);
+    try {
+      const res = await fetch(`/api/merchant/ad-placements/${placementId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        toast.success(result.message || "Solicitud cancelada");
+        fetchData();
+      } else {
+        toast.error(result.error || "Error al cancelar");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -945,6 +978,21 @@ export default function PublicidadPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Botón cancelar — solo para PENDING */}
+                  {p.status === "PENDING" && (
+                    <button
+                      onClick={() => handleCancelPlacement(p.id)}
+                      disabled={cancellingId === p.id}
+                      className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition disabled:opacity-50"
+                    >
+                      {cancellingId === p.id ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Cancelando...</>
+                      ) : (
+                        <><XCircle className="w-3.5 h-3.5" /> Cancelar solicitud</>
+                      )}
+                    </button>
+                  )}
                 </div>
               );
             })}
