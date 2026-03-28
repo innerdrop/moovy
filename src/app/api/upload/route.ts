@@ -4,6 +4,7 @@ import path from "path";
 import { auth } from "@/lib/auth";
 import sharp from "sharp";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { uploadToR2, isR2Configured } from "@/lib/r2";
 
 // V-018 FIX: Magic bytes validation for real file type detection
 const MAGIC_BYTES: Record<string, number[][]> = {
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
         const optimizedBuffer = await sharp(originalBuffer)
             .resize(maxWidth, null, {
                 withoutEnlargement: true,  // Don't upscale small images
-                fit: 'inside'
+                fit: "inside",
             })
             .webp({ quality: 80 })
             .rotate() // Auto-rotate based on EXIF orientation before stripping
@@ -104,8 +105,20 @@ export async function POST(request: Request) {
         // Generate unique filename with .webp extension
         const baseName = file.name.replace(/\.[^/.]+$/, "").replaceAll(" ", "_");
         const filename = `${Date.now()}-${baseName}.webp`;
+        const key = `${safeFolder}/${filename}`;
 
-        // Ensure directory exists
+        // ── Upload strategy: R2 (production) → filesystem (fallback/dev) ──
+        if (isR2Configured()) {
+            try {
+                const imageUrl = await uploadToR2(key, optimizedBuffer, "image/webp");
+                return NextResponse.json({ url: imageUrl });
+            } catch (error) {
+                console.error("[R2] Upload failed, falling back to filesystem:", error);
+                // Fall through to filesystem
+            }
+        }
+
+        // Fallback: guardar en filesystem local (dev o si R2 no está configurado)
         const uploadDir = path.join(process.cwd(), "public", "uploads", safeFolder);
 
         try {
@@ -121,7 +134,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Failed to save file" }, { status: 500 });
         }
 
-        // Return the public URL
+        // Return the public URL (local)
         const imageUrl = `/uploads/${safeFolder}/${filename}`;
         return NextResponse.json({ url: imageUrl });
 
