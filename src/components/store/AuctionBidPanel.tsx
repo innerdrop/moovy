@@ -80,9 +80,9 @@ export default function AuctionBidPanel({
     const countdown = useCountdown(endsAt);
     const isActive = auctionStatus === "ACTIVE" && !countdown.expired;
     const isEnded = auctionStatus === "ENDED" || auctionStatus === "SOLD" || countdown.expired;
-    const isWinner = userId && (auctionWinnerId === userId || (isEnded && currentBidderId === userId));
+    const isWinner = !!(userId && (auctionWinnerId === userId || (isEnded && currentBidderId === userId)));
     const isSeller = userId === sellerUserId;
-    const isHighestBidder = userId && currentBidderId === userId;
+    const isHighestBidder = !!(userId && currentBidderId === userId);
 
     const minBid = currentBid
         ? currentBid + bidIncrement
