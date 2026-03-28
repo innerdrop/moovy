@@ -24,7 +24,6 @@ export async function PATCH(
             return NextResponse.json({ error: "Acción no válida" }, { status: 400 });
         }
 
-        // Buscar la solicitud verificando que pertenece al merchant del usuario
         const merchant = await prisma.merchant.findFirst({
             where: { userId: session.user.id },
             select: { id: true },
@@ -42,7 +41,6 @@ export async function PATCH(
             return NextResponse.json({ error: "Solicitud no encontrada" }, { status: 404 });
         }
 
-        // Solo se puede cancelar en estado PENDING
         if (placement.status !== "PENDING") {
             return NextResponse.json(
                 { error: "Solo podés cancelar solicitudes pendientes. Para cancelar una publicidad aprobada o activa, contactá a soporte." },
@@ -50,7 +48,6 @@ export async function PATCH(
             );
         }
 
-        // Cancelar
         const updated = await prisma.adPlacement.update({
             where: { id },
             data: { status: "CANCELLED" },
