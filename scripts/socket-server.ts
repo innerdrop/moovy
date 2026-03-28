@@ -389,6 +389,7 @@ httpServer.listen(PORT, () => {
 ║  ⏱  Cron: merchant-timeout      every 60s                ║
 ║  ⏱  Cron: seller-resume         every 5 min              ║
 ║  ⏱  Cron: scheduled-notify      every 5 min              ║
+║  ⏱  Cron: close-auctions       every 60s                ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
 
@@ -491,6 +492,31 @@ httpServer.listen(PORT, () => {
             cronFailure("scheduled-notify", e.message || "fetch error");
         }
     }, 300_000);
+
+    // ─── Cron: Close Auctions (every 60s) ──────────────────────────────
+    // Close expired auctions, assign winners, mark no-bid auctions
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${NEXT_URL}/api/cron/close-auctions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${CRON_SECRET}`
+                }
+            });
+            if (res.ok) {
+                cronSuccess("close-auctions");
+                const data = await res.json();
+                if (data.closed > 0) {
+                    console.log(`[Cron] Closed ${data.closed} auction(s) (${data.withBids} con ofertas, ${data.noBids} sin ofertas)`);
+                }
+            } else {
+                cronFailure("close-auctions", `HTTP ${res.status}`);
+            }
+        } catch (e: any) {
+            cronFailure("close-auctions", e.message || "fetch error");
+        }
+    }, 60_000);
 });
 
 export { io, logistica };
