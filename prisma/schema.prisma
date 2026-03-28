@@ -74,6 +74,7 @@ model User {
   orderChatsAsA      OrderChat[]         @relation("OrderChatParticipantA")
   orderChatsAsB      OrderChat[]         @relation("OrderChatParticipantB")
   orderChatMessages  OrderChatMessage[]  @relation("OrderChatMessageSender")
+  bids               Bid[]
 }
 
 model UserRole {
@@ -551,30 +552,60 @@ model SellerProfile {
 }
 
 model Listing {
-  id          String         @id @default(cuid())
-  sellerId    String
-  title       String
-  description String?
-  price       Float
-  stock       Int            @default(1)
-  condition   String         @default("NUEVO")
-  weightKg    Float?
-  lengthCm    Float?
-  widthCm     Float?
-  heightCm    Float?
-  isActive    Boolean        @default(true)
-  categoryId  String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  seller      SellerProfile  @relation(fields: [sellerId], references: [id])
-  images      ListingImage[]
-  category    Category?      @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
-  favorites   Favorite[]
+  id              String         @id @default(cuid())
+  sellerId        String
+  title           String
+  description     String?
+  price           Float
+  stock           Int            @default(1)
+  condition       String         @default("NUEVO")
+  weightKg        Float?
+  lengthCm        Float?
+  widthCm         Float?
+  heightCm        Float?
+  isActive        Boolean        @default(true)
+  categoryId      String?
+  // --- Campos de subasta ---
+  listingType     String         @default("DIRECT") // DIRECT | AUCTION
+  auctionEndsAt   DateTime?
+  auctionDuration Int?           // duración original en horas (6, 12, 24, 48, 72)
+  startingPrice   Float?         // precio base de la subasta
+  bidIncrement    Float?         // incremento mínimo ($100, $500, $1000)
+  currentBid      Float?         // cache desnormalizado del bid más alto
+  currentBidderId String?        // cache del usuario con el bid más alto
+  totalBids       Int            @default(0) // contador de ofertas
+  auctionStatus   String?        // ACTIVE | ENDED | SOLD | NO_BIDS | CANCELLED
+  auctionWinnerId String?        // userId del ganador final
+  winnerPaymentDeadline DateTime? // 24h después de cierre para pagar
+  // --- Timestamps ---
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  seller          SellerProfile  @relation(fields: [sellerId], references: [id])
+  images          ListingImage[]
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  orderItems      OrderItem[]
+  favorites       Favorite[]
+  bids            Bid[]
 
   @@index([isActive])
   @@index([sellerId])
   @@index([categoryId])
+  @@index([listingType])
+  @@index([auctionStatus])
+  @@index([auctionEndsAt])
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  listingId String
+  userId    String
+  amount    Float
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, amount])
+  @@index([userId])
 }
 
 model ListingImage {

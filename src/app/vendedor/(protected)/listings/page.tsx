@@ -11,6 +11,9 @@ import {
     Edit,
     AlertCircle,
     Star,
+    Gavel,
+    Clock,
+    Users,
 } from "lucide-react";
 
 interface Listing {
@@ -25,6 +28,45 @@ interface Listing {
     createdAt: string;
     images: { url: string; order: number }[];
     category: { id: string; name: string; slug: string } | null;
+    // Auction fields
+    listingType?: string;
+    auctionStatus?: string;
+    auctionEndsAt?: string;
+    startingPrice?: number | null;
+    currentBid?: number | null;
+    totalBids?: number;
+    auctionWinnerId?: string | null;
+}
+
+const auctionStatusConfig: Record<string, { text: string; color: string }> = {
+    ACTIVE: { text: "En curso", color: "bg-violet-100 text-violet-700" },
+    ENDED: { text: "Finalizada", color: "bg-amber-100 text-amber-700" },
+    SOLD: { text: "Vendida", color: "bg-green-100 text-green-700" },
+    NO_BIDS: { text: "Sin ofertas", color: "bg-gray-100 text-gray-600" },
+    CANCELLED: { text: "Cancelada", color: "bg-red-100 text-red-700" },
+};
+
+function AuctionCountdown({ endsAt }: { endsAt: string }) {
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        function update() {
+            const diff = new Date(endsAt).getTime() - Date.now();
+            if (diff <= 0) {
+                setTimeLeft("Finalizada");
+                return;
+            }
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            setTimeLeft(`${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`);
+        }
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [endsAt]);
+
+    return <span className="text-xs text-violet-600 font-mono">{timeLeft}</span>;
 }
 
 const conditionBadge: Record<string, { text: string; color: string }> = {
@@ -106,7 +148,7 @@ export default function VendedorListingsPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                     <p className="text-sm text-gray-500">Total</p>
                     <p className="text-2xl font-bold text-gray-900">{listings.length}</p>
@@ -115,6 +157,12 @@ export default function VendedorListingsPage() {
                     <p className="text-sm text-green-800">Activas</p>
                     <p className="text-2xl font-bold text-green-900">
                         {listings.filter((l) => l.isActive).length}
+                    </p>
+                </div>
+                <div className="bg-violet-50 rounded-xl p-4 border border-violet-200">
+                    <p className="text-sm text-violet-800">Subastas</p>
+                    <p className="text-2xl font-bold text-violet-900">
+                        {listings.filter((l) => l.listingType === "AUCTION" && l.auctionStatus === "ACTIVE").length}
                     </p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -144,18 +192,25 @@ export default function VendedorListingsPage() {
                             text: listing.condition,
                             color: "bg-gray-100 text-gray-700",
                         };
+                        const isAuction = listing.listingType === "AUCTION";
+                        const auctionStatus = isAuction && listing.auctionStatus
+                            ? auctionStatusConfig[listing.auctionStatus] || { text: listing.auctionStatus, color: "bg-gray-100 text-gray-600" }
+                            : null;
+                        const displayPrice = isAuction
+                            ? (listing.currentBid || listing.startingPrice || listing.price)
+                            : listing.price;
 
                         return (
                             <div
                                 key={listing.id}
                                 className={`bg-white rounded-2xl shadow-sm border p-4 transition-all ${listing.isActive
-                                        ? "border-gray-100"
+                                        ? isAuction && listing.auctionStatus === "ACTIVE" ? "border-violet-200" : "border-gray-100"
                                         : "border-gray-200 opacity-60"
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
                                     {/* Thumbnail */}
-                                    <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                    <div className="relative w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                                         {listing.images?.[0]?.url ? (
                                             <img
                                                 src={listing.images[0].url}
@@ -165,6 +220,11 @@ export default function VendedorListingsPage() {
                                         ) : (
                                             <Tag className="w-6 h-6 text-gray-300" />
                                         )}
+                                        {isAuction && (
+                                            <div className="absolute top-0 left-0 bg-violet-600 rounded-br-lg p-0.5">
+                                                <Gavel className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Info */}
@@ -173,49 +233,93 @@ export default function VendedorListingsPage() {
                                             {listing.title}
                                         </h3>
                                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            <span className="font-bold text-emerald-600">
-                                                ${listing.price.toLocaleString("es-AR")}
+                                            <span className={`font-bold ${isAuction ? "text-violet-600" : "text-emerald-600"}`}>
+                                                ${displayPrice.toLocaleString("es-AR")}
                                             </span>
-                                            <span
-                                                className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${cond.color}`}
-                                            >
-                                                {cond.text}
-                                            </span>
+                                            {isAuction && listing.currentBid && (
+                                                <span className="text-[10px] text-violet-500 font-medium">
+                                                    oferta actual
+                                                </span>
+                                            )}
+                                            {isAuction && !listing.currentBid && (
+                                                <span className="text-[10px] text-gray-400 font-medium">
+                                                    precio base
+                                                </span>
+                                            )}
+                                            {auctionStatus && (
+                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${auctionStatus.color}`}>
+                                                    {auctionStatus.text}
+                                                </span>
+                                            )}
+                                            {!isAuction && (
+                                                <span
+                                                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${cond.color}`}
+                                                >
+                                                    {cond.text}
+                                                </span>
+                                            )}
                                             {listing.category && (
                                                 <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
                                                     {listing.category.name}
                                                 </span>
                                             )}
-                                            <span className="text-[10px] text-gray-400">
-                                                Stock: {listing.stock}
-                                            </span>
+                                            {!isAuction && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    Stock: {listing.stock}
+                                                </span>
+                                            )}
                                         </div>
+                                        {/* Auction extra info row */}
+                                        {isAuction && listing.auctionStatus === "ACTIVE" && listing.auctionEndsAt && (
+                                            <div className="flex items-center gap-3 mt-1.5">
+                                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                    <Clock className="w-3 h-3" />
+                                                    <AuctionCountdown endsAt={listing.auctionEndsAt} />
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                    <Users className="w-3 h-3" />
+                                                    <span>{listing.totalBids || 0} oferta{(listing.totalBids || 0) !== 1 ? "s" : ""}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-1 flex-shrink-0">
-                                        <Link
-                                            href={`/vendedor/listings/${listing.id}`}
-                                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </Link>
-                                        <button
-                                            onClick={() => toggleActive(listing.id)}
-                                            disabled={togglingId === listing.id}
-                                            className={`p-2 rounded-lg transition ${listing.isActive
-                                                    ? "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
-                                                    : "text-gray-400 hover:text-green-600 hover:bg-green-50"
-                                                }`}
-                                        >
-                                            {togglingId === listing.id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : listing.isActive ? (
-                                                <EyeOff className="w-4 h-4" />
-                                            ) : (
-                                                <Eye className="w-4 h-4" />
-                                            )}
-                                        </button>
+                                        {(!isAuction || listing.auctionStatus !== "ACTIVE") && (
+                                            <Link
+                                                href={`/vendedor/listings/${listing.id}`}
+                                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </Link>
+                                        )}
+                                        {(!isAuction || listing.auctionStatus !== "ACTIVE") && (
+                                            <button
+                                                onClick={() => toggleActive(listing.id)}
+                                                disabled={togglingId === listing.id}
+                                                className={`p-2 rounded-lg transition ${listing.isActive
+                                                        ? "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
+                                                        : "text-gray-400 hover:text-green-600 hover:bg-green-50"
+                                                    }`}
+                                            >
+                                                {togglingId === listing.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : listing.isActive ? (
+                                                    <EyeOff className="w-4 h-4" />
+                                                ) : (
+                                                    <Eye className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        )}
+                                        {isAuction && listing.auctionStatus === "ACTIVE" && (
+                                            <Link
+                                                href={`/marketplace/${listing.id}`}
+                                                className="px-3 py-1.5 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-lg transition"
+                                            >
+                                                Ver subasta
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -12,10 +12,20 @@ export async function GET(request: Request) {
         const minPrice = searchParams.get("minPrice");
         const maxPrice = searchParams.get("maxPrice");
         const sortBy = searchParams.get("sortBy"); // price_asc, price_desc, newest
+        const listingType = searchParams.get("listingType"); // DIRECT | AUCTION
         const limit = parseInt(searchParams.get("limit") || "20");
         const offset = parseInt(searchParams.get("offset") || "0");
 
         const where: any = { isActive: true };
+
+        // Filtro por tipo de listing
+        if (listingType === "AUCTION") {
+            where.listingType = "AUCTION";
+            where.auctionStatus = "ACTIVE";
+        } else if (listingType === "DIRECT") {
+            where.listingType = "DIRECT";
+        }
+        // Si no se especifica, devuelve ambos tipos
 
         if (categoryId) {
             where.categoryId = categoryId;

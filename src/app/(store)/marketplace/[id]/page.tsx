@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import ListingDetailClient from "./ListingDetailClient";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.somosmoovy.com";
@@ -14,6 +15,7 @@ async function getListing(id: string) {
                 seller: {
                     select: {
                         id: true,
+                        userId: true,
                         displayName: true,
                         bio: true,
                         avatar: true,
@@ -117,13 +119,14 @@ export default async function MarketplaceDetailPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    const listing = await getListing(id);
+    const [listing, session] = await Promise.all([getListing(id), auth()]);
 
     if (!listing || !listing.isActive) {
         notFound();
     }
 
     const sellerName = listing.seller.displayName || "Vendedor MOOVY";
+    const currentUserId = session?.user?.id;
 
     // JSON-LD structured data
     const jsonLd = {
@@ -176,6 +179,7 @@ export default async function MarketplaceDetailPage({
                 listing={serializedListing}
                 relatedListings={relatedListings}
                 appUrl={APP_URL}
+                userId={currentUserId}
             />
         </>
     );

@@ -63,27 +63,57 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { title, description, price, stock, condition, categoryId, weightKg, lengthCm, widthCm, heightCm, imageUrl } = body;
+        const {
+            title, description, price, stock, condition, categoryId,
+            weightKg, lengthCm, widthCm, heightCm, imageUrl,
+            // Campos de subasta
+            listingType, auctionDuration, startingPrice, bidIncrement,
+        } = body;
+
+        const isAuction = listingType === "AUCTION";
 
         // Validate required fields
-        if (!title || price === undefined || price === null) {
+        if (!title) {
             return NextResponse.json(
-                { error: "Título y precio son obligatorios" },
+                { error: "El título es obligatorio" },
                 { status: 400 }
             );
         }
 
-        if (typeof price !== "number" || price <= 0) {
-            return NextResponse.json(
-                { error: "El precio debe ser un número positivo" },
-                { status: 400 }
-            );
+        if (isAuction) {
+            // Validaciones específicas de subasta
+            if (!startingPrice || typeof startingPrice !== "number" || startingPrice <= 0) {
+                return NextResponse.json(
+                    { error: "El precio base de la subasta debe ser un número positivo" },
+                    { status: 400 }
+                );
+            }
+            if (!bidIncrement || ![100, 500, 1000, 5000].includes(bidIncrement)) {
+                return NextResponse.json(
+                    { error: "El incremento mínimo debe ser $100, $500, $1.000 o $5.000" },
+                    { status: 400 }
+                );
+            }
+            if (!auctionDuration || ![6, 12, 24, 48, 72].includes(auctionDuration)) {
+                return NextResponse.json(
+                    { error: "La duración debe ser 6, 12, 24, 48 o 72 horas" },
+                    { status: 400 }
+                );
+            }
+        } else {
+            // Venta directa: precio obligatorio
+            if (price === undefined || price === null || typeof price !== "number" || price <= 0) {
+                return NextResponse.json(
+                    { error: "El precio debe ser un número positivo" },
+                    { status: 400 }
+                );
+            }
         }
 
         // Validate at least one image
         if (!imageUrl || typeof imageUrl !== "string" || !imageUrl.trim()) {
             return NextResponse.json(
-                { error: "Necesitás subir al menos 1 imagen para publicar tu listing" },
+                { error: "Necesitás subir al menos 1 imagen para publicar" },
                 { status: 400 }
             );
         }
@@ -101,19 +131,31 @@ export async function POST(request: Request) {
             }
         }
 
+        // Calcular fecha de fin si es subasta
+        const auctionEndsAt = isAuction
+            ? new Date(Date.now() + auctionDuration * 60 * 60 * 1000)
+            : null;
+
         const listing = await prisma.listing.create({
             data: {
                 sellerId: seller.id,
                 title,
                 description: description || null,
-                price,
-                stock: stock ?? 1,
+                price: isAuction ? (startingPrice as number) : price,
+                stock: isAuction ? 1 : (stock ?? 1),
                 condition: condition || "NUEVO",
                 categoryId: categoryId || null,
                 weightKg: typeof weightKg === "number" ? weightKg : null,
                 lengthCm: typeof lengthCm === "number" ? lengthCm : null,
                 widthCm: typeof widthCm === "number" ? widthCm : null,
                 heightCm: typeof heightCm === "number" ? heightCm : null,
+                // Campos de subasta
+                listingType: isAuction ? "AUCTION" : "DIRECT",
+                startingPrice: isAuction ? startingPrice : null,
+                bidIncrement: isAuction ? bidIncrement : null,
+                auctionDuration: isAuction ? auctionDuration : null,
+                auctionEndsAt,
+                auctionStatus: isAuction ? "ACTIVE" : null,
                 images: {
                     create: {
                         url: imageUrl.trim(),

@@ -272,6 +272,18 @@ logistica.on("connection", (socket) => {
         socket.data.role = "customer";
     });
 
+    // ── Auction Events (any authenticated user) ─────────────────────────────
+
+    socket.on("join_auction", (listingId: string) => {
+        console.log(`[Socket] Client joined auction room: ${listingId}`);
+        socket.join(`auction:${listingId}`);
+    });
+
+    socket.on("leave_auction", (listingId: string) => {
+        console.log(`[Socket] Client left auction room: ${listingId}`);
+        socket.leave(`auction:${listingId}`);
+    });
+
     // ── Admin Events (ADMIN role only) ──────────────────────────────────────
 
     socket.on("join_admin_orders", () => {

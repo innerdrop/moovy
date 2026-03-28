@@ -21,6 +21,7 @@ import {
 import { useCartStore } from "@/store/cart";
 import HeartButton from "@/components/ui/HeartButton";
 import ListingCard from "@/components/store/ListingCard";
+import AuctionBidPanel from "@/components/store/AuctionBidPanel";
 
 interface ListingImage {
     url: string;
@@ -47,8 +48,20 @@ interface ListingDetail {
     condition: string;
     sellerId: string;
     images: ListingImage[];
-    seller: SellerInfo;
+    seller: SellerInfo & { userId?: string };
     category: { id: string; name: string; slug: string } | null;
+    // Campos de subasta
+    listingType?: string;
+    auctionStatus?: string;
+    auctionEndsAt?: string;
+    auctionDuration?: number;
+    startingPrice?: number | null;
+    bidIncrement?: number | null;
+    currentBid?: number | null;
+    currentBidderId?: string | null;
+    totalBids?: number;
+    auctionWinnerId?: string | null;
+    winnerPaymentDeadline?: string | null;
 }
 
 interface RelatedListing {
@@ -70,6 +83,7 @@ interface Props {
     listing: ListingDetail;
     relatedListings: RelatedListing[];
     appUrl: string;
+    userId?: string; // Current logged-in user ID
 }
 
 const conditionConfig: Record<string, { text: string; cssClass: string }> = {
@@ -78,7 +92,7 @@ const conditionConfig: Record<string, { text: string; cssClass: string }> = {
     REACONDICIONADO: { text: "Reacondicionado", cssClass: "mp-badge-reacondicionado" },
 };
 
-export default function ListingDetailClient({ listing, relatedListings, appUrl }: Props) {
+export default function ListingDetailClient({ listing, relatedListings, appUrl, userId }: Props) {
     const addItem = useCartStore((s) => s.addItem);
     const [added, setAdded] = useState(false);
     const [currentImg, setCurrentImg] = useState(0);
@@ -87,7 +101,8 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
 
     const cond = conditionConfig[listing.condition] || { text: listing.condition, cssClass: "mp-badge-usado" };
     const sellerName = listing.seller.displayName || "Vendedor";
-    const isLowStock = listing.stock > 0 && listing.stock <= 3;
+    const isAuction = listing.listingType === "AUCTION";
+    const isLowStock = !isAuction && listing.stock > 0 && listing.stock <= 3;
     const memberSince = listing.seller.createdAt
         ? new Date(listing.seller.createdAt).toLocaleDateString("es-AR", { month: "long", year: "numeric" })
         : null;
@@ -251,60 +266,102 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl }
                             {listing.title}
                         </h1>
 
-                        {/* Price + Share */}
-                        <div className="flex items-center justify-between gap-4">
-                            <p className="mp-gradient-text text-3xl lg:text-4xl xl:text-5xl font-extrabold">
-                                ${listing.price.toLocaleString("es-AR")}
-                            </p>
-                            <button
-                                onClick={handleShare}
-                                className="flex items-center gap-1.5 rounded-xl border border-purple-200/50 px-3 py-1.5 text-xs font-medium text-purple-500 transition hover:bg-purple-50 active:scale-95 lg:px-4 lg:py-2 lg:text-sm"
-                            >
-                                <Share2 className="w-3.5 h-3.5" />
-                                Compartir
-                            </button>
-                        </div>
+                        {/* Price / Auction + Share */}
+                        {isAuction ? (
+                            <>
+                                <div className="flex items-center justify-end">
+                                    <button
+                                        onClick={handleShare}
+                                        className="flex items-center gap-1.5 rounded-xl border border-purple-200/50 px-3 py-1.5 text-xs font-medium text-purple-500 transition hover:bg-purple-50 active:scale-95 lg:px-4 lg:py-2 lg:text-sm"
+                                    >
+                                        <Share2 className="w-3.5 h-3.5" />
+                                        Compartir
+                                    </button>
+                                </div>
 
-                        {/* Stock + condition row */}
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <span className={cond.cssClass}>{cond.text}</span>
-                            <span className="text-xs text-gray-500">
-                                Stock: <strong className="text-gray-800">{listing.stock}</strong>
-                            </span>
-                            {isLowStock && (
-                                <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    Últimas unidades
-                                </span>
-                            )}
-                        </div>
+                                {/* Condition row */}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <span className={cond.cssClass}>{cond.text}</span>
+                                </div>
 
-                        {/* Add to Cart button */}
-                        <button
-                            onClick={handleAddToCart}
-                            disabled={listing.stock === 0}
-                            className={`w-full rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 shadow-lg active:scale-[0.98] lg:py-4 lg:text-base ${
-                                added
-                                    ? "bg-green-500 text-white shadow-green-300/30"
-                                    : listing.stock === 0
-                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
-                                        : "bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white shadow-purple-500/25 hover:shadow-purple-500/40"
-                            }`}
-                        >
-                            {added ? (
-                                <span className="flex items-center justify-center gap-2"><Check className="w-5 h-5" /> Agregado al carrito</span>
-                            ) : listing.stock === 0 ? (
-                                "Sin stock"
-                            ) : (
-                                <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-5 h-5" /> Agregar al carrito</span>
-                            )}
-                        </button>
+                                {/* Auction Bid Panel */}
+                                <AuctionBidPanel
+                                    listingId={listing.id}
+                                    startingPrice={listing.startingPrice || listing.price}
+                                    currentBid={listing.currentBid || null}
+                                    bidIncrement={listing.bidIncrement || 500}
+                                    auctionEndsAt={listing.auctionEndsAt || ""}
+                                    auctionStatus={listing.auctionStatus || "ACTIVE"}
+                                    totalBids={listing.totalBids || 0}
+                                    currentBidderId={listing.currentBidderId || null}
+                                    auctionWinnerId={listing.auctionWinnerId || null}
+                                    userId={userId}
+                                    sellerUserId={listing.seller.userId || ""}
+                                />
 
-                        {/* Trust signals */}
-                        <div className="flex items-center gap-4 text-[11px] text-gray-400">
-                            <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-green-500" /> Compra protegida</span>
-                            <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5 text-purple-400" /> Envío en Ushuaia</span>
-                        </div>
+                                {/* Trust signals */}
+                                <div className="flex items-center gap-4 text-[11px] text-gray-400">
+                                    <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-green-500" /> Compra protegida</span>
+                                    <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5 text-purple-400" /> Envío en Ushuaia</span>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between gap-4">
+                                    <p className="mp-gradient-text text-3xl lg:text-4xl xl:text-5xl font-extrabold">
+                                        ${listing.price.toLocaleString("es-AR")}
+                                    </p>
+                                    <button
+                                        onClick={handleShare}
+                                        className="flex items-center gap-1.5 rounded-xl border border-purple-200/50 px-3 py-1.5 text-xs font-medium text-purple-500 transition hover:bg-purple-50 active:scale-95 lg:px-4 lg:py-2 lg:text-sm"
+                                    >
+                                        <Share2 className="w-3.5 h-3.5" />
+                                        Compartir
+                                    </button>
+                                </div>
+
+                                {/* Stock + condition row */}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <span className={cond.cssClass}>{cond.text}</span>
+                                    <span className="text-xs text-gray-500">
+                                        Stock: <strong className="text-gray-800">{listing.stock}</strong>
+                                    </span>
+                                    {isLowStock && (
+                                        <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                                            <AlertTriangle className="w-3 h-3" />
+                                            Últimas unidades
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Add to Cart button */}
+                                <button
+                                    onClick={handleAddToCart}
+                                    disabled={listing.stock === 0}
+                                    className={`w-full rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 shadow-lg active:scale-[0.98] lg:py-4 lg:text-base ${
+                                        added
+                                            ? "bg-green-500 text-white shadow-green-300/30"
+                                            : listing.stock === 0
+                                                ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                                                : "bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white shadow-purple-500/25 hover:shadow-purple-500/40"
+                                    }`}
+                                >
+                                    {added ? (
+                                        <span className="flex items-center justify-center gap-2"><Check className="w-5 h-5" /> Agregado al carrito</span>
+                                    ) : listing.stock === 0 ? (
+                                        "Sin stock"
+                                    ) : (
+                                        <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-5 h-5" /> Agregar al carrito</span>
+                                    )}
+                                </button>
+
+                                {/* Trust signals */}
+                                <div className="flex items-center gap-4 text-[11px] text-gray-400">
+                                    <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-green-500" /> Compra protegida</span>
+                                    <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5 text-purple-400" /> Envío en Ushuaia</span>
+                                </div>
+                            </>
+                        )}
 
                         {/* Description */}
                         {listing.description && (

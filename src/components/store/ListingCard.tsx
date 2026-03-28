@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Star, Tag, Plus, Check, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Star, Tag, Plus, Check, ShieldCheck, AlertTriangle, Gavel } from "lucide-react";
 import { useCartStore } from "@/store/cart";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeartButton from "@/components/ui/HeartButton";
 
 interface SellerAvailability {
@@ -33,10 +33,44 @@ interface ListingCardProps {
         category?: { name: string } | null;
         soldCount?: number;
         favCount?: number;
+        // Campos de subasta
+        listingType?: string;
+        auctionStatus?: string;
+        auctionEndsAt?: string;
+        currentBid?: number | null;
+        startingPrice?: number | null;
+        totalBids?: number;
     };
     showAddButton?: boolean;
     /** "marketplace" applies purple accent; default keeps red */
     variant?: "default" | "marketplace";
+}
+
+/** Hook para countdown en subastas */
+function useCountdown(endsAt?: string | null) {
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        if (!endsAt) return;
+        function update() {
+            const diff = new Date(endsAt!).getTime() - Date.now();
+            if (diff <= 0) {
+                setTimeLeft("Finalizada");
+                return;
+            }
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            if (h > 0) setTimeLeft(`${h}h ${m}m`);
+            else if (m > 0) setTimeLeft(`${m}m ${s}s`);
+            else setTimeLeft(`${s}s`);
+        }
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [endsAt]);
+
+    return timeLeft;
 }
 
 /* ── Default condition badges (store variant) ── */
@@ -123,11 +157,18 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
     /* ════════════════════════════════════════════════
        MARKETPLACE VARIANT — Violet Premium Card
        ════════════════════════════════════════════════ */
+    const isAuction = listing.listingType === "AUCTION";
+    const auctionActive = isAuction && listing.auctionStatus === "ACTIVE";
+    const countdown = useCountdown(auctionActive ? listing.auctionEndsAt : null);
+    const displayPrice = isAuction
+        ? (listing.currentBid || listing.startingPrice || listing.price)
+        : listing.price;
+
     if (isMp) {
         const mpBadgeClass = mpConditionBadge[listing.condition] || "mp-badge-usado";
         const mpBadgeLabel = conditionLabel[listing.condition] || listing.condition;
-        const isLowStock = listing.stock !== undefined && listing.stock > 0 && listing.stock <= 3;
-        const hasSold = (listing.soldCount || 0) > 0;
+        const isLowStock = !isAuction && listing.stock !== undefined && listing.stock > 0 && listing.stock <= 3;
+        const hasSold = !isAuction && (listing.soldCount || 0) > 0;
 
         return (
             <Link
@@ -152,10 +193,17 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                         {/* Gradient overlay bottom */}
                         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
 
-                        {/* Condition Badge */}
-                        <span className={`absolute top-2 left-2 ${mpBadgeClass}`}>
-                            {mpBadgeLabel}
-                        </span>
+                        {/* Condition / Auction Badge */}
+                        {isAuction ? (
+                            <span className="absolute top-2 left-2 flex items-center gap-1 bg-violet-600 text-white text-[11px] font-bold px-2 py-1 rounded-full shadow-lg">
+                                <Gavel className="w-3 h-3" />
+                                SUBASTA
+                            </span>
+                        ) : (
+                            <span className={`absolute top-2 left-2 ${mpBadgeClass}`}>
+                                {mpBadgeLabel}
+                            </span>
+                        )}
 
                         {/* Heart */}
                         <HeartButton type="listing" itemId={listing.id} className="absolute top-2 right-2" />
@@ -219,22 +267,38 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                             )}
                         </div>
 
-                        {/* Social proof line */}
-                        {hasSold && (
+                        {/* Social proof / Auction info */}
+                        {isAuction && auctionActive ? (
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="text-violet-600 font-semibold">
+                                    {(listing.totalBids || 0)} oferta{(listing.totalBids || 0) !== 1 ? "s" : ""}
+                                </span>
+                                <span className="text-red-500 font-bold animate-pulse">
+                                    {countdown}
+                                </span>
+                            </div>
+                        ) : hasSold ? (
                             <span className="text-xs text-purple-400 font-medium">
                                 {listing.soldCount} vendido{(listing.soldCount || 0) > 1 ? "s" : ""}
                             </span>
-                        )}
+                        ) : null}
 
                         {/* Spacer */}
                         <div className="flex-1" />
 
                         {/* Price + Add to cart */}
                         <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-purple-50">
-                            <p className="mp-gradient-text text-lg font-extrabold tracking-tight">
-                                ${listing.price.toLocaleString("es-AR")}
-                            </p>
-                            {showAddButton && (
+                            <div>
+                                {isAuction && (
+                                    <p className="text-[10px] text-gray-400 font-medium -mb-0.5">
+                                        {listing.currentBid ? "Oferta actual" : "Precio base"}
+                                    </p>
+                                )}
+                                <p className="mp-gradient-text text-lg font-extrabold tracking-tight">
+                                    ${displayPrice.toLocaleString("es-AR")}
+                                </p>
+                            </div>
+                            {showAddButton && !isAuction && (
                                 <button
                                     onClick={handleAddToCart}
                                     className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 shadow-sm ${cartPop ? "mp-cart-pop" : ""} ${
@@ -245,6 +309,12 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
                                 >
                                     {added ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                                 </button>
+                            )}
+                            {isAuction && auctionActive && (
+                                <span className="flex items-center gap-1 bg-violet-100 text-violet-700 text-xs font-bold px-2.5 py-1.5 rounded-xl">
+                                    <Gavel className="w-3 h-3" />
+                                    Ofertar
+                                </span>
                             )}
                         </div>
                     </div>
