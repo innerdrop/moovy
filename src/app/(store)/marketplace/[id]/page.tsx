@@ -167,6 +167,8 @@ export default async function MarketplaceDetailPage({
             ...listing.seller,
             createdAt: listing.seller.createdAt.toISOString(),
         },
+        auctionEndsAt: listing.auctionEndsAt?.toISOString() ?? null,
+        winnerPaymentDeadline: listing.winnerPaymentDeadline?.toISOString() ?? null,
     };
 
     return (
