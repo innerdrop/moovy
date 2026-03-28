@@ -123,7 +123,7 @@ if ($CleanProd) {
     }
 
     $remoteCommand += " && " +
-        "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && " +
+        "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && " +
         "npx prisma db push --accept-data-loss && " +
         "ADMIN_PASSWORD='$($env:ADMIN_PASSWORD)' npx tsx prisma/seed-production.ts"
 } elseif ($SyncLocal) {
@@ -134,7 +134,7 @@ if ($CleanProd) {
 
     $remoteCommand += " && " +
         "sed -i 's/\r$//' database_dump.sql && " +
-        "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && " +
+        "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && " +
         "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < database_dump.sql"
 } elseif ($SchemaOnly) {
     # MODO SCHEMA: solo actualizar estructura, no tocar datos
@@ -172,7 +172,4 @@ if ($errorSummary.Count -gt 0) {
     Write-Host "--------------------------------------" -ForegroundColor Red
     Write-Host "`nRevisá los fallos arriba mencionados." -ForegroundColor Yellow
 } else {
-    Write-Host "`n[OK] Todo se ejecutó sin problemas." -ForegroundColor Green
-    Write-Host "Tu app está actualizada en: https://somosmoovy.com" -ForegroundColor Gray
-}
-Write-Host ""
+    Write-Ho
