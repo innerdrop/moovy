@@ -51,10 +51,10 @@ interface ListingDetail {
     seller: SellerInfo & { userId?: string };
     category: { id: string; name: string; slug: string } | null;
     // Campos de subasta
-    listingType?: string;
-    auctionStatus?: string;
-    auctionEndsAt?: string;
-    auctionDuration?: number;
+    listingType?: string | null;
+    auctionStatus?: string | null;
+    auctionEndsAt?: string | null;
+    auctionDuration?: number | null;
     startingPrice?: number | null;
     bidIncrement?: number | null;
     currentBid?: number | null;
