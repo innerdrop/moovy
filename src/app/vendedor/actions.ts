@@ -49,7 +49,7 @@ export async function updateSellerSchedule(scheduleEnabled: boolean, scheduleJso
             const parsed = JSON.parse(scheduleJson);
             const validation = scheduleJsonSchema.safeParse(parsed);
             if (!validation.success) {
-                return { error: validation.error.errors[0]?.message || "Horarios inválidos" };
+                return { error: validation.error.issues[0]?.message || "Horarios inválidos" };
             }
         }
 
