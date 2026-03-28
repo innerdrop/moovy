@@ -61,16 +61,29 @@ async function getCategories(limit: number = 8) {
 
 async function getMerchants() {
   try {
-    return await prisma.merchant.findMany({
+    const MAX_CLOSED_FREE = 5; // max cerrados sin publicidad paga en home
+
+    const all = await prisma.merchant.findMany({
       where: { isActive: true },
-      take: 8,
       orderBy: [
         { isOpen: "desc" },
-        { displayOrder: "desc" },
         { isPremium: "desc" },
+        { displayOrder: "desc" },
         { name: "asc" },
       ],
     });
+
+    // Premium/destacados siempre aparecen (pagaron por visibilidad)
+    // Cerrados sin publicidad: máximo MAX_CLOSED_FREE
+    let closedFreeCount = 0;
+    const filtered = all.filter((m) => {
+      if (m.isOpen) return true; // abiertos siempre
+      if (m.isPremium) return true; // premium cerrados siempre (pagaron)
+      closedFreeCount++;
+      return closedFreeCount <= MAX_CLOSED_FREE;
+    });
+
+    return filtered.slice(0, 8);
   } catch {
     return [];
   }
@@ -256,21 +269,13 @@ async function LiveStoreView() {
 
           {merchants.length > 0 ? (
             <>
-              {/* Mobile: horizontal scroll like mockup */}
-              <div
-                className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 pl-4 pr-4 lg:hidden"
-                style={{ scrollbarWidth: "none" }}
-              >
+              {/* Mobile: compact horizontal cards in vertical list */}
+              <div className="flex flex-col gap-2 lg:hidden">
                 {merchants.map((merchant) => (
-                  <div
-                    key={merchant.id}
-                    className="flex-shrink-0 w-[260px] snap-start"
-                  >
-                    <MerchantCard merchant={merchant} />
-                  </div>
+                  <MerchantCard key={merchant.id} merchant={merchant} variant="compact" />
                 ))}
               </div>
-              {/* Desktop: grid */}
+              {/* Desktop: grid with default vertical cards */}
               <div className="hidden lg:grid lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
                 {merchants.map((merchant) => (
                   <MerchantCard key={merchant.id} merchant={merchant} />

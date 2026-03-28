@@ -133,7 +133,10 @@ export async function POST(request: NextRequest) {
     for (const vendor of vendorData) {
       let schedule: Schedule = {};
 
-      if (vendor.scheduleEnabled && vendor.scheduleJson) {
+      // Siempre usar el schedule configurado del comercio si existe,
+      // independientemente de scheduleEnabled (que controla si ofrece
+      // entrega programada, no los horarios de operación)
+      if (vendor.scheduleJson) {
         try {
           schedule = JSON.parse(vendor.scheduleJson);
         } catch {
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
           schedule = getDefaultSchedule(vendor.type);
         }
       } else {
-        // No schedule configured, use defaults
+        // No schedule configured at all, use defaults
         schedule = getDefaultSchedule(vendor.type);
       }
 

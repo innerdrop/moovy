@@ -22,9 +22,10 @@ interface MerchantCardProps {
         premiumTier?: string | null;
         isOpen: boolean;
     };
+    variant?: "default" | "compact";
 }
 
-export default function MerchantCard({ merchant }: MerchantCardProps) {
+export default function MerchantCard({ merchant, variant = "default" }: MerchantCardProps) {
     // Premium badge styles based on tier
     const getPremiumBadge = () => {
         if (!merchant.isPremium) return null;
@@ -38,12 +39,80 @@ export default function MerchantCard({ merchant }: MerchantCardProps) {
         const style = styles[tier] || styles.basic;
 
         return (
-            <div className={`absolute top-3 left-3 ${style.bg} ${style.text} text-xs font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse`}>
+            <div className={`absolute top-1 left-1 ${style.bg} ${style.text} text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5`}>
                 {style.label}
             </div>
         );
     };
 
+    // ─── Compact variant: horizontal card for mobile ─────────────────────
+    if (variant === "compact") {
+        return (
+            <Link
+                href={`/tienda/${merchant.slug}`}
+                className={`group flex items-center gap-3 bg-white rounded-xl p-2.5 shadow-sm border transition-all tap-bounce ${
+                    merchant.isPremium ? "border-yellow-300 ring-1 ring-yellow-200" : "border-gray-100"
+                } ${!merchant.isOpen ? "opacity-60" : ""}`}
+            >
+                {/* Image thumbnail */}
+                <div className="relative w-[72px] h-[72px] rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    {merchant.image ? (
+                        <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                            <span className="text-2xl font-bold opacity-20">{cleanEncoding(merchant.name).charAt(0)}</span>
+                        </div>
+                    )}
+                    {!merchant.isOpen && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-white text-[9px] font-bold">Cerrado</span>
+                        </div>
+                    )}
+                    {merchant.isPremium && getPremiumBadge()}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 py-0.5">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                        <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-[#e60012] transition">
+                            {cleanEncoding(merchant.name)}
+                        </h3>
+                        {merchant.isPremium ? (
+                            <Sparkles className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                        ) : merchant.isVerified && (
+                            <BadgeCheck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                        )}
+                        <div className="flex items-center gap-0.5 text-[11px] font-semibold text-gray-500 ml-auto flex-shrink-0">
+                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            <span>{merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}</span>
+                        </div>
+                    </div>
+                    <p className="text-gray-400 text-xs line-clamp-1 mb-1">
+                        {cleanEncoding(merchant.description || "Sin descripción")}
+                    </p>
+                    <div className="flex items-center gap-2.5 text-[11px] text-gray-500">
+                        <span className="flex items-center gap-0.5">
+                            <Clock className="w-3 h-3" />
+                            {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax}min
+                        </span>
+                        <span className="flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate max-w-[90px]">{cleanEncoding(merchant.address || "Ushuaia")}</span>
+                        </span>
+                        <span className="font-semibold ml-auto flex-shrink-0">
+                            {merchant.deliveryFee === 0 ? (
+                                <span className="text-green-600">Gratis</span>
+                            ) : (
+                                <span className="text-gray-700">${merchant.deliveryFee}</span>
+                            )}
+                        </span>
+                    </div>
+                </div>
+            </Link>
+        );
+    }
+
+    // ─── Default variant: vertical card for desktop ──────────────────────
     return (
         <Link href={`/tienda/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover-lift tap-bounce border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'} ${!merchant.isOpen ? 'opacity-75' : ''}`}>
             <div className="relative aspect-video bg-gray-100">
