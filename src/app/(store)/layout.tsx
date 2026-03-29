@@ -50,6 +50,15 @@ export default function StoreLayout({
             setContentReady(true);
         }
 
+        // Preview mode: ?preview=CLAVE_SECRETA setea cookie para bypass de mantenimiento
+        const PREVIEW_SECRET = process.env.NEXT_PUBLIC_PREVIEW_SECRET || "moovy2026preview";
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("preview") === PREVIEW_SECRET) {
+            document.cookie = "moovy_preview=1; path=/; max-age=86400; SameSite=Lax";
+        }
+
+        const hasPreviewCookie = document.cookie.includes("moovy_preview=1");
+
         // Fetch promo settings
         fetch("/api/settings")
             .then(res => res.json())
@@ -57,7 +66,7 @@ export default function StoreLayout({
                 if (!data) return;
 
                 const isAdmin = hasAnyRole(session, ["ADMIN"]);
-                if (data.tiendaMaintenance && !isAdmin) {
+                if (data.tiendaMaintenance && !isAdmin && !hasPreviewCookie) {
                     window.location.href = "/mantenimiento";
                     return;
                 }
