@@ -108,8 +108,8 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 ## Reglas de negocio
 - Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
 - Repartidor: 80% del delivery fee (riderCommissionPercent en StoreSettings)
-- Puntos: 1 punto por $1 gastado, $0.01 por punto, max 50% descuento
-- Signup bonus: 100 puntos, referral: 200 puntos
+- Puntos: 1 punto por $1 gastado, $0.015 por punto, max 50% descuento
+- Signup bonus: 250 puntos, referral: 200 puntos
 - Pedido mínimo: configurable por merchant (minOrderAmount)
 - Radio de entrega: configurable por merchant (deliveryRadiusKm, default 5km)
 - Timeout merchant: configurable (merchant_confirm_timeout en MoovyConfig)
@@ -439,9 +439,9 @@ Verificar que:
 Los puntos son dinero disfrazado. Un bug acá = regalar plata o enfurecer
 usuarios. Verificar:
 - Earn: 1 punto por $1 gastado. Se otorgan SOLO cuando el pedido pasa a DELIVERED, NUNCA antes
-- Burn: $0.01 por punto. Máximo 50% del subtotal como descuento
-- Signup bonus: 100 puntos. Se otorgan una sola vez (verificar que no se duplique)
-- Referral: 200 puntos al referidor + 100 al referido. Verificar que el referido sea nuevo
+- Burn: $0.015 por punto. Máximo 50% del subtotal como descuento
+- Signup bonus: 250 puntos. Se otorgan una sola vez (verificar que no se duplique)
+- Referral: 200 puntos al referidor + 250 al referido. Verificar que el referido sea nuevo
 - Transacción atómica: earn/burn dentro de $transaction serializable
 - Balance NUNCA negativo (validar server-side antes de descontar)
 - Si se cancela un pedido que usó puntos: DEVOLVER los puntos gastados

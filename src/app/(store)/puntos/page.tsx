@@ -171,7 +171,7 @@ export default function PuntosPage() {
     };
 
     const handleShare = async () => {
-        const shareText = `¡Unite a Moovy! Usá mi código ${referralCode} y ganá 100 puntos de regalo. #SoyMoover`;
+        const shareText = `¡Unite a Moovy! Usá mi código ${referralCode} y ganá 250 puntos de regalo. #SoyMoover`;
         const fullText = `${shareText} ${referralLink}`;
 
         // Check if on mobile
@@ -401,7 +401,7 @@ export default function PuntosPage() {
                         </div>
 
                         <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                            Comprá y ganácon{" "}
+                            Comprá y ganá con{" "}
                             <span
                                 className="text-[#e60012]"
                                 style={{ fontFamily: "'Junegull', sans-serif" }}
@@ -411,7 +411,7 @@ export default function PuntosPage() {
                         </h1>
 
                         <p className="text-xl lg:text-2xl text-gray-600 mb-8 leading-relaxed">
-                            Cada compra te acerca a tu próximo descuento. Ganásiempre,
+                            Cada compra te acerca a tu próximo descuento. Ganá siempre,
                             canjeá cuando quieras.
                         </p>
 
@@ -609,7 +609,7 @@ export default function PuntosPage() {
                                         </h3>
                                         <p className="text-gray-600 mt-1">
                                             <strong className="text-[#e60012] text-lg">
-                                                500 puntos por cada amigo
+                                                200 puntos por cada amigo
                                             </strong>
                                             <br />
                                             Cuando tu amigo hace su primera compra de $8,000+
@@ -1009,7 +1009,7 @@ export default function PuntosPage() {
                                         Refiriendo amigos
                                     </p>
                                     <p className="text-gray-500 text-xs">
-                                        500 puntos por cada amigo
+                                        200 puntos por cada amigo
                                     </p>
                                 </div>
                                 {expandedItem === "referidos" ? (
@@ -1025,7 +1025,7 @@ export default function PuntosPage() {
                                         primera compra:
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Vos ganás 500 puntos cuando tu amigo compra $8,000+</li>
+                                        <li>Vos ganás 200 puntos cuando tu amigo compra $8,000+</li>
                                         <li>Tu amigo gana 250 puntos extras de bienvenida</li>
                                         <li>¡No hay límite! Invitá a todos los que quieras</li>
                                     </ul>
@@ -1215,7 +1215,7 @@ export default function PuntosPage() {
                             </div>
 
                             <p className="text-xs text-gray-400 mt-4">
-                                Compartí tu código para que otros ganen 100 puntos
+                                Compartí tu código para que otros ganen 250 puntos
                             </p>
                         </div>
                     </div>

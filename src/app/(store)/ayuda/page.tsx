@@ -90,7 +90,7 @@ const FAQ_SECTIONS: FaqSection[] = [
         items: [
             {
                 question: "¿Cómo gano puntos MOOVER?",
-                answer: "Ganás 1 punto por cada $1 que gastás en compras. También ganás 500 puntos por cada amigo que invites y un bono de bienvenida de 250 puntos al registrarte."
+                answer: "Ganás 1 punto por cada $1 que gastás en compras. También ganás 200 puntos por cada amigo que invites y un bono de bienvenida de 250 puntos al registrarte."
             },
             {
                 question: "¿Cómo uso mis puntos?",

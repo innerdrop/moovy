@@ -48,7 +48,7 @@ export default function TerminosMooverPage() {
                         </div>
                     </div>
                     <p className="text-sm text-gray-600">
-                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 15% de tu compra. Mínimo 500 puntos para canjear.
+                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 50% del subtotal. Mínimo 500 puntos para canjear.
                     </p>
                 </section>
 
@@ -75,7 +75,7 @@ export default function TerminosMooverPage() {
                                 <span className="text-sm text-gray-700">Por referir un amigo</span>
                                 <p className="text-xs text-red-600">Cuando tu amigo compra $8,000+</p>
                             </div>
-                            <span className="font-bold text-[#e60012]">+500 puntos</span>
+                            <span className="font-bold text-[#e60012]">+200 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-700">Tu amigo referido recibe</span>
@@ -101,7 +101,7 @@ export default function TerminosMooverPage() {
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-red-600 font-bold">•</span>
-                            <span>Vos ganás <strong>1,000 puntos</strong> y tu amigo gana <strong>500 puntos</strong>.</span>
+                            <span>Vos ganás <strong>200 puntos</strong> y tu amigo gana <strong>250 puntos</strong> de bienvenida.</span>
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-red-600 font-bold">•</span>
