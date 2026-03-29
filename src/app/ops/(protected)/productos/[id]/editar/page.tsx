@@ -296,7 +296,7 @@ export default function EditProductPage() {
                 {/* Image Upload */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                     <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <ImageIcon className="w-5 h-5 text-[#e60012]" />
+                        <UploadImageIcon className="w-5 h-5 text-[#e60012]" />
                         Imagen del Producto
                     </h2>
 
@@ -315,7 +315,7 @@ export default function EditProductPage() {
                                 </>
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                                    <ImageIcon className="w-8 h-8 mb-1" />
+                                    <UploadImageIcon className="w-8 h-8 mb-1" />
                                     <span className="text-[10px]">Sin imagen</span>
                                 </div>
                             )}

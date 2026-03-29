@@ -165,9 +165,6 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
                     >
                         <X className="w-4 h-4" />
                     </button>
-                    <div className="absolute create-bottom-0 inset-x-0 bg-gradient-to-t from-black/50 to-transparent p-4 pointer-events-none">
-                        <p className="text-white text-xs font-medium truncate">{value.split('/').pop()}</p>
-                    </div>
                 </div>
             )}
         </div>

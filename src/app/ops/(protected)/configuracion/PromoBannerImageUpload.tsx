@@ -122,7 +122,7 @@ export default function PromoBannerImageUpload({ currentImage, name }: PromoBann
                             <p className="text-sm text-gray-600">
                                 <span className="font-medium text-pink-600">Click para subir</span> o arrastrá una imagen
                             </p>
-                            <p className="text-xs text-gray-400">PNG, JPG, WebP (máx. 5MB)</p>
+                            <p className="text-xs text-gray-400">PNG, JPG, WebP (máx. 10MB)</p>
                         </div>
                     )}
                 </div>
@@ -137,7 +137,7 @@ export default function PromoBannerImageUpload({ currentImage, name }: PromoBann
             />
 
             <p className="text-xs text-gray-500 mt-2">
-                Si subís una imagen, reemplazará la ilustración por defecto del banner.
+                Recomendado: 1200x400px. Se muestra como banner en la tienda.
             </p>
         </div>
     );

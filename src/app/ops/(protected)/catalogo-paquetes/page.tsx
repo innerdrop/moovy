@@ -487,7 +487,7 @@ export default function CatalogPackagesPage() {
                                     <UploadImage src={product.images[0].url} alt={product.name} fill className={`object-cover group-hover:scale-105 transition-all duration-500 ${!product.isActive ? "grayscale opacity-50" : ""}`} />
                                 ) : (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
-                                        <ImageIcon className="w-12 h-12 mb-2" />
+                                        <UploadImageIcon className="w-12 h-12 mb-2" />
                                         <span className="text-xs">Sin imagen oficial</span>
                                     </div>
                                 )}
@@ -563,7 +563,7 @@ export default function CatalogPackagesPage() {
                                                 <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden relative border border-slate-200">
                                                     {p.images?.[0]?.url ? (
                                                         <UploadImage src={p.images[0].url} alt={p.name} fill className="object-cover" />
-                                                    ) : <ImageIcon className="w-5 h-5 absolute inset-0 m-auto text-slate-300" />}
+                                                    ) : <UploadImageIcon className="w-5 h-5 absolute inset-0 m-auto text-slate-300" />}
                                                 </div>
                                                 <span className="font-bold text-slate-800">{p.name}</span>
                                             </div>
@@ -732,7 +732,7 @@ export default function CatalogPackagesPage() {
                                 {/* Compact Image Header */}
                                 <div className="h-28 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden">
                                     {cat.image ? (
-                                        <Image
+                                        <UploadImage
                                             src={cat.image}
                                             alt={cat.name}
                                             fill
@@ -904,7 +904,7 @@ export default function CatalogPackagesPage() {
 
                                     {categoryForm.image && (
                                         <div className="relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-100 bg-slate-50 group/preview">
-                                            <Image
+                                            <UploadImage
                                                 src={categoryForm.image}
                                                 alt="Preview"
                                                 fill

@@ -204,8 +204,8 @@ export default function MultiImageUpload({
                 ))}
             </div>
 
-            <p className="text-xs text-gray-500 mt-2 text-center">
-                La primera imagen será la principal. Máximo {maxImages} imágenes.
+            <p className="text-xs text-gray-400 mt-2">
+                {values.length}/{maxImages} imágenes. La primera es la principal.
             </p>
         </div>
     );
