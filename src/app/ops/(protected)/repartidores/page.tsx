@@ -132,8 +132,8 @@ export default function AdminRepartidoresPage() {
             return;
         }
 
-        if (formData.password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        if (formData.password.length < 8) {
+            setError("La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
@@ -480,7 +480,7 @@ export default function AdminRepartidoresPage() {
                                         className="input w-full"
                                         placeholder="Mínimo 6 caracteres"
                                         required
-                                        minLength={6}
+                                        minLength={8}
                                     />
                                 </div>
                             </div>

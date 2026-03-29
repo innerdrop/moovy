@@ -99,8 +99,8 @@ export default function ClientsPage() {
             return;
         }
 
-        if (formData.password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        if (formData.password.length < 8) {
+            setError("La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
@@ -496,7 +496,7 @@ export default function ClientsPage() {
                             <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input w-full" placeholder="Nombre completo *" required />
                             <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input w-full" placeholder="Email *" required />
                             <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="input w-full" placeholder="Teléfono" />
-                            <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="input w-full" placeholder="Contraseña * (mín 6 caracteres)" required minLength={6} />
+                            <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="input w-full" placeholder="Contraseña * (mín 8 caracteres)" required minLength={8} />
 
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={() => setShowCreateForm(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>

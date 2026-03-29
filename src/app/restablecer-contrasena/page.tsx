@@ -42,8 +42,8 @@ function ResetPasswordContent() {
         e.preventDefault();
         setError("");
 
-        if (password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        if (password.length < 8) {
+            setError("La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
@@ -189,7 +189,7 @@ function ResetPasswordContent() {
                                     placeholder="••••••••"
                                     className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                 />
                                 <button
                                     type="button"
@@ -218,7 +218,7 @@ function ResetPasswordContent() {
                                     placeholder="••••••••"
                                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                 />
                             </div>
                         </div>

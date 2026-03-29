@@ -137,8 +137,8 @@ function RepartidorRegistroContent() {
             return;
         }
 
-        if (formData.password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        if (formData.password.length < 8) {
+            setError("La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
@@ -406,7 +406,7 @@ function RepartidorRegistroContent() {
                                             onChange={handleChange}
                                             placeholder="Mínimo 6"
                                             className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            minLength={6}
+                                            minLength={8}
                                             required
                                         />
                                         <button
@@ -429,7 +429,7 @@ function RepartidorRegistroContent() {
                                             onChange={handleChange}
                                             placeholder="Repetí"
                                             className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            minLength={6}
+                                            minLength={8}
                                             required
                                         />
                                         <button

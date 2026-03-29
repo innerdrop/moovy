@@ -352,8 +352,8 @@ function ComercioRegistroContent() {
                                 setError("Las contraseñas no coinciden");
                                 return;
                             }
-                            if (formData.password.length < 6) {
-                                setError("La contraseña debe tener al menos 6 caracteres");
+                            if (formData.password.length < 8) {
+                                setError("La contraseña debe tener al menos 8 caracteres");
                                 return;
                             }
                             setStep(3);
