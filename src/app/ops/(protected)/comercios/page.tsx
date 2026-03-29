@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
 import {
@@ -392,7 +392,7 @@ export default function ComerciosPage() {
                             <div className="p-5 border-b border-gray-50 flex items-start gap-4">
                                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100 shadow-inner group-hover:scale-105 transition-transform duration-300">
                                     {merchant.image ? (
-                                        <Image src={merchant.image} alt={merchant.name} width={64} height={64} className="w-full h-full object-cover" />
+                                        <UploadImage src={merchant.image} alt={merchant.name} width={64} height={64} className="w-full h-full object-cover" />
                                     ) : (
                                         <Store className="w-8 h-8 text-gray-300" />
                                     )}

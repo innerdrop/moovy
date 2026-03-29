@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { confirm } from "@/store/confirm";
 import {
     ChevronLeft,
@@ -437,7 +437,7 @@ export default function DestacadosPage() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     {merchant.image && (
-                                                        <Image
+                                                        <UploadImage
                                                             src={merchant.image}
                                                             alt={merchant.name}
                                                             width={40}

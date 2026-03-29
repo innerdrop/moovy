@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { Upload, X, Loader2, Plus } from "lucide-react";
 import { toast } from "@/store/toast";
 
@@ -153,7 +153,7 @@ export default function MultiImageUpload({
                             </div>
                         ) : url ? (
                             <>
-                                <Image
+                                <UploadImage
                                     src={url}
                                     alt={`Imagen ${index + 1}`}
                                     fill

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import {
     Package,
     Search,
@@ -209,7 +209,7 @@ export default function ProductsPage() {
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm flex-shrink-0">
                                                             {image ? (
-                                                                <Image src={image} alt={product.name} width={48} height={48} className="object-cover" />
+                                                                <UploadImage src={image} alt={product.name} width={48} height={48} className="object-cover" />
                                                             ) : (
                                                                 <Package className="w-5 h-5 text-slate-400" />
                                                             )}
@@ -302,7 +302,7 @@ export default function ProductsPage() {
                                     <div className="flex gap-4">
                                         <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 shadow-sm flex-shrink-0">
                                             {image ? (
-                                                <Image src={image} alt={product.name} width={80} height={80} className="object-cover" />
+                                                <UploadImage src={image} alt={product.name} width={80} height={80} className="object-cover" />
                                             ) : (
                                                 <Package className="w-8 h-8 text-slate-300" />
                                             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "@/store/toast";
 
@@ -136,7 +136,7 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
                 </div>
             ) : (
                 <div className="relative w-full aspect-video sm:aspect-[4/3] rounded-xl overflow-hidden border border-gray-200 group">
-                    <Image
+                    <UploadImage
                         src={value}
                         alt="Product Image"
                         fill

@@ -2,7 +2,7 @@
 
 // Cart Page - Carrito Multi-vendor
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/delivery";
 import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, Package, ChevronLeft, Store, User } from "lucide-react";
@@ -80,7 +80,7 @@ export default function CarritoPage() {
                             <div key={`${item.productId}-${item.variantId || "default"}`} className="bg-white rounded-xl p-4 flex gap-4">
                                 <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                     {item.image ? (
-                                        <Image src={item.image} alt={item.name} width={80} height={80} className="w-full h-full object-cover" />
+                                        <UploadImage src={item.image} alt={item.name} width={80} height={80} className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center"><Package className="w-8 h-8 text-gray-300" /></div>
                                     )}

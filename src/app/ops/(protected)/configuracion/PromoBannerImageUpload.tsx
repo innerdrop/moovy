@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { Upload, X, Loader2, ImageIcon } from "lucide-react";
 import { toast } from "@/store/toast";
 
@@ -83,7 +83,7 @@ export default function PromoBannerImageUpload({ currentImage, name }: PromoBann
             {imageUrl ? (
                 <div className="relative rounded-xl overflow-hidden border-2 border-pink-200 bg-gray-100">
                     <div className="relative h-40 w-full">
-                        <Image
+                        <UploadImage
                             src={imageUrl}
                             alt="Preview"
                             fill

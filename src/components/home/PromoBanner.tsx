@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import { ChevronRight } from "lucide-react";
 
 interface PromoBannerProps {
@@ -60,7 +60,7 @@ export default function PromoBanner({
                 {image ? (
                     <>
                         <div className="relative w-full aspect-[3/1]">
-                            <Image
+                            <UploadImage
                                 src={image}
                                 alt={title || "Promoción"}
                                 fill

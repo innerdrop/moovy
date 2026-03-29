@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { auth } from "@/lib/auth";
+import { isR2Configured, uploadToR2 } from "@/lib/r2-storage";
 
 export async function POST(request: Request) {
     try {
@@ -30,32 +31,38 @@ export async function POST(request: Request) {
             );
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
             return NextResponse.json(
-                { error: "El archivo es muy grande. Máximo 5MB" },
+                { error: "El archivo es muy grande. Máximo 10MB" },
                 { status: 400 }
             );
         }
 
-        // Create uploads directory if it doesn't exist
-        const uploadsDir = path.join(process.cwd(), "public", "uploads", "slides");
-        await mkdir(uploadsDir, { recursive: true });
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
         // Generate unique filename
         const ext = file.name.split(".").pop();
         const filename = `slide-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const filepath = path.join(uploadsDir, filename);
+        const key = `slides/${filename}`;
 
-        // Write file
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(filepath, buffer);
+        // ── R2 (producción) ───────────────────────────────────────
+        if (isR2Configured()) {
+            try {
+                const publicUrl = await uploadToR2(key, buffer, file.type);
+                return NextResponse.json({ url: publicUrl });
+            } catch (r2Error) {
+                console.error("R2 upload failed, falling back to filesystem:", r2Error);
+            }
+        }
 
-        // Return the public URL
-        const publicUrl = `/uploads/slides/${filename}`;
+        // ── Filesystem (desarrollo / fallback) ───────────────────
+        const uploadsDir = path.join(process.cwd(), "public", "uploads", "slides");
+        await mkdir(uploadsDir, { recursive: true });
+        await writeFile(path.join(uploadsDir, filename), buffer);
 
-        return NextResponse.json({ url: publicUrl });
+        return NextResponse.json({ url: `/uploads/slides/${filename}` });
     } catch (error) {
         console.error("Error uploading file:", error);
         return NextResponse.json(

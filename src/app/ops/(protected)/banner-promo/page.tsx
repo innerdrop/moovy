@@ -13,7 +13,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import PromoBanner from "@/components/home/PromoBanner";
 
 interface BannerSettings {
@@ -265,7 +265,7 @@ export default function PromoBannerPage() {
               {settings.promoBannerImage ? (
                 <div className="relative w-full rounded-xl overflow-hidden border border-gray-200">
                   <div className="relative w-full aspect-[3/1]">
-                    <Image
+                    <UploadImage
                       src={settings.promoBannerImage}
                       alt="Banner preview"
                       fill

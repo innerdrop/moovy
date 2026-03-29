@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import {
     ShoppingBag, Search, Loader2, ChevronLeft, Check,
     ImageIcon, Layers, ArrowRight, Plus, Sparkles,
@@ -317,7 +317,7 @@ export default function PackageCatalogPage() {
                             >
                                 <div className="aspect-[3/2] relative">
                                     {cat.image ? (
-                                        <Image src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <UploadImage src={cat.image} alt={cat.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                                     ) : (
                                         <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
                                             <Package className="w-16 h-16 text-white/20" />
@@ -454,7 +454,7 @@ export default function PackageCatalogPage() {
                         <div key={p.id} className="bg-white rounded-xl border border-slate-100 overflow-hidden">
                             <div className="aspect-square relative bg-slate-50">
                                 {p.images?.[0]?.url ? (
-                                    <Image src={p.images[0].url} alt={p.name} fill className="object-cover" />
+                                    <UploadImage src={p.images[0].url} alt={p.name} fill className="object-cover" />
                                 ) : (
                                     <ImageIcon className="w-10 h-10 absolute inset-0 m-auto text-slate-200" />
                                 )}
@@ -529,7 +529,7 @@ export default function PackageCatalogPage() {
                                 >
                                     <div className="aspect-square relative bg-slate-50">
                                         {p.images?.[0]?.url ? (
-                                            <Image src={p.images[0].url} alt={p.name} fill className="object-cover" />
+                                            <UploadImage src={p.images[0].url} alt={p.name} fill className="object-cover" />
                                         ) : (
                                             <ImageIcon className="w-8 h-8 absolute inset-0 m-auto text-slate-200" />
                                         )}

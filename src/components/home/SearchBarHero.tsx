@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Store, ShoppingBag, Tag, X } from "lucide-react";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 
 interface Suggestion {
   type: "comercio" | "tienda" | "marketplace";
@@ -211,7 +211,7 @@ export default function SearchBarHero() {
                   >
                     <div className="w-10 h-10 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                       {s.image ? (
-                        <Image
+                        <UploadImage
                           src={s.image}
                           alt=""
                           width={40}

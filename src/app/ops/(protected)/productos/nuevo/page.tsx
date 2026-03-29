@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import {
     ArrowLeft,
     Save,
@@ -189,7 +189,7 @@ export default function NewProductPage() {
                         <div className="w-32 h-32 bg-slate-100 rounded-xl overflow-hidden relative border-2 border-dashed border-slate-200">
                             {imageUrl ? (
                                 <>
-                                    <Image src={imageUrl} alt={name || "Producto"} fill className="object-cover" />
+                                    <UploadImage src={imageUrl} alt={name || "Producto"} fill className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => setImageUrl("")}

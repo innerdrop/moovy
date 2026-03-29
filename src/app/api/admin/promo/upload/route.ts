@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { isR2Configured, uploadToR2 } from "@/lib/r2-storage";
 
 export async function POST(request: Request) {
     try {
@@ -29,35 +30,45 @@ export async function POST(request: Request) {
             );
         }
 
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024;
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
             return NextResponse.json(
-                { error: "El archivo es muy grande. Máximo 5MB." },
+                { error: "El archivo es muy grande. Máximo 10MB." },
                 { status: 400 }
             );
         }
 
-        // Create uploads directory if it doesn't exist
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "promo");
-        await mkdir(uploadDir, { recursive: true });
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
         // Generate unique filename
         const ext = file.name.split(".").pop();
         const uniqueName = `promo-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const filePath = path.join(uploadDir, uniqueName);
+        const key = `promo/${uniqueName}`;
 
-        // Write file
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(filePath, buffer);
+        // ── R2 (producción) ───────────────────────────────────────
+        if (isR2Configured()) {
+            try {
+                const publicUrl = await uploadToR2(key, buffer, file.type);
+                return NextResponse.json({
+                    success: true,
+                    url: publicUrl,
+                    message: "Imagen subida correctamente",
+                });
+            } catch (r2Error) {
+                console.error("R2 upload failed, falling back to filesystem:", r2Error);
+            }
+        }
 
-        // Return public URL
-        const publicUrl = `/uploads/promo/${uniqueName}`;
+        // ── Filesystem (desarrollo / fallback) ───────────────────
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "promo");
+        await mkdir(uploadDir, { recursive: true });
+        await writeFile(path.join(uploadDir, uniqueName), buffer);
 
         return NextResponse.json({
             success: true,
-            url: publicUrl,
+            url: `/uploads/promo/${uniqueName}`,
             message: "Imagen subida correctamente",
         });
     } catch (error) {

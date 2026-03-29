@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import UploadImage from "@/components/ui/UploadImage";
 import {
     Package,
     Plus,
@@ -484,7 +484,7 @@ export default function CatalogPackagesPage() {
                         <div key={product.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col">
                             <div className="aspect-square bg-slate-100 relative overflow-hidden">
                                 {product.images?.[0]?.url ? (
-                                    <Image src={product.images[0].url} alt={product.name} fill className={`object-cover group-hover:scale-105 transition-all duration-500 ${!product.isActive ? "grayscale opacity-50" : ""}`} />
+                                    <UploadImage src={product.images[0].url} alt={product.name} fill className={`object-cover group-hover:scale-105 transition-all duration-500 ${!product.isActive ? "grayscale opacity-50" : ""}`} />
                                 ) : (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
                                         <ImageIcon className="w-12 h-12 mb-2" />
@@ -562,7 +562,7 @@ export default function CatalogPackagesPage() {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden relative border border-slate-200">
                                                     {p.images?.[0]?.url ? (
-                                                        <Image src={p.images[0].url} alt={p.name} fill className="object-cover" />
+                                                        <UploadImage src={p.images[0].url} alt={p.name} fill className="object-cover" />
                                                     ) : <ImageIcon className="w-5 h-5 absolute inset-0 m-auto text-slate-300" />}
                                                 </div>
                                                 <span className="font-bold text-slate-800">{p.name}</span>
