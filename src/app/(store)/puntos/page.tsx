@@ -438,59 +438,53 @@ export default function PuntosPage() {
                             Cómo Funciona
                         </h2>
 
-                        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-8">
+                        <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-10">
                             {/* Step 1 */}
-                            <div className="flex flex-col">
-                                <div className="mb-6">
-                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-[#e60012] text-white rounded-full text-2xl font-bold mb-4">
-                                        1
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                                        Comprá
-                                    </h3>
-                                    <p className="text-lg text-gray-600 leading-relaxed">
-                                        Cada compra que recibís se convierte automáticamente en puntos.
-                                        <strong className="block text-gray-900 mt-2">
-                                            10 puntos por cada $1,000
-                                        </strong>
-                                    </p>
+                            <div className="text-center">
+                                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#e60012] text-white rounded-full text-xl font-bold mb-4">
+                                    1
                                 </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                    Comprá
+                                </h3>
+                                <p className="text-base text-gray-600 leading-relaxed">
+                                    Cada compra que recibís se convierte automáticamente en puntos.
+                                </p>
+                                <p className="text-base font-semibold text-gray-900 mt-3">
+                                    10 puntos por cada $1,000
+                                </p>
                             </div>
 
                             {/* Step 2 */}
-                            <div className="flex flex-col">
-                                <div className="mb-6">
-                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-[#e60012] text-white rounded-full text-2xl font-bold mb-4">
-                                        2
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                                        Acumulá
-                                    </h3>
-                                    <p className="text-lg text-gray-600 leading-relaxed">
-                                        Tus puntos tienen valor real. 6 meses sin pedir y expiran.
-                                        <strong className="block text-gray-900 mt-2">
-                                            1 punto = $1 de descuento
-                                        </strong>
-                                    </p>
+                            <div className="text-center">
+                                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#e60012] text-white rounded-full text-xl font-bold mb-4">
+                                    2
                                 </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                    Acumulá
+                                </h3>
+                                <p className="text-base text-gray-600 leading-relaxed">
+                                    Tus puntos tienen valor real. 6 meses sin pedir y expiran.
+                                </p>
+                                <p className="text-base font-semibold text-gray-900 mt-3">
+                                    1 punto = $1 de descuento
+                                </p>
                             </div>
 
                             {/* Step 3 */}
-                            <div className="flex flex-col">
-                                <div className="mb-6">
-                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-[#e60012] text-white rounded-full text-2xl font-bold mb-4">
-                                        3
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                                        Canjeá
-                                    </h3>
-                                    <p className="text-lg text-gray-600 leading-relaxed">
-                                        Usálos como descuento en tu próximo pedido.
-                                        <strong className="block text-gray-900 mt-2">
-                                            Hasta 20% de descuento
-                                        </strong>
-                                    </p>
+                            <div className="text-center">
+                                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#e60012] text-white rounded-full text-xl font-bold mb-4">
+                                    3
                                 </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                    Canjeá
+                                </h3>
+                                <p className="text-base text-gray-600 leading-relaxed">
+                                    Usálos como descuento en tu próximo pedido.
+                                </p>
+                                <p className="text-base font-semibold text-gray-900 mt-3">
+                                    Hasta 20% de descuento
+                                </p>
                             </div>
                         </div>
                     </div>

@@ -247,63 +247,10 @@ export function ChatWidget() {
         }
     };
 
-    // If not logged in, show login prompt
+    // Users not logged in don't see the chat widget
+    // They have WhatsApp, email, and /ayuda for support
     if (!session?.user) {
-        return (
-            <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40">
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`relative w-14 h-14 rounded-full bg-[#e60012] text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center ${
-                        isOpen ? "scale-125" : "hover:scale-110"
-                    }`}
-                    aria-label="Abrir chat de soporte"
-                >
-                    <ChatBubbleIcon className="w-7 h-7" />
-                    {isOnline && <OnlineIndicator />}
-                </button>
-
-                {isOpen && (
-                    <div className="absolute bottom-20 right-0 w-96 max-w-[calc(100vw-32px)] bg-white rounded-lg shadow-2xl flex flex-col animate-in slide-in-from-bottom-5">
-                        <div className="bg-[#e60012] text-white p-4 rounded-t-lg">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-semibold">Soporte MOOVY</h3>
-                                    <p className="text-sm opacity-90">
-                                        {isOnline ? "En línea" : "Fuera de línea"}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    className="text-lg hover:opacity-80"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-6 text-center">
-                            <div className="text-4xl mb-3">💬</div>
-                            <p className="font-semibold mb-2">¿Necesitás ayuda?</p>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Iniciá sesión para chatear con nuestro equipo de soporte.
-                            </p>
-                            <a
-                                href="/login"
-                                className="inline-block w-full bg-[#e60012] text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium text-center"
-                            >
-                                Iniciar sesión
-                            </a>
-                            <a
-                                href="/registro"
-                                className="inline-block w-full mt-2 text-sm text-[#e60012] hover:underline"
-                            >
-                                ¿No tenés cuenta? Registrate
-                            </a>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
+        return null;
     }
 
     // Logged in
