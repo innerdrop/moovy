@@ -90,11 +90,11 @@ const FAQ_SECTIONS: FaqSection[] = [
         items: [
             {
                 question: "¿Cómo gano puntos MOOVER?",
-                answer: "Ganás 1 punto por cada $1 que gastás en compras. También ganás 200 puntos por cada amigo que invites y un bono de bienvenida de 250 puntos al registrarte."
+                answer: "Ganás 10 puntos por cada $1,000 que gastás en compras. También ganás 1,000 puntos por cada amigo que invites y un bono de bienvenida de 1,000 puntos con tu primera compra."
             },
             {
                 question: "¿Cómo uso mis puntos?",
-                answer: "Podés canjear tus puntos por descuentos en el checkout. El descuento máximo es del 50% del subtotal y se requiere un mínimo de 500 puntos."
+                answer: "Podés canjear tus puntos por descuentos en el checkout. Cada punto vale $1 de descuento. El descuento máximo es del 20% del subtotal y se requiere un mínimo de 500 puntos."
             },
             {
                 question: "¿Los puntos vencen?",

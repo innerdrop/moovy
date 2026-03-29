@@ -171,7 +171,7 @@ export default function PuntosPage() {
     };
 
     const handleShare = async () => {
-        const shareText = `¡Unite a Moovy! Usá mi código ${referralCode} y ganá 250 puntos de regalo. #SoyMoover`;
+        const shareText = `¡Unite a Moovy! Usá mi código ${referralCode} y ganá 500 puntos de regalo. #SoyMoover`;
         const fullText = `${shareText} ${referralLink}`;
 
         // Check if on mobile
@@ -451,9 +451,9 @@ export default function PuntosPage() {
                                         Comprá
                                     </h3>
                                     <p className="text-lg text-gray-600 leading-relaxed">
-                                        Cada peso que gastás se convierte automáticamente en puntos.
+                                        Cada compra que recibís se convierte automáticamente en puntos.
                                         <strong className="block text-gray-900 mt-2">
-                                            1 punto por cada $1
+                                            10 puntos por cada $1,000
                                         </strong>
                                     </p>
                                 </div>
@@ -469,9 +469,9 @@ export default function PuntosPage() {
                                         Acumulá
                                     </h3>
                                     <p className="text-lg text-gray-600 leading-relaxed">
-                                        Tus puntos tienen valor real y nunca expiran.
+                                        Tus puntos tienen valor real. 6 meses sin pedir y expiran.
                                         <strong className="block text-gray-900 mt-2">
-                                            Cada punto vale $0.015
+                                            1 punto = $1 de descuento
                                         </strong>
                                     </p>
                                 </div>
@@ -489,7 +489,7 @@ export default function PuntosPage() {
                                     <p className="text-lg text-gray-600 leading-relaxed">
                                         Usálos como descuento en tu próximo pedido.
                                         <strong className="block text-gray-900 mt-2">
-                                            Hasta 15% de descuento
+                                            Hasta 20% de descuento
                                         </strong>
                                     </p>
                                 </div>
@@ -533,10 +533,10 @@ export default function PuntosPage() {
                                     <div>
                                         <p className="text-lg text-gray-900">
                                             Ganás{" "}
-                                            <strong className="text-[#e60012]">8,000 puntos</strong>
+                                            <strong className="text-[#e60012]">80 puntos</strong>
                                         </p>
                                         <p className="text-gray-600 mt-1">
-                                            (1 punto por cada peso)
+                                            (10 puntos por cada $1,000)
                                         </p>
                                     </div>
                                 </div>
@@ -550,20 +550,20 @@ export default function PuntosPage() {
                                     <div>
                                         <p className="text-lg text-gray-900">
                                             Esos puntos valen{" "}
-                                            <strong className="text-[#e60012]">$120</strong>
+                                            <strong className="text-[#e60012]">$80</strong>
                                         </p>
                                         <p className="text-gray-600 mt-1">
-                                            (8,000 × $0.015 cada punto)
+                                            (80 puntos × $1 cada punto)
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="border-t-2 border-red-300 pt-8">
                                     <p className="text-center text-gray-900 text-lg">
-                                        <strong>En tu próximo pedido de $800,</strong>
+                                        <strong>En tu próximo pedido,</strong>
                                         <br />
                                         <span className="text-[#e60012] text-2xl font-bold">
-                                            tenés $120 de descuento listo
+                                            tenés $80 de descuento listo
                                         </span>
                                     </p>
                                 </div>
@@ -590,10 +590,10 @@ export default function PuntosPage() {
                                         </h3>
                                         <p className="text-gray-600 mt-1">
                                             <strong className="text-[#e60012] text-lg">
-                                                250 puntos de bienvenida
+                                                1,000 puntos de bienvenida
                                             </strong>
                                             <br />
-                                            ($3.75 en valor real) en tu primera compra
+                                            ($1,000 en descuentos) con tu primera compra de $5,000+
                                         </p>
                                     </div>
                                 </div>
@@ -609,14 +609,13 @@ export default function PuntosPage() {
                                         </h3>
                                         <p className="text-gray-600 mt-1">
                                             <strong className="text-[#e60012] text-lg">
-                                                200 puntos por cada amigo
+                                                1,000 puntos por cada amigo
                                             </strong>
                                             <br />
                                             Cuando tu amigo hace su primera compra de $8,000+
                                         </p>
                                         <p className="text-gray-600 mt-2 text-sm">
-                                            Además, tu amigo recibe 250 puntos extras al registrarse
-                                            con tu código
+                                            Además, tu amigo recibe 500 puntos extras de bienvenida
                                         </p>
                                     </div>
                                 </div>
@@ -648,7 +647,7 @@ export default function PuntosPage() {
                                     💡 Nota
                                 </span>
                                 Los bonos de bienvenida se activan con tu primera compra de $5,000+.
-                                Los bonos por referidos se otorgan cuando tu amigo gasta $8,000.
+                                Los puntos por referidos se acreditan cuando tu amigo completa su primer pedido de $8,000+.
                             </p>
                         </div>
                     </div>
@@ -661,77 +660,83 @@ export default function PuntosPage() {
                             Niveles Exclusivos
                         </h2>
 
-                        <div className="space-y-6">
-                            {/* Moover */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* MOOVER */}
                             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-8">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-medium text-blue-600 uppercase tracking-wide mb-2">
-                                            🚀 Nivel Inicial
-                                        </p>
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                            Moover
-                                        </h3>
-                                        <p className="text-gray-600 mb-4">
-                                            0 a 299,999 puntos acumulados
-                                        </p>
-                                        <ul className="space-y-2 text-gray-700">
-                                            <li>✓ Acumulás 1 punto por cada $1</li>
-                                            <li>✓ Canjeás descuentos hasta 15%</li>
-                                            <li>✓ Referidos y bonificaciones</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <p className="text-sm font-medium text-blue-600 uppercase tracking-wide mb-2">
+                                    🚀 Nivel Inicial
+                                </p>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                    MOOVER
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    Todos empiezan acá
+                                </p>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li>✓ 10 puntos por cada $1,000</li>
+                                    <li>✓ Descuentos hasta 20%</li>
+                                    <li>✓ Referidos y bonificaciones</li>
+                                </ul>
                             </div>
 
-                            {/* Pro */}
-                            <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-8">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-medium text-red-600 uppercase tracking-wide mb-2">
-                                            ⚡ Nivel Pro
-                                        </p>
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                            Pro
-                                        </h3>
-                                        <p className="text-gray-600 mb-4">
-                                            300,000 a 999,999 puntos acumulados
-                                        </p>
-                                        <ul className="space-y-2 text-gray-700">
-                                            <li>✓ Todo lo de Moover</li>
-                                            <li>✓ 5% OFF en envíos</li>
-                                            <li>✓ Sorteos exclusivos</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                            {/* SILVER */}
+                            <div className="bg-gradient-to-r from-gray-100 to-slate-100 border border-gray-300 rounded-2xl p-8">
+                                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-2">
+                                    🥈 Nivel Silver
+                                </p>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                    MOOVER SILVER
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    5 pedidos entregados en 90 días
+                                </p>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li>✓ 12.5 puntos por cada $1,000</li>
+                                    <li>✓ Badge Silver en tu perfil</li>
+                                    <li>✓ Destacado en comentarios</li>
+                                </ul>
                             </div>
 
-                            {/* Legend */}
-                            <div className="bg-gradient-to-r from-yellow-50 to-pink-50 border border-yellow-200 rounded-2xl p-8">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-medium text-yellow-700 uppercase tracking-wide mb-2">
-                                            👑 Máximo Nivel
-                                        </p>
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                            Leyenda
-                                        </h3>
-                                        <p className="text-gray-600 mb-4">
-                                            1,000,000+ puntos acumulados
-                                        </p>
-                                        <ul className="space-y-2 text-gray-700">
-                                            <li>✓ Todo lo de Pro</li>
-                                            <li>✓ Envíos gratis en pedidos +$20k</li>
-                                            <li>✓ Atención prioritaria 24/7</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                            {/* GOLD */}
+                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-2xl p-8">
+                                <p className="text-sm font-medium text-yellow-700 uppercase tracking-wide mb-2">
+                                    🥇 Nivel Gold
+                                </p>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                    MOOVER GOLD
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    15 pedidos entregados en 90 días
+                                </p>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li>✓ 15 puntos por cada $1,000</li>
+                                    <li>✓ Badge Gold en tu perfil</li>
+                                    <li>✓ Soporte prioritario</li>
+                                </ul>
+                            </div>
+
+                            {/* BLACK */}
+                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 text-white">
+                                <p className="text-sm font-medium text-yellow-400 uppercase tracking-wide mb-2">
+                                    👑 Máximo Nivel
+                                </p>
+                                <h3 className="text-2xl font-bold text-white mb-2">
+                                    MOOVER BLACK
+                                </h3>
+                                <p className="text-gray-300 mb-4">
+                                    40 pedidos entregados en 90 días
+                                </p>
+                                <ul className="space-y-2 text-gray-200">
+                                    <li>✓ 20 puntos por cada $1,000</li>
+                                    <li>✓ Badge Black exclusivo</li>
+                                    <li>✓ Soporte VIP + eventos exclusivos</li>
+                                </ul>
                             </div>
                         </div>
 
                         <p className="text-center text-gray-500 text-sm mt-12">
-                            Los niveles se calculan con tu historial total de puntos acumulados.
-                            No se pierden al canjeár.
+                            Los niveles se calculan automáticamente según tus pedidos entregados
+                            en los últimos 90 días. Si dejás de pedir, tu nivel puede bajar.
                         </p>
                     </div>
                 </section>
@@ -814,34 +819,12 @@ export default function PuntosPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-white/80">Tu nivel</span>
                                 <span className="font-bold text-lg flex items-center gap-1">
-                                    {pointsLifetime >= 1000000
-                                        ? "👑 Leyenda"
-                                        : pointsLifetime >= 300000
-                                            ? "⚡ Pro"
-                                            : "🚀 Moover"}
+                                    {"🚀 MOOVER"}
                                 </span>
                             </div>
-                            <div className="mt-2 bg-white/10 rounded-full h-2 overflow-hidden">
-                                <div
-                                    className="h-full bg-yellow-400 rounded-full transition-all"
-                                    style={{
-                                        width: `${Math.min(
-                                            100,
-                                            pointsLifetime >= 1000000
-                                                ? 100
-                                                : pointsLifetime >= 300000
-                                                    ? (pointsLifetime / 1000000) * 100
-                                                    : (pointsLifetime / 300000) * 100
-                                        )}%`
-                                    }}
-                                />
-                            </div>
-                            <p className="text-[10px] text-white/60 mt-1 text-left">
-                                {pointsLifetime >= 1000000
-                                    ? "¡Nivel máximo! • Tocá para ver beneficios"
-                                    : pointsLifetime >= 300000
-                                        ? `${(1000000 - pointsLifetime).toLocaleString("es-AR")} para Leyenda`
-                                        : `${(300000 - pointsLifetime).toLocaleString("es-AR")} para Pro`}
+                            <p className="text-[10px] text-white/60 mt-2 text-left">
+                                Tu nivel se calcula por pedidos entregados en los últimos 90 días.
+                                Tocá para ver los niveles.
                             </p>
                         </button>
 
@@ -967,7 +950,7 @@ export default function PuntosPage() {
                                 <div className="flex-1 text-left">
                                     <p className="font-medium text-gray-900">Comprando</p>
                                     <p className="text-gray-500 text-xs">
-                                        1 punto por cada $1 de compra
+                                        10 puntos por cada $1,000 de compra
                                     </p>
                                 </div>
                                 {expandedItem === "compras" ? (
@@ -983,7 +966,7 @@ export default function PuntosPage() {
                                         automáticamente:
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Si gastás $1.000, sumás 1.000 puntos</li>
+                                        <li>Si gastás $10.000, sumás 100 puntos ($100 en descuentos)</li>
                                         <li>Los puntos se acreditan al recibir tu pedido</li>
                                         <li>Aplica para productos, no para envío</li>
                                     </ul>
@@ -1009,7 +992,7 @@ export default function PuntosPage() {
                                         Refiriendo amigos
                                     </p>
                                     <p className="text-gray-500 text-xs">
-                                        200 puntos por cada amigo
+                                        1,000 puntos por cada amigo
                                     </p>
                                 </div>
                                 {expandedItem === "referidos" ? (
@@ -1025,8 +1008,8 @@ export default function PuntosPage() {
                                         primera compra:
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Vos ganás 200 puntos cuando tu amigo compra $8,000+</li>
-                                        <li>Tu amigo gana 250 puntos extras de bienvenida</li>
+                                        <li>Vos ganás 1,000 puntos cuando tu amigo compra $8,000+</li>
+                                        <li>Tu amigo gana 500 puntos extras de bienvenida</li>
                                         <li>¡No hay límite! Invitá a todos los que quieras</li>
                                     </ul>
                                 </div>
@@ -1043,7 +1026,7 @@ export default function PuntosPage() {
                                     Bono de bienvenida
                                 </p>
                                 <p className="text-gray-500 text-xs">
-                                    250 puntos con tu primera compra ✓
+                                    1,000 puntos con tu primera compra ✓
                                 </p>
                             </div>
                         </div>
@@ -1215,7 +1198,7 @@ export default function PuntosPage() {
                             </div>
 
                             <p className="text-xs text-gray-400 mt-4">
-                                Compartí tu código para que otros ganen 250 puntos
+                                Compartí tu código para que otros ganen 500 puntos
                             </p>
                         </div>
                     </div>
@@ -1429,97 +1412,69 @@ export default function PuntosPage() {
                                 </button>
                             </div>
                             <div className="p-4 space-y-4">
-                                {/* Moover */}
-                                <div
-                                    className={`rounded-xl p-4 border-2 ${
-                                        pointsLifetime < 300000
-                                            ? "border-blue-400 bg-blue-50"
-                                            : "border-gray-200 bg-gray-50"
-                                    }`}
-                                >
+                                {/* MOOVER */}
+                                <div className="rounded-xl p-4 border-2 border-blue-400 bg-blue-50">
                                     <div className="flex items-center gap-3 mb-2">
                                         <span className="text-3xl">🚀</span>
                                         <div>
-                                            <p className="font-bold text-gray-900">Moover</p>
-                                            <p className="text-xs text-gray-500">
-                                                0 - 299,999 puntos
-                                            </p>
+                                            <p className="font-bold text-gray-900">MOOVER</p>
+                                            <p className="text-xs text-gray-500">Todos empiezan acá</p>
                                         </div>
-                                        {pointsLifetime < 300000 && (
-                                            <span className="ml-auto text-xs bg-blue-400 text-white px-2 py-0.5 rounded-full font-bold">
-                                                Tu nivel
-                                            </span>
-                                        )}
                                     </div>
                                     <ul className="text-sm text-gray-600 space-y-1">
-                                        <li>✓ Acumulás 1 punto por cada $1</li>
-                                        <li>✓ Acceso a descuentos base</li>
+                                        <li>✓ 10 puntos por cada $1,000 gastados</li>
+                                        <li>✓ Descuentos hasta 20% del subtotal</li>
                                     </ul>
                                 </div>
 
-                                {/* Pro */}
-                                <div
-                                    className={`rounded-xl p-4 border-2 ${
-                                        pointsLifetime >= 300000 &&
-                                        pointsLifetime < 1000000
-                                            ? "border-red-500 bg-red-50"
-                                            : "border-gray-200 bg-gray-50"
-                                    }`}
-                                >
+                                {/* SILVER */}
+                                <div className="rounded-xl p-4 border-2 border-gray-300 bg-gray-50">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <span className="text-3xl">⚡</span>
+                                        <span className="text-3xl">🥈</span>
                                         <div>
-                                            <p className="font-bold text-gray-900">Pro</p>
-                                            <p className="text-xs text-gray-500">
-                                                300,000 - 999,999 puntos
-                                            </p>
+                                            <p className="font-bold text-gray-900">MOOVER SILVER</p>
+                                            <p className="text-xs text-gray-500">5 pedidos en 90 días</p>
                                         </div>
-                                        {pointsLifetime >= 300000 &&
-                                            pointsLifetime < 1000000 && (
-                                                <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
-                                                    Tu nivel
-                                                </span>
-                                            )}
                                     </div>
                                     <ul className="text-sm text-gray-600 space-y-1">
-                                        <li>✓ Todo lo de Moover</li>
-                                        <li>✓ 5% OFF en envíos</li>
-                                        <li>✓ Sorteos exclusivos</li>
+                                        <li>✓ 12.5 puntos por cada $1,000</li>
+                                        <li>✓ Badge Silver en tu perfil</li>
                                     </ul>
                                 </div>
 
-                                {/* Leyenda */}
-                                <div
-                                    className={`rounded-xl p-4 border-2 ${
-                                        pointsLifetime >= 1000000
-                                            ? "border-pink-500 bg-pink-50"
-                                            : "border-gray-200 bg-gray-50"
-                                    }`}
-                                >
+                                {/* GOLD */}
+                                <div className="rounded-xl p-4 border-2 border-yellow-300 bg-yellow-50">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="text-3xl">🥇</span>
+                                        <div>
+                                            <p className="font-bold text-gray-900">MOOVER GOLD</p>
+                                            <p className="text-xs text-gray-500">15 pedidos en 90 días</p>
+                                        </div>
+                                    </div>
+                                    <ul className="text-sm text-gray-600 space-y-1">
+                                        <li>✓ 15 puntos por cada $1,000</li>
+                                        <li>✓ Badge Gold + soporte prioritario</li>
+                                    </ul>
+                                </div>
+
+                                {/* BLACK */}
+                                <div className="rounded-xl p-4 border-2 border-gray-800 bg-gray-900 text-white">
                                     <div className="flex items-center gap-3 mb-2">
                                         <span className="text-3xl">👑</span>
                                         <div>
-                                            <p className="font-bold text-gray-900">Leyenda</p>
-                                            <p className="text-xs text-gray-500">
-                                                1,000,000+ puntos
-                                            </p>
+                                            <p className="font-bold text-white">MOOVER BLACK</p>
+                                            <p className="text-xs text-gray-400">40 pedidos en 90 días</p>
                                         </div>
-                                        {pointsLifetime >= 1000000 && (
-                                            <span className="ml-auto text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full font-bold">
-                                                Tu nivel
-                                            </span>
-                                        )}
                                     </div>
-                                    <ul className="text-sm text-gray-600 space-y-1">
-                                        <li>✓ Todo lo de Pro</li>
-                                        <li>✓ Envíos gratis en pedidos +$20k</li>
-                                        <li>✓ Atención prioritaria 24/7</li>
+                                    <ul className="text-sm text-gray-300 space-y-1">
+                                        <li>✓ 20 puntos por cada $1,000</li>
+                                        <li>✓ Badge Black + soporte VIP + eventos</li>
                                     </ul>
                                 </div>
 
                                 <p className="text-xs text-gray-400 text-center pt-4">
-                                    Los niveles se calculan con los puntos totales acumulados
-                                    (no se restan al canjear)
+                                    Los niveles se calculan según pedidos entregados en los
+                                    últimos 90 días. Si dejás de pedir, podés bajar de nivel.
                                 </p>
                             </div>
                         </div>

@@ -39,16 +39,16 @@ export default function TerminosMooverPage() {
                     </h2>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div className="bg-white rounded-lg p-3 text-center">
-                            <p className="text-2xl font-bold text-green-600">100 pts</p>
-                            <p className="text-sm text-gray-500">= $1.50 de descuento</p>
+                            <p className="text-2xl font-bold text-green-600">1 pt</p>
+                            <p className="text-sm text-gray-500">= $1 de descuento</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 text-center">
-                            <p className="text-2xl font-bold text-green-600">1,000 pts</p>
-                            <p className="text-sm text-gray-500">= $15 de descuento</p>
+                            <p className="text-2xl font-bold text-green-600">500 pts</p>
+                            <p className="text-sm text-gray-500">= $500 de descuento</p>
                         </div>
                     </div>
                     <p className="text-sm text-gray-600">
-                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 50% del subtotal. Mínimo 500 puntos para canjear.
+                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 20% del subtotal. Mínimo 500 puntos para canjear.
                     </p>
                 </section>
 
@@ -60,26 +60,26 @@ export default function TerminosMooverPage() {
                     </h2>
                     <div className="space-y-4">
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm text-gray-700">Por cada $1 de compra</span>
-                            <span className="font-bold text-[#e60012]">+1 punto</span>
+                            <span className="text-sm text-gray-700">Por cada $1,000 de compra</span>
+                            <span className="font-bold text-[#e60012]">+10 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
                             <div>
                                 <span className="text-sm text-gray-700">Bono de bienvenida</span>
                                 <p className="text-xs text-amber-600">Se activa con tu 1ra compra de $5,000+</p>
                             </div>
-                            <span className="font-bold text-[#e60012]">+250 puntos</span>
+                            <span className="font-bold text-[#e60012]">+1,000 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                             <div>
                                 <span className="text-sm text-gray-700">Por referir un amigo</span>
                                 <p className="text-xs text-red-600">Cuando tu amigo compra $8,000+</p>
                             </div>
-                            <span className="font-bold text-[#e60012]">+200 puntos</span>
+                            <span className="font-bold text-[#e60012]">+1,000 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-700">Tu amigo referido recibe</span>
-                            <span className="font-bold text-[#e60012]">+250 puntos</span>
+                            <span className="font-bold text-[#e60012]">+500 puntos</span>
                         </div>
                     </div>
                 </section>
@@ -101,7 +101,7 @@ export default function TerminosMooverPage() {
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-red-600 font-bold">•</span>
-                            <span>Vos ganás <strong>200 puntos</strong> y tu amigo gana <strong>250 puntos</strong> de bienvenida.</span>
+                            <span>Vos ganás <strong>1,000 puntos</strong> y tu amigo gana <strong>500 puntos</strong> de bienvenida.</span>
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-red-600 font-bold">•</span>
@@ -165,3 +165,4 @@ export default function TerminosMooverPage() {
         </div>
     );
 }
+              
