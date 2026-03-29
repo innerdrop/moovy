@@ -626,7 +626,7 @@ model StoreSettings {
   closedMessage         String   @default("Estamos cerrados. ??Volvemos pronto!")
   isMaintenanceMode     Boolean  @default(false)
   maintenanceMessage    String   @default("??Volvemos pronto! Estamos trabajando para mejorar tu experiencia.")
-  fuelPricePerLiter     Float    @default(1200)
+  fuelPricePerLiter     Float    @default(1591)
   fuelConsumptionPerKm  Float    @default(0.06)
   baseDeliveryFee       Float    @default(500)
   maintenanceFactor     Float    @default(1.35)
@@ -666,7 +666,7 @@ model StoreSettings {
 
   // === OPS CONFIG: Delivery Zones & Climate (Biblia Financiera) ===
   zoneMultipliersJson      String  @default("{\"ZONA_A\":1.0,\"ZONA_B\":1.15,\"ZONA_C\":1.35}")
-  climateMultipliersJson   String  @default("{\"normal\":1.0,\"lluvia\":1.10,\"nieve\":1.15,\"extremo\":1.25}")
+  climateMultipliersJson   String  @default("{\"normal\":1.0,\"lluvia_leve\":1.15,\"temporal_fuerte\":1.30}")
   activeClimateCondition   String  @default("normal")
   operationalCostPercent   Float   @default(5)
 
@@ -720,16 +720,16 @@ model StoreSettings {
 
 model PointsConfig {
   id                   String   @id @default("points_config")
-  pointsPerDollar      Float    @default(1)
+  pointsPerDollar      Float    @default(0.01)
   minPurchaseForPoints Float    @default(0)
-  pointsValue          Float    @default(0.01)
-  minPointsToRedeem    Int      @default(100)
-  maxDiscountPercent   Float    @default(50)
-  signupBonus          Int      @default(100)
-  referralBonus        Int      @default(200)
-  reviewBonus          Int      @default(10)
+  pointsValue          Float    @default(1)
+  minPointsToRedeem    Int      @default(500)
+  maxDiscountPercent   Float    @default(20)
+  signupBonus          Int      @default(1000)
+  referralBonus        Int      @default(1000)
+  reviewBonus          Int      @default(25)
   pointsExpireDays     Int?
-  refereeBonus         Int      @default(100)
+  refereeBonus         Int      @default(500)
   minPurchaseForBonus  Float    @default(5000)
   minReferralPurchase  Float    @default(8000)
   tierWindowDays       Int      @default(90)

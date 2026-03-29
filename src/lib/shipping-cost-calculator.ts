@@ -34,6 +34,8 @@ export interface ShippingCostParams {
   freeDeliveryMinimum: number | null;
   /** Si es retiro en local */
   isPickup?: boolean;
+  /** Biblia v3: % de costo operativo sobre orderTotal (default 5%) */
+  operationalCostPercent?: number;
 }
 
 export interface ShippingCostResult {
@@ -132,10 +134,14 @@ export function calculateShippingCost(
   const shipmentType = getShipmentType(params.shipmentTypeCode);
   const shipmentSurcharge = shipmentType.surchargeArs;
 
-  // 5. Total antes de descuentos
-  const totalBeforeDiscounts = subtotal + shipmentSurcharge;
+  // 5. Costo operativo (Biblia v3: 5% del subtotal del pedido, cubre MP 3.81% + margen)
+  const opPercent = params.operationalCostPercent ?? 5;
+  const operationalCost = Math.round(params.orderTotal * (opPercent / 100));
 
-  // 6. Evaluar envío gratis
+  // 6. Total antes de descuentos (envío + recargo + operativo)
+  const totalBeforeDiscounts = subtotal + shipmentSurcharge + operationalCost;
+
+  // 7. Evaluar envío gratis
   let isFreeDelivery = false;
   let freeDeliveryReason: string | undefined;
 
@@ -148,10 +154,10 @@ export function calculateShippingCost(
     freeDeliveryReason = `Envío gratis por compra mayor a $${params.freeDeliveryMinimum}`;
   }
 
-  // 7. Total final
-  const total = isFreeDelivery ? 0 : Math.ceil(totalBeforeDiscounts);
+  // 8. Total final (si es gratis, solo se cobra el operativo — Moovy no puede perder el costo MP)
+  const total = isFreeDelivery ? operationalCost : Math.ceil(totalBeforeDiscounts);
 
-  // 8. Desglose
+  // 9. Desglose
   const breakdown: ShippingBreakdownItem[] = [
     { concept: `Envío ${category}`, amount: baseCost },
     { concept: `Distancia (${params.distanceKm.toFixed(1)} km)`, amount: distanceCost },
@@ -161,8 +167,12 @@ export function calculateShippingCost(
     breakdown.push({ concept: `Recargo ${shipmentType.name}`, amount: shipmentSurcharge });
   }
 
+  if (operationalCost > 0) {
+    breakdown.push({ concept: `Costo operativo (${opPercent}%)`, amount: operationalCost });
+  }
+
   if (isFreeDelivery) {
-    breakdown.push({ concept: freeDeliveryReason!, amount: -totalBeforeDiscounts });
+    breakdown.push({ concept: freeDeliveryReason!, amount: -(subtotal + shipmentSurcharge) });
   }
 
   return {

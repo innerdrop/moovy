@@ -209,6 +209,27 @@ export async function POST(request: Request) {
             distanceKm = calculateDistance(originLat, originLng, lat, lng);
         }
 
+        // Parse zone/climate multipliers from StoreSettings (Biblia v3)
+        let zoneMultipliers: Record<string, number> = { ZONA_A: 1.0, ZONA_B: 1.15, ZONA_C: 1.35 };
+        let climateMultipliers: Record<string, number> = { normal: 1.0, lluvia_leve: 1.15, temporal_fuerte: 1.30 };
+        try {
+            if ((settings as any).zoneMultipliersJson) {
+                zoneMultipliers = JSON.parse((settings as any).zoneMultipliersJson);
+            }
+            if ((settings as any).climateMultipliersJson) {
+                climateMultipliers = JSON.parse((settings as any).climateMultipliersJson);
+            }
+        } catch { /* use defaults */ }
+
+        const activeClimate: string = (settings as any).activeClimateCondition ?? "normal";
+        const operationalCostPercent: number = (settings as any).operationalCostPercent ?? 5;
+
+        // TODO: Zone detection could use PostGIS in the future.
+        // For now, default to ZONA_A. OPS can override per-order if needed.
+        const zone = "ZONA_A";
+        const zoneMultiplier = zoneMultipliers[zone] ?? 1.0;
+        const climateMultiplier = climateMultipliers[activeClimate] ?? 1.0;
+
         const deliverySettings: DeliverySettings = {
             fuelPricePerLiter: settings.fuelPricePerLiter,
             fuelConsumptionPerKm: settings.fuelConsumptionPerKm,
@@ -218,6 +239,10 @@ export async function POST(request: Request) {
             maxDeliveryDistance: settings.maxDeliveryDistance,
             originLat,
             originLng,
+            zoneMultiplier,
+            climateMultiplier,
+            operationalCostPercent,
+            orderSubtotal: orderTotal,
         };
 
         const result = calculateDeliveryCost(distanceKm, deliverySettings, orderTotal);
@@ -226,6 +251,8 @@ export async function POST(request: Request) {
             ...result,
             storeAddress: originAddress,
             isRealRoadDistance,
+            zone,
+            activeClimate,
             message: result.isWithinRange
                 ? result.isFreeDelivery
                     ? "¡Envío gratis!"

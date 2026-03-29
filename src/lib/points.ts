@@ -1,5 +1,7 @@
-// Points System - Core Logic (Optimized Strategy)
-// This module handles all points calculations and transactions
+// Points System - Core Logic (Biblia Financiera v3)
+// Earn: 10 pts por $1,000 (0.01 pts/$1). Valor: 1 pt = $1. Cashback ~1%.
+// Niveles por pedidos DELIVERED en 90 días: MOOVER(0), SILVER(5), GOLD(15), BLACK(40)
+// Earn rates: MOOVER ×1, SILVER ×1.25, GOLD ×1.5, BLACK ×2
 import { prisma } from "@/lib/prisma";
 
 interface PointsConfig {
@@ -16,42 +18,128 @@ interface PointsConfig {
     minReferralPurchase: number;      // Min purchase for referral to count
 }
 
-// Optimized config - 1.5% return rate with activation requirements
+// Biblia Financiera v3 defaults
 const defaultConfig: PointsConfig = {
-    pointsPerDollar: 1,               // 1 point per $1 spent
+    pointsPerDollar: 0.01,            // 10 points per $1,000 spent (0.01 pts/$1)
     minPurchaseForPoints: 0,          // No minimum for earning
-    pointsValue: 0.015,               // Each point = $0.015 (1.5% cashback)
-    minPointsToRedeem: 500,           // Min 500 points to use ($7.50)
-    maxDiscountPercent: 15,           // Max 15% discount with points
-    signupBonus: 250,                 // 250 points for signing up (after activation)
-    referralBonus: 500,               // 500 points for referring (after referral buys)
-    refereeBonus: 250,                // 250 points bonus for being referred
+    pointsValue: 1,                   // Each point = $1 ARS (1% cashback at base level)
+    minPointsToRedeem: 500,           // Min 500 points to use ($500)
+    maxDiscountPercent: 20,           // Max 20% discount with points
+    signupBonus: 1000,                // 1,000 points signup (boost month: doubled)
+    referralBonus: 1000,              // 1,000 points for referring (after referral's 1st DELIVERED order)
+    refereeBonus: 500,                // 500 points bonus for being referred
     reviewBonus: 25,                  // 25 points per review
     minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
     minReferralPurchase: 8000,        // $8,000 min for referral to count
 };
 
+// ─── User Levels (Biblia v3) ─────────────────────────────────────────────────
+
+export type UserLevel = "MOOVER" | "SILVER" | "GOLD" | "BLACK";
+
+interface LevelConfig {
+    name: UserLevel;
+    minOrders: number;
+    earnMultiplier: number; // Applied to base pointsPerDollar
+}
+
+/** Sorted highest-first for matching */
+const LEVEL_CONFIGS: LevelConfig[] = [
+    { name: "BLACK", minOrders: 40, earnMultiplier: 2.0 },   // 20 pts/$1K
+    { name: "GOLD", minOrders: 15, earnMultiplier: 1.5 },    // 15 pts/$1K
+    { name: "SILVER", minOrders: 5, earnMultiplier: 1.25 },   // 12.5 pts/$1K
+    { name: "MOOVER", minOrders: 0, earnMultiplier: 1.0 },    // 10 pts/$1K
+];
+
 /**
- * Calculate points earned from a purchase
+ * Get user level based on DELIVERED orders in the last 90 days.
+ * Biblia v3: MOOVER(0), SILVER(5), GOLD(15), BLACK(40)
+ */
+export async function getUserLevel(userId: string): Promise<{
+    level: UserLevel;
+    ordersInWindow: number;
+    earnMultiplier: number;
+    nextLevel: UserLevel | null;
+    ordersToNextLevel: number;
+}> {
+    const windowDays = 90;
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() - windowDays);
+
+    try {
+        const deliveredCount = await prisma.order.count({
+            where: {
+                userId,
+                status: "DELIVERED",
+                updatedAt: { gte: windowStart },
+                deletedAt: null,
+            },
+        });
+
+        // Find current level (configs sorted highest first)
+        let currentLevel = LEVEL_CONFIGS[LEVEL_CONFIGS.length - 1]; // MOOVER default
+        for (const lc of LEVEL_CONFIGS) {
+            if (deliveredCount >= lc.minOrders) {
+                currentLevel = lc;
+                break;
+            }
+        }
+
+        // Find next level
+        const currentIdx = LEVEL_CONFIGS.indexOf(currentLevel);
+        const nextLevelConfig = currentIdx > 0 ? LEVEL_CONFIGS[currentIdx - 1] : null;
+
+        return {
+            level: currentLevel.name,
+            ordersInWindow: deliveredCount,
+            earnMultiplier: currentLevel.earnMultiplier,
+            nextLevel: nextLevelConfig?.name ?? null,
+            ordersToNextLevel: nextLevelConfig
+                ? Math.max(0, nextLevelConfig.minOrders - deliveredCount)
+                : 0,
+        };
+    } catch (error) {
+        console.error("[Points] Error getting user level:", error);
+        return {
+            level: "MOOVER",
+            ordersInWindow: 0,
+            earnMultiplier: 1.0,
+            nextLevel: "SILVER",
+            ordersToNextLevel: 5,
+        };
+    }
+}
+
+/**
+ * Calculate points earned from a purchase.
+ * Biblia v3: base 10 pts/$1,000 × level multiplier
+ * @param earnMultiplier - from getUserLevel() (MOOVER=1, SILVER=1.25, GOLD=1.5, BLACK=2)
  */
 export function calculatePointsEarned(
     orderTotal: number,
-    config: PointsConfig = defaultConfig
+    config: PointsConfig = defaultConfig,
+    earnMultiplier: number = 1.0
 ): number {
     if (orderTotal < config.minPurchaseForPoints) {
         return 0;
     }
-    return Math.floor(orderTotal * config.pointsPerDollar);
+    return Math.floor(orderTotal * config.pointsPerDollar * earnMultiplier);
 }
 
 /**
  * Calculate maximum discount when using points
+ * Biblia v3: 1 pt = $1, max 20% del subtotal, min 500 pts
  */
 export function calculateMaxPointsDiscount(
     orderTotal: number,
     userPointsBalance: number,
     config: PointsConfig = defaultConfig
 ): { pointsUsable: number; discountAmount: number } {
+    // Check minimum points requirement first
+    if (userPointsBalance < config.minPointsToRedeem) {
+        return { pointsUsable: 0, discountAmount: 0 };
+    }
+
     // Can't use more than max discount percent
     const maxDiscount = orderTotal * (config.maxDiscountPercent / 100);
 
@@ -63,11 +151,6 @@ export function calculateMaxPointsDiscount(
 
     // Points needed for this discount
     const pointsUsable = Math.ceil(discountAmount / config.pointsValue);
-
-    // Check minimum points requirement
-    if (userPointsBalance < config.minPointsToRedeem) {
-        return { pointsUsable: 0, discountAmount: 0 };
-    }
 
     return {
         pointsUsable: Math.min(pointsUsable, userPointsBalance),
@@ -295,15 +378,20 @@ export async function activatePendingBonuses(
 }
 
 /**
- * Process points for a completed order
+ * Process points for a completed order (Biblia v3)
+ * Now considers user level for earn rate multiplier.
+ * Points are awarded ONLY when order is DELIVERED.
  */
 export async function processOrderPoints(
     userId: string,
     orderId: string,
     orderTotal: number,
     pointsUsed: number = 0
-): Promise<{ earned: number; spent: number; bonusActivated: number }> {
+): Promise<{ earned: number; spent: number; bonusActivated: number; level: UserLevel }> {
     const config = await getPointsConfig();
+
+    // Get user level for earn rate multiplier
+    const { level, earnMultiplier } = await getUserLevel(userId);
 
     // Deduct points used (if any)
     if (pointsUsed > 0) {
@@ -316,14 +404,14 @@ export async function processOrderPoints(
         );
     }
 
-    // Add points earned
-    const earned = calculatePointsEarned(orderTotal, config);
+    // Add points earned (with level multiplier)
+    const earned = calculatePointsEarned(orderTotal, config, earnMultiplier);
     if (earned > 0) {
         await recordPointsTransaction(
             userId,
             "EARN",
             earned,
-            `Ganaste ${earned} puntos por tu compra`,
+            `Ganaste ${earned} puntos por tu compra (nivel ${level})`,
             orderId
         );
     }
@@ -331,7 +419,7 @@ export async function processOrderPoints(
     // Try to activate pending bonuses
     const { bonusAwarded } = await activatePendingBonuses(userId, orderTotal, orderId);
 
-    return { earned, spent: pointsUsed, bonusActivated: bonusAwarded };
+    return { earned, spent: pointsUsed, bonusActivated: bonusAwarded, level };
 }
 
 /**
@@ -368,5 +456,5 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
     }
 }
 
-export { defaultConfig };
+export { defaultConfig, LEVEL_CONFIGS };
 export type { PointsConfig };

@@ -108,10 +108,10 @@ export interface FullOpsConfig {
   merchantTiers: MerchantTierConfig[];
 }
 
-// DEFAULTS matching Biblia Financiera
+// DEFAULTS matching Biblia Financiera v3
 const DEFAULTS = {
   zoneMultipliers: { ZONA_A: 1.0, ZONA_B: 1.15, ZONA_C: 1.35 },
-  climateMultipliers: { normal: 1.0, lluvia: 1.10, nieve: 1.15, extremo: 1.25 },
+  climateMultipliers: { normal: 1.0, lluvia_leve: 1.15, temporal_fuerte: 1.30 },
 };
 
 // Safe JSON parse with fallback
@@ -163,14 +163,14 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
     },
     points: {
-      pointsPerDollar: pointsConfig?.pointsPerDollar ?? 1,
+      pointsPerDollar: pointsConfig?.pointsPerDollar ?? 0.01,
       minPurchaseForPoints: pointsConfig?.minPurchaseForPoints ?? 0,
-      pointsValue: pointsConfig?.pointsValue ?? 0.015,
+      pointsValue: pointsConfig?.pointsValue ?? 1,
       minPointsToRedeem: pointsConfig?.minPointsToRedeem ?? 500,
-      maxDiscountPercent: pointsConfig?.maxDiscountPercent ?? 15,
-      signupBonus: pointsConfig?.signupBonus ?? 250,
-      referralBonus: pointsConfig?.referralBonus ?? 200,
-      refereeBonus: (pointsConfig as any)?.refereeBonus ?? 100,
+      maxDiscountPercent: pointsConfig?.maxDiscountPercent ?? 20,
+      signupBonus: pointsConfig?.signupBonus ?? 1000,
+      referralBonus: pointsConfig?.referralBonus ?? 1000,
+      refereeBonus: (pointsConfig as any)?.refereeBonus ?? 500,
       reviewBonus: pointsConfig?.reviewBonus ?? 25,
       minPurchaseForBonus: (pointsConfig as any)?.minPurchaseForBonus ?? 5000,
       minReferralPurchase: (pointsConfig as any)?.minReferralPurchase ?? 8000,
@@ -539,8 +539,8 @@ export function calculateDeliveryFeeWithConfig(
   const climateMult =
     config.climateMultipliers[config.activeClimateCondition] ?? 1.0;
 
-  // Cost per km = fuelPrice × consumption × 2 (round trip factor from Biblia: Factor 2.2 = ida + vuelta + margen)
-  const costPerKm = config.fuelPricePerLiter * config.fuelConsumptionPerKm * 2;
+  // Cost per km = fuelPrice × consumption × 2.2 (Biblia v3: Factor 2.2 = ida + vuelta + espera/maniobras)
+  const costPerKm = config.fuelPricePerLiter * config.fuelConsumptionPerKm * 2.2;
 
   // Base fee + distance cost
   const basePlusDistance = config.baseDeliveryFee + costPerKm * distanceKm;
@@ -597,10 +597,11 @@ export function calculateDeliveryFeeWithConfig(
     amount: fee,
   });
 
-  // Rider earnings: 80% of final fee (default from StoreSettings.riderCommissionPercent)
-  const riderEarnings = Math.round(fee * 0.8);
-  // Moovy earnings: remaining 20%
-  const moovyEarnings = fee - riderEarnings;
+  // Biblia v3: Rider earns 80% of TRIP cost (without operational cost)
+  const tripCost = fee - operationalCost;
+  const riderEarnings = Math.round(tripCost * (config.riderCommissionPercent / 100));
+  // Moovy: remaining trip cost + 100% of operational
+  const moovyEarnings = (tripCost - riderEarnings) + Math.round(operationalCost);
 
   return {
     fee,
