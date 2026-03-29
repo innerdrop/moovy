@@ -79,6 +79,29 @@ export async function POST(request: Request) {
 
         const rawData = await request.json();
 
+        // IDEMPOTENCY: Prevenir double-submit en checkout
+        // Detectar si el mismo usuario creó una orden idéntica en los últimos 30 segundos
+        const recentDuplicate = await prisma.order.findFirst({
+            where: {
+                userId: session.user.id,
+                createdAt: { gte: new Date(Date.now() - 30 * 1000) }, // últimos 30 seg
+                status: { in: ["PENDING", "SCHEDULED"] },
+                deletedAt: null,
+            },
+            select: { id: true, orderNumber: true, total: true },
+            orderBy: { createdAt: "desc" },
+        });
+        if (recentDuplicate) {
+            orderLogger.warn(
+                { existingOrderId: recentDuplicate.id, userId: session.user.id },
+                "Possible double-submit: order created <30s ago for same user"
+            );
+            return NextResponse.json(
+                { error: "Ya tenés un pedido en proceso. Esperá unos segundos.", orderId: recentDuplicate.id, orderNumber: recentDuplicate.orderNumber },
+                { status: 409 }
+            );
+        }
+
         // Validate input with Zod
         const validation = validateInput(CreateOrderSchema, rawData);
         if (!validation.success) {
@@ -114,12 +137,11 @@ export async function POST(request: Request) {
         // Load OPS config from Biblia Financiera (StoreSettings) — single DB read for all config
         const opsSettings = await getOpsSettings();
 
-        // BUG #5 FIX: Enhanced delivery fee validation (fraud prevention)
-        // Validate that deliveryFee is reasonable and server-side calculated
-        let validatedDeliveryFee = deliveryFee || 0;
+        // DELIVERY FEE: SIEMPRE recalcular server-side. NUNCA confiar en el frontend.
+        let validatedDeliveryFee = 0;
 
         if (!isPickup) {
-            // For deliveries, validate fee is not negative and not zero
+            // Reject negative fees
             if (deliveryFee !== undefined && deliveryFee !== null && deliveryFee < 0) {
                 return NextResponse.json(
                     { error: "El costo de envío no puede ser negativo" },
@@ -127,43 +149,50 @@ export async function POST(request: Request) {
                 );
             }
 
-            // AUDIT FIX 2.5: Reject delivery orders with no delivery fee instead of hardcoding
-            // Previous: silently set to 100 ARS. Now: require frontend to send a calculated fee.
-            if (!deliveryFee || deliveryFee === 0) {
-                // Try server-side calculation if distance is available
-                if (distanceKm && distanceKm > 0) {
-                    try {
-                        const serverFee = calculateShippingCost({
-                            distanceKm,
-                            packageCategory: "MEDIUM",
-                            shipmentTypeCode: "STANDARD",
-                            orderTotal: 0, // Not yet calculated — just need base fee
-                            freeDeliveryMinimum: null,
-                        });
-                        if (serverFee && serverFee.total > 0) {
-                            validatedDeliveryFee = serverFee.total;
-                            orderLogger.info(
-                                { distanceKm, calculatedFee: serverFee.total },
-                                "Server-side delivery fee calculation for missing frontend fee"
-                            );
-                        } else {
-                            return NextResponse.json(
-                                { error: "No se pudo calcular el costo de envío. Intentá de nuevo." },
-                                { status: 400 }
+            // SIEMPRE calcular server-side si tenemos distancia
+            if (distanceKm && distanceKm > 0) {
+                try {
+                    const serverFee = calculateShippingCost({
+                        distanceKm,
+                        packageCategory: "MEDIUM",
+                        shipmentTypeCode: "STANDARD",
+                        orderTotal: 0,
+                        freeDeliveryMinimum: null,
+                    });
+                    if (serverFee && serverFee.total > 0) {
+                        validatedDeliveryFee = serverFee.total;
+
+                        // Log si el frontend mandó un fee distinto (posible manipulación)
+                        if (deliveryFee && deliveryFee > 0 && Math.abs(deliveryFee - serverFee.total) > serverFee.total * 0.25) {
+                            orderLogger.warn(
+                                { clientFee: deliveryFee, serverFee: serverFee.total, distanceKm, diff: Math.abs(deliveryFee - serverFee.total) },
+                                "FRAUD ALERT: Client delivery fee differs >25% from server calculation. Using server fee."
                             );
                         }
-                    } catch {
+                    } else {
                         return NextResponse.json(
-                            { error: "Error al calcular el costo de envío. Intentá de nuevo." },
+                            { error: "No se pudo calcular el costo de envío. Intentá de nuevo." },
                             { status: 400 }
                         );
                     }
-                } else {
+                } catch {
                     return NextResponse.json(
-                        { error: "Se requiere el costo de envío para pedidos con delivery" },
+                        { error: "Error al calcular el costo de envío. Intentá de nuevo." },
                         { status: 400 }
                     );
                 }
+            } else if (deliveryFee && deliveryFee > 0) {
+                // Sin distancia pero con fee del frontend — aceptar como fallback pero loguear
+                validatedDeliveryFee = deliveryFee;
+                orderLogger.warn(
+                    { clientFee: deliveryFee },
+                    "No distanceKm available, using client-sent delivery fee as fallback"
+                );
+            } else {
+                return NextResponse.json(
+                    { error: "Se requiere el costo de envío para pedidos con delivery" },
+                    { status: 400 }
+                );
             }
             // Apply climate multiplier from Biblia Financiera if active condition is not normal
             const climateCond = opsSettings.activeClimateCondition || "normal";
@@ -464,12 +493,13 @@ export async function POST(request: Request) {
                 const slotStart = new Date(scheduledSlotStart);
                 const slotEnd = new Date(scheduledSlotEnd);
 
-                // Count existing orders in the same time slot (not cancelled)
+                // Count existing orders that OVERLAP with the requested slot (not just exact match)
+                // Un pedido existente se solapa si: empieza antes de que termine el nuevo Y termina después de que empiece el nuevo
                 const existingOrdersInSlot = await tx.order.count({
                     where: {
                         deliveryType: "SCHEDULED",
-                        scheduledSlotStart: { gte: slotStart },
-                        scheduledSlotEnd: { lte: slotEnd },
+                        scheduledSlotStart: { lt: slotEnd },   // empieza antes de que termine el solicitado
+                        scheduledSlotEnd: { gt: slotStart },   // termina después de que empiece el solicitado
                         status: { notIn: ["CANCELLED"] },
                         deletedAt: null,
                     },
@@ -719,6 +749,12 @@ export async function POST(request: Request) {
             }
 
             return newOrder;
+        }, {
+            // Serializable previene race conditions de stock:
+            // dos órdenes simultáneas no pueden leer el mismo stock y decrementar ambas
+            isolationLevel: "Serializable",
+            maxWait: 10000,  // 10s max wait para adquirir el lock
+            timeout: 30000,  // 30s max para la transacción completa
         });
 
         // Process points earning (outside transaction)

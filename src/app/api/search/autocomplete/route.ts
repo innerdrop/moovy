@@ -71,7 +71,7 @@ export async function GET(request: Request) {
                 id: m.id,
                 label: m.name,
                 image: m.image,
-                href: `/comercios/${m.slug}`,
+                href: `/tienda/${m.slug}`,
                 extra: m.isOpen ? "Abierto" : "Cerrado",
             })),
             ...products.map((p) => ({
