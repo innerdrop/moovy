@@ -392,55 +392,53 @@ export default function PuntosPage() {
         return (
             <div className="min-h-screen bg-white">
                 {/* Hero Section */}
-                <section className="px-4 py-20 lg:py-28 max-w-7xl mx-auto">
-                    <div className="max-w-2xl">
-                        <div className="inline-block mb-6">
-                            <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                                Programa de Recompensas
-                            </span>
-                        </div>
+                <section className="px-4 py-16 lg:py-24 max-w-3xl mx-auto text-center">
+                    <div className="inline-block mb-4">
+                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                            Programa de Recompensas
+                        </span>
+                    </div>
 
-                        <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                            Comprá y ganá con{" "}
-                            <span
-                                className="text-[#e60012]"
-                                style={{ fontFamily: "'Junegull', sans-serif" }}
-                            >
-                                MOOVER
-                            </span>
-                        </h1>
+                    <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                        Comprá y ganá con{" "}
+                        <span
+                            className="text-[#e60012]"
+                            style={{ fontFamily: "'Junegull', sans-serif" }}
+                        >
+                            MOOVER
+                        </span>
+                    </h1>
 
-                        <p className="text-xl lg:text-2xl text-gray-600 mb-8 leading-relaxed">
-                            Cada compra te acerca a tu próximo descuento. Ganá siempre,
-                            canjeá cuando quieras.
-                        </p>
+                    <p className="text-lg lg:text-xl text-gray-600 mb-8 leading-relaxed max-w-xl mx-auto">
+                        Cada compra te acerca a tu próximo descuento. Ganá siempre,
+                        canjeá cuando quieras.
+                    </p>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <Link
-                                href="/registro"
-                                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-red-700 transition active:scale-95"
-                            >
-                                <UserPlus className="w-5 h-5" />
-                                Quiero ser MOOVER
-                            </Link>
-                            <Link
-                                href="/login"
-                                className="inline-flex items-center justify-center px-8 py-4 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-200 transition"
-                            >
-                                Tengo cuenta
-                            </Link>
-                        </div>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Link
+                            href="/registro"
+                            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-red-700 transition active:scale-95"
+                        >
+                            <UserPlus className="w-5 h-5" />
+                            Quiero ser MOOVER
+                        </Link>
+                        <Link
+                            href="/login"
+                            className="inline-flex items-center justify-center px-8 py-4 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-200 transition"
+                        >
+                            Tengo cuenta
+                        </Link>
                     </div>
                 </section>
 
                 {/* How it Works Section */}
-                <section className="px-4 py-20 bg-gray-50 border-t border-gray-200">
-                    <div className="max-w-7xl mx-auto">
-                        <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-16 text-center">
+                <section className="px-4 py-16 bg-gray-50 border-t border-gray-200">
+                    <div className="max-w-3xl mx-auto">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-12 text-center">
                             Cómo Funciona
                         </h2>
 
-                        <div className="max-w-4xl mx-auto space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-12">
+                        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-8">
                             {/* Step 1 */}
                             <div className="flex flex-col">
                                 <div className="mb-6">
@@ -499,13 +497,13 @@ export default function PuntosPage() {
                 </section>
 
                 {/* Example Section */}
-                <section className="px-4 py-20">
-                    <div className="max-w-4xl mx-auto">
-                        <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-12 text-center">
+                <section className="px-4 py-16">
+                    <div className="max-w-2xl mx-auto">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-10 text-center">
                             Te Mostramos un Ejemplo
                         </h2>
 
-                        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-2xl p-8 lg:p-12">
+                        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-2xl p-6 lg:p-8">
                             <div className="space-y-8">
                                 <div className="flex items-start gap-6">
                                     <div className="flex-shrink-0">
@@ -573,15 +571,15 @@ export default function PuntosPage() {
                 </section>
 
                 {/* Bonuses Section */}
-                <section className="px-4 py-20 bg-gray-50 border-t border-gray-200">
-                    <div className="max-w-4xl mx-auto">
-                        <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-16 text-center">
+                <section className="px-4 py-16 bg-gray-50 border-t border-gray-200">
+                    <div className="max-w-2xl mx-auto">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-10 text-center">
                             Bonificaciones Extras
                         </h2>
 
-                        <div className="space-y-8">
+                        <div className="space-y-4">
                             {/* Welcome bonus */}
-                            <div className="bg-white rounded-2xl p-8 border border-gray-200">
+                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
                                 <div className="flex items-start gap-4 mb-4">
                                     <span className="text-4xl">🎁</span>
                                     <div>
@@ -600,7 +598,7 @@ export default function PuntosPage() {
                             </div>
 
                             {/* Referral bonus */}
-                            <div className="bg-white rounded-2xl p-8 border border-gray-200">
+                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
                                 <div className="flex items-start gap-4 mb-4">
                                     <span className="text-4xl">👥</span>
                                     <div>
@@ -622,7 +620,7 @@ export default function PuntosPage() {
                             </div>
 
                             {/* Review bonus */}
-                            <div className="bg-white rounded-2xl p-8 border border-gray-200">
+                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
                                 <div className="flex items-start gap-4 mb-4">
                                     <span className="text-4xl">⭐</span>
                                     <div>
@@ -641,7 +639,7 @@ export default function PuntosPage() {
                             </div>
                         </div>
 
-                        <div className="mt-12 p-8 bg-blue-50 border border-blue-200 rounded-2xl">
+                        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
                             <p className="text-gray-700 text-center">
                                 <span className="block text-sm text-gray-600 mb-2">
                                     💡 Nota
@@ -654,15 +652,15 @@ export default function PuntosPage() {
                 </section>
 
                 {/* Levels Section */}
-                <section className="px-4 py-20">
-                    <div className="max-w-4xl mx-auto">
-                        <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-16 text-center">
+                <section className="px-4 py-16">
+                    <div className="max-w-2xl mx-auto">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-10 text-center">
                             Niveles Exclusivos
                         </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* MOOVER */}
-                            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-8">
+                            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-6">
                                 <p className="text-sm font-medium text-blue-600 uppercase tracking-wide mb-2">
                                     🚀 Nivel Inicial
                                 </p>
@@ -680,7 +678,7 @@ export default function PuntosPage() {
                             </div>
 
                             {/* SILVER */}
-                            <div className="bg-gradient-to-r from-gray-100 to-slate-100 border border-gray-300 rounded-2xl p-8">
+                            <div className="bg-gradient-to-r from-gray-100 to-slate-100 border border-gray-300 rounded-2xl p-6">
                                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-2">
                                     🥈 Nivel Silver
                                 </p>
@@ -698,7 +696,7 @@ export default function PuntosPage() {
                             </div>
 
                             {/* GOLD */}
-                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-2xl p-8">
+                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-2xl p-6">
                                 <p className="text-sm font-medium text-yellow-700 uppercase tracking-wide mb-2">
                                     🥇 Nivel Gold
                                 </p>
@@ -716,7 +714,7 @@ export default function PuntosPage() {
                             </div>
 
                             {/* BLACK */}
-                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 text-white">
+                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6 text-white">
                                 <p className="text-sm font-medium text-yellow-400 uppercase tracking-wide mb-2">
                                     👑 Máximo Nivel
                                 </p>
@@ -734,7 +732,7 @@ export default function PuntosPage() {
                             </div>
                         </div>
 
-                        <p className="text-center text-gray-500 text-sm mt-12">
+                        <p className="text-center text-gray-500 text-sm mt-8">
                             Los niveles se calculan automáticamente según tus pedidos entregados
                             en los últimos 90 días. Si dejás de pedir, tu nivel puede bajar.
                         </p>
@@ -742,9 +740,9 @@ export default function PuntosPage() {
                 </section>
 
                 {/* CTA Final Section */}
-                <section className="px-4 py-20 bg-gradient-to-r from-[#a3000c] via-[#e60012] to-[#ff1a2e] text-white">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+                <section className="px-4 py-16 bg-gradient-to-r from-[#a3000c] via-[#e60012] to-[#ff1a2e] text-white">
+                    <div className="max-w-2xl mx-auto text-center">
+                        <h2 className="text-3xl lg:text-4xl font-bold mb-6">
                             ¿Listo para ser MOOVER?
                         </h2>
                         <p className="text-xl text-white/90 mb-8">
@@ -782,10 +780,10 @@ export default function PuntosPage() {
 
     // ========== MOOVER DASHBOARD PARA USUARIOS LOGUEADOS ==========
     return (
-        <div className="pb-24 px-4 lg:px-6 xl:px-8">
-            <div className="max-w-7xl mx-auto">
+        <div className="pb-24 px-4">
+            <div className="max-w-lg mx-auto">
                 {/* MOOVER Hero Card */}
-                <div className="bg-gradient-to-br from-[#a3000c] via-[#e60012] to-[#ff1a2e] rounded-2xl p-6 lg:p-10 text-white relative overflow-hidden mt-4 lg:mt-8">
+                <div className="bg-gradient-to-br from-[#a3000c] via-[#e60012] to-[#ff1a2e] rounded-2xl p-6 text-white relative overflow-hidden mt-4">
                     {/* Decorative elements */}
                     <div className="absolute top-0 right-0 opacity-10">
                         <Crown className="w-32 h-32" />
@@ -849,7 +847,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* Referral Code Section */}
-                <div className="mx-4 mt-4 bg-white rounded-xl p-4">
+                <div className="mt-4 bg-white rounded-xl p-4">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500">Tu código de referido</p>
@@ -879,7 +877,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* Referral Stats - Monthly */}
-                <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-3">
                     <button
                         onClick={handleOpenFriendsModal}
                         className="bg-white rounded-xl p-4 text-center hover:bg-red-50 transition active:scale-95"
@@ -911,7 +909,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* Gift Points Button */}
-                <div className="mx-4 mt-4">
+                <div className="mt-4">
                     <button
                         onClick={() => setShowGiftModal(true)}
                         className="w-full bg-white rounded-xl p-4 flex items-center gap-4 hover:bg-green-50 transition active:scale-[0.98]"
@@ -928,7 +926,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* How to earn points */}
-                <div className="mx-4 mt-6 bg-white rounded-xl p-4">
+                <div className="mt-6 bg-white rounded-xl p-4">
                     <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                         <Star className="w-5 h-5 text-yellow-500" />
                         Cómo ganar puntos
@@ -1034,7 +1032,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* How to use points */}
-                <div className="mx-4 mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
                     <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
                         💳 Usá tus Puntos en el Checkout
                     </h3>
@@ -1046,7 +1044,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* Catalog Teaser */}
-                <div className="mx-4 mt-4 bg-gradient-to-r from-red-600 to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
+                <div className="mt-4 bg-gradient-to-r from-red-600 to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 opacity-20">
                         <Gift className="w-24 h-24 -mt-4 -mr-4" />
                     </div>
@@ -1074,7 +1072,7 @@ export default function PuntosPage() {
                 </div>
 
                 {/* Transaction History */}
-                <div className="mx-4 mt-6">
+                <div className="mt-6">
                     <h2 className="font-bold text-gray-900 mb-3">Historial de Movimientos</h2>
 
                     {history.length === 0 ? (
