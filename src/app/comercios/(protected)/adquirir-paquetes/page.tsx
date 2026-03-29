@@ -456,7 +456,7 @@ export default function PackageCatalogPage() {
                                 {p.images?.[0]?.url ? (
                                     <UploadImage src={p.images[0].url} alt={p.name} fill className="object-cover" />
                                 ) : (
-                                    <UploadImageIcon className="w-10 h-10 absolute inset-0 m-auto text-slate-200" />
+                                    <ImageIcon className="w-10 h-10 absolute inset-0 m-auto text-slate-200" />
                                 )}
                                 {ownedProducts.includes(p.id) && (
                                     <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
@@ -531,7 +531,7 @@ export default function PackageCatalogPage() {
                                         {p.images?.[0]?.url ? (
                                             <UploadImage src={p.images[0].url} alt={p.name} fill className="object-cover" />
                                         ) : (
-                                            <UploadImageIcon className="w-8 h-8 absolute inset-0 m-auto text-slate-200" />
+                                            <ImageIcon className="w-8 h-8 absolute inset-0 m-auto text-slate-200" />
                                         )}
                                         {isInCart && (
                                             <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
