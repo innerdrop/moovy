@@ -90,7 +90,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Pagos: MP Checkout Pro (redirect), no Checkout API (inline)
 - DB: PostgreSQL + PostGIS Docker puerto 5436, Prisma db push (NUNCA migrate dev)
 - Comisiones: 8% merchant, 12% seller, 80% repartidor (configurable en MoovyConfig/StoreSettings)
-- Delivery fee: base + por km, calculado dinámicamente con logistics-config
+- Delivery fee (Biblia v3): max(min_vehiculo, costo_km × dist × 2.2) × zona × clima + subtotal×5%. Zonas A/B/C. Factor 2.2
 - Multi-vendor: SubOrder por vendedor, un solo pago al comprador
 - Colores: Rojo #e60012 (MOOVY), Violeta #7C3AED (Marketplace)
 - Font: Plus Jakarta Sans (variable --font-jakarta)
@@ -101,27 +101,73 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Auditoría checkout 2026-03-24: Webhook MP ahora valida monto pagado vs total orden (tolerancia $1). Idempotencia usa eventId determinístico. Order creation valida approvalStatus, isOpen, horario, minOrderAmount, deliveryRadiusKm, maxUsesPerUser de cupón. Cupón se registra dentro de $transaction. Refund automático vía API REST cuando merchant rechaza pedido pagado. Portal merchant protegido por approvalStatus. Delivery fee se calcula server-side si falta (no se hardcodea).
 - Fidelización merchants 2026-03-24: Comisión dinámica por tier (BRONCE 8%, PLATA 7%, ORO 6%, DIAMANTE 5%) calculada por volumen de pedidos DELIVERED en últimos 30 días. getEffectiveCommission() reemplaza el 8% hardcodeado en order creation. Tiers configurables desde admin. Cron diario recalcula. Diferenciador vs PedidosYa (ellos cobran 25-30% fijo).
 - Consolidación OPS 2026-03-26: Biblia Financiera es la ÚNICA fuente de verdad para parámetros financieros. /ops/puntos redirige a Biblia. /api/settings/ bloqueado para campos financieros (solo UI/store). configuracion-logistica mantiene solo campos de asignación/logística (MoovyConfig). Biblia sincroniza automáticamente timeouts y comisiones a MoovyConfig para que assignment-engine y crons los lean. Script validate-ops-config.ts verifica integridad. /api/admin/points/config/ marcado como deprecated (proxy a points-config canónico).
-- Publicidad 2026-03-27: Espacios publicitarios como fuente de revenue desde día 1. Precios en Biblia Financiera (Platino $150K, Destacado $95K, Premium $55K, Hero $250K, Banner $180K, Producto $25K). Descuento 50% lanzamiento. Sidebar OPS reorganizado con sección Marketing. Destacados como subsección premium en home con 3 tiers (Platino/Destacado/Premium). REGLA: jamás mencionar competidores en contenido visible al usuario.
-- Sidebar OPS reorganizado 2026-03-27: Nueva sección "Marketing" (Hero Banners, Banner Promo, Destacados). Paquetes B2B separados de Catálogo. Banner Promo movido de Configuración a Marketing. Eliminado ruido y duplicados.
-- Dólar referencia 2026-03-27: USD 1 = ARS 1.450. Todos los precios de publicidad en ARS.
+- Publicidad 2026-03-29 (Biblia v3): 4 paquetes: VISIBLE $25K, DESTACADO $50K, PREMIUM $100K, LANZAMIENTO ESPECIAL $150K. Se activa en Fase 2 (5+ comercios activos). REEMPLAZA los 6 espacios anteriores. Sidebar OPS con sección Marketing.
+- Sidebar OPS reorganizado 2026-03-27: Nueva sección "Marketing" (Hero Banners, Banner Promo, Destacados). Paquetes B2B separados de Catálogo.
+- Dólar referencia 2026-03-27: USD 1 = ARS 1.450.
+- Biblia Financiera v3 2026-03-29: Documento maestro aprobado como FUENTE DE VERDAD para lanzamiento. Puntos MOOVER reformulados (10pts/$1K, $1/pt, 4 niveles, boost 30 días). Delivery con factor 2.2 + zonas A/B/C + 5% operativo embebido. Comisión 0% mes 1 comercios. Protocolo efectivo 3 capas. Publicidad 4 paquetes ($25K-$150K). Nafta $1,591/litro. Gastos fijos ~$440K/mes.
 
-## Reglas de negocio
-- Comisión MOOVY: 8% merchant, 12% seller, configurable desde MoovyConfig
-- Repartidor: 80% del delivery fee (riderCommissionPercent en StoreSettings)
-- Puntos: 1 punto por $1 gastado, $0.015 por punto, max 50% descuento
-- Signup bonus: 250 puntos, referral: 200 puntos
+## Reglas de negocio (Biblia Financiera v3 — FUENTE DE VERDAD)
+- Comisión comercios MES 1: 0% (30 días gratis, inversión de adquisición)
+- Comisión comercios MES 2+: 8% sobre ventas, configurable desde MoovyConfig
+- Comisión sellers marketplace: 12% desde día 1
+- Service fee al comprador: 0% (eliminado, precio limpio: producto + envío)
+- Costo operativo: 5% del subtotal embebido en delivery fee (cubre MP 3.81% + margen 1.19%)
+- Repartidor: 80% del costo REAL del viaje (NO incluye el 5% operativo)
+- Moovy en delivery: 20% del viaje + 5% operativo
 - Pedido mínimo: configurable por merchant (minOrderAmount)
 - Radio de entrega: configurable por merchant (deliveryRadiusKm, default 5km)
 - Timeout merchant: configurable (merchant_confirm_timeout en MoovyConfig)
 - Timeout driver: configurable (driver_response_timeout en MoovyConfig)
-- Publicidad Platino: $150.000/mes — posición #1 garantizada + push + badge premium
-- Publicidad Destacado: $95.000/mes — top 3 + featured en categorías
-- Publicidad Premium: $55.000/mes — badge + posición preferencial
-- Hero Banner: $250.000/mes — max 3 slots, full-width above the fold
-- Banner Promocional: $180.000/mes — full-width con CTA
-- Producto Destacado: $25.000/mes por producto — max 12 slots
-- Descuento lanzamiento: 50% primeros 3 meses
+- Costo real MercadoPago: 3.81% (3.15% + IVA 21%), redondeado a 4% en proyecciones
 - Cotización referencia: USD 1 = ARS 1.450
+- Gastos fijos mensuales: ~$440,641 ARS (~$304 USD)
+
+### Puntos MOOVER (Biblia v3)
+- Earn rate MOOVER (básico): 10 pts por $1,000 gastados (~1% cashback)
+- Earn rate SILVER: 12.5 pts/$1,000 (~1.25%)
+- Earn rate GOLD: 15 pts/$1,000 (~1.5%)
+- Earn rate BLACK: 20 pts/$1,000 (~2%)
+- Valor del punto: $1 ARS (1 punto = $1 de descuento)
+- Max descuento con puntos: 20% del subtotal
+- Min puntos para canjear: 500 puntos
+- Signup bonus MES 1 (boost): 1,000 pts ($1,000)
+- Signup bonus MES 2+: 500 pts ($500)
+- Referral (quien refiere): 1,000 pts (referido debe completar PRIMER pedido DELIVERED)
+- Referral (referido): 500 pts (al completar primer pedido)
+- Boost lanzamiento (30 días): TODOS los puntos se duplican
+- Expiración: 6 meses completos sin pedidos = puntos vencen
+- Garantía primer pedido: reembolso completo + 500 pts bonus si hay problema
+- Niveles por pedidos DELIVERED en 90 días: MOOVER (0), SILVER (5), GOLD (15), BLACK (40)
+
+### Delivery (Biblia v3)
+- Fórmula: fee = max(MINIMO, costo_km × distancia × 2.2) × zona × clima + (subtotal × 5%)
+- Factor distancia: ×2.2 (1.0 ida + 1.0 vuelta + 0.2 espera/maniobras)
+- Nafta super Ushuaia: $1,591/litro
+- Vehículos: Bici ($15/km, min $800), Moto ($73/km, min $1,500), Auto chico ($193/km, min $2,200), Auto mediano ($222/km, min $2,500), Pickup/SUV ($269/km, min $3,000), Flete ($329/km, min $3,800)
+- Zona A (Centro/Costa): ×1.0, bonus driver $0
+- Zona B (Intermedia): ×1.15, bonus driver +$150
+- Zona C (Alta/Difícil): ×1.35, bonus driver +$350
+- Zona Excluida: Costa Susana (sin señal celular)
+- Clima normal: ×1.0, lluvia leve: ×1.15, temporal fuerte: ×1.30
+- Demanda normal: ×1.0, alta (vie-sáb): ×1.20, pico (feriados): ×1.40
+- Bonus nocturno (23:00-07:00): +30% al fee del repartidor (lo paga Moovy)
+- Categorías marketplace: SOBRE (0-2kg, $800), PEQUEÑO (2-5kg, $1,200), MEDIANO (5-15kg, $2,500), GRANDE (15-30kg, $3,500), EXTRA GRANDE (30-70kg, $5,000), FLETE (70+kg, $8,000)
+- Peso cobrable marketplace: max(peso_real_kg, largo×ancho×alto/5000)
+
+### Publicidad (Biblia v3)
+- VISIBLE: $25,000/mes — Logo en categoría + Top 5 + Badge 'Nuevo'
+- DESTACADO: $50,000/mes — VISIBLE + banner rotativo + 2 push/mes + 3 productos destacados
+- PREMIUM: $100,000/mes — DESTACADO + banner homepage + popup + posición #1 + 4 push
+- LANZAMIENTO ESPECIAL: $150,000/mes — PREMIUM + video + influencers + exclusividad 7 días
+- Se activa en Fase 2 (5+ comercios activos)
+
+### Protocolo efectivo repartidores (Biblia v3)
+- Primeras 10 entregas: SOLO pedidos MP (sin efectivo)
+- 10-30 entregas: límite deuda efectivo $15,000
+- 30-60 entregas: límite $25,000
+- 60+ entregas: límite $40,000
+- 200+ entregas (6+ meses): límite $60,000 o sin límite
+- Compensación cruzada automática: deuda se descuenta del próximo pago MP
 
 ## Variables de entorno
 DB: DATABASE_URL, SHADOW_DATABASE_URL
@@ -417,14 +463,17 @@ Si toca pedidos o delivery, verificar la cadena completa:
 - Multi-vendor: ¿SubOrders se crean correctamente? ¿Cada merchant ve solo su parte?
 
 **PAGOS** — Director Financiero (CERO TOLERANCIA A ERRORES)
-Si toca dinero en CUALQUIER forma, aplicar estas verificaciones matemáticas:
+Si toca dinero en CUALQUIER forma, aplicar estas verificaciones (Biblia v3):
 ```
 subtotal = Σ(item.price × item.quantity) por cada SubOrder
-descuento_puntos = min(puntos_usados × 0.01, subtotal × 0.50)
-delivery_fee = calcularDeliveryFee(distancia) // NUNCA hardcodeado
-comision_moovy = subtotal × commissionRate // 0.08 merchant, 0.12 seller
-pago_repartidor = delivery_fee × riderCommissionPercent // default 0.80
-total = subtotal - descuento_puntos + delivery_fee
+descuento_puntos = min(puntos_usados × $1, subtotal × 0.20) // 1pt=$1, max 20%
+costo_viaje = max(fee_minimo_vehiculo, costo_km × distancia × 2.2) × zona × clima
+costo_operativo = subtotal × 0.05 // 5% embebido que cubre MP + margen
+delivery_fee_visible = costo_viaje + costo_operativo // lo que ve el comprador
+comision_moovy = subtotal × commissionRate // 0% mes 1, 8% mes 2+ merchant, 12% seller
+pago_repartidor = costo_viaje × 0.80 // 80% del viaje REAL, no del fee visible
+moovy_delivery = costo_viaje × 0.20 + costo_operativo // 20% viaje + 5% operativo
+total = subtotal - descuento_puntos + delivery_fee_visible
 ```
 Verificar que:
 - Webhook MP valida monto pagado vs total (tolerancia $1, ver src/app/api/webhooks/mercadopago)
@@ -437,11 +486,16 @@ Verificar que:
 
 **PUNTOS MOOVER** — Subdirector Financiero (CERO TOLERANCIA A ERRORES)
 Los puntos son dinero disfrazado. Un bug acá = regalar plata o enfurecer
-usuarios. Verificar:
-- Earn: 1 punto por $1 gastado. Se otorgan SOLO cuando el pedido pasa a DELIVERED, NUNCA antes
-- Burn: $0.015 por punto. Máximo 50% del subtotal como descuento
-- Signup bonus: 250 puntos. Se otorgan una sola vez (verificar que no se duplique)
-- Referral: 200 puntos al referidor + 250 al referido. Verificar que el referido sea nuevo
+usuarios. Verificar según Biblia v3:
+- Earn: 10 pts por $1,000 gastados (nivel básico MOOVER). Se otorgan SOLO cuando pedido pasa a DELIVERED
+- Earn rates por nivel: SILVER 12.5/$1K, GOLD 15/$1K, BLACK 20/$1K
+- Burn: 1 punto = $1 ARS de descuento. Máximo 20% del subtotal
+- Min puntos para canjear: 500 puntos
+- Signup bonus mes 1 (boost): 1,000 pts. Mes 2+: 500 pts. Se otorgan una sola vez
+- Referral: 1,000 pts al referidor + 500 pts al referido. Solo post-DELIVERED del primer pedido
+- Boost lanzamiento (30 días): TODOS los puntos se duplican. Se desactiva automáticamente día 31
+- Niveles: MOOVER (0 pedidos), SILVER (5/90d), GOLD (15/90d), BLACK (40/90d). Recalculo diario
+- Expiración: 6 meses completos sin pedidos = puntos vencen. 1 pedido reinicia el timer
 - Transacción atómica: earn/burn dentro de $transaction serializable
 - Balance NUNCA negativo (validar server-side antes de descontar)
 - Si se cancela un pedido que usó puntos: DEVOLVER los puntos gastados

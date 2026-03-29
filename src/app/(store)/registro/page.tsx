@@ -55,8 +55,8 @@ function RegistrationForm() {
             return;
         }
 
-        if (password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        if (password.length < 8) {
+            setError("La contraseña debe tener al menos 8 caracteres");
             return;
         }
 
@@ -245,7 +245,7 @@ function RegistrationForm() {
                                     placeholder="••••••••"
                                     className="input input-with-icon pr-10"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                     autoComplete="new-password"
                                 />
                                 <button
@@ -275,7 +275,7 @@ function RegistrationForm() {
                                     placeholder="••••••••"
                                     className="input input-with-icon"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                     autoComplete="new-password"
                                 />
                             </div>
