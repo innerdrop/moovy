@@ -857,4 +857,22 @@ function RepartidorRegistroContent() {
 
                 {/* Back Link */}
                 {step < 4 && (
-           
+                    <Link
+                        href="/"
+                        className="mt-4 flex items-center justify-center text-sm text-gray-500 hover:text-gray-700 transition"
+                    >
+                        ← Volver al inicio
+                    </Link>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default function RepartidorRegistroPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-500" /></div>}>
+            <RepartidorRegistroContent />
+        </Suspense>
+    );
+}
