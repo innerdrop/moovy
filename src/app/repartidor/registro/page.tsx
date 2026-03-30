@@ -30,6 +30,7 @@ import {
     CreditCard
 } from "lucide-react";
 import ImageUpload from "@/components/ui/ImageUpload";
+import DocumentUpload from "@/components/ui/DocumentUpload";
 
 // Tipos de vehículo con sus propiedades
 const VEHICLE_TYPES = [
@@ -449,16 +450,20 @@ function RepartidorRegistroContent() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Frente</label>
-                                        <ImageUpload
+                                        <DocumentUpload
                                             value={formData.dniFrenteUrl}
                                             onChange={(url) => setFormData(prev => ({ ...prev, dniFrenteUrl: url }))}
+                                            placeholder="Subí foto del frente"
+                                            formatHint="JPG, PNG o PDF (Max 10MB)"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Dorso</label>
-                                        <ImageUpload
+                                        <DocumentUpload
                                             value={formData.dniDorsoUrl}
                                             onChange={(url) => setFormData(prev => ({ ...prev, dniDorsoUrl: url }))}
+                                            placeholder="Subí foto del dorso"
+                                            formatHint="JPG, PNG o PDF (Max 10MB)"
                                         />
                                     </div>
                                 </div>
@@ -628,17 +633,21 @@ function RepartidorRegistroContent() {
 
                                         <div>
                                             <label className="block text-xs text-gray-500 mb-1">Licencia de Conducir</label>
-                                            <ImageUpload
+                                            <DocumentUpload
                                                 value={formData.licenciaUrl}
                                                 onChange={(url) => setFormData(prev => ({ ...prev, licenciaUrl: url }))}
+                                                placeholder="Subí tu licencia de conducir"
+                                                formatHint="JPG, PNG o PDF (Max 10MB)"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-xs text-gray-500 mb-1">Seguro del Vehículo</label>
-                                            <ImageUpload
+                                            <DocumentUpload
                                                 value={formData.seguroUrl}
                                                 onChange={(url) => setFormData(prev => ({ ...prev, seguroUrl: url }))}
+                                                placeholder="Subí el seguro del vehículo"
+                                                formatHint="JPG, PNG o PDF (Max 10MB)"
                                             />
                                             <p className="text-[10px] text-gray-500 mt-1 ml-1">
                                                 Obligatorio por Ley 24.449. Cobertura de responsabilidad civil hacia terceros.
@@ -647,9 +656,11 @@ function RepartidorRegistroContent() {
 
                                         <div>
                                             <label className="block text-xs text-gray-500 mb-1">VTV (Verificación Técnica Vehicular)</label>
-                                            <ImageUpload
+                                            <DocumentUpload
                                                 value={formData.vtvUrl}
                                                 onChange={(url) => setFormData(prev => ({ ...prev, vtvUrl: url }))}
+                                                placeholder="Subí tu VTV vigente"
+                                                formatHint="JPG, PNG o PDF (Max 10MB)"
                                             />
                                         </div>
                                     </div>
@@ -846,27 +857,4 @@ function RepartidorRegistroContent() {
 
                 {/* Back Link */}
                 {step < 4 && (
-                    <Link
-                        href={fromProfile ? "/mi-perfil" : "/"}
-                        className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {fromProfile ? "Volver al perfil" : "Volver al inicio"}
-                    </Link>
-                )}
-            </div>
-        </div>
-    );
-}
-
-export default function RepartidorRegistroPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#e60012]"></div>
-            </div>
-        }>
-            <RepartidorRegistroContent />
-        </Suspense>
-    );
-}
+           

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import ImageUpload from "@/components/ui/ImageUpload";
+import DocumentUpload from "@/components/ui/DocumentUpload";
 
 // Tipos de negocio que requieren registro sanitario (alimentos)
 const FOOD_BUSINESS_TYPES = [
@@ -39,7 +40,9 @@ const FOOD_BUSINESS_TYPES = [
     "Panadería/Pastelería",
     "Sushi",
     "Comida Saludable",
-    "Bebidas"
+    "Rotisería",
+    "Bebidas",
+    "Vinoteca/Licorería"
 ];
 
 function ComercioRegistroContent() {
@@ -77,6 +80,7 @@ function ComercioRegistroContent() {
     });
 
     const businessTypes = [
+        // Gastronomía
         "Restaurante",
         "Pizzería",
         "Hamburguesería",
@@ -86,10 +90,30 @@ function ComercioRegistroContent() {
         "Panadería/Pastelería",
         "Sushi",
         "Comida Saludable",
-        "Farmacia",
+        "Rotisería",
+        // Bebidas
+        "Bebidas",
+        "Vinoteca/Licorería",
+        // Compras diarias
         "Supermercado/Almacén",
         "Kiosco",
-        "Bebidas",
+        "Dietética/Naturista",
+        // Salud y bienestar
+        "Farmacia",
+        "Veterinaria/Pet Shop",
+        "Óptica",
+        "Perfumería/Cosmética",
+        // Hogar
+        "Ferretería",
+        "Mueblería/Decoración",
+        "Lavandería/Tintorería",
+        // Otros comercios
+        "Librería/Papelería",
+        "Electrónica/Celulares",
+        "Regalería/Cotillón",
+        "Floristería",
+        "Juguetería",
+        "Indumentaria",
         "Otro"
     ];
 
@@ -578,45 +602,55 @@ function ComercioRegistroContent() {
 
                             {/* Constancia AFIP */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Constancia de Inscripción AFIP
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Constancia de Inscripción AFIP *
                                 </label>
-                                <ImageUpload
+                                <p className="text-xs text-gray-500 mb-2">
+                                    Es el comprobante que certifica tu inscripción fiscal. Lo descargás desde{" "}
+                                    <a href="https://www.afip.gob.ar" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">afip.gob.ar</a>{" "}
+                                    → Constancia de inscripción. Puede ser Monotributo o Responsable Inscripto.
+                                </p>
+                                <DocumentUpload
                                     value={formData.constanciaAfipUrl}
                                     onChange={(url) => setFormData(prev => ({ ...prev, constanciaAfipUrl: url }))}
+                                    placeholder="Subí tu constancia AFIP"
+                                    formatHint="PDF, JPG o PNG (Max 10MB)"
                                 />
-                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    Monotributo o Responsable Inscripto. Formato imagen (JPG, PNG).
-                                </p>
                             </div>
 
                             {/* Habilitación Municipal */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Habilitación Municipal
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Habilitación Municipal *
                                 </label>
-                                <ImageUpload
+                                <p className="text-xs text-gray-500 mb-2">
+                                    Es el permiso que otorga la Municipalidad de Ushuaia para operar tu comercio.
+                                    Si todavía estás en trámite, podés subir el comprobante de inicio de trámite.
+                                </p>
+                                <DocumentUpload
                                     value={formData.habilitacionMunicipalUrl}
                                     onChange={(url) => setFormData(prev => ({ ...prev, habilitacionMunicipalUrl: url }))}
+                                    placeholder="Subí tu habilitación municipal"
+                                    formatHint="PDF, JPG o PNG (Max 10MB)"
                                 />
-                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    Habilitación expedida por la Municipalidad de Ushuaia.
-                                </p>
                             </div>
 
                             {/* Registro Sanitario - solo para alimentos */}
                             {isFoodBusiness && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Registro Sanitario / Habilitación Bromatológica
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Registro Sanitario / Habilitación Bromatológica *
                                     </label>
-                                    <ImageUpload
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        Obligatorio para comercios que elaboran o manipulan alimentos.
+                                        Lo expide la autoridad sanitaria de Tierra del Fuego.
+                                    </p>
+                                    <DocumentUpload
                                         value={formData.registroSanitarioUrl}
                                         onChange={(url) => setFormData(prev => ({ ...prev, registroSanitarioUrl: url }))}
+                                        placeholder="Subí tu registro sanitario"
+                                        formatHint="PDF, JPG o PNG (Max 10MB)"
                                     />
-                                    <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                        Requerido para comercios que manipulan alimentos. Expedido por la autoridad sanitaria de Tierra del Fuego.
-                                    </p>
                                 </div>
                             )}
 
@@ -704,10 +738,9 @@ function ComercioRegistroContent() {
                 {step < 4 && (
                     <Link
                         href={fromProfile ? "/mi-perfil" : "/"}
-                        className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700"
+                        className="mt-4 flex items-center justify-center text-sm text-gray-500 hover:text-gray-700 transition"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        {fromProfile ? "Volver al perfil" : "Volver al inicio"}
+                        ← Volver al inicio
                     </Link>
                 )}
             </div>
@@ -717,11 +750,7 @@ function ComercioRegistroContent() {
 
 export default function ComercioRegistroPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#e60012]"></div>
-            </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
             <ComercioRegistroContent />
         </Suspense>
     );
