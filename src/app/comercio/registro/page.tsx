@@ -480,7 +480,8 @@ function ComercioRegistroContent() {
                                             name="password"
                                             value={formData.password}
                                             onChange={handleChange}
-                                            placeholder="Mínimo 6"
+                                            placeholder="Mínimo 8"
+                                            autoComplete="new-password"
                                             className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
                                         />
@@ -505,6 +506,7 @@ function ComercioRegistroContent() {
                                             value={formData.confirmPassword}
                                             onChange={handleChange}
                                             placeholder="Repetí"
+                                            autoComplete="new-password"
                                             className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
                                         />
