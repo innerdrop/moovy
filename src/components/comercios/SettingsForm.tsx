@@ -298,7 +298,7 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                         <button
                             type="button"
                             onClick={() => window.location.href = "/api/mp/connect?type=merchant"}
-                            className="btn-primary flex items-center gap-2"
+                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
                         >
                             <Link2 className="w-4 h-4" />
                             Vincular MercadoPago

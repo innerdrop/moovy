@@ -19,43 +19,53 @@ export default async function NewProductPage() {
     ]);
 
     // 2. Fetch all products: either from an acquired category OR acquired individually
-    const masterProducts = await prisma.product.findMany({
-        where: {
-            merchantId: null, // Master products only
-            isActive: true,
-            OR: [
-                {
-                    categories: {
-                        some: {
-                            categoryId: { in: merchantCategoryIds }
+    const masterProducts = merchantCategoryIds.length > 0 || merchantProductIds.length > 0
+        ? await prisma.product.findMany({
+            where: {
+                merchantId: null,
+                isActive: true,
+                OR: [
+                    ...(merchantCategoryIds.length > 0 ? [{
+                        categories: {
+                            some: {
+                                categoryId: { in: merchantCategoryIds }
+                            }
                         }
-                    }
-                },
-                {
-                    id: { in: merchantProductIds }
+                    }] : []),
+                    ...(merchantProductIds.length > 0 ? [{
+                        id: { in: merchantProductIds }
+                    }] : [])
+                ]
+            },
+            include: {
+                images: { take: 1 },
+                categories: {
+                    include: { category: true }
                 }
-            ]
-        },
-        include: {
-            images: { take: 1 },
-            categories: {
-                include: { category: true }
-            }
-        },
-        orderBy: { name: "asc" }
-    });
+            },
+            orderBy: { name: "asc" }
+        })
+        : [];
 
-    // 3. Get unique categories from all available master products
-    // This ensures that even if only one product from a category was bought, the category appears in the dropdown
+    // 3. Get unique categories from purchased catalog products (for catalog dropdown)
     const availableCategoryIds = Array.from(new Set(
         masterProducts.flatMap(p => p.categories.map(c => c.categoryId))
     ));
 
-    const categories = await prisma.category.findMany({
-        where: {
-            id: { in: availableCategoryIds },
-            isActive: true
-        },
+    const categories = availableCategoryIds.length > 0
+        ? await prisma.category.findMany({
+            where: {
+                id: { in: availableCategoryIds },
+                isActive: true
+            },
+            select: { id: true, name: true },
+            orderBy: { name: "asc" },
+        })
+        : [];
+
+    // 4. Fetch ALL active categories for the manual product form (independent of purchased packages)
+    const allCategories = await prisma.category.findMany({
+        where: { isActive: true },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
     });
@@ -64,6 +74,7 @@ export default async function NewProductPage() {
         <div className="max-w-4xl mx-auto">
             <NewProductForm
                 categories={categories}
+                allCategories={allCategories}
                 catalogProducts={masterProducts.map(p => ({
                     id: p.id,
                     name: p.name,

@@ -9,9 +9,10 @@ interface ImageUploadProps {
     value: string;
     onChange: (url: string) => void;
     disabled?: boolean;
+    compact?: boolean;
 }
 
-export default function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, disabled, compact }: ImageUploadProps) {
     const [isLoading, setIsLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,20 +120,24 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
                 <div
                     onClick={() => fileInputRef.current?.click()}
                     className={`
-                        border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition
+                        border-2 border-dashed rounded-xl ${compact ? "p-3 aspect-square" : "p-8"} flex flex-col items-center justify-center cursor-pointer transition
                         ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 hover:border-blue-500"}
                         border-gray-300 bg-white
                     `}
                 >
                     {isLoading ? (
-                        <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-2" />
+                        <Loader2 className={`${compact ? "w-5 h-5" : "w-10 h-10"} text-blue-500 animate-spin ${compact ? "" : "mb-2"}`} />
                     ) : (
-                        <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                        <Upload className={`${compact ? "w-5 h-5" : "w-10 h-10"} text-gray-400 ${compact ? "" : "mb-2"}`} />
                     )}
-                    <p className="text-sm font-medium text-gray-600">
-                        {isLoading ? "Subiendo..." : "Click para subir imagen"}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP (Max 4MB)</p>
+                    {!compact && (
+                        <>
+                            <p className="text-sm font-medium text-gray-600">
+                                {isLoading ? "Subiendo..." : "Click para subir imagen"}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP (Max 4MB)</p>
+                        </>
+                    )}
                 </div>
             ) : (
                 <div className="relative w-full aspect-video sm:aspect-[4/3] rounded-xl overflow-hidden border border-gray-200 group">
