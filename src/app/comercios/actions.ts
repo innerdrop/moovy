@@ -493,6 +493,7 @@ export async function updateMerchant(formData: FormData) {
         ]);
 
         revalidatePath("/comercios/configuracion");
+        revalidatePath("/comercios/mi-comercio");
         revalidatePath("/comercios");
         return { success: true };
     } catch (error) {
@@ -591,6 +592,7 @@ export async function toggleMerchantOpen(isOpen: boolean) {
         });
 
         revalidatePath("/comercios/configuracion");
+        revalidatePath("/comercios/mi-comercio");
         revalidatePath("/comercios");
         revalidatePath("/tienda");
         revalidatePath("/");

@@ -16,6 +16,7 @@ import {
     DollarSign,
     Star,
     Megaphone,
+    Building2,
 } from "lucide-react";
 
 import SupportNavBadge from "@/components/comercios/SupportNavBadge";
@@ -56,6 +57,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         { href: "/comercios/productos", icon: Package, label: "Productos" },
         { href: "/comercios/pagos", icon: DollarSign, label: "Pagos" },
         // --- Los siguientes van en sidebar desktop + menú "Más" mobile ---
+        { href: "/comercios/mi-comercio", icon: Building2, label: "Mi Comercio" },
         { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
         { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
         { href: "/comercios/resenas", icon: Star, label: "Reseñas" },

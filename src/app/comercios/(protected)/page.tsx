@@ -115,9 +115,9 @@ export default async function ComerciosDashboardPage() {
                     <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
                         <Settings className="w-5 h-5 text-amber-600" />
                     </div>
-                    <Link href="/comercios/configuracion" className="group">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuracion</p>
-                        <p className="text-sm font-bold text-gray-700 group-hover:text-red-600 transition-colors">Ajustar tienda &rarr;</p>
+                    <Link href="/comercios/mi-comercio" className="group">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Mi Comercio</p>
+                        <p className="text-sm font-bold text-gray-700 group-hover:text-red-600 transition-colors">Editar perfil &rarr;</p>
                     </Link>
                 </div>
 
@@ -207,8 +207,8 @@ export default async function ComerciosDashboardPage() {
                             Accesos Rapidos
                         </h3>
                         <div className="grid grid-cols-1 gap-2">
-                            <Link href="/comercios/configuracion" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
-                                <span className="text-sm font-medium text-gray-600">Ver Perfil Publico</span>
+                            <Link href="/comercios/mi-comercio" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                                <span className="text-sm font-medium text-gray-600">Editar Mi Comercio</span>
                                 <ArrowRight className="w-4 h-4 text-gray-300" />
                             </Link>
                             <Link href="/comercios/soporte" className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
