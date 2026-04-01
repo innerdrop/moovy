@@ -373,11 +373,16 @@ const merchantSchema = z.object({
     deliveryTimeMax: z.coerce.number().int().min(10).optional(),
     deliveryFee: z.coerce.number().min(0).optional(),
     minOrderAmount: z.coerce.number().min(0).optional(),
+    deliveryRadiusKm: z.coerce.number().min(1).max(50).optional(),
+    allowPickup: z.string().optional().transform(v => v === "true"),
     latitude: z.coerce.number().optional().nullable(),
     longitude: z.coerce.number().optional().nullable(),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     ownerPhone: z.string().optional(),
+    instagramUrl: z.string().optional(),
+    facebookUrl: z.string().optional(),
+    whatsappNumber: z.string().optional(),
 });
 
 export async function updateMerchant(formData: FormData) {
@@ -398,11 +403,16 @@ export async function updateMerchant(formData: FormData) {
         deliveryTimeMax: formData.get("deliveryTimeMax"),
         deliveryFee: formData.get("deliveryFee"),
         minOrderAmount: formData.get("minOrderAmount"),
+        deliveryRadiusKm: formData.get("deliveryRadiusKm"),
+        allowPickup: formData.get("allowPickup"),
         latitude: formData.get("latitude"),
         longitude: formData.get("longitude"),
         firstName: formData.get("firstName"),
         lastName: formData.get("lastName"),
         ownerPhone: formData.get("ownerPhone"),
+        instagramUrl: formData.get("instagramUrl"),
+        facebookUrl: formData.get("facebookUrl"),
+        whatsappNumber: formData.get("whatsappNumber"),
     };
 
     const validation = merchantSchema.safeParse(rawData);
@@ -451,7 +461,7 @@ export async function updateMerchant(formData: FormData) {
                 where: { id: merchant.id },
                 data: {
                     name: data.name,
-                    businessName: data.name, // Support both fields
+                    businessName: data.name,
                     description: data.description || null,
                     image: data.image || null,
                     email: data.email || null,
@@ -462,8 +472,13 @@ export async function updateMerchant(formData: FormData) {
                     deliveryTimeMax: data.deliveryTimeMax || 45,
                     deliveryFee: data.deliveryFee || 0,
                     minOrderAmount: data.minOrderAmount || 0,
+                    deliveryRadiusKm: data.deliveryRadiusKm || 5,
+                    allowPickup: data.allowPickup ?? false,
                     latitude: finalLatitude,
                     longitude: finalLongitude,
+                    instagramUrl: data.instagramUrl || null,
+                    facebookUrl: data.facebookUrl || null,
+                    whatsappNumber: data.whatsappNumber || null,
                 },
             }),
             prisma.user.update({

@@ -49,6 +49,8 @@ export default async function ConfiguracionPage() {
                     deliveryTimeMax: merchant.deliveryTimeMax,
                     deliveryFee: merchant.deliveryFee,
                     minOrderAmount: merchant.minOrderAmount,
+                    deliveryRadiusKm: merchant.deliveryRadiusKm,
+                    allowPickup: merchant.allowPickup,
                     latitude: merchant.latitude,
                     longitude: merchant.longitude,
                     firstName: merchant.owner.firstName || "",
@@ -59,6 +61,14 @@ export default async function ConfiguracionPage() {
                     mpUserId: merchant.mpUserId,
                     scheduleEnabled: merchant.scheduleEnabled,
                     scheduleJson: merchant.scheduleJson,
+                    commissionRate: merchant.commissionRate,
+                    constanciaAfipUrl: merchant.constanciaAfipUrl,
+                    habilitacionMunicipalUrl: merchant.habilitacionMunicipalUrl,
+                    registroSanitarioUrl: merchant.registroSanitarioUrl,
+                    approvalStatus: merchant.approvalStatus,
+                    instagramUrl: merchant.instagramUrl,
+                    facebookUrl: merchant.facebookUrl,
+                    whatsappNumber: merchant.whatsappNumber,
                 }}
             />
         </div>

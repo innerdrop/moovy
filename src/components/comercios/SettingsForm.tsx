@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen, updateMerchantSchedule } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User, Link2, Unlink, AlertTriangle, CheckCircle, Calendar, Plus, Trash2 } from "lucide-react";
+import { Loader2, Save, Store, Clock, DollarSign, MapPin, Phone, Mail, Tag, Power, User, Link2, Unlink, AlertTriangle, CheckCircle, Calendar, Plus, Trash2, FileText, Instagram, MessageCircle, Globe, Truck, ShoppingBag, Info, Percent } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 
 interface SettingsFormProps {
@@ -23,6 +23,8 @@ interface SettingsFormProps {
         deliveryTimeMax: number;
         deliveryFee: number;
         minOrderAmount: number;
+        deliveryRadiusKm: number;
+        allowPickup: boolean;
         firstName: string;
         lastName: string;
         ownerPhone: string;
@@ -31,6 +33,16 @@ interface SettingsFormProps {
         mpUserId?: string | null;
         scheduleEnabled: boolean;
         scheduleJson?: string | null;
+        commissionRate: number;
+        // Document status
+        constanciaAfipUrl?: string | null;
+        habilitacionMunicipalUrl?: string | null;
+        registroSanitarioUrl?: string | null;
+        approvalStatus: string;
+        // Social media
+        instagramUrl?: string | null;
+        facebookUrl?: string | null;
+        whatsappNumber?: string | null;
     };
 }
 
@@ -91,18 +103,22 @@ function normalizeScheduleFromDb(raw: Record<string, unknown>): WeekSchedule {
 }
 
 const CATEGORIES = [
-    "Restaurante",
-    "Pizzería",
-    "Hamburguesería",
-    "Parrilla",
-    "Cafetería",
-    "Panadería",
-    "Farmacia",
-    "Supermercado",
-    "Kiosco",
-    "Verdulería",
-    "Carnicería",
-    "Otro",
+    // Gastronomía
+    "Restaurante", "Pizzería", "Hamburguesería", "Parrilla",
+    "Cafetería", "Heladería", "Panadería/Pastelería", "Sushi",
+    "Comida Saludable", "Rotisería",
+    // Bebidas
+    "Bebidas", "Vinoteca/Licorería",
+    // Compras diarias
+    "Supermercado/Almacén", "Kiosco", "Dietética/Naturista",
+    "Verdulería", "Carnicería",
+    // Salud y bienestar
+    "Farmacia", "Veterinaria/Pet Shop", "Óptica", "Perfumería/Cosmética",
+    // Hogar
+    "Ferretería", "Mueblería/Decoración", "Lavandería/Tintorería",
+    // Otros comercios
+    "Librería/Papelería", "Electrónica/Celulares", "Regalería/Cotillón",
+    "Floristería", "Juguetería", "Indumentaria", "Otro",
 ];
 
 export default function SettingsForm({ merchant }: SettingsFormProps) {
@@ -460,70 +476,122 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                     </div>
                 </div>
 
-                {/* Delivery Settings */}
-                <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+                {/* Delivery & Pickup Settings */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-blue-600" />
-                        Configuración de Delivery
+                        <Truck className="w-5 h-5 text-blue-600" />
+                        Entregas y Pedidos
                     </h2>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Tiempo Mín (min)
-                            </label>
+                    {/* Delivery info */}
+                    <div className="bg-blue-50 rounded-lg p-3 flex gap-2">
+                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-blue-800">
+                            El costo de envío se calcula automáticamente según la distancia entre tu comercio y el comprador. No necesitás configurar un precio fijo.
+                        </p>
+                    </div>
+
+                    {/* Pickup toggle */}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <ShoppingBag className="w-5 h-5 text-gray-600" />
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">Retiro en local</p>
+                                <p className="text-xs text-gray-500">Permitir que los clientes retiren su pedido en tu comercio</p>
+                            </div>
+                        </div>
+                        <label className="relative inline-flex cursor-pointer">
+                            <input type="hidden" name="allowPickup" value="false" />
                             <input
-                                name="deliveryTimeMin"
-                                type="number"
-                                min="5"
-                                defaultValue={merchant.deliveryTimeMin}
-                                className="input"
+                                type="checkbox"
+                                name="allowPickup"
+                                defaultChecked={merchant.allowPickup}
+                                value="true"
+                                className="sr-only peer"
                                 disabled={isLoading}
                             />
+                            <div className="w-11 h-6 bg-gray-300 peer-checked:bg-green-500 rounded-full transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:bg-white after:rounded-full after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+                        </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tiempo de preparación (min)
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    name="deliveryTimeMin"
+                                    type="number"
+                                    min="5"
+                                    defaultValue={merchant.deliveryTimeMin}
+                                    className="input w-full"
+                                    disabled={isLoading}
+                                    placeholder="Mín"
+                                />
+                                <span className="text-gray-400">a</span>
+                                <input
+                                    name="deliveryTimeMax"
+                                    type="number"
+                                    min="10"
+                                    defaultValue={merchant.deliveryTimeMax}
+                                    className="input w-full"
+                                    disabled={isLoading}
+                                    placeholder="Máx"
+                                />
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-1">Tiempo estimado para preparar un pedido</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Tiempo Máx (min)
+                                Radio de entrega (km)
                             </label>
                             <input
-                                name="deliveryTimeMax"
+                                name="deliveryRadiusKm"
                                 type="number"
-                                min="10"
-                                defaultValue={merchant.deliveryTimeMax}
+                                min="1"
+                                max="50"
+                                step="0.5"
+                                defaultValue={merchant.deliveryRadiusKm}
                                 className="input"
                                 disabled={isLoading}
                             />
+                            <p className="text-[10px] text-gray-500 mt-1">Distancia máxima para recibir pedidos</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 <DollarSign className="w-4 h-4 inline" />
-                                Envío
-                            </label>
-                            <input
-                                name="deliveryFee"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                defaultValue={merchant.deliveryFee}
-                                className="input"
-                                disabled={isLoading}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <DollarSign className="w-4 h-4 inline" />
-                                Pedido Mín
+                                Pedido mínimo
                             </label>
                             <input
                                 name="minOrderAmount"
                                 type="number"
                                 min="0"
-                                step="0.01"
+                                step="100"
                                 defaultValue={merchant.minOrderAmount}
                                 className="input"
                                 disabled={isLoading}
                             />
+                            <p className="text-[10px] text-gray-500 mt-1">Monto mínimo para aceptar un pedido. $0 = sin mínimo</p>
                         </div>
+                    </div>
+                    {/* Hidden deliveryFee to maintain backwards compat */}
+                    <input type="hidden" name="deliveryFee" value={merchant.deliveryFee.toString()} />
+                </div>
+
+                {/* Commission Info (read-only) */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Percent className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-900">Tu comisión actual</p>
+                                <p className="text-sm text-gray-500">Porcentaje que MOOVY cobra por cada venta</p>
+                            </div>
+                        </div>
+                        <span className="text-2xl font-bold text-blue-600">{merchant.commissionRate}%</span>
                     </div>
                 </div>
 
@@ -666,6 +734,121 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                         </button>
                     </div>
                 )}
+            </div>
+
+            {/* Document Status */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    Estado de Documentos
+                </h2>
+                <p className="text-sm text-gray-500">
+                    Documentos que presentaste al registrarte. Nuestro equipo los revisa para verificar tu comercio.
+                </p>
+
+                <div className="space-y-2">
+                    {[
+                        { label: "Constancia AFIP", value: merchant.constanciaAfipUrl },
+                        { label: "Habilitación Municipal", value: merchant.habilitacionMunicipalUrl },
+                        { label: "Registro Sanitario", value: merchant.registroSanitarioUrl },
+                    ].map((doc) => (
+                        <div key={doc.label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm text-gray-700">{doc.label}</span>
+                            {doc.value ? (
+                                <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+                                    Presentado
+                                </span>
+                            ) : (
+                                <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-200 text-gray-500">
+                                    No presentado
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {merchant.approvalStatus === "APPROVED" && (
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg">
+                        <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                        <p className="text-sm font-medium">Tu comercio está verificado y aprobado</p>
+                    </div>
+                )}
+                {merchant.approvalStatus === "PENDING" && (
+                    <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
+                        <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                        <p className="text-sm font-medium">Documentos en revisión — te notificaremos cuando estén aprobados</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Social Media */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    Redes Sociales
+                </h2>
+                <p className="text-sm text-gray-500">
+                    Mostrá tus redes en tu perfil público. Los clientes confían más en comercios con presencia en redes.
+                </p>
+
+                <form action={async (formData: FormData) => {
+                    const result = await updateMerchant(formData);
+                    if (result?.error) setError(result.error);
+                    else { setSuccess("Redes sociales guardadas"); setTimeout(() => setSuccess(""), 3000); }
+                }}>
+                    {/* Pass required hidden fields for the updateMerchant action */}
+                    <input type="hidden" name="name" value={merchant.name} />
+                    <input type="hidden" name="image" value={merchant.image} />
+                    <input type="hidden" name="deliveryFee" value={merchant.deliveryFee.toString()} />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Instagram className="w-4 h-4 inline mr-1" />
+                                Instagram
+                            </label>
+                            <input
+                                name="instagramUrl"
+                                type="text"
+                                defaultValue={merchant.instagramUrl || ""}
+                                placeholder="@tu_comercio"
+                                className="input"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <MessageCircle className="w-4 h-4 inline mr-1" />
+                                WhatsApp
+                            </label>
+                            <input
+                                name="whatsappNumber"
+                                type="text"
+                                defaultValue={merchant.whatsappNumber || ""}
+                                placeholder="+54 9 2901 ..."
+                                className="input"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Globe className="w-4 h-4 inline mr-1" />
+                                Facebook
+                            </label>
+                            <input
+                                name="facebookUrl"
+                                type="text"
+                                defaultValue={merchant.facebookUrl || ""}
+                                placeholder="facebook.com/tu_comercio"
+                                className="input"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <button type="submit" className="btn-primary flex items-center gap-2 px-6">
+                            <Save className="w-4 h-4" />
+                            Guardar Redes
+                        </button>
+                    </div>
+                </form>
             </div>
 
             {/* MercadoPago */}

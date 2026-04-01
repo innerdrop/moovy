@@ -391,6 +391,7 @@ model Merchant {
   deliveryTimeMax  Int                       @default(45)
   deliveryFee      Float                     @default(0)
   minOrderAmount   Float                     @default(0)
+  allowPickup      Boolean                   @default(false)
   cuit                      String?
   constanciaAfipUrl         String?
   habilitacionMunicipalUrl  String?
