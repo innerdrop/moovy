@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Settings } from "lucide-react";
 import SettingsForm from "@/components/comercios/SettingsForm";
 
 export default async function ConfiguracionPage() {
@@ -11,10 +11,8 @@ export default async function ConfiguracionPage() {
         redirect("/comercios/login");
     }
 
-    // Get merchant for this user
     const merchant = await prisma.merchant.findFirst({
         where: { ownerId: session.user.id },
-        include: { owner: true }
     });
 
     if (!merchant) {
@@ -30,20 +28,18 @@ export default async function ConfiguracionPage() {
     return (
         <div className="max-w-3xl mx-auto space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-                <p className="text-gray-500">Gestiona la información de tu comercio</p>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <Settings className="w-6 h-6" style={{ color: "#e60012" }} />
+                    Ajustes
+                </h1>
+                <p className="text-gray-500">Configuración operativa de tu tienda</p>
             </div>
 
             <SettingsForm
                 merchant={{
                     id: merchant.id,
                     name: merchant.name,
-                    description: merchant.description || "",
                     image: merchant.image || "",
-                    email: merchant.email || "",
-                    phone: merchant.phone || "",
-                    address: merchant.address || "",
-                    category: merchant.category || "Otro",
                     isOpen: merchant.isOpen,
                     deliveryTimeMin: merchant.deliveryTimeMin,
                     deliveryTimeMax: merchant.deliveryTimeMax,
@@ -51,24 +47,14 @@ export default async function ConfiguracionPage() {
                     minOrderAmount: merchant.minOrderAmount,
                     deliveryRadiusKm: merchant.deliveryRadiusKm,
                     allowPickup: merchant.allowPickup,
-                    latitude: merchant.latitude,
-                    longitude: merchant.longitude,
-                    firstName: merchant.owner.firstName || "",
-                    lastName: merchant.owner.lastName || "",
-                    ownerPhone: merchant.owner.phone || "",
+                    commissionRate: merchant.commissionRate,
                     mpEmail: merchant.mpEmail,
                     mpLinkedAt: merchant.mpLinkedAt?.toISOString() || null,
                     mpUserId: merchant.mpUserId,
-                    scheduleEnabled: merchant.scheduleEnabled,
-                    scheduleJson: merchant.scheduleJson,
-                    commissionRate: merchant.commissionRate,
                     constanciaAfipUrl: merchant.constanciaAfipUrl,
                     habilitacionMunicipalUrl: merchant.habilitacionMunicipalUrl,
                     registroSanitarioUrl: merchant.registroSanitarioUrl,
                     approvalStatus: merchant.approvalStatus,
-                    instagramUrl: merchant.instagramUrl,
-                    facebookUrl: merchant.facebookUrl,
-                    whatsappNumber: merchant.whatsappNumber,
                 }}
             />
         </div>
