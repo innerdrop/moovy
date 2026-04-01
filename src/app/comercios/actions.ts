@@ -373,7 +373,7 @@ const merchantSchema = z.object({
     deliveryTimeMax: z.coerce.number().int().min(0).optional().transform(v => (v && v > 0 && v < 10) ? 10 : v),
     deliveryFee: z.coerce.number().min(0).optional(),
     minOrderAmount: z.coerce.number().min(0).optional(),
-    deliveryRadiusKm: z.coerce.number().min(1).max(50).optional(),
+    deliveryRadiusKm: z.coerce.number().min(0).max(50).optional(),
     allowPickup: z.string().optional().transform(v => v === "true"),
     latitude: z.coerce.number().optional().nullable(),
     longitude: z.coerce.number().optional().nullable(),
@@ -607,3 +607,4 @@ export async function toggleMerchantOpen(isOpen: boolean) {
 }
 
 
+                                              
