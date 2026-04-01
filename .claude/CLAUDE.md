@@ -256,7 +256,7 @@ servicios, verificar que la versión y el estado sigan vigentes.
 ## Reglas de ejecución
 1. NO abrir browser, NO npm run dev/build, NO pruebas visuales
 2. Verificar TS con `npx tsc --noEmit` (targeted si OOM)
-3. Crear rama nueva antes de tocar código. NUNCA trabajar en develop
+3. **REGLA CRÍTICA — NUNCA EDITAR CÓDIGO EN DEVELOP.** Antes de tocar CUALQUIER archivo de código, PRIMERO verificar en qué rama está Mauro. Si está en `develop` o `main`: DETENER TODO, avisar a Mauro, y pedirle que cree una rama nueva con `.\scripts\start.ps1`. Si la rama ya fue cerrada/mergeada y hay que hacer otro cambio: crear una NUEVA rama. No existe excepción a esta regla. Cada cambio va en su propia rama feature/fix. Si no se sabe en qué rama está Mauro, PREGUNTAR antes de escribir código.
 4. Mostrar plan → esperar aprobación → ejecutar → mostrar archivos modificados + tsc
 5. Ignorar 3 errores pre-existentes: `--incremental`, `session.user` ×2
 6. Al cerrar rama: actualizar CLAUDE.md + PROJECT_STATUS.md en el commit
@@ -733,4 +733,4 @@ antes de empezar a trabajar:
 1. Leé este archivo y PROJECT_STATUS.md antes de hacer cualquier cosa
 2. Trabajá las tareas en orden de PROJECT_STATUS.md
 3. Commiteá seguido con mensajes claros
-4. Cuando complete
+4. Cuando complete                                                                                                                                                                                                                                                                                                                                                                                                                                                               
