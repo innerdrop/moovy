@@ -456,12 +456,15 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                             <input name="facebookUrl" type="text" defaultValue={merchant.facebookUrl || ""} placeholder="facebook.com/tu_comercio" className="input" />
                         </div>
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <button type="submit" disabled={savingSocial} className="btn-primary flex items-center gap-2 px-6">
-                            {savingSocial ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Guardar Redes
-                        </button>
-                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={savingSocial}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm disabled:opacity-50 mt-4"
+                    >
+                        {savingSocial ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Guardar Redes
+                    </button>
                 </form>
             </div>
         </div>
