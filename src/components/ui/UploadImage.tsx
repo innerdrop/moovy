@@ -30,15 +30,24 @@ export default function UploadImage({
     src,
     fallbackSrc = "/placeholder-image.webp",
     alt,
+    fill,
+    sizes,
     ...props
 }: UploadImageProps) {
     const imageSrc = src || fallbackSrc;
     const shouldSkipOptimization = isLocalUpload(imageSrc);
 
+    // Default sizes for fill images: mobile-first responsive
+    const defaultSizes = fill && !sizes
+        ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        : sizes;
+
     return (
         <Image
             src={imageSrc}
             alt={alt}
+            fill={fill}
+            sizes={defaultSizes}
             unoptimized={shouldSkipOptimization}
             {...props}
         />

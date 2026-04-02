@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen } from "@/app/comercios/actions";
 import { Loader2, Save, Power, DollarSign, Truck, ShoppingBag, Info, Percent, Link2, Unlink, AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { confirm } from "@/store/confirm";
+import { toast } from "@/store/toast";
 
 interface SettingsFormProps {
     merchant: {
@@ -38,17 +40,24 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
     const [mpLinkedAt] = useState(merchant.mpLinkedAt || null);
 
     const handleSubmit = async (formData: FormData) => {
+        const ok = await confirm({
+            title: "Guardar cambios",
+            message: "¿Querés guardar los cambios en la configuración operativa?",
+            confirmLabel: "Guardar",
+            cancelLabel: "Cancelar",
+        });
+        if (!ok) return;
+
         setIsLoading(true);
         setError("");
-        setSuccess("");
         formData.append("image", merchant.image);
         formData.append("name", merchant.name);
         const result = await updateMerchant(formData);
         if (result?.error) {
+            toast.error(result.error);
             setError(result.error);
         } else {
-            setSuccess("Configuración guardada correctamente");
-            setTimeout(() => setSuccess(""), 3000);
+            toast.success("Configuración guardada correctamente");
         }
         setIsLoading(false);
     };
