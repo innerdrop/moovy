@@ -2,41 +2,41 @@
 
 import { useState, useRef } from "react";
 import UploadImage from "@/components/ui/UploadImage";
-import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { toast } from "@/store/toast";
+import dynamic from "next/dynamic";
+
+const ImageCropModal = dynamic(() => import("@/components/ui/ImageCropModal"), { ssr: false });
 
 interface ImageUploadProps {
     value: string;
     onChange: (url: string) => void;
     disabled?: boolean;
     compact?: boolean;
+    /** When set, shows a crop modal before uploading. 1 = square (logo), 16/9 = banner, etc. */
+    cropAspect?: number;
+    /** Output size in pixels for cropped image (default 500) */
+    cropOutputSize?: number;
 }
 
-export default function ImageUpload({ value, onChange, disabled, compact }: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, disabled, compact, cropAspect, cropOutputSize = 500 }: ImageUploadProps) {
     const [isLoading, setIsLoading] = useState(false);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
+    const uploadFile = async (file: File | Blob, fileName?: string) => {
         setIsLoading(true);
-
         try {
-            // Client-side Compression
-            const compressedFile = await compressImage(file);
-
+            const uploadBlob = file instanceof File ? file : new File([file], fileName || "cropped.jpg", { type: "image/jpeg" });
             const formData = new FormData();
-            formData.append("file", compressedFile);
+            formData.append("file", uploadBlob);
 
             const response = await fetch("/api/upload", {
                 method: "POST",
                 body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error("Upload failed");
-            }
+            if (!response.ok) throw new Error("Upload failed");
 
             const data = await response.json();
             onChange(data.url);
@@ -48,7 +48,44 @@ export default function ImageUpload({ value, onChange, disabled, compact }: Imag
         }
     };
 
-    // Compression Utility
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (cropAspect) {
+            // Show crop modal instead of uploading directly
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setCropSrc(ev.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        // No crop — compress and upload directly
+        setIsLoading(true);
+        try {
+            const compressedFile = await compressImage(file);
+            await uploadFile(compressedFile);
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            toast.error("Error al subir la imagen. Intenta de nuevo.");
+            setIsLoading(false);
+        }
+    };
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        setCropSrc(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        await uploadFile(croppedBlob, "logo.jpg");
+    };
+
+    const handleCropClose = () => {
+        setCropSrc(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    // Compression Utility (used for non-crop uploads)
     const compressImage = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -90,7 +127,7 @@ export default function ImageUpload({ value, onChange, disabled, compact }: Imag
                         } else {
                             reject(new Error("Canvas to Blob failed"));
                         }
-                    }, "image/jpeg", 0.7); // 70% quality, highly efficient
+                    }, "image/jpeg", 0.7);
                 };
                 img.onerror = (error) => reject(error);
             };
@@ -104,6 +141,8 @@ export default function ImageUpload({ value, onChange, disabled, compact }: Imag
             fileInputRef.current.value = "";
         }
     };
+
+    const isSquare = cropAspect === 1;
 
     return (
         <div className="w-full">
@@ -140,10 +179,10 @@ export default function ImageUpload({ value, onChange, disabled, compact }: Imag
                     )}
                 </div>
             ) : (
-                <div className="relative w-full aspect-video sm:aspect-[4/3] rounded-xl overflow-hidden border border-gray-200 group">
+                <div className={`relative w-full ${isSquare ? "aspect-square" : "aspect-video sm:aspect-[4/3]"} rounded-xl overflow-hidden border border-gray-200 group`}>
                     <UploadImage
                         src={value}
-                        alt="Product Image"
+                        alt="Uploaded Image"
                         fill
                         className="object-cover"
                     />
@@ -171,6 +210,17 @@ export default function ImageUpload({ value, onChange, disabled, compact }: Imag
                         <X className="w-4 h-4" />
                     </button>
                 </div>
+            )}
+
+            {/* Crop Modal */}
+            {cropSrc && (
+                <ImageCropModal
+                    imageSrc={cropSrc}
+                    aspectRatio={cropAspect || 1}
+                    outputSize={cropOutputSize}
+                    onCrop={handleCropComplete}
+                    onClose={handleCropClose}
+                />
             )}
         </div>
     );

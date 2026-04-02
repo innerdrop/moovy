@@ -5,6 +5,8 @@ import { updateMerchant, updateMerchantSchedule } from "@/app/comercios/actions"
 import ImageUpload from "@/components/ui/ImageUpload";
 import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
+import { confirm } from "@/store/confirm";
+import { toast } from "@/store/toast";
 
 interface MiComercioFormProps {
     merchant: {
@@ -115,21 +117,36 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
     const [savingSocial, setSavingSocial] = useState(false);
 
     const handleSubmit = async (formData: FormData) => {
+        const ok = await confirm({
+            title: "Guardar perfil",
+            message: "¿Querés guardar los cambios en tu perfil de comercio?",
+            confirmLabel: "Guardar",
+            cancelLabel: "Cancelar",
+        });
+        if (!ok) return;
+
         setIsLoading(true);
         setError("");
-        setSuccess("");
         formData.append("image", imageUrl);
         const result = await updateMerchant(formData);
         if (result?.error) {
+            toast.error(result.error);
             setError(result.error);
         } else {
-            setSuccess("Cambios guardados correctamente");
-            setTimeout(() => setSuccess(""), 3000);
+            toast.success("Perfil guardado correctamente");
         }
         setIsLoading(false);
     };
 
     const handleSaveSchedule = async () => {
+        const ok = await confirm({
+            title: "Guardar horarios",
+            message: "¿Querés guardar los cambios en los horarios de atención?",
+            confirmLabel: "Guardar",
+            cancelLabel: "Cancelar",
+        });
+        if (!ok) return;
+
         setSavingSchedule(true);
         setError("");
         const result = await updateMerchantSchedule(
@@ -137,10 +154,10 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
             scheduleEnabled ? JSON.stringify(schedule) : null
         );
         if (result?.error) {
+            toast.error(result.error);
             setError(result.error);
         } else {
-            setSuccess("Horarios guardados correctamente");
-            setTimeout(() => setSuccess(""), 3000);
+            toast.success("Horarios guardados correctamente");
         }
         setSavingSchedule(false);
     };
@@ -212,6 +229,8 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                                 value={imageUrl}
                                 onChange={setImageUrl}
                                 disabled={isLoading}
+                                cropAspect={1}
+                                cropOutputSize={500}
                             />
                         </div>
                         <div className="md:col-span-2 space-y-4">
@@ -423,10 +442,18 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                 </p>
 
                 <form action={async (formData: FormData) => {
+                    const ok = await confirm({
+                        title: "Guardar redes sociales",
+                        message: "¿Querés guardar los cambios en tus redes sociales?",
+                        confirmLabel: "Guardar",
+                        cancelLabel: "Cancelar",
+                    });
+                    if (!ok) return;
+
                     setSavingSocial(true);
                     const result = await updateMerchant(formData);
-                    if (result?.error) setError(result.error);
-                    else { setSuccess("Redes sociales guardadas"); setTimeout(() => setSuccess(""), 3000); }
+                    if (result?.error) { toast.error(result.error); setError(result.error); }
+                    else { toast.success("Redes sociales guardadas"); }
                     setSavingSocial(false);
                 }}>
                     <input type="hidden" name="name" value={merchant.name} />
