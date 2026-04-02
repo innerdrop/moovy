@@ -362,7 +362,7 @@ export async function toggleProductActive(productId: string, isActive: boolean) 
 // ============================================
 
 const merchantSchema = z.object({
-    name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+    name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").optional(),
     description: z.string().optional(),
     image: z.string().optional(),
     email: z.string().email("Email inválido").optional().or(z.literal("")),
@@ -391,7 +391,9 @@ export async function updateMerchant(formData: FormData) {
         return { error: "No autorizado" };
     }
 
-    const rawData = {
+    // Build rawData filtering out null values (fields not present in the form)
+    // Zod .optional() accepts undefined but NOT null, and formData.get() returns null for missing fields
+    const allFields = {
         name: formData.get("name"),
         description: formData.get("description"),
         image: formData.get("image"),
@@ -414,6 +416,11 @@ export async function updateMerchant(formData: FormData) {
         facebookUrl: formData.get("facebookUrl"),
         whatsappNumber: formData.get("whatsappNumber"),
     };
+
+    // Convert null → undefined so Zod .optional() works correctly
+    const rawData = Object.fromEntries(
+        Object.entries(allFields).filter(([_, v]) => v !== null)
+    );
 
     const validation = merchantSchema.safeParse(rawData);
 
@@ -460,36 +467,41 @@ export async function updateMerchant(formData: FormData) {
             prisma.merchant.update({
                 where: { id: merchant.id },
                 data: {
-                    name: data.name,
-                    businessName: data.name,
-                    description: data.description || null,
-                    image: data.image || null,
-                    email: data.email || null,
-                    phone: data.phone || null,
-                    address: data.address || null,
-                    category: data.category || "Otro",
-                    deliveryTimeMin: data.deliveryTimeMin || 30,
-                    deliveryTimeMax: data.deliveryTimeMax || 45,
-                    deliveryFee: data.deliveryFee || 0,
-                    minOrderAmount: data.minOrderAmount || 0,
-                    deliveryRadiusKm: data.deliveryRadiusKm || 5,
-                    allowPickup: data.allowPickup ?? false,
+                    // Only update fields that were actually sent in the form (undefined fields are skipped by Prisma)
+                    ...(data.name !== undefined && { name: data.name, businessName: data.name }),
+                    ...(data.description !== undefined && { description: data.description || null }),
+                    ...(data.image !== undefined && { image: data.image || null }),
+                    ...(data.email !== undefined && { email: data.email || null }),
+                    ...(data.phone !== undefined && { phone: data.phone || null }),
+                    ...(data.address !== undefined && { address: data.address || null }),
+                    ...(data.category !== undefined && { category: data.category || "Otro" }),
+                    ...(data.deliveryTimeMin !== undefined && { deliveryTimeMin: data.deliveryTimeMin || 30 }),
+                    ...(data.deliveryTimeMax !== undefined && { deliveryTimeMax: data.deliveryTimeMax || 45 }),
+                    ...(data.deliveryFee !== undefined && { deliveryFee: data.deliveryFee || 0 }),
+                    ...(data.minOrderAmount !== undefined && { minOrderAmount: data.minOrderAmount || 0 }),
+                    ...(data.deliveryRadiusKm !== undefined && { deliveryRadiusKm: data.deliveryRadiusKm || 5 }),
+                    ...(data.allowPickup !== undefined && { allowPickup: data.allowPickup }),
                     latitude: finalLatitude,
                     longitude: finalLongitude,
-                    instagramUrl: data.instagramUrl || null,
-                    facebookUrl: data.facebookUrl || null,
-                    whatsappNumber: data.whatsappNumber || null,
+                    ...(data.instagramUrl !== undefined && { instagramUrl: data.instagramUrl || null }),
+                    ...(data.facebookUrl !== undefined && { facebookUrl: data.facebookUrl || null }),
+                    ...(data.whatsappNumber !== undefined && { whatsappNumber: data.whatsappNumber || null }),
                 },
             }),
-            prisma.user.update({
-                where: { id: session.user.id },
-                data: {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    name: `${data.firstName?.trim()} ${data.lastName?.trim()}`,
-                    phone: data.ownerPhone,
-                }
-            })
+            // Only update owner fields if they were sent (MiComercioForm sends them, SettingsForm does not)
+            ...(data.firstName !== undefined || data.lastName !== undefined || data.ownerPhone !== undefined ? [
+                prisma.user.update({
+                    where: { id: session.user.id },
+                    data: {
+                        ...(data.firstName !== undefined && { firstName: data.firstName }),
+                        ...(data.lastName !== undefined && { lastName: data.lastName }),
+                        ...(data.firstName !== undefined && data.lastName !== undefined && {
+                            name: `${data.firstName?.trim()} ${data.lastName?.trim()}`
+                        }),
+                        ...(data.ownerPhone !== undefined && { phone: data.ownerPhone }),
+                    }
+                })
+            ] : [])
         ]);
 
         revalidatePath("/comercios/configuracion");
@@ -607,4 +619,3 @@ export async function toggleMerchantOpen(isOpen: boolean) {
 }
 
 
-                                              

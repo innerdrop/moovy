@@ -129,6 +129,10 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
 
             {/* Delivery & Pickup Settings */}
             <form action={handleSubmit} className="space-y-6">
+                {/* Hidden fields required by merchantSchema */}
+                <input type="hidden" name="name" value={merchant.name} />
+                <input type="hidden" name="image" value={merchant.image} />
+
                 <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                         <Truck className="w-5 h-5 text-blue-600" />
