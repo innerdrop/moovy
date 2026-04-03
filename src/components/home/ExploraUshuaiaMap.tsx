@@ -170,58 +170,44 @@ export default function ExploraUshuaiaMap({ merchants }: ExploraUshuaiaMapProps)
                   onCloseClick={() => setSelectedMerchant(null)}
                   options={{ maxWidth: 260, pixelOffset: new google.maps.Size(0, -42) }}
                 >
-                  <div className="min-w-[220px]">
-                    {/* Image */}
-                    <div className="relative h-[90px] -mx-2 -mt-2 mb-2 overflow-hidden">
-                      {selectedMerchant.image ? (
+                  <div style={{ minWidth: 180, padding: "2px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      {selectedMerchant.image && (
                         <img
                           src={selectedMerchant.image}
-                          alt={selectedMerchant.name}
-                          className="w-full h-full object-cover"
+                          alt=""
+                          style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0 }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                          <MapPin className="w-6 h-6 text-gray-300" />
-                        </div>
                       )}
-                      {!selectedMerchant.isOpen && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">Cerrado</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {cleanEncoding(selectedMerchant.name)}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <h3 className="font-bold text-sm text-gray-900 truncate">
-                        {cleanEncoding(selectedMerchant.name)}
-                      </h3>
-                      {selectedMerchant.rating ? (
-                        <div className="flex items-center gap-0.5 text-xs text-gray-600 flex-shrink-0">
-                          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                          {selectedMerchant.rating.toFixed(1)}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 11, color: "#666", marginTop: 1 }}>
+                          {selectedMerchant.rating ? (
+                            <span style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                              ⭐ {selectedMerchant.rating.toFixed(1)}
+                            </span>
+                          ) : null}
+                          <span>{selectedMerchant.deliveryTimeMin}-{selectedMerchant.deliveryTimeMax} min</span>
+                          {selectedMerchant.isOpen ? (
+                            <span style={{ color: "#16a34a", fontWeight: 600 }}>Abierto</span>
+                          ) : (
+                            <span style={{ color: "#dc2626", fontWeight: 600 }}>Cerrado</span>
+                          )}
                         </div>
-                      ) : null}
+                      </div>
                     </div>
-
-                    {selectedMerchant.description && (
-                      <p className="text-gray-400 text-xs line-clamp-1 mb-2">
-                        {cleanEncoding(selectedMerchant.description)}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-xs text-gray-500">
-                        <Clock className="w-3 h-3" />
-                        {selectedMerchant.deliveryTimeMin}-{selectedMerchant.deliveryTimeMax} min
-                      </span>
-                      <Link
-                        href={`/tienda/${selectedMerchant.slug}`}
-                        className="text-xs font-bold text-[#e60012] hover:underline"
-                      >
-                        Ver menú →
-                      </Link>
-                    </div>
+                    <a
+                      href={`/tienda/${selectedMerchant.slug}`}
+                      style={{
+                        display: "block", textAlign: "center", background: "#e60012", color: "white",
+                        fontSize: 12, fontWeight: 700, padding: "6px 0", borderRadius: 8,
+                        textDecoration: "none",
+                      }}
+                    >
+                      Pedir ahora
+                    </a>
                   </div>
                 </InfoWindow>
               )}
