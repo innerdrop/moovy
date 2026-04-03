@@ -67,15 +67,39 @@ async function getHeroSlides() {
   }
 }
 
-async function getCategories(limit: number = 8) {
+/** Home categories from curated HomeCategorySlot (admin-managed, independent of B2B packages) */
+async function getHomeCategories(limit: number = 8) {
   try {
-    return await prisma.category.findMany({
-      where: { isActive: true, scope: { in: ["STORE", "BOTH"] } },
+    const slots = await prisma.homeCategorySlot.findMany({
+      where: { isActive: true },
+      include: { category: true },
       orderBy: { order: "asc" },
       take: limit,
     });
+
+    // Merge slot overrides with category data
+    return slots.map((slot) => ({
+      id: slot.category.id,
+      name: slot.label || slot.category.name,
+      slug: slot.category.slug,
+      image: slot.image || slot.category.image,
+      icon: slot.icon || slot.category.icon,
+      description: slot.category.description,
+      scope: slot.category.scope,
+      order: slot.order,
+      isActive: true,
+    }));
   } catch {
-    return [];
+    // Fallback: if HomeCategorySlot table doesn't exist yet, use legacy query
+    try {
+      return await prisma.category.findMany({
+        where: { isActive: true, scope: { in: ["STORE", "BOTH"] } },
+        orderBy: { order: "asc" },
+        take: limit,
+      });
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -222,7 +246,7 @@ function MaintenanceView() {
 // MAIN STORE VIEW
 // ============================================
 
-async function LiveStoreView() {
+export default async function LiveStoreView() {
   const settings = await prisma.storeSettings
     .findUnique({ where: { id: "settings" } })
     .catch(() => null);
@@ -235,7 +259,7 @@ async function LiveStoreView() {
     slides,
     topMerchantIds,
   ] = await Promise.all([
-    getCategories(settings?.maxCategoriesHome ?? 8),
+    getHomeCategories(settings?.maxCategoriesHome ?? 8),
     getAllActiveMerchants(),
     getFeaturedProducts(),
     getRecentListings(),
@@ -472,24 +496,13 @@ async function LiveStoreView() {
         <TrustBar />
       </AnimateIn>
 
-      {/* ── 10. SUPPLY SIDE CTAs ── */}
-      <AnimateIn animation="reveal-scale" delay={100}>
+      {/* ── 10. SUPPLY-SIDE CTAs ── */}
+      <AnimateIn animation="reveal" delay={100}>
         <SupplySideCTA />
       </AnimateIn>
 
-      {/* Footer */}
+      {/* ── 11. FOOTER ── */}
       <Footer />
     </div>
   );
-}
-
-// ============================================
-// PAGE EXPORT
-// ============================================
-
-export default function HomePage() {
-  if (IS_MAINTENANCE_MODE) {
-    return <MaintenanceView />;
-  }
-  return <LiveStoreView />;
-}
+}

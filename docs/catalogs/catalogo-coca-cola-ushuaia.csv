@@ -1,0 +1,64 @@
+name,slug,description,price,costPrice,stock,minStock,categorySlug,packageCategory,maxWeightGrams,maxLengthCm,maxWidthCm,maxHeightCm,volumeScore,allowedVehicles
+Coca-Cola Original 354ml Lata,coca-cola-original-354ml-lata,Gaseosa cola sabor original en lata 354ml,1650,1100,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Coca-Cola Zero Azúcar 354ml Lata,coca-cola-zero-354ml-lata,Gaseosa cola sin azúcar en lata 354ml,1650,1100,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Coca-Cola Light 354ml Lata,coca-cola-light-354ml-lata,Gaseosa cola light en lata 354ml,1650,1100,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Coca-Cola Original 500ml PET,coca-cola-original-500ml-pet,Gaseosa cola sabor original botella personal 500ml,2000,1350,100,10,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Coca-Cola Zero Azúcar 500ml PET,coca-cola-zero-500ml-pet,Gaseosa cola sin azúcar botella personal 500ml,2000,1350,100,10,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Coca-Cola Light 500ml PET,coca-cola-light-500ml-pet,Gaseosa cola light botella personal 500ml,2000,1350,100,10,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Coca-Cola Original 1.5L PET,coca-cola-original-15l-pet,Gaseosa cola sabor original botella familiar 1.5 litros,3500,2350,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Coca-Cola Zero Azúcar 1.5L PET,coca-cola-zero-15l-pet,Gaseosa cola sin azúcar botella familiar 1.5 litros,3500,2350,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Coca-Cola Light 1.5L PET,coca-cola-light-15l-pet,Gaseosa cola light botella familiar 1.5 litros,3500,2350,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Coca-Cola Original 2.25L PET,coca-cola-original-225l-pet,Gaseosa cola sabor original botella 2.25 litros,5200,3500,50,5,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Coca-Cola Zero Azúcar 2.25L PET,coca-cola-zero-225l-pet,Gaseosa cola sin azúcar botella 2.25 litros,5200,3500,50,5,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Coca-Cola Light 2.25L PET,coca-cola-light-225l-pet,Gaseosa cola light botella 2.25 litros,5200,3500,50,5,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Coca-Cola Original 2.5L PET,coca-cola-original-25l-pet,Gaseosa cola sabor original botella 2.5 litros,5800,3900,40,4,bebidas,MEDIUM,2700,36,12,12,6,MOTO|CAR
+Coca-Cola Zero Azúcar 2.5L PET,coca-cola-zero-25l-pet,Gaseosa cola sin azúcar botella 2.5 litros,5800,3900,40,4,bebidas,MEDIUM,2700,36,12,12,6,MOTO|CAR
+Coca-Cola Original 3L PET,coca-cola-original-3l-pet,Gaseosa cola sabor original botella familiar grande 3 litros,7200,4800,30,3,bebidas,MEDIUM,3250,39,13,13,6,MOTO|CAR
+Fanta Naranja 354ml Lata,fanta-naranja-354ml-lata,Gaseosa de naranja Fanta en lata 354ml,1500,1000,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Fanta Limón 354ml Lata,fanta-limon-354ml-lata,Gaseosa sabor limón Fanta en lata 354ml,1500,1000,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Fanta Naranja 1.5L PET,fanta-naranja-15l-pet,Gaseosa de naranja Fanta botella familiar 1.5 litros,3200,2150,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Fanta Limón 1.5L PET,fanta-limon-15l-pet,Gaseosa sabor limón Fanta botella familiar 1.5 litros,3200,2150,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Fanta Naranja Zero 1.5L PET,fanta-naranja-zero-15l-pet,Gaseosa de naranja sin azúcar Fanta botella 1.5 litros,3200,2150,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Fanta Sandía 1.5L PET,fanta-sandia-15l-pet,Gaseosa sabor sandía Fanta botella 1.5 litros,3200,2150,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Fanta Naranja 2.25L PET,fanta-naranja-225l-pet,Gaseosa de naranja Fanta botella 2.25 litros,4900,3300,40,4,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Fanta Limón 2.25L PET,fanta-limon-225l-pet,Gaseosa sabor limón Fanta botella 2.25 litros,4900,3300,40,4,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Sprite 354ml Lata,sprite-354ml-lata,Gaseosa sabor lima-limón Sprite en lata 354ml,1500,1000,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Sprite Zero 354ml Lata,sprite-zero-354ml-lata,Gaseosa lima-limón sin azúcar Sprite en lata 354ml,1500,1000,100,10,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Sprite 1.5L PET,sprite-15l-pet,Gaseosa sabor lima-limón Sprite botella familiar 1.5 litros,3200,2150,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Sprite Zero 1.5L PET,sprite-zero-15l-pet,Gaseosa lima-limón sin azúcar Sprite botella 1.5 litros,3200,2150,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Sprite 2.25L PET,sprite-225l-pet,Gaseosa sabor lima-limón Sprite botella 2.25 litros,4900,3300,40,4,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Sprite Zero 2.25L PET,sprite-zero-225l-pet,Gaseosa lima-limón sin azúcar Sprite botella 2.25 litros,4900,3300,40,4,bebidas,MEDIUM,2400,35,12,12,6,MOTO|CAR
+Schweppes Agua Tónica 354ml Lata,schweppes-tonica-354ml-lata,Agua tónica Schweppes en lata 354ml,1650,1100,80,8,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Schweppes Pomelo 354ml Lata,schweppes-pomelo-354ml-lata,Gaseosa sabor pomelo Schweppes en lata 354ml,1650,1100,80,8,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Schweppes Jengibre 354ml Lata,schweppes-jengibre-354ml-lata,Gaseosa sabor jengibre Schweppes en lata 354ml,1650,1100,80,8,bebidas,MICRO,380,12,7,7,1,BIKE|MOTO
+Schweppes Agua Tónica 1.5L PET,schweppes-tonica-15l-pet,Agua tónica Schweppes botella familiar 1.5 litros,3500,2350,40,4,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Schweppes Pomelo 1.5L PET,schweppes-pomelo-15l-pet,Gaseosa sabor pomelo Schweppes botella familiar 1.5 litros,3500,2350,40,4,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Schweppes Naranja 1.5L PET,schweppes-naranja-15l-pet,Gaseosa sabor naranja Schweppes botella 1.5 litros,3500,2350,40,4,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Powerade Uva 500ml PET,powerade-uva-500ml-pet,Bebida isotónica sabor uva Powerade 500ml,2400,1600,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Powerade Limón 500ml PET,powerade-limon-500ml-pet,Bebida isotónica sabor limón Powerade 500ml,2400,1600,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Powerade Mountain Blast 500ml PET,powerade-mountain-blast-500ml-pet,Bebida isotónica Mountain Blast Powerade 500ml,2400,1600,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Powerade Ice Storm 500ml PET,powerade-ice-storm-500ml-pet,Bebida isotónica Ice Storm Powerade 500ml,2400,1600,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Powerade Golden Mango 500ml PET,powerade-golden-mango-500ml-pet,Bebida isotónica Golden Mango Powerade 500ml,2400,1600,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Powerade Ice Storm 1L PET,powerade-ice-storm-1l-pet,Bebida isotónica Ice Storm Powerade 1 litro,4000,2700,40,4,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+Monster Energy Original 473ml Lata,monster-energy-original-473ml,Bebida energizante Monster Energy original sabor verde 473ml,4200,2800,50,5,bebidas,MICRO,500,16,7,7,1,BIKE|MOTO
+Monster Energy Ultra White 473ml Lata,monster-energy-ultra-white-473ml,Bebida energizante Monster Energy Ultra Zero azúcar 473ml,4200,2800,50,5,bebidas,MICRO,500,16,7,7,1,BIKE|MOTO
+Monster Energy Mango Loco 473ml Lata,monster-energy-mango-loco-473ml,Bebida energizante Monster Mango Loco con jugo 473ml,4200,2800,50,5,bebidas,MICRO,500,16,7,7,1,BIKE|MOTO
+Monster Energy Rio Punch 473ml Lata,monster-energy-rio-punch-473ml,Bebida energizante Monster Rio Punch sabor tropical 473ml,4200,2800,50,5,bebidas,MICRO,500,16,7,7,1,BIKE|MOTO
+Monster Energy Pipeline Punch 473ml Lata,monster-energy-pipeline-punch-473ml,Bebida energizante Monster Pipeline Punch 473ml,4200,2800,50,5,bebidas,MICRO,500,16,7,7,1,BIKE|MOTO
+Benedictino Sin Gas 500ml PET,benedictino-sin-gas-500ml,Agua mineral sin gas Benedictino 500ml,1300,870,100,10,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Benedictino Con Gas 500ml PET,benedictino-con-gas-500ml,Agua mineral con gas Benedictino 500ml,1400,940,100,10,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Benedictino Sin Gas 1.5L PET,benedictino-sin-gas-15l,Agua mineral sin gas Benedictino 1.5 litros,2600,1740,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Benedictino Con Gas 1.5L PET,benedictino-con-gas-15l,Agua mineral con gas Benedictino 1.5 litros,2800,1880,60,6,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR
+Smartwater 750ml PET,smartwater-750ml,Agua purificada premium Smartwater 750ml,3500,2350,40,4,bebidas,MICRO,800,29,8,8,1,BIKE|MOTO
+Cepita del Valle Naranja 1L,cepita-del-valle-naranja-1l,Jugo de naranja Cepita del Valle 1 litro sin TACC,3000,2000,50,5,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+Cepita del Valle Durazno 1L,cepita-del-valle-durazno-1l,Jugo de durazno Cepita del Valle 1 litro sin TACC,3000,2000,50,5,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+Cepita del Valle Multifrutal 1L,cepita-del-valle-multifrutal-1l,Jugo multifrutal Cepita del Valle 1 litro sin TACC,3000,2000,50,5,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+Cepita del Valle Manzana 1L,cepita-del-valle-manzana-1l,Jugo de manzana Cepita del Valle 1 litro sin TACC,3000,2000,50,5,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+Cepita del Valle Naranja 200ml Tetra,cepita-del-valle-naranja-200ml,Jugo de naranja Cepita del Valle 200ml tetra pack individual,900,600,100,10,bebidas,MICRO,230,11,5,5,1,BIKE|MOTO
+Cepita del Valle Durazno 200ml Tetra,cepita-del-valle-durazno-200ml,Jugo de durazno Cepita del Valle 200ml tetra pack individual,900,600,100,10,bebidas,MICRO,230,11,5,5,1,BIKE|MOTO
+AdeS Vainilla 1L Tetra,ades-vainilla-1l,Bebida vegetal de soja sabor vainilla AdeS 1 litro,3500,2350,40,4,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+AdeS Original 1L Tetra,ades-original-1l,Bebida vegetal de soja original AdeS 1 litro,3500,2350,40,4,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+AdeS Frutas Tropicales 1L Tetra,ades-frutas-tropicales-1l,Bebida vegetal de soja frutas tropicales AdeS 1 litro,3500,2350,40,4,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+Aquarius Naranja 500ml PET,aquarius-naranja-500ml,Bebida con fruta sabor naranja Aquarius 500ml,2000,1340,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Aquarius Manzana 500ml PET,aquarius-manzana-500ml,Bebida con fruta sabor manzana Aquarius 500ml,2000,1340,60,6,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+Aquarius Naranja 1.5L PET,aquarius-naranja-15l,Bebida con fruta sabor naranja Aquarius 1.5 litros,3500,2350,40,4,bebidas,SMALL,1600,34,10,10,3,BIKE|MOTO|CAR

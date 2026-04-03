@@ -1,0 +1,416 @@
+﻿name,slug,description,price,costPrice,stock,minStock,categorySlug,packageCategory,maxWeightGrams,maxLengthCm,maxWidthCm,maxHeightCm,volumeScore,allowedVehicles
+SERRANITAS 105gr,serranitas-105gr,Serranitas 105Gr,700,455,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SERRANITAS X3 315gr,serranitas-x3-315gr,Serranitas X3 315Gr,1800,1170,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER MOUSSE 40gr,cofler-mousse-40gr,Cofler Mousse 40Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CHOCO-COOKIES 132gr,cofler-choco-cookies-132gr,Cofler Choco-Cookies 132Gr,3600,2340,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CHOCO-COOKIES 105gr,cofler-choco-cookies-105gr,Cofler Choco-Cookies 105Gr,3600,2340,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CHOCO-COOKIE CHOCOLATE  105gr,cofler-choco-cookie-chocolate-105gr,Cofler Choco-Cookie Chocolate  105Gr,3600,2340,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER RELLENAS CHOCO CREAMY 85gr,cofler-rellenas-choco-creamy-85gr,Cofler Rellenas Choco Creamy 85Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER RELLENAS CHOCOLATE 85gr,cofler-rellenas-chocolate-85gr,Cofler Rellenas Chocolate 85Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER RELLENA BON O BON 85gr,cofler-rellena-bon-o-bon-85gr,Cofler Rellena Bon O Bon 85Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TRAVIATA CRAC REX 96gr,traviata-crac-rex-96gr,Traviata Crac Rex 96Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TRAVIATA CRAC KESITAS 96gr,traviata-crac-kesitas-96gr,Traviata Crac Kesitas 96Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TRAVIATA 108gr,traviata-108gr,Traviata 108Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TRAVIATA X3 324gr,traviata-x3-324gr,Traviata X3 324Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CEREAL MIX ORIGINAL CL 23gr,cereal-mix-original-cl-23gr,Cereal Mix Original Cl 23Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CEREAL MIX CHOCOLATE C/MANI,cereal-mix-chocolate-cmani,Cereal Mix Chocolate C/Mani,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SURTIDO BAGLEY 400gr,surtido-bagley-400gr,Surtido Bagley 400Gr,3900,2535,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SALADIX CAJA XTRA PICANTE 100gr,saladix-caja-xtra-picante-100gr,Saladix Caja Xtra Picante 100Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CHOCO CREAMY 60gr,cofler-choco-creamy-60gr,Cofler Choco Creamy 60Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF CHOCOTORTA TRIPLE 71gr,alf-chocotorta-triple-71gr,Alf Chocotorta Triple 71Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+KESITAS CAJA 125gr,kesitas-caja-125gr,Kesitas Caja 125Gr,2900,1885,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TATIN SIMPLE 33gr,tatin-simple-33gr,Tatin Simple 33Gr,500,325,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TATIN SIMPLE BLANCO 33gr,tatin-simple-blanco-33gr,Tatin Simple Blanco 33Gr,500,325,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SALADIX CAJA JAMON Y QUESO,saladix-caja-jamon-y-queso,Saladix Caja Jamon Y Queso,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF BYN NEGRO X3,alf-byn-negro-x3,Alf Byn Negro X3,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CRIOLLITAS 100gr,criollitas-100gr,Criollitas 100Gr,800,520,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CRIOLLITAS X3 300gr,criollitas-x3-300gr,Criollitas X3 300Gr,2100,1365,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TATIN TRIPLE BLANCO 60gr,tatin-triple-blanco-60gr,Tatin Triple Blanco 60Gr,1100,715,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TATIN TRIPLE NEGRO 60gr,tatin-triple-negro-60gr,Tatin Triple Negro 60Gr,1100,715,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TOFI TRIPLE NEGRO 73 gr,tofi-triple-negro-73-gr,Tofi Triple Negro 73 Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF BON O BON SIMPLE BANCO 40gr,alf-bon-o-bon-simple-banco-40gr,Alf Bon O Bon Simple Banco 40Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF BON O BON SOMPLE NEGRO 40gr,alf-bon-o-bon-somple-negro-40gr,Alf Bon O Bon Somple Negro 40Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF BON O BON TRIPLE NEGRO 60gr,alf-bon-o-bon-triple-negro-60gr,Alf Bon O Bon Triple Negro 60Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF. COFLER TRIPLE BLOCK 60gr,alf-cofler-triple-block-60gr,Alf. Cofler Triple Block 60Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TORTITA BLACK 125gr,tortita-black-125gr,Tortita Black 125Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TORTITAS CHOCOLATE 125gr,tortitas-chocolate-125gr,Tortitas Chocolate 125Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SERRANAS SANDWICH 336gr,serranas-sandwich-336gr,Serranas Sandwich 336Gr,2300,1495,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+REX CAJA 125gr,rex-caja-125gr,Rex Caja 125Gr,2700,1755,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF TOFI TRIPLE BLANCO 73gr,alf-tofi-triple-blanco-73gr,Alf Tofi Triple Blanco 73Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALF BYN TRIPLE BLANCO,alf-byn-triple-blanco,Alf Byn Triple Blanco,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+FRUTIGRAN AVENA Y PASAS 250 G,frutigran-avena-y-pasas-250-g,Frutigran Avena Y Pasas 250 G,3100,2015,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+FRUTIGRAN CHIPS CHOCOLATE,frutigran-chips-chocolate,Frutigran Chips Chocolate,3100,2015,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+GALLETAS GRANIX LINO 175gr,galletas-granix-lino-175gr,Galletas Granix Lino 175Gr,2100,1365,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+GALLETAS GRANIX SESAMO 175gr,galletas-granix-sesamo-175gr,Galletas Granix Sesamo 175Gr,2300,1495,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ENC. MAGICLICK TURBO,enc-magiclick-turbo,Enc. Magiclick Turbo,3000,1950,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ACEITE COCINERO GIRASOL 1.5L,aceite-cocinero-girasol-15l,Aceite Cocinero Girasol 1.5L,5600,3640,100,5,supermercado,SMALL,1650,34,10,10,3,BIKE|MOTO|CAR
+ACEITE COCINERO MEZCLA 900 ML,aceite-cocinero-mezcla-900-ml,Aceite Cocinero Mezcla 900 Ml,3600,2340,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ESTRELLA ALGODON 75 GR,estrella-algodon-75-gr,Estrella Algodon 75 Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SHAMPOO ESTRELLA 180ml,shampoo-estrella-180ml,Shampoo Estrella 180Ml,2400,1560,100,5,farmacia,MICRO,200,15,8,5,1,BIKE|MOTO
+ACONDICIONADOR ESTRELLA 180ml,acondicionador-estrella-180ml,Acondicionador Estrella 180Ml,2400,1560,100,5,farmacia,MICRO,200,15,8,5,1,BIKE|MOTO
+COCINERO GIRASOL 900ml,cocinero-girasol-900ml,Cocinero Girasol 900Ml,3800,2470,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PATITAS DE POLLO GRANJA DEL SUL 400G,patitas-de-pollo-granja-del-sul-400g,Patitas De Pollo Granja Del Sul 400G,8000,5200,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+GRANJA DEL SOL ESPINACA 500GR,granja-del-sol-espinaca-500gr,Granja Del Sol Espinaca 500Gr,4500,2925,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+GRANJA DEL SOL ACELGA 500G,granja-del-sol-acelga-500g,Granja Del Sol Acelga 500G,4200,2730,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+GRANJA DEL SOL ARVEJAS 300G,granja-del-sol-arvejas-300g,Granja Del Sol Arvejas 300G,3500,2275,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+FIDEO TALLARIN LUCCHETTI 500gr,fideo-tallarin-lucchetti-500gr,Fideo Tallarin Lucchetti 500Gr,1500,975,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+FIDEO TALLARIN MATARAZZO 500gr,fideo-tallarin-matarazzo-500gr,Fideo Tallarin Matarazzo 500Gr,1700,1105,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+CRACKEADAS DE ARROZ GALLO 100gr,crackeadas-de-arroz-gallo-100gr,Crackeadas De Arroz Gallo 100Gr,2300,1495,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ARROZ LUCCHETTI 1kg,arroz-lucchetti-1kg,Arroz Lucchetti 1Kg,2900,1885,100,5,supermercado,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+NOBLEZA GAUCHA TRADICIONAL 500gr,nobleza-gaucha-tradicional-500gr,Nobleza Gaucha Tradicional 500Gr,2800,1820,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+NOBLEZA GAUCHA SERENA 500gr,nobleza-gaucha-serena-500gr,Nobleza Gaucha Serena 500Gr,2900,1885,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+CHAMINGO 500 GR,chamingo-500-gr,Chamingo 500 Gr,3100,2015,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+HARINA LEUDANTE BLANCAFLOR 1KG,harina-leudante-blancaflor-1kg,Harina Leudante Blancaflor 1Kg,3200,2080,100,5,supermercado,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+HARINA FAVORITA 0000,harina-favorita-0000,Harina Favorita 0000,1100,715,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+NIETO SENETINER CABERNET SAUV.,nieto-senetiner-cabernet-sauv,Nieto Senetiner Cabernet Sauv.,15900,10335,100,5,bebidas,MEDIUM,1500,28,20,10,6,MOTO|CAR
+ARLISTAN 50 GR,arlistan-50-gr,Arlistan 50 Gr,3800,2470,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CELULAR SAL FINAL PAQUETE 500gr,celular-sal-final-paquete-500gr,Celular Sal Final Paquete 500Gr,3200,2080,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+SAL FINA CELUSAL ESTUCHE 500gr,sal-fina-celusal-estuche-500gr,Sal Fina Celusal Estuche 500Gr,3400,2210,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+POZO MAGDALENAS MARMOLADAS 200gr,pozo-magdalenas-marmoladas-200gr,Pozo Magdalenas Marmoladas 200Gr,3200,2080,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+POZO MAGDALENA COCO C/DDL X200gr,pozo-magdalena-coco-cddl-x200gr,Pozo Magdalena Coco C/Ddl X200Gr,3200,2080,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SALCHICHA FELA X6,salchicha-fela-x6,Salchicha Fela X6,2300,1495,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+SALCHICHAS PALADINI X6,salchichas-paladini-x6,Salchichas Paladini X6,3500,2275,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MEDALLON DE POLLO PALADINI X2 150gr,medallon-de-pollo-paladini-x2-150gr,Medallon De Pollo Paladini X2 150Gr,2600,1690,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MEDALLON DE POLLO CON JYQ X2 PALADINI 170gr,medallon-de-pollo-con-jyq-x2-paladini-170gr,Medallon De Pollo Con Jyq X2 Paladini 170Gr,3100,2015,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+NUGGETS DE POLLO PALADINI 380gr,nuggets-de-pollo-paladini-380gr,Nuggets De Pollo Paladini 380Gr,6400,4160,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HAMBURGUESA PALADINI 160gr,hamburguesa-paladini-160gr,Hamburguesa Paladini 160Gr,3500,2275,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+HAMB ESPINACA Y QUESO PALADINI X2 170gr,hamb-espinaca-y-queso-paladini-x2-170gr,Hamb Espinaca Y Queso Paladini X2 170Gr,4000,2600,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PAPAS CORTE BASTON PALADINI 700kg,papas-corte-baston-paladini-700kg,Papas Corte Baston Paladini 700Kg,4800,3120,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+HAMB VEGETAL PALADINI X2 160gr,hamb-vegetal-paladini-x2-160gr,Hamb Vegetal Paladini X2 160Gr,3200,2080,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PIZZETA DE MUZZA PALADINI 190gr,pizzeta-de-muzza-paladini-190gr,Pizzeta De Muzza Paladini 190Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PIZZETA DE MUZZA Y JAMON PALADINI 205gr,pizzeta-de-muzza-y-jamon-paladini-205gr,Pizzeta De Muzza Y Jamon Paladini 205Gr,4300,2795,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MANTECA SANCOR 200gr,manteca-sancor-200gr,Manteca Sancor 200Gr,4900,3185,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+CREMA DE LECHE SANCOR 360ml,crema-de-leche-sancor-360ml,Crema De Leche Sancor 360Ml,4300,2795,100,5,farmacia,MICRO,200,15,8,5,1,BIKE|MOTO
+CREMA DE LECHE SANCOR 200ml,crema-de-leche-sancor-200ml,Crema De Leche Sancor 200Ml,2500,1625,100,5,farmacia,MICRO,250,12,5,5,1,BIKE|MOTO
+RED POINT COMUN,red-point-comun,Red Point Comun,1300,845,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MENTHO PLUS 2 ZERO STRONG,mentho-plus-2-zero-strong,Mentho Plus 2 Zero Strong,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SIDRA 1888,sidra-1888,Sidra 1888,9200,5980,100,5,bebidas,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SIDRA REAL,sidra-real,Sidra Real,4700,3055,100,5,bebidas,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUENIA GINGER 473C,pehuenia-ginger-473c,Pehuenia Ginger 473C,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SIDRA LATA REAL 473ml,sidra-lata-real-473ml,Sidra Lata Real 473Ml,2500,1625,100,5,bebidas,MICRO,400,13,7,7,1,BIKE|MOTO
+SIDRA 1888 473ml,sidra-1888-473ml,Sidra 1888 473Ml,2900,1885,100,5,bebidas,MICRO,400,13,7,7,1,BIKE|MOTO
+PETACA CAÑA QUEMAITA 200cc,petaca-cana-quemaita-200cc,Petaca Caña Quemaita 200Cc,3000,1950,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PETACA DURAZNO SAN VICENTE 200cc,petaca-durazno-san-vicente-200cc,Petaca Durazno San Vicente 200Cc,3000,1950,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PETACA WHISKY GLOUCESTER 200ml,petaca-whisky-gloucester-200ml,Petaca Whisky Gloucester 200Ml,3000,1950,100,5,bebidas,MICRO,250,12,5,5,1,BIKE|MOTO
+PETACA LICOR DE MENTA NEW STYLE 200ml,petaca-licor-de-menta-new-style-200ml,Petaca Licor De Menta New Style 200Ml,3000,1950,100,5,kiosco,MICRO,250,12,5,5,1,BIKE|MOTO
+PETACA ANIS SAN VICENTE 200ml,petaca-anis-san-vicente-200ml,Petaca Anis San Vicente 200Ml,2400,1560,100,5,supermercado,MICRO,250,12,5,5,1,BIKE|MOTO
+PETACA CHOCOLATE NEW STYLE 200ml,petaca-chocolate-new-style-200ml,Petaca Chocolate New Style 200Ml,2100,1365,100,5,kiosco,MICRO,250,12,5,5,1,BIKE|MOTO
+PETACA LICOR DDL NEW STYLE 200ml,petaca-licor-ddl-new-style-200ml,Petaca Licor Ddl New Style 200Ml,2100,1365,100,5,kiosco,MICRO,250,12,5,5,1,BIKE|MOTO
+PETACA PIÑA COLADA NEW STYLE 200ml,petaca-pina-colada-new-style-200ml,Petaca Piña Colada New Style 200Ml,2600,1690,100,5,kiosco,MICRO,250,12,5,5,1,BIKE|MOTO
+PETACA VODKA NEW STYLE 200ml,petaca-vodka-new-style-200ml,Petaca Vodka New Style 200Ml,2200,1430,100,5,bebidas,MICRO,250,12,5,5,1,BIKE|MOTO
+LICOR DE CHOCOLATE NEW STYLE 1000cc,licor-de-chocolate-new-style-1000cc,Licor De Chocolate New Style 1000Cc,6400,4160,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LICOR DE MELON NEW STYLE 1000cc,licor-de-melon-new-style-1000cc,Licor De Melon New Style 1000Cc,6900,4485,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LICOR DURAZNO 1000cc,licor-durazno-1000cc,Licor Durazno 1000Cc,6400,4160,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LICOR CAFE AL COGNAC 1000cc,licor-cafe-al-cognac-1000cc,Licor Cafe Al Cognac 1000Cc,6900,4485,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+JUGO DE LIMON MENOYO 250ml,jugo-de-limon-menoyo-250ml,Jugo De Limon Menoyo 250Ml,2100,1365,100,5,bebidas,MICRO,250,12,5,5,1,BIKE|MOTO
+MENOYO MAYONESA 235gr,menoyo-mayonesa-235gr,Menoyo Mayonesa 235Gr,1300,845,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+LAVANDINA AYUDIN 1L,lavandina-ayudin-1l,Lavandina Ayudin 1L,2200,1430,100,5,supermercado,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+ALCOHOL ETILICO,alcohol-etilico,Alcohol Etilico,3500,2275,100,5,farmacia,MICRO,200,15,8,5,1,BIKE|MOTO
+ALCOHOL BIACOHOL 500ml,alcohol-biacohol-500ml,Alcohol Biacohol 500Ml,3400,2210,100,5,farmacia,MICRO,540,23,7,7,1,BIKE|MOTO
+FAVINCO JUGO DE LIMON 500ml,favinco-jugo-de-limon-500ml,Favinco Jugo De Limon 500Ml,1650,1072,100,5,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+FAVINCO VINAGRE DE VINO 500ml,favinco-vinagre-de-vino-500ml,Favinco Vinagre De Vino 500Ml,2900,1885,100,5,bebidas,MICRO,540,23,7,7,1,BIKE|MOTO
+CAFE MOLIDO TORRADO LA VIRGINIA 250gr,cafe-molido-torrado-la-virginia-250gr,Cafe Molido Torrado La Virginia 250Gr,9900,6435,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CAFE EN SAQUITOS LA VIRGINIA 20U,cafe-en-saquitos-la-virginia-20u,Cafe En Saquitos La Virginia 20U,8000,5200,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CAFE LA VIRGINIA 50G,cafe-la-virginia-50g,Cafe La Virginia 50G,4400,2860,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+CAFE LA VIRGINIA 100G,cafe-la-virginia-100g,Cafe La Virginia 100G,7300,4745,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CAPPUCCINO TRADICIONAL 10 SOBRES LA VIRGINIA,cappuccino-tradicional-10-sobres-la-virginia,Cappuccino Tradicional 10 Sobres La Virginia,5300,3445,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CAPPUCCINO TRADICIONAL LA VIRGINIA 125gr,cappuccino-tradicional-la-virginia-125gr,Cappuccino Tradicional La Virginia 125Gr,7600,4940,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LA VIRGINIA TE NEGRO,la-virginia-te-negro,La Virginia Te Negro,1600,1040,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TÉ DE LIMON LA VIRGINIA,te-de-limon-la-virginia,Té De Limon La Virginia,2900,1885,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MATE COCIDO LITORAL LA VIRGINIA,mate-cocido-litoral-la-virginia,Mate Cocido Litoral La Virginia,4300,2795,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TÉ DE BOLDO LA VIRGINIA,te-de-boldo-la-virginia,Té De Boldo La Virginia,3000,1950,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TÉ DE TILO LA VIRGINIA,te-de-tilo-la-virginia,Té De Tilo La Virginia,4400,2860,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TÉ DE MANZANILLA LA VIRGINIA,te-de-manzanilla-la-virginia,Té De Manzanilla La Virginia,2500,1625,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TE LA VIRGINIA INSPIRAR 25u,te-la-virginia-inspirar-25u,Te La Virginia Inspirar 25U,4200,2730,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TE LA VIRGINIA RELAJAR 25u,te-la-virginia-relajar-25u,Te La Virginia Relajar 25U,4200,2730,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ALICANTE BICARBONATO 50gr,alicante-bicarbonato-50gr,Alicante Bicarbonato 50Gr,1200,780,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+CANELA EN RAMA ALICANTE 20gr,canela-en-rama-alicante-20gr,Canela En Rama Alicante 20Gr,3800,2470,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MIX PICANTE ALICANTE 25gr,mix-picante-alicante-25gr,Mix Picante Alicante 25Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MIX CRIOLLO ALICANTE 25gr,mix-criollo-alicante-25gr,Mix Criollo Alicante 25Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+FINAS HIERBAS ALICANTE 20gr,finas-hierbas-alicante-20gr,Finas Hierbas Alicante 20Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ALICANTE OREGANO 25gr,alicante-oregano-25gr,Alicante Oregano 25Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PIMIENTA BLANCA MOLIDA ALICANTE 25gr,pimienta-blanca-molida-alicante-25gr,Pimienta Blanca Molida Alicante 25Gr,2800,1820,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PIMIENTA BLANCA EN GRANO ALICANTE 25gr,pimienta-blanca-en-grano-alicante-25gr,Pimienta Blanca En Grano Alicante 25Gr,2600,1690,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PIMIENTA NEGRA EN GRANO ALICANTE 25gr,pimienta-negra-en-grano-alicante-25gr,Pimienta Negra En Grano Alicante 25Gr,2200,1430,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+EDULCORANTE TUY 200CC,edulcorante-tuy-200cc,Edulcorante Tuy 200Cc,3500,2275,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+CHOCOLINO LA VIRGINIA 180gr,chocolino-la-virginia-180gr,Chocolino La Virginia 180Gr,3300,2145,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PAN RALLADO MORIXIE 500gr,pan-rallado-morixie-500gr,Pan Rallado Morixie 500Gr,1300,845,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+MORIXE PAN RALLADO 1 KG,morixe-pan-rallado-1-kg,Morixe Pan Rallado 1 Kg,2900,1885,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+REBOZADOR MORIXE 500gr,rebozador-morixe-500gr,Rebozador Morixe 500Gr,1300,845,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+KOOKY BON 10gr,kooky-bon-10gr,Kooky Bon 10Gr,800,520,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DE A 2 BOCADITO FELFORT 12gr,de-a-2-bocadito-felfort-12gr,De A 2 Bocadito Felfort 12Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CEREAL FORT FRUTOS ROJOS,cereal-fort-frutos-rojos,Cereal Fort Frutos Rojos,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALMA MORA MALBEC 750ml,alma-mora-malbec-750ml,Alma Mora Malbec 750Ml,6800,4420,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+PAÑUELITOS ELITE,panuelitos-elite,Pañuelitos Elite,800,520,100,5,farmacia,MICRO,200,15,8,5,1,BIKE|MOTO
+HIGIENOL X4,higienol-x4,Higienol X4,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LADYSOFT TOALLITA X8,ladysoft-toallita-x8,Ladysoft Toallita X8,2000,1300,100,5,farmacia,MICRO,200,15,8,5,1,BIKE|MOTO
+FERNET BRANCA 1L,fernet-branca-1l,Fernet Branca 1L,18600,12090,100,5,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+FERNET BRANCA 450ml,fernet-branca-450ml,Fernet Branca 450Ml,9600,6240,100,5,bebidas,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+FERNET VITTONE 75CL,fernet-vittone-75cl,Fernet Vittone 75Cl,10000,6500,100,5,bebidas,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SERNOVA VODKA 700ml,sernova-vodka-700ml,Sernova Vodka 700Ml,9500,6175,100,5,bebidas,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SERNOVA WILL BERRIES 700ml,sernova-will-berries-700ml,Sernova Will Berries 700Ml,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SERNOVA FRESH CITRUS 700ml,sernova-fresh-citrus-700ml,Sernova Fresh Citrus 700Ml,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+FERNET BRANCA 750ml,fernet-branca-750ml,Fernet Branca 750Ml,14500,9425,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+SERNOVA APPLE/PEAR 700ml,sernova-applepear-700ml,Sernova Apple/Pear 700Ml,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SERNOVA TROPICAL PASION 700ml,sernova-tropical-pasion-700ml,Sernova Tropical Pasion 700Ml,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SERNOVA CARIBBEAN BLEND 700ml,sernova-caribbean-blend-700ml,Sernova Caribbean Blend 700Ml,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+SERNOVA CANDY GLOW,sernova-candy-glow,Sernova Candy Glow,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+TWISTOS JAMON IBERICO 95 G,twistos-jamon-iberico-95-g,Twistos Jamon Iberico 95 G,4200,2730,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TWISTOS QUESO 95,twistos-queso-95,Twistos Queso 95,4200,2730,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR MANI PELADO 75G,pehuamar-mani-pelado-75g,Pehuamar Mani Pelado 75G,2700,1755,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEP PANCETA 84 G,pep-panceta-84-g,Pep Panceta 84 G,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PALITOS PEP PANCETA 120gr,palitos-pep-panceta-120gr,Palitos Pep Panceta 120Gr,3700,2405,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEP RUEDITAS 74gr,pep-rueditas-74gr,Pep Rueditas 74Gr,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEP RUEDITAS 120 G,pep-rueditas-120-g,Pep Rueditas 120 G,3700,2405,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR MAICITOS 125gr,pehuamar-maicitos-125gr,Pehuamar Maicitos 125Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR PALITOS SALADOS 90 G,pehuamar-palitos-salados-90-g,Pehuamar Palitos Salados 90 G,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR PALITOS QUESO 90gr,pehuamar-palitos-queso-90gr,Pehuamar Palitos Queso 90Gr,2500,1625,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TWISTOS QUESO 155gr,twistos-queso-155gr,Twistos Queso 155Gr,5700,3705,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+TWISTOS JAMON 155gr,twistos-jamon-155gr,Twistos Jamon 155Gr,5700,3705,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LAYS CLASICAS 230GR,lays-clasicas-230gr,Lays Clasicas 230Gr,9000,5850,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+3D 43gr,3d-43gr,3D 43Gr,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+3D 143gr,3d-143gr,3D 143Gr,6000,3900,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+PEP RAMITAS QUESO 40gr,pep-ramitas-queso-40gr,Pep Ramitas Queso 40Gr,1300,845,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PEP RAMITAS SABOR QUESO 84gr,pep-ramitas-sabor-queso-84gr,Pep Ramitas Sabor Queso 84Gr,2600,1690,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS CLASICAS 40gr,lays-clasicas-40gr,Lays Clasicas 40Gr,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS SABOR QUESO 40 G,doritos-sabor-queso-40-g,Doritos Sabor Queso 40 G,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CHEETOS ORIGINAL 43 G,cheetos-original-43-g,Cheetos Original 43 G,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS FLAMIN HOT 70 G,lays-flamin-hot-70-g,Lays Flamin Hot 70 G,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS FLAMIN HOT 30gr,lays-flamin-hot-30gr,Lays Flamin Hot 30Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CHEETOS ONDULADOS 43gr,cheetos-ondulados-43gr,Cheetos Ondulados 43Gr,2100,1365,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR PAPA LISA 135gr,pehuamar-papa-lisa-135gr,Pehuamar Papa Lisa 135Gr,4400,2860,100,5,bebidas,MICRO,200,15,8,5,1,BIKE|MOTO
+PALITOS SALADOS PEHUAMAR 165gr,palitos-salados-pehuamar-165gr,Palitos Salados Pehuamar 165Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS JAMON SERRANO 70gr,lays-jamon-serrano-70gr,Lays Jamon Serrano 70Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR PAPAS ACANALADAS 135gr,pehuamar-papas-acanaladas-135gr,Pehuamar Papas Acanaladas 135Gr,4400,2860,100,5,mascotas,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS CLASICA 85 G,lays-clasica-85-g,Lays Clasica 85 G,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS CLASICAS 134gr,lays-clasicas-134gr,Lays Clasicas 134Gr,6000,3900,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LAYS KETCHUP 77gr,lays-ketchup-77gr,Lays Ketchup 77Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS QUESO CREMA CEBOLLA 77 G,lays-queso-crema-cebolla-77-g,Lays Queso Crema Cebolla 77 G,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TOSTITOS NACHOS 77gr,tostitos-nachos-77gr,Tostitos Nachos 77Gr,3700,2405,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TOSTITOS NACHOS 129GR,tostitos-nachos-129gr,Tostitos Nachos 129Gr,5600,3640,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LAYS JAMON SERRANO 122gr,lays-jamon-serrano-122gr,Lays Jamon Serrano 122Gr,5600,3640,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+DORITOS 77gr,doritos-77gr,Doritos 77Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS 129gr,doritos-129gr,Doritos 129Gr,6000,3900,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CHEETOS ONDULADOS 85gr,cheetos-ondulados-85gr,Cheetos Ondulados 85Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CHEETOS ORIGINAL 229gr,cheetos-original-229gr,Cheetos Original 229Gr,8300,5395,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CHEETOS QUESO ORIGINAL 140gr,cheetos-queso-original-140gr,Cheetos Queso Original 140Gr,5600,3640,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CHEETOS QUESO ORIGINAL 85gr,cheetos-queso-original-85gr,Cheetos Queso Original 85Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+3D 85gr,3d-85gr,3D 85Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR MANI C/PIEL 75gr,pehuamar-mani-cpiel-75gr,Pehuamar Mani C/Piel 75Gr,2700,1755,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MANIAX TIPO JAPONES 95gr,maniax-tipo-japones-95gr,Maniax Tipo Japones 95Gr,2900,1885,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS PROVOLETA 77 G,lays-provoleta-77-g,Lays Provoleta 77 G,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS SWEET CHILI 35gr,doritos-sweet-chili-35gr,Doritos Sweet Chili 35Gr,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS SWEER CHILI 74gr,doritos-sweer-chili-74gr,Doritos Sweer Chili 74Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TWISTOS QUESO 40gr,twistos-queso-40gr,Twistos Queso 40Gr,2200,1430,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS DINAMITA 45gr,doritos-dinamita-45gr,Doritos Dinamita 45Gr,2100,1365,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS DINAMITA 82gr,doritos-dinamita-82gr,Doritos Dinamita 82Gr,3200,2080,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR PAPAS ACANALADAS 90G,pehuamar-papas-acanaladas-90g,Pehuamar Papas Acanaladas 90G,3100,2015,100,5,mascotas,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS BARBACOA 77G,lays-barbacoa-77g,Lays Barbacoa 77G,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS BARBACOA 34 GR,lays-barbacoa-34-gr,Lays Barbacoa 34 Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LAYS PANCETA 77 G,lays-panceta-77-g,Lays Panceta 77 G,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEHUAMAR MANI TUBULAR 40GR,pehuamar-mani-tubular-40gr,Pehuamar Mani Tubular 40Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PEP RUEDITAS FLAMINT HOT 71gr,pep-rueditas-flamint-hot-71gr,Pep Rueditas Flamint Hot 71Gr,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITOS DINAMITA EXTRA 82 G,doritos-dinamita-extra-82-g,Doritos Dinamita Extra 82 G,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+DORITO EXTRA DINAMITA 45gr,dorito-extra-dinamita-45gr,Dorito Extra Dinamita 45Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TOSTITOS ORIGINAL 100gr,tostitos-original-100gr,Tostitos Original 100Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+VINO CANCILLER 750ML,vino-canciller-750ml,Vino Canciller 750Ml,4000,2600,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+VINO RESERO 1L,vino-resero-1l,Vino Resero 1L,2500,1625,100,5,bebidas,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+VILLA DEL SUR S/G 1.65L,villa-del-sur-sg-165l,Villa Del Sur S/G 1.65L,2100,1365,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+VILLAVICENCIO SPORT 750ml,villavicencio-sport-750ml,Villavicencio Sport 750Ml,2100,1365,100,5,kiosco,MEDIUM,900,32,11,11,6,MOTO|CAR
+OPERA 55gr,opera-55gr,Opera 55Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SALCHICHAS SWIFT X6,salchichas-swift-x6,Salchichas Swift X6,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+BOCADITOS DE CARNE SWIFT,bocaditos-de-carne-swift,Bocaditos De Carne Swift,7700,5005,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HAMB SWIFT CLASICA X4 320gr,hamb-swift-clasica-x4-320gr,Hamb Swift Clasica X4 320Gr,5500,3575,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HAMB SWIFT PARRILLERA X4,hamb-swift-parrillera-x4,Hamb Swift Parrillera X4,7600,4940,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HAMB SWIFT BURGER X4,hamb-swift-burger-x4,Hamb Swift Burger X4,5400,3510,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HAMBURGUESA LA BLANCA X4U,hamburguesa-la-blanca-x4u,Hamburguesa La Blanca X4U,3800,2470,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+HAMB SWIFT CLASICA XL X2 250gr,hamb-swift-clasica-xl-x2-250gr,Hamb Swift Clasica Xl X2 250Gr,6100,3965,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HAMB SWIFT TIPO CASERA,hamb-swift-tipo-casera,Hamb Swift Tipo Casera,6100,3965,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+BOCADITOS DE POLLO SWIFT 400gr,bocaditos-de-pollo-swift-400gr,Bocaditos De Pollo Swift 400Gr,6900,4485,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+ALFAJOR MILKA TRIPLE DULCE DE LECHE 70gr,alfajor-milka-triple-dulce-de-leche-70gr,Alfajor Milka Triple Dulce De Leche 70Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALFAJOR MILKA MOUSSE 55gr,alfajor-milka-mousse-55gr,Alfajor Milka Mousse 55Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ALFAJOR TERRABUSI CLASICO 70gr,alfajor-terrabusi-clasico-70gr,Alfajor Terrabusi Clasico 70Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+BARRITA FLOW CEREAL FRUTOS ROJOS CON YOGUR,barrita-flow-cereal-frutos-rojos-con-yogur,Barrita Flow Cereal Frutos Rojos Con Yogur,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+BARRITA FLOW CEREAL FRUTOS DEL BOSQUE,barrita-flow-cereal-frutos-del-bosque,Barrita Flow Cereal Frutos Del Bosque,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+BARRITA FLOW CEREAL FRUTOS ROJOS CON YOGUR,barrita-flow-cereal-frutos-rojos-con-yogur-2,Barrita Flow Cereal Frutos Rojos Con Yogur,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CEREAL FLOW ALMENDRAS CON CHOCO 30gr,cereal-flow-almendras-con-choco-30gr,Cereal Flow Almendras Con Choco 30Gr,1400,910,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+"CEREAL FLOW AVELLANAS,ARAN CON MIEL 30gr",cereal-flow-avellanasaran-con-miel-30gr,"Cereal Flow Avellanas,Aran Con Miel 30Gr",1400,910,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CHOCOLATE TODDY 180gr,chocolate-toddy-180gr,Chocolate Toddy 180Gr,2900,1885,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TODDY GALLETA,toddy-galleta,Toddy Galleta,2600,1690,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MANTECOL OBLEA 27gr,mantecol-oblea-27gr,Mantecol Oblea 27Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MANTECOL CAFE 110gr,mantecol-cafe-110gr,Mantecol Cafe 110Gr,3600,2340,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MANTECOL COCO 110gr,mantecol-coco-110gr,Mantecol Coco 110Gr,3600,2340,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ALFAJOR TERRABUSI TORTA 70gr,alfajor-terrabusi-torta-70gr,Alfajor Terrabusi Torta 70Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TE DE TILO TARAGUI,te-de-tilo-taragui,Te De Tilo Taragui,3300,2145,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+YERBA TARAGUI 500gr,yerba-taragui-500gr,Yerba Taragui 500Gr,3400,2210,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+YERBA TARAGUI C/PALO 250gr,yerba-taragui-cpalo-250gr,Yerba Taragui C/Palo 250Gr,2600,1690,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+YERBA UNION X500gr,yerba-union-x500gr,Yerba Union X500Gr,3300,2145,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+YERBA MAÑANITA 500gr,yerba-mananita-500gr,Yerba Mañanita 500Gr,4000,2600,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+MAÑANITA 250gr,mananita-250gr,Mañanita 250Gr,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LA MERCED DE CAMPO 500gr,la-merced-de-campo-500gr,La Merced De Campo 500Gr,7200,4680,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+LA MERCED DE MONTE 500gr,la-merced-de-monte-500gr,La Merced De Monte 500Gr,7200,4680,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+YERBA LA MERCED BARBACUA 500gr,yerba-la-merced-barbacua-500gr,Yerba La Merced Barbacua 500Gr,7200,4680,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+LA MERCED CAMPO Y MONTE 500gr,la-merced-campo-y-monte-500gr,La Merced Campo Y Monte 500Gr,7200,4680,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+LA MERCED CAMPO SUR 500gr,la-merced-campo-sur-500gr,La Merced Campo Sur 500Gr,7200,4680,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+MATE LISTO TARAGUI,mate-listo-taragui,Mate Listo Taragui,2600,1690,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TERMO TARAGUI 500ml,termo-taragui-500ml,Termo Taragui 500Ml,3300,2145,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+MATE COCIDO TARAGUI 25gr,mate-cocido-taragui-25gr,Mate Cocido Taragui 25Gr,1600,1040,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TE TARAGUI 25SAQ,te-taragui-25saq,Te Taragui 25Saq,1500,975,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+WD-40 CHICO 155gr,wd-40-chico-155gr,Wd-40 Chico 155Gr,10000,6500,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+EL PUPITO 50gr,el-pupito-50gr,El Pupito 50Gr,6000,3900,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+ECCOLE,eccole,Eccole,5800,3770,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+FASTIX,fastix,Fastix,3900,2535,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+AGUILA CLASICO 100gr,aguila-clasico-100gr,Aguila Clasico 100Gr,6000,3900,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+YERBA ROSAMONTE SUAVE 250gr,yerba-rosamonte-suave-250gr,Yerba Rosamonte Suave 250Gr,1200,780,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ROSAMONTE 500 GR,rosamonte-500-gr,Rosamonte 500 Gr,4200,2730,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+LA YAPA,la-yapa,La Yapa,600,390,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+GREEN HILLS TE NEGRO,green-hills-te-negro,Green Hills Te Negro,2500,1625,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+LA TRANQUERA TRADICIONAL 500gr,la-tranquera-tradicional-500gr,La Tranquera Tradicional 500Gr,4200,2730,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+LA TRANQUERA LIVIANA,la-tranquera-liviana,La Tranquera Liviana,4200,2730,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+"LA TRANQUERA MATE COCIDO 62,5GR",la-tranquera-mate-cocido-625gr,"La Tranquera Mate Cocido 62,5Gr",2200,1430,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+HARINA DE MAIZ 500gr,harina-de-maiz-500gr,Harina De Maiz 500Gr,3300,2145,100,5,kiosco,MICRO,540,23,7,7,1,BIKE|MOTO
+BLEM ORIGINAL 360ml,blem-original-360ml,Blem Original 360Ml,7300,4745,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LYSOFORM 285cm,lysoform-285cm,Lysoform 285Cm,5500,3575,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LIMPIADOR LIQ COCINA MR MUSCULO 450ml,limpiador-liq-cocina-mr-musculo-450ml,Limpiador Liq Cocina Mr Musculo 450Ml,3000,1950,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MENDIA TAPA DE EMPANADAS 520 GR,mendia-tapa-de-empanadas-520-gr,Mendia Tapa De Empanadas 520 Gr,3000,1950,100,5,bebidas,MICRO,200,15,8,5,1,BIKE|MOTO
+FLICS TUTTI FRUTTI,flics-tutti-frutti,Flics Tutti Frutti,800,520,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLOCK 45gr,cofler-block-45gr,Cofler Block 45Gr,11,7,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TORTA HELADA AMERICANA Y FRUTILLA 900gr,torta-helada-americana-y-frutilla-900gr,Torta Helada Americana Y Frutilla 900Gr,16000,10400,100,5,kiosco,MEDIUM,1500,28,20,10,6,MOTO|CAR
+HALLS MIEL C/MENTA 28gr,halls-miel-cmenta-28gr,Halls Miel C/Menta 28Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CAFE LA PLANTA 125gr,cafe-la-planta-125gr,Cafe La Planta 125Gr,4900,3185,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+LA PLANTA CAFE SAQUITO 18U,la-planta-cafe-saquito-18u,La Planta Cafe Saquito 18U,7900,5135,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+CAFE LA PLANTA 100gr,cafe-la-planta-100gr,Cafe La Planta 100Gr,4400,2860,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+RUTINI MALBEC 750ml,rutini-malbec-750ml,Rutini Malbec 750Ml,40700,26455,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+RUTINI CABERNET-MALBEC 750ml,rutini-cabernet-malbec-750ml,Rutini Cabernet-Malbec 750Ml,20000,13000,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+TRUMPETER CAB.SAUVIGNON 750ml,trumpeter-cabsauvignon-750ml,Trumpeter Cab.Sauvignon 750Ml,12000,7800,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+TRUMPETER MALBEC 750ml,trumpeter-malbec-750ml,Trumpeter Malbec 750Ml,12000,7800,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+RUTINI CABERNET SAUV. 750ml,rutini-cabernet-sauv-750ml,Rutini Cabernet Sauv. 750Ml,33500,21775,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+RUTINI CABERNET-MERLOT 750ml,rutini-cabernet-merlot-750ml,Rutini Cabernet-Merlot 750Ml,20000,13000,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+RUTINI CABERNET-SYRAH 750ml,rutini-cabernet-syrah-750ml,Rutini Cabernet-Syrah 750Ml,20000,13000,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+RUTINI CAB.FRANC-MALBEC 750ml,rutini-cabfranc-malbec-750ml,Rutini Cab.Franc-Malbec 750Ml,20000,13000,100,5,bebidas,MEDIUM,900,32,11,11,6,MOTO|CAR
+CORRECTOR LIQUIDO TRABI 20ml,corrector-liquido-trabi-20ml,Corrector Liquido Trabi 20Ml,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR LECHE 55gr,cofler-air-leche-55gr,Cofler Air Leche 55Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER ALMENDRA 55gr,cofler-almendra-55gr,Cofler Almendra 55Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SUGUS CONFITADOS 50gr,sugus-confitados-50gr,Sugus Confitados 50Gr,1400,910,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+"MOGUL EXTREME OSITO UVA,SANDIA 30gr",mogul-extreme-osito-uvasandia-30gr,"Mogul Extreme Osito Uva,Sandia 30Gr",1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR LECHE CON MANI 80gr,arcor-leche-con-mani-80gr,Arcor Leche Con Mani 80Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR BLANCO CON MANI 80gr,arcor-blanco-con-mani-80gr,Arcor Blanco Con Mani 80Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR MARMOLADO 80gr,arcor-marmolado-80gr,Arcor Marmolado 80Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR LECHE 27gr,cofler-air-leche-27gr,Cofler Air Leche 27Gr,2900,1885,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR BLANCO 27gr,cofler-air-blanco-27gr,Cofler Air Blanco 27Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR MIXTO 27gr,cofler-air-mixto-27gr,Cofler Air Mixto 27Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR BLANCO 55gr,cofler-air-blanco-55gr,Cofler Air Blanco 55Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR MIXTO 55gr,cofler-air-mixto-55gr,Cofler Air Mixto 55Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR ALMENDRAS,cofler-air-almendras,Cofler Air Almendras,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR LECHE 100gr,cofler-air-leche-100gr,Cofler Air Leche 100Gr,6500,4225,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER AIR BLANCO 100gr,cofler-air-blanco-100gr,Cofler Air Blanco 100Gr,6500,4225,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER AIR MIXTO 100gr,cofler-air-mixto-100gr,Cofler Air Mixto 100Gr,6500,4225,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER AIR ALMENDRAS 100gr,cofler-air-almendras-100gr,Cofler Air Almendras 100Gr,6500,4225,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER LECHE 55gr,cofler-leche-55gr,Cofler Leche 55Gr,3900,2535,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER ROCKLETS 55gr,cofler-rocklets-55gr,Cofler Rocklets 55Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLANCO CHOCOLINAS 55gr,cofler-blanco-chocolinas-55gr,Cofler Blanco Chocolinas 55Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLOCK 300,cofler-block-300,Cofler Block 300,14000,9100,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+ARCOR 50% CACAO 80gr,arcor-50-cacao-80gr,Arcor 50% Cacao 80Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLOCK 170gr,cofler-block-170gr,Cofler Block 170Gr,8000,5200,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER TRES PLACERES 55gr,cofler-tres-placeres-55gr,Cofler Tres Placeres 55Gr,4500,2925,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+OBLEA BON O BON XL 45gr,oblea-bon-o-bon-xl-45gr,Oblea Bon O Bon Xl 45Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLOCK MANI 40gr,cofler-block-mani-40gr,Cofler Block Mani 40Gr,2200,1430,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER GRAFFITI 45gr,cofler-graffiti-45gr,Cofler Graffiti 45Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR BON O BON 67gr,cofler-air-bon-o-bon-67gr,Cofler Air Bon O Bon 67Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER AIR TOFI 70gr,cofler-air-tofi-70gr,Cofler Air Tofi 70Gr,4000,2600,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ROCKLETS COOKIE 35gr,rocklets-cookie-35gr,Rocklets Cookie 35Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME ACIDO DULCE,mogul-extreme-acido-dulce,Mogul Extreme Acido Dulce,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME PALOTE 48gr,mogul-extreme-palote-48gr,Mogul Extreme Palote 48Gr,1000,650,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL MORAS 80gr,mogul-moras-80gr,Mogul Moras 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR CHOCOLATE CRISPY 80gr,arcor-chocolate-crispy-80gr,Arcor Chocolate Crispy 80Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ROCKLETS PICANTE 20gr,rocklets-picante-20gr,Rocklets Picante 20Gr,1000,650,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+ROCKLETS EXTREME 20gr,rocklets-extreme-20gr,Rocklets Extreme 20Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR 50% CACAO 25gr,arcor-50-cacao-25gr,Arcor 50% Cacao 25Gr,1300,845,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TOPLINE ULTRA RED BERRY,topline-ultra-red-berry,Topline Ultra Red Berry,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CUBANITOS CHOC. 29gr,cofler-cubanitos-choc-29gr,Cofler Cubanitos Choc. 29Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CUBANITOS DARK 29gr,cofler-cubanitos-dark-29gr,Cofler Cubanitos Dark 29Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CUBANITOS AV. 29gr,cofler-cubanitos-av-29gr,Cofler Cubanitos Av. 29Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER YOGUR 64gr,cofler-yogur-64gr,Cofler Yogur 64Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER GRAFFITI BLANCO 45gr,cofler-graffiti-blanco-45gr,Cofler Graffiti Blanco 45Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR LECHE Y MANI 25gr,arcor-leche-y-mani-25gr,Arcor Leche Y Mani 25Gr,1300,845,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BON O BON 30gr,cofler-bon-o-bon-30gr,Cofler Bon O Bon 30Gr,2900,1885,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLANCO CHOCOLINAS,cofler-blanco-chocolinas,Cofler Blanco Chocolinas,8500,5525,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+AZUCAR ARCOR X 1KG,azucar-arcor-x-1kg,Azucar Arcor X 1Kg,2000,1300,100,5,kiosco,SMALL,1100,31,9,9,3,BIKE|MOTO|CAR
+COFLER LECHE 140gr,cofler-leche-140gr,Cofler Leche 140Gr,8500,5525,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+ARCOR MANI BAÑADO,arcor-mani-banado,Arcor Mani Bañado,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER ALMENDRAS 140gr,cofler-almendras-140gr,Cofler Almendras 140Gr,8500,5525,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+MOGUL EXTREME OSITO ACIDODULCE 50gr,mogul-extreme-osito-acidodulce-50gr,Mogul Extreme Osito Acidodulce 50Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME ACIDO-DULCE SANDIA 50gr,mogul-extreme-acido-dulce-sandia-50gr,Mogul Extreme Acido-Dulce Sandia 50Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EUCALIPTUS 50gr,mogul-eucaliptus-50gr,Mogul Eucaliptus 50Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL MORAS X50gr,mogul-moras-x50gr,Mogul Moras X50Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+LA CAMPAGNOLA LOMO DE ATUN EN A,la-campagnola-lomo-de-atun-en-a,La Campagnola Lomo De Atun En A,6900,4485,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+LOMO DE ATUN NATURAL,lomo-de-atun-natural,Lomo De Atun Natural,6900,4485,100,5,supermercado,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+HUEVO ROCLETS 28gr,huevo-roclets-28gr,Huevo Roclets 28Gr,1900,1235,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+OBLEA TWIT 20gr,oblea-twit-20gr,Oblea Twit 20Gr,700,455,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER MITI MITI 170gr,cofler-miti-miti-170gr,Cofler Miti Miti 170Gr,8000,5200,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER DDL 38gr,cofler-ddl-38gr,Cofler Ddl 38Gr,1800,1170,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+HUEVO ARCOR MILK 22gr,huevo-arcor-milk-22gr,Huevo Arcor Milk 22Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+TOPLINE ULTRA CITRUS BLUEBERRY,topline-ultra-citrus-blueberry,Topline Ultra Citrus Blueberry,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL DIENTES 50gr,mogul-dientes-50gr,Mogul Dientes 50Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL XTREME ROCKS 45gr,mogul-xtreme-rocks-45gr,Mogul Xtreme Rocks 45Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+POLENTA PRESTO PRONTA 490gr,polenta-presto-pronta-490gr,Polenta Presto Pronta 490Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+PURE DE TOMATE NOEL 530gr,pure-de-tomate-noel-530gr,Pure De Tomate Noel 530Gr,800,520,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PURE DE TOMATE LA CAMPAGNOLA 530gr,pure-de-tomate-la-campagnola-530gr,Pure De Tomate La Campagnola 530Gr,1300,845,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME TUBITOS FRUTILLA 70gr,mogul-extreme-tubitos-frutilla-70gr,Mogul Extreme Tubitos Frutilla 70Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+FLICS MENTA,flics-menta,Flics Menta,800,520,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME TUTTI FRUTTI 70gr,mogul-extreme-tutti-frutti-70gr,Mogul Extreme Tutti Frutti 70Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME LENGUASMAX 15gr,mogul-extreme-lenguasmax-15gr,Mogul Extreme Lenguasmax 15Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER CREMOSO 60% CACAO 100gr,cofler-cremoso-60-cacao-100gr,Cofler Cremoso 60% Cacao 100Gr,7200,4680,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER NARANJA 60% CACAO 100gr,cofler-naranja-60-cacao-100gr,Cofler Naranja 60% Cacao 100Gr,7200,4680,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+MOGUL JELLY BEANS 50gr,mogul-jelly-beans-50gr,Mogul Jelly Beans 50Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL JELLY BEANS 150gr,mogul-jelly-beans-150gr,Mogul Jelly Beans 150Gr,3000,1950,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+AGUILA 80% CACAO 150gr,aguila-80-cacao-150gr,Aguila 80% Cacao 150Gr,12000,7800,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+AGUILA NARANJA 60% CACAO 100gr,aguila-naranja-60-cacao-100gr,Aguila Naranja 60% Cacao 100Gr,7600,4940,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER BLOCK 45 GR,cofler-block-45-gr,Cofler Block 45 Gr,3500,2275,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER ALMENDRA 60% CACAO 100gr,cofler-almendra-60-cacao-100gr,Cofler Almendra 60% Cacao 100Gr,7200,4680,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER AVELLANAS 140gr,cofler-avellanas-140gr,Cofler Avellanas 140Gr,8500,5525,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+ARCOR MILK 20gr,arcor-milk-20gr,Arcor Milk 20Gr,1200,780,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+BON O BON TABLETA 160gr,bon-o-bon-tableta-160gr,Bon O Bon Tableta 160Gr,8500,5525,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+COFLER ROCKLETS 140gr,cofler-rocklets-140gr,Cofler Rocklets 140Gr,8500,5525,100,5,kiosco,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+PURE DE TOMATE ARCOR  520gr,pure-de-tomate-arcor-520gr,Pure De Tomate Arcor  520Gr,1300,845,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL BANANITA 30gr,mogul-bananita-30gr,Mogul Bananita 30Gr,700,455,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME FRUTILLA 15gr,mogul-extreme-frutilla-15gr,Mogul Extreme Frutilla 15Gr,500,325,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MENTHO PLUS MIX BERRIES,mentho-plus-mix-berries,Mentho Plus Mix Berries,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SUGUS ACIDOS 50gr,sugus-acidos-50gr,Sugus Acidos 50Gr,1400,910,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL BOMBON FRUTAS 80gr,mogul-bombon-frutas-80gr,Mogul Bombon Frutas 80Gr,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER MAAX CHOCOLINAS 60gr,cofler-maax-chocolinas-60gr,Cofler Maax Chocolinas 60Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+COFLER BLOCK MAAX 60gr,cofler-block-maax-60gr,Cofler Block Maax 60Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EXTREME ACIDO DULCE 80gr,mogul-extreme-acido-dulce-80gr,Mogul Extreme Acido Dulce 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL DIENTES 80gr,mogul-dientes-80gr,Mogul Dientes 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+BOLSA DE CARAMELOS BUTTER TOFFEES CHOCO 80gr,bolsa-de-caramelos-butter-toffees-choco-80gr,Bolsa De Caramelos Butter Toffees Choco 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL ANILLOS 80gr,mogul-anillos-80gr,Mogul Anillos 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL EUCALIPTUS 80gr,mogul-eucaliptus-80gr,Mogul Eucaliptus 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL CONITOS 80gr,mogul-conitos-80gr,Mogul Conitos 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL JELLY 80gr,mogul-jelly-80gr,Mogul Jelly 80Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL CEREBRITOS 30gr,mogul-cerebritos-30gr,Mogul Cerebritos 30Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL OSITO 30gr,mogul-osito-30gr,Mogul Osito 30Gr,700,455,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL TIBURONCITOS 30gr,mogul-tiburoncitos-30gr,Mogul Tiburoncitos 30Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL VIBORITAS 30gr,mogul-viboritas-30gr,Mogul Viboritas 30Gr,800,520,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ROCKLETS 40gr,rocklets-40gr,Rocklets 40Gr,1500,975,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+OBLEA BON O BON NEGRO 30gr,oblea-bon-o-bon-negro-30gr,Oblea Bon O Bon Negro 30Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+OBLEA BON O BON BLANCO 30gr,oblea-bon-o-bon-blanco-30gr,Oblea Bon O Bon Blanco 30Gr,1000,650,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR CHOCOLATE 25gr,arcor-chocolate-25gr,Arcor Chocolate 25Gr,1700,1105,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+ARCOR BLANCO 25gr,arcor-blanco-25gr,Arcor Blanco 25Gr,1300,845,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MOGUL PIECITOS 30gr,mogul-piecitos-30gr,Mogul Piecitos 30Gr,700,455,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SALADIX CAJA PIZZA 100gr,saladix-caja-pizza-100gr,Saladix Caja Pizza 100Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+SALADIX CAJA JAMON 100gr,saladix-caja-jamon-100gr,Saladix Caja Jamon 100Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+SALADIX CAJA CALABRESA 100gr,saladix-caja-calabresa-100gr,Saladix Caja Calabresa 100Gr,2000,1300,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MALBORO GOLD,malboro-gold,Malboro Gold,3800,2470,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+FOSFOROS TRES PATITOS 222U,fosforos-tres-patitos-222u,Fosforos Tres Patitos 222U,1300,845,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+SALCHICHA PATY X6,salchicha-paty-x6,Salchicha Paty X6,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+SALCHICHA PATY VIENA X12,salchicha-paty-viena-x12,Salchicha Paty Viena X12,4000,2600,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+LA GOTITA GEL 3gr,la-gotita-gel-3gr,La Gotita Gel 3Gr,2900,1885,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+MARLO BLANCO DULCE 750ml,marlo-blanco-dulce-750ml,Marlo Blanco Dulce 750Ml,6800,4420,100,5,kiosco,MEDIUM,900,32,11,11,6,MOTO|CAR
+CBSÉ JENGIBRE 500 GR,cbse-jengibre-500-gr,Cbsé Jengibre 500 Gr,2800,1820,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CBSÉ HIERBAS SERRANAS 500 GR,cbse-hierbas-serranas-500-gr,Cbsé Hierbas Serranas 500 Gr,2800,1820,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CBSÉ NARANJA 500 GR,cbse-naranja-500-gr,Cbsé Naranja 500 Gr,2800,1820,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+CBSÉ LIMÓN 500 GR,cbse-limon-500-gr,Cbsé Limón 500 Gr,2800,1820,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+YERBA CBSE YERBA DEL LITORAL 500gr,yerba-cbse-yerba-del-litoral-500gr,Yerba Cbse Yerba Del Litoral 500Gr,2800,1820,100,5,supermercado,MICRO,540,23,7,7,1,BIKE|MOTO
+TE CBSE HIERBAS SERRANAS 25u,te-cbse-hierbas-serranas-25u,Te Cbse Hierbas Serranas 25U,1700,1105,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+TE CBSE GUARANA Y JENGIBRE 25u,te-cbse-guarana-y-jengibre-25u,Te Cbse Guarana Y Jengibre 25U,1700,1105,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+YERBA CBSE MANGO PICANTE 250gr,yerba-cbse-mango-picante-250gr,Yerba Cbse Mango Picante 250Gr,2000,1300,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO

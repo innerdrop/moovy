@@ -1,0 +1,7 @@
+﻿name,slug,description,price,costPrice,stock,minStock,categorySlug,packageCategory,maxWeightGrams,maxLengthCm,maxWidthCm,maxHeightCm,volumeScore,allowedVehicles
+PROMO BRIGHTON+SCHWEPPES,promo-brightonschweppes,Promo Brighton+Schweppes,11200,7280,100,5,bebidas,SMALL,800,22,12,8,3,BIKE|MOTO|CAR
+"PROMO FERNET 450+COCA 1,5L+HIELO",promo-fernet-450coca-15lhielo,"Promo Fernet 450+Coca 1,5L+Hielo",11500,7475,100,5,bebidas,SMALL,1650,34,10,10,3,BIKE|MOTO|CAR
+PROMO BRAMA DORADA 473 2X1,promo-brama-dorada-473-2x1,Promo Brama Dorada 473 2X1,3000,1950,100,5,supermercado,MICRO,200,15,8,5,1,BIKE|MOTO
+PROMO BRAHMA DORADA+MANI,promo-brahma-doradamani,Promo Brahma Dorada+Mani,4380,2847,100,5,bebidas,MICRO,200,15,8,5,1,BIKE|MOTO
+AURICULAR SOUL S59 CLASIC BLANCO,auricular-soul-s59-clasic-blanco,Auricular Soul S59 Clasic Blanco,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO
+AURICULAR SOUL S59 CLASIC NEGRO,auricular-soul-s59-clasic-negro,Auricular Soul S59 Clasic Negro,2500,1625,100,5,kiosco,MICRO,200,15,8,5,1,BIKE|MOTO

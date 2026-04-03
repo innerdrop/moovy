@@ -19,6 +19,7 @@ export async function GET(request: Request) {
         const categories = await prisma.category.findMany({
             where: {
                 isActive: true,
+                isPackageAvailable: true, // Solo las que están disponibles como paquete B2B
                 parentId: null, // Only root categories (packages)
                 ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
                 ...(scope !== "all" ? { scope: { in: [scope.toUpperCase(), "BOTH"] } } : {}),

@@ -19,6 +19,7 @@ import {
 import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/icons";
 import { toast } from "@/store/toast";
 import ImageUpload from "@/components/ui/ImageUpload";
+import HomeCategorySlotsManager from "@/components/ops/HomeCategorySlotsManager";
 
 // DnD Kit Imports
 import {
@@ -401,15 +402,16 @@ export default function AdminCategoriasPage() {
     }
 
     async function handleDelete(id: string, name: string) {
-        if (!confirm(`¿Eliminar la categoría "${name}"?`)) return;
+        if (!confirm(`¿Eliminar la categoría "${name}"?\n\nNota: No se puede eliminar si tiene productos o listings asignados.`)) return;
 
         try {
-            const res = await fetch(`/api/admin/categories/${id}`, {
+            const res = await fetch(`/api/admin/categories?id=${id}`, {
                 method: "DELETE",
             });
 
             if (res.ok) {
                 await loadCategories();
+                toast.success(`Categoría "${name}" eliminada`);
             } else {
                 const data = await res.json();
                 toast.error(data.error || "Error al eliminar");
@@ -534,6 +536,11 @@ export default function AdminCategoriasPage() {
                     </SortableContext>
                 </DndContext>
             )}
+
+            {/* ─── Home Categories Section ─── */}
+            <div className="mt-8 p-4 sm:p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <HomeCategorySlotsManager />
+            </div>
 
             {/* Modal Form - Simple like Clientes, Positioned Top */}
             {showForm && (

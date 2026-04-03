@@ -150,10 +150,12 @@ model Category {
   scope                   String             @default("BOTH") // STORE, MARKETPLACE, BOTH
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
+  // B2B package fields
   allowIndividualPurchase Boolean            @default(true)
   price                   Float              @default(0)
-  starterPrice            Float?             // Precio del starter pack (subset curado)
-  isStarter               Boolean            @default(false) // Si es un starter pack curado
+  starterPrice            Float?
+  isStarter               Boolean            @default(false)
+  isPackageAvailable      Boolean            @default(true) // Si aparece como paquete comprable en el panel merchant
   parentId                String?
   icon                    String?
   parent                  Category?          @relation("CategoryHierarchy", fields: [parentId], references: [id])
@@ -162,6 +164,7 @@ model Category {
   products                ProductCategory[]
   listings                Listing[]
   packagePurchases        PackagePurchase[]
+  homeSlots               HomeCategorySlot[]
 }
 
 model Product {
@@ -196,7 +199,7 @@ model ProductCategory {
   id         String   @id @default(cuid())
   productId  String
   categoryId String
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict) // PROTEGER: no borrar categoría si tiene productos
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, categoryId])
@@ -1245,4 +1248,25 @@ model ConfigAuditLog {
 
   @@index([configType, createdAt])
   @@index([adminUserId])
+}
+
+// ─── HomeCategorySlot ─────────────────────────────────────────────────────
+// Slots curados por el admin de OPS para mostrar en el home.
+// Independiente de isActive/isPackageAvailable de Category.
+// El admin elige qué categorías mostrar, en qué orden, y con qué imagen.
+model HomeCategorySlot {
+  id         String   @id @default(cuid())
+  categoryId String
+  order      Int      @default(0)
+  image      String?  // Imagen custom para el home (si null, usa la de Category)
+  icon       String?  // Ícono custom para el home (si null, usa el de Category)
+  label      String?  // Label custom (si null, usa category.name)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId]) // Una categoría solo puede tener un slot
+  @@index([order])
 }

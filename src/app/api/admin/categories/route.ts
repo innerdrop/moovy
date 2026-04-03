@@ -60,6 +60,7 @@ export async function POST(request: Request) {
                 scope: ["STORE", "MARKETPLACE", "BOTH"].includes(data.scope) ? data.scope : "BOTH",
                 price: parseFloat(data.price || 0),
                 allowIndividualPurchase: data.allowIndividualPurchase !== false,
+                isPackageAvailable: data.isPackageAvailable !== false,
                 order: newOrder,
                 parentId: data.parentId || null,
                 icon: data.icon || null,
@@ -114,7 +115,7 @@ export async function PATCH(request: Request) {
     }
 }
 
-// DELETE - Delete category
+// DELETE - Delete category (PROTEGIDO: no permite borrar si tiene productos asignados)
 export async function DELETE(request: Request) {
     try {
         const session = await auth();
@@ -129,6 +130,35 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "ID requerido" }, { status: 400 });
         }
 
+        // Verificar si tiene productos asignados (protección contra pérdida de clasificación)
+        const productCount = await prisma.productCategory.count({
+            where: { categoryId: id },
+        });
+
+        if (productCount > 0) {
+            return NextResponse.json(
+                {
+                    error: `No se puede eliminar: esta categoría tiene ${productCount} producto(s) asignado(s). Desvinculá los productos primero o desactivá la categoría en su lugar.`,
+                },
+                { status: 409 }
+            );
+        }
+
+        // Verificar si tiene listings asignados
+        const listingCount = await prisma.listing.count({
+            where: { categoryId: id },
+        });
+
+        if (listingCount > 0) {
+            return NextResponse.json(
+                {
+                    error: `No se puede eliminar: esta categoría tiene ${listingCount} listing(s) del marketplace asignado(s).`,
+                },
+                { status: 409 }
+            );
+        }
+
+        // Safe to delete — also removes HomeCategorySlot (cascade) and MerchantCategory (cascade)
         await prisma.category.delete({
             where: { id },
         });
