@@ -1,4 +1,4 @@
-// Home Page - Página de Inicio (Nueva Landing v2)
+// Home Page - Página de Inicio (v3 — Contextual Hero + Discovery Rows + Map)
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -11,26 +11,46 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { ArrowRight, Store } from "lucide-react";
+import { ArrowRight, Store, Sparkles, Star, TrendingUp, Clock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
 import SearchBarHero from "@/components/home/SearchBarHero";
-// HeroSliderNew removed — replaced by HeroBannerCarousel in section 1
-import SocialProofBar from "@/components/home/SocialProofBar";
-// HowItWorks removed — replaced by banner slot
 import CategoryGrid from "@/components/home/CategoryGrid";
 import TrustBar from "@/components/home/TrustBar";
 import SupplySideCTA from "@/components/home/SupplySideCTA";
-import MerchantCard from "@/components/store/MerchantCard";
 import ListingCard from "@/components/store/ListingCard";
 import Footer from "@/components/layout/Footer";
 import HomeProductCard from "@/components/home/HomeProductCard";
 import PromoBanner from "@/components/home/PromoBanner";
-import DestacadosSection from "@/components/home/DestacadosSection";
+import ContextualHero from "@/components/home/ContextualHero";
+import MerchantDiscoveryRow from "@/components/home/MerchantDiscoveryRow";
+import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
+
+// ============================================
+// MERCHANT SELECT — shared fields for discovery
+// ============================================
+
+const MERCHANT_DISCOVERY_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  image: true,
+  category: true,
+  isOpen: true,
+  rating: true,
+  deliveryTimeMin: true,
+  deliveryTimeMax: true,
+  deliveryFee: true,
+  isPremium: true,
+  latitude: true,
+  longitude: true,
+  createdAt: true,
+} as const;
 
 // ============================================
 // DATA FETCHING
@@ -59,31 +79,19 @@ async function getCategories(limit: number = 8) {
   }
 }
 
-async function getMerchants() {
+/** All active merchants for hero + discovery rows + map (single query, split client-side) */
+async function getAllActiveMerchants() {
   try {
-    const MAX_CLOSED_FREE = 5; // max cerrados sin publicidad paga en home
-
-    const all = await prisma.merchant.findMany({
+    return await prisma.merchant.findMany({
       where: { isActive: true },
+      select: MERCHANT_DISCOVERY_SELECT,
       orderBy: [
         { isOpen: "desc" },
         { isPremium: "desc" },
-        { displayOrder: "desc" },
+        { rating: "desc" },
         { name: "asc" },
       ],
     });
-
-    // Premium/destacados siempre aparecen (pagaron por visibilidad)
-    // Cerrados sin publicidad: máximo MAX_CLOSED_FREE
-    let closedFreeCount = 0;
-    const filtered = all.filter((m) => {
-      if (m.isOpen) return true; // abiertos siempre
-      if (m.isPremium) return true; // premium cerrados siempre (pagaron)
-      closedFreeCount++;
-      return closedFreeCount <= MAX_CLOSED_FREE;
-    });
-
-    return filtered.slice(0, 8);
   } catch {
     return [];
   }
@@ -129,34 +137,60 @@ async function getRecentListings() {
   }
 }
 
-async function getTotalDelivered() {
+/** Top merchants by order count (most popular) */
+async function getMostOrderedMerchantIds(): Promise<string[]> {
   try {
-    return await prisma.order.count({
-      where: { status: "DELIVERED", deletedAt: null },
+    const results = await prisma.order.groupBy({
+      by: ["merchantId"],
+      where: {
+        status: "DELIVERED",
+        deletedAt: null,
+        merchantId: { not: null },
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: 10,
     });
+    return results
+      .filter((r) => r.merchantId !== null)
+      .map((r) => r.merchantId as string);
   } catch {
-    return 0;
+    return [];
   }
 }
 
-async function getActiveMerchantCount() {
-  try {
-    return await prisma.merchant.count({
-      where: { isActive: true },
-    });
-  } catch {
-    return 0;
-  }
+// ============================================
+// DISCOVERY ROW HELPERS
+// ============================================
+
+function getOpenNow(merchants: any[]) {
+  return merchants.filter((m) => m.isOpen).slice(0, 10);
 }
 
-async function getOpenMerchantCount() {
-  try {
-    return await prisma.merchant.count({
-      where: { isActive: true, isOpen: true },
-    });
-  } catch {
-    return 0;
-  }
+function getNewMerchants(merchants: any[]) {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  return merchants
+    .filter((m) => new Date(m.createdAt) > thirtyDaysAgo)
+    .slice(0, 10);
+}
+
+function getBestRated(merchants: any[]) {
+  return merchants
+    .filter((m) => m.rating && m.rating >= 3.5)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 10);
+}
+
+function getMostOrdered(merchants: any[], topIds: string[]) {
+  if (topIds.length === 0) return [];
+  const idSet = new Set(topIds);
+  // Preserve order from topIds (most orders first)
+  const byId = new Map(merchants.map((m) => [m.id, m]));
+  return topIds
+    .filter((id) => byId.has(id))
+    .map((id) => byId.get(id)!)
+    .slice(0, 10);
 }
 
 // ============================================
@@ -188,7 +222,6 @@ function MaintenanceView() {
 // MAIN STORE VIEW
 // ============================================
 
-
 async function LiveStoreView() {
   const settings = await prisma.storeSettings
     .findUnique({ where: { id: "settings" } })
@@ -196,224 +229,250 @@ async function LiveStoreView() {
 
   const [
     categories,
-    merchants,
+    allMerchants,
     featuredProducts,
     recentListings,
     slides,
-    totalDelivered,
-    activeMerchants,
-    openMerchants,
+    topMerchantIds,
   ] = await Promise.all([
     getCategories(settings?.maxCategoriesHome ?? 8),
-    getMerchants(),
+    getAllActiveMerchants(),
     getFeaturedProducts(),
     getRecentListings(),
     getHeroSlides(),
-    getTotalDelivered(),
-    getActiveMerchantCount(),
-    getOpenMerchantCount(),
+    getMostOrderedMerchantIds(),
   ]);
 
+  // Hero Banner OPS settings
   const slideInterval = settings?.heroSliderInterval ?? 5000;
   const sliderEnabled = (settings as any)?.heroSliderEnabled ?? true;
   const sliderShowArrows = (settings as any)?.heroSliderShowArrows ?? true;
+  const hasOpsSlides = sliderEnabled && slides.length > 0;
 
-  // Banner /Tienda settings
+  // Promo Banner settings
   const bannerEnabled = (settings as any)?.promoBannerEnabled ?? false;
-  const bannerProps = bannerEnabled ? {
-    enabled: true,
-    title: (settings as any)?.promoBannerTitle || undefined,
-    subtitle: (settings as any)?.promoBannerSubtitle || undefined,
-    buttonText: (settings as any)?.promoBannerButtonText || undefined,
-    buttonLink: (settings as any)?.promoBannerButtonLink || undefined,
-    image: (settings as any)?.promoBannerImage || null,
-    ctaPosition: (settings as any)?.promoBannerCtaPosition || "abajo-izquierda",
-  } : null;
+  const bannerProps = bannerEnabled
+    ? {
+        enabled: true,
+        title: (settings as any)?.promoBannerTitle || undefined,
+        subtitle: (settings as any)?.promoBannerSubtitle || undefined,
+        buttonText: (settings as any)?.promoBannerButtonText || undefined,
+        buttonLink: (settings as any)?.promoBannerButtonLink || undefined,
+        image: (settings as any)?.promoBannerImage || null,
+        ctaPosition:
+          (settings as any)?.promoBannerCtaPosition || "abajo-izquierda",
+      }
+    : null;
+
+  // Build discovery rows from the single allMerchants query
+  const openNow = getOpenNow(allMerchants);
+  const newMerchants = getNewMerchants(allMerchants);
+  const bestRated = getBestRated(allMerchants);
+  const mostOrdered = getMostOrdered(allMerchants, topMerchantIds);
 
   return (
     <div>
-      {/* 1. Hero Banner Carousel */}
-      {sliderEnabled && slides.length > 0 && (
-        <HeroBannerCarousel slides={slides as any} slideInterval={slideInterval} showArrows={sliderShowArrows} />
-      )}
+      {/* ── 1. CONTEXTUAL HERO — changes by time of day ── */}
+      <ContextualHero merchants={allMerchants as any} />
 
-      {/* 2. Search Bar */}
+      {/* ── 2. SEARCH BAR ── */}
       <SearchBarHero />
 
-      {/* 3. Categorías — sin título, protagonistas (no reveal — above the fold) */}
+      {/* ── 3. CATEGORÍAS — above the fold, no animation delay ── */}
       <section className="relative py-5 lg:py-8 bg-white">
         <CategoryGrid categories={categories} />
       </section>
 
-      {/* 4. Banner Promocional configurable desde OPS */}
+      {/* ── 4. PROMO BANNER (OPS configurable) ── */}
       {bannerProps && <PromoBanner {...bannerProps} />}
 
-      {/* 5. Comercios Destacados */}
-      <DestacadosSection />
+      {/* ── 5. DISCOVERY ROWS (Concepto C — Netflix-style) ── */}
 
-      {/* 6. Comercios en Ushuaia */}
+      {/* 5a. Abiertos ahora */}
       <AnimateIn animation="reveal">
-      <section className="py-6 lg:py-10 xl:py-12 bg-white">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl lg:text-2xl font-black text-gray-900">
-              Comercios en Ushuaia
-            </h2>
-            <Link
-              href="/tiendas"
-              className="text-[#e60012] text-sm font-semibold hover:underline flex items-center gap-1"
-            >
-              Ver todos <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {merchants.length > 0 ? (
-            <>
-              {/* Mobile: compact horizontal cards in vertical list */}
-              <div className="flex flex-col gap-2 lg:hidden">
-                {merchants.map((merchant) => (
-                  <MerchantCard key={merchant.id} merchant={merchant} variant="compact" />
-                ))}
-              </div>
-              {/* Desktop: grid with default vertical cards */}
-              <div className="hidden lg:grid lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
-                {merchants.map((merchant) => (
-                  <MerchantCard key={merchant.id} merchant={merchant} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="py-12 text-center text-gray-500">
-              <Store className="w-16 h-16 mx-auto mb-3 opacity-20" />
-              <p className="font-semibold text-gray-600">
-                Estamos sumando comercios cada día
-              </p>
-              <p className="text-sm mt-1">Pronto vas a encontrar tu favorito</p>
-              <Link
-                href="/comercio/registro"
-                className="inline-block mt-4 text-sm font-semibold text-[#e60012] hover:underline"
-              >
-                ¿Tenés un comercio? Sumate a MOOVY &rarr;
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
+        <MerchantDiscoveryRow
+          title="Abiertos ahora"
+          icon={<Clock className="w-4 h-4 text-green-600" />}
+          merchants={openNow}
+          viewAllHref="/tiendas?filter=abiertos"
+          accentColor="bg-green-500"
+        />
       </AnimateIn>
 
-      {/* 7. Productos — Lo más pedido */}
+      {/* 5b. OPS Hero Banner — intercalado entre filas como publicidad */}
+      {hasOpsSlides && (
+        <div className="py-2 lg:py-4">
+          <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
+            <div className="rounded-2xl overflow-hidden shadow-md">
+              <HeroBannerCarousel
+                slides={slides as any}
+                slideInterval={slideInterval}
+                showArrows={sliderShowArrows}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5c. Nuevos en MOOVY */}
+      <AnimateIn animation="reveal">
+        <MerchantDiscoveryRow
+          title="Nuevos en MOOVY"
+          icon={<Sparkles className="w-4 h-4 text-purple-600" />}
+          merchants={newMerchants}
+          viewAllHref="/tiendas?filter=nuevos"
+          accentColor="bg-purple-500"
+        />
+      </AnimateIn>
+
+      {/* 5d. Los más pedidos */}
+      <AnimateIn animation="reveal">
+        <MerchantDiscoveryRow
+          title="Los más pedidos"
+          icon={<TrendingUp className="w-4 h-4 text-orange-600" />}
+          merchants={mostOrdered}
+          viewAllHref="/tiendas?filter=populares"
+          accentColor="bg-orange-500"
+        />
+      </AnimateIn>
+
+      {/* 5e. Mejor calificados */}
+      <AnimateIn animation="reveal">
+        <MerchantDiscoveryRow
+          title="Mejor calificados"
+          icon={<Star className="w-4 h-4 text-yellow-600" />}
+          merchants={bestRated}
+          viewAllHref="/tiendas?filter=mejor-calificados"
+          accentColor="bg-yellow-500"
+        />
+      </AnimateIn>
+
+      {/* ── 6. PRODUCTOS — Lo más pedido ── */}
       <AnimateIn animation="reveal" delay={100}>
-      <section className="py-8 lg:py-12 xl:py-14 bg-white">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl lg:text-2xl font-black text-gray-900">
-              Lo más pedido
-            </h2>
-            <Link
-              href="/productos"
-              className="text-[#e60012] text-sm font-semibold hover:underline flex items-center gap-1"
-            >
-              Ver todos <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 lg:gap-4">
-              {featuredProducts.map((product) => (
-                <HomeProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-400">
-              <p className="font-medium text-gray-600">
-                Estamos preparando ofertas increíbles para vos
-              </p>
-              <p className="text-sm mt-1">Volvé pronto</p>
-            </div>
-          )}
-        </div>
-      </section>
-      </AnimateIn>
-
-      {/* 8. Marketplace */}
-      {recentListings.length > 0 && (
-        <AnimateIn animation="reveal-scale">
         <section className="py-8 lg:py-12 xl:py-14 bg-white">
           <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-            {/* Marketplace hero banner — immersive gradient */}
-            <div className="relative overflow-hidden rounded-3xl mb-6">
-              {/* Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6]" />
-              {/* Decorative orbs */}
-              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-purple-400/20 blur-2xl" />
-              <div className="absolute -left-10 bottom-0 w-32 h-32 rounded-full bg-fuchsia-400/15 blur-2xl" />
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl lg:text-2xl font-black text-gray-900">
+                Lo más pedido
+              </h2>
+              <Link
+                href="/productos"
+                className="text-[#e60012] text-sm font-semibold hover:underline flex items-center gap-1"
+              >
+                Ver todos <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
 
-              <div className="relative z-10 px-5 py-6 lg:px-10 lg:py-8 lg:flex lg:items-center lg:justify-between">
-                <div className="lg:max-w-md">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Vendedores activos en Ushuaia
-                  </span>
-                  <h2 className="text-2xl lg:text-3xl font-black text-white mb-1.5 leading-tight">
-                    Marketplace
-                  </h2>
-                  <p className="text-sm text-white/70 mb-4 leading-relaxed">
-                    Comprá y vendé productos entre vecinos. Publicar es gratis.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href="/marketplace"
-                      className="inline-flex items-center gap-1.5 bg-white text-[#7C3AED] text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-white/90 transition shadow-lg shadow-black/10"
-                    >
-                      Explorar
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      href="/vendedor/registro"
-                      className="inline-flex items-center gap-1.5 bg-white/15 text-white text-sm font-semibold px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/25 transition"
-                    >
-                      Quiero vender
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Right: mini preview cards stacked (desktop only) */}
-                <div className="hidden lg:flex flex-col gap-2 w-56">
-                  {recentListings.slice(0, 2).map((listing) => (
-                    <Link
-                      key={listing.id}
-                      href={`/marketplace/${listing.id}`}
-                      className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 border border-white/10 hover:bg-white/20 transition"
-                    >
-                      {listing.images[0]?.url && (
-                        <img src={listing.images[0].url} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">{listing.title}</p>
-                        <p className="text-xs font-bold text-purple-200">${listing.price.toLocaleString("es-AR")}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+            {featuredProducts.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 lg:gap-4">
+                {featuredProducts.map((product) => (
+                  <HomeProductCard key={product.id} product={product} />
+                ))}
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4">
-              {recentListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <p className="font-medium text-gray-600">
+                  Estamos preparando ofertas increíbles para vos
+                </p>
+                <p className="text-sm mt-1">Volvé pronto</p>
+              </div>
+            )}
           </div>
         </section>
+      </AnimateIn>
+
+      {/* ── 7. EXPLORÁ USHUAIA — mapa interactivo ── */}
+      <AnimateIn animation="reveal">
+        <ExploraUshuaiaMap merchants={allMerchants as any} />
+      </AnimateIn>
+
+      {/* ── 8. MARKETPLACE ── */}
+      {recentListings.length > 0 && (
+        <AnimateIn animation="reveal-scale">
+          <section className="py-8 lg:py-12 xl:py-14 bg-white">
+            <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
+              {/* Marketplace hero banner — immersive gradient */}
+              <div className="relative overflow-hidden rounded-3xl mb-6">
+                {/* Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6]" />
+                {/* Decorative orbs */}
+                <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-purple-400/20 blur-2xl" />
+                <div className="absolute -left-10 bottom-0 w-32 h-32 rounded-full bg-fuchsia-400/15 blur-2xl" />
+
+                <div className="relative z-10 px-5 py-6 lg:px-10 lg:py-8 lg:flex lg:items-center lg:justify-between">
+                  <div className="lg:max-w-md">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Vendedores activos en Ushuaia
+                    </span>
+                    <h2 className="text-2xl lg:text-3xl font-black text-white mb-1.5 leading-tight">
+                      Marketplace
+                    </h2>
+                    <p className="text-sm text-white/70 mb-4 leading-relaxed">
+                      Comprá y vendé productos entre vecinos. Publicar es gratis.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href="/marketplace"
+                        className="inline-flex items-center gap-1.5 bg-white text-[#7C3AED] text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-white/90 transition shadow-lg shadow-black/10"
+                      >
+                        Explorar
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      <Link
+                        href="/vendedor/registro"
+                        className="inline-flex items-center gap-1.5 bg-white/15 text-white text-sm font-semibold px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/25 transition"
+                      >
+                        Quiero vender
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Right: mini preview cards stacked (desktop only) */}
+                  <div className="hidden lg:flex flex-col gap-2 w-56">
+                    {recentListings.slice(0, 2).map((listing) => (
+                      <Link
+                        key={listing.id}
+                        href={`/marketplace/${listing.id}`}
+                        className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 border border-white/10 hover:bg-white/20 transition"
+                      >
+                        {listing.images[0]?.url && (
+                          <img
+                            src={listing.images[0].url}
+                            alt=""
+                            className="w-10 h-10 rounded-lg object-cover"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-white truncate">
+                            {listing.title}
+                          </p>
+                          <p className="text-xs font-bold text-purple-200">
+                            ${listing.price.toLocaleString("es-AR")}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4">
+                {recentListings.map((listing) => (
+                  <ListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            </div>
+          </section>
         </AnimateIn>
       )}
 
-      {/* 9. Trust Bar */}
+      {/* ── 9. TRUST BAR ── */}
       <AnimateIn animation="reveal" delay={50}>
         <TrustBar />
       </AnimateIn>
 
-      {/* 10. Supply Side CTAs */}
+      {/* ── 10. SUPPLY SIDE CTAs ── */}
       <AnimateIn animation="reveal-scale" delay={100}>
         <SupplySideCTA />
       </AnimateIn>
