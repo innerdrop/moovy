@@ -12,6 +12,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 import { notifyMerchant, notifySeller } from "@/lib/notifications";
 import { orderLogger } from "@/lib/logger";
 import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-calculator";
+import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -327,47 +328,24 @@ export async function POST(request: Request) {
                 );
             }
 
-            // AUDIT FIX 1.3: Validate merchant is open
-            if (!merchant.isOpen) {
-                return NextResponse.json(
-                    { error: `${merchant.businessName || "El comercio"} está cerrado en este momento` },
-                    { status: 400 }
-                );
-            }
-
-            // AUDIT FIX 1.3b: Validate merchant schedule for immediate orders
-            if (deliveryType !== "SCHEDULED" && merchant.scheduleEnabled && merchant.scheduleJson) {
-                try {
-                    const schedule = JSON.parse(merchant.scheduleJson);
-                    const now = new Date();
-                    const jsDay = now.getDay();
-                    const scheduleDay = jsDay === 0 ? "7" : String(jsDay);
-                    const daySchedule = schedule[scheduleDay];
-
-                    if (!daySchedule) {
-                        return NextResponse.json(
-                            { error: `${merchant.businessName || "El comercio"} no opera hoy` },
-                            { status: 400 }
-                        );
-                    }
-
-                    const currentHour = now.getHours();
-                    const currentMin = now.getMinutes();
-                    const [openH, openM] = daySchedule.open.split(":").map(Number);
-                    const [closeH, closeM] = daySchedule.close.split(":").map(Number);
-                    const currentMinutes = currentHour * 60 + currentMin;
-                    const openMinutes = openH * 60 + (openM || 0);
-                    const closeMinutes = closeH * 60 + (closeM || 0);
-
-                    if (currentMinutes < openMinutes || currentMinutes >= closeMinutes) {
-                        return NextResponse.json(
-                            { error: `${merchant.businessName || "El comercio"} está fuera de horario (${daySchedule.open}-${daySchedule.close})` },
-                            { status: 400 }
-                        );
-                    }
-                } catch {
-                    // Invalid schedule JSON — skip validation, log warning
-                    orderLogger.warn({ merchantId }, "Invalid scheduleJson, skipping schedule validation");
+            // Validate merchant can receive orders (pausa manual + horario obligatorio)
+            // Si el merchant no configuró horario, se aplica el default (lun-vie 9-21, sáb 10-14)
+            if (deliveryType !== "SCHEDULED") {
+                const scheduleCheck = validateMerchantCanReceiveOrders(merchant);
+                if (!scheduleCheck.allowed) {
+                    return NextResponse.json(
+                        { error: scheduleCheck.reason },
+                        { status: 400 }
+                    );
+                }
+            } else {
+                // Para pedidos programados: solo verificar pausa manual
+                // El slot ya se valida contra el horario en la sección de scheduled delivery
+                if (!merchant.isOpen) {
+                    return NextResponse.json(
+                        { error: `${merchant.businessName || "El comercio"} está cerrado en este momento` },
+                        { status: 400 }
+                    );
                 }
             }
 

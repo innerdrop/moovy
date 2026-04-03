@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import MerchantCard from "@/components/store/MerchantCard";
 import { Store } from "lucide-react";
 import Link from "next/link";
+import { checkMerchantSchedule } from "@/lib/merchant-schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,21 @@ async function getAllMerchants() {
 }
 
 export default async function TiendasPage() {
-    const merchants = await getAllMerchants();
+    const rawMerchants = await getAllMerchants();
+    // Enrich with schedule-based open/closed status
+    const merchants = rawMerchants.map((m) => {
+        const scheduleResult = checkMerchantSchedule({
+            isOpen: m.isOpen,
+            scheduleJson: m.scheduleJson,
+        });
+        return {
+            ...m,
+            isOpen: scheduleResult.isCurrentlyOpen,
+            isPaused: !m.isOpen,
+            nextOpenTime: scheduleResult.nextOpenTime,
+            nextOpenDay: scheduleResult.nextOpenDay,
+        };
+    });
     const openCount = merchants.filter((m) => m.isOpen).length;
 
     return (

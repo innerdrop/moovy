@@ -26,6 +26,7 @@ import ContextualHero from "@/components/home/ContextualHero";
 import MerchantDiscoveryRow from "@/components/home/MerchantDiscoveryRow";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
+import { checkMerchantSchedule } from "@/lib/merchant-schedule";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
@@ -42,6 +43,7 @@ const MERCHANT_DISCOVERY_SELECT = {
   image: true,
   category: true,
   isOpen: true,
+  scheduleJson: true,
   rating: true,
   deliveryTimeMin: true,
   deliveryTimeMax: true,
@@ -288,16 +290,33 @@ export default async function LiveStoreView() {
       }
     : null;
 
-  // Build discovery rows from the single allMerchants query
-  const openNow = getOpenNow(allMerchants);
-  const newMerchants = getNewMerchants(allMerchants);
-  const bestRated = getBestRated(allMerchants);
-  const mostOrdered = getMostOrdered(allMerchants, topMerchantIds);
+  // Enrich merchants with real-time schedule status
+  // Combina pausa manual (isOpen) + horario configurado/default
+  const enrichedMerchants = allMerchants.map((m) => {
+    const scheduleResult = checkMerchantSchedule({
+      isOpen: m.isOpen,
+      scheduleJson: m.scheduleJson,
+    });
+    return {
+      ...m,
+      // Override isOpen with combined check (pausa + horario)
+      isOpen: scheduleResult.isCurrentlyOpen,
+      isPaused: !m.isOpen, // pausa manual original
+      nextOpenTime: scheduleResult.nextOpenTime,
+      nextOpenDay: scheduleResult.nextOpenDay,
+    };
+  });
+
+  // Build discovery rows from enriched merchants
+  const openNow = getOpenNow(enrichedMerchants);
+  const newMerchants = getNewMerchants(enrichedMerchants);
+  const bestRated = getBestRated(enrichedMerchants);
+  const mostOrdered = getMostOrdered(enrichedMerchants, topMerchantIds);
 
   return (
     <div>
       {/* ── 1. CONTEXTUAL HERO — changes by time of day ── */}
-      <ContextualHero merchants={allMerchants as any} />
+      <ContextualHero merchants={enrichedMerchants as any} />
 
       {/* ── 2. SEARCH BAR ── */}
       <SearchBarHero />
@@ -407,7 +426,7 @@ export default async function LiveStoreView() {
 
       {/* ── 7. EXPLORÁ USHUAIA — mapa interactivo ── */}
       <AnimateIn animation="reveal">
-        <ExploraUshuaiaMap merchants={allMerchants as any} />
+        <ExploraUshuaiaMap merchants={enrichedMerchants as any} />
       </AnimateIn>
 
       {/* ── 8. MARKETPLACE ── */}

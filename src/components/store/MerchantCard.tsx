@@ -21,6 +21,12 @@ interface MerchantCardProps {
         isPremium?: boolean;
         premiumTier?: string | null;
         isOpen: boolean;
+        /** Info de próxima apertura cuando está cerrado (ej: "Hoy", "Mañana", "Lunes") */
+        nextOpenDay?: string | null;
+        /** Hora de próxima apertura (ej: "09:00") */
+        nextOpenTime?: string | null;
+        /** true si está pausado manualmente (vs cerrado por horario) */
+        isPaused?: boolean;
     };
     variant?: "default" | "compact";
 }
@@ -65,7 +71,9 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
                     )}
                     {!merchant.isOpen && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white text-[9px] font-bold">Cerrado</span>
+                            <span className="text-white text-[9px] font-bold">
+                                {merchant.isPaused ? "Pausado" : merchant.nextOpenTime ? `Abre ${merchant.nextOpenTime}` : "Cerrado"}
+                            </span>
                         </div>
                     )}
                     {merchant.isPremium && getPremiumBadge()}
@@ -125,12 +133,17 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
                     </div>
                 )}
 
-                {/* Closed overlay — open is the default state, no badge needed */}
+                {/* Closed overlay — shows reason and next open time */}
                 {!merchant.isOpen && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-10 gap-1">
                         <span className="text-white text-sm font-bold bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
-                            Cerrado
+                            {merchant.isPaused ? "Cerrado temporalmente" : "Cerrado"}
                         </span>
+                        {!merchant.isPaused && merchant.nextOpenTime && (
+                            <span className="text-white/80 text-xs font-medium">
+                                Abre {merchant.nextOpenDay === "Hoy" ? "hoy" : merchant.nextOpenDay} a las {merchant.nextOpenTime}
+                            </span>
+                        )}
                     </div>
                 )}
 

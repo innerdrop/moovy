@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { updateMerchant, toggleMerchantOpen } from "@/app/comercios/actions";
-import { Loader2, Save, Power, DollarSign, Truck, ShoppingBag, Info, Percent, Link2, Unlink, AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { Loader2, Save, Power, DollarSign, Truck, ShoppingBag, Info, Percent, Link2, Unlink, AlertTriangle, CheckCircle, FileText, Eye } from "lucide-react";
 import { confirm } from "@/store/confirm";
 import { toast } from "@/store/toast";
 
@@ -248,11 +248,24 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                     ].map((doc) => (
                         <div key={doc.label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-700">{doc.label}</span>
-                            {doc.value ? (
-                                <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Presentado</span>
-                            ) : (
-                                <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-200 text-gray-500">No presentado</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {doc.value ? (
+                                    <>
+                                        <a
+                                            href={doc.value}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 transition-colors"
+                                            title={`Ver ${doc.label}`}
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </a>
+                                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Presentado</span>
+                                    </>
+                                ) : (
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-200 text-gray-500">No presentado</span>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

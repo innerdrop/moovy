@@ -703,10 +703,10 @@ export default function AdminCategoriasPage() {
                             <button
                                 onClick={handleSubmit}
                                 disabled={saving}
-                                className="flex-1 py-3 bg-[#e60012] text-white rounded-xl font-bold hover:bg-[#cc000f] shadow-xl shadow-moovy/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all active:scale-95"
+                                className="flex-1 py-3 bg-moovy text-white rounded-xl font-bold hover:bg-red-700 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                                {editingId ? 'Guardar Cambios' : 'Crear Categoría'}
+                                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {editingId ? "Guardar" : "Crear"}
                             </button>
                         </div>
                     </div>

@@ -93,6 +93,6 @@ export async function GET(request: Request) {
         });
     } catch (error) {
         console.error("Error fetching package catalog:", error);
-        return NextResponse.json({ error: "Error interno" }, { status: 500 });
+        return NextResponse.json({ error: "Error al obtener catálogo de paquetes" }, { status: 500 });
     }
 }

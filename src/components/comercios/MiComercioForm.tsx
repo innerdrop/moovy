@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updateMerchant, updateMerchantSchedule } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe } from "lucide-react";
+import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe, Info } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { confirm } from "@/store/confirm";
 import { toast } from "@/store/toast";
@@ -149,9 +149,10 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
 
         setSavingSchedule(true);
         setError("");
+        // Horarios siempre activos — scheduleEnabled = true al guardar
         const result = await updateMerchantSchedule(
-            scheduleEnabled,
-            scheduleEnabled ? JSON.stringify(schedule) : null
+            true,
+            JSON.stringify(schedule)
         );
         if (result?.error) {
             toast.error(result.error);
@@ -342,93 +343,84 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                 </div>
             </form>
 
-            {/* Schedule Section */}
+            {/* Schedule Section — Horarios obligatorios */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-blue-600" />
                         Horarios de Atención
                     </h2>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm text-gray-500">{scheduleEnabled ? "Activo" : "Desactivado"}</span>
-                        <button
-                            type="button"
-                            onClick={() => setScheduleEnabled(!scheduleEnabled)}
-                            className={`relative w-11 h-6 rounded-full transition ${scheduleEnabled ? "bg-green-500" : "bg-gray-300"}`}
-                        >
-                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${scheduleEnabled ? "translate-x-5" : ""}`} />
-                        </button>
-                    </label>
                 </div>
 
                 <p className="text-sm text-gray-500">
                     Configurá los horarios en que tu comercio acepta pedidos. Fuera de estos horarios se mostrará como cerrado automáticamente.
                 </p>
 
-                {scheduleEnabled && (
-                    <div className="space-y-3">
-                        {Object.entries(DAY_NAMES).map(([day, name]) => {
-                            const shifts = schedule[day];
-                            const dayIsOpen = shifts !== null && shifts !== undefined;
-
-                            return (
-                                <div key={day} className="p-3 bg-gray-50 rounded-lg space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleDay(day)}
-                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition flex-shrink-0 ${dayIsOpen ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}
-                                        >
-                                            {dayIsOpen && <span className="text-xs font-bold">&#10003;</span>}
-                                        </button>
-                                        <span className={`w-24 text-sm font-medium ${dayIsOpen ? "text-gray-900" : "text-gray-400"}`}>{name}</span>
-                                        {!dayIsOpen && <span className="text-sm text-gray-400 italic ml-auto">Cerrado</span>}
-                                    </div>
-
-                                    {dayIsOpen && shifts && shifts.map((shift, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 ml-8">
-                                            <input type="time" value={shift.open} onChange={(e) => updateShift(day, idx, "open", e.target.value)} className="input w-28 text-sm" />
-                                            <span className="text-gray-400 text-sm">a</span>
-                                            <input type="time" value={shift.close} onChange={(e) => updateShift(day, idx, "close", e.target.value)} className="input w-28 text-sm" />
-                                            {shifts.length > 1 && (
-                                                <button type="button" onClick={() => removeShift(day, idx)} className="text-red-400 hover:text-red-600 transition p-1" title="Eliminar turno">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-
-                                    {dayIsOpen && shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
-                                        <button type="button" onClick={() => addShift(day)} className="ml-8 text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition">
-                                            <Plus className="w-3 h-3" />
-                                            Agregar turno
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-
-                        <p className="text-xs text-gray-400 mt-1">
-                            Podés configurar turnos partidos (ej: mañana y tarde) con el botón &quot;Agregar turno&quot;.
-                        </p>
-
-                        <div className="flex justify-end pt-2">
-                            <button type="button" onClick={handleSaveSchedule} disabled={savingSchedule} className="btn-primary flex items-center gap-2 px-6">
-                                {savingSchedule ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                Guardar Horarios
-                            </button>
+                {!merchant.scheduleJson && (
+                    <div className="flex items-start gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
+                        <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium">Estos son horarios sugeridos</p>
+                            <p className="text-xs text-amber-600 mt-0.5">
+                                Personalizalos según tu comercio y guardá los cambios. Mientras tanto, se aplican estos horarios por defecto.
+                            </p>
                         </div>
                     </div>
                 )}
 
-                {!scheduleEnabled && (
-                    <div className="flex justify-end">
-                        <button type="button" onClick={handleSaveSchedule} disabled={savingSchedule} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                            {savingSchedule && <Loader2 className="w-3 h-3 animate-spin" />}
-                            Guardar
+                <div className="space-y-3">
+                    {Object.entries(DAY_NAMES).map(([day, name]) => {
+                        const shifts = schedule[day];
+                        const dayIsOpen = shifts !== null && shifts !== undefined;
+
+                        return (
+                            <div key={day} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleDay(day)}
+                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition flex-shrink-0 ${dayIsOpen ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}
+                                    >
+                                        {dayIsOpen && <span className="text-xs font-bold">&#10003;</span>}
+                                    </button>
+                                    <span className={`w-24 text-sm font-medium ${dayIsOpen ? "text-gray-900" : "text-gray-400"}`}>{name}</span>
+                                    {!dayIsOpen && <span className="text-sm text-gray-400 italic ml-auto">Cerrado</span>}
+                                </div>
+
+                                {dayIsOpen && shifts && shifts.map((shift, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 ml-8">
+                                        <input type="time" value={shift.open} onChange={(e) => updateShift(day, idx, "open", e.target.value)} className="input w-28 text-sm" />
+                                        <span className="text-gray-400 text-sm">a</span>
+                                        <input type="time" value={shift.close} onChange={(e) => updateShift(day, idx, "close", e.target.value)} className="input w-28 text-sm" />
+                                        {shifts.length > 1 && (
+                                            <button type="button" onClick={() => removeShift(day, idx)} className="text-red-400 hover:text-red-600 transition p-1" title="Eliminar turno">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {dayIsOpen && shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
+                                    <button type="button" onClick={() => addShift(day)} className="ml-8 text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition">
+                                        <Plus className="w-3 h-3" />
+                                        Agregar turno
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    <p className="text-xs text-gray-400 mt-1">
+                        Podés configurar turnos partidos (ej: mañana y tarde) con el botón &quot;Agregar turno&quot;. Usá el botón &quot;Pausar Tienda&quot; en Ajustes para cerrar temporalmente fuera de horario.
+                    </p>
+
+                    <div className="flex justify-end pt-2">
+                        <button type="button" onClick={handleSaveSchedule} disabled={savingSchedule} className="btn-primary flex items-center gap-2 px-6">
+                            {savingSchedule ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            Guardar Horarios
                         </button>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Social Media */}
