@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowLeft,
   Upload,
@@ -11,61 +11,76 @@ import {
   Save,
   Monitor,
   Smartphone,
+  Plus,
+  Trash2,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+  Copy,
+  ToggleLeft,
+  ToggleRight,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import UploadImage from "@/components/ui/UploadImage";
-import PromoBanner from "@/components/home/PromoBanner";
-
-interface BannerSettings {
-  promoBannerEnabled: boolean;
-  promoBannerTitle: string;
-  promoBannerSubtitle: string;
-  promoBannerButtonText: string;
-  promoBannerButtonLink: string;
-  promoBannerImage: string | null;
-  promoBannerCtaPosition: string;
-}
+import PromoBanner, { type PromoSlide } from "@/components/home/PromoBanner";
 
 const CTA_POSITIONS = [
-  { value: "arriba-izquierda", label: "Arriba izquierda" },
-  { value: "arriba-centro", label: "Arriba centro" },
-  { value: "arriba-derecha", label: "Arriba derecha" },
-  { value: "centro-izquierda", label: "Centro izquierda" },
-  { value: "centro", label: "Centro" },
-  { value: "centro-derecha", label: "Centro derecha" },
-  { value: "abajo-izquierda", label: "Abajo izquierda" },
-  { value: "abajo-centro", label: "Abajo centro" },
-  { value: "abajo-derecha", label: "Abajo derecha" },
+  { value: "arriba-izquierda", label: "↖ Arriba izq" },
+  { value: "arriba-centro", label: "↑ Arriba centro" },
+  { value: "arriba-derecha", label: "↗ Arriba der" },
+  { value: "centro-izquierda", label: "← Centro izq" },
+  { value: "centro", label: "● Centro" },
+  { value: "centro-derecha", label: "→ Centro der" },
+  { value: "abajo-izquierda", label: "↙ Abajo izq" },
+  { value: "abajo-centro", label: "↓ Abajo centro" },
+  { value: "abajo-derecha", label: "↘ Abajo der" },
 ] as const;
 
-// Visual position grid for visual picker
 const POSITION_GRID = [
   ["arriba-izquierda", "arriba-centro", "arriba-derecha"],
   ["centro-izquierda", "centro", "centro-derecha"],
   ["abajo-izquierda", "abajo-centro", "abajo-derecha"],
 ] as const;
 
+function generateId() {
+  return `slide-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function createEmptySlide(order: number): PromoSlide {
+  return {
+    id: generateId(),
+    title: "",
+    subtitle: "",
+    buttonText: "",
+    buttonLink: "/",
+    image: null,
+    ctaPosition: "abajo-izquierda",
+    enabled: true,
+    order,
+  };
+}
+
 export default function PromoBannerPage() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
 
-  const [settings, setSettings] = useState<BannerSettings>({
-    promoBannerEnabled: true,
-    promoBannerTitle: "",
-    promoBannerSubtitle: "",
-    promoBannerButtonText: "",
-    promoBannerButtonLink: "",
-    promoBannerImage: null,
-    promoBannerCtaPosition: "abajo-izquierda",
-  });
+  // Global toggle
+  const [globalEnabled, setGlobalEnabled] = useState(true);
+
+  // Slides array
+  const [slides, setSlides] = useState<PromoSlide[]>([]);
+
+  // Which slide is expanded for editing
+  const [expandedSlideId, setExpandedSlideId] = useState<string | null>(null);
+
+  // Upload state per slide
+  const [uploadingSlideId, setUploadingSlideId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetSlideId = useRef<string | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -82,17 +97,47 @@ export default function PromoBannerPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/settings");
-      if (res.ok) {
-        const data = await res.json();
-        setSettings({
-          promoBannerEnabled: data.promoBannerEnabled ?? true,
-          promoBannerTitle: data.promoBannerTitle || "",
-          promoBannerSubtitle: data.promoBannerSubtitle || "",
-          promoBannerButtonText: data.promoBannerButtonText || "",
-          promoBannerButtonLink: data.promoBannerButtonLink || "",
-          promoBannerImage: data.promoBannerImage || null,
-          promoBannerCtaPosition: data.promoBannerCtaPosition || "abajo-izquierda",
-        });
+      if (!res.ok) throw new Error("fetch failed");
+      const data = await res.json();
+
+      setGlobalEnabled(data.promoBannerEnabled ?? true);
+
+      // Try to load slides from promoSlidesJson
+      let parsedSlides: PromoSlide[] = [];
+      if (data.promoSlidesJson) {
+        try {
+          const arr = JSON.parse(data.promoSlidesJson);
+          if (Array.isArray(arr) && arr.length > 0) {
+            parsedSlides = arr;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // If no slides in JSON, migrate legacy single banner
+      if (parsedSlides.length === 0) {
+        const hasLegacy = data.promoBannerTitle || data.promoBannerSubtitle || data.promoBannerImage || data.promoBannerButtonText;
+        if (hasLegacy) {
+          parsedSlides = [
+            {
+              id: generateId(),
+              title: data.promoBannerTitle || "",
+              subtitle: data.promoBannerSubtitle || "",
+              buttonText: data.promoBannerButtonText || "",
+              buttonLink: data.promoBannerButtonLink || "/",
+              image: data.promoBannerImage || null,
+              ctaPosition: data.promoBannerCtaPosition || "abajo-izquierda",
+              enabled: true,
+              order: 0,
+            },
+          ];
+        }
+      }
+
+      setSlides(parsedSlides);
+      if (parsedSlides.length > 0) {
+        setExpandedSlideId(parsedSlides[0].id);
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -102,25 +147,72 @@ export default function PromoBannerPage() {
     }
   };
 
-  const handleInputChange = (field: keyof BannerSettings, value: any) => {
-    setSettings((prev) => ({ ...prev, [field]: value }));
+  // ─── Slide CRUD ───
+
+  const addSlide = () => {
+    const newSlide = createEmptySlide(slides.length);
+    setSlides((prev) => [...prev, newSlide]);
+    setExpandedSlideId(newSlide.id);
+  };
+
+  const removeSlide = (id: string) => {
+    setSlides((prev) => prev.filter((s) => s.id !== id).map((s, i) => ({ ...s, order: i })));
+    if (expandedSlideId === id) {
+      setExpandedSlideId(slides.length > 1 ? slides.find((s) => s.id !== id)?.id || null : null);
+    }
+  };
+
+  const duplicateSlide = (id: string) => {
+    const source = slides.find((s) => s.id === id);
+    if (!source) return;
+    const newSlide: PromoSlide = {
+      ...source,
+      id: generateId(),
+      title: source.title ? `${source.title} (copia)` : "",
+      order: slides.length,
+    };
+    setSlides((prev) => [...prev, newSlide]);
+    setExpandedSlideId(newSlide.id);
+  };
+
+  const updateSlide = (id: string, field: keyof PromoSlide, value: any) => {
+    setSlides((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+  };
+
+  const moveSlide = (id: string, direction: "up" | "down") => {
+    setSlides((prev) => {
+      const idx = prev.findIndex((s) => s.id === id);
+      if (idx < 0) return prev;
+      const newIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const copy = [...prev];
+      [copy[idx], copy[newIdx]] = [copy[newIdx], copy[idx]];
+      return copy.map((s, i) => ({ ...s, order: i }));
+    });
+  };
+
+  // ─── Image upload ───
+
+  const triggerImageUpload = (slideId: string) => {
+    uploadTargetSlideId.current = slideId;
+    fileInputRef.current?.click();
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    const slideId = uploadTargetSlideId.current;
+    if (!file || !slideId) return;
 
     if (!file.type.startsWith("image/")) {
       setToast({ message: "Por favor, seleccioná un archivo de imagen", type: "error" });
       return;
     }
-
     if (file.size > 10 * 1024 * 1024) {
       setToast({ message: "La imagen no debe pesar más de 10MB", type: "error" });
       return;
     }
 
-    setUploading(true);
+    setUploadingSlideId(slideId);
     const formData = new FormData();
     formData.append("file", file);
 
@@ -132,24 +224,21 @@ export default function PromoBannerPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setSettings((prev) => ({ ...prev, promoBannerImage: data.url }));
+        updateSlide(slideId, "image", data.url);
         setToast({ message: "Imagen subida correctamente", type: "success" });
       } else {
         const error = await res.json();
         setToast({ message: error.error || "Error al subir la imagen", type: "error" });
       }
-    } catch (error) {
-      console.error("Error uploading image:", error);
+    } catch {
       setToast({ message: "Error al subir la imagen", type: "error" });
     } finally {
-      setUploading(false);
+      setUploadingSlideId(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleRemoveImage = () => {
-    setSettings((prev) => ({ ...prev, promoBannerImage: null }));
-  };
+  // ─── Save ───
 
   const handleSave = async () => {
     setSaving(true);
@@ -158,29 +247,25 @@ export default function PromoBannerPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promoBannerEnabled: settings.promoBannerEnabled,
-          promoBannerTitle: settings.promoBannerTitle,
-          promoBannerSubtitle: settings.promoBannerSubtitle,
-          promoBannerButtonText: settings.promoBannerButtonText,
-          promoBannerButtonLink: settings.promoBannerButtonLink,
-          promoBannerImage: settings.promoBannerImage,
-          promoBannerCtaPosition: settings.promoBannerCtaPosition,
+          promoBannerEnabled: globalEnabled,
+          promoSlidesJson: JSON.stringify(slides),
         }),
       });
 
       if (res.ok) {
-        setToast({ message: "Banner guardado correctamente", type: "success" });
+        setToast({ message: "Banners guardados correctamente", type: "success" });
       } else {
         const error = await res.json();
         setToast({ message: error.error || "Error al guardar", type: "error" });
       }
-    } catch (error) {
-      console.error("Error saving settings:", error);
+    } catch {
       setToast({ message: "Error al guardar los cambios", type: "error" });
     } finally {
       setSaving(false);
     }
   };
+
+  // ─── Render ───
 
   if (loading) {
     return (
@@ -189,6 +274,8 @@ export default function PromoBannerPage() {
       </div>
     );
   }
+
+  const enabledSlides = slides.filter((s) => s.enabled !== false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -199,18 +286,19 @@ export default function PromoBannerPage() {
             <Link href="/ops">
               <ArrowLeft className="w-6 h-6 text-gray-600 hover:text-gray-900" />
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Banner Promocional</h1>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Banner Promocional</h1>
+              <p className="text-xs text-gray-500">
+                {slides.length} slide{slides.length !== 1 ? "s" : ""} — {enabledSlides.length} activo{enabledSlides.length !== 1 ? "s" : ""}
+              </p>
+            </div>
           </div>
           <button
             onClick={handleSave}
-            disabled={saving || uploading}
+            disabled={saving}
             className="flex items-center gap-2 bg-[#e60012] hover:bg-[#cc000f] disabled:bg-gray-300 text-white font-bold py-2.5 px-6 rounded-xl transition-colors"
           >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </div>
@@ -227,200 +315,292 @@ export default function PromoBannerPage() {
         </div>
       )}
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-          {/* Form Section — 3 cols */}
+          {/* ─── Left: Slide List + Editor (3 cols) ─── */}
           <div className="xl:col-span-3 space-y-6">
-            {/* Toggle Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <label className="flex items-center gap-4 cursor-pointer group">
+            {/* Global Toggle */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <label className="flex items-center gap-4 cursor-pointer">
                 <div
                   className={`relative w-14 h-8 rounded-full transition-colors ${
-                    settings.promoBannerEnabled ? "bg-[#e60012]" : "bg-gray-300"
+                    globalEnabled ? "bg-[#e60012]" : "bg-gray-300"
                   }`}
-                  onClick={() => handleInputChange("promoBannerEnabled", !settings.promoBannerEnabled)}
+                  onClick={() => setGlobalEnabled(!globalEnabled)}
                 >
                   <div
                     className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      settings.promoBannerEnabled ? "translate-x-6" : ""
+                      globalEnabled ? "translate-x-6" : ""
                     }`}
                   />
                 </div>
                 <div>
                   <span className="text-lg font-bold text-gray-900">
-                    {settings.promoBannerEnabled ? "Banner activo" : "Banner inactivo"}
+                    {globalEnabled ? "Carrusel activo" : "Carrusel inactivo"}
                   </span>
-                  <p className="text-xs text-gray-500">El banner se muestra en la página de inicio</p>
+                  <p className="text-xs text-gray-500">El carrusel se muestra en la página de inicio</p>
                 </div>
               </label>
             </div>
 
-            {/* Image Upload Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Imagen del banner</h2>
-              <p className="text-sm text-gray-500 mb-4">
-                Diseñá la imagen a <strong className="text-gray-700">1200 × 400 px</strong> (ratio 3:1). Se muestra con los colores originales, sin filtros.
-              </p>
+            {/* Slide Cards */}
+            {slides.map((slide, idx) => {
+              const isExpanded = expandedSlideId === slide.id;
+              const isUploading = uploadingSlideId === slide.id;
 
-              {settings.promoBannerImage ? (
-                <div className="relative w-full rounded-xl overflow-hidden border border-gray-200">
-                  <div className="relative w-full aspect-[3/1]">
-                    <UploadImage
-                      src={settings.promoBannerImage}
-                      alt="Banner preview"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2 rounded-xl transition-colors shadow-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
+              return (
                 <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                    uploading
-                      ? "border-red-300 bg-red-50"
-                      : "border-gray-300 hover:border-[#e60012] hover:bg-red-50/30"
+                  key={slide.id}
+                  className={`bg-white rounded-2xl shadow-sm border transition-all ${
+                    isExpanded ? "border-[#e60012]/30 ring-1 ring-[#e60012]/10" : "border-gray-100"
                   }`}
                 >
-                  {uploading ? (
-                    <Loader2 className="w-10 h-10 text-[#e60012] mx-auto mb-3 animate-spin" />
-                  ) : (
-                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                  )}
-                  <p className="text-sm font-semibold text-gray-700">
-                    {uploading ? "Subiendo..." : "Hacé clic o arrastrá una imagen"}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP o GIF — máx 10MB</p>
-                </div>
-              )}
+                  {/* Slide Header (always visible) */}
+                  <div
+                    className="flex items-center gap-3 px-5 py-4 cursor-pointer"
+                    onClick={() => setExpandedSlideId(isExpanded ? null : slide.id)}
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-16 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 relative">
+                      {slide.image ? (
+                        <UploadImage src={slide.image} alt="" fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={uploading}
-                className="hidden"
-              />
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-900 truncate">
+                          {slide.title?.trim() || `Slide ${idx + 1}`}
+                        </span>
+                        {slide.enabled === false && (
+                          <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                            OCULTO
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 truncate">
+                        {slide.subtitle?.trim() || (slide.image ? "Solo imagen" : "Sin contenido")}
+                      </p>
+                    </div>
 
-              <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2">
-                <p className="text-sm font-bold text-blue-800">Medidas obligatorias</p>
-                <div className="text-xs text-blue-700 space-y-1">
-                  <p><strong>Tamaño:</strong> 1200 × 400 px (ratio 3:1)</p>
-                  <p><strong>Formato:</strong> WebP o PNG (se comprime automáticamente a WebP)</p>
-                  <p><strong>Peso máximo:</strong> 10 MB (se optimiza al subir)</p>
-                </div>
-                <p className="text-xs text-blue-600 pt-1 border-t border-blue-100">
-                  Diseñá siempre a 1200×400. La imagen se muestra sin filtros ni recortes. Si tiene otro ratio, se recortará para encajar.
-                </p>
-              </div>
-            </div>
-
-            {/* Text Fields Card — all optional */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Texto sobre el banner</h2>
-              <p className="text-sm text-gray-500 mb-5">
-                Todos los campos son opcionales. Si no completás ninguno, se muestra solo la imagen.
-              </p>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Título</label>
-                  <textarea
-                    value={settings.promoBannerTitle}
-                    onChange={(e) => handleInputChange("promoBannerTitle", e.target.value)}
-                    placeholder="Ej: Noches de Pizza & Pelis"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] resize-none text-sm"
-                    rows={2}
-                  />
-                  <p className="mt-1 text-xs text-gray-400">Usá \n para hacer saltos de línea</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Subtítulo</label>
-                  <input
-                    type="text"
-                    value={settings.promoBannerSubtitle}
-                    onChange={(e) => handleInputChange("promoBannerSubtitle", e.target.value)}
-                    placeholder="Ej: 2x1 en locales seleccionados"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] text-sm"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Texto del botón</label>
-                    <input
-                      type="text"
-                      value={settings.promoBannerButtonText}
-                      onChange={(e) => handleInputChange("promoBannerButtonText", e.target.value)}
-                      placeholder="Ej: Ver locales"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">URL del botón</label>
-                    <input
-                      type="text"
-                      value={settings.promoBannerButtonLink}
-                      onChange={(e) => handleInputChange("promoBannerButtonLink", e.target.value)}
-                      placeholder="Ej: /productos?categoria=pizzas"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA Position Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Posición del contenido</h2>
-              <p className="text-sm text-gray-500 mb-5">
-                Elegí dónde aparece el texto y el botón sobre la imagen.
-              </p>
-
-              {/* Visual Position Grid */}
-              <div className="inline-block border border-gray-200 rounded-xl overflow-hidden">
-                {POSITION_GRID.map((row, rowIdx) => (
-                  <div key={rowIdx} className="flex">
-                    {row.map((pos) => (
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                       <button
-                        key={pos}
-                        type="button"
-                        onClick={() => handleInputChange("promoBannerCtaPosition", pos)}
-                        className={`w-16 h-12 border border-gray-100 flex items-center justify-center transition-all ${
-                          settings.promoBannerCtaPosition === pos
-                            ? "bg-[#e60012] shadow-inner"
-                            : "bg-gray-50 hover:bg-gray-100"
-                        }`}
-                        title={CTA_POSITIONS.find((p) => p.value === pos)?.label}
+                        onClick={() => moveSlide(slide.id, "up")}
+                        disabled={idx === 0}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded-lg hover:bg-gray-50"
+                        title="Mover arriba"
                       >
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            settings.promoBannerCtaPosition === pos
-                              ? "bg-white"
-                              : "bg-gray-300"
-                          }`}
-                        />
+                        <ChevronUp className="w-4 h-4" />
                       </button>
-                    ))}
+                      <button
+                        onClick={() => moveSlide(slide.id, "down")}
+                        disabled={idx === slides.length - 1}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded-lg hover:bg-gray-50"
+                        title="Mover abajo"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => updateSlide(slide.id, "enabled", !slide.enabled)}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+                        title={slide.enabled !== false ? "Ocultar slide" : "Activar slide"}
+                      >
+                        {slide.enabled !== false ? (
+                          <ToggleRight className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <ToggleLeft className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => duplicateSlide(slide.id)}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+                        title="Duplicar"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => removeSlide(slide.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
 
-              <p className="mt-3 text-sm font-medium text-gray-700">
-                {CTA_POSITIONS.find((p) => p.value === settings.promoBannerCtaPosition)?.label || "Abajo izquierda"}
-              </p>
-            </div>
+                  {/* Expanded Editor */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 px-5 py-5 space-y-5">
+                      {/* Image Upload */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Imagen</label>
+                        <p className="text-xs text-gray-400 mb-3">
+                          Medida recomendada: <strong className="text-gray-600">1200 x 400 px</strong> (ratio 3:1)
+                        </p>
+                        {slide.image ? (
+                          <div className="relative w-full rounded-xl overflow-hidden border border-gray-200">
+                            <div className="relative w-full aspect-[3/1]">
+                              <UploadImage src={slide.image} alt="Preview" fill className="object-cover" />
+                            </div>
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              <button
+                                onClick={() => triggerImageUpload(slide.id)}
+                                className="bg-white/90 hover:bg-white text-gray-700 p-2 rounded-lg transition shadow-sm"
+                                title="Cambiar imagen"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => updateSlide(slide.id, "image", null)}
+                                className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition shadow-sm"
+                                title="Quitar imagen"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => triggerImageUpload(slide.id)}
+                            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                              isUploading
+                                ? "border-red-300 bg-red-50"
+                                : "border-gray-300 hover:border-[#e60012] hover:bg-red-50/30"
+                            }`}
+                          >
+                            {isUploading ? (
+                              <Loader2 className="w-8 h-8 text-[#e60012] mx-auto mb-2 animate-spin" />
+                            ) : (
+                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            )}
+                            <p className="text-sm font-semibold text-gray-700">
+                              {isUploading ? "Subiendo..." : "Subir imagen"}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP — máx 10MB</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text Fields */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Título</label>
+                        <textarea
+                          value={slide.title || ""}
+                          onChange={(e) => updateSlide(slide.id, "title", e.target.value)}
+                          placeholder="Ej: Noches de Pizza & Pelis"
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] resize-none text-sm"
+                          rows={2}
+                        />
+                        <p className="mt-1 text-xs text-gray-400">Usá \n para saltos de línea</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Subtítulo</label>
+                        <input
+                          type="text"
+                          value={slide.subtitle || ""}
+                          onChange={(e) => updateSlide(slide.id, "subtitle", e.target.value)}
+                          placeholder="Ej: 2x1 en locales seleccionados"
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] text-sm"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Texto del botón</label>
+                          <input
+                            type="text"
+                            value={slide.buttonText || ""}
+                            onChange={(e) => updateSlide(slide.id, "buttonText", e.target.value)}
+                            placeholder="Ej: Ver locales"
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">URL del botón</label>
+                          <input
+                            type="text"
+                            value={slide.buttonLink || ""}
+                            onChange={(e) => updateSlide(slide.id, "buttonLink", e.target.value)}
+                            placeholder="Ej: /productos?categoria=pizzas"
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* CTA Position Grid */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Posición del contenido</label>
+                        <div className="flex items-center gap-4">
+                          <div className="inline-block border border-gray-200 rounded-xl overflow-hidden">
+                            {POSITION_GRID.map((row, rowIdx) => (
+                              <div key={rowIdx} className="flex">
+                                {row.map((pos) => (
+                                  <button
+                                    key={pos}
+                                    type="button"
+                                    onClick={() => updateSlide(slide.id, "ctaPosition", pos)}
+                                    className={`w-12 h-9 border border-gray-100 flex items-center justify-center transition-all ${
+                                      slide.ctaPosition === pos
+                                        ? "bg-[#e60012] shadow-inner"
+                                        : "bg-gray-50 hover:bg-gray-100"
+                                    }`}
+                                  >
+                                    <div
+                                      className={`w-2.5 h-2.5 rounded-full ${
+                                        slide.ctaPosition === pos ? "bg-white" : "bg-gray-300"
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {CTA_POSITIONS.find((p) => p.value === slide.ctaPosition)?.label || "Abajo izq"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Add Slide Button */}
+            <button
+              onClick={addSlide}
+              className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-[#e60012] hover:text-[#e60012] hover:bg-red-50/30 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="font-semibold text-sm">Agregar slide</span>
+            </button>
+
+            {slides.length === 0 && (
+              <div className="text-center py-8">
+                <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No hay slides configurados</p>
+                <p className="text-sm text-gray-400 mt-1">Agregá tu primer banner promocional</p>
+              </div>
+            )}
           </div>
 
-          {/* Preview Section — 2 cols */}
+          {/* ─── Right: Preview (2 cols) ─── */}
           <div className="xl:col-span-2">
             <div className="sticky top-24">
               <div className="flex items-center justify-between mb-4">
@@ -429,9 +609,7 @@ export default function PromoBannerPage() {
                   <button
                     onClick={() => setPreviewMode("mobile")}
                     className={`p-2 rounded-lg transition-colors ${
-                      previewMode === "mobile"
-                        ? "bg-[#e60012] text-white"
-                        : "hover:bg-gray-100 text-gray-500"
+                      previewMode === "mobile" ? "bg-[#e60012] text-white" : "hover:bg-gray-100 text-gray-500"
                     }`}
                     title="Vista mobile"
                   >
@@ -440,9 +618,7 @@ export default function PromoBannerPage() {
                   <button
                     onClick={() => setPreviewMode("desktop")}
                     className={`p-2 rounded-lg transition-colors ${
-                      previewMode === "desktop"
-                        ? "bg-[#e60012] text-white"
-                        : "hover:bg-gray-100 text-gray-500"
+                      previewMode === "desktop" ? "bg-[#e60012] text-white" : "hover:bg-gray-100 text-gray-500"
                     }`}
                     title="Vista desktop"
                   >
@@ -453,42 +629,32 @@ export default function PromoBannerPage() {
                     onClick={() => setShowPreview(!showPreview)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    {showPreview ? (
-                      <Eye className="w-4 h-4 text-gray-500" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 text-gray-500" />
-                    )}
+                    {showPreview ? <Eye className="w-4 h-4 text-gray-500" /> : <EyeOff className="w-4 h-4 text-gray-500" />}
                   </button>
                 </div>
               </div>
 
-              {showPreview && settings.promoBannerEnabled && (
+              {showPreview && globalEnabled && enabledSlides.length > 0 && (
                 <div
                   className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${
                     previewMode === "mobile" ? "max-w-[375px] mx-auto" : ""
                   }`}
                 >
                   <div className={previewMode === "mobile" ? "p-2" : "p-3"}>
-                    <PromoBanner
-                      enabled={true}
-                      title={settings.promoBannerTitle || undefined}
-                      subtitle={settings.promoBannerSubtitle || undefined}
-                      buttonText={settings.promoBannerButtonText || undefined}
-                      buttonLink={settings.promoBannerButtonLink || "/"}
-                      image={settings.promoBannerImage}
-                      ctaPosition={settings.promoBannerCtaPosition}
-                    />
+                    <PromoBanner slides={enabledSlides} interval={5000} />
                   </div>
                   <p className="text-xs text-gray-400 text-center py-2 border-t border-gray-100">
-                    Vista {previewMode === "mobile" ? "mobile (375px)" : "desktop"}
+                    Vista {previewMode === "mobile" ? "mobile (375px)" : "desktop"} — {enabledSlides.length} slide{enabledSlides.length !== 1 ? "s" : ""}
                   </p>
                 </div>
               )}
 
-              {showPreview && !settings.promoBannerEnabled && (
+              {showPreview && (!globalEnabled || enabledSlides.length === 0) && (
                 <div className="bg-gray-50 rounded-2xl p-8 text-center border border-gray-200">
                   <EyeOff className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">El banner está desactivado</p>
+                  <p className="text-sm text-gray-600">
+                    {!globalEnabled ? "El carrusel está desactivado" : "No hay slides activos"}
+                  </p>
                 </div>
               )}
 
@@ -496,10 +662,11 @@ export default function PromoBannerPage() {
               <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4">
                 <h3 className="text-sm font-bold text-amber-800 mb-2">Consejos</h3>
                 <ul className="text-xs text-amber-700 space-y-1.5">
-                  <li>• La imagen se muestra con sus colores originales</li>
-                  <li>• Si el texto no se ve bien sobre la imagen, ajustá el diseño de la imagen directamente</li>
-                  <li>• Si solo subís una imagen sin texto, se muestra como banner visual puro</li>
-                  <li>• Probá distintas posiciones del contenido con la grilla de arriba</li>
+                  <li>Diseñá cada imagen a <strong>1200 x 400 px</strong> (ratio 3:1)</li>
+                  <li>Los slides rotan automáticamente cada 5 segundos</li>
+                  <li>Podés desactivar slides individuales sin eliminarlos</li>
+                  <li>Arrastrá los slides con las flechas para cambiar el orden</li>
+                  <li>Si solo subís imagen sin texto, se muestra como banner visual puro</li>
                 </ul>
               </div>
             </div>

@@ -190,3 +190,4 @@ function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
         </Link>
     );
 }
+          
