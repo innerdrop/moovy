@@ -273,7 +273,7 @@ export default function PromoBanner({
                     <>
                         <button
                             onClick={(e) => { e.preventDefault(); goPrev(); }}
-                            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-1.5 md:p-2 rounded-full transition-all opacity-0 hover:opacity-100 group-hover:opacity-100"
+                            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-1.5 md:p-2 rounded-full transition-all"
                             style={{ opacity: isHovered ? 1 : 0, transition: "opacity 0.2s" }}
                             aria-label="Slide anterior"
                         >
