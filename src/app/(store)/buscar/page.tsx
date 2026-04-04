@@ -97,13 +97,13 @@ function BuscarContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const initialQuery = searchParams.get("q") || "";
-    const initialTab = (searchParams.get("tab") as Tab) || "comercios";
+    const urlQuery = searchParams.get("q") || "";
+    const urlTab = (searchParams.get("tab") as Tab) || "comercios";
 
-    const [query, setQuery] = useState(initialQuery);
-    const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+    const [query, setQuery] = useState(urlQuery);
+    const [activeTab, setActiveTab] = useState<Tab>(urlTab);
     const [loading, setLoading] = useState(false);
-    const [hasSearched, setHasSearched] = useState(!!initialQuery);
+    const [hasSearched, setHasSearched] = useState(!!urlQuery);
 
     // Results
     const [products, setProducts] = useState<ProductResult[]>([]);
@@ -115,20 +115,24 @@ function BuscarContent() {
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<NodeJS.Timeout>(undefined);
 
-    // Focus input on mount
+    // Focus input on mount if no query
     useEffect(() => {
-        if (!initialQuery) {
+        if (!urlQuery) {
             inputRef.current?.focus();
         }
-    }, [initialQuery]);
+    }, [urlQuery]);
 
-    // Search on initial load if query present
+    // Sync state from URL searchParams — handles both initial load and
+    // client-side navigation (e.g. "Ver todos los resultados" from overlay)
     useEffect(() => {
-        if (initialQuery) {
-            performSearch(initialQuery, initialTab);
+        if (urlQuery && urlQuery.length >= 2) {
+            setQuery(urlQuery);
+            setActiveTab(urlTab);
+            setHasSearched(true);
+            performSearch(urlQuery, urlTab);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [urlQuery, urlTab]);
 
     const performSearch = useCallback(async (searchQuery: string, tab: Tab) => {
         if (searchQuery.length < 2) {
