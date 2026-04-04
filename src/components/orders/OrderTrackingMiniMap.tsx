@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
+import { GoogleMap, DirectionsRenderer, Marker } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Loader2, Clock, Navigation } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { useSocketAuth } from "@/hooks/useSocketAuth";
@@ -26,7 +27,7 @@ interface RouteInfo {
     duration: string;
 }
 
-const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+// Libraries se cargan centralizadamente en useGoogleMaps
 
 const containerStyle = {
     width: "100%",
@@ -129,13 +130,7 @@ function OrderTrackingMiniMapInner({
         }
     }, [initialDriverLat, initialDriverLng]);
 
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries,
-        language: 'es',
-        region: 'AR'
-    });
+    const { isLoaded } = useGoogleMaps();
 
     // Get socket auth token
     const { token: socketToken } = useSocketAuth(
@@ -446,13 +441,7 @@ function OrderTrackingMiniMapInner({
 
 // ── WRAPPER: Ensure Google Maps API is loaded before rendering ──
 function OrderTrackingMiniMap(props: OrderTrackingMiniMapProps) {
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries,
-        language: 'es',
-        region: 'AR'
-    });
+    const { isLoaded, loadError } = useGoogleMaps();
 
     if (loadError) {
         return (

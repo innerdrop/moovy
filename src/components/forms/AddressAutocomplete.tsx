@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useJsApiLoader } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { MapPin, Loader2, X, Search } from "lucide-react";
 
 interface AddressAutocompleteProps {
@@ -27,7 +27,7 @@ const USHUAIA_BOUNDS = {
     east: -68.15,
 };
 
-const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+// Libraries ahora se cargan centralizadamente en useGoogleMaps
 
 /**
  * AddressAutocomplete — Places API (New) con Data API
@@ -63,13 +63,7 @@ export function AddressAutocomplete({
     const geocoderRef = useRef<google.maps.Geocoder | null>(null);
     const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
 
-    const { isLoaded } = useJsApiLoader({
-        id: "google-map-script",
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries,
-        language: "es",
-        region: "AR",
-    });
+    const { isLoaded } = useGoogleMaps();
 
     // Sync external value
     useEffect(() => {

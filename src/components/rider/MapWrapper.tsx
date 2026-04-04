@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useJsApiLoader } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { MapPin } from "lucide-react";
 
-// ── Stable reference to avoid useJsApiLoader re-init on navigations ──
-const LIBRARIES: ("places" | "geometry")[] = ["places", "geometry"];
+// Libraries se cargan centralizadamente en useGoogleMaps
 
 // ═══════════════════════════════════════════════
 //  MapSkeleton — instant visual while JS loads
@@ -53,13 +52,7 @@ export default function MapWrapper({ children, fallback }: MapWrapperProps) {
         setMounted(true);
     }, []);
 
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: "google-map-script", // singleton — won't reload on navigations
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries: LIBRARIES,
-        language: "es",
-        region: "AR",
-    });
+    const { isLoaded, loadError } = useGoogleMaps();
 
     // SSR / pre-mount — show skeleton immediately
     if (!mounted) {

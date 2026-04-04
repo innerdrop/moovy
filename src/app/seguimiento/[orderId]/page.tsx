@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { io, Socket } from "socket.io-client";
 import { useSocketAuth } from "@/hooks/useSocketAuth";
 import {
@@ -109,7 +110,7 @@ function getStatusMessage(status: string): { title: string; subtitle: string } {
     }
 }
 
-const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+// Libraries se cargan centralizadamente en useGoogleMaps
 
 const mapOptions: google.maps.MapOptions = {
     disableDefaultUI: true,
@@ -143,13 +144,7 @@ export default function TrackingPage() {
     const socketRef = useRef<Socket | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
 
-    const { isLoaded } = useJsApiLoader({
-        id: "google-map-script",
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries,
-        language: "es",
-        region: "AR",
-    });
+    const { isLoaded } = useGoogleMaps();
 
     // ─── Fetch order ───
     const fetchOrder = useCallback(async () => {

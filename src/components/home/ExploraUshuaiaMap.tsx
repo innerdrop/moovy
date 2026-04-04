@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import Link from "next/link";
 import { Star, Clock, MapPin, Navigation } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
@@ -72,10 +73,7 @@ const MAP_CONTAINER_STYLE = {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function ExploraUshuaiaMap({ merchants }: ExploraUshuaiaMapProps) {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    id: "moovy-maps",
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const [selectedMerchant, setSelectedMerchant] = useState<MapMerchant | null>(null);
 

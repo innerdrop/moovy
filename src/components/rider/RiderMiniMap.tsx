@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { GoogleMap, useJsApiLoader, Polyline, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, Polyline, InfoWindow } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Loader2, Compass, MapPin as MapPinIcon, Crosshair, Navigation2 } from "lucide-react";
 
 export interface NavUpdateData {
@@ -40,7 +41,7 @@ export interface RiderMiniMapRef {
     recenter: () => void;
 }
 
-const libraries: ("places" | "geometry" | "marker")[] = ["places", "geometry", "marker"];
+// Libraries se cargan centralizadamente en useGoogleMaps
 
 // ── Custom hook for AdvancedMarkerElement (replaces deprecated Marker) ──
 function useAdvancedMarker({
@@ -200,13 +201,7 @@ function RiderMiniMapComponent({
     const [totalDuration, setTotalDuration] = useState("");
     const prevHeadingRef = useRef<number>(0); // Smooth heading transitions
 
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries,
-        language: 'es',
-        region: 'AR'
-    });
+    const { isLoaded } = useGoogleMaps();
 
     // ── Helper: clear all route state ──
     const clearRouteState = useCallback(() => {
