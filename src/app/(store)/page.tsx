@@ -11,22 +11,21 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { ArrowRight, Store, Sparkles, Star, TrendingUp, Clock } from "lucide-react";
+import { ArrowRight, Store, Sparkles, Star, TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
-// SearchBarHero removed — search is now permanently in the AppHeader
-import CategoryGrid from "@/components/home/CategoryGrid";
 import TrustBar from "@/components/home/TrustBar";
 import SupplySideCTA from "@/components/home/SupplySideCTA";
 import ListingCard from "@/components/store/ListingCard";
 import Footer from "@/components/layout/Footer";
 import HomeProductCard from "@/components/home/HomeProductCard";
 import PromoBanner from "@/components/home/PromoBanner";
-import ContextualHero from "@/components/home/ContextualHero";
+import HomeFeed from "@/components/home/HomeFeed";
 import MerchantDiscoveryRow from "@/components/home/MerchantDiscoveryRow";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
+import { auth } from "@/lib/auth";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
@@ -189,10 +188,6 @@ async function getMostOrderedMerchantIds(): Promise<string[]> {
 // DISCOVERY ROW HELPERS
 // ============================================
 
-function getOpenNow(merchants: any[]) {
-  return merchants.filter((m) => m.isOpen).slice(0, 10);
-}
-
 function getNewMerchants(merchants: any[]) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -249,9 +244,13 @@ function MaintenanceView() {
 // ============================================
 
 export default async function LiveStoreView() {
-  const settings = await prisma.storeSettings
-    .findUnique({ where: { id: "settings" } })
-    .catch(() => null);
+  const [settings, session] = await Promise.all([
+    prisma.storeSettings.findUnique({ where: { id: "settings" } }).catch(() => null),
+    auth().catch(() => null),
+  ]);
+
+  const isLoggedIn = !!session?.user;
+  const userName = (session?.user as any)?.name || "";
 
   const [
     categories,
@@ -268,18 +267,6 @@ export default async function LiveStoreView() {
     getHeroSlides(),
     getMostOrderedMerchantIds(),
   ]);
-
-  // Hero Backgrounds (ContextualHero time-of-day colors from OPS)
-  const heroBackgrounds = (() => {
-    try {
-      const raw = (settings as any)?.heroBackgroundsJson;
-      if (!raw || raw === "{}") return undefined;
-      const parsed = JSON.parse(raw);
-      return typeof parsed === "object" && Object.keys(parsed).length > 0 ? parsed : undefined;
-    } catch {
-      return undefined;
-    }
-  })();
 
   // Hero Banner OPS settings
   const slideInterval = settings?.heroSliderInterval ?? 5000;
@@ -320,37 +307,19 @@ export default async function LiveStoreView() {
   });
 
   // Build discovery rows from enriched merchants
-  const openNow = getOpenNow(enrichedMerchants);
   const newMerchants = getNewMerchants(enrichedMerchants);
   const bestRated = getBestRated(enrichedMerchants);
   const mostOrdered = getMostOrdered(enrichedMerchants, topMerchantIds);
 
   return (
     <div>
-      {/* ── 1. CONTEXTUAL HERO — changes by time of day ── */}
-      <ContextualHero merchants={enrichedMerchants as any} customBackgrounds={heroBackgrounds} />
-
-      {/* Search bar moved to AppHeader — always visible */}
-
-      {/* ── 2. CATEGORÍAS — above the fold, no animation delay ── */}
-      <section className="relative py-5 lg:py-8 bg-white">
-        <CategoryGrid categories={categories} />
-      </section>
-
-      {/* ── 3. DISCOVERY ROWS (Netflix-style) ── */}
-
-      {/* 3a. Abiertos ahora */}
-      <AnimateIn animation="reveal">
-        <MerchantDiscoveryRow
-          title="Abiertos ahora"
-          icon={<Clock className="w-4 h-4 text-green-600" />}
-          merchants={openNow}
-          viewAllHref="/tiendas?filter=abiertos"
-          accentColor="bg-green-500"
-          showEmpty
-          emptyText="No hay locales abiertos a esta hora. ¡Volvé pronto!"
-        />
-      </AnimateIn>
+      {/* ── 1. HERO (red) + ABIERTOS AHORA (filterable by category pills) ── */}
+      <HomeFeed
+        merchants={enrichedMerchants as any}
+        categories={categories as any}
+        isLoggedIn={isLoggedIn}
+        userName={userName}
+      />
 
       {/* ── 4. PROMO BANNER (OPS configurable) ── */}
       {bannerProps && <PromoBanner {...bannerProps} />}

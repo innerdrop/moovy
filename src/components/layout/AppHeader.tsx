@@ -35,6 +35,7 @@ export default function AppHeader({
     const router = useRouter();
     const pathname = usePathname();
     const isMarketplace = pathname?.startsWith("/marketplace");
+    const isHomepage = pathname === "/";
     const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
     const [showOrderPopup, setShowOrderPopup] = useState(false);
 
@@ -50,6 +51,13 @@ export default function AppHeader({
     const firstName = userName?.split(" ")[0] || "";
 
     const headerSearchRef = useRef<HTMLInputElement>(null);
+
+    // Listen for custom event from HomeHero search button
+    useEffect(() => {
+        const handler = () => setShowMobileSearch(true);
+        window.addEventListener("moovy:open-search", handler);
+        return () => window.removeEventListener("moovy:open-search", handler);
+    }, []);
 
     // Fetch active orders
     useEffect(() => {
@@ -159,11 +167,11 @@ export default function AppHeader({
                 className="fixed top-0 left-0 right-0 z-50 overflow-visible bg-white shadow-sm"
                 style={{ paddingTop: 'env(safe-area-inset-top)' }}
             >
-                {/* Accent line — red or violet on marketplace */}
-                <div className={`h-1 bg-gradient-to-r ${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"}`} />
+                {/* Accent line — red or violet on marketplace (hidden on homepage mobile) */}
+                <div className={`h-1 bg-gradient-to-r ${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"} ${isHomepage ? "lg:block hidden" : ""}`} />
 
-                {/* Mobile Header - Single clean row */}
-                <div className="lg:hidden flex items-center justify-between h-14 px-4">
+                {/* Mobile Header - Single clean row (hidden on homepage — HomeHero replaces it) */}
+                <div className={`lg:hidden flex items-center justify-between h-14 px-4 ${isHomepage ? "hidden" : ""}`}>
                     {/* Left: Location or Greeting */}
                     <div className="flex items-center gap-2">
                         {isLoggedIn && firstName ? (
@@ -218,8 +226,8 @@ export default function AppHeader({
                     </div>
                 </div>
 
-                {/* Mobile: Always-visible compact search bar with brand color */}
-                {!isMarketplace && (
+                {/* Mobile: Always-visible compact search bar with brand color (hidden on homepage — HomeHero has search) */}
+                {!isMarketplace && !isHomepage && (
                     <div className="lg:hidden px-4 pb-3 pt-1.5" style={{ backgroundColor: "#e60012" }}>
                         <button
                             type="button"
