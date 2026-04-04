@@ -103,6 +103,32 @@ export async function PUT(request: Request) {
         if (data.promoBannerImage !== undefined) updateData.promoBannerImage = data.promoBannerImage || null;
         if (data.promoBannerCtaPosition !== undefined) updateData.promoBannerCtaPosition = data.promoBannerCtaPosition || "abajo-izquierda";
 
+        // Promo Slides (JSON array of slides for carousel)
+        if (data.promoSlidesJson !== undefined) {
+            try {
+                const parsed = typeof data.promoSlidesJson === "string"
+                    ? JSON.parse(data.promoSlidesJson)
+                    : data.promoSlidesJson;
+                if (Array.isArray(parsed)) {
+                    // Validate each slide has expected structure
+                    const validSlides = parsed.map((slide: any, idx: number) => ({
+                        id: slide.id || `slide-${idx}-${Date.now()}`,
+                        title: typeof slide.title === "string" ? slide.title : "",
+                        subtitle: typeof slide.subtitle === "string" ? slide.subtitle : "",
+                        buttonText: typeof slide.buttonText === "string" ? slide.buttonText : "",
+                        buttonLink: typeof slide.buttonLink === "string" ? slide.buttonLink : "/",
+                        image: typeof slide.image === "string" ? slide.image : null,
+                        ctaPosition: typeof slide.ctaPosition === "string" ? slide.ctaPosition : "abajo-izquierda",
+                        enabled: typeof slide.enabled === "boolean" ? slide.enabled : true,
+                        order: typeof slide.order === "number" ? slide.order : idx,
+                    }));
+                    updateData.promoSlidesJson = JSON.stringify(validSlides);
+                }
+            } catch {
+                // Invalid JSON — skip silently
+            }
+        }
+
         // Hero Backgrounds (JSON string)
         if (data.heroBackgroundsJson !== undefined) {
             // Validate it's valid JSON with expected structure

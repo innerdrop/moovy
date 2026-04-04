@@ -269,20 +269,36 @@ export default async function LiveStoreView() {
   const sliderShowArrows = (settings as any)?.heroSliderShowArrows ?? true;
   const hasOpsSlides = sliderEnabled && slides.length > 0;
 
-  // Promo Banner settings
+  // Promo Banner settings (carousel mode with legacy fallback)
   const bannerEnabled = (settings as any)?.promoBannerEnabled ?? false;
-  const bannerProps = bannerEnabled
-    ? {
-        enabled: true,
-        title: (settings as any)?.promoBannerTitle || undefined,
-        subtitle: (settings as any)?.promoBannerSubtitle || undefined,
-        buttonText: (settings as any)?.promoBannerButtonText || undefined,
-        buttonLink: (settings as any)?.promoBannerButtonLink || undefined,
+  const promoSlides: import("@/components/home/PromoBanner").PromoSlide[] = (() => {
+    if (!bannerEnabled) return [];
+    // Try slides JSON first
+    const slidesJson = (settings as any)?.promoSlidesJson;
+    if (slidesJson) {
+      try {
+        const parsed = JSON.parse(slidesJson);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((s: any) => s.enabled !== false);
+        }
+      } catch {}
+    }
+    // Legacy fallback: single banner from individual fields
+    const hasLegacy = (settings as any)?.promoBannerTitle || (settings as any)?.promoBannerImage;
+    if (hasLegacy) {
+      return [{
+        id: "legacy",
+        title: (settings as any)?.promoBannerTitle || "",
+        subtitle: (settings as any)?.promoBannerSubtitle || "",
+        buttonText: (settings as any)?.promoBannerButtonText || "",
+        buttonLink: (settings as any)?.promoBannerButtonLink || "/",
         image: (settings as any)?.promoBannerImage || null,
-        ctaPosition:
-          (settings as any)?.promoBannerCtaPosition || "abajo-izquierda",
-      }
-    : null;
+        ctaPosition: (settings as any)?.promoBannerCtaPosition || "abajo-izquierda",
+        enabled: true,
+      }];
+    }
+    return [];
+  })();
 
   // Enrich merchants with real-time schedule status
   // Combina pausa manual (isOpen) + horario configurado/default
@@ -321,8 +337,8 @@ export default async function LiveStoreView() {
         </section>
       </AnimateIn>
 
-      {/* ── 4. PROMO BANNER (OPS configurable) ── */}
-      {bannerProps && <PromoBanner {...bannerProps} />}
+      {/* ── 4. PROMO BANNER CAROUSEL (OPS configurable) ── */}
+      {promoSlides.length > 0 && <PromoBanner slides={promoSlides} interval={5000} />}
 
       {/* 3b. Nuevos en MOOVY — círculos con logo + borde animado */}
       <AnimateIn animation="reveal">

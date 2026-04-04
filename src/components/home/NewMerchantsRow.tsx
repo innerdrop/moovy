@@ -117,7 +117,7 @@ function MerchantCircle({ merchant }: { merchant: MerchantPreview }) {
             </div>
 
             {/* Name */}
-            <span className="text-[11px] lg:text-xs font-bold text-gray-700 text-center leading-tight truncate w-full group-hover:text-[#e60012] transition-colors mt-1">
+            <span className="text-[11px] lg:text-xs font-bold text-gray-700 text-center leading-tight truncate w-full">
                 {name}
             </span>
         </Link>

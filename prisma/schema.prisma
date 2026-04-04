@@ -666,6 +666,7 @@ model StoreSettings {
   promoBannerSubtitle   String   @default("2x1 en locales seleccionados de 20hs a 23hs.")
   promoBannerTitle      String   @default("Noches de\nPizza & Pelis")
   promoBannerCtaPosition String  @default("abajo-izquierda")
+  promoSlidesJson        String  @default("[]")
   riderCommissionPercent Float   @default(80)
 
   // === OPS CONFIG: Delivery Zones & Climate (Biblia Financiera) ===
