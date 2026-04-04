@@ -489,4 +489,4 @@ export default async function LiveStoreView() {
       <Footer />
     </div>
   );
-}
+}

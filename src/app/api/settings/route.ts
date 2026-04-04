@@ -81,7 +81,6 @@ export async function PUT(request: Request) {
         if (data.maxDeliveryDistance) updateData.maxDeliveryDistance = parseFloat(data.maxDeliveryDistance);
         if (data.riderCommissionPercent) updateData.riderCommissionPercent = parseFloat(data.riderCommissionPercent);
 
-
         // Integers
         if (data.maxCategoriesHome) updateData.maxCategoriesHome = parseInt(data.maxCategoriesHome);
         // Hero slider interval (value comes from ConfigForm already in milliseconds)
@@ -124,30 +123,6 @@ export async function PUT(request: Request) {
                     }));
                     updateData.promoSlidesJson = JSON.stringify(validSlides);
                 }
-            } catch {
-                // Invalid JSON — skip silently
-            }
-        }
-
-        // Hero Backgrounds (JSON string)
-        if (data.heroBackgroundsJson !== undefined) {
-            // Validate it's valid JSON with expected structure
-            try {
-                const parsed = typeof data.heroBackgroundsJson === "string"
-                    ? JSON.parse(data.heroBackgroundsJson)
-                    : data.heroBackgroundsJson;
-                const validSlots = ["morning", "lunch", "afternoon", "dinner", "night"];
-                const cleaned: Record<string, { from: string; via?: string; to: string }> = {};
-                for (const slot of validSlots) {
-                    if (parsed[slot] && parsed[slot].from && parsed[slot].to) {
-                        cleaned[slot] = {
-                            from: parsed[slot].from,
-                            ...(parsed[slot].via ? { via: parsed[slot].via } : {}),
-                            to: parsed[slot].to,
-                        };
-                    }
-                }
-                updateData.heroBackgroundsJson = JSON.stringify(cleaned);
             } catch {
                 // Invalid JSON — skip silently
             }

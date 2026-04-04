@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import ConfigForm from "./ConfigForm";
 import { Switch } from "./Switch";
-import HeroBackgroundsEditor from "./HeroBackgroundsEditor";
 // PromoBannerImageUpload moved to dedicated /ops/banner-promo page
 
 async function getSettings() {
@@ -184,24 +183,6 @@ export default async function ConfigurationPage() {
                         </div>
                     </div>
 
-                    {/* Hero Backgrounds Section */}
-                    <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
-
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
-                                <span className="text-2xl">🎨</span>
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900 leading-none">Fondos del Hero</h2>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Colores por franja horaria</p>
-                            </div>
-                        </div>
-
-                        <HeroBackgroundsEditor
-                            initialValue={(settings as any)?.heroBackgroundsJson || "{}"}
-                        />
-                    </div>
                 </div>
 
                 {/* Right Column: Promos & Branding */}
