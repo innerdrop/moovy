@@ -1,10 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Search, ShoppingBag, Bell, User, Sunrise, Sun, Sunset, Moon } from "lucide-react";
-import { useCartStore } from "@/store/cart";
+import { useState, useEffect, useRef } from "react";
+import { Search, Sunrise, Sun, Sunset, Moon } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -20,8 +17,6 @@ interface HomeHeroProps {
     categories: Category[];
     selectedCategory: string | null;
     onCategoryChange: (slug: string | null) => void;
-    isLoggedIn?: boolean;
-    userName?: string;
 }
 
 // ─── Time-of-day config ─────────────────────────────────────────────────────
@@ -55,17 +50,11 @@ export default function HomeHero({
     categories,
     selectedCategory,
     onCategoryChange,
-    isLoggedIn = false,
-    userName,
 }: HomeHeroProps) {
     const openSearch = () => window.dispatchEvent(new Event("moovy:open-search"));
     const [timeSlot, setTimeSlot] = useState<TimeSlot>(getCurrentTimeSlot);
     const [mounted, setMounted] = useState(false);
-    const openCart = useCartStore((s) => s.openCart);
-    const items = useCartStore((s) => s.items);
-    const cartCount = items.length;
-
-    const firstName = userName?.split(" ")[0] || "";
+    const searchBarRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setTimeSlot(getCurrentTimeSlot());
@@ -74,72 +63,47 @@ export default function HomeHero({
         return () => clearInterval(interval);
     }, []);
 
+    // Dispatch event when hero search bar scrolls out of view
+    // so AppHeader can show its compact search bar
+    useEffect(() => {
+        if (!mounted) return;
+        const el = searchBarRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                window.dispatchEvent(
+                    new CustomEvent("moovy:hero-search-visibility", {
+                        detail: { visible: entry.isIntersecting },
+                    })
+                );
+            },
+            { threshold: 0 }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [mounted]);
+
     const Icon = timeSlot.icon;
 
     if (!mounted) {
         return (
-            <section className="bg-[#e60012]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-                <div className="h-[220px] animate-pulse" />
+            <section className="bg-[#e60012]">
+                <div className="h-[160px] animate-pulse" />
             </section>
         );
     }
 
     return (
-        <section className="bg-[#e60012] relative overflow-hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <section className="bg-[#e60012] relative overflow-hidden">
             {/* Decorative blobs */}
             <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/5 blur-3xl pointer-events-none" />
             <div className="absolute -left-16 bottom-0 w-48 h-48 rounded-full bg-black/5 blur-3xl pointer-events-none" />
 
             <div className="relative">
-                {/* ── Top bar: avatar/location — logo — bell + cart ── */}
-                <div className="lg:hidden flex items-center justify-between h-14 px-4">
-                    {/* Left */}
-                    <div className="flex items-center gap-2">
-                        {isLoggedIn && firstName ? (
-                            <Link href="/mi-perfil" className="flex items-center gap-1.5">
-                                <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-white/20 text-white">
-                                    {firstName.charAt(0).toUpperCase()}
-                                </div>
-                            </Link>
-                        ) : (
-                            <Link href="/ingresar" className="p-1.5 text-white/80">
-                                <User className="w-5 h-5" />
-                            </Link>
-                        )}
-                    </div>
-
-                    {/* Center: White logo */}
-                    <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
-                        <Image
-                            src="/logo-moovy-white.svg"
-                            alt="MOOVY"
-                            width={280}
-                            height={90}
-                            className="h-6 w-auto"
-                            priority
-                        />
-                    </Link>
-
-                    {/* Right: bell + cart */}
-                    <div className="flex items-center gap-0.5">
-                        {isLoggedIn && (
-                            <Link href="/mis-pedidos" className="relative p-2 text-white/80 hover:text-white transition">
-                                <Bell className="w-5 h-5" />
-                            </Link>
-                        )}
-                        <button onClick={() => openCart()} className="relative p-2 text-white/80 hover:text-white transition">
-                            <ShoppingBag className="w-5 h-5" />
-                            {cartCount > 0 && (
-                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] rounded-full flex items-center justify-center font-bold bg-white text-[#e60012] shadow-sm">
-                                    {cartCount > 99 ? "99+" : cartCount}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
                 {/* ── Greeting ── */}
-                <div className="px-5 pt-2 pb-1 lg:pt-6 lg:pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
+                <div className="px-5 pt-4 pb-1 lg:pt-6 lg:pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
                     <p className="text-white/70 text-sm font-medium flex items-center gap-1.5">
                         <Icon className="w-4 h-4" />
                         {timeSlot.greeting}
@@ -149,8 +113,8 @@ export default function HomeHero({
                     </h1>
                 </div>
 
-                {/* ── Search bar ── */}
-                <div className="px-5 pt-3 pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
+                {/* ── Search bar (tracked for sticky fallback) ── */}
+                <div ref={searchBarRef} className="px-5 pt-3 pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
                     <button
                         type="button"
                         onClick={openSearch}

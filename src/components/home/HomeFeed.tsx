@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Clock, ChevronRight, Store } from "lucide-react";
+import { Clock, ChevronRight, Store, Star } from "lucide-react";
 import HomeHero from "./HomeHero";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -33,8 +33,6 @@ interface Category {
 interface HomeFeedProps {
     merchants: MerchantPreview[];
     categories: Category[];
-    isLoggedIn?: boolean;
-    userName?: string;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -42,8 +40,6 @@ interface HomeFeedProps {
 export default function HomeFeed({
     merchants,
     categories,
-    isLoggedIn,
-    userName,
 }: HomeFeedProps) {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -78,8 +74,6 @@ export default function HomeFeed({
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
-                isLoggedIn={isLoggedIn}
-                userName={userName}
             />
 
             {/* ── ABIERTOS AHORA (filterable) ── */}
@@ -129,7 +123,7 @@ export default function HomeFeed({
                             <Store className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                             <p className="text-sm text-gray-500 font-medium">
                                 {selectedCategory
-                                    ? `No hay locales de esta categoría abiertos ahora`
+                                    ? "No hay locales de esta categoría abiertos ahora"
                                     : "No hay locales abiertos a esta hora. ¡Volvé pronto!"
                                 }
                             </p>
@@ -184,7 +178,10 @@ function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
                         {merchant.rating && merchant.rating > 0 && (
                             <>
                                 <span className="text-xs text-gray-300">·</span>
-                                <span className="text-xs text-yellow-600 font-semibold">★ {merchant.rating.toFixed(1)}</span>
+                                <span className="text-xs text-yellow-600 font-semibold flex items-center gap-0.5">
+                                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                    {merchant.rating.toFixed(1)}
+                                </span>
                             </>
                         )}
                     </div>

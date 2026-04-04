@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { ArrowRight, Store, Sparkles, Star, TrendingUp } from "lucide-react";
+import { ArrowRight, Store, Star, TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
 import TrustBar from "@/components/home/TrustBar";
@@ -22,10 +22,11 @@ import HomeProductCard from "@/components/home/HomeProductCard";
 import PromoBanner from "@/components/home/PromoBanner";
 import HomeFeed from "@/components/home/HomeFeed";
 import MerchantDiscoveryRow from "@/components/home/MerchantDiscoveryRow";
+import NewMerchantsRow from "@/components/home/NewMerchantsRow";
+import CategoryGrid from "@/components/home/CategoryGrid";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
-import { auth } from "@/lib/auth";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
@@ -244,13 +245,7 @@ function MaintenanceView() {
 // ============================================
 
 export default async function LiveStoreView() {
-  const [settings, session] = await Promise.all([
-    prisma.storeSettings.findUnique({ where: { id: "settings" } }).catch(() => null),
-    auth().catch(() => null),
-  ]);
-
-  const isLoggedIn = !!session?.user;
-  const userName = (session?.user as any)?.name || "";
+  const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } }).catch(() => null);
 
   const [
     categories,
@@ -317,22 +312,21 @@ export default async function LiveStoreView() {
       <HomeFeed
         merchants={enrichedMerchants as any}
         categories={categories as any}
-        isLoggedIn={isLoggedIn}
-        userName={userName}
       />
+
+      {/* ── 2b. CATEGORÍAS DE PRODUCTOS ── */}
+      <AnimateIn animation="reveal">
+        <section className="py-5 lg:py-7 bg-white">
+          <CategoryGrid categories={categories as any} />
+        </section>
+      </AnimateIn>
 
       {/* ── 4. PROMO BANNER (OPS configurable) ── */}
       {bannerProps && <PromoBanner {...bannerProps} />}
 
-      {/* 3b. Nuevos en MOOVY */}
+      {/* 3b. Nuevos en MOOVY — círculos con logo + borde animado */}
       <AnimateIn animation="reveal">
-        <MerchantDiscoveryRow
-          title="Nuevos en MOOVY"
-          icon={<Sparkles className="w-4 h-4 text-purple-600" />}
-          merchants={newMerchants}
-          viewAllHref="/tiendas?filter=nuevos"
-          accentColor="bg-purple-500"
-        />
+        <NewMerchantsRow merchants={newMerchants as any} />
       </AnimateIn>
 
       {/* ── 5. OPS Hero Banner — intercalado entre filas de discovery ── */}

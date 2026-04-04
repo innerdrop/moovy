@@ -36,6 +36,8 @@ export default function AppHeader({
     const pathname = usePathname();
     const isMarketplace = pathname?.startsWith("/marketplace");
     const isHomepage = pathname === "/";
+    const isBuscar = pathname === "/buscar";
+
     const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
     const [showOrderPopup, setShowOrderPopup] = useState(false);
 
@@ -58,6 +60,28 @@ export default function AppHeader({
         window.addEventListener("moovy:open-search", handler);
         return () => window.removeEventListener("moovy:open-search", handler);
     }, []);
+
+    // On homepage: show compact search bar when hero search scrolls out of view
+    const [heroSearchVisible, setHeroSearchVisible] = useState(true);
+    useEffect(() => {
+        if (!isHomepage) return;
+        const handler = (e: Event) => {
+            const visible = (e as CustomEvent).detail?.visible ?? true;
+            setHeroSearchVisible(visible);
+        };
+        window.addEventListener("moovy:hero-search-visibility", handler);
+        return () => window.removeEventListener("moovy:hero-search-visibility", handler);
+    }, [isHomepage]);
+
+    // On non-homepage pages: show subtle search bar only after user scrolls down
+    const [hasScrolled, setHasScrolled] = useState(false);
+    useEffect(() => {
+        if (isHomepage || isMarketplace || isBuscar) return;
+        setHasScrolled(false);
+        const onScroll = () => setHasScrolled(window.scrollY > 30);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, [isHomepage, isMarketplace, isBuscar, pathname]);
 
     // Fetch active orders
     useEffect(() => {
@@ -167,11 +191,11 @@ export default function AppHeader({
                 className="fixed top-0 left-0 right-0 z-50 overflow-visible bg-white shadow-sm"
                 style={{ paddingTop: 'env(safe-area-inset-top)' }}
             >
-                {/* Accent line — red or violet on marketplace (hidden on homepage mobile) */}
-                <div className={`h-1 bg-gradient-to-r ${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"} ${isHomepage ? "lg:block hidden" : ""}`} />
+                {/* Accent line — red or violet on marketplace */}
+                <div className={`h-1 bg-gradient-to-r ${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"}`} />
 
-                {/* Mobile Header - Single clean row (hidden on homepage — HomeHero replaces it) */}
-                <div className={`lg:hidden flex items-center justify-between h-14 px-4 ${isHomepage ? "hidden" : ""}`}>
+                {/* Mobile Header - Single clean row */}
+                <div className="lg:hidden flex items-center justify-between h-14 px-4">
                     {/* Left: Location or Greeting */}
                     <div className="flex items-center gap-2">
                         {isLoggedIn && firstName ? (
@@ -226,8 +250,9 @@ export default function AppHeader({
                     </div>
                 </div>
 
-                {/* Mobile: Always-visible compact search bar with brand color (hidden on homepage — HomeHero has search) */}
-                {!isMarketplace && !isHomepage && (
+                {/* Mobile: compact search bar — style varies by context */}
+                {/* Homepage (after scroll): red bg, prominent */}
+                {isHomepage && !heroSearchVisible && (
                     <div className="lg:hidden px-4 pb-3 pt-1.5" style={{ backgroundColor: "#e60012" }}>
                         <button
                             type="button"
@@ -236,6 +261,19 @@ export default function AppHeader({
                         >
                             <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                             <span className="text-sm text-gray-400 font-medium truncate">¿Qué querés pedir?</span>
+                        </button>
+                    </div>
+                )}
+                {/* Other pages (except marketplace/buscar/homepage): subtle gray bar, only after scroll */}
+                {!isHomepage && !isMarketplace && !isBuscar && hasScrolled && (
+                    <div className="lg:hidden px-4 pb-2 pt-1.5 bg-white border-b border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileSearch(true)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 bg-gray-100 rounded-xl text-left transition active:scale-[0.98]"
+                        >
+                            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-400 font-medium truncate">Buscar...</span>
                         </button>
                     </div>
                 )}
