@@ -87,9 +87,8 @@ export default function Footer() {
                 </div>
 
                 {/* Bottom bar */}
-                <div className="border-t border-gray-800 pt-5 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-500">
+                <div className="border-t border-gray-800 pt-5 text-center text-xs text-gray-500">
                     <p>&copy; {new Date().getFullYear()} MOOVY. Todos los derechos reservados.</p>
-                    <p>Hecho con amor en Ushuaia</p>
                 </div>
             </div>
         </footer>

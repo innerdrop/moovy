@@ -49,37 +49,7 @@ export default function AppHeader({
 
     const firstName = userName?.split(" ")[0] || "";
 
-    // Scroll detection — show compact search bar when hero search is off-screen
-    const [scrolledPastHero, setScrolledPastHero] = useState(false);
     const headerSearchRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        let heroSearchTop = 0;
-
-        const measureHeroSearch = () => {
-            const el = document.querySelector('[data-hero-search]');
-            if (el) {
-                const rect = el.getBoundingClientRect();
-                heroSearchTop = rect.top + window.scrollY;
-            }
-        };
-
-        // Measure after paint
-        requestAnimationFrame(measureHeroSearch);
-
-        const handleScroll = () => {
-            // Show compact search when hero search bar scrolls behind the header (60px)
-            const threshold = heroSearchTop > 0 ? heroSearchTop - 60 : 140;
-            setScrolledPastHero(window.scrollY > threshold);
-        };
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        window.addEventListener("resize", measureHeroSearch);
-        handleScroll();
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-            window.removeEventListener("resize", measureHeroSearch);
-        };
-    }, []);
 
     // Fetch active orders
     useEffect(() => {
@@ -223,15 +193,8 @@ export default function AppHeader({
                         />
                     </Link>
 
-                    {/* Right: Search + Orders + Cart */}
+                    {/* Right: Orders + Cart */}
                     <div className="flex items-center gap-0.5">
-                        <button
-                            onClick={() => setShowMobileSearch(true)}
-                            className="p-2 text-gray-600 hover:text-[#e60012] transition"
-                        >
-                            <Search className="w-5 h-5" />
-                        </button>
-
                         {isLoggedIn && (
                             <Link
                                 href="/mis-pedidos"
@@ -255,39 +218,19 @@ export default function AppHeader({
                     </div>
                 </div>
 
-                {/* Mobile: Compact search bar — slides in with wavy bottom edge (not on marketplace — has its own) */}
-                <div
-                    className={`lg:hidden relative overflow-visible transition-all duration-300 ease-out ${
-                        scrolledPastHero && !isMarketplace ? "max-h-20 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
-                    }`}
-                >
-                    <div className="relative px-4 pb-5 pt-2" style={{ backgroundColor: isMarketplace ? "#7C3AED" : "#e60012" }}>
-                        <form onSubmit={handleSearchSubmit} className="relative z-10">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                ref={headerSearchRef}
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onFocus={() => setShowMobileSearch(true)}
-                                placeholder={isMarketplace ? "Buscar en marketplace..." : "¿Qué querés pedir?"}
-                                className="w-full pl-11 pr-4 py-3 bg-white rounded-2xl text-base shadow-lg shadow-black/15 focus:outline-none focus:ring-2 focus:ring-white/50 transition placeholder:text-gray-400 font-medium"
-                            />
-                        </form>
+                {/* Mobile: Always-visible compact search bar with brand color */}
+                {!isMarketplace && (
+                    <div className="lg:hidden px-4 pb-3 pt-1.5" style={{ backgroundColor: "#e60012" }}>
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileSearch(true)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-white rounded-2xl text-left shadow-lg shadow-black/10 transition active:scale-[0.98]"
+                        >
+                            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-400 font-medium truncate">¿Qué querés pedir?</span>
+                        </button>
                     </div>
-                    {/* Wavy bottom edge — exact same bezier curves as hero clip-path */}
-                    <svg
-                        className="absolute bottom-0 left-0 w-full translate-y-[calc(100%-1px)]"
-                        viewBox="0 0 1 0.18"
-                        preserveAspectRatio="none"
-                        style={{ height: "22px" }}
-                    >
-                        <path
-                            d="M0,0 L1,0 L1,0.02 C0.85,0.12 0.7,0.04 0.55,0.10 C0.4,0.16 0.25,0.08 0.1,0.15 C0.05,0.17 0.02,0.15 0,0.13 Z"
-                            fill={isMarketplace ? "#7C3AED" : "#e60012"}
-                        />
-                    </svg>
-                </div>
+                )}
 
                 {/* Desktop Header */}
                 <div className="hidden lg:flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">

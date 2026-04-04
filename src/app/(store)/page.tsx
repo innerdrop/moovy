@@ -14,7 +14,7 @@ import Link from "next/link";
 import { ArrowRight, Store, Sparkles, Star, TrendingUp, Clock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
-import SearchBarHero from "@/components/home/SearchBarHero";
+// SearchBarHero removed — search is now permanently in the AppHeader
 import CategoryGrid from "@/components/home/CategoryGrid";
 import TrustBar from "@/components/home/TrustBar";
 import SupplySideCTA from "@/components/home/SupplySideCTA";
@@ -318,20 +318,16 @@ export default async function LiveStoreView() {
       {/* ── 1. CONTEXTUAL HERO — changes by time of day ── */}
       <ContextualHero merchants={enrichedMerchants as any} />
 
-      {/* ── 2. SEARCH BAR ── */}
-      <SearchBarHero />
+      {/* Search bar moved to AppHeader — always visible */}
 
-      {/* ── 3. CATEGORÍAS — above the fold, no animation delay ── */}
+      {/* ── 2. CATEGORÍAS — above the fold, no animation delay ── */}
       <section className="relative py-5 lg:py-8 bg-white">
         <CategoryGrid categories={categories} />
       </section>
 
-      {/* ── 4. PROMO BANNER (OPS configurable) ── */}
-      {bannerProps && <PromoBanner {...bannerProps} />}
+      {/* ── 3. DISCOVERY ROWS (Netflix-style) ── */}
 
-      {/* ── 5. DISCOVERY ROWS (Concepto C — Netflix-style) ── */}
-
-      {/* 5a. Abiertos ahora */}
+      {/* 3a. Abiertos ahora */}
       <AnimateIn animation="reveal">
         <MerchantDiscoveryRow
           title="Abiertos ahora"
@@ -339,10 +335,26 @@ export default async function LiveStoreView() {
           merchants={openNow}
           viewAllHref="/tiendas?filter=abiertos"
           accentColor="bg-green-500"
+          showEmpty
+          emptyText="No hay locales abiertos a esta hora. ¡Volvé pronto!"
         />
       </AnimateIn>
 
-      {/* 5b. OPS Hero Banner — intercalado entre filas como publicidad */}
+      {/* ── 4. PROMO BANNER (OPS configurable) ── */}
+      {bannerProps && <PromoBanner {...bannerProps} />}
+
+      {/* 3b. Nuevos en MOOVY */}
+      <AnimateIn animation="reveal">
+        <MerchantDiscoveryRow
+          title="Nuevos en MOOVY"
+          icon={<Sparkles className="w-4 h-4 text-purple-600" />}
+          merchants={newMerchants}
+          viewAllHref="/tiendas?filter=nuevos"
+          accentColor="bg-purple-500"
+        />
+      </AnimateIn>
+
+      {/* ── 5. OPS Hero Banner — intercalado entre filas de discovery ── */}
       {hasOpsSlides && (
         <div className="py-2 lg:py-4">
           <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
@@ -357,18 +369,7 @@ export default async function LiveStoreView() {
         </div>
       )}
 
-      {/* 5c. Nuevos en MOOVY */}
-      <AnimateIn animation="reveal">
-        <MerchantDiscoveryRow
-          title="Nuevos en MOOVY"
-          icon={<Sparkles className="w-4 h-4 text-purple-600" />}
-          merchants={newMerchants}
-          viewAllHref="/tiendas?filter=nuevos"
-          accentColor="bg-purple-500"
-        />
-      </AnimateIn>
-
-      {/* 5d. Los más pedidos */}
+      {/* 3c. Los más pedidos */}
       <AnimateIn animation="reveal">
         <MerchantDiscoveryRow
           title="Los más pedidos"
@@ -379,7 +380,7 @@ export default async function LiveStoreView() {
         />
       </AnimateIn>
 
-      {/* 5e. Mejor calificados */}
+      {/* 3d. Mejor calificados */}
       <AnimateIn animation="reveal">
         <MerchantDiscoveryRow
           title="Mejor calificados"
@@ -429,81 +430,54 @@ export default async function LiveStoreView() {
         <ExploraUshuaiaMap merchants={enrichedMerchants as any} />
       </AnimateIn>
 
-      {/* ── 8. MARKETPLACE ── */}
+      {/* ── 8. MARKETPLACE — invitación compacta ── */}
       {recentListings.length > 0 && (
-        <AnimateIn animation="reveal-scale">
-          <section className="py-8 lg:py-12 xl:py-14 bg-white">
+        <AnimateIn animation="reveal">
+          <section className="py-6 lg:py-8 bg-white">
             <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-              {/* Marketplace hero banner — immersive gradient */}
-              <div className="relative overflow-hidden rounded-3xl mb-6">
-                {/* Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6]" />
-                {/* Decorative orbs */}
-                <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-purple-400/20 blur-2xl" />
-                <div className="absolute -left-10 bottom-0 w-32 h-32 rounded-full bg-fuchsia-400/15 blur-2xl" />
-
-                <div className="relative z-10 px-5 py-6 lg:px-10 lg:py-8 lg:flex lg:items-center lg:justify-between">
-                  <div className="lg:max-w-md">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-white/70 uppercase tracking-widest mb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Vendedores activos en Ushuaia
-                    </span>
-                    <h2 className="text-2xl lg:text-3xl font-black text-white mb-1.5 leading-tight">
+              {/* Compact marketplace banner */}
+              <div className="relative overflow-hidden rounded-2xl mb-4">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6]" />
+                <div className="relative z-10 px-5 py-4 flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                      <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Vendedores activos</span>
+                    </div>
+                    <h2 className="text-lg lg:text-xl font-black text-white leading-tight">
                       Marketplace
                     </h2>
-                    <p className="text-sm text-white/70 mb-4 leading-relaxed">
-                      Comprá y vendé productos entre vecinos. Publicar es gratis.
+                    <p className="text-xs text-white/60 mt-0.5">
+                      Comprá y vendé entre vecinos
                     </p>
-                    <div className="flex items-center gap-3">
-                      <Link
-                        href="/marketplace"
-                        className="inline-flex items-center gap-1.5 bg-white text-[#7C3AED] text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-white/90 transition shadow-lg shadow-black/10"
-                      >
-                        Explorar
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                      <Link
-                        href="/vendedor/registro"
-                        className="inline-flex items-center gap-1.5 bg-white/15 text-white text-sm font-semibold px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/25 transition"
-                      >
-                        Quiero vender
-                      </Link>
-                    </div>
                   </div>
-
-                  {/* Right: mini preview cards stacked (desktop only) */}
-                  <div className="hidden lg:flex flex-col gap-2 w-56">
-                    {recentListings.slice(0, 2).map((listing) => (
-                      <Link
-                        key={listing.id}
-                        href={`/marketplace/${listing.id}`}
-                        className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 border border-white/10 hover:bg-white/20 transition"
-                      >
-                        {listing.images[0]?.url && (
-                          <img
-                            src={listing.images[0].url}
-                            alt=""
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">
-                            {listing.title}
-                          </p>
-                          <p className="text-xs font-bold text-purple-200">
-                            ${listing.price.toLocaleString("es-AR")}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Link
+                      href="/marketplace"
+                      className="inline-flex items-center gap-1.5 bg-white text-[#7C3AED] text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/90 transition shadow-lg shadow-black/10"
+                    >
+                      Explorar
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4">
-                {recentListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+              {/* Single horizontal row of listings — scrollable */}
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+                {recentListings.slice(0, 6).map((listing) => (
+                  <div key={listing.id} className="flex-shrink-0 w-[160px] lg:w-[180px] snap-start">
+                    <ListingCard listing={listing} />
+                  </div>
                 ))}
+                {/* CTA final card */}
+                <Link
+                  href="/marketplace"
+                  className="flex-shrink-0 w-[160px] lg:w-[180px] snap-start flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-purple-50/50 hover:bg-purple-50 transition min-h-[200px]"
+                >
+                  <ArrowRight className="w-6 h-6 text-[#7C3AED] mb-2" />
+                  <span className="text-sm font-semibold text-[#7C3AED]">Ver todo</span>
+                </Link>
               </div>
             </div>
           </section>

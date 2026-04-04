@@ -84,8 +84,9 @@ export default function MerchantDiscoveryRow({
           </div>
         ) : (
           showEmpty && (
-            <div className="py-8 text-center text-gray-400">
-              <p className="text-sm">{emptyText}</p>
+            <div className="py-6 text-center">
+              <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 font-medium">{emptyText}</p>
             </div>
           )
         )}
