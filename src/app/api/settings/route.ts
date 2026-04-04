@@ -103,6 +103,30 @@ export async function PUT(request: Request) {
         if (data.promoBannerImage !== undefined) updateData.promoBannerImage = data.promoBannerImage || null;
         if (data.promoBannerCtaPosition !== undefined) updateData.promoBannerCtaPosition = data.promoBannerCtaPosition || "abajo-izquierda";
 
+        // Hero Backgrounds (JSON string)
+        if (data.heroBackgroundsJson !== undefined) {
+            // Validate it's valid JSON with expected structure
+            try {
+                const parsed = typeof data.heroBackgroundsJson === "string"
+                    ? JSON.parse(data.heroBackgroundsJson)
+                    : data.heroBackgroundsJson;
+                const validSlots = ["morning", "lunch", "afternoon", "dinner", "night"];
+                const cleaned: Record<string, { from: string; via?: string; to: string }> = {};
+                for (const slot of validSlots) {
+                    if (parsed[slot] && parsed[slot].from && parsed[slot].to) {
+                        cleaned[slot] = {
+                            from: parsed[slot].from,
+                            ...(parsed[slot].via ? { via: parsed[slot].via } : {}),
+                            to: parsed[slot].to,
+                        };
+                    }
+                }
+                updateData.heroBackgroundsJson = JSON.stringify(cleaned);
+            } catch {
+                // Invalid JSON — skip silently
+            }
+        }
+
         // Optional float (can be null)
         if (data.freeDeliveryMinimum) {
             updateData.freeDeliveryMinimum = parseFloat(data.freeDeliveryMinimum);

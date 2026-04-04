@@ -714,6 +714,10 @@ model StoreSettings {
   adCancellation48hFullRefund Boolean @default(true)
   adCancellationAdminFeePercent Int @default(10)
 
+  // === OPS CONFIG: Hero Backgrounds (ContextualHero time-of-day colors) ===
+  // JSON with shape: { morning: { from: "#hex", via?: "#hex", to: "#hex" }, lunch: {...}, afternoon: {...}, dinner: {...}, night: {...} }
+  heroBackgroundsJson  String  @default("{}")
+
   // Datos bancarios para transferencias (publicidad y otros)
   bankName           String  @default("")
   bankAccountHolder  String  @default("")

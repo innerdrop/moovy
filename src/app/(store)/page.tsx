@@ -269,6 +269,18 @@ export default async function LiveStoreView() {
     getMostOrderedMerchantIds(),
   ]);
 
+  // Hero Backgrounds (ContextualHero time-of-day colors from OPS)
+  const heroBackgrounds = (() => {
+    try {
+      const raw = (settings as any)?.heroBackgroundsJson;
+      if (!raw || raw === "{}") return undefined;
+      const parsed = JSON.parse(raw);
+      return typeof parsed === "object" && Object.keys(parsed).length > 0 ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+
   // Hero Banner OPS settings
   const slideInterval = settings?.heroSliderInterval ?? 5000;
   const sliderEnabled = (settings as any)?.heroSliderEnabled ?? true;
@@ -316,7 +328,7 @@ export default async function LiveStoreView() {
   return (
     <div>
       {/* ── 1. CONTEXTUAL HERO — changes by time of day ── */}
-      <ContextualHero merchants={enrichedMerchants as any} />
+      <ContextualHero merchants={enrichedMerchants as any} customBackgrounds={heroBackgrounds} />
 
       {/* Search bar moved to AppHeader — always visible */}
 

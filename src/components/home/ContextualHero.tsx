@@ -18,8 +18,16 @@ interface MerchantPreview {
   deliveryTimeMax: number;
 }
 
+interface HeroBackground {
+  from: string;
+  via?: string;
+  to: string;
+}
+
 interface ContextualHeroProps {
   merchants: MerchantPreview[];
+  /** Custom backgrounds from OPS — keyed by slot id (morning, lunch, etc.) */
+  customBackgrounds?: Record<string, HeroBackground>;
 }
 
 // ─── Time-of-day configuration ──────────────────────────────────────────────
@@ -106,7 +114,7 @@ function getCurrentTimeSlot(): TimeSlot {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function ContextualHero({ merchants }: ContextualHeroProps) {
+export default function ContextualHero({ merchants, customBackgrounds }: ContextualHeroProps) {
   const [timeSlot, setTimeSlot] = useState<TimeSlot>(getCurrentTimeSlot);
   const [mounted, setMounted] = useState(false);
 
@@ -163,9 +171,24 @@ export default function ContextualHero({ merchants }: ContextualHeroProps) {
     );
   }
 
+  // Use custom OPS background if available, otherwise fall back to Tailwind classes
+  const customBg = customBackgrounds?.[timeSlot.id];
+  const hasCustomBg = customBg && customBg.from && customBg.to;
+
+  const sectionStyle = hasCustomBg
+    ? {
+        background: `linear-gradient(135deg, ${customBg.from}${customBg.via ? `, ${customBg.via}` : ""}, ${customBg.to})`,
+      }
+    : undefined;
+
+  const sectionClassName = hasCustomBg
+    ? "relative overflow-hidden transition-colors duration-1000"
+    : `relative overflow-hidden bg-gradient-to-br ${timeSlot.gradientFrom} ${timeSlot.gradientVia || ""} ${timeSlot.gradientTo} transition-colors duration-1000`;
+
   return (
     <section
-      className={`relative overflow-hidden bg-gradient-to-br ${timeSlot.gradientFrom} ${timeSlot.gradientVia || ""} ${timeSlot.gradientTo} transition-colors duration-1000`}
+      className={sectionClassName}
+      style={sectionStyle}
     >
       {/* Decorative blobs */}
       <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/10 blur-3xl pointer-events-none" />
