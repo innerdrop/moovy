@@ -26,8 +26,11 @@ async function getStats() {
 
     try {
         const [
-            totalUsers,
-            newUsersToday,
+            totalBuyers,
+            newBuyersToday,
+            totalMerchants,
+            totalDrivers,
+            totalSellers,
             totalOrders,
             pendingOrders,
             activeOrders,
@@ -45,9 +48,26 @@ async function getStats() {
             totalListings,
             openSupportChats,
         ] = await Promise.all([
-            // Users - count from UserRole table (correct way)
-            prisma.user.count(),
-            prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
+            // Buyers: users with role USER that don't have ADMIN/COMERCIO/DRIVER/SELLER roles
+            prisma.user.count({
+                where: {
+                    role: "USER",
+                    roles: { none: { role: { in: ["ADMIN", "COMERCIO", "DRIVER", "SELLER"] } } },
+                    deletedAt: null,
+                },
+            }),
+            prisma.user.count({
+                where: {
+                    role: "USER",
+                    roles: { none: { role: { in: ["ADMIN", "COMERCIO", "DRIVER", "SELLER"] } } },
+                    deletedAt: null,
+                    createdAt: { gte: todayStart },
+                },
+            }),
+            // Role counts for subtitle
+            prisma.merchant.count({ where: { isActive: true } }),
+            prisma.driver.count({ where: { isActive: true } }),
+            prisma.sellerProfile.count(),
             // Orders
             prisma.order.count(),
             prisma.order.count({ where: { status: "PENDING" } }),
@@ -88,8 +108,11 @@ async function getStats() {
         ]);
 
         return {
-            totalUsers,
-            newUsersToday,
+            totalBuyers,
+            newBuyersToday,
+            totalMerchants,
+            totalDrivers,
+            totalSellers,
             totalOrders,
             pendingOrders,
             activeOrders,
@@ -110,7 +133,8 @@ async function getStats() {
     } catch (error) {
         console.error("Dashboard stats error:", error);
         return {
-            totalUsers: 0, newUsersToday: 0, totalOrders: 0, pendingOrders: 0,
+            totalBuyers: 0, newBuyersToday: 0, totalMerchants: 0, totalDrivers: 0,
+            totalSellers: 0, totalOrders: 0, pendingOrders: 0,
             activeOrders: 0, ordersToday: 0, ordersYesterday: 0, deliveredToday: 0,
             revenueToday: 0, revenueMonth: 0, driversOnline: 0, driversTotal: 0,
             merchantsOpen: 0, merchantsTotal: 0, unassignedOrders: 0,
@@ -197,10 +221,24 @@ export default async function AdminDashboard() {
                 </div>
                 <Link
                     href="/ops/live"
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium shadow-sm"
+                    className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition text-sm font-medium shadow-sm ${
+                        stats.activeOrders > 0
+                            ? "bg-green-600 hover:bg-green-700"
+                            : "bg-slate-500 hover:bg-slate-600"
+                    }`}
                 >
-                    <Activity className="w-4 h-4" />
-                    Ver en vivo
+                    {stats.activeOrders > 0 ? (
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-200" />
+                        </span>
+                    ) : (
+                        <Activity className="w-4 h-4 opacity-70" />
+                    )}
+                    {stats.activeOrders > 0
+                        ? `En vivo · ${stats.activeOrders} pedido${stats.activeOrders > 1 ? "s" : ""}`
+                        : "En vivo"
+                    }
                 </Link>
             </div>
 
@@ -278,14 +316,17 @@ export default async function AdminDashboard() {
                         <div className="p-2 bg-red-100 rounded-lg">
                             <Users className="w-5 h-5 text-red-600" />
                         </div>
-                        {stats.newUsersToday > 0 && (
+                        {stats.newBuyersToday > 0 && (
                             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                                +{stats.newUsersToday} hoy
+                                +{stats.newBuyersToday} hoy
                             </span>
                         )}
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-                    <p className="text-xs text-gray-500 mt-1">Usuarios registrados</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalBuyers}</p>
+                    <p className="text-xs text-gray-500 mt-1">Compradores</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                        {stats.totalMerchants} comercio{stats.totalMerchants !== 1 ? "s" : ""} · {stats.totalDrivers} repartidor{stats.totalDrivers !== 1 ? "es" : ""}{stats.totalSellers > 0 ? ` · ${stats.totalSellers} vendedor${stats.totalSellers !== 1 ? "es" : ""}` : ""}
+                    </p>
                 </Link>
             </div>
 

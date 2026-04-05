@@ -88,7 +88,7 @@ export const useCartStore = create<CartStore>()(
                     set({ items: [...items, newItem] });
                 }
 
-                set({ isOpen: true });
+                // No auto-open: feedback is via button state + toast + FloatingCartButton
             },
 
             removeItem: (productId, variantId) => {

@@ -359,7 +359,7 @@ export default function ComerciosPage() {
                 </select>
             </div>
 
-            {/* Merchants Grid */}
+            {/* Merchants Table */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
                     <Loader2 className="w-10 h-10 animate-spin text-moovy mb-4" />
@@ -367,193 +367,251 @@ export default function ComerciosPage() {
                 </div>
             ) : merchants.length > 0 ? (
                 <>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {merchants
-                            .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-                            .map((merchant) => (
-                        <div key={merchant.id} className={`group bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col relative ${
-                            merchant.approvalStatus === "PENDING" || (!merchant.approvalStatus && !merchant.isVerified)
-                                ? "border-amber-200 ring-1 ring-amber-100"
-                                : merchant.approvalStatus === "REJECTED"
-                                    ? "border-red-200"
-                                    : "border-gray-100"
-                        }`}>
-                            {/* Checkbox */}
-                            <div className="absolute top-3 right-3 z-10">
-                                <button
-                                    onClick={() => toggleMerchantSelection(merchant.id)}
-                                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedMerchants.includes(merchant.id) ? "bg-blue-500 border-blue-500" : "border-gray-300 hover:border-blue-400 bg-white"}`}
-                                >
-                                    {selectedMerchants.includes(merchant.id) && <Check className="w-3 h-3 text-white" />}
-                                </button>
-                            </div>
-
-                            {/* Header Section */}
-                            <div className="p-5 border-b border-gray-50 flex items-start gap-4">
-                                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100 shadow-inner group-hover:scale-105 transition-transform duration-300">
-                                    {merchant.image ? (
-                                        <UploadImage src={merchant.image} alt={merchant.name} width={64} height={64} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Store className="w-8 h-8 text-gray-300" />
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0 pt-1">
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                        <h3 className="font-black text-gray-900 text-lg truncate leading-tight">{merchant.name}</h3>
-                                        {merchant.isVerified && (
-                                            <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0 shadow-sm shadow-blue-200">
-                                                <CheckCircle className="w-3 h-3 text-white fill-current" />
+                    {/* Desktop Table */}
+                    <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/50">
+                                    <th className="w-10 px-4 py-3">
+                                        <button
+                                            onClick={() => {
+                                                const pageIds = merchants.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).map(m => m.id);
+                                                const allSelected = pageIds.every(id => selectedMerchants.includes(id));
+                                                setSelectedMerchants(allSelected ? selectedMerchants.filter(id => !pageIds.includes(id)) : [...new Set([...selectedMerchants, ...pageIds])]);
+                                            }}
+                                            className="w-4 h-4 rounded border-2 border-gray-300 flex items-center justify-center hover:border-blue-400 transition"
+                                        >
+                                            {merchants.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).every(m => selectedMerchants.includes(m.id)) && merchants.length > 0 && (
+                                                <Check className="w-3 h-3 text-blue-500" />
+                                            )}
+                                        </button>
+                                    </th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Comercio</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Categoría</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estado</th>
+                                    <th className="text-center px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Productos</th>
+                                    <th className="text-center px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pedidos</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contacto</th>
+                                    <th className="text-right px-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {merchants.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).map((merchant) => (
+                                    <tr key={merchant.id} className={`hover:bg-gray-50/50 transition ${
+                                        isPending(merchant) ? "bg-amber-50/30" : merchant.approvalStatus === "REJECTED" ? "bg-red-50/20" : ""
+                                    }`}>
+                                        <td className="px-4 py-3">
+                                            <button
+                                                onClick={() => toggleMerchantSelection(merchant.id)}
+                                                className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${selectedMerchants.includes(merchant.id) ? "bg-blue-500 border-blue-500" : "border-gray-300 hover:border-blue-400"}`}
+                                            >
+                                                {selectedMerchants.includes(merchant.id) && <Check className="w-3 h-3 text-white" />}
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">
+                                                    {merchant.image ? (
+                                                        <UploadImage src={merchant.image} alt={merchant.name} width={40} height={40} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Store className="w-5 h-5 text-gray-300" />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="font-bold text-gray-900 text-sm truncate">{merchant.name}</p>
+                                                        {merchant.isVerified && (
+                                                            <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0">
+                                                                <CheckCircle className="w-2.5 h-2.5 text-white fill-current" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-gray-400 truncate">{merchant.email || "—"}</p>
+                                                </div>
                                             </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-bold uppercase tracking-wider">
+                                                {merchant.category || "General"}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-col gap-1">
+                                                {getApprovalBadge(merchant)}
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={`w-2 h-2 rounded-full ${merchant.isActive ? "bg-green-500" : "bg-gray-300"}`} />
+                                                    <span className="text-[10px] text-gray-400 font-medium">{merchant.isActive ? "Activo" : "Inactivo"}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className="text-sm font-bold text-gray-900">{merchant._count.products}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className="text-sm font-bold text-gray-900">{merchant._count.orders}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="space-y-0.5">
+                                                {merchant.phone && (
+                                                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                                                        <Phone className="w-3 h-3 text-gray-300" />
+                                                        {merchant.phone}
+                                                    </p>
+                                                )}
+                                                {merchant.address && (
+                                                    <p className="text-xs text-gray-400 flex items-center gap-1.5 truncate max-w-[200px]">
+                                                        <MapPin className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                                                        {merchant.address}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center justify-end gap-1">
+                                                {isPending(merchant) ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleApprove(merchant.id)}
+                                                            disabled={actionLoading === merchant.id}
+                                                            className="p-2 hover:bg-green-50 rounded-lg transition text-green-600"
+                                                            title="Aprobar"
+                                                        >
+                                                            {actionLoading === merchant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setRejectModal({ merchantId: merchant.id, merchantName: merchant.name })}
+                                                            className="p-2 hover:bg-red-50 rounded-lg transition text-red-500"
+                                                            title="Rechazar"
+                                                        >
+                                                            <ShieldX className="w-4 h-4" />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
+                                                            disabled={actionLoading === merchant.id}
+                                                            className={`p-2 rounded-lg transition ${merchant.isVerified ? "text-blue-600 hover:bg-blue-50" : "text-gray-400 hover:bg-gray-50"}`}
+                                                            title={merchant.isVerified ? "Quitar verificación" : "Verificar"}
+                                                        >
+                                                            {actionLoading === merchant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => toggleActive(merchant.id, merchant.isActive)}
+                                                            disabled={actionLoading === merchant.id}
+                                                            className={`p-2 rounded-lg transition ${merchant.isActive ? "text-green-600 hover:bg-green-50" : "text-red-500 hover:bg-red-50"}`}
+                                                            title={merchant.isActive ? "Desactivar" : "Activar"}
+                                                        >
+                                                            {actionLoading === merchant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : merchant.isActive ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                                        </button>
+                                                    </>
+                                                )}
+                                                <Link
+                                                    href={`/ops/comercios/${merchant.id}`}
+                                                    className="p-2 hover:bg-slate-50 rounded-lg transition text-slate-400 hover:text-gray-900"
+                                                    title="Ver panel"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Link>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                        {merchants.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).map((merchant) => (
+                            <div key={merchant.id} className={`bg-white rounded-xl shadow-sm border p-4 space-y-3 ${
+                                isPending(merchant) ? "border-amber-200" : merchant.approvalStatus === "REJECTED" ? "border-red-200" : "border-gray-100"
+                            }`}>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">
+                                        {merchant.image ? (
+                                            <UploadImage src={merchant.image} alt={merchant.name} width={48} height={48} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Store className="w-6 h-6 text-gray-300" />
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="inline-block px-2.5 py-1 bg-gray-100 text-gray-500 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none">
-                                            {merchant.category || "General"}
-                                        </span>
-                                        {getApprovalBadge(merchant)}
-                                    </div>
-                                </div>
-                                <div className={`w-3 h-3 rounded-full border-2 ${merchant.isActive ? 'bg-green-500 border-green-100 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-gray-300 border-gray-100'}`} />
-                            </div>
-
-                            {/* Rejection reason */}
-                            {merchant.approvalStatus === "REJECTED" && merchant.rejectionReason && (
-                                <div className="mx-5 mt-3 p-2.5 bg-red-50 border border-red-100 rounded-xl">
-                                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Motivo del rechazo</p>
-                                    <p className="text-xs text-red-700 line-clamp-2">{merchant.rejectionReason}</p>
-                                </div>
-                            )}
-
-                            {/* Stats Dashboard */}
-                            <div className="grid grid-cols-2 gap-px bg-gray-50 border-b border-gray-50">
-                                <div className="bg-white p-4 text-center group-hover:bg-gray-50/50 transition-colors">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Productos</p>
-                                    <div className="flex items-center justify-center gap-1.5 font-black text-gray-900 text-xl">
-                                        <Package className="w-5 h-5 text-moovy/20" />
-                                        {merchant._count.products}
-                                    </div>
-                                </div>
-                                <div className="bg-white p-4 text-center group-hover:bg-gray-50/50 transition-colors">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pedidos</p>
-                                    <div className="flex items-center justify-center gap-1.5 font-black text-gray-900 text-xl">
-                                        <ShoppingCart className="w-5 h-5 text-moovy/20" />
-                                        {merchant._count.orders}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Info Section */}
-                            <div className="p-5 flex-1 space-y-4">
-                                {/* Owner */}
-                                {merchant.owner && (
-                                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-navy/5 border border-navy/5">
-                                        <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-black text-xs shadow-sm">
-                                            {merchant.owner.firstName?.charAt(0)}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-[10px] font-black text-gray-900/40 uppercase tracking-widest leading-none mb-1">Dueño</p>
-                                            <p className="font-bold text-gray-900 text-sm truncate">{merchant.owner.firstName} {merchant.owner.lastName}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Details */}
-                                <div className="space-y-3 px-1">
-                                    {merchant.email && (
-                                        <div className="flex items-center gap-3 text-gray-600">
-                                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                                <Mail className="w-3.5 h-3.5 text-blue-500" />
-                                            </div>
-                                            <span className="text-xs font-bold truncate">{merchant.email}</span>
-                                        </div>
-                                    )}
-                                    {merchant.phone && (
-                                        <div className="flex items-center gap-3 text-gray-600">
-                                            <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                                                <Phone className="w-3.5 h-3.5 text-green-500" />
-                                            </div>
-                                            <span className="text-xs font-bold">{merchant.phone}</span>
-                                        </div>
-                                    )}
-                                    {merchant.address && (
-                                        <div className="flex items-start gap-3 text-gray-600">
-                                            <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <MapPin className="w-3.5 h-3.5 text-orange-500" />
-                                            </div>
-                                            <span className="text-xs font-bold line-clamp-2 leading-relaxed">{merchant.address}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Footer Actions */}
-                            <div className="p-5 pt-0 mt-auto">
-                                {/* Approval actions for pending merchants */}
-                                {(merchant.approvalStatus === "PENDING" || (!merchant.approvalStatus && !merchant.isVerified && !merchant.isActive)) && (
-                                    <div className="grid grid-cols-2 gap-3 mb-3">
-                                        <button
-                                            onClick={() => handleApprove(merchant.id)}
-                                            disabled={actionLoading === merchant.id}
-                                            className="py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border bg-green-50 text-green-600 border-green-200 hover:bg-green-100 flex items-center justify-center gap-1.5"
-                                        >
-                                            {actionLoading === merchant.id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <ShieldCheck className="w-4 h-4" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="font-bold text-gray-900 text-sm truncate">{merchant.name}</p>
+                                            {merchant.isVerified && (
+                                                <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0">
+                                                    <CheckCircle className="w-2.5 h-2.5 text-white fill-current" />
+                                                </div>
                                             )}
-                                            Aprobar
-                                        </button>
-                                        <button
-                                            onClick={() => setRejectModal({ merchantId: merchant.id, merchantName: merchant.name })}
-                                            disabled={actionLoading === merchant.id}
-                                            className="py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border bg-red-50 text-red-500 border-red-200 hover:bg-red-100 flex items-center justify-center gap-1.5"
-                                        >
-                                            <ShieldX className="w-4 h-4" />
-                                            Rechazar
-                                        </button>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase">{merchant.category || "General"}</span>
+                                            {getApprovalBadge(merchant)}
+                                        </div>
                                     </div>
+                                    <div className={`w-3 h-3 rounded-full ${merchant.isActive ? "bg-green-500" : "bg-gray-300"}`} />
+                                </div>
+
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5" /> {merchant._count.products} prod.</span>
+                                    <span className="flex items-center gap-1"><ShoppingCart className="w-3.5 h-3.5" /> {merchant._count.orders} ped.</span>
+                                    {merchant.email && <span className="truncate flex items-center gap-1"><Mail className="w-3.5 h-3.5 flex-shrink-0" /> {merchant.email}</span>}
+                                </div>
+
+                                {merchant.approvalStatus === "REJECTED" && merchant.rejectionReason && (
+                                    <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{merchant.rejectionReason}</p>
                                 )}
 
-                                {/* Standard actions for approved/rejected merchants */}
-                                {merchant.approvalStatus !== "PENDING" && (merchant.approvalStatus || merchant.isVerified || merchant.isActive) && (
-                                    <div className="grid grid-cols-2 gap-3 mb-3">
-                                        <button
-                                            onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
-                                            disabled={actionLoading === merchant.id}
-                                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isVerified
-                                                    ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
-                                                    : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100"
-                                                }`}
-                                        >
-                                            {actionLoading === merchant.id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                            ) : merchant.isVerified ? "Verificado" : "Verificar"}
-                                        </button>
-                                        <button
-                                            onClick={() => toggleActive(merchant.id, merchant.isActive)}
-                                            disabled={actionLoading === merchant.id}
-                                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${merchant.isActive
-                                                    ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
-                                                    : "bg-red-50 text-red-500 border-red-100 hover:bg-red-100"
-                                                }`}
-                                        >
-                                            {actionLoading === merchant.id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                            ) : merchant.isActive ? "Activo" : "Inactivo"}
-                                        </button>
-                                    </div>
-                                )}
-                                <Link
-                                    href={`/ops/comercios/${merchant.id}`}
-                                    className="block w-full text-center py-3 bg-navy text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg shadow-navy/10 active:scale-95"
-                                >
-                                    Abrir Panel
-                                </Link>
+                                <div className="flex gap-2">
+                                    {isPending(merchant) ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleApprove(merchant.id)}
+                                                disabled={actionLoading === merchant.id}
+                                                className="flex-1 py-2 bg-green-50 text-green-600 rounded-xl text-xs font-bold border border-green-100 hover:bg-green-100 flex items-center justify-center gap-1.5"
+                                            >
+                                                {actionLoading === merchant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                                                Aprobar
+                                            </button>
+                                            <button
+                                                onClick={() => setRejectModal({ merchantId: merchant.id, merchantName: merchant.name })}
+                                                className="flex-1 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-bold border border-red-100 hover:bg-red-100 flex items-center justify-center gap-1.5"
+                                            >
+                                                <ShieldX className="w-4 h-4" />
+                                                Rechazar
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => toggleVerified(merchant.id, merchant.isVerified)}
+                                                disabled={actionLoading === merchant.id}
+                                                className={`flex-1 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 ${merchant.isVerified ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-gray-50 text-gray-400 border-gray-100"}`}
+                                            >
+                                                {merchant.isVerified ? "Verificado" : "Verificar"}
+                                            </button>
+                                            <button
+                                                onClick={() => toggleActive(merchant.id, merchant.isActive)}
+                                                disabled={actionLoading === merchant.id}
+                                                className={`flex-1 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 ${merchant.isActive ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-500 border-red-100"}`}
+                                            >
+                                                {merchant.isActive ? "Activo" : "Inactivo"}
+                                            </button>
+                                        </>
+                                    )}
+                                    <Link
+                                        href={`/ops/comercios/${merchant.id}`}
+                                        className="w-10 h-10 bg-slate-800 text-white rounded-xl flex items-center justify-center hover:opacity-90"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
                     </div>
-                    {!loading && merchants.length > 0 && Math.ceil(merchants.length / ITEMS_PER_PAGE) > 1 && (
+
+                    {/* Pagination */}
+                    {Math.ceil(merchants.length / ITEMS_PER_PAGE) > 1 && (
                         <div className="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4">
                             <span className="text-sm text-gray-500">
                                 Mostrando {((page - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(page * ITEMS_PER_PAGE, merchants.length)} de {merchants.length}

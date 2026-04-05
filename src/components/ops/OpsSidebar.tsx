@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -51,7 +51,7 @@ const navSections: NavSection[] = [
         title: "Operaciones",
         items: [
             { href: "/ops/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-            { href: "/ops/live", icon: Radio, label: "En Vivo", badge: "🔴" },
+            { href: "/ops/live", icon: Radio, label: "En Vivo", badge: "live-indicator" },
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
         ],
@@ -123,6 +123,20 @@ const mobileNavItems = [
 export default function OpsSidebar({ userName }: OpsSidebarProps) {
     const pathname = usePathname();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [activeOrders, setActiveOrders] = useState(0);
+
+    // Poll active orders every 15s for live indicator
+    useEffect(() => {
+        const fetchActive = () => {
+            fetch("/api/admin/active-orders")
+                .then(r => r.json())
+                .then(d => setActiveOrders(d.count || 0))
+                .catch(() => {});
+        };
+        fetchActive();
+        const interval = setInterval(fetchActive, 15000);
+        return () => clearInterval(interval);
+    }, []);
 
     const closeMobileMenu = () => setIsMobileOpen(false);
 
@@ -246,9 +260,23 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                                         >
                                             <item.icon className="w-4 h-4 flex-shrink-0" />
                                             <span>{item.label}</span>
-                                            {item.badge && (
+                                            {item.badge === "live-indicator" ? (
+                                                <span className="ml-auto">
+                                                    {activeOrders > 0 ? (
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span className="relative flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+                                                            </span>
+                                                            <span className="text-[10px] font-medium text-green-400">{activeOrders}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex h-2 w-2 rounded-full bg-slate-600" />
+                                                    )}
+                                                </span>
+                                            ) : item.badge ? (
                                                 <span className="ml-auto text-xs">{item.badge}</span>
-                                            )}
+                                            ) : null}
                                         </Link>
                                     </li>
                                 ))}

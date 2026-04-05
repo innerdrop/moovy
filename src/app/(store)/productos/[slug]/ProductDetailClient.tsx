@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 // useSession removed — cart works without auth, login at checkout
 import { useCartStore } from "@/store/cart";
+import { toast } from "@/store/toast";
 import { formatPrice } from "@/lib/delivery";
 import {
     ChevronLeft,
@@ -104,6 +105,7 @@ export default function ProductDetailClient() {
             type: "product",
         });
         setAddedToCart(true);
+        toast.success(`${product.name} agregado al carrito`);
         setTimeout(() => setAddedToCart(false), 2000);
     };
 

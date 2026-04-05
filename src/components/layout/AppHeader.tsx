@@ -4,10 +4,10 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Package, X, ChevronRight, Bell, Search, Loader2, Store, ArrowLeft } from "lucide-react";
+import { ShoppingBag, MapPin, Package, X, ChevronRight, Bell, Search, Loader2, Store, Tag, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
-import { useDebounce } from "@/hooks/useDebounce";
+import UploadImage from "@/components/ui/UploadImage";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -41,14 +41,22 @@ export default function AppHeader({
     const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
     const [showOrderPopup, setShowOrderPopup] = useState(false);
 
-    // Search state
+    // Search state — uses autocomplete API like SearchBarHero
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<any>(null);
+    const [suggestions, setSuggestions] = useState<Array<{
+        type: "comercio" | "tienda" | "marketplace";
+        id: string;
+        label: string;
+        image: string | null;
+        href: string;
+        extra: string | null;
+        price?: number;
+    }>>([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [showResults, setShowResults] = useState(false);
-    const debouncedQuery = useDebounce(searchQuery, 300);
     const searchRef = useRef<HTMLDivElement>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const firstName = userName?.split(" ")[0] || "";
 
@@ -107,37 +115,48 @@ export default function AppHeader({
 
     const hasActiveOrder = activeOrder !== null;
 
-    // Search: fetch results on debounced query change
-    useEffect(() => {
-        if (!debouncedQuery || debouncedQuery.length < 2) {
-            setSearchResults(null);
+    // Search: fetch autocomplete suggestions with debounce
+    const fetchSuggestions = (q: string) => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        if (q.length < 1) {
+            setSuggestions([]);
             setShowResults(false);
             return;
         }
-
-        let cancelled = false;
         setSearchLoading(true);
-
-        fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=5`)
-            .then((r) => r.ok ? r.json() : null)
-            .then((data) => {
-                if (!cancelled && data) {
-                    setSearchResults(data);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/search/autocomplete?q=${encodeURIComponent(q)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSuggestions(data.suggestions || []);
                     setShowResults(true);
                 }
-            })
-            .catch(() => {})
-            .finally(() => { if (!cancelled) setSearchLoading(false); });
+            } catch { /* silent */ }
+            finally { setSearchLoading(false); }
+        }, 300);
+    };
 
-        return () => { cancelled = true; };
-    }, [debouncedQuery]);
+    // Cleanup debounce on unmount
+    useEffect(() => {
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, []);
+
+    const handleSearchInputChange = (value: string) => {
+        setSearchQuery(value);
+        fetchSuggestions(value);
+    };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim().length >= 2) {
-            router.push(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`);
+            const q = searchQuery.trim();
+            // Navigate first, then close overlay without clearing query
+            // (the /buscar page reads from URL params, not from this state)
+            router.push(`/buscar?q=${encodeURIComponent(q)}`);
             setShowResults(false);
             setShowMobileSearch(false);
+            setSuggestions([]);
             setSearchQuery("");
         }
     };
@@ -146,18 +165,30 @@ export default function AppHeader({
         setShowResults(false);
         setShowMobileSearch(false);
         setSearchQuery("");
-        setSearchResults(null);
+        setSuggestions([]);
     };
 
-    // Navigate then close — delay the close so router.push completes before overlay unmounts
+    // Navigate to specific result, then close overlay
     const navigateAndClose = (href: string) => {
         router.push(href);
-        setTimeout(() => closeSearch(), 150);
+        // Small delay so router.push fires before overlay unmounts
+        setTimeout(() => closeSearch(), 100);
     };
 
-    // Auto-close search on route change (covers all navigation paths)
+    // Close search overlay on route change — but only if we're not navigating TO /buscar
+    // (avoids race condition where closeSearch interferes with the navigation)
+    const prevPathRef = useRef(pathname);
     useEffect(() => {
-        closeSearch();
+        if (prevPathRef.current !== pathname) {
+            // Only auto-close if the overlay is open and we navigated away
+            if (showMobileSearch || showResults) {
+                setShowResults(false);
+                setShowMobileSearch(false);
+                setSuggestions([]);
+                setSearchQuery("");
+            }
+            prevPathRef.current = pathname;
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
 
@@ -314,8 +345,8 @@ export default function AppHeader({
                             <input
                                 type="text"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onFocus={() => { if (searchResults) setShowResults(true); }}
+                                onChange={(e) => handleSearchInputChange(e.target.value)}
+                                onFocus={() => { if (suggestions.length > 0) setShowResults(true); }}
                                 placeholder="Buscar productos, comercios..."
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition placeholder:text-gray-400"
                             />
@@ -325,74 +356,110 @@ export default function AppHeader({
                         </form>
 
                         {/* Desktop Search Results Dropdown */}
-                        {showResults && searchResults && (
+                        {showResults && suggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-[60]">
-                                {searchResults.results?.length > 0 ? (
-                                    <div className="max-h-80 overflow-y-auto">
-                                        {searchResults.merchants?.length > 0 && (
+                                <div className="max-h-80 overflow-y-auto">
+                                    {(() => {
+                                        const comercios = suggestions.filter(s => s.type === "comercio");
+                                        const productos = suggestions.filter(s => s.type === "tienda");
+                                        const marketplace = suggestions.filter(s => s.type === "marketplace");
+                                        return (
                                             <>
-                                                <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comercios</div>
-                                                {searchResults.merchants.slice(0, 3).map((m: any) => (
-                                                    <button
-                                                        key={m.id}
-                                                        type="button"
-                                                        onClick={() => navigateAndClose(`/tienda/${m.slug}`)}
-                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
-                                                    >
-                                                        {m.logo ? (
-                                                            <img src={m.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                                                        ) : (
-                                                            <div className="w-10 h-10 rounded-xl bg-[#e60012]/10 flex items-center justify-center">
-                                                                <Store className="w-5 h-5 text-[#e60012]" />
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <p className="text-base font-semibold text-gray-900">{m.name}</p>
-                                                            {m.description && <p className="text-xs text-gray-500 line-clamp-1">{m.description}</p>}
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </>
-                                        )}
-                                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Productos</div>
-                                        {searchResults.results.slice(0, 5).map((p: any) => (
-                                            <button
-                                                key={p.id}
-                                                type="button"
-                                                onClick={() => navigateAndClose(`/productos/${p.slug}`)}
-                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
-                                            >
-                                                {p.images?.[0]?.url ? (
-                                                    <img src={p.images[0].url} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                                                ) : (
-                                                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                                                        <Package className="w-5 h-5 text-gray-300" />
-                                                    </div>
+                                                {comercios.length > 0 && (
+                                                    <>
+                                                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comercios</div>
+                                                        {comercios.map(s => (
+                                                            <button
+                                                                key={s.id}
+                                                                type="button"
+                                                                onClick={() => navigateAndClose(s.href)}
+                                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                    {s.image ? (
+                                                                        <UploadImage src={s.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Store className="w-5 h-5 text-gray-400" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-base font-semibold text-gray-900 truncate">{s.label}</p>
+                                                                    {s.extra && <p className="text-xs text-gray-500">{s.extra}</p>}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </>
                                                 )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-base font-semibold text-gray-900 truncate">{p.name}</p>
-                                                    <p className="text-base font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="p-6 text-center">
-                                        <p className="text-sm text-gray-500">No se encontraron resultados</p>
-                                    </div>
+                                                {productos.length > 0 && (
+                                                    <>
+                                                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Productos</div>
+                                                        {productos.map(s => (
+                                                            <button
+                                                                key={s.id}
+                                                                type="button"
+                                                                onClick={() => navigateAndClose(s.href)}
+                                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                    {s.image ? (
+                                                                        <UploadImage src={s.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Package className="w-5 h-5 text-gray-300" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-base font-semibold text-gray-900 truncate">{s.label}</p>
+                                                                    <p className="text-base font-bold text-[#e60012]">{s.price != null ? `$${s.price.toLocaleString("es-AR")}` : ""}</p>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </>
+                                                )}
+                                                {marketplace.length > 0 && (
+                                                    <>
+                                                        <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Marketplace</div>
+                                                        {marketplace.map(s => (
+                                                            <button
+                                                                key={s.id}
+                                                                type="button"
+                                                                onClick={() => navigateAndClose(s.href)}
+                                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                    {s.image ? (
+                                                                        <UploadImage src={s.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Tag className="w-5 h-5 text-gray-400" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-base font-semibold text-gray-900 truncate">{s.label}</p>
+                                                                    <p className="text-base font-bold text-[#7C3AED]">{s.price != null ? `$${s.price.toLocaleString("es-AR")}` : ""}</p>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                                {searchQuery.trim().length >= 2 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)}
+                                        className="w-full px-4 py-3 text-center text-sm font-semibold text-[#e60012] bg-gray-50 hover:bg-gray-100 transition border-t border-gray-100"
+                                    >
+                                        Ver todos los resultados
+                                    </button>
                                 )}
-                                <button
-                                    type="button"
-                                    disabled={!searchQuery.trim()}
-                                    onClick={() => {
-                                        if (searchQuery.trim()) {
-                                            navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`);
-                                        }
-                                    }}
-                                    className="w-full px-4 py-3 text-center text-sm font-semibold text-[#e60012] bg-gray-50 hover:bg-gray-100 transition border-t border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Ver todos los resultados
-                                </button>
+                            </div>
+                        )}
+                        {showResults && suggestions.length === 0 && !searchLoading && searchQuery.length >= 1 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-[60]">
+                                <div className="p-6 text-center">
+                                    <p className="text-sm text-gray-500">No se encontraron resultados</p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -488,7 +555,7 @@ export default function AppHeader({
                                 type="text"
                                 autoFocus
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => handleSearchInputChange(e.target.value)}
                                 placeholder="Buscar productos, comercios..."
                                 className="w-full pl-10 pr-9 py-2.5 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 transition placeholder:text-gray-400"
                             />
@@ -496,7 +563,7 @@ export default function AppHeader({
                             {searchQuery.length > 0 && !searchLoading && (
                                 <button
                                     type="button"
-                                    onClick={() => { setSearchQuery(""); setSearchResults(null); setShowResults(false); }}
+                                    onClick={() => { setSearchQuery(""); setSuggestions([]); setShowResults(false); }}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                 >
                                     <X className="w-4 h-4" />
@@ -510,81 +577,111 @@ export default function AppHeader({
 
                     {/* Mobile Search Results */}
                     <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 56px - env(safe-area-inset-top))' }}>
-                        {showResults && searchResults ? (
-                            searchResults.results?.length > 0 || searchResults.merchants?.length > 0 ? (
-                                <>
-                                    {searchResults.merchants?.length > 0 && (
+                        {suggestions.length > 0 ? (
+                            <>
+                                {(() => {
+                                    const comercios = suggestions.filter(s => s.type === "comercio");
+                                    const productos = suggestions.filter(s => s.type === "tienda");
+                                    const marketplace = suggestions.filter(s => s.type === "marketplace");
+                                    return (
                                         <>
-                                            <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comercios</div>
-                                            {searchResults.merchants.slice(0, 3).map((m: any) => (
-                                                <button
-                                                    key={m.id}
-                                                    type="button"
-                                                    onClick={() => navigateAndClose(`/tienda/${m.slug}`)}
-                                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
-                                                >
-                                                    {m.logo ? (
-                                                        <img src={m.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-xl bg-[#e60012]/10 flex items-center justify-center">
-                                                            <Store className="w-5 h-5 text-[#e60012]" />
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="text-sm font-semibold text-gray-900">{m.name}</p>
-                                                        {m.description && <p className="text-xs text-gray-500 line-clamp-1">{m.description}</p>}
-                                                    </div>
-                                                    <ChevronRight className="w-4 h-4 text-gray-300 ml-auto" />
-                                                </button>
-                                            ))}
+                                            {comercios.length > 0 && (
+                                                <>
+                                                    <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comercios</div>
+                                                    {comercios.map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => navigateAndClose(s.href)}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                {s.image ? (
+                                                                    <UploadImage src={s.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <Store className="w-5 h-5 text-gray-400" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-semibold text-gray-900 truncate">{s.label}</p>
+                                                                {s.extra && <p className="text-xs text-gray-500">{s.extra}</p>}
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                                        </button>
+                                                    ))}
+                                                </>
+                                            )}
+                                            {productos.length > 0 && (
+                                                <>
+                                                    <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Productos</div>
+                                                    {productos.map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => navigateAndClose(s.href)}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                {s.image ? (
+                                                                    <UploadImage src={s.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <Package className="w-5 h-5 text-gray-300" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-base font-semibold text-gray-900 truncate">{s.label}</p>
+                                                                <p className="text-base font-bold text-[#e60012]">{s.price != null ? `$${s.price.toLocaleString("es-AR")}` : ""}</p>
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                                        </button>
+                                                    ))}
+                                                </>
+                                            )}
+                                            {marketplace.length > 0 && (
+                                                <>
+                                                    <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Marketplace</div>
+                                                    {marketplace.map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => navigateAndClose(s.href)}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                                {s.image ? (
+                                                                    <UploadImage src={s.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <Tag className="w-5 h-5 text-gray-400" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-base font-semibold text-gray-900 truncate">{s.label}</p>
+                                                                <p className="text-base font-bold text-[#7C3AED]">{s.price != null ? `$${s.price.toLocaleString("es-AR")}` : ""}</p>
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                                        </button>
+                                                    ))}
+                                                </>
+                                            )}
                                         </>
-                                    )}
-                                    {searchResults.results?.length > 0 && (
-                                        <>
-                                            <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Productos</div>
-                                            {searchResults.results.slice(0, 6).map((p: any) => (
-                                                <button
-                                                    key={p.id}
-                                                    type="button"
-                                                    onClick={() => navigateAndClose(`/productos/${p.slug}`)}
-                                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 text-left"
-                                                >
-                                                    {p.images?.[0]?.url ? (
-                                                        <img src={p.images[0].url} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                                                            <Package className="w-5 h-5 text-gray-300" />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-base font-semibold text-gray-900 truncate">{p.name}</p>
-                                                        <p className="text-base font-bold text-[#e60012]">${p.price?.toLocaleString("es-AR")}</p>
-                                                    </div>
-                                                    <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                                                </button>
-                                            ))}
-                                        </>
-                                    )}
+                                    );
+                                })()}
+                                {searchQuery.trim().length >= 2 && (
                                     <button
                                         type="button"
-                                        disabled={!searchQuery.trim()}
-                                        onClick={() => {
-                                            if (searchQuery.trim()) {
-                                                navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`);
-                                            }
-                                        }}
-                                        className="w-full px-4 py-4 text-center text-sm font-semibold text-[#e60012] hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={() => navigateAndClose(`/buscar?q=${encodeURIComponent(searchQuery.trim())}`)}
+                                        className="w-full px-4 py-4 text-center text-sm font-semibold text-[#e60012] hover:bg-gray-50 transition"
                                     >
                                         Ver todos los resultados
                                     </button>
-                                </>
-                            ) : (
-                                <div className="p-8 text-center">
-                                    <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                                    <p className="text-base text-gray-500">No se encontraron resultados</p>
-                                    <p className="text-sm text-gray-400 mt-1">Probá con otra palabra</p>
-                                </div>
-                            )
+                                )}
+                            </>
+                        ) : searchQuery && !searchLoading && showResults ? (
+                            <div className="p-8 text-center">
+                                <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                                <p className="text-base text-gray-500">No se encontraron resultados</p>
+                                <p className="text-sm text-gray-400 mt-1">Probá con otra palabra</p>
+                            </div>
                         ) : !searchQuery ? (
                             <div className="px-5 pt-6">
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Búsquedas populares</p>
@@ -593,7 +690,7 @@ export default function AppHeader({
                                         <button
                                             key={term}
                                             type="button"
-                                            onClick={() => { setSearchQuery(term); }}
+                                            onClick={() => handleSearchInputChange(term)}
                                             className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-700 hover:bg-[#e60012]/10 hover:text-[#e60012] transition"
                                         >
                                             {term}

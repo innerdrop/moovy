@@ -149,19 +149,23 @@ function BuscarContent() {
         setHasSearched(true);
 
         try {
-            const res = await fetch(
-                `/api/search?q=${encodeURIComponent(searchQuery)}&tab=${tab}&limit=20`
-            );
-            const data = await res.json();
+            // Fetch BOTH tabs in parallel so we can show accurate counts
+            // and allow instant tab switching without re-fetching
+            const [comerciosRes, marketplaceRes] = await Promise.all([
+                fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&tab=comercios&limit=20`),
+                fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&tab=marketplace&limit=20`),
+            ]);
 
-            if (tab === "marketplace") {
-                setListings(data.results || []);
-                setListingTotal(data.total || 0);
-            } else {
-                setProducts(data.results || []);
-                setProductTotal(data.total || 0);
-                setMerchants(data.merchants || []);
-            }
+            const [comerciosData, marketplaceData] = await Promise.all([
+                comerciosRes.json(),
+                marketplaceRes.json(),
+            ]);
+
+            setProducts(comerciosData.results || []);
+            setProductTotal(comerciosData.total || 0);
+            setMerchants(comerciosData.merchants || []);
+            setListings(marketplaceData.results || []);
+            setListingTotal(marketplaceData.total || 0);
         } catch (error) {
             console.error("Search error:", error);
         } finally {
@@ -200,7 +204,7 @@ function BuscarContent() {
                 "",
                 `/buscar?q=${encodeURIComponent(query.trim())}&tab=${tab}`
             );
-            performSearch(query.trim(), tab);
+            // No need to re-fetch — both tabs are preloaded
         }
     };
 
@@ -268,8 +272,10 @@ function BuscarContent() {
                     >
                         <Store className="w-4 h-4" />
                         Comercios
-                        {activeTab === "comercios" && hasSearched && (
-                            <span className="text-xs bg-red-50 text-[#e60012] px-1.5 py-0.5 rounded-full">
+                        {hasSearched && (productTotal + merchants.length) > 0 && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                activeTab === "comercios" ? "bg-red-50 text-[#e60012]" : "bg-gray-100 text-gray-500"
+                            }`}>
                                 {productTotal + merchants.length}
                             </span>
                         )}
@@ -284,8 +290,10 @@ function BuscarContent() {
                     >
                         <Tag className="w-4 h-4" />
                         Marketplace
-                        {activeTab === "marketplace" && hasSearched && (
-                            <span className="text-xs bg-violet-50 text-[#7C3AED] px-1.5 py-0.5 rounded-full">
+                        {hasSearched && listingTotal > 0 && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                activeTab === "marketplace" ? "bg-violet-50 text-[#7C3AED]" : "bg-gray-100 text-gray-500"
+                            }`}>
                                 {listingTotal}
                             </span>
                         )}
