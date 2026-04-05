@@ -466,9 +466,7 @@ export default function ProfilePage() {
                     Eliminar mi cuenta
                 </button>
 
-                <p className="text-center text-[10px] text-gray-400 pb-4">
-                    Versión 1.0.0 • Hecho con ❤️ en Ushuaia
-                </p>
+                <div className="pb-4" />
                 </div>
             </div>
 

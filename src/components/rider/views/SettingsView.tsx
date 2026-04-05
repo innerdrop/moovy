@@ -247,11 +247,7 @@ export default function SettingsView({ onBack }: SettingsViewProps) {
 
                 {/* ── INFO ── */}
                 <div className="text-center pt-4 pb-8">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                        <Shield className="w-4 h-4 text-gray-300" />
-                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">MOOVY Repartidor</span>
-                    </div>
-                    <p className="text-[10px] text-gray-300">v1.0.0</p>
+                    <div className="pb-4" />
                 </div>
             </div>
         </div>
