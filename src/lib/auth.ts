@@ -114,6 +114,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 token.loginAt = Date.now();
             }
 
+            // Re-fetch roles from DB when client calls update() (e.g. after activating SELLER role)
+            if (trigger === "update" && token.id) {
+                try {
+                    const { prisma } = await import("@/lib/prisma");
+                    const freshUser = await prisma.user.findUnique({
+                        where: { id: token.id as string },
+                        select: {
+                            role: true,
+                            roles: { where: { isActive: true }, select: { role: true } },
+                        },
+                    });
+                    if (freshUser) {
+                        const rolesFromTable = freshUser.roles.map((r) => r.role);
+                        token.roles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];
+                        token.role = freshUser.role;
+
+                        // Also refresh merchantId in case user became a merchant
+                        const merchant = await prisma.merchant.findFirst({
+                            where: { ownerId: token.id as string },
+                            select: { id: true },
+                        });
+                        token.merchantId = merchant?.id || null;
+                    }
+                } catch (err) {
+                    console.error("[Auth] Failed to refresh roles on update:", err);
+                }
+            }
+
             // Invalidate token if too old (security measure)
             if (token.loginAt && Date.now() - (token.loginAt as number) > 7 * 24 * 60 * 60 * 1000) {
                 // Force re-login after 7 days
