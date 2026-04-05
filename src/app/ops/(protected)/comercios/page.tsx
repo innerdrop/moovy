@@ -26,7 +26,9 @@ import {
     ShieldCheck,
     ShieldX,
     Clock,
-    AlertTriangle
+    AlertTriangle,
+    Plus,
+    KeyRound,
 } from "lucide-react";
 
 interface Merchant {
@@ -75,6 +77,49 @@ export default function ComerciosPage() {
     const [rejectModal, setRejectModal] = useState<{ merchantId: string; merchantName: string } | null>(null);
     const [rejectReason, setRejectReason] = useState("");
     const [rejectLoading, setRejectLoading] = useState(false);
+
+    // Create merchant modal state
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createLoading, setCreateLoading] = useState(false);
+    const [createForm, setCreateForm] = useState({
+        businessName: "",
+        email: "",
+        password: "",
+        ownerName: "",
+        phone: "",
+        address: "",
+        category: "Otro",
+        description: "",
+    });
+
+    const handleCreateMerchant = async () => {
+        if (!createForm.businessName || !createForm.email) {
+            toast.error("Nombre del comercio y email son obligatorios");
+            return;
+        }
+        if (!createForm.password || createForm.password.length < 8) {
+            toast.error("La contraseña debe tener al menos 8 caracteres");
+            return;
+        }
+        setCreateLoading(true);
+        try {
+            const res = await fetch("/api/admin/merchants/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(createForm),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Error al crear comercio");
+            toast.success(data.message || "Comercio creado exitosamente");
+            setShowCreateModal(false);
+            setCreateForm({ businessName: "", email: "", password: "", ownerName: "", phone: "", address: "", category: "Otro", description: "" });
+            fetchMerchants();
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setCreateLoading(false);
+        }
+    };
 
     const fetchMerchants = async () => {
         setLoading(true);
@@ -293,6 +338,177 @@ export default function ComerciosPage() {
                 </div>
             )}
 
+            {/* Create Merchant Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="font-bold text-lg mb-1 text-gray-900 flex items-center gap-2">
+                            <Store className="w-5 h-5 text-moovy" />
+                            Nuevo Comercio
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-5">
+                            El comercio se creará pre-aprobado y listo para operar.
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Business Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nombre del comercio <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={createForm.businessName}
+                                    onChange={(e) => setCreateForm({ ...createForm, businessName: e.target.value })}
+                                    placeholder="Ej: Panadería del Centro"
+                                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                                />
+                            </div>
+
+                            {/* Owner Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nombre del responsable
+                                </label>
+                                <input
+                                    type="text"
+                                    value={createForm.ownerName}
+                                    onChange={(e) => setCreateForm({ ...createForm, ownerName: e.target.value })}
+                                    placeholder="Ej: Juan Pérez"
+                                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                                />
+                            </div>
+
+                            {/* Email + Password */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Email <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="email"
+                                            value={createForm.email}
+                                            onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                                            placeholder="comercio@email.com"
+                                            className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Contraseña <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={createForm.password}
+                                            onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                                            placeholder="Mín. 8 caracteres"
+                                            className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Phone + Category */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={createForm.phone}
+                                            onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                                            placeholder="Ej: 2901-XXXXXX"
+                                            className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                                    <select
+                                        value={createForm.category}
+                                        onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })}
+                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm bg-white"
+                                    >
+                                        <option value="Otro">Otro</option>
+                                        <option value="Gastronomía">Gastronomía</option>
+                                        <option value="Almacén / Kiosco">Almacén / Kiosco</option>
+                                        <option value="Farmacia">Farmacia</option>
+                                        <option value="Supermercado">Supermercado</option>
+                                        <option value="Panadería / Pastelería">Panadería / Pastelería</option>
+                                        <option value="Cervecería">Cervecería</option>
+                                        <option value="Carnicería">Carnicería</option>
+                                        <option value="Verdulería">Verdulería</option>
+                                        <option value="Heladería">Heladería</option>
+                                        <option value="Librería / Bazar">Librería / Bazar</option>
+                                        <option value="Indumentaria">Indumentaria</option>
+                                        <option value="Electrónica">Electrónica</option>
+                                        <option value="Servicios">Servicios</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Address */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={createForm.address}
+                                        onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
+                                        placeholder="Ej: San Martín 123, Ushuaia"
+                                        className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                                <textarea
+                                    value={createForm.description}
+                                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                                    placeholder="Breve descripción del comercio..."
+                                    rows={2}
+                                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm resize-none"
+                                />
+                            </div>
+
+                            {/* Info */}
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                                <p className="text-xs text-blue-700">
+                                    El comercio se creará con estado <strong>Aprobado</strong>. Si el email ya está registrado en MOOVY,
+                                    se le agregará el rol de comercio a la cuenta existente.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-5">
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="flex-1 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCreateMerchant}
+                                disabled={createLoading || !createForm.businessName || !createForm.email}
+                                className="flex-1 py-2.5 bg-moovy text-white rounded-lg hover:bg-red-700 transition text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {createLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                Crear Comercio
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
@@ -323,14 +539,23 @@ export default function ComerciosPage() {
                         </button>
                     </div>
                 ) : (
-                    <a
-                        href="/api/ops/export?type=merchants"
-                        className="btn-secondary flex items-center gap-2"
-                        download
-                    >
-                        <Download className="w-4 h-4" />
-                        CSV
-                    </a>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-moovy text-white rounded-lg text-sm font-bold hover:bg-red-700 transition shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Nuevo Comercio
+                        </button>
+                        <a
+                            href="/api/ops/export?type=merchants"
+                            className="btn-secondary flex items-center gap-2"
+                            download
+                        >
+                            <Download className="w-4 h-4" />
+                            CSV
+                        </a>
+                    </div>
                 )}
             </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
 // Seller Onboarding - Wizard de registro para vendedores marketplace
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -21,10 +22,19 @@ import {
 function SellerRegistroContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session, update: updateSession } = useSession();
     const fromProfile = searchParams.get("from") === "profile";
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Guard: if user already has SELLER role, redirect to seller panel
+    useEffect(() => {
+        const roles = (session?.user as any)?.roles || [];
+        if (roles.includes("SELLER")) {
+            router.replace("/vendedor/dashboard");
+        }
+    }, [session, router]);
 
     const [formData, setFormData] = useState({
         // Paso 1: Datos fiscales
@@ -82,13 +92,17 @@ function SellerRegistroContent() {
             const data = await res.json();
 
             if (!res.ok) {
-                // Si ya tiene el rol, dejar que continúe al paso 2
                 if (res.status === 409) {
-                    setStep(2);
+                    // Ya es vendedor — refrescar sesión y redirigir al panel
+                    await updateSession();
+                    router.replace("/vendedor/dashboard");
                     return;
                 }
                 throw new Error(data.error || "Error al activar vendedor");
             }
+
+            // Refrescar JWT para que incluya el nuevo rol SELLER
+            await updateSession();
 
             setStep(2);
         } catch (err: any) {
@@ -118,6 +132,9 @@ function SellerRegistroContent() {
                 const data = await res.json();
                 throw new Error(data.error || "Error al guardar perfil");
             }
+
+            // Asegurar que la sesión tenga SELLER antes de redirigir al panel
+            await updateSession();
 
             setStep(3);
         } catch (err: any) {

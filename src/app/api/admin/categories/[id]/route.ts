@@ -60,6 +60,9 @@ export async function PATCH(
         if (data.isActive !== undefined) updateData.isActive = data.isActive;
         if (data.order !== undefined) updateData.order = data.order;
         if (data.icon !== undefined) updateData.icon = data.icon;
+        if (data.scope !== undefined && ["STORE", "MARKETPLACE", "BOTH"].includes(data.scope)) {
+            updateData.scope = data.scope;
+        }
 
         const category = await prisma.category.update({
             where: { id },
