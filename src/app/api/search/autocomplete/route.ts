@@ -20,7 +20,10 @@ export async function GET(request: Request) {
             prisma.product.findMany({
                 where: {
                     isActive: true,
-                    name: { contains: q, mode: "insensitive" },
+                    OR: [
+                        { name: { contains: q, mode: "insensitive" } },
+                        { description: { contains: q, mode: "insensitive" } },
+                    ],
                 },
                 select: {
                     id: true,
@@ -36,7 +39,10 @@ export async function GET(request: Request) {
             prisma.listing.findMany({
                 where: {
                     isActive: true,
-                    title: { contains: q, mode: "insensitive" },
+                    OR: [
+                        { title: { contains: q, mode: "insensitive" } },
+                        { description: { contains: q, mode: "insensitive" } },
+                    ],
                 },
                 select: {
                     id: true,
@@ -51,7 +57,10 @@ export async function GET(request: Request) {
             prisma.merchant.findMany({
                 where: {
                     isActive: true,
-                    name: { contains: q, mode: "insensitive" },
+                    OR: [
+                        { name: { contains: q, mode: "insensitive" } },
+                        { description: { contains: q, mode: "insensitive" } },
+                    ],
                 },
                 select: {
                     id: true,

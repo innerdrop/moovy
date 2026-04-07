@@ -44,6 +44,9 @@ interface Merchant {
     deliveryTimeMin: number;
     deliveryTimeMax: number;
     deliveryFee: number;
+    deliveryRadiusKm: number;
+    minOrderAmount: number;
+    allowPickup: boolean;
     address: string | null;
 }
 
@@ -221,7 +224,7 @@ export default function ProductDetailClient() {
                     <p className="text-2xl font-bold text-[#e60012] mb-1">{formatPrice(product.price)}</p>
                     <p className="text-xs text-amber-600 font-medium mb-3 flex items-center gap-1">
                         <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                        +{Math.floor(product.price)} puntos MOOVER
+                        +{Math.max(1, Math.floor(product.price / 100))} puntos MOOVER
                     </p>
 
                     {/* Stock */}
@@ -287,19 +290,37 @@ export default function ProductDetailClient() {
                         </Link>
                     )}
 
-                    {/* ── Delivery & payment info ── */}
+                    {/* ── Delivery & payment info (dynamic from merchant config) ── */}
                     <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                                 <Truck className="w-4 h-4 text-green-600" />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-900">Envío a todo Ushuaia</p>
+                                <p className="text-sm font-medium text-gray-900">
+                                    Envío en Ushuaia{merchant?.deliveryRadiusKm ? ` (hasta ${merchant.deliveryRadiusKm} km)` : ""}
+                                </p>
                                 <p className="text-xs text-gray-500">
-                                    {merchant?.deliveryFee ? `$${merchant.deliveryFee.toLocaleString("es-AR")} de envío` : "Consultar costo de envío"}
+                                    {merchant?.deliveryTimeMin && merchant?.deliveryTimeMax
+                                        ? `${merchant.deliveryTimeMin}-${merchant.deliveryTimeMax} min`
+                                        : "Consultar tiempo de entrega"}
+                                    {merchant?.deliveryFee ? ` · $${merchant.deliveryFee.toLocaleString("es-AR")} de envío` : ""}
                                 </p>
                             </div>
                         </div>
+                        {merchant?.allowPickup && (
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                    <MapPin className="w-4 h-4 text-purple-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-900">Retiro en local</p>
+                                    <p className="text-xs text-gray-500">
+                                        {merchant.address || "Consultá la dirección en la tienda"}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                                 <CreditCard className="w-4 h-4 text-blue-600" />
@@ -318,6 +339,25 @@ export default function ProductDetailClient() {
                                 <p className="text-xs text-gray-500">Pagás al recibir tu pedido</p>
                             </div>
                         </div>
+                        {merchant?.minOrderAmount > 0 && (
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-900">Pedido mínimo {formatPrice(merchant.minOrderAmount)}</p>
+                                    <p className="text-xs text-gray-500">Este comercio requiere un monto mínimo</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Trust badge */}
+                    <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3.5 py-2.5 mb-5">
+                        <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <p className="text-xs text-green-700 font-medium">
+                            Compra protegida — garantía MOOVY en tu primer pedido
+                        </p>
                     </div>
 
                     {/* WhatsApp CTA */}
@@ -441,7 +481,7 @@ export default function ProductDetailClient() {
                                 <p className="text-3xl lg:text-4xl xl:text-5xl font-bold text-[#e60012]">{formatPrice(product.price)}</p>
                                 <p className="text-xs text-amber-600 font-medium mt-0.5 flex items-center gap-1">
                                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                                    +{Math.floor(product.price)} puntos MOOVER con esta compra
+                                    +{Math.max(1, Math.floor(product.price / 100))} puntos MOOVER con esta compra
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -528,12 +568,25 @@ export default function ProductDetailClient() {
                             </Link>
                         )}
 
-                        {/* Payment & Delivery info */}
+                        {/* Payment & Delivery info (dynamic from merchant config) */}
                         <div className="space-y-3 pt-4 lg:pt-6 border-t border-gray-100 lg:space-y-4">
                             <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
                                 <Truck className="w-4 h-4 text-green-500 flex-shrink-0 lg:w-5 lg:h-5" />
-                                <span>Envío a todo Ushuaia — {merchant?.deliveryFee ? `$${merchant.deliveryFee.toLocaleString("es-AR")}` : "consultar"}</span>
+                                <span>
+                                    Envío en Ushuaia{merchant?.deliveryRadiusKm ? ` (hasta ${merchant.deliveryRadiusKm} km)` : ""}
+                                    {" — "}
+                                    {merchant?.deliveryTimeMin && merchant?.deliveryTimeMax
+                                        ? `${merchant.deliveryTimeMin}-${merchant.deliveryTimeMax} min`
+                                        : "consultar"}
+                                    {merchant?.deliveryFee ? ` · $${merchant.deliveryFee.toLocaleString("es-AR")}` : ""}
+                                </span>
                             </div>
+                            {merchant?.allowPickup && (
+                                <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
+                                    <MapPin className="w-4 h-4 text-purple-500 flex-shrink-0 lg:w-5 lg:h-5" />
+                                    <span>Retiro en local — {merchant.address || "consultá la dirección en la tienda"}</span>
+                                </div>
+                            )}
                             <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
                                 <CreditCard className="w-4 h-4 text-blue-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Mercado Pago — tarjeta, débito o dinero en cuenta</span>
@@ -541,6 +594,16 @@ export default function ProductDetailClient() {
                             <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
                                 <Banknote className="w-4 h-4 text-emerald-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Efectivo al recibir</span>
+                            </div>
+                            {merchant?.minOrderAmount > 0 && (
+                                <div className="flex items-center gap-3 text-sm lg:text-base text-amber-600 font-medium">
+                                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 lg:w-5 lg:h-5" />
+                                    <span>Pedido mínimo {formatPrice(merchant.minOrderAmount)}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-3 text-sm lg:text-base text-green-600 font-medium">
+                                <Shield className="w-4 h-4 text-green-500 flex-shrink-0 lg:w-5 lg:h-5" />
+                                <span>Compra protegida — garantía MOOVY en tu primer pedido</span>
                             </div>
                         </div>
                     </div>

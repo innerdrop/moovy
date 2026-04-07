@@ -777,6 +777,9 @@ export default function CheckoutPage() {
                                         className="btn-primary w-full py-3 lg:py-4 lg:text-base lg:font-semibold mt-4 lg:mt-6"
                                     >
                                         Continuar
+                                        <span className="lg:hidden text-xs font-normal opacity-80 ml-2">
+                                            · {formatPrice(subtotal)}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -1065,6 +1068,15 @@ export default function CheckoutPage() {
                                     </span>
                                 </div>
                             </div>
+
+                            {/* Seguir comprando CTA */}
+                            <Link
+                                href="/productos"
+                                className="mt-4 lg:mt-6 flex items-center justify-center gap-2 w-full py-3 lg:py-3.5 border-2 border-gray-200 rounded-xl text-sm lg:text-base font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition"
+                            >
+                                <ShoppingBag className="w-4 h-4" />
+                                ¿Te falta algo? Seguir comprando
+                            </Link>
                         </div>
                     </div>
                 </div>

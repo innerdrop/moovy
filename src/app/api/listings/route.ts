@@ -40,10 +40,10 @@ export async function GET(request: Request) {
         }
 
         if (search) {
-            where.title = {
-                contains: search,
-                mode: "insensitive",
-            };
+            where.OR = [
+                { title: { contains: search, mode: "insensitive" } },
+                { description: { contains: search, mode: "insensitive" } },
+            ];
         }
 
         if (minPrice || maxPrice) {

@@ -69,6 +69,14 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
   ✅ HIGH: admin merchants usaba legacy role check (migrado a hasAnyRole)
   ✅ HIGH: admin merchants PATCH sin whitelist de campos (whitelist agregado)
   Pendiente: smoke test visual en navegador (Mauro)
+  UX improvements (smoke test visual — 2026-04-07):
+  ✅ Búsqueda por descripción además de nombre (autocomplete + listings)
+  ✅ Chat bubble draggable con snap-to-edge (fix hooks order que causaba error flash al login)
+  ✅ Notas de producto dinámicas desde config del merchant (radio, tiempo, fee, retiro, pedido mínimo)
+  ✅ FIX CRÍTICO: puntos MOOVER mostraban Math.floor(price) — 100x inflado — corregido a price/100
+  ✅ Badge "Compra protegida — garantía MOOVY" en página de producto
+  ✅ CTA "¿Te falta algo? Seguir comprando" en resumen del checkout
+  ✅ Subtotal visible en botón Continuar mobile (checkout)
 
 ## P1 — Sin esto los usuarios se van
 
@@ -233,3 +241,4 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
 - ✅ Regla de marca: NUNCA mencionar competidores (documentado en CLAUDE.md)
 - ✅ Header: MapPin + Ushuaia reemplaza "Ingresar" (rama anterior mergeada)
 - ✅ Fondos blancos uniformes en toda la home
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

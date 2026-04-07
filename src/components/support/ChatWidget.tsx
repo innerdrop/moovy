@@ -247,18 +247,85 @@ export function ChatWidget() {
         }
     };
 
+    // --- Draggable button logic (MUST be before any conditional return) ---
+    const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
+    const dragging = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0, bx: 0, by: 0 });
+    const hasMoved = useRef(false);
+
+    const getDefaultPos = useCallback(() => {
+        if (typeof window === "undefined") return { x: 358, y: 760 };
+        return { x: window.innerWidth - 72, y: window.innerHeight - 140 };
+    }, []);
+
+    const clampPos = useCallback((x: number, y: number) => {
+        const maxX = (typeof window !== "undefined" ? window.innerWidth : 430) - 56;
+        const maxY = (typeof window !== "undefined" ? window.innerHeight : 900) - 56;
+        return { x: Math.max(0, Math.min(x, maxX)), y: Math.max(0, Math.min(y, maxY)) };
+    }, []);
+
+    const handleDragStart = useCallback((clientX: number, clientY: number) => {
+        const pos = bubblePos || getDefaultPos();
+        dragging.current = true;
+        hasMoved.current = false;
+        dragStart.current = { x: clientX, y: clientY, bx: pos.x, by: pos.y };
+    }, [bubblePos, getDefaultPos]);
+
+    const handleDragMove = useCallback((clientX: number, clientY: number) => {
+        if (!dragging.current) return;
+        const dx = clientX - dragStart.current.x;
+        const dy = clientY - dragStart.current.y;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved.current = true;
+        setBubblePos(clampPos(dragStart.current.bx + dx, dragStart.current.by + dy));
+    }, [clampPos]);
+
+    const handleDragEnd = useCallback(() => {
+        dragging.current = false;
+        // Snap to nearest horizontal edge
+        if (bubblePos) {
+            const midX = (typeof window !== "undefined" ? window.innerWidth : 430) / 2;
+            const snapX = bubblePos.x < midX ? 16 : (typeof window !== "undefined" ? window.innerWidth : 430) - 72;
+            setBubblePos(prev => prev ? { ...prev, x: snapX } : prev);
+        }
+    }, [bubblePos]);
+
+    useEffect(() => {
+        const onMove = (e: TouchEvent) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        const onEnd = () => handleDragEnd();
+        const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+        const onMouseUp = () => handleDragEnd();
+        if (dragging.current) {
+            window.addEventListener("touchmove", onMove, { passive: false });
+            window.addEventListener("touchend", onEnd);
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
+        }
+        return () => {
+            window.removeEventListener("touchmove", onMove);
+            window.removeEventListener("touchend", onEnd);
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+        };
+    });
+
     // Users not logged in don't see the chat widget
     // They have WhatsApp, email, and /ayuda for support
     if (!session?.user) {
         return null;
     }
 
-    // Logged in
+    const currentPos = bubblePos || getDefaultPos();
+    const chatOpensUp = currentPos.y > 300;
     return (
-        <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40">
+        <div
+            className="fixed z-40"
+            style={{ left: currentPos.x, top: currentPos.y, touchAction: "none" }}
+        >
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full bg-[#e60012] text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center relative ${
+                onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+                onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
+                onClick={() => { if (!hasMoved.current) setIsOpen(!isOpen); }}
+                className={`w-14 h-14 rounded-full bg-[#e60012] text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center relative cursor-grab active:cursor-grabbing ${
                     isOpen ? "scale-125" : "hover:scale-110"
                 }`}
                 aria-label="Chat de soporte"
@@ -274,7 +341,7 @@ export function ChatWidget() {
             </button>
 
             {isOpen && (
-                <div className="absolute bottom-20 right-0 w-96 max-w-[calc(100vw-32px)] bg-white rounded-lg shadow-2xl flex flex-col h-96 md:h-[500px] animate-in slide-in-from-bottom-5">
+                <div className={`absolute ${chatOpensUp ? "bottom-20" : "top-20"} right-0 w-96 max-w-[calc(100vw-32px)] bg-white rounded-lg shadow-2xl flex flex-col h-96 md:h-[500px] animate-in slide-in-from-bottom-5`}>
                     {!activeChat ? (
                         <>
                             {/* Header - Chat list */}

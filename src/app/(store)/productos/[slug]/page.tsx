@@ -9,7 +9,16 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.somosmoovy.com";
 const includeOpts = {
     categories: { include: { category: true } } as const,
     images: { orderBy: { order: "asc" as const }, take: 4 },
-    merchant: { select: { name: true, slug: true } },
+    merchant: {
+        select: {
+            name: true,
+            slug: true,
+            isOpen: true,
+            deliveryRadiusKm: true,
+            minOrderAmount: true,
+            allowPickup: true,
+        },
+    },
 };
 
 async function getProduct(rawSlug: string) {

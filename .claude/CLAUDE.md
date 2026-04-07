@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-03-27 (marketing & publicidad + sidebar OPS reorganizado)
+Última actualización: 2026-04-07 (UX smoke test improvements + puntos fix)
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -105,6 +105,7 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Sidebar OPS reorganizado 2026-03-27: Nueva sección "Marketing" (Hero Banners, Banner Promo, Destacados). Paquetes B2B separados de Catálogo.
 - Dólar referencia 2026-03-27: USD 1 = ARS 1.450.
 - Biblia Financiera v3 2026-03-29: Documento maestro aprobado como FUENTE DE VERDAD para lanzamiento. Puntos MOOVER reformulados (10pts/$1K, $1/pt, 4 niveles, boost 30 días). Delivery con factor 2.2 + zonas A/B/C + 5% operativo embebido. Comisión 0% mes 1 comercios. Protocolo efectivo 3 capas. Publicidad 4 paquetes ($25K-$150K). Nafta $1,591/litro. Gastos fijos ~$440K/mes.
+- UX smoke test 2026-04-07: Búsqueda incluye descripción (OR clause). Chat bubble draggable (hooks antes de return condicional). Notas de producto dinámicas desde merchant config (deliveryRadiusKm, minOrderAmount, allowPickup). Fix crítico puntos MOOVER: display usaba Math.floor(price) = 100x inflado, corregido a Math.floor(price/100) = 10pts/$1K. Badge "Compra protegida". Checkout: CTA "Seguir comprando" + subtotal en botón mobile.
 
 ## Reglas de negocio (Biblia Financiera v3 — FUENTE DE VERDAD)
 - Comisión comercios MES 1: 0% (30 días gratis, inversión de adquisición)
@@ -733,4 +734,4 @@ antes de empezar a trabajar:
 1. Leé este archivo y PROJECT_STATUS.md antes de hacer cualquier cosa
 2. Trabajá las tareas en orden de PROJECT_STATUS.md
 3. Commiteá seguido con mensajes claros
-4. Cuando complete                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+4. Cuando complete
