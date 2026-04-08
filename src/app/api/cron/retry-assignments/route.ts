@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { startAssignmentCycle } from "@/lib/assignment-engine";
+import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { verifyBearerToken } from "@/lib/env-validation";
 import { cronLogger } from "@/lib/logger";
 
@@ -162,12 +162,52 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // --- Multi-vendor: retry stuck SubOrders without drivers ---
+        let subOrderRetried = 0;
+        const stuckSubOrders = await prisma.subOrder.findMany({
+            where: {
+                status: { in: ["PENDING", "PREPARING"] },
+                driverId: null,
+                pendingDriverId: null,
+                assignmentAttempts: { lt: MAX_RETRIES },
+                order: {
+                    isMultiVendor: true,
+                    status: { in: ["PENDING", "CONFIRMED", "PREPARING"] },
+                    deletedAt: null,
+                },
+            },
+            select: {
+                id: true,
+                assignmentAttempts: true,
+                order: { select: { id: true, orderNumber: true } },
+                merchant: { select: { name: true } },
+            },
+            take: 20, // Limit to prevent overload
+        });
+
+        for (const so of stuckSubOrders) {
+            cronLogger.info(
+                { subOrderId: so.id, orderId: so.order.id, orderNumber: so.order.orderNumber, attempt: so.assignmentAttempts + 1 },
+                "Retrying SubOrder assignment"
+            );
+
+            const result = await startSubOrderAssignmentCycle(so.id);
+            if (result.success) {
+                subOrderRetried++;
+                cronLogger.info({ subOrderId: so.id, driverId: result.driverId }, "SubOrder assignment retry succeeded");
+            } else {
+                cronLogger.warn({ subOrderId: so.id, error: result.error }, "SubOrder assignment retry failed");
+            }
+        }
+
         return NextResponse.json({
             success: true,
             retried,
             escalated,
+            subOrderRetried,
             total: stuckOrders.length,
-            message: `Processed ${stuckOrders.length} stuck orders. Retried: ${retried}, Escalated: ${escalated}`,
+            totalSubOrders: stuckSubOrders.length,
+            message: `Processed ${stuckOrders.length} stuck orders (retried: ${retried}, escalated: ${escalated}) + ${stuckSubOrders.length} stuck SubOrders (retried: ${subOrderRetried})`,
         });
     } catch (error) {
         cronLogger.error(

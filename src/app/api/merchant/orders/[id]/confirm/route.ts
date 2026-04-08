@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { startAssignmentCycle } from "@/lib/assignment-engine";
+import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { notifyBuyer } from "@/lib/notifications";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
@@ -55,7 +55,12 @@ export async function POST(
                 orderNumber: true,
                 total: true,
                 createdAt: true,
+                isMultiVendor: true,
                 merchant: { select: { name: true } },
+                subOrders: {
+                    where: { merchantId: merchant?.id ?? undefined },
+                    select: { id: true, status: true, merchantId: true },
+                },
             },
         });
 
@@ -115,26 +120,49 @@ export async function POST(
         // BUG FIX #2: Don't silently swallow assignment errors
         let assignmentError: Error | null = null;
         try {
-            const assignmentResult = await startAssignmentCycle(orderId);
-            if (!assignmentResult.success) {
-                assignmentError = new Error(assignmentResult.error || "Unknown assignment error");
-                console.error("[Confirm] Assignment failed:", assignmentResult.error);
+            if (order.isMultiVendor && order.subOrders.length > 0) {
+                // Multi-vendor: assign per SubOrder for this merchant
+                const subOrder = order.subOrders.find(so => so.merchantId === merchant?.id);
+                if (subOrder) {
+                    // Update SubOrder status to PREPARING
+                    await prisma.subOrder.update({
+                        where: { id: subOrder.id },
+                        data: { status: "PREPARING" },
+                    });
 
-                // Notify admin/ops about the failed assignment so they can investigate
-                // The retry-assignments cron job will pick this up and retry
-                emitSocket("assignment_failed", "admin:orders", {
-                    orderId,
-                    orderNumber: order.orderNumber,
-                    reason: assignmentResult.error,
-                    timestamp: new Date().toISOString(),
-                }).catch(console.error);
+                    const result = await startSubOrderAssignmentCycle(subOrder.id);
+                    if (!result.success) {
+                        assignmentError = new Error(result.error || "Unknown assignment error");
+                        console.error("[Confirm] SubOrder assignment failed:", result.error);
+
+                        emitSocket("assignment_failed", "admin:orders", {
+                            orderId,
+                            subOrderId: subOrder.id,
+                            orderNumber: order.orderNumber,
+                            reason: result.error,
+                            timestamp: new Date().toISOString(),
+                        }).catch(console.error);
+                    }
+                }
+            } else {
+                // Single-vendor: use legacy Order-level assignment
+                const assignmentResult = await startAssignmentCycle(orderId);
+                if (!assignmentResult.success) {
+                    assignmentError = new Error(assignmentResult.error || "Unknown assignment error");
+                    console.error("[Confirm] Assignment failed:", assignmentResult.error);
+
+                    emitSocket("assignment_failed", "admin:orders", {
+                        orderId,
+                        orderNumber: order.orderNumber,
+                        reason: assignmentResult.error,
+                        timestamp: new Date().toISOString(),
+                    }).catch(console.error);
+                }
             }
         } catch (err) {
             assignmentError = err instanceof Error ? err : new Error(String(err));
             console.error("[Confirm] Error starting assignment cycle:", assignmentError);
 
-            // Notify admin/ops about the error so they can investigate
-            // The retry-assignments cron job will pick this up and retry
             emitSocket("assignment_failed", "admin:orders", {
                 orderId,
                 orderNumber: order.orderNumber,

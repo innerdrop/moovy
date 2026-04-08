@@ -469,6 +469,283 @@ export async function startAssignmentCycle(
 }
 
 /**
+ * Start the assignment cycle for a single SubOrder (multi-vendor delivery).
+ * Uses SubOrder's own assignment fields instead of PendingAssignment.
+ * Includes smart batching: if another SubOrder from the same parent order
+ * has a merchant within batchRadiusKm AND combined volume fits the vehicle,
+ * the same driver is offered both.
+ */
+export async function startSubOrderAssignmentCycle(
+    subOrderId: string
+): Promise<{ success: boolean; driverId?: string; batchedSubOrderIds?: string[]; error?: string }> {
+    try {
+        const subOrder = await prisma.subOrder.findUnique({
+            where: { id: subOrderId },
+            include: {
+                merchant: {
+                    select: { latitude: true, longitude: true, name: true, category: true },
+                },
+                seller: {
+                    select: { id: true, displayName: true },
+                },
+                items: {
+                    select: { quantity: true, name: true, packageCategoryName: true },
+                },
+                order: {
+                    select: {
+                        id: true,
+                        orderNumber: true,
+                        userId: true,
+                        addressId: true,
+                        address: { select: { latitude: true, longitude: true, street: true, number: true } },
+                        isMultiVendor: true,
+                    },
+                },
+            },
+        });
+
+        if (!subOrder) return { success: false, error: "SubOrder no encontrado" };
+        if (subOrder.driverId) return { success: false, error: "La sub-orden ya tiene repartidor asignado" };
+
+        // Determine origin coordinates (merchant or seller's merchant)
+        const merchantLat = subOrder.merchant?.latitude;
+        const merchantLng = subOrder.merchant?.longitude;
+
+        if (!merchantLat || !merchantLng) {
+            return { success: false, error: "El comercio de la sub-orden no tiene coordenadas configuradas" };
+        }
+
+        // Calculate package category from SubOrder items
+        const itemCategories = subOrder.items.map((item) => ({
+            packageCategory: item.packageCategoryName || null,
+            quantity: item.quantity,
+            name: item.name || undefined,
+        }));
+        const subOrderCategory = await calculateOrderCategory(itemCategories, {
+            merchantCategoryName: subOrder.merchant?.category ?? undefined,
+        });
+
+        // --- Smart Batching: check sibling SubOrders ---
+        const batchRadiusKm = 3; // configurable in the future
+        let batchedSubOrderIds: string[] = [];
+        let combinedVehicles = subOrderCategory.allowedVehicles;
+
+        if (subOrder.order.isMultiVendor) {
+            const siblingSubOrders = await prisma.subOrder.findMany({
+                where: {
+                    orderId: subOrder.order.id,
+                    id: { not: subOrderId },
+                    driverId: null, // Not yet assigned
+                    status: { in: ["PENDING", "PREPARING"] },
+                },
+                include: {
+                    merchant: {
+                        select: { latitude: true, longitude: true, name: true, category: true },
+                    },
+                    items: {
+                        select: { quantity: true, name: true, packageCategoryName: true },
+                    },
+                },
+            });
+
+            for (const sibling of siblingSubOrders) {
+                if (!sibling.merchant?.latitude || !sibling.merchant?.longitude) continue;
+
+                // Check distance between merchants
+                const dist = calculateDistance(
+                    merchantLat, merchantLng,
+                    sibling.merchant.latitude, sibling.merchant.longitude
+                );
+
+                if (dist <= batchRadiusKm) {
+                    // Calculate combined volume
+                    const siblingItems = sibling.items.map((item) => ({
+                        packageCategory: item.packageCategoryName || null,
+                        quantity: item.quantity,
+                        name: item.name || undefined,
+                    }));
+                    const combinedItems = [...itemCategories, ...siblingItems];
+                    const combinedCategory = await calculateOrderCategory(combinedItems, {
+                        merchantCategoryName: subOrder.merchant?.category ?? undefined,
+                    });
+
+                    // If combined volume still fits in at least one vehicle type, batch them
+                    if (combinedCategory.allowedVehicles.length > 0) {
+                        batchedSubOrderIds.push(sibling.id);
+                        combinedVehicles = combinedCategory.allowedVehicles;
+                        deliveryLogger.info(
+                            {
+                                subOrderId,
+                                siblingId: sibling.id,
+                                distance: dist.toFixed(2),
+                                combinedCategory: combinedCategory.category,
+                                combinedVehicles,
+                            },
+                            "Smart batch: sibling SubOrder qualifies for same driver"
+                        );
+                    } else {
+                        deliveryLogger.info(
+                            { subOrderId, siblingId: sibling.id, distance: dist.toFixed(2) },
+                            "Smart batch: sibling too heavy for single vehicle, assigning separately"
+                        );
+                    }
+                }
+            }
+        }
+
+        // Read timeout from config
+        const timeoutStr = await getConfig("driver_response_timeout_seconds", "20");
+        const timeoutSeconds = parseInt(timeoutStr, 10) || 20;
+        const expiresAt = new Date(Date.now() + timeoutSeconds * 1000);
+
+        // Find next eligible driver (using combined vehicles if batching)
+        const vehiclesToUse = batchedSubOrderIds.length > 0 ? combinedVehicles : subOrderCategory.allowedVehicles;
+        const attemptedIds = (subOrder.attemptedDriverIds as string[]) || [];
+
+        const driver = await findNextEligibleDriver(
+            merchantLat,
+            merchantLng,
+            vehiclesToUse,
+            attemptedIds
+        );
+
+        if (!driver) {
+            // Update SubOrder as unassignable
+            await prisma.subOrder.update({
+                where: { id: subOrderId },
+                data: {
+                    pendingDriverId: null,
+                    assignmentExpiresAt: null,
+                },
+            });
+
+            notifyOps(
+                "⚠️ Sub-orden sin repartidor",
+                `La sub-orden del pedido ${subOrder.order.orderNumber} (${subOrder.merchant?.name || "Vendedor"}) no tiene repartidores disponibles.`,
+                subOrder.order.id
+            ).catch((err) => deliveryLogger.error({ error: err }, "Ops notification error"));
+
+            return { success: false, error: "No hay repartidores disponibles en la zona" };
+        }
+
+        // Update SubOrder with pending driver
+        await prisma.subOrder.update({
+            where: { id: subOrderId },
+            data: {
+                pendingDriverId: driver.id,
+                assignmentExpiresAt: expiresAt,
+                assignmentAttempts: { increment: 1 },
+                attemptedDriverIds: [...attemptedIds, driver.id],
+            },
+        });
+
+        // If batching, also mark sibling SubOrders with the same pending driver
+        if (batchedSubOrderIds.length > 0) {
+            await prisma.subOrder.updateMany({
+                where: { id: { in: batchedSubOrderIds } },
+                data: {
+                    pendingDriverId: driver.id,
+                    assignmentExpiresAt: expiresAt,
+                    assignmentAttempts: { increment: 1 },
+                },
+            });
+        }
+
+        // Calculate delivery details for the offer
+        const distanceToMerchant = driver.distance;
+        const distanceToCustomer =
+            subOrder.order.address?.latitude && subOrder.order.address?.longitude
+                ? calculateDistance(
+                      merchantLat,
+                      merchantLng,
+                      subOrder.order.address.latitude,
+                      subOrder.order.address.longitude
+                  )
+                : null;
+
+        const estimatedEarnings = await calculateEstimatedEarnings(
+            subOrderCategory.category,
+            distanceToMerchant + (distanceToCustomer ?? 0)
+        );
+        const estimatedTime = estimateTravelTime(
+            distanceToMerchant + (distanceToCustomer ?? 0),
+            driver.vehicleType || "MOTO"
+        );
+        const productDescription = subOrder.items.map((i) => `${i.quantity}x ${i.name}`).join(", ");
+
+        // Push notification to driver
+        const merchantName = subOrder.merchant?.name || subOrder.seller?.displayName || "Comercio";
+        sendNewOfferNotification(
+            driver.userId,
+            merchantName,
+            estimatedEarnings,
+            subOrder.order.id
+        ).catch((err) => deliveryLogger.error({ error: err }, "Push error (SubOrder)"));
+
+        // Shipment type info
+        const shipmentType = getShipmentType(subOrderCategory.shipmentTypeCode);
+
+        // Socket event to driver
+        emitSocket("orden_pendiente", `driver:${driver.id}`, {
+            orderId: subOrder.order.id,
+            subOrderId,
+            orderNumber: subOrder.order.orderNumber,
+            merchantName,
+            packageCategory: subOrderCategory.category,
+            shipmentTypeCode: subOrderCategory.shipmentTypeCode,
+            shipmentTypeName: shipmentType.name,
+            shipmentTypeIcon: shipmentType.icon,
+            requiresThermalBag: shipmentType.requiresThermalBag,
+            maxDeliveryMinutes: shipmentType.maxDeliveryMinutes,
+            distanceToMerchant: Math.round(distanceToMerchant * 10) / 10,
+            distanceToCustomer: distanceToCustomer != null ? Math.round(distanceToCustomer * 10) / 10 : null,
+            estimatedEarnings,
+            estimatedTime,
+            expiresAt: expiresAt.toISOString(),
+            productDescription,
+            isMultiVendor: true,
+            batchedCount: batchedSubOrderIds.length + 1,
+        }).catch((err) => deliveryLogger.error({ error: err }, "Socket error (SubOrder)"));
+
+        // Notify admin
+        emitSocket("assignment_started", "admin:orders", {
+            orderId: subOrder.order.id,
+            subOrderId,
+            orderNumber: subOrder.order.orderNumber,
+            merchantName,
+            driverId: driver.id,
+            attemptNumber: subOrder.assignmentAttempts + 1,
+            isSubOrder: true,
+            batchedCount: batchedSubOrderIds.length + 1,
+        }).catch((err) => deliveryLogger.error({ error: err }, "Socket admin error (SubOrder)"));
+
+        deliveryLogger.info(
+            {
+                subOrderId,
+                orderId: subOrder.order.id,
+                orderNumber: subOrder.order.orderNumber,
+                merchantName,
+                driverId: driver.id,
+                distanceKm: driver.distance.toFixed(2),
+                batchedSubOrders: batchedSubOrderIds,
+            },
+            "SubOrder offered to driver"
+        );
+
+        return {
+            success: true,
+            driverId: driver.id,
+            batchedSubOrderIds: batchedSubOrderIds.length > 0 ? batchedSubOrderIds : undefined,
+        };
+    } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        const errStack = error instanceof Error ? error.stack : undefined;
+        deliveryLogger.error({ error: errMsg, stack: errStack, subOrderId }, "Error starting SubOrder assignment cycle");
+        return { success: false, error: "Error interno al asignar repartidor para sub-orden" };
+    }
+}
+
+/**
  * Process all expired pending assignments (cron tick).
  * Cascades to next driver or marks as UNASSIGNABLE.
  */

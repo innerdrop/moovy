@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
-import { startAssignmentCycle } from "@/lib/assignment-engine";
+import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 
 /** Emit a socket event (fire-and-forget) */
 async function emitSocket(event: string, room: string, data: Record<string, unknown>): Promise<void> {
@@ -65,6 +65,7 @@ export async function POST(
                         scheduledSlotStart: true,
                         scheduledSlotEnd: true,
                         status: true,
+                        isMultiVendor: true,
                         subOrders: {
                             select: {
                                 id: true,
@@ -199,10 +200,21 @@ export async function POST(
                 // Start assignment cycle for immediate delivery
                 let assignmentStarted = false;
                 try {
-                    const result = await startAssignmentCycle(order.id);
-                    assignmentStarted = result.success;
-                    if (!result.success) {
-                        console.warn(`[SellerConfirm] Assignment failed for ${order.orderNumber}: ${result.error}`);
+                    if (order.isMultiVendor && order.subOrders.length > 1) {
+                        // Multi-vendor: assign per SubOrder independently
+                        const results = await Promise.all(
+                            order.subOrders.map((so) => startSubOrderAssignmentCycle(so.id))
+                        );
+                        assignmentStarted = results.some((r) => r.success);
+                        results.filter((r) => !r.success).forEach((r) => {
+                            console.warn(`[SellerConfirm] SubOrder assignment failed: ${r.error}`);
+                        });
+                    } else {
+                        const result = await startAssignmentCycle(order.id);
+                        assignmentStarted = result.success;
+                        if (!result.success) {
+                            console.warn(`[SellerConfirm] Assignment failed for ${order.orderNumber}: ${result.error}`);
+                        }
                     }
                 } catch (err) {
                     console.error("[SellerConfirm] Error starting assignment:", err);
