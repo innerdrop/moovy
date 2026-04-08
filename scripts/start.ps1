@@ -19,20 +19,30 @@ if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al sincronizar develop" }
 # 2. Seleccionar tipo de rama
 Write-Host ""
 Write-Host "Selecciona el tipo de cambio:" -ForegroundColor Cyan
-Write-Host "  1. feat  - Nueva funcionalidad"
-Write-Host "  2. fix   - Correccion de bug"
-Write-Host "  3. hotfix - Correccion urgente"
+Write-Host "  1. feat     - Nueva funcionalidad"
+Write-Host "  2. fix      - Correccion de bug"
+Write-Host "  3. hotfix   - Correccion urgente"
 Write-Host "  4. refactor - Mejora de codigo"
+Write-Host "  5. config   - Cambios de configuracion/parametros"
+Write-Host "  6. chore    - Mantenimiento (deps, scripts, limpieza)"
+Write-Host "  7. docs     - Documentacion"
+Write-Host "  8. style    - Cambios visuales/UI"
+Write-Host "  9. perf     - Mejoras de rendimiento"
 Write-Host ""
 
-$option = Read-Host "Opcion (1-4)"
+$option = Read-Host "Opcion (1-9)"
 
 switch ($option) {
     "1" { $prefix = "feat" }
     "2" { $prefix = "fix" }
     "3" { $prefix = "hotfix" }
     "4" { $prefix = "refactor" }
-    default { 
+    "5" { $prefix = "config" }
+    "6" { $prefix = "chore" }
+    "7" { $prefix = "docs" }
+    "8" { $prefix = "style" }
+    "9" { $prefix = "perf" }
+    default {
         Write-Host "[ERROR] Opcion invalida" -ForegroundColor Red
         exit 1
     }
