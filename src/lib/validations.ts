@@ -27,6 +27,8 @@ export const OrderGroupSchema = z.object({
     merchantId: z.string().optional(),
     sellerId: z.string().optional(),
     vendorName: z.string().optional(),
+    deliveryFee: z.number().min(0).default(0),
+    distanceKm: z.number().min(0).default(0),
     items: z.array(OrderItemSchema).min(1),
 });
 

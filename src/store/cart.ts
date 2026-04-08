@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const SESSION_STORAGE_KEY = "moovy_cart_session";
+const MULTI_VENDOR_WARNED_KEY = "moovy_multi_vendor_warned";
 
 export interface CartItem {
     id: string;
@@ -69,6 +70,21 @@ export const useCartStore = create<CartStore>()(
             addItem: (item) => {
                 const { items } = get();
 
+                // Detect if adding from a NEW vendor (multi-vendor order)
+                const newVendorKey = item.type === "listing" && item.sellerId
+                    ? `seller_${item.sellerId}`
+                    : `merchant_${item.merchantId || "unknown"}`;
+
+                const existingVendors = new Set(
+                    items.map(i =>
+                        i.type === "listing" && i.sellerId
+                            ? `seller_${i.sellerId}`
+                            : `merchant_${i.merchantId || "unknown"}`
+                    )
+                );
+
+                const isNewVendor = items.length > 0 && !existingVendors.has(newVendorKey);
+
                 const existingIndex = items.findIndex(
                     (i) => i.productId === item.productId && i.variantId === item.variantId
                 );
@@ -88,7 +104,22 @@ export const useCartStore = create<CartStore>()(
                     set({ items: [...items, newItem] });
                 }
 
-                // No auto-open: feedback is via button state + toast + FloatingCartButton
+                // Show multi-vendor info toast once per session
+                if (isNewVendor) {
+                    try {
+                        const warned = sessionStorage.getItem(MULTI_VENDOR_WARNED_KEY);
+                        if (!warned) {
+                            sessionStorage.setItem(MULTI_VENDOR_WARNED_KEY, "1");
+                            // Lazy import toast to avoid circular deps
+                            import("@/store/toast").then(({ toast }) => {
+                                toast.info(
+                                    "Tu pedido incluye productos de distintos comercios. Cada uno tiene su propio envío.",
+                                    6000
+                                );
+                            });
+                        }
+                    } catch {}
+                }
             },
 
             removeItem: (productId, variantId) => {

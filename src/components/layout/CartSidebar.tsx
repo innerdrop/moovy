@@ -1,7 +1,7 @@
 "use client";
 
-// Cart Modal Component - Centered modal instead of fullscreen
-import { X, Plus, Minus, Trash2, ShoppingBag, UserPlus } from "lucide-react";
+// Cart Modal Component - Centered modal with multi-vendor grouping
+import { X, Plus, Minus, Trash2, ShoppingBag, UserPlus, Store, User, Truck } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCartStore } from "@/store/cart";
@@ -15,12 +15,15 @@ export default function CartSidebar() {
     const removeItem = useCartStore((state) => state.removeItem);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const getTotalPrice = useCartStore((state) => state.getTotalPrice);
+    const groupByVendor = useCartStore((state) => state.groupByVendor);
     const clearCart = useCartStore((state) => state.clearCart);
 
     if (!isOpen) return null;
 
     const total = getTotalPrice();
     const isLoggedIn = status === "authenticated";
+    const vendorGroups = items.length > 0 ? groupByVendor() : [];
+    const isMultiVendor = vendorGroups.length > 1;
 
     return (
         <>
@@ -95,55 +98,81 @@ export default function CartSidebar() {
                                 </Link>
                             </div>
                         ) : (
-                            // Has items
-                            <ul className="space-y-4">
-                                {items.map((item) => (
-                                    <li key={item.id} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
-                                        {/* Image placeholder */}
-                                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                                            {item.image ? (
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-                                            ) : (
-                                                <ShoppingBag className="w-6 h-6 text-gray-400" />
-                                            )}
-                                        </div>
+                            // Has items — grouped by vendor
+                            <div className="space-y-4">
+                                {/* Multi-vendor info banner */}
+                                {isMultiVendor && (
+                                    <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                                        <Truck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                        <p className="text-xs text-blue-700 font-medium">
+                                            {vendorGroups.length} comercios · cada uno con su propio envío
+                                        </p>
+                                    </div>
+                                )}
 
-                                        {/* Details */}
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-navy truncate">{item.name}</h3>
-                                            {item.variantName && (
-                                                <p className="text-xs text-gray-500">{item.variantName}</p>
-                                            )}
-                                            <p className="text-moovy font-semibold">{formatPrice(item.price)}</p>
-
-                                            {/* Quantity Controls */}
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <button
-                                                    onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
-                                                    className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-moovy transition"
-                                                >
-                                                    <Minus className="w-3 h-3" />
-                                                </button>
-                                                <span className="font-medium w-8 text-center">{item.quantity}</span>
-                                                <button
-                                                    onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
-                                                    className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-moovy transition"
-                                                >
-                                                    <Plus className="w-3 h-3" />
-                                                </button>
+                                {vendorGroups.map((group) => (
+                                    <div key={group.vendorId}>
+                                        {/* Vendor header — only show if multi-vendor */}
+                                        {isMultiVendor && (
+                                            <div className="flex items-center gap-1.5 mb-2 px-1">
+                                                {group.vendorType === "seller" ? (
+                                                    <User className="w-3.5 h-3.5 text-purple-500" />
+                                                ) : (
+                                                    <Store className="w-3.5 h-3.5 text-[#e60012]" />
+                                                )}
+                                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    {group.vendorName}
+                                                </span>
+                                                <span className="text-xs text-gray-400 ml-auto">
+                                                    {formatPrice(group.subtotal)}
+                                                </span>
                                             </div>
-                                        </div>
+                                        )}
 
-                                        {/* Remove Button */}
-                                        <button
-                                            onClick={() => removeItem(item.productId, item.variantId)}
-                                            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition self-start"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </li>
+                                        <ul className="space-y-3">
+                                            {group.items.map((item) => (
+                                                <li key={item.id} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
+                                                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                                        {item.image ? (
+                                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                                                        ) : (
+                                                            <ShoppingBag className="w-6 h-6 text-gray-400" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-medium text-navy truncate">{item.name}</h3>
+                                                        {item.variantName && (
+                                                            <p className="text-xs text-gray-500">{item.variantName}</p>
+                                                        )}
+                                                        <p className="text-moovy font-semibold">{formatPrice(item.price)}</p>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <button
+                                                                onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
+                                                                className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-moovy transition"
+                                                            >
+                                                                <Minus className="w-3 h-3" />
+                                                            </button>
+                                                            <span className="font-medium w-8 text-center">{item.quantity}</span>
+                                                            <button
+                                                                onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
+                                                                className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-moovy transition"
+                                                            >
+                                                                <Plus className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => removeItem(item.productId, item.variantId)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition self-start"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         )}
                     </div>
 

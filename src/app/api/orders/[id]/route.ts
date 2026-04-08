@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { startAssignmentCycle } from "@/lib/assignment-engine";
+import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { sendOrderReadyNotification } from "@/lib/push";
 import { notifyBuyer } from "@/lib/notifications";
 import { UpdateOrderSchema, validateInput } from "@/lib/validations";
@@ -31,6 +31,14 @@ export async function GET(
                 user: { select: { id: true, name: true, email: true, phone: true } },
                 driver: { select: { id: true, latitude: true, longitude: true, user: { select: { name: true, phone: true } } } },
                 merchant: { select: { name: true, latitude: true, longitude: true, address: true } },
+                subOrders: {
+                    include: {
+                        merchant: { select: { id: true, name: true, latitude: true, longitude: true, address: true } },
+                        seller: { select: { id: true, displayName: true } },
+                        driver: { select: { id: true, latitude: true, longitude: true, user: { select: { name: true, phone: true } } } },
+                        items: { select: { id: true, name: true, quantity: true, price: true } },
+                    },
+                },
             },
         });
 
@@ -149,7 +157,11 @@ export async function PATCH(
         // Get current order to check status change AND get merchantId/userId for socket rooms
         const existingOrder = await prisma.order.findUnique({
             where: { id },
-            select: { id: true, status: true, merchantId: true, userId: true, driverId: true, orderNumber: true },
+            select: {
+                id: true, status: true, merchantId: true, userId: true, driverId: true, orderNumber: true,
+                isMultiVendor: true,
+                subOrders: { select: { id: true, status: true, driverId: true, merchantId: true } },
+            },
         });
 
         const order = await prisma.order.update({
@@ -262,28 +274,58 @@ export async function PATCH(
 
         // Trigger auto-assignment when status changes to PREPARING
         if (data.status === "PREPARING" && existingOrder?.status !== "PREPARING") {
-            // Fire and forget - don't block the response
-            startAssignmentCycle(id).then((result) => {
-                if (result.success) {
-                    orderLogger.info({ orderId: id, orderNumber: order.orderNumber, driverId: result.driverId }, "Order offered to driver");
-                } else {
-                    orderLogger.warn({ orderId: id, orderNumber: order.orderNumber, error: result.error }, "Assignment failed");
+            if (existingOrder?.isMultiVendor && existingOrder.subOrders?.length > 0) {
+                // Multi-vendor: assign per SubOrder
+                for (const so of existingOrder.subOrders) {
+                    if (!so.driverId) {
+                        startSubOrderAssignmentCycle(so.id).then((result) => {
+                            if (result.success) {
+                                orderLogger.info({ orderId: id, subOrderId: so.id, driverId: result.driverId }, "SubOrder offered to driver");
+                            } else {
+                                orderLogger.warn({ orderId: id, subOrderId: so.id, error: result.error }, "SubOrder assignment failed");
+                            }
+                        });
+                    }
                 }
-            });
+            } else {
+                // Single-vendor: legacy Order-level assignment
+                startAssignmentCycle(id).then((result) => {
+                    if (result.success) {
+                        orderLogger.info({ orderId: id, orderNumber: order.orderNumber, driverId: result.driverId }, "Order offered to driver");
+                    } else {
+                        orderLogger.warn({ orderId: id, orderNumber: order.orderNumber, error: result.error }, "Assignment failed");
+                    }
+                });
+            }
         }
 
         // Safety net: if order reaches READY without a driver, re-attempt assignment
         if (data.status === "READY" && existingOrder?.status !== "READY" && !order.driverId) {
-            // Check if there's already an active PendingAssignment before re-triggering
-            const activePending = await prisma.pendingAssignment.findUnique({ where: { orderId: id } });
-            if (!activePending || activePending.status !== "WAITING") {
-                startAssignmentCycle(id).then((result) => {
-                    if (result.success) {
-                        orderLogger.info({ orderId: id, orderNumber: order.orderNumber, driverId: result.driverId }, "READY safety net: Order offered to driver");
-                    } else {
-                        orderLogger.warn({ orderId: id, orderNumber: order.orderNumber, error: result.error }, "READY safety net: Assignment failed");
+            if (existingOrder?.isMultiVendor && existingOrder.subOrders?.length > 0) {
+                // Multi-vendor: retry per SubOrder without driver
+                for (const so of existingOrder.subOrders) {
+                    if (!so.driverId) {
+                        startSubOrderAssignmentCycle(so.id).then((result) => {
+                            if (result.success) {
+                                orderLogger.info({ orderId: id, subOrderId: so.id, driverId: result.driverId }, "READY safety net: SubOrder offered to driver");
+                            } else {
+                                orderLogger.warn({ orderId: id, subOrderId: so.id, error: result.error }, "READY safety net: SubOrder assignment failed");
+                            }
+                        });
                     }
-                });
+                }
+            } else {
+                // Check if there's already an active PendingAssignment before re-triggering
+                const activePending = await prisma.pendingAssignment.findUnique({ where: { orderId: id } });
+                if (!activePending || activePending.status !== "WAITING") {
+                    startAssignmentCycle(id).then((result) => {
+                        if (result.success) {
+                            orderLogger.info({ orderId: id, orderNumber: order.orderNumber, driverId: result.driverId }, "READY safety net: Order offered to driver");
+                        } else {
+                            orderLogger.warn({ orderId: id, orderNumber: order.orderNumber, error: result.error }, "READY safety net: Assignment failed");
+                        }
+                    });
+                }
             }
         }
 

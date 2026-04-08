@@ -91,10 +91,21 @@ interface OrderDetail {
     merchantRatingComment?: string;
     sellerRating?: number;
     sellerRatingComment?: string;
+    isMultiVendor?: boolean;
     subOrders?: Array<{
         id: string;
+        status: string;
+        subtotal: number;
+        deliveryFee: number;
+        total: number;
+        deliveryStatus?: string;
+        merchantId?: string;
         sellerId?: string;
+        driverId?: string;
+        merchant?: { id: string; name: string; latitude?: number; longitude?: number; address?: string };
         seller?: { id: string; displayName?: string };
+        driver?: { id: string; latitude?: number; longitude?: number; user: { name: string; phone?: string } };
+        items?: Array<{ id: string; name: string; quantity: number; price: number }>;
     }>;
 }
 
@@ -405,8 +416,115 @@ export default function OrderDetailPage() {
                     </div>
                 )}
 
-                {/* ── Map ── */}
-                {showMap && (
+                {/* ── Multi-vendor SubOrder Deliveries ── */}
+                {order.isMultiVendor && order.subOrders && order.subOrders.length > 1 && (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 px-1">
+                            <Truck className="w-4 h-4 text-blue-500" />
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                {order.subOrders.length} entregas independientes
+                            </p>
+                        </div>
+
+                        {order.subOrders.map((so, idx) => {
+                            const soMerchant = so.merchant;
+                            const soDriver = so.driver;
+                            const soStatusLabel = (() => {
+                                const map: Record<string, string> = {
+                                    PENDING: "Pendiente",
+                                    CONFIRMED: "Confirmado",
+                                    PREPARING: "Preparando",
+                                    READY: "Listo",
+                                    PICKED_UP: "Retirado",
+                                    IN_DELIVERY: "En camino",
+                                    DELIVERED: "Entregado",
+                                    CANCELLED: "Cancelado",
+                                };
+                                return map[so.status] || so.status;
+                            })();
+                            const soIsActive = !["DELIVERED", "CANCELLED"].includes(so.status);
+                            const showSoMap = soIsActive && ["READY", "PICKED_UP", "IN_DELIVERY"].includes(so.status);
+
+                            return (
+                                <div key={so.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                                    {/* SubOrder header */}
+                                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${so.status === "DELIVERED" ? "bg-green-50" : soIsActive ? "bg-blue-50" : "bg-gray-50"}`}>
+                                            <Store className={`w-4 h-4 ${so.status === "DELIVERED" ? "text-green-500" : soIsActive ? "text-blue-500" : "text-gray-400"}`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-gray-900 truncate">
+                                                {soMerchant?.name || so.seller?.displayName || `Entrega ${idx + 1}`}
+                                            </p>
+                                            <p className={`text-xs font-medium ${so.status === "DELIVERED" ? "text-green-600" : soIsActive ? "text-blue-600" : "text-gray-400"}`}>
+                                                {soStatusLabel}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs font-bold text-gray-500">
+                                            Envío: {formatPrice(so.deliveryFee)}
+                                        </span>
+                                    </div>
+
+                                    {/* Items in this SubOrder */}
+                                    {so.items && so.items.length > 0 && (
+                                        <div className="px-4 py-2 space-y-1">
+                                            {so.items.map(item => (
+                                                <div key={item.id} className="flex items-center justify-between text-xs">
+                                                    <span className="text-gray-600 truncate">{item.quantity}x {item.name}</span>
+                                                    <span className="text-gray-500 font-medium flex-shrink-0 ml-2">{formatPrice(item.price * item.quantity)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Mini map for active SubOrder deliveries */}
+                                    {showSoMap && soMerchant && (
+                                        <div className="border-t border-gray-100">
+                                            <OrderTrackingMiniMap
+                                                orderId={order.id}
+                                                orderStatus={so.status}
+                                                merchantLat={soMerchant.latitude}
+                                                merchantLng={soMerchant.longitude}
+                                                merchantName={soMerchant.name}
+                                                customerLat={order.address?.latitude}
+                                                customerLng={order.address?.longitude}
+                                                customerAddress={`${order.address.street} ${order.address.number}`}
+                                                initialDriverLat={soDriver?.latitude}
+                                                initialDriverLng={soDriver?.longitude}
+                                                height="150px"
+                                                showEta
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Driver info for this SubOrder */}
+                                    {soDriver && (
+                                        <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-2.5">
+                                            <Truck className="w-3.5 h-3.5 text-green-500" />
+                                            <span className="text-xs font-medium text-gray-700">{soDriver.user.name}</span>
+                                            {soDriver.user.phone && (
+                                                <a href={`tel:${soDriver.user.phone}`} className="ml-auto text-xs text-green-600 font-semibold hover:underline">
+                                                    Llamar
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Waiting for driver */}
+                                    {!soDriver && soIsActive && ["PREPARING", "READY"].includes(so.status) && (
+                                        <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-2">
+                                            <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" />
+                                            <span className="text-xs text-gray-400">Buscando repartidor...</span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* ── Map (single-vendor only) ── */}
+                {showMap && !order.isMultiVendor && (
                     <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                         <OrderTrackingMiniMap
                             orderId={order.id}
@@ -425,8 +543,8 @@ export default function OrderDetailPage() {
                     </div>
                 )}
 
-                {/* ── Merchant ── */}
-                {order.merchant && (
+                {/* ── Merchant (single-vendor only) ── */}
+                {order.merchant && !order.isMultiVendor && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <div className="flex items-center gap-3">
                             <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -530,8 +648,8 @@ export default function OrderDetailPage() {
                     />
                 )}
 
-                {/* ── Driver ── */}
-                {order.driver && (
+                {/* ── Driver (single-vendor only — multi-vendor shows per SubOrder) ── */}
+                {order.driver && !order.isMultiVendor && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <div className="flex items-center gap-3">
                             <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -584,12 +702,24 @@ export default function OrderDetailPage() {
                             <span className="text-gray-500">Subtotal</span>
                             <span className="font-medium text-gray-600">{formatPrice(order.subtotal || order.total - (order.deliveryFee || 0))}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Envio</span>
-                            <span className={`font-medium ${order.deliveryFee ? "text-gray-600" : "text-green-600"}`}>
-                                {order.deliveryFee ? formatPrice(order.deliveryFee) : "Gratis"}
-                            </span>
-                        </div>
+                        {/* Multi-vendor: show per-SubOrder delivery fees */}
+                        {order.isMultiVendor && order.subOrders && order.subOrders.length > 1 ? (
+                            <>
+                                {order.subOrders.map((so, idx) => (
+                                    <div key={so.id} className="flex justify-between text-sm">
+                                        <span className="text-gray-500 truncate">Envío {so.merchant?.name || so.seller?.displayName || `#${idx + 1}`}</span>
+                                        <span className="font-medium text-gray-600 flex-shrink-0 ml-2">{formatPrice(so.deliveryFee)}</span>
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Envío</span>
+                                <span className={`font-medium ${order.deliveryFee ? "text-gray-600" : "text-green-600"}`}>
+                                    {order.deliveryFee ? formatPrice(order.deliveryFee) : "Gratis"}
+                                </span>
+                            </div>
+                        )}
                         <div className="flex justify-between pt-2 border-t border-gray-200">
                             <span className="font-bold text-gray-900">Total</span>
                             <span className="font-bold text-lg text-[#e60012]">{formatPrice(order.total)}</span>

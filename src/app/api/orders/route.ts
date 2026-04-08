@@ -140,6 +140,8 @@ export async function POST(request: Request) {
 
         // DELIVERY FEE: SIEMPRE recalcular server-side. NUNCA confiar en el frontend.
         let validatedDeliveryFee = 0;
+        // Per-group validated delivery fees (multi-vendor)
+        const validatedGroupFees: Map<string, { deliveryFee: number; distanceKm: number }> = new Map();
 
         if (!isPickup) {
             // Reject negative fees
@@ -150,57 +152,130 @@ export async function POST(request: Request) {
                 );
             }
 
-            // SIEMPRE calcular server-side si tenemos distancia
-            if (distanceKm && distanceKm > 0) {
-                try {
-                    const serverFee = calculateShippingCost({
-                        distanceKm,
-                        packageCategory: "MEDIUM",
-                        shipmentTypeCode: "STANDARD",
-                        orderTotal: 0,
-                        freeDeliveryMinimum: null,
-                    });
-                    if (serverFee && serverFee.total > 0) {
-                        validatedDeliveryFee = serverFee.total;
+            // --- Multi-vendor: validate per-group delivery fees server-side ---
+            if (isMultiVendor && groups && groups.length > 1) {
+                for (const group of groups) {
+                    const groupKey = group.merchantId || group.sellerId || "unknown";
+                    const groupDistKm = group.distanceKm || 0;
+                    const groupClientFee = group.deliveryFee || 0;
 
-                        // Log si el frontend mandó un fee distinto (posible manipulación)
-                        if (deliveryFee && deliveryFee > 0 && Math.abs(deliveryFee - serverFee.total) > serverFee.total * 0.25) {
-                            orderLogger.warn(
-                                { clientFee: deliveryFee, serverFee: serverFee.total, distanceKm, diff: Math.abs(deliveryFee - serverFee.total) },
-                                "FRAUD ALERT: Client delivery fee differs >25% from server calculation. Using server fee."
-                            );
+                    if (groupDistKm > 0) {
+                        try {
+                            const serverFee = calculateShippingCost({
+                                distanceKm: groupDistKm,
+                                packageCategory: "MEDIUM",
+                                shipmentTypeCode: "STANDARD",
+                                orderTotal: 0,
+                                freeDeliveryMinimum: null,
+                            });
+                            if (serverFee && serverFee.total > 0) {
+                                let groupValidatedFee = serverFee.total;
+
+                                // Log si el frontend mandó un fee distinto (posible manipulación)
+                                if (groupClientFee > 0 && Math.abs(groupClientFee - serverFee.total) > serverFee.total * 0.25) {
+                                    orderLogger.warn(
+                                        { groupKey, clientFee: groupClientFee, serverFee: serverFee.total, distanceKm: groupDistKm },
+                                        "FRAUD ALERT: Multi-vendor group delivery fee differs >25% from server calculation"
+                                    );
+                                }
+
+                                validatedGroupFees.set(groupKey, { deliveryFee: groupValidatedFee, distanceKm: groupDistKm });
+                            } else if (groupClientFee > 0) {
+                                // Server calc returned 0 but client sent a fee — use client as fallback
+                                validatedGroupFees.set(groupKey, { deliveryFee: groupClientFee, distanceKm: groupDistKm });
+                                orderLogger.warn({ groupKey, clientFee: groupClientFee }, "Server fee calc returned 0 for multi-vendor group, using client fee");
+                            }
+                        } catch {
+                            // Fallback to client fee if server calc fails
+                            if (groupClientFee > 0) {
+                                validatedGroupFees.set(groupKey, { deliveryFee: groupClientFee, distanceKm: groupDistKm });
+                                orderLogger.warn({ groupKey, clientFee: groupClientFee }, "Server fee calc error for multi-vendor group, using client fee");
+                            }
                         }
-                    } else {
-                        return NextResponse.json(
-                            { error: "No se pudo calcular el costo de envío. Intentá de nuevo." },
-                            { status: 400 }
-                        );
+                    } else if (groupClientFee > 0) {
+                        // No distance but client sent fee — accept as fallback
+                        validatedGroupFees.set(groupKey, { deliveryFee: groupClientFee, distanceKm: groupDistKm });
+                        orderLogger.warn({ groupKey, clientFee: groupClientFee }, "No distanceKm for multi-vendor group, using client fee");
                     }
-                } catch {
+                }
+
+                // Sum all validated group fees
+                validatedDeliveryFee = Array.from(validatedGroupFees.values()).reduce((sum, g) => sum + g.deliveryFee, 0);
+
+                if (validatedDeliveryFee <= 0) {
                     return NextResponse.json(
-                        { error: "Error al calcular el costo de envío. Intentá de nuevo." },
+                        { error: "Se requiere el costo de envío para cada comercio en pedidos multi-vendor" },
                         { status: 400 }
                     );
                 }
-            } else if (deliveryFee && deliveryFee > 0) {
-                // Sin distancia pero con fee del frontend — aceptar como fallback pero loguear
-                validatedDeliveryFee = deliveryFee;
-                orderLogger.warn(
-                    { clientFee: deliveryFee },
-                    "No distanceKm available, using client-sent delivery fee as fallback"
+
+                orderLogger.info(
+                    { groupCount: groups.length, totalDeliveryFee: validatedDeliveryFee, perGroup: Object.fromEntries(validatedGroupFees) },
+                    "Multi-vendor delivery fees validated"
                 );
             } else {
-                return NextResponse.json(
-                    { error: "Se requiere el costo de envío para pedidos con delivery" },
-                    { status: 400 }
-                );
+                // --- Single-vendor: original logic ---
+                // SIEMPRE calcular server-side si tenemos distancia
+                if (distanceKm && distanceKm > 0) {
+                    try {
+                        const serverFee = calculateShippingCost({
+                            distanceKm,
+                            packageCategory: "MEDIUM",
+                            shipmentTypeCode: "STANDARD",
+                            orderTotal: 0,
+                            freeDeliveryMinimum: null,
+                        });
+                        if (serverFee && serverFee.total > 0) {
+                            validatedDeliveryFee = serverFee.total;
+
+                            // Log si el frontend mandó un fee distinto (posible manipulación)
+                            if (deliveryFee && deliveryFee > 0 && Math.abs(deliveryFee - serverFee.total) > serverFee.total * 0.25) {
+                                orderLogger.warn(
+                                    { clientFee: deliveryFee, serverFee: serverFee.total, distanceKm, diff: Math.abs(deliveryFee - serverFee.total) },
+                                    "FRAUD ALERT: Client delivery fee differs >25% from server calculation. Using server fee."
+                                );
+                            }
+                        } else {
+                            return NextResponse.json(
+                                { error: "No se pudo calcular el costo de envío. Intentá de nuevo." },
+                                { status: 400 }
+                            );
+                        }
+                    } catch {
+                        return NextResponse.json(
+                            { error: "Error al calcular el costo de envío. Intentá de nuevo." },
+                            { status: 400 }
+                        );
+                    }
+                } else if (deliveryFee && deliveryFee > 0) {
+                    // Sin distancia pero con fee del frontend — aceptar como fallback pero loguear
+                    validatedDeliveryFee = deliveryFee;
+                    orderLogger.warn(
+                        { clientFee: deliveryFee },
+                        "No distanceKm available, using client-sent delivery fee as fallback"
+                    );
+                } else {
+                    return NextResponse.json(
+                        { error: "Se requiere el costo de envío para pedidos con delivery" },
+                        { status: 400 }
+                    );
+                }
             }
+
             // Apply climate multiplier from Biblia Financiera if active condition is not normal
             const climateCond = opsSettings.activeClimateCondition || "normal";
             const climateMultiplier = opsSettings.climateMultipliers[climateCond] ?? 1.0;
             if (climateMultiplier !== 1.0 && validatedDeliveryFee > 0) {
                 const originalFee = validatedDeliveryFee;
                 validatedDeliveryFee = Math.round(validatedDeliveryFee * climateMultiplier);
+
+                // Also apply to per-group fees for multi-vendor
+                if (isMultiVendor) {
+                    for (const [key, val] of validatedGroupFees) {
+                        val.deliveryFee = Math.round(val.deliveryFee * climateMultiplier);
+                    }
+                }
+
                 orderLogger.info(
                     { originalFee, climateCondition: climateCond, multiplier: climateMultiplier, adjustedFee: validatedDeliveryFee },
                     "Climate multiplier applied to delivery fee"
@@ -225,12 +300,35 @@ export async function POST(request: Request) {
         if (!isPickup && validatedDeliveryFee > 0) {
             const opCostPct = opsSettings.operationalCostPercent || 0;
             if (opCostPct > 0) {
-                const opSurcharge = Math.round(subtotal * (opCostPct / 100));
-                validatedDeliveryFee += opSurcharge;
-                orderLogger.info(
-                    { opCostPct, subtotal, opSurcharge, newDeliveryFee: validatedDeliveryFee },
-                    "Operational cost surcharge applied to delivery fee"
-                );
+                if (isMultiVendor && groups && groups.length > 1) {
+                    // Multi-vendor: apply per-group based on each group's subtotal
+                    let totalOpSurcharge = 0;
+                    for (const group of groups) {
+                        const groupKey = group.merchantId || group.sellerId || "unknown";
+                        const groupSubtotal = group.items.reduce(
+                            (sum: number, gi: { price: number; quantity: number }) => sum + gi.price * gi.quantity, 0
+                        );
+                        const groupSurcharge = Math.round(groupSubtotal * (opCostPct / 100));
+                        totalOpSurcharge += groupSurcharge;
+
+                        const existing = validatedGroupFees.get(groupKey);
+                        if (existing) {
+                            existing.deliveryFee += groupSurcharge;
+                        }
+                    }
+                    validatedDeliveryFee += totalOpSurcharge;
+                    orderLogger.info(
+                        { opCostPct, subtotal, totalOpSurcharge, newDeliveryFee: validatedDeliveryFee },
+                        "Operational cost surcharge applied per-group (multi-vendor)"
+                    );
+                } else {
+                    const opSurcharge = Math.round(subtotal * (opCostPct / 100));
+                    validatedDeliveryFee += opSurcharge;
+                    orderLogger.info(
+                        { opCostPct, subtotal, opSurcharge, newDeliveryFee: validatedDeliveryFee },
+                        "Operational cost surcharge applied to delivery fee"
+                    );
+                }
             }
         }
 
@@ -622,6 +720,11 @@ export async function POST(request: Request) {
                         groupPayout = groupSubtotal - groupCommission;
                     }
 
+                    // Resolve per-group delivery fee (multi-vendor or single)
+                    const groupKey = group.merchantId || group.sellerId || "unknown";
+                    const groupFeeData = validatedGroupFees.get(groupKey);
+                    const groupDeliveryFee = isPickup ? 0 : (groupFeeData?.deliveryFee || 0);
+
                     const subOrder = await tx.subOrder.create({
                         data: {
                             orderId: newOrder.id,
@@ -629,7 +732,8 @@ export async function POST(request: Request) {
                             sellerId: group.sellerId || null,
                             status: "PENDING",
                             subtotal: groupSubtotal,
-                            total: groupSubtotal,
+                            deliveryFee: groupDeliveryFee,
+                            total: groupSubtotal + groupDeliveryFee,
                             moovyCommission: groupCommission,
                             sellerPayout: groupPayout,
                         },

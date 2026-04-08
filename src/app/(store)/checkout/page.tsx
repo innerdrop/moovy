@@ -63,6 +63,8 @@ export default function CheckoutPage() {
     const [loadingAddresses, setLoadingAddresses] = useState(true);
 
     const [deliveryResult, setDeliveryResult] = useState<DeliveryResult | null>(null);
+    // Per-vendor delivery results for multi-vendor orders
+    const [vendorDeliveryResults, setVendorDeliveryResults] = useState<Record<string, DeliveryResult>>({});
     const [isCalculating, setIsCalculating] = useState(false);
     const [deliveryMethod, setDeliveryMethod] = useState<"home" | "pickup">("home");
     const [hasDrivers, setHasDrivers] = useState(true);
@@ -75,6 +77,7 @@ export default function CheckoutPage() {
 
     // Get primary merchantId for delivery calc (first merchant group, if any)
     const primaryMerchantId = groups.find(g => g.vendorType === "merchant")?.vendorId.replace("merchant_", "") || null;
+    const isMultiVendor = groups.length > 1;
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [saveAddress, setSaveAddress] = useState(false);
     const [addressLabel, setAddressLabel] = useState("Casa");
@@ -90,7 +93,18 @@ export default function CheckoutPage() {
 
     const subtotal = getTotalPrice();
     const isPickup = deliveryMethod === "pickup";
-    const deliveryCost = (!isPickup && deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery) ? deliveryResult.totalCost : 0;
+
+    // Calculate total delivery cost: sum of all per-vendor fees for multi-vendor, or single fee
+    const vendorResults = Object.values(vendorDeliveryResults);
+    const allVendorsInRange = isMultiVendor
+        ? vendorResults.length > 0 && vendorResults.every(r => r.isWithinRange)
+        : deliveryResult?.isWithinRange ?? false;
+    const totalDeliveryCost = isPickup ? 0 : (
+        isMultiVendor
+            ? vendorResults.reduce((sum, r) => sum + (r.isWithinRange && !r.isFreeDelivery ? r.totalCost : 0), 0)
+            : (deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery ? deliveryResult.totalCost : 0)
+    );
+    const deliveryCost = totalDeliveryCost;
     const finalTotal = Math.max(0, subtotal + deliveryCost - discountAmount);
 
     // Redirect if cart is empty
@@ -298,43 +312,65 @@ export default function CheckoutPage() {
     };
 
     // Calculate delivery cost using server-side geocoding
+    const calculateDeliveryForMerchant = async (merchantId: string, orderSubtotal: number): Promise<DeliveryResult> => {
+        const calcResponse = await fetch("/api/delivery/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                address: {
+                    street: address.street,
+                    number: address.number,
+                    city: address.city || "Ushuaia",
+                    latitude: address.latitude,
+                    longitude: address.longitude,
+                },
+                merchantId,
+                orderTotal: orderSubtotal,
+            }),
+        });
+        return calcResponse.json();
+    };
+
     const calculateDelivery = async () => {
-        if (!address.street || !address.number) {
-            return;
-        }
+        if (!address.street || !address.number) return;
 
         setIsCalculating(true);
-        console.log("[Checkout] Calculating delivery for:", address.street, address.number);
-        console.log("[Checkout] Using MerchantID:", primaryMerchantId);
 
         try {
-            // Send address to server - server handles geocoding
-            const calcResponse = await fetch("/api/delivery/calculate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    address: {
-                        street: address.street,
-                        number: address.number,
-                        city: address.city || "Ushuaia",
-                        latitude: address.latitude,
-                        longitude: address.longitude,
-                    },
-                    merchantId: primaryMerchantId || undefined,
-                    orderTotal: subtotal,
-                }),
-            });
+            if (isMultiVendor) {
+                // Multi-vendor: calculate delivery per vendor group
+                const results: Record<string, DeliveryResult> = {};
+                const merchantGroups = groups.filter(g => g.vendorType === "merchant");
 
-            const result = await calcResponse.json();
-            setDeliveryResult(result);
+                await Promise.all(
+                    merchantGroups.map(async (group) => {
+                        const merchantId = group.vendorId.replace("merchant_", "");
+                        try {
+                            results[group.vendorId] = await calculateDeliveryForMerchant(merchantId, group.subtotal);
+                        } catch {
+                            results[group.vendorId] = {
+                                distanceKm: 0, totalCost: 0, isWithinRange: false,
+                                isFreeDelivery: false, message: `Error calculando envío de ${group.vendorName}`,
+                            };
+                        }
+                    })
+                );
+
+                setVendorDeliveryResults(results);
+                // Also set primary result for backward compatibility
+                const primaryResult = primaryMerchantId ? results[`merchant_${primaryMerchantId}`] : Object.values(results)[0];
+                setDeliveryResult(primaryResult || null);
+            } else {
+                // Single vendor: original logic
+                const result = await calculateDeliveryForMerchant(primaryMerchantId || "", subtotal);
+                setDeliveryResult(result);
+                setVendorDeliveryResults({});
+            }
         } catch (error) {
             console.error("Error calculating delivery:", error);
             setDeliveryResult({
-                distanceKm: 0,
-                totalCost: 0,
-                isWithinRange: false,
-                isFreeDelivery: false,
-                message: "Error al calcular el envío. Intenta de nuevo.",
+                distanceKm: 0, totalCost: 0, isWithinRange: false,
+                isFreeDelivery: false, message: "Error al calcular el envío. Intenta de nuevo.",
             });
         } finally {
             setIsCalculating(false);
@@ -399,19 +435,24 @@ export default function CheckoutPage() {
                         variantName: item.variantName,
                         type: item.type || "product",
                     })),
-                    groups: groups.map(g => ({
-                        merchantId: g.vendorType === "merchant" ? g.vendorId.replace("merchant_", "") : undefined,
-                        sellerId: g.vendorType === "seller" ? g.vendorId.replace("seller_", "") : undefined,
-                        vendorName: g.vendorName,
-                        items: g.items.map(item => ({
-                            productId: item.productId,
-                            name: item.name,
-                            price: item.price,
-                            quantity: item.quantity,
-                            variantName: item.variantName,
-                            type: item.type || "product",
-                        })),
-                    })),
+                    groups: groups.map(g => {
+                        const vendorResult = vendorDeliveryResults[g.vendorId];
+                        return {
+                            merchantId: g.vendorType === "merchant" ? g.vendorId.replace("merchant_", "") : undefined,
+                            sellerId: g.vendorType === "seller" ? g.vendorId.replace("seller_", "") : undefined,
+                            vendorName: g.vendorName,
+                            deliveryFee: isPickup ? 0 : (vendorResult?.isWithinRange && !vendorResult.isFreeDelivery ? vendorResult.totalCost : 0),
+                            distanceKm: vendorResult?.distanceKm || 0,
+                            items: g.items.map(item => ({
+                                productId: item.productId,
+                                name: item.name,
+                                price: item.price,
+                                quantity: item.quantity,
+                                variantName: item.variantName,
+                                type: item.type || "product",
+                            })),
+                        };
+                    }),
                     merchantId: primaryMerchantId || undefined,
                     // Send addressId if available, otherwise addressData
                     addressId: orderAddressId || undefined,
@@ -810,9 +851,58 @@ export default function CheckoutPage() {
                                 {isCalculating ? (
                                     <div className="text-center py-8">
                                         <Loader2 className="w-8 h-8 animate-spin text-moovy mx-auto mb-2" />
-                                        <p className="text-gray-600">Calculando envío...</p>
+                                        <p className="text-gray-600">
+                                            Calculando envío{isMultiVendor ? ` para ${groups.length} comercios...` : "..."}
+                                        </p>
+                                    </div>
+                                ) : isMultiVendor && Object.keys(vendorDeliveryResults).length > 0 ? (
+                                    /* Multi-vendor: show per-vendor delivery results */
+                                    <div className="space-y-3">
+                                        {groups.filter(g => g.vendorType === "merchant").map((group) => {
+                                            const result = vendorDeliveryResults[group.vendorId];
+                                            if (!result) return null;
+                                            return (
+                                                <div
+                                                    key={group.vendorId}
+                                                    className={`p-4 rounded-lg ${result.isWithinRange
+                                                        ? "bg-green-50 border border-green-200"
+                                                        : "bg-red-50 border border-red-200"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Store className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-sm font-semibold text-gray-700">{group.vendorName}</span>
+                                                    </div>
+                                                    {result.isWithinRange ? (
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-sm text-gray-600">
+                                                                {result.distanceKm.toFixed(1)} km
+                                                                {result.isRealRoadDistance && (
+                                                                    <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase ml-1">Real</span>
+                                                                )}
+                                                            </p>
+                                                            <p className="font-bold text-moovy">
+                                                                {result.isFreeDelivery ? "GRATIS" : formatPrice(result.totalCost)}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 text-red-700 text-sm">
+                                                            <AlertCircle className="w-4 h-4" />
+                                                            <span>{result.message}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                        {allVendorsInRange && totalDeliveryCost > 0 && (
+                                            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                                                <span className="font-semibold text-gray-700">Total envíos</span>
+                                                <span className="text-xl font-bold text-moovy">{formatPrice(totalDeliveryCost)}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : deliveryResult ? (
+                                    /* Single vendor: original display */
                                     <div className={`p-4 rounded-lg ${deliveryResult.isWithinRange
                                         ? "bg-green-50 border border-green-200"
                                         : "bg-red-50 border border-red-200"
@@ -855,7 +945,7 @@ export default function CheckoutPage() {
                                     </button>
                                     <button
                                         onClick={() => setStep(3)}
-                                        disabled={!deliveryResult?.isWithinRange}
+                                        disabled={!allVendorsInRange}
                                         className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold"
                                     >
                                         Continuar
@@ -1045,7 +1135,21 @@ export default function CheckoutPage() {
                                     <span>Subtotal</span>
                                     <span>{formatPrice(subtotal)}</span>
                                 </div>
-                                {deliveryResult?.isWithinRange && (
+                                {!isPickup && isMultiVendor && Object.keys(vendorDeliveryResults).length > 0 ? (
+                                    /* Multi-vendor: per-vendor delivery fees */
+                                    groups.filter(g => g.vendorType === "merchant").map((group) => {
+                                        const result = vendorDeliveryResults[group.vendorId];
+                                        if (!result?.isWithinRange) return null;
+                                        return (
+                                            <div key={group.vendorId} className="flex justify-between text-sm lg:text-base">
+                                                <span className="text-gray-500">Envío {group.vendorName}</span>
+                                                <span className={result.isFreeDelivery ? "text-green-600" : ""}>
+                                                    {result.isFreeDelivery ? "GRATIS" : formatPrice(result.totalCost)}
+                                                </span>
+                                            </div>
+                                        );
+                                    })
+                                ) : deliveryResult?.isWithinRange ? (
                                     <div className="flex justify-between text-sm lg:text-base">
                                         <span>Envío</span>
                                         <span className={deliveryResult.isFreeDelivery ? "text-green-600" : ""}>
@@ -1054,7 +1158,7 @@ export default function CheckoutPage() {
                                                 : formatPrice(deliveryResult.totalCost)}
                                         </span>
                                     </div>
-                                )}
+                                ) : null}
                                 {discountAmount > 0 && (
                                     <div className="flex justify-between text-sm lg:text-base text-green-600 font-medium">
                                         <span>Descuento (Puntos)</span>
