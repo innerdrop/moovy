@@ -250,4 +250,13 @@ export async function GET(
             addresses: user.addresses,
             recentOrders: user.orders,
             pointsTransactions: user.pointsTransactions,
-       
+            stats,
+        });
+    } catch (error) {
+        console.error("Error fetching user detail:", error);
+        return NextResponse.json(
+            { error: "Error al obtener detalle del usuario" },
+            { status: 500 }
+        );
+    }
+}
