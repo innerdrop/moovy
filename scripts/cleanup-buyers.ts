@@ -155,7 +155,7 @@ async function main() {
     }
 
     // 3e. SellerProfile and SellerAvailability
-    const delSellerAvail = await prisma.sellerAvailability.deleteMany({ where: { userId: { in: deleteUserIds } } });
+    const delSellerAvail = await prisma.sellerAvailability.deleteMany({ where: { sellerId: { in: deleteUserIds } } });
     console.log(`   SellerAvailability: ${delSellerAvail.count}`);
 
     const sellerProfiles = await prisma.sellerProfile.findMany({
@@ -218,12 +218,12 @@ async function main() {
     console.log(`   Comercios: ${remainingMerchants}`);
     console.log(`   Productos: ${remainingProducts}`);
     console.log("=".repeat(50));
-    console.log("\n✨ Limpieza completada exitosamente.\n");
+    console.log("\n✨ Limpieza completada.\n");
 }
 
 main()
     .catch(e => {
-        console.error("\n❌ Error durante la limpieza:", e);
+        console.error("Error:", e);
         process.exit(1);
     })
     .finally(() => prisma.$disconnect());

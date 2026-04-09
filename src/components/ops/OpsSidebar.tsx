@@ -59,10 +59,7 @@ const navSections: NavSection[] = [
     {
         title: "Actores",
         items: [
-            { href: "/ops/comercios", icon: Building2, label: "Comercios" },
-            { href: "/ops/repartidores", icon: Truck, label: "Repartidores" },
-            { href: "/ops/vendedores", icon: UserCheck, label: "Vendedores" },
-            { href: "/ops/clientes", icon: Users, label: "Clientes" },
+            { href: "/ops/usuarios", icon: Users, label: "Usuarios" },
         ],
     },
     {
@@ -117,7 +114,7 @@ const mobileNavItems = [
     { href: "/ops/dashboard", icon: LayoutDashboard, label: "Inicio" },
     { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
     { href: "/ops/live", icon: Activity, label: "Live" },
-    { href: "/ops/comercios", icon: Building2, label: "Comercios" },
+    { href: "/ops/usuarios", icon: Users, label: "Usuarios" },
 ];
 
 export default function OpsSidebar({ userName }: OpsSidebarProps) {

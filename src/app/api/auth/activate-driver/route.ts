@@ -109,6 +109,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, status: "PENDING_VERIFICATION" });
     } catch (error) {
         console.error("[ActivateDriver] Error:", error);
-        return NextResponse.json({ error: "Error interno" }, { status: 500 });
+        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
     }
 }

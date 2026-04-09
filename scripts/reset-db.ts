@@ -296,10 +296,10 @@ async function main() {
 
     // MerchantLoyaltyConfig tiers
     const tiers = [
-        { tier: "BRONCE", minOrders: 0, commissionRate: 8 },
-        { tier: "PLATA", minOrders: 30, commissionRate: 7 },
-        { tier: "ORO", minOrders: 80, commissionRate: 6 },
-        { tier: "DIAMANTE", minOrders: 200, commissionRate: 5 },
+        { tier: "BRONCE", minOrdersPerMonth: 0, commissionRate: 8, badgeText: "Nuevo", badgeColor: "gray", displayOrder: 0 },
+        { tier: "PLATA", minOrdersPerMonth: 30, commissionRate: 7, badgeText: "Destacado", badgeColor: "blue", displayOrder: 1 },
+        { tier: "ORO", minOrdersPerMonth: 80, commissionRate: 6, badgeText: "Popular", badgeColor: "yellow", displayOrder: 2 },
+        { tier: "DIAMANTE", minOrdersPerMonth: 200, commissionRate: 5, badgeText: "Elite", badgeColor: "purple", displayOrder: 3 },
     ];
     for (const t of tiers) {
         const existing = await prisma.merchantLoyaltyConfig.findFirst({ where: { tier: t.tier } });
