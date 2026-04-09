@@ -234,6 +234,14 @@ Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 3
 - [x] Programa fidelización merchants (4 tiers BRONCE→DIAMANTE, comisión dinámica 5-8%, widget, badge, admin, cron) — 2026-03-24
 - [x] Smoke test code review flows 2/3/4: 12 bugs críticos/altos corregidos (driver approval gating, race conditions, admin soft delete, whitelist PATCH, syntax errors, scripts truncados) — 2026-03-26
 
+### 2026-04-08 — Driver onboarding desde perfil comprador
+- ✅ "Quiero ser Repartidor" ahora muestra modal de confirmación → redirige a wizard de registro
+- ✅ Wizard de registro adaptado: si venís logueado desde perfil, saltea datos personales (2 pasos en vez de 3)
+- ✅ activate-driver API reescrito: acepta datos completos (vehículo, docs, CUIT, términos)
+- ✅ Auto-refresh de roles en mi-perfil: al volver a la pestaña detecta aprobación de OPS
+- ✅ Guard: si ya sos DRIVER, redirige al dashboard. Si no estás logueado, redirige a login
+- ✅ Progress bar adaptado (2 pasos vs 3 según origen)
+
 ### 2026-04-08 — Smoke test code review (4 flujos)
 - ✅ HIGH: Seller confirm no detectaba SubOrders de merchants en estado PREPARING (mixto multi-vendor)
 - ✅ HIGH: driverRejectOrder no incrementaba assignmentAttempts en Order (retry cron contaba mal)

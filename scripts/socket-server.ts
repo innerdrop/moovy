@@ -77,9 +77,17 @@ const cronHealth: Record<string, CronStatus> = {
     "merchant-timeout":   { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
     "seller-resume":      { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
     "scheduled-notify":   { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
+    "close-auctions":     { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null },
 };
 
+function ensureCronEntry(name: string) {
+    if (!cronHealth[name]) {
+        cronHealth[name] = { lastRunAt: null, lastSuccessAt: null, consecutiveFailures: 0, lastError: null };
+    }
+}
+
 function cronSuccess(name: string) {
+    ensureCronEntry(name);
     const now = new Date().toISOString();
     cronHealth[name].lastRunAt = now;
     cronHealth[name].lastSuccessAt = now;
@@ -88,6 +96,7 @@ function cronSuccess(name: string) {
 }
 
 function cronFailure(name: string, error: string) {
+    ensureCronEntry(name);
     cronHealth[name].lastRunAt = new Date().toISOString();
     cronHealth[name].consecutiveFailures++;
     cronHealth[name].lastError = error;

@@ -118,8 +118,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (trigger === "update" && token.id) {
                 try {
                     const { prisma } = await import("@/lib/prisma");
+                    const userId = token.id as string;
+
                     const freshUser = await prisma.user.findUnique({
-                        where: { id: token.id as string },
+                        where: { id: userId },
                         select: {
                             role: true,
                             roles: { where: { isActive: true }, select: { role: true } },
@@ -127,12 +129,39 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     });
                     if (freshUser) {
                         const rolesFromTable = freshUser.roles.map((r) => r.role);
+
+                        // Auto-heal: if Driver is APPROVED but UserRole DRIVER doesn't exist or is inactive,
+                        // create/activate it so the JWT includes DRIVER role
+                        if (!rolesFromTable.includes("DRIVER")) {
+                            const approvedDriver = await prisma.driver.findUnique({
+                                where: { userId },
+                                select: { approvalStatus: true, isActive: true },
+                            });
+                            if (approvedDriver && (approvedDriver.approvalStatus === "APPROVED" || approvedDriver.isActive)) {
+                                // Upsert the UserRole
+                                const existingRole = await prisma.userRole.findUnique({
+                                    where: { userId_role: { userId, role: "DRIVER" } },
+                                });
+                                if (existingRole && !existingRole.isActive) {
+                                    await prisma.userRole.update({
+                                        where: { userId_role: { userId, role: "DRIVER" } },
+                                        data: { isActive: true },
+                                    });
+                                } else if (!existingRole) {
+                                    await prisma.userRole.create({
+                                        data: { userId, role: "DRIVER", isActive: true },
+                                    });
+                                }
+                                rolesFromTable.push("DRIVER");
+                            }
+                        }
+
                         token.roles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];
                         token.role = freshUser.role;
 
                         // Also refresh merchantId in case user became a merchant
                         const merchant = await prisma.merchant.findFirst({
-                            where: { ownerId: token.id as string },
+                            where: { ownerId: userId },
                             select: { id: true },
                         });
                         token.merchantId = merchant?.id || null;

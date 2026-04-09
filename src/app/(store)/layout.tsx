@@ -1,7 +1,7 @@
 "use client";
 
 // Store Layout - Experiencia tipo App para TODOS los usuarios
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import CartSidebar from "@/components/layout/CartSidebar";
 // FloatingCartButton removed — cart badge in header is sufficient
@@ -30,6 +30,7 @@ export default function StoreLayout({
     const [contentReady, setContentReady] = useState(false);
     const [promoSettings, setPromoSettings] = useState<any>(null);
 
+    // Mount + splash — runs exactly once
     useEffect(() => {
         setMounted(true);
 
@@ -40,7 +41,6 @@ export default function StoreLayout({
                 localStorage.setItem(SPLASH_SHOWN_KEY, "true");
                 setTimeout(() => {
                     setShowSplash(false);
-                    // Small delay before content reveal for smoothness
                     requestAnimationFrame(() => setContentReady(true));
                 }, 1000);
             } else {
@@ -56,10 +56,17 @@ export default function StoreLayout({
         if (params.get("preview") === PREVIEW_SECRET) {
             document.cookie = "moovy_preview=1; path=/; max-age=86400; SameSite=Lax";
         }
+    }, []); // empty deps = runs once on mount, NOT on session change
+
+    // Fetch settings + promo + maintenance check — runs once when session is resolved
+    const settingsFetched = useRef(false);
+
+    useEffect(() => {
+        if (status === "loading" || settingsFetched.current) return;
+        settingsFetched.current = true;
 
         const hasPreviewCookie = document.cookie.includes("moovy_preview=1");
 
-        // Fetch promo settings
         fetch("/api/settings")
             .then(res => res.json())
             .then(data => {
@@ -84,7 +91,8 @@ export default function StoreLayout({
                 }
             })
             .catch(err => console.error("Error fetching settings:", err));
-    }, [session]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
 
     const isLoggedIn = status === "authenticated" && session;
     const isLoading = status === "loading";

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "@/store/toast";
@@ -24,6 +25,7 @@ import {
     Gift,
     X,
     Calendar,
+    Clock,
     ShoppingBag,
     ExternalLink,
     LayoutDashboard,
@@ -36,7 +38,8 @@ import { useUserPoints } from "@/hooks/useUserPoints";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export default function ProfilePage() {
-    const { data: session } = useSession();
+    const { data: session, update: updateSession } = useSession();
+    const router = useRouter();
     const { points, level, nextLevelPoints } = useUserPoints();
     const { isSupported: pushSupported, isSubscribed: pushSubscribed, permission: pushPermission, requestPermission: requestPush, loading: pushLoading } = usePushNotifications();
     const [showRedemptions, setShowRedemptions] = useState(false);
@@ -52,6 +55,7 @@ export default function ProfilePage() {
     const [sellerStatus, setSellerStatus] = useState<string | null>(null);
     const [driverStatus, setDriverStatus] = useState<string | null>(null);
     const [activatingRole, setActivatingRole] = useState<string | null>(null);
+    const [showDriverConfirm, setShowDriverConfirm] = useState(false);
 
     // Derive all user roles from session (roles[] array preferred, fallback to legacy role)
     const userRoles: string[] = (() => {
@@ -66,28 +70,46 @@ export default function ProfilePage() {
     const hasMerchant = userRoles.includes("MERCHANT") || userRoles.includes("COMERCIO");
     const hasAdmin = userRoles.includes("ADMIN");
 
-    // Fetch user roles on mount
+    // Check driver status once on mount — NO updateSession() here to avoid remount loops
+    const mountChecked = useRef(false);
+
     useEffect(() => {
-        if (session?.user) {
-            if (hasSeller) setSellerStatus("ACTIVE");
-            // Check driver status
-            // Only check driver profile if user has DRIVER role
-            // Avoids 404 noise in console for regular users
-            if (hasDriver) {
-                fetch("/api/driver/profile")
-                    .then(res => {
-                        if (res.ok) return res.json();
-                        return null;
-                    })
-                    .then(data => {
-                        if (data) {
-                            setDriverStatus(data.isActive ? "ACTIVE" : "PENDING_VERIFICATION");
-                        }
-                    })
-                    .catch(() => { });
-            }
-        }
-    }, [session, hasSeller, hasDriver]);
+        if (!session?.user || mountChecked.current) return;
+        mountChecked.current = true;
+
+        fetch("/api/driver/profile")
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (!data) return;
+                if (data.approvalStatus === "APPROVED" || data.isActive) {
+                    setDriverStatus("ACTIVE");
+                } else {
+                    setDriverStatus("PENDING_VERIFICATION");
+                }
+            })
+            .catch(() => { /* no driver profile yet */ });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [!!session?.user]);
+
+    // On tab focus: re-check driver status (e.g. after OPS approval)
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState !== "visible") return;
+            fetch("/api/driver/profile")
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (!data) return;
+                    if (data.approvalStatus === "APPROVED" || data.isActive) {
+                        setDriverStatus("ACTIVE");
+                    } else {
+                        setDriverStatus("PENDING_VERIFICATION");
+                    }
+                })
+                .catch(() => { /* ignore */ });
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+        return () => document.removeEventListener("visibilitychange", handleVisibility);
+    }, []);
 
     const handleActivateSeller = async () => {
         setActivatingRole("seller");
@@ -107,22 +129,13 @@ export default function ProfilePage() {
         }
     };
 
-    const handleActivateDriver = async () => {
-        setActivatingRole("driver");
-        try {
-            const res = await fetch("/api/auth/activate-driver", { method: "POST" });
-            const data = await res.json();
-            if (res.ok) {
-                setDriverStatus("PENDING_VERIFICATION");
-            } else {
-                if (data.status) setDriverStatus(data.status);
-                toast.error(data.error || "Error al solicitar repartidor");
-            }
-        } catch {
-            toast.error("Error de conexión");
-        } finally {
-            setActivatingRole(null);
-        }
+    const handleActivateDriver = () => {
+        setShowDriverConfirm(true);
+    };
+
+    const handleConfirmDriver = () => {
+        setShowDriverConfirm(false);
+        router.push("/repartidor/registro?from=profile");
     };
 
     const handleDeleteAccount = async () => {
@@ -266,7 +279,20 @@ export default function ProfilePage() {
                                 </Link>
                             )}
                             {driverStatus === "ACTIVE" && (
-                                <Link href="/repartidor/dashboard" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                                <button
+                                    onClick={async () => {
+                                        if (!hasDriver) {
+                                            // Trigger JWT callback with trigger="update" (empty object required!)
+                                            // Without args, NextAuth v5 just GETs session without regenerating JWT
+                                            await updateSession({ refreshRoles: true });
+                                            // Full navigation to send the updated JWT cookie to the proxy
+                                            window.location.href = "/repartidor/dashboard";
+                                        } else {
+                                            router.push("/repartidor/dashboard");
+                                        }
+                                    }}
+                                    className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
+                                >
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
                                             <Truck className="w-4 h-4" />
@@ -277,7 +303,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                     <ExternalLink className="w-4 h-4 text-gray-300" />
-                                </Link>
+                                </button>
                             )}
                             {hasMerchant && (
                                 <Link href="/comercios" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
@@ -469,6 +495,55 @@ export default function ProfilePage() {
                 <div className="pb-4" />
                 </div>
             </div>
+
+            {/* Driver Confirmation Modal */}
+            {showDriverConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <Car className="w-6 h-6 text-green-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Quiero ser Repartidor</h3>
+                                <p className="text-sm text-gray-500">Generá ingresos con tu vehículo</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-4 space-y-2">
+                            <p className="text-sm text-green-800 leading-relaxed">
+                                Para ser repartidor en MOOVY necesitás completar tus datos: tipo de vehículo, documentación (DNI, CUIT) y aceptar los términos.
+                            </p>
+                            <p className="text-sm text-green-800 leading-relaxed">
+                                Una vez enviada tu solicitud, nuestro equipo la revisará y te notificará cuando esté aprobada.
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-4">
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                <span>Tiempo estimado: 3-5 minutos</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDriverConfirm(false)}
+                                className="flex-1 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition text-sm font-medium"
+                            >
+                                Ahora no
+                            </button>
+                            <button
+                                onClick={handleConfirmDriver}
+                                className="flex-1 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-bold flex items-center justify-center gap-2"
+                            >
+                                <Car className="w-4 h-4" />
+                                Completar datos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Delete Account Confirmation Modal */}
             {showDeleteConfirm && (

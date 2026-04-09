@@ -47,10 +47,21 @@ export async function PUT(
                     rejectionReason: null,
                 }
             });
-            await tx.userRole.updateMany({
-                where: { userId: driver.userId, role: "DRIVER" },
-                data: { isActive: true }
+            // Upsert: activate existing UserRole or create if missing
+            // (handles drivers registered before activate-driver created UserRole)
+            const existing = await tx.userRole.findUnique({
+                where: { userId_role: { userId: driver.userId, role: "DRIVER" } },
             });
+            if (existing) {
+                await tx.userRole.update({
+                    where: { userId_role: { userId: driver.userId, role: "DRIVER" } },
+                    data: { isActive: true },
+                });
+            } else {
+                await tx.userRole.create({
+                    data: { userId: driver.userId, role: "DRIVER", isActive: true },
+                });
+            }
         });
 
         // Send approval email (non-blocking)

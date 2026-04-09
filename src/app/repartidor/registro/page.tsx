@@ -1,8 +1,9 @@
 "use client";
 
 // Repartidor Registration Page - Formulario de registro para repartidores
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -43,12 +44,31 @@ const VEHICLE_TYPES = [
 function RepartidorRegistroContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session, update: updateSession } = useSession();
     const fromProfile = searchParams.get("from") === "profile";
-    const [step, setStep] = useState(1);
+    const isAuthenticated = !!session?.user;
+
+    // If coming from profile (authenticated), skip step 1 (personal data) → start at step 2 (vehicle)
+    const [step, setStep] = useState(fromProfile && isAuthenticated ? 2 : 1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // Guard: if from=profile but not authenticated, redirect to login
+    useEffect(() => {
+        if (fromProfile && !isAuthenticated && session !== undefined) {
+            router.replace("/login");
+        }
+    }, [fromProfile, isAuthenticated, session, router]);
+
+    // Guard: if already a driver, redirect
+    useEffect(() => {
+        const roles = (session?.user as any)?.roles || [];
+        if (roles.includes("DRIVER")) {
+            router.replace("/repartidor/dashboard");
+        }
+    }, [session, router]);
 
     // Current year for vehicle validation (max 10 years old)
     const currentYear = new Date().getFullYear();
@@ -182,7 +202,13 @@ function RepartidorRegistroContent() {
         setIsLoading(true);
 
         try {
-            const res = await fetch("/api/auth/register/driver", {
+            // Authenticated user from profile → use activate-driver (adds role to existing account)
+            // New user → use register/driver (creates new account + driver)
+            const endpoint = fromProfile && isAuthenticated
+                ? "/api/auth/activate-driver"
+                : "/api/auth/register/driver";
+
+            const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
@@ -192,6 +218,11 @@ function RepartidorRegistroContent() {
 
             if (!res.ok) {
                 throw new Error(data.error || "Error al registrar");
+            }
+
+            // Refresh session so roles update in JWT
+            if (fromProfile && isAuthenticated) {
+                await updateSession();
             }
 
             setStep(4); // Success step
@@ -220,18 +251,22 @@ function RepartidorRegistroContent() {
                 </div>
 
                 {/* Progress Steps */}
-                {step < 4 && (
-                    <div className="flex items-center justify-center gap-2 mb-6">
-                        {[1, 2, 3].map((s) => (
-                            <div key={s} className="flex items-center gap-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-500"}`}>
-                                    {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
+                {step < 4 && (() => {
+                    // From profile: show steps 2 and 3 as "1 of 2" and "2 of 2"
+                    const steps = fromProfile && isAuthenticated ? [2, 3] : [1, 2, 3];
+                    return (
+                        <div className="flex items-center justify-center gap-2 mb-6">
+                            {steps.map((s, i) => (
+                                <div key={s} className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-500"}`}>
+                                        {step > s ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
+                                    </div>
+                                    {i < steps.length - 1 && <div className={`w-12 h-1 rounded ${step > s ? "bg-green-600" : "bg-gray-200"}`} />}
                                 </div>
-                                {s < 3 && <div className={`w-12 h-1 rounded ${step > s ? "bg-green-600" : "bg-gray-200"}`} />}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    );
+                })()}
 
                 {/* Success Step */}
                 {step === 4 && (
@@ -279,8 +314,8 @@ function RepartidorRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 1: Personal Data + CUIT + DNI photos */}
-                {step === 1 && (
+                {/* Step 1: Personal Data + CUIT + DNI photos (skipped when from=profile) */}
+                {step === 1 && !(fromProfile && isAuthenticated) && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <div className="flex items-center justify-center mb-4">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
@@ -486,13 +521,29 @@ function RepartidorRegistroContent() {
                 {/* Step 2: Vehicle Type + Data + Documents */}
                 {step === 2 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
-                        <button
-                            onClick={() => { setError(""); setStep(1); }}
-                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Volver
-                        </button>
+                        {fromProfile && isAuthenticated ? (
+                            <button
+                                onClick={() => router.push("/mi-perfil")}
+                                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Volver al perfil
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => { setError(""); setStep(1); }}
+                                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Volver
+                            </button>
+                        )}
+
+                        {fromProfile && isAuthenticated && (
+                            <div className="mb-4 p-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-800">
+                                <span className="font-medium">{session?.user?.name}</span>, completá los datos de tu vehículo para empezar a repartir.
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-center mb-4">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
@@ -500,7 +551,9 @@ function RepartidorRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Tu Vehículo</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Tipo de vehículo y documentación</p>
+                        <p className="text-sm text-gray-500 text-center mb-6">
+                            {fromProfile && isAuthenticated ? "Paso 1: Tipo de vehículo y documentación" : "Paso 2: Tipo de vehículo y documentación"}
+                        </p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -706,7 +759,9 @@ function RepartidorRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Confirmación</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 3: Revisá y aceptá los términos</p>
+                        <p className="text-sm text-gray-500 text-center mb-6">
+                            {fromProfile && isAuthenticated ? "Paso 2: Revisá y aceptá los términos" : "Paso 3: Revisá y aceptá los términos"}
+                        </p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
