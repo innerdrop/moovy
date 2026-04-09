@@ -13,6 +13,7 @@ import { notifyMerchant, notifySeller } from "@/lib/notifications";
 import { orderLogger } from "@/lib/logger";
 import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-calculator";
 import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
+import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -1133,6 +1134,18 @@ export async function POST(request: Request) {
         // This should be handled by a cron job that auto-cancels after merchant_confirm_timeout.
         // See: src/app/api/cron/assignment-timeout or similar
         const requiresMerchantConfirmation = paymentMethod === "cash" || paymentMethod === undefined;
+
+        // Log order creation activity (fire-and-forget)
+        const { ipAddress, userAgent } = extractRequestInfo(request);
+        logUserActivity({
+            userId: session.user.id,
+            action: ACTIVITY_ACTIONS.ORDER_CREATED,
+            entityType: "Order",
+            entityId: order.id,
+            metadata: { orderNumber: order.orderNumber, total: order.total, isMultiVendor },
+            ipAddress,
+            userAgent,
+        }).catch((err) => orderLogger.error({ error: err }, "Failed to log order creation activity"));
 
         return NextResponse.json({
             success: true,

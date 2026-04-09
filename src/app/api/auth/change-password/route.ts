@@ -1,12 +1,13 @@
 // API Route: Change Password (for authenticated users)
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 import { validatePasswordStrength } from "@/lib/security";
+import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id) {
@@ -137,6 +138,17 @@ export async function POST(request: Request) {
             // Log but don't fail the request if email fails
             console.error("Error sending confirmation email:", emailError);
         }
+
+        // Log password change activity (fire-and-forget)
+        const { ipAddress, userAgent } = extractRequestInfo(request);
+        logUserActivity({
+            userId: session.user.id,
+            action: ACTIVITY_ACTIONS.PASSWORD_CHANGED,
+            entityType: "User",
+            entityId: session.user.id,
+            ipAddress,
+            userAgent,
+        }).catch((err) => console.error("[ChangePassword] Failed to log password change activity:", err));
 
         return NextResponse.json({
             success: true,

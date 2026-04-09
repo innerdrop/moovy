@@ -31,6 +31,14 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         redirect("/comercios/login");
     }
 
+    // Check suspension and archive status
+    if ((session.user as any).isSuspended) {
+        redirect("/cuenta-suspendida");
+    }
+    if ((session.user as any).isArchived) {
+        redirect("/cuenta-archivada");
+    }
+
     // AUDIT FIX 2.4: Verify merchant is approved before allowing portal access
     // Admins bypass this check
     if (!hasAnyRole(session, ["ADMIN"])) {

@@ -111,12 +111,17 @@ export async function getEffectiveCommission(merchantId: string): Promise<number
   try {
     const merchant = await prisma.merchant.findUnique({
       where: { id: merchantId },
-      select: { loyaltyTier: true },
+      select: { loyaltyTier: true, commissionOverride: true },
     });
 
     if (!merchant) {
       // Merchant not found, return default
       return 8;
+    }
+
+    // Special agreement override takes priority over loyalty tier
+    if (merchant.commissionOverride !== null && merchant.commissionOverride !== undefined) {
+      return merchant.commissionOverride;
     }
 
     const tierConfig = await getTierConfig(merchant.loyaltyTier as MerchantTierType);
@@ -145,11 +150,17 @@ export async function updateMerchantTier(merchantId: string): Promise<{
   try {
     const merchant = await prisma.merchant.findUnique({
       where: { id: merchantId },
-      select: { id: true, loyaltyTier: true, email: true, ownerId: true },
+      select: { id: true, loyaltyTier: true, email: true, ownerId: true, loyaltyTierLocked: true },
     });
 
     if (!merchant) {
       return { changed: false, newTier: "BRONCE" };
+    }
+
+    // If admin locked the tier, skip automatic recalculation
+    if (merchant.loyaltyTierLocked) {
+      loyaltyLogger.info({ merchantId, tier: merchant.loyaltyTier }, "Tier locked by admin, skipping recalculation");
+      return { changed: false, newTier: merchant.loyaltyTier };
     }
 
     const oldTier = merchant.loyaltyTier;
@@ -193,7 +204,7 @@ export async function updateAllMerchantTiers(): Promise<number> {
   try {
     // Get all active merchants
     const merchants = await prisma.merchant.findMany({
-      where: { isActive: true, approvalStatus: "APPROVED" },
+      where: { isActive: true, approvalStatus: "APPROVED", loyaltyTierLocked: false },
       select: { id: true },
     });
 

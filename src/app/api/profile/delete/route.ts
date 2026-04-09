@@ -1,12 +1,13 @@
 // V-025 FIX: Account deletion endpoint (required by Google Play Store)
 // POST /api/profile/delete
 // Deletes all user data: orders (soft), addresses, favorites, push subs, roles, points, referrals
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id) {
@@ -109,6 +110,17 @@ export async function POST(request: Request) {
                 });
             }
         });
+
+        // Log account deletion activity (fire-and-forget)
+        const { ipAddress, userAgent } = extractRequestInfo(request);
+        logUserActivity({
+            userId: session.user.id,
+            action: ACTIVITY_ACTIONS.ACCOUNT_DELETED,
+            entityType: "User",
+            entityId: session.user.id,
+            ipAddress,
+            userAgent,
+        }).catch((err) => console.error("[Delete] Failed to log account deletion activity:", err));
 
         return NextResponse.json({
             success: true,

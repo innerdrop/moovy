@@ -69,6 +69,9 @@ export async function PUT(
         });
     } catch (error) {
         console.error("Error rejecting merchant:", error);
-        return NextResponse.json({ error: "Error interno" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Error interno del servidor" },
+            { status: 500 }
+        );
     }
 }

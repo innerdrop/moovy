@@ -108,7 +108,7 @@ export default function PendienteAprobacionPage() {
 
                 {/* Bottom text */}
                 <p className="text-center text-white/60 text-xs mt-6">
-                    Gracias por confiar en MOOVY para tu negocio
+                    Tu solicitud está siendo revisada por nuestro equipo
                 </p>
             </div>
         </div>

@@ -3,6 +3,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { checkRateLimit, resetRateLimit } from "@/lib/security";
+import { logUserActivity, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 
 
@@ -112,6 +113,83 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 token.referralCode = (user as any).referralCode;
                 token.merchantId = (user as any).merchantId;
                 token.loginAt = Date.now();
+
+                // Log successful login on sign-in
+                if (trigger === "signIn") {
+                    logUserActivity({
+                        userId: user.id || "",
+                        action: ACTIVITY_ACTIONS.LOGIN,
+                        entityType: "User",
+                        entityId: user.id || "",
+                        metadata: { method: "credentials" },
+                    }).catch((err) => console.error("[Auth] Failed to log login activity:", err));
+                }
+            }
+
+            // Check suspension and archive status on signin and update
+            if ((trigger === "signIn" || trigger === "update") && token.id) {
+                try {
+                    const { prisma } = await import("@/lib/prisma");
+                    const userId = token.id as string;
+
+                    const userStatus = await prisma.user.findUnique({
+                        where: { id: userId },
+                        select: {
+                            isSuspended: true,
+                            suspendedUntil: true,
+                            suspensionReason: true,
+                            archivedAt: true,
+                        },
+                    });
+
+                    if (userStatus) {
+                        // Check archive status
+                        if (userStatus.archivedAt) {
+                            (token as any).isArchived = true;
+                        } else {
+                            (token as any).isArchived = false;
+                        }
+
+                        // Check suspension status
+                        if (userStatus.isSuspended) {
+                            const now = new Date();
+                            if (userStatus.suspendedUntil && userStatus.suspendedUntil <= now) {
+                                // Auto-unsuspend: suspension period has expired
+                                await prisma.user.update({
+                                    where: { id: userId },
+                                    data: {
+                                        isSuspended: false,
+                                        suspendedUntil: null,
+                                    },
+                                });
+
+                                // Also clear suspension from related Merchant and Driver if exists
+                                await prisma.merchant.updateMany({
+                                    where: { ownerId: userId },
+                                    data: { isSuspended: false, suspendedUntil: null },
+                                });
+
+                                await prisma.driver.updateMany({
+                                    where: { userId },
+                                    data: { isSuspended: false, suspendedUntil: null },
+                                });
+
+                                (token as any).isSuspended = false;
+                                (token as any).suspendedUntil = null;
+                            } else {
+                                // Still suspended
+                                (token as any).isSuspended = true;
+                                (token as any).suspendedUntil = userStatus.suspendedUntil?.toISOString() || null;
+                                (token as any).suspensionReason = userStatus.suspensionReason;
+                            }
+                        } else {
+                            (token as any).isSuspended = false;
+                            (token as any).suspendedUntil = null;
+                        }
+                    }
+                } catch (err) {
+                    console.error("[Auth] Failed to check suspension status:", err);
+                }
             }
 
             // Re-fetch roles from DB when client calls update() (e.g. after activating SELLER role)
@@ -241,6 +319,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 (session.user as any).roles = token.roles || [token.role];
                 (session.user as any).referralCode = token.referralCode;
                 (session.user as any).merchantId = token.merchantId;
+                (session.user as any).isSuspended = (token as any).isSuspended || false;
+                (session.user as any).suspendedUntil = (token as any).suspendedUntil || null;
+                (session.user as any).suspensionReason = (token as any).suspensionReason || null;
+                (session.user as any).isArchived = (token as any).isArchived || false;
             }
             return session;
         },

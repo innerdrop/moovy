@@ -50,6 +50,8 @@ interface UnifiedUser {
     pointsBalance: number;
     createdAt: string;
     deletedAt: string | null;
+    isSuspended: boolean;
+    archivedAt: string | null;
     roles: UserRole[];
     merchant: MerchantData | null;
     driver: DriverData | null;
@@ -71,6 +73,8 @@ const ITEMS_PER_PAGE = 20;
 // Helper function to determine user status
 function getUserStatus(user: UnifiedUser): { label: string; color: string } {
     if (user.deletedAt) return { label: "Eliminado", color: "red" };
+    if (user.isSuspended) return { label: "Suspendido", color: "red" };
+    if (user.archivedAt) return { label: "Archivado", color: "gray" };
 
     if (user.driver?.approvalStatus === "PENDING" || user.merchant?.approvalStatus === "PENDING") {
         return { label: "Pendiente", color: "yellow" };
@@ -171,6 +175,7 @@ export default function UsuariosPage() {
     );
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"" | "active" | "suspended" | "archived">("");
     const [page, setPage] = useState(1);
     const [users, setUsers] = useState<UnifiedUser[]>([]);
     const [total, setTotal] = useState(0);
@@ -194,6 +199,11 @@ export default function UsuariosPage() {
 
         return () => clearTimeout(timer);
     }, [search]);
+
+    // Reset page when status filter changes
+    useEffect(() => {
+        setPage(1);
+    }, [statusFilter]);
 
     // Map tab to API params
     const getFilterParams = useCallback((): { role?: string; status?: string } => {
@@ -223,6 +233,8 @@ export default function UsuariosPage() {
             if (debouncedSearch) params.set("search", debouncedSearch);
             if (filterParams.role) params.set("role", filterParams.role);
             if (filterParams.status) params.set("status", filterParams.status);
+            // Add status filter from UI dropdown if set
+            if (statusFilter) params.set("status", statusFilter);
             params.set("page", String(page));
             params.set("limit", String(ITEMS_PER_PAGE));
 
@@ -241,7 +253,7 @@ export default function UsuariosPage() {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearch, page, getFilterParams]);
+    }, [debouncedSearch, page, getFilterParams, statusFilter]);
 
     // Fetch tab counts
     const fetchTabCounts = useCallback(async () => {
@@ -327,18 +339,33 @@ export default function UsuariosPage() {
 
             {/* Content */}
             <div className="px-6 py-6">
-                {/* Search Bar */}
-                <div className="mb-6">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombre, email o teléfono..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        />
+                {/* Search Bar and Filters */}
+                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end">
+                    {/* Search Input */}
+                    <div className="flex-1">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, email o teléfono..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                        </div>
                     </div>
+
+                    {/* Status Filter Dropdown */}
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "suspended" | "archived")}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white"
+                    >
+                        <option value="">Todos los estados</option>
+                        <option value="active">Activos</option>
+                        <option value="suspended">Suspendidos</option>
+                        <option value="archived">Archivados</option>
+                    </select>
                 </div>
 
                 {/* Table */}

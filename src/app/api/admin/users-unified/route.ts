@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
  * Query parameters:
  * - search: filter by name, email, or phone (case-insensitive contains)
  * - role: filter by UserRoleType (USER, ADMIN, COMERCIO, DRIVER, SELLER)
- * - status: "active", "pending", "rejected", "inactive"
+ * - status: "active", "pending", "rejected", "inactive", "suspended", "archived"
  * - page: default 1
  * - limit: default 20
  * - sortBy: default "createdAt"
@@ -59,11 +59,18 @@ export async function GET(request: NextRequest) {
         // Status filter
         if (statusFilter) {
             if (statusFilter === "active") {
-                // Has at least one active role AND not soft-deleted
+                // Not suspended, not archived, not soft-deleted
                 where.AND = [
-                    { roles: { some: { isActive: true } } },
+                    { isSuspended: false },
+                    { archivedAt: null },
                     { deletedAt: null },
                 ];
+            } else if (statusFilter === "suspended") {
+                // isSuspended = true
+                where.isSuspended = true;
+            } else if (statusFilter === "archived") {
+                // archivedAt is not null
+                where.archivedAt = { not: null };
             } else if (statusFilter === "pending") {
                 // Has a Driver with PENDING approval OR Merchant with PENDING approval
                 where.OR = [
@@ -102,6 +109,8 @@ export async function GET(request: NextRequest) {
                 pointsBalance: true,
                 createdAt: true,
                 deletedAt: true,
+                isSuspended: true,
+                archivedAt: true,
                 roles: {
                     select: {
                         role: true,
@@ -163,6 +172,8 @@ export async function GET(request: NextRequest) {
             pointsBalance: user.pointsBalance,
             createdAt: user.createdAt,
             deletedAt: user.deletedAt,
+            isSuspended: user.isSuspended,
+            archivedAt: user.archivedAt,
             roles: user.roles,
             merchant: user.ownedMerchants.length > 0 ? user.ownedMerchants[0] : null,
             driver: user.driver,

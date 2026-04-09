@@ -51,6 +51,11 @@ model User {
   resetToken         String?
   resetTokenExpiry   DateTime?
   deletedAt          DateTime?
+  isSuspended        Boolean             @default(false)
+  suspendedAt        DateTime?
+  suspendedUntil     DateTime?           // null = permanent until manual reactivation
+  suspensionReason   String?
+  archivedAt         DateTime?           // separate from deletedAt — admin can view archived users
   addresses          Address[]
   cart               CartItem[]
   driver             Driver?
@@ -75,6 +80,10 @@ model User {
   orderChatsAsB      OrderChat[]         @relation("OrderChatParticipantB")
   orderChatMessages  OrderChatMessage[]  @relation("OrderChatMessageSender")
   bids               Bid[]
+  activityLogs       UserActivityLog[]
+
+  @@index([isSuspended])
+  @@index([archivedAt])
 }
 
 model UserRole {
@@ -428,12 +437,19 @@ model Merchant {
   mpUserId         String?                   @unique
   mpEmail          String?
   mpLinkedAt       DateTime?
-  approvalStatus   String                    @default("PENDING") // PENDING | APPROVED | REJECTED
+  approvalStatus   String                    @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
   approvedAt       DateTime?
   rejectionReason  String?
+  isSuspended      Boolean                   @default(false)
+  suspendedAt      DateTime?
+  suspendedUntil   DateTime?                 // null = permanent until manual reactivation
+  suspensionReason String?
+  commissionOverride  Float?                 // null = use loyalty tier rate, value = special agreement
+  commissionOverrideReason String?           // "Convenio especial lanzamiento", etc.
   ubicacion        Unsupported("geography")?
   // Merchant Loyalty Program
   loyaltyTier      String                    @default("BRONCE") // BRONCE | PLATA | ORO | DIAMANTE
+  loyaltyTierLocked Boolean                  @default(false) // true = admin override, cron won't change it
   loyaltyOrderCount Int                      @default(0) // Orders in current 30-day period
   loyaltyUpdatedAt DateTime                  @default(now()) // Last time tier was recalculated
   owner            User                      @relation(fields: [ownerId], references: [id])
@@ -450,6 +466,7 @@ model Merchant {
   @@index([ownerId])
   @@index([approvalStatus])
   @@index([loyaltyTier])
+  @@index([isSuspended])
 }
 
 model MerchantLoyaltyConfig {
@@ -493,9 +510,13 @@ model Driver {
   lastLocationAt     DateTime?
   latitude           Float?
   longitude          Float?
-  approvalStatus     String                    @default("PENDING") // PENDING | APPROVED | REJECTED
+  approvalStatus     String                    @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
   approvedAt         DateTime?
   rejectionReason    String?
+  isSuspended        Boolean                   @default(false)
+  suspendedAt        DateTime?
+  suspendedUntil     DateTime?                 // null = permanent until manual reactivation
+  suspensionReason   String?
   ubicacion          Unsupported("geography")?
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders              Order[]
@@ -506,6 +527,7 @@ model Driver {
   @@index([isOnline])
   @@index([isActive])
   @@index([approvalStatus])
+  @@index([isSuspended])
 }
 
 model DriverLocationHistory {
@@ -551,6 +573,10 @@ model SellerProfile {
   isOnline           Boolean   @default(false)
   isPaused           Boolean   @default(false)
   pauseEndsAt        DateTime?
+  isSuspended        Boolean   @default(false)
+  suspendedAt        DateTime?
+  suspendedUntil     DateTime?           // null = permanent until manual reactivation
+  suspensionReason   String?
   preparationMinutes Int       @default(15)
   scheduleEnabled    Boolean   @default(false)
   scheduleJson       String?   // JSON: { "1": { "open": "09:00", "close": "21:00" }, ... } (1=Mon..7=Sun, null=closed)
@@ -559,6 +585,8 @@ model SellerProfile {
   user           User      @relation(fields: [userId], references: [id])
   listings       Listing[]
   subOrders      SubOrder[]
+
+  @@index([isSuspended])
 }
 
 model Listing {
@@ -1276,4 +1304,27 @@ model HomeCategorySlot {
 
   @@unique([categoryId]) // Una categoría solo puede tener un slot
   @@index([order])
+}
+
+// ─── UserActivityLog ──────────────────────────────────────────────────────
+// Registra TODAS las acciones del usuario en su cuenta.
+// Distinto de AuditLog (que registra acciones de admin).
+// Fundamental para gestión de reclamos y seguridad.
+model UserActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String   // e.g. "LOGIN", "ORDER_CREATED", "PRODUCT_ADDED", "PASSWORD_CHANGED", "SETTINGS_UPDATED"
+  entityType String?  // e.g. "Order", "Product", "Listing", "Driver", "Merchant"
+  entityId   String?  // ID of the affected entity
+  metadata   String?  // JSON string with extra context (before/after, amounts, etc.)
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

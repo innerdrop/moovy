@@ -30,6 +30,8 @@ import {
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
 import { formatPrice } from "@/lib/delivery";
+import { UserAdminActions } from "@/components/ops/UserAdminActions";
+import { UserActivityLog } from "@/components/ops/UserActivityLog";
 
 interface UserData {
     id: string;
@@ -42,6 +44,11 @@ interface UserData {
     deletedAt: string | null;
     referralCode: string | null;
     emailVerified: string | null;
+    isSuspended: boolean;
+    suspendedAt: string | null;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
+    archivedAt: string | null;
     roles: Array<{ id: string; role: string; isActive: boolean; activatedAt: string }>;
     merchant: MerchantData | null;
     driver: DriverData | null;
@@ -65,8 +72,11 @@ interface MerchantData {
     address: string | null;
     approvalStatus: string;
     commissionRate: number;
+    commissionOverride: number | null;
+    commissionOverrideReason: string | null;
     rating: number | null;
     loyaltyTier: string;
+    loyaltyTierLocked: boolean;
     category: string | null;
     deliveryRadiusKm: number;
     minOrderAmount: number;
@@ -210,6 +220,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const [user, setUser] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [activeTab, setActiveTab] = useState<"info" | "actions" | "activity">("info");
 
     const [expandedMerchant, setExpandedMerchant] = useState(true);
     const [expandedDriver, setExpandedDriver] = useState(true);
@@ -504,6 +515,45 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 )}
             </div>
 
+            {/* Tabs Navigation */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex border-b border-slate-200">
+                    <button
+                        onClick={() => setActiveTab("info")}
+                        className={`flex-1 px-6 py-4 text-center font-semibold transition ${
+                            activeTab === "info"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Información
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("actions")}
+                        className={`flex-1 px-6 py-4 text-center font-semibold transition ${
+                            activeTab === "actions"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Acciones
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("activity")}
+                        className={`flex-1 px-6 py-4 text-center font-semibold transition ${
+                            activeTab === "activity"
+                                ? "text-[#e60012] border-b-2 border-[#e60012]"
+                                : "text-gray-600 hover:text-gray-900"
+                        }`}
+                    >
+                        Actividad
+                    </button>
+                </div>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === "info" && (
+            <div className="space-y-6">
             {/* Merchant Section */}
             {user.merchant && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -1344,36 +1394,66 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
             )}
 
-            {/* Actions Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-                <h2 className="text-lg font-bold text-gray-900 mb-6">Acciones</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button
-                        onClick={handleUnlockAccount}
-                        disabled={processing}
-                        className="flex items-center justify-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
-                    >
-                        {processing ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <Unlock className="w-5 h-5" />
-                        )}
-                        Desbloquear cuenta
-                    </button>
-                    <button
-                        onClick={handleResetPassword}
-                        disabled={processing}
-                        className="flex items-center justify-center gap-3 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
-                    >
-                        {processing ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <Lock className="w-5 h-5" />
-                        )}
-                        Resetear contraseña
-                    </button>
+            </div>
+            )}
+
+            {activeTab === "actions" && (
+            <div className="space-y-6">
+                <UserAdminActions
+                    userId={user.id}
+                    userName={user.name || user.email}
+                    isSuspended={user.isSuspended}
+                    suspendedUntil={user.suspendedUntil}
+                    suspensionReason={user.suspensionReason}
+                    archivedAt={user.archivedAt}
+                    merchant={user.merchant ? {
+                        id: user.merchant.id,
+                        commissionOverride: user.merchant.commissionOverride,
+                        commissionOverrideReason: user.merchant.commissionOverrideReason,
+                        loyaltyTier: user.merchant.loyaltyTier,
+                        loyaltyTierLocked: user.merchant.loyaltyTierLocked,
+                    } : undefined}
+                    onRefresh={fetchUser}
+                />
+
+                {/* Legacy Actions Section */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                    <h2 className="text-lg font-bold text-gray-900 mb-6">Acciones Adicionales</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                            onClick={handleUnlockAccount}
+                            disabled={processing}
+                            className="flex items-center justify-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
+                        >
+                            {processing ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <Unlock className="w-5 h-5" />
+                            )}
+                            Desbloquear cuenta
+                        </button>
+                        <button
+                            onClick={handleResetPassword}
+                            disabled={processing}
+                            className="flex items-center justify-center gap-3 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
+                        >
+                            {processing ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <Lock className="w-5 h-5" />
+                            )}
+                            Resetear contraseña
+                        </button>
+                    </div>
                 </div>
             </div>
+            )}
+
+            {activeTab === "activity" && (
+            <div className="space-y-6">
+                <UserActivityLog userId={user.id} />
+            </div>
+            )}
         </div>
     );
 }

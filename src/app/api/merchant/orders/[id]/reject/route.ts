@@ -5,6 +5,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { createRefund } from "@/lib/mercadopago";
+import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -178,6 +179,18 @@ export async function POST(
         } catch (stockError) {
             console.error(`[Merchant Reject] Stock restore error for order ${order.orderNumber}:`, stockError);
         }
+
+        // Log order rejection activity (fire-and-forget)
+        const { ipAddress, userAgent } = extractRequestInfo(req);
+        logUserActivity({
+            userId: session.user.id,
+            action: ACTIVITY_ACTIONS.ORDER_REJECTED,
+            entityType: "Order",
+            entityId: orderId,
+            metadata: { orderNumber: order.orderNumber, reason },
+            ipAddress,
+            userAgent,
+        }).catch((err) => console.error("[Reject] Failed to log order rejection activity:", err));
 
         return NextResponse.json({ success: true, status: "CANCELLED" });
     } catch (error) {

@@ -100,7 +100,7 @@ export async function PUT(
     });
 
     // Determine action type based on lock change
-    let action = ACTIVITY_ACTIONS.ADMIN_LOYALTY_TIER_CHANGED;
+    let action: string = ACTIVITY_ACTIONS.ADMIN_LOYALTY_TIER_CHANGED;
     if (locked && !oldLocked) {
       action = ACTIVITY_ACTIONS.ADMIN_LOYALTY_TIER_LOCKED;
     } else if (!locked && oldLocked) {

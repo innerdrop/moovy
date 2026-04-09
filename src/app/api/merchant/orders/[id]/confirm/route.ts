@@ -5,6 +5,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { notifyBuyer } from "@/lib/notifications";
+import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -178,6 +179,18 @@ export async function POST(
         if (order.userId) {
             emitSocket("order_status_changed", `customer:${order.userId}`, socketData).catch(console.error);
         }
+
+        // Log order confirmation activity (fire-and-forget)
+        const { ipAddress, userAgent } = extractRequestInfo(_req);
+        logUserActivity({
+            userId: session.user.id,
+            action: ACTIVITY_ACTIONS.ORDER_CONFIRMED,
+            entityType: "Order",
+            entityId: orderId,
+            metadata: { orderNumber: order.orderNumber },
+            ipAddress,
+            userAgent,
+        }).catch((err) => console.error("[Confirm] Failed to log order confirmation activity:", err));
 
         // Still return 200 to merchant (order IS confirmed, assignment is pending)
         return NextResponse.json({

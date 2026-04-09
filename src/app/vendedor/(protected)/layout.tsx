@@ -29,6 +29,14 @@ export default async function VendedorLayout({ children }: { children: React.Rea
         redirect("/mi-perfil");
     }
 
+    // Check suspension and archive status
+    if ((session.user as any).isSuspended) {
+        redirect("/cuenta-suspendida");
+    }
+    if ((session.user as any).isArchived) {
+        redirect("/cuenta-archivada");
+    }
+
     const userRoles = getUserRoles(session);
 
     const navItems = [

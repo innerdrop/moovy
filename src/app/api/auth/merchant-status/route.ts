@@ -36,6 +36,6 @@ export async function GET() {
         });
     } catch (error) {
         console.error("[MerchantStatus] Error:", error);
-        return NextResponse.json({ error: "Error interno" }, { status: 500 });
+        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
     }
 }

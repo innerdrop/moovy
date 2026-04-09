@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 // GET - List all listings for the authenticated seller
 export async function GET() {
@@ -41,7 +42,7 @@ export async function GET() {
 }
 
 // POST - Create a new listing
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id) {
@@ -168,6 +169,18 @@ export async function POST(request: Request) {
                 category: { select: { id: true, name: true, slug: true } },
             },
         });
+
+        // Log listing creation activity (fire-and-forget)
+        const { ipAddress, userAgent } = extractRequestInfo(request);
+        logUserActivity({
+            userId: userId,
+            action: ACTIVITY_ACTIONS.LISTING_ADDED,
+            entityType: "Listing",
+            entityId: listing.id,
+            metadata: { title: listing.title, price: listing.price, listingType: listing.listingType },
+            ipAddress,
+            userAgent,
+        }).catch((err) => console.error("[Listing] Failed to log listing creation activity:", err));
 
         return NextResponse.json(listing, { status: 201 });
     } catch (error) {
