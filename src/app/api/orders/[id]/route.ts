@@ -422,8 +422,10 @@ export async function DELETE(
         // Push notification to buyer about cancellation (fire-and-forget)
         if (order.userId) {
             notifyBuyer(order.userId, 'CANCELLED', order.orderNumber, { orderId: order.id })
-                .catch(err => orderLogger.error({ error: err }, "Buyer cancel push notification error"));
+                .catch(err => orderLogger.error({ error: err }, "Buyer cancellation notification error"));
         }
+
+        orderLogger.info({ orderId: id, userId: session.user.id, orderNumber: order.orderNumber }, "Order cancelled");
 
         return NextResponse.json({ success: true, message: "Pedido cancelado" });
     } catch (error) {

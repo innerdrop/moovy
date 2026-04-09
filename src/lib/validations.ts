@@ -151,7 +151,7 @@ export const DeliveryCalcSchema = z.object({
 
 export const LoginSchema = z.object({
     email: z.string().email("Email inválido"),
-    password: z.string().min(6, "Contraseña mínimo 6 caracteres"),
+    password: z.string().min(8, "Contraseña mínimo 8 caracteres"),
 });
 
 export const RegisterSchema = z.object({
@@ -181,8 +181,6 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): {
     const firstError = result.error.issues[0];
     return {
         success: false,
-        error: firstError
-            ? `${firstError.path.join(".")}: ${firstError.message}`
-            : "Datos inválidos",
+        error: firstError?.message || "Datos inválidos",
     };
 }

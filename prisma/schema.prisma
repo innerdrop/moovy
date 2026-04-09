@@ -370,6 +370,8 @@ model SubOrder {
   @@index([paymentStatus])
   @@index([sellerId])
   @@index([merchantId])
+  @@index([orderId])
+  @@index([driverId])
 }
 
 model Merchant {

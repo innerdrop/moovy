@@ -86,6 +86,49 @@ async function notifyOps(title: string, body: string, orderId?: string): Promise
     }
 }
 
+/**
+ * Calculate estimated driver earnings for an order.
+ * Uses DeliveryRate from DB (base + per-km) × 80% riderCommission (Biblia v3).
+ * Falls back to sensible defaults if DB rates unavailable.
+ */
+async function calculateEstimatedEarnings(
+    packageCategory: string,
+    totalDistanceKm: number
+): Promise<number> {
+    // Default rates per Biblia v3 (base + per-km, driver gets 80%)
+    const FALLBACK_RATES: Record<string, { base: number; perKm: number }> = {
+        MICRO: { base: 800, perKm: 73 },
+        SMALL: { base: 1200, perKm: 73 },
+        MEDIUM: { base: 2500, perKm: 193 },
+        LARGE: { base: 3500, perKm: 222 },
+        XL: { base: 5000, perKm: 269 },
+        FREIGHT: { base: 8000, perKm: 329 },
+    };
+
+    try {
+        const deliveryRate = await prisma.deliveryRate.findFirst({
+            where: {
+                category: { name: packageCategory.toUpperCase() },
+                isActive: true,
+            },
+        });
+
+        const base = deliveryRate?.basePriceArs ?? (FALLBACK_RATES[packageCategory.toUpperCase()]?.base ?? 1500);
+        const perKm = deliveryRate?.pricePerKmArs ?? (FALLBACK_RATES[packageCategory.toUpperCase()]?.perKm ?? 73);
+
+        // Trip cost × factor 2.2 (ida + vuelta + espera) × 80% para el driver
+        const tripCost = Math.max(base, perKm * totalDistanceKm * 2.2);
+        const driverEarnings = Math.round(tripCost * 0.80);
+
+        return driverEarnings;
+    } catch (err) {
+        deliveryLogger.warn({ packageCategory, totalDistanceKm, error: err }, "Error calculating earnings, using fallback");
+        const fallback = FALLBACK_RATES[packageCategory.toUpperCase()] ?? FALLBACK_RATES.MEDIUM;
+        const tripCost = Math.max(fallback.base, fallback.perKm * totalDistanceKm * 2.2);
+        return Math.round(tripCost * 0.80);
+    }
+}
+
 // ─── Core Functions ─────────────────────────────────────────────────────────────
 
 /**
@@ -1281,37 +1324,13 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
     ).catch((err) => deliveryLogger.error({ error: err }, "Ops notification error"));
 
     emitSocket("order_unassignable", "admin:orders", { orderId, orderNumber }).catch((err) =>
-        deliveryLogger.error({ error: err }, "Socket unassignable error")
+        deliveryLogger.error({ error: err }, "Socket emit unassignable error")
     );
 
-    // Also notify the merchant
-    const orderForMerchant = await prisma.order.findUnique({
-        where: { id: orderId },
-        select: { merchantId: true },
-    });
-    if (orderForMerchant?.merchantId) {
-        emitSocket("order_unassignable", `merchant:${orderForMerchant.merchantId}`, { orderId, orderNumber }).catch((err) =>
-            deliveryLogger.error({ error: err }, "Socket merchant unassignable error")
-        );
-    }
-
-    // Notify customer
-    notifyBuyer(userId, "CANCELLED", orderNumber, { orderId }).catch((err) =>
-        deliveryLogger.error({ error: err }, "Buyer notification error")
+    // Notify buyer
+    notifyBuyer(userId, "UNASSIGNABLE", orderNumber, { orderId }).catch((err) =>
+        deliveryLogger.error({ error: err }, "Buyer notification error (unassignable)")
     );
-}
 
-/** Calculate estimated driver earnings from DeliveryRate */
-async function calculateEstimatedEarnings(categoryName: string, totalDistanceKm: number): Promise<number> {
-    const category = await prisma.packageCategory.findUnique({
-        where: { name: categoryName },
-        include: { deliveryRate: true },
-    });
-
-    if (category?.deliveryRate) {
-        return Math.round(category.deliveryRate.basePriceArs + category.deliveryRate.pricePerKmArs * totalDistanceKm);
-    }
-
-    // Fallback if no rate configured
-    return Math.round(500 + totalDistanceKm * 300);
+    deliveryLogger.warn({ orderId, orderNumber }, "Order marked as UNASSIGNABLE — no drivers available");
 }

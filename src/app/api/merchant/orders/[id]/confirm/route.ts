@@ -183,10 +183,13 @@ export async function POST(
         return NextResponse.json({
             success: true,
             status: "PREPARING",
-            assignmentPending: assignmentError != null
+            assignmentPending: assignmentError != null,
         });
     } catch (error) {
-        console.error("[Merchant Confirm] Error:", error);
-        return NextResponse.json({ error: "Error al confirmar el pedido" }, { status: 500 });
+        console.error("[MerchantConfirm] Error:", error);
+        return NextResponse.json(
+            { error: "Error al confirmar el pedido" },
+            { status: 500 }
+        );
     }
 }

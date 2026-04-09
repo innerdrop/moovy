@@ -212,11 +212,12 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         cronLogger.error(
             { error: error instanceof Error ? error.message : String(error) },
-            "Error processing assignment retries"
+            "Retry assignments cron failed"
         );
         return NextResponse.json(
-            { success: false, error: "Error processing assignment retries" },
+            { success: false, error: "Internal server error" },
             { status: 500 }
         );
     }
 }
+      

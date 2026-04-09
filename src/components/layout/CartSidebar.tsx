@@ -199,7 +199,7 @@ export default function CartSidebar() {
                                 onClick={closeCart}
                                 className="btn-primary w-full py-3 text-center block"
                             >
-                                Ir a Pagar
+                                Ir al checkout
                             </Link>
                         </div>
                     )}
@@ -208,3 +208,4 @@ export default function CartSidebar() {
         </>
     );
 }
+                          

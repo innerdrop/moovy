@@ -339,13 +339,13 @@ export default function ProductDetailClient() {
                                 <p className="text-xs text-gray-500">Pagás al recibir tu pedido</p>
                             </div>
                         </div>
-                        {merchant?.minOrderAmount > 0 && (
+                        {merchant && (merchant.minOrderAmount ?? 0) > 0 && (
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                                     <AlertCircle className="w-4 h-4 text-amber-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900">Pedido mínimo {formatPrice(merchant.minOrderAmount)}</p>
+                                    <p className="text-sm font-medium text-gray-900">Pedido mínimo {formatPrice(merchant.minOrderAmount!)}</p>
                                     <p className="text-xs text-gray-500">Este comercio requiere un monto mínimo</p>
                                 </div>
                             </div>
@@ -595,10 +595,10 @@ export default function ProductDetailClient() {
                                 <Banknote className="w-4 h-4 text-emerald-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Efectivo al recibir</span>
                             </div>
-                            {merchant?.minOrderAmount > 0 && (
+                            {merchant && (merchant.minOrderAmount ?? 0) > 0 && (
                                 <div className="flex items-center gap-3 text-sm lg:text-base text-amber-600 font-medium">
                                     <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 lg:w-5 lg:h-5" />
-                                    <span>Pedido mínimo {formatPrice(merchant.minOrderAmount)}</span>
+                                    <span>Pedido mínimo {formatPrice(merchant.minOrderAmount!)}</span>
                                 </div>
                             )}
                             <div className="flex items-center gap-3 text-sm lg:text-base text-green-600 font-medium">

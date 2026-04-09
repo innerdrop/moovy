@@ -1,5 +1,5 @@
 # MOOVY
-Última actualización: 2026-04-07 (UX smoke test improvements + puntos fix)
+Última actualización: 2026-04-08 (Fix archivos truncados + calculateEstimatedEarnings)
 Marketplace + tienda + delivery en Ushuaia, Argentina (80k hab). El comercio cobra al instante.
 Stack: Next.js 16 + React 19 + TS + Tailwind 4 + Prisma 5 + PostgreSQL/PostGIS + NextAuth v5 (JWT) + Socket.IO + Zustand
 Hosting: VPS Hostinger. Deploy: PowerShell scripts → SSH. Dominio: somosmoovy.com
@@ -38,11 +38,11 @@ MerchantLoyaltyConfig → tiers de fidelización (BRONCE/PLATA/ORO/DIAMANTE, com
 ✅ Auth — NextAuth v5 JWT, multi-rol, rate limit login, password policy 8+ chars
 ✅ Registro — Buyer/Merchant/Driver/Seller con docs y términos legales
 ✅ Catálogo — Productos + Listings con categorías scoped (STORE/MARKETPLACE/BOTH)
-✅ Carrito — Zustand multi-vendor con groupByVendor()
-✅ Checkout — Cash + MercadoPago Checkout Pro, puntos como descuento
+✅ Carrito — Zustand multi-vendor con groupByVendor() + detección automática multi-vendor + toast informativo
+✅ Checkout — Cash + MercadoPago Checkout Pro, puntos como descuento, delivery fee per-vendor para multi-vendor
 ✅ Pagos MP — Webhook HMAC + idempotency + auto-confirm + stock restore on reject
-✅ Assignment Engine — PostGIS + Haversine fallback, ciclo timeout/retry por driver
-✅ Tracking — GPS polling cada 10s + OrderTrackingMiniMap (dynamic import)
+✅ Assignment Engine — PostGIS + Haversine fallback, ciclo timeout/retry por driver + per-SubOrder assignment para multi-vendor
+✅ Tracking — GPS polling cada 10s + OrderTrackingMiniMap (dynamic import) + per-SubOrder tracking cards para multi-vendor
 ✅ Push — Web Push VAPID, notifyBuyer() en cada cambio de estado
 ✅ Socket.IO — Real-time para pedidos, driver tracking, admin live feed
 ✅ Ratings — Merchant + Seller + Driver con promedios atómicos (serializable tx)
@@ -105,7 +105,9 @@ Admin: login ✅ → dashboard ✅ → usuarios ✅ → pedidos ✅ → revenue 
 - Sidebar OPS reorganizado 2026-03-27: Nueva sección "Marketing" (Hero Banners, Banner Promo, Destacados). Paquetes B2B separados de Catálogo.
 - Dólar referencia 2026-03-27: USD 1 = ARS 1.450.
 - Biblia Financiera v3 2026-03-29: Documento maestro aprobado como FUENTE DE VERDAD para lanzamiento. Puntos MOOVER reformulados (10pts/$1K, $1/pt, 4 niveles, boost 30 días). Delivery con factor 2.2 + zonas A/B/C + 5% operativo embebido. Comisión 0% mes 1 comercios. Protocolo efectivo 3 capas. Publicidad 4 paquetes ($25K-$150K). Nafta $1,591/litro. Gastos fijos ~$440K/mes.
+- Multi-vendor delivery 2026-04-08: Cada SubOrder tiene delivery independiente con su propio repartidor, fee y tracking. Carrito detecta multi-vendor y muestra toast informativo (una vez por sesión). Checkout calcula delivery fee por vendor en paralelo via /api/delivery/calculate. Order API valida fees server-side por grupo y los asigna a SubOrders. Assignment engine tiene startSubOrderAssignmentCycle() que usa campos propios de SubOrder (pendingDriverId, assignmentExpiresAt, attemptedDriverIds). Smart batching: si comercios están a <3km Y el volumen combinado cabe en el mismo vehículo, se asigna el mismo repartidor. Merchant/seller confirm routes disparan asignación per SubOrder para multi-vendor. Retry cron maneja SubOrders stuck. Tracking muestra cards independientes por SubOrder con estado, driver, mini-mapa y items. Fees desglosados por vendor en resumen del pedido.
 - UX smoke test 2026-04-07: Búsqueda incluye descripción (OR clause). Chat bubble draggable (hooks antes de return condicional). Notas de producto dinámicas desde merchant config (deliveryRadiusKm, minOrderAmount, allowPickup). Fix crítico puntos MOOVER: display usaba Math.floor(price) = 100x inflado, corregido a Math.floor(price/100) = 10pts/$1K. Badge "Compra protegida". Checkout: CTA "Seguir comprando" + subtotal en botón mobile.
+- calculateEstimatedEarnings 2026-04-08: Función en assignment-engine.ts que calcula ganancia estimada del driver para mostrar en la oferta de pedido. Busca DeliveryRate de DB, fallback a rates hardcoded (Biblia v3). Fórmula: max(base, perKm × distancia × 2.2) × 0.80. Se usa en startAssignmentCycle, startSubOrderAssignmentCycle y rejectOrder.
 
 ## Reglas de negocio (Biblia Financiera v3 — FUENTE DE VERDAD)
 - Comisión comercios MES 1: 0% (30 días gratis, inversión de adquisición)

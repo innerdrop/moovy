@@ -1,6 +1,6 @@
 # Moovy — Tareas pendientes
-Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
-Última actualización: 2026-03-27
+Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 3
+Última actualización: 2026-04-08 (post-fix archivos truncados)
 
 ## P0 — Sin esto no se lanza
 
@@ -60,7 +60,7 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
   ✅ CRITICAL: claim endpoint auto-creaba driver sin registro (eliminado)
   ✅ CRITICAL: claim endpoint sin protección de race condition (updateMany atómico)
   ✅ HIGH: location endpoint sin approval check (corregido)
-  ⚠️ Password policy frontend 6 chars vs 8 en CLAUDE.md (fix pendiente)
+  ✅ Password policy LoginSchema min(6)→min(8) consistente con CLAUDE.md (corregido 2026-04-08)
   Flow 4 (admin/ops) — code review completo 2026-03-26:
   ✅ CRITICAL: puntos/page.tsx truncado con redirect incompleto (corregido)
   ✅ CRITICAL: points/config/route.ts truncado (corregido)
@@ -171,7 +171,7 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
 - Descuentos bulk B2B (hoteles, oficinas, hospitales) — M
 
 ### Eficiencia operativa
-- Batched deliveries (agrupar pedidos misma ruta) — L — Est: -30% costo driver
+- ~~Batched deliveries (agrupar pedidos misma ruta) — L~~ ✅ Implementado como smart batching en multi-vendor (comercios <3km + volumen compatible)
 - Smart assignment (heading-aware, no solo distancia) — M — Est: -15min ETA
 - Auto-aprobación merchants (CUIT válido + docs OK) — S
 - Alertas predictivas de stock bajo para merchants — S
@@ -233,6 +233,32 @@ Score: 99/100 | P0: 2 tareas | P1: 0 | P2: 3
 - [x] Historial ubicación driver (DriverLocationHistory, batch save, admin trace, cron cleanup 30d) — 2026-03-24
 - [x] Programa fidelización merchants (4 tiers BRONCE→DIAMANTE, comisión dinámica 5-8%, widget, badge, admin, cron) — 2026-03-24
 - [x] Smoke test code review flows 2/3/4: 12 bugs críticos/altos corregidos (driver approval gating, race conditions, admin soft delete, whitelist PATCH, syntax errors, scripts truncados) — 2026-03-26
+
+### 2026-04-08 — Reparación archivos truncados + fixes compilación
+- ✅ CRITICAL: 5 archivos truncados reparados (retry-assignments, assignment-engine, orders/[id], merchant/confirm, CartSidebar)
+- ✅ CRITICAL: función calculateEstimatedEarnings faltante en assignment-engine (ganancia estimada del driver)
+- ✅ CRITICAL: validateInput en validations.ts truncado (completado)
+- ✅ HIGH: LoginSchema password min(6)→min(8) consistente con política documentada
+- ✅ HIGH: ProductDetailClient null checks para merchant.minOrderAmount
+- ✅ MEDIUM: Indexes SubOrder (orderId, driverId) para performance de queries multi-vendor
+- ✅ TypeScript compila limpio — 0 errores
+
+### 2026-04-08 — Multi-vendor Delivery System
+- ✅ Carrito detecta multi-vendor y muestra toast informativo (una vez por sesión)
+- ✅ CartSidebar agrupa items por vendedor con banner info
+- ✅ Checkout calcula delivery fee por vendor en paralelo
+- ✅ Order API valida fees server-side por grupo, asigna deliveryFee a SubOrders
+- ✅ startSubOrderAssignmentCycle() en assignment engine con smart batching (<3km + volumen)
+- ✅ Merchant/seller confirm disparan asignación per SubOrder
+- ✅ Retry cron maneja SubOrders stuck sin driver
+- ✅ Tracking muestra cards independientes por SubOrder (estado, driver, mapa, items)
+- ✅ Fees desglosados por vendor en resumen del pedido
+- ✅ Validación Zod: OrderGroupSchema acepta deliveryFee + distanceKm
+
+### 2026-04-07 — UX Smoke Test Improvements
+- ✅ Búsqueda por descripción + Chat bubble draggable (fix hooks order)
+- ✅ Notas dinámicas de merchant + Fix crítico puntos MOOVER (100x inflado)
+- ✅ Badge "Compra protegida" + CTA "Seguir comprando" + subtotal en botón mobile
 
 ### 2026-03-27 — Marketing & Publicidad
 - ✅ Sección "Destacados" en home page (3 tiers: Platino/Destacado/Premium)
