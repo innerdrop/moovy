@@ -14,6 +14,7 @@ import {
     Star,
 } from "lucide-react";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
+import SellerMobileMoreMenu from "@/components/seller/SellerMobileMoreMenu";
 import { MessageCircle } from "lucide-react";
 
 export default async function VendedorLayout({ children }: { children: React.ReactNode }) {
@@ -124,10 +125,10 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                 {children}
             </main>
 
-            {/* Mobile Bottom Navigation */}
+            {/* Mobile Bottom Navigation — 4 main items + More menu */}
             <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                 <div className="flex items-center justify-between h-16 px-2 max-w-md mx-auto relative text-center">
-                    {navItems.map((item) => (
+                    {navItems.slice(0, 4).map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
@@ -139,6 +140,8 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                             </span>
                         </Link>
                     ))}
+                    {/* More menu for remaining items (Reseñas, Soporte, Configuración) */}
+                    <SellerMobileMoreMenu />
                 </div>
                 {/* Safe area padding for iPhones with notch */}
                 <div className="h-[env(safe-area-inset-bottom)] bg-white" />

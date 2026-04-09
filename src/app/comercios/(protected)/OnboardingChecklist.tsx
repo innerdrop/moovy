@@ -51,49 +51,73 @@ export default function OnboardingChecklist() {
     ];
 
     const completedCount = steps.filter((s) => s.completed).length;
-    const pending = steps.filter((s) => !s.completed);
+    const progressPercent = (completedCount / steps.length) * 100;
 
     return (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl px-4 py-3 border border-red-100 flex items-center gap-3 flex-wrap">
-            {/* Progress */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: "#e60012" }}>
-                    {completedCount}/{steps.length}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Header with progress */}
+            <div className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                        style={{ backgroundColor: "#e60012" }}
+                    >
+                        {completedCount}/{steps.length}
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-gray-900">Completá tu perfil</p>
+                        <p className="text-[11px] text-gray-400">Para empezar a recibir pedidos</p>
+                    </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-800">Completá tu perfil:</span>
+                <button
+                    onClick={() => setDismissed(true)}
+                    className="text-gray-300 hover:text-gray-500 transition p-1"
+                    title="Ocultar por ahora"
+                >
+                    <X className="w-4 h-4" />
+                </button>
             </div>
 
-            {/* Pending items as compact chips */}
-            <div className="flex items-center gap-2 flex-wrap flex-1">
-                {pending.map((step) => (
+            {/* Progress bar */}
+            <div className="px-4 pb-3">
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%`, backgroundColor: "#e60012" }}
+                    />
+                </div>
+            </div>
+
+            {/* Steps list — vertical on mobile, clean and tappable */}
+            <div className="border-t border-gray-50">
+                {steps.map((step, i) => (
                     <Link
                         key={step.id}
                         href={step.href}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-medium text-gray-700 border border-gray-200 hover:border-red-300 hover:bg-red-50 transition shadow-sm"
+                        className={`flex items-center gap-3 px-4 py-3 transition ${
+                            step.completed
+                                ? "bg-green-50/50"
+                                : "hover:bg-red-50/50 active:bg-red-50"
+                        } ${i < steps.length - 1 ? "border-b border-gray-50" : ""}`}
                     >
-                        <Circle className="w-3 h-3 text-gray-300" />
-                        {step.label}
-                        <ChevronRight className="w-3 h-3 text-gray-300" />
+                        {step.completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        ) : (
+                            <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                        )}
+                        <span
+                            className={`text-sm font-medium flex-1 ${
+                                step.completed ? "text-green-700 line-through decoration-green-300" : "text-gray-700"
+                            }`}
+                        >
+                            {step.label}
+                        </span>
+                        {!step.completed && (
+                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                        )}
                     </Link>
                 ))}
-
-                {/* Show completed as small checkmarks */}
-                {steps.filter(s => s.completed).map((step) => (
-                    <span key={step.id} className="inline-flex items-center gap-1 px-2 py-1 text-xs text-green-600 font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {step.label.split(" (")[0]}
-                    </span>
-                ))}
             </div>
-
-            {/* Dismiss */}
-            <button
-                onClick={() => setDismissed(true)}
-                className="text-gray-400 hover:text-gray-600 transition flex-shrink-0 p-1"
-                title="Ocultar por ahora"
-            >
-                <X className="w-4 h-4" />
-            </button>
         </div>
     );
 }

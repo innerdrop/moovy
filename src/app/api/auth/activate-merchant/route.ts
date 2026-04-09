@@ -1,0 +1,137 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { sendMerchantRequestNotification } from "@/lib/email";
+import { encryptMerchantData } from "@/lib/fiscal-crypto";
+import { applyRateLimit } from "@/lib/rate-limit";
+
+function generateSlug(name: string): string {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
+}
+
+/**
+ * POST /api/auth/activate-merchant
+ * Add COMERCIO role to an authenticated user who wants to register their business.
+ * Only collects business data — personal data comes from existing account.
+ */
+export async function POST(request: NextRequest) {
+    const limited = await applyRateLimit(request, "auth:activate-merchant", 5, 15 * 60_000);
+    if (limited) return limited;
+
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        }
+
+        const userId = (session.user as any).id;
+
+        // Check if already has a merchant
+        const existingMerchant = await prisma.merchant.findFirst({
+            where: { ownerId: userId },
+        });
+        if (existingMerchant) {
+            return NextResponse.json(
+                {
+                    error:
+                        existingMerchant.approvalStatus === "APPROVED"
+                            ? "Ya tenés un comercio activo"
+                            : "Tu solicitud de comercio está pendiente de aprobación",
+                    status:
+                        existingMerchant.approvalStatus === "APPROVED"
+                            ? "ACTIVE"
+                            : "PENDING_VERIFICATION",
+                },
+                { status: 409 }
+            );
+        }
+
+        let body: Record<string, any> = {};
+        try {
+            body = await request.json();
+        } catch {
+            return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+        }
+
+        // Validate required fields (business data only — no personal data needed)
+        if (!body.businessName) {
+            return NextResponse.json({ error: "El nombre del comercio es obligatorio" }, { status: 400 });
+        }
+        if (!body.acceptedTerms) {
+            return NextResponse.json(
+                { error: "Debés aceptar los Términos para Comercios" },
+                { status: 400 }
+            );
+        }
+
+        // Generate slug
+        let slug = generateSlug(body.businessName);
+        const existingSlug = await prisma.merchant.findUnique({ where: { slug } });
+        if (existingSlug) {
+            slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
+        }
+
+        // Build merchant data
+        let merchantData: Record<string, any> = {
+            ownerId: userId,
+            name: body.businessName,
+            businessName: body.businessName,
+            slug,
+            category: body.businessType || null,
+            cuit: body.cuit || null,
+            bankAccount: body.cbu || null,
+            constanciaAfipUrl: body.constanciaAfipUrl || null,
+            habilitacionMunicipalUrl: body.habilitacionMunicipalUrl || null,
+            registroSanitarioUrl: body.registroSanitarioUrl || null,
+            acceptedTermsAt: new Date(),
+            acceptedPrivacyAt: body.acceptedPrivacy ? new Date() : null,
+            email: session.user.email || body.email || null,
+            phone: body.businessPhone || body.phone || null,
+            address: body.address || null,
+            latitude: body.latitude ? parseFloat(body.latitude) : null,
+            longitude: body.longitude ? parseFloat(body.longitude) : null,
+            description: body.description || "Nuevo comercio Moovy",
+            isActive: false,
+            isVerified: false,
+            approvalStatus: "PENDING",
+        };
+
+        // Encrypt sensitive fiscal data
+        merchantData = encryptMerchantData(merchantData);
+
+        await prisma.$transaction(async (tx) => {
+            await tx.merchant.create({ data: merchantData as any });
+
+            // Add COMERCIO role if not present
+            const existingRole = await tx.userRole.findUnique({
+                where: { userId_role: { userId, role: "COMERCIO" } },
+            });
+            if (!existingRole) {
+                await tx.userRole.create({
+                    data: { userId, role: "COMERCIO", isActive: true },
+                });
+            } else if (!existingRole.isActive) {
+                await tx.userRole.update({
+                    where: { userId_role: { userId, role: "COMERCIO" } },
+                    data: { isActive: true },
+                });
+            }
+        });
+
+        // Notify admin (non-blocking)
+        sendMerchantRequestNotification(
+            body.businessName,
+            session.user.name || null,
+            session.user.email || null,
+            body.businessType || null
+        );
+
+        return NextResponse.json({ success: true, status: "PENDING_VERIFICATION" });
+    } catch (error) {
+        console.error("[ActivateMerchant] Error:", error);
+        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    }
+}

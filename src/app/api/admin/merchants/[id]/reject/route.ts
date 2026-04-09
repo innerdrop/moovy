@@ -4,7 +4,14 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendMerchantRejectionEmail } from "@/lib/email";
 
-// PUT - Reject merchant application (admin only)
+// PUT/POST - Reject merchant application (admin only)
+export async function POST(
+    request: Request,
+    context: { params: Promise<{ id: string }> }
+) {
+    return PUT(request, context);
+}
+
 export async function PUT(
     request: Request,
     context: { params: Promise<{ id: string }> }

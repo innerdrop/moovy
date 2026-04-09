@@ -54,6 +54,7 @@ export default function ProfilePage() {
     // Role activation state
     const [sellerStatus, setSellerStatus] = useState<string | null>(null);
     const [driverStatus, setDriverStatus] = useState<string | null>(null);
+    const [merchantStatus, setMerchantStatus] = useState<string | null>(null);
     const [activatingRole, setActivatingRole] = useState<string | null>(null);
     const [showDriverConfirm, setShowDriverConfirm] = useState(false);
 
@@ -70,13 +71,14 @@ export default function ProfilePage() {
     const hasMerchant = userRoles.includes("MERCHANT") || userRoles.includes("COMERCIO");
     const hasAdmin = userRoles.includes("ADMIN");
 
-    // Check driver status once on mount — NO updateSession() here to avoid remount loops
+    // Check driver & seller status once on mount — NO updateSession() here to avoid remount loops
     const mountChecked = useRef(false);
 
     useEffect(() => {
         if (!session?.user || mountChecked.current) return;
         mountChecked.current = true;
 
+        // Check driver status via API (independent of JWT)
         fetch("/api/driver/profile")
             .then(res => res.ok ? res.json() : null)
             .then(data => {
@@ -88,6 +90,37 @@ export default function ProfilePage() {
                 }
             })
             .catch(() => { /* no driver profile yet */ });
+
+        // Check seller status via API (independent of JWT)
+        // Covers the case where user registered as seller but JWT wasn't refreshed
+        if (!hasSeller) {
+            fetch("/api/seller/profile")
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data?.isActive) {
+                        setSellerStatus("ACTIVE");
+                        // Refresh JWT so hasSeller becomes true on next render
+                        updateSession({ refreshRoles: true });
+                    }
+                })
+                .catch(() => { /* no seller profile yet */ });
+        }
+
+        // Check merchant status via API (independent of JWT)
+        if (!hasMerchant) {
+            fetch("/api/auth/merchant-status")
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (!data?.exists) return;
+                    if (data.approvalStatus === "APPROVED") {
+                        setMerchantStatus("ACTIVE");
+                        updateSession({ refreshRoles: true });
+                    } else {
+                        setMerchantStatus("PENDING_VERIFICATION");
+                    }
+                })
+                .catch(() => { /* no merchant yet */ });
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [!!session?.user]);
 
@@ -260,12 +293,22 @@ export default function ProfilePage() {
                 </section>
 
                 {/* 2. My Portals — links to active role dashboards */}
-                {(hasSeller || driverStatus === "ACTIVE" || hasMerchant || hasAdmin) && (
+                {(hasSeller || sellerStatus === "ACTIVE" || driverStatus === "ACTIVE" || hasMerchant || merchantStatus === "ACTIVE" || hasAdmin) && (
                     <section>
                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Mis Portales</h3>
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            {hasSeller && (
-                                <Link href="/vendedor" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                            {(hasSeller || sellerStatus === "ACTIVE") && (
+                                <button
+                                    onClick={async () => {
+                                        if (!hasSeller) {
+                                            await updateSession({ refreshRoles: true });
+                                            window.location.href = "/vendedor";
+                                        } else {
+                                            router.push("/vendedor");
+                                        }
+                                    }}
+                                    className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
+                                >
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
                                             <ShoppingBag className="w-4 h-4" />
@@ -276,7 +319,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                     <ExternalLink className="w-4 h-4 text-gray-300" />
-                                </Link>
+                                </button>
                             )}
                             {driverStatus === "ACTIVE" && (
                                 <button
@@ -305,8 +348,18 @@ export default function ProfilePage() {
                                     <ExternalLink className="w-4 h-4 text-gray-300" />
                                 </button>
                             )}
-                            {hasMerchant && (
-                                <Link href="/comercios" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
+                            {(hasMerchant || merchantStatus === "ACTIVE") && (
+                                <button
+                                    onClick={async () => {
+                                        if (!hasMerchant) {
+                                            await updateSession({ refreshRoles: true });
+                                            window.location.href = "/comercios";
+                                        } else {
+                                            router.push("/comercios");
+                                        }
+                                    }}
+                                    className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
+                                >
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
                                             <Store className="w-4 h-4" />
@@ -317,7 +370,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                     <ExternalLink className="w-4 h-4 text-gray-300" />
-                                </Link>
+                                </button>
                             )}
                             {hasAdmin && (
                                 <Link href="/ops" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
@@ -341,24 +394,57 @@ export default function ProfilePage() {
                 <section>
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 ml-1">Oportunidades MOOVY</h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        {/* Comercio - se mantiene como link (onboarding separado) */}
-                        {!hasMerchant && (
-                            <Link href="/comercio/registro?from=profile" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
-                                        <Store className="w-4 h-4" />
+                        {/* Comercio — register or show pending status */}
+                        {!hasMerchant && merchantStatus !== "ACTIVE" && (
+                            <div>
+                                <Link
+                                    href="/comercio/registro?from=profile"
+                                    className={`flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group ${merchantStatus === "PENDING_VERIFICATION" ? "pointer-events-none opacity-70" : ""}`}
+                                    aria-disabled={merchantStatus === "PENDING_VERIFICATION"}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
+                                            <Store className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900 block">Registrar mi Comercio</span>
+                                            <span className="text-[10px] text-gray-400">Vendé tus productos en Moovy</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="text-sm font-medium text-gray-900 block">Registrar mi Comercio</span>
-                                        <span className="text-[10px] text-gray-400">Vendé tus productos en Moovy</span>
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-gray-300" />
-                            </Link>
+                                    {merchantStatus === "PENDING_VERIFICATION" ? (
+                                        <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+                                    ) : (
+                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                    )}
+                                </Link>
+                                {/* Cancel pending merchant request */}
+                                {merchantStatus === "PENDING_VERIFICATION" && (
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm("¿Estás seguro de que querés cancelar tu solicitud de comercio?")) return;
+                                            try {
+                                                const res = await fetch("/api/auth/cancel-merchant", { method: "POST" });
+                                                if (res.ok) {
+                                                    setMerchantStatus(null);
+                                                } else {
+                                                    const data = await res.json();
+                                                    alert(data.error || "Error al cancelar");
+                                                }
+                                            } catch {
+                                                alert("Error de conexión");
+                                            }
+                                        }}
+                                        className="flex items-center justify-center gap-2 w-full p-3 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 transition border-b border-gray-50"
+                                    >
+                                        <X className="w-3 h-3" />
+                                        Cancelar solicitud de comercio
+                                    </button>
+                                )}
+                            </div>
                         )}
 
                         {/* Seller - link al onboarding (solo si no tiene el rol) */}
-                        {!hasSeller && (
+                        {!hasSeller && sellerStatus !== "ACTIVE" && (
                             <Link
                                 href="/vendedor/registro?from=profile"
                                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
@@ -399,6 +485,30 @@ export default function ProfilePage() {
                                 ) : (
                                     <ChevronRight className="w-4 h-4 text-gray-300" />
                                 )}
+                            </button>
+                        )}
+
+                        {/* Cancel pending driver request */}
+                        {driverStatus === "PENDING_VERIFICATION" && (
+                            <button
+                                onClick={async () => {
+                                    if (!confirm("¿Estás seguro de que querés cancelar tu solicitud de repartidor?")) return;
+                                    try {
+                                        const res = await fetch("/api/auth/cancel-driver", { method: "POST" });
+                                        if (res.ok) {
+                                            setDriverStatus(null);
+                                        } else {
+                                            const data = await res.json();
+                                            alert(data.error || "Error al cancelar");
+                                        }
+                                    } catch {
+                                        alert("Error de conexión");
+                                    }
+                                }}
+                                className="flex items-center justify-center gap-2 w-full p-3 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 transition border-t border-gray-100"
+                            >
+                                <X className="w-3 h-3" />
+                                Cancelar solicitud de repartidor
                             </button>
                         )}
                     </div>

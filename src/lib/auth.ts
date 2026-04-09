@@ -156,6 +156,56 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             }
                         }
 
+                        // Auto-heal: if SellerProfile exists and is active but UserRole SELLER
+                        // doesn't exist or is inactive, create/activate it
+                        if (!rolesFromTable.includes("SELLER")) {
+                            const activeSeller = await prisma.sellerProfile.findUnique({
+                                where: { userId },
+                                select: { isActive: true },
+                            });
+                            if (activeSeller?.isActive) {
+                                const existingRole = await prisma.userRole.findUnique({
+                                    where: { userId_role: { userId, role: "SELLER" } },
+                                });
+                                if (existingRole && !existingRole.isActive) {
+                                    await prisma.userRole.update({
+                                        where: { userId_role: { userId, role: "SELLER" } },
+                                        data: { isActive: true },
+                                    });
+                                } else if (!existingRole) {
+                                    await prisma.userRole.create({
+                                        data: { userId, role: "SELLER", isActive: true },
+                                    });
+                                }
+                                rolesFromTable.push("SELLER");
+                            }
+                        }
+
+                        // Auto-heal: if Merchant exists for this user but UserRole COMERCIO
+                        // doesn't exist or is inactive, create/activate it
+                        if (!rolesFromTable.includes("COMERCIO")) {
+                            const ownedMerchant = await prisma.merchant.findFirst({
+                                where: { ownerId: userId },
+                                select: { id: true },
+                            });
+                            if (ownedMerchant) {
+                                const existingRole = await prisma.userRole.findUnique({
+                                    where: { userId_role: { userId, role: "COMERCIO" } },
+                                });
+                                if (existingRole && !existingRole.isActive) {
+                                    await prisma.userRole.update({
+                                        where: { userId_role: { userId, role: "COMERCIO" } },
+                                        data: { isActive: true },
+                                    });
+                                } else if (!existingRole) {
+                                    await prisma.userRole.create({
+                                        data: { userId, role: "COMERCIO", isActive: true },
+                                    });
+                                }
+                                rolesFromTable.push("COMERCIO");
+                            }
+                        }
+
                         token.roles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];
                         token.role = freshUser.role;
 

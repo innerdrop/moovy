@@ -96,7 +96,7 @@ function RepartidorRegistroContent() {
         licensePlate: "",
         licenciaUrl: "",
         seguroUrl: "",
-        vtvUrl: "",
+        rtoUrl: "",
         // Paso 3: Confirmación
         hasLicense: false,
         acceptTerms: false,
@@ -208,10 +208,14 @@ function RepartidorRegistroContent() {
                 ? "/api/auth/activate-driver"
                 : "/api/auth/register/driver";
 
+            // Map rtoUrl → vtvUrl for API (DB field is vtvUrl, UI shows RTO for Ushuaia)
+            const payload = { ...formData, vtvUrl: formData.rtoUrl };
+            delete (payload as any).rtoUrl;
+
             const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
@@ -286,21 +290,6 @@ function RepartidorRegistroContent() {
                                     <p className="font-medium text-green-900">Próximos pasos</p>
                                     <p className="text-sm text-green-700">Nuestro equipo revisará tu documentación y te contactaremos en las próximas 24-48 horas.</p>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-3 mb-6">
-                            <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                <Shield className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                                <p className="text-xs text-gray-600">Verificación</p>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                <FileText className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                                <p className="text-xs text-gray-600">Documentos</p>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                <Zap className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                                <p className="text-xs text-gray-600">¡A rodar!</p>
                             </div>
                         </div>
 
@@ -708,11 +697,11 @@ function RepartidorRegistroContent() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs text-gray-500 mb-1">VTV (Verificación Técnica Vehicular)</label>
+                                            <label className="block text-xs text-gray-500 mb-1">RTO (Revisión Técnica Obligatoria)</label>
                                             <DocumentUpload
-                                                value={formData.vtvUrl}
-                                                onChange={(url) => setFormData(prev => ({ ...prev, vtvUrl: url }))}
-                                                placeholder="Subí tu VTV vigente"
+                                                value={formData.rtoUrl}
+                                                onChange={(url) => setFormData(prev => ({ ...prev, rtoUrl: url }))}
+                                                placeholder="Subí tu RTO vigente"
                                                 formatHint="JPG, PNG o PDF (Max 10MB)"
                                             />
                                         </div>
@@ -775,11 +764,15 @@ function RepartidorRegistroContent() {
                                 <p className="text-sm font-medium text-gray-800">Resumen de tu solicitud:</p>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <span className="text-gray-500">Nombre:</span>
-                                    <span className="text-gray-800 font-medium">{formData.firstName} {formData.lastName}</span>
+                                    <span className="text-gray-800 font-medium">
+                                        {fromProfile && isAuthenticated
+                                            ? (session?.user?.name || "—")
+                                            : `${formData.firstName} ${formData.lastName}`}
+                                    </span>
                                     <span className="text-gray-500">DNI:</span>
-                                    <span className="text-gray-800 font-medium">{formData.dni}</span>
+                                    <span className="text-gray-800 font-medium">{formData.dni || "—"}</span>
                                     <span className="text-gray-500">CUIT:</span>
-                                    <span className="text-gray-800 font-medium">{formData.cuit}</span>
+                                    <span className="text-gray-800 font-medium">{formData.cuit || "—"}</span>
                                     <span className="text-gray-500">Vehículo:</span>
                                     <span className="text-gray-800 font-medium capitalize">
                                         {formData.vehicleType}

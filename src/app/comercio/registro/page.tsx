@@ -3,6 +3,7 @@
 // Comercio Registration Page - Formulario de registro para comercios
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -48,7 +49,11 @@ const FOOD_BUSINESS_TYPES = [
 function ComercioRegistroContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session, update: updateSession } = useSession();
     const fromProfile = searchParams.get("from") === "profile";
+    const isAuthenticated = !!session?.user;
+
+    // If from profile (authenticated), skip step 2 (contact/password) → go 1 → 3
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -159,7 +164,13 @@ function ComercioRegistroContent() {
         };
 
         try {
-            const res = await fetch("/api/auth/register/merchant", {
+            // Authenticated user from profile → activate-merchant (adds role to existing account)
+            // New user → register/merchant (creates new account + merchant)
+            const endpoint = fromProfile && isAuthenticated
+                ? "/api/auth/activate-merchant"
+                : "/api/auth/register/merchant";
+
+            const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(submissionData)
@@ -169,6 +180,11 @@ function ComercioRegistroContent() {
 
             if (!res.ok) {
                 throw new Error(data.error || "Error al registrar");
+            }
+
+            // Refresh session so COMERCIO role appears in JWT
+            if (fromProfile && isAuthenticated) {
+                await updateSession({ refreshRoles: true });
             }
 
             setStep(4); // Success step
@@ -197,18 +213,22 @@ function ComercioRegistroContent() {
                 </div>
 
                 {/* Progress Steps */}
-                {step < 4 && (
-                    <div className="flex items-center justify-center gap-2 mb-6">
-                        {[1, 2, 3].map((s) => (
-                            <div key={s} className="flex items-center gap-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}>
-                                    {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
+                {step < 4 && (() => {
+                    // From profile: show steps 1 and 3 as "1 of 2" and "2 of 2" (skip step 2)
+                    const steps = fromProfile && isAuthenticated ? [1, 3] : [1, 2, 3];
+                    return (
+                        <div className="flex items-center justify-center gap-2 mb-6">
+                            {steps.map((s, i) => (
+                                <div key={s} className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}>
+                                        {step > s ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
+                                    </div>
+                                    {i < steps.length - 1 && <div className={`w-12 h-1 rounded ${step > s ? "bg-blue-600" : "bg-gray-200"}`} />}
                                 </div>
-                                {s < 3 && <div className={`w-12 h-1 rounded ${step > s ? "bg-blue-600" : "bg-gray-200"}`} />}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    );
+                })()}
 
                 {/* Success Step */}
                 {step === 4 && (
@@ -248,7 +268,9 @@ function ComercioRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Registrar mi Comercio</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 1: Información básica</p>
+                        <p className="text-sm text-gray-500 text-center mb-6">
+                            {fromProfile && isAuthenticated ? "Paso 1: Datos de tu negocio" : "Paso 1: Información básica"}
+                        </p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -256,7 +278,12 @@ function ComercioRegistroContent() {
                             </div>
                         )}
 
-                        <form onSubmit={(e) => { e.preventDefault(); setError(""); setStep(2); }} className="space-y-4">
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            setError("");
+                            // From profile: skip step 2 (contact/password), go straight to fiscal docs
+                            setStep(fromProfile && isAuthenticated ? 3 : 2);
+                        }} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Nombre del Comercio <span className="text-red-500">*</span>
@@ -275,39 +302,42 @@ function ComercioRegistroContent() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Nombre <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            {/* Personal data — only for new users (profile users already have this) */}
+                            {!(fromProfile && isAuthenticated) && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Nombre <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                name="firstName"
+                                                value={formData.firstName}
+                                                onChange={handleChange}
+                                                placeholder="Juan"
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Apellido <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="text"
-                                            name="firstName"
-                                            value={formData.firstName}
+                                            name="lastName"
+                                            value={formData.lastName}
                                             onChange={handleChange}
-                                            placeholder="Juan"
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Pérez"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Apellido <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        placeholder="Pérez"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -338,9 +368,11 @@ function ComercioRegistroContent() {
                             </button>
                         </form>
 
-                        <p className="mt-4 text-center text-sm text-gray-500">
-                            ¿Ya tenés cuenta? <Link href="/comercios/login" className="text-blue-600 font-medium hover:underline">Iniciá sesión</Link>
-                        </p>
+                        {!(fromProfile && isAuthenticated) && (
+                            <p className="mt-4 text-center text-sm text-gray-500">
+                                ¿Ya tenés cuenta? <Link href="/comercios/login" className="text-blue-600 font-medium hover:underline">Iniciá sesión</Link>
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -535,7 +567,7 @@ function ComercioRegistroContent() {
                 {step === 3 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <button
-                            onClick={() => { setError(""); setStep(2); }}
+                            onClick={() => { setError(""); setStep(fromProfile && isAuthenticated ? 1 : 2); }}
                             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -548,7 +580,9 @@ function ComercioRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Datos Fiscales y Legales</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Paso 3: Documentación para operar</p>
+                        <p className="text-sm text-gray-500 text-center mb-6">
+                            {fromProfile && isAuthenticated ? "Paso 2: Documentación para operar" : "Paso 3: Documentación para operar"}
+                        </p>
 
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -557,6 +591,53 @@ function ComercioRegistroContent() {
                         )}
 
                         <div className="space-y-4">
+                            {/* Business address & phone — only shown here when from profile (step 2 is skipped) */}
+                            {fromProfile && isAuthenticated && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Teléfono del Negocio (+549) <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold border-r pr-1.5 border-gray-200 text-sm">
+                                                +549
+                                            </span>
+                                            <input
+                                                type="tel"
+                                                name="businessPhone"
+                                                value={formData.businessPhone}
+                                                onChange={handleChange}
+                                                placeholder="2901 ..."
+                                                className="w-full pl-[5.5rem] pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                required
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                            Ingresá solo números, sin 0 y sin 15.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Dirección del negocio <span className="text-red-500">*</span>
+                                        </label>
+                                        <AddressAutocomplete
+                                            value={formData.address}
+                                            onChange={(address, lat, lng, street, num) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    address: num ? `${street} ${num}` : address,
+                                                    latitude: lat ?? prev.latitude,
+                                                    longitude: lng ?? prev.longitude
+                                                }));
+                                            }}
+                                            placeholder="Buscá tu dirección o nombre de negocio..."
+                                            required
+                                        />
+                                    </div>
+                                </>
+                            )}
+
                             {/* CUIT */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
