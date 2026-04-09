@@ -19,7 +19,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -28,7 +28,7 @@ export async function GET(
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await context.params;
 
         // Fetch complete user with all relations
         const user = await prisma.user.findUnique({
@@ -250,13 +250,4 @@ export async function GET(
             addresses: user.addresses,
             recentOrders: user.orders,
             pointsTransactions: user.pointsTransactions,
-            stats,
-        });
-    } catch (error) {
-        console.error("Error fetching user detail:", error);
-        return NextResponse.json(
-            { error: "Error al obtener detalles del usuario" },
-            { status: 500 }
-        );
-    }
-}
+       
