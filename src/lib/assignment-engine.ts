@@ -1248,13 +1248,14 @@ export async function driverRejectOrder(
             },
         });
 
-        // Sync legacy Order fields
+        // Sync legacy Order fields (including assignmentAttempts to match PendingAssignment)
         await prisma.order.update({
             where: { id: orderId },
             data: {
                 pendingDriverId: nextDriver.id,
                 assignmentExpiresAt: newExpiresAt,
                 lastAssignmentAt: new Date(),
+                assignmentAttempts: { increment: 1 },
                 attemptedDriverIds: excludeDriverIds,
             },
         });

@@ -1210,37 +1210,52 @@ export async function GET(request: Request) {
 
         const isAdmin = hasAnyRole(session, ["ADMIN"]);
         const { searchParams } = new URL(request.url);
-        const status = searchParams.get("status");
+        const statusFilter = searchParams.get("status");
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
+        const skip = (page - 1) * limit;
 
         const where: any = isAdmin ? {} : { userId: session.user.id };
-        if (status) {
-            where.status = status;
+        where.deletedAt = null; // Always exclude soft-deleted
+        if (statusFilter) {
+            where.status = statusFilter;
         }
 
-        const orders = await prisma.order.findMany({
-            where,
-            include: {
-                items: true,
-                address: true,
-                user: {
-                    select: { id: true, name: true, email: true, phone: true },
+        const [orders, total] = await Promise.all([
+            prisma.order.findMany({
+                where,
+                include: {
+                    items: true,
+                    address: true,
+                    user: {
+                        select: { id: true, name: true, email: true, phone: true },
+                    },
+                    driver: {
+                        select: {
+                            id: true,
+                            latitude: true,
+                            longitude: true,
+                            user: { select: { name: true, phone: true } }
+                        }
+                    },
+                    merchant: {
+                        select: { id: true, name: true, latitude: true, longitude: true }
+                    },
+                    subOrders: {
+                        select: { id: true, status: true, merchantId: true, sellerId: true, deliveryFee: true, driverId: true },
+                    },
                 },
-                driver: {
-                    select: {
-                        id: true,
-                        latitude: true,
-                        longitude: true,
-                        user: { select: { name: true, phone: true } }
-                    }
-                },
-                merchant: {
-                    select: { id: true, name: true, latitude: true, longitude: true }
-                }
-            },
-            orderBy: { createdAt: "desc" },
-        });
+                orderBy: { createdAt: "desc" },
+                take: limit,
+                skip,
+            }),
+            prisma.order.count({ where }),
+        ]);
 
-        return NextResponse.json(orders);
+        return NextResponse.json({
+            orders,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
     } catch (error) {
         status = "500";
         orderLogger.error({ error }, "Error fetching orders");

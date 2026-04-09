@@ -234,6 +234,15 @@ Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 3
 - [x] Programa fidelización merchants (4 tiers BRONCE→DIAMANTE, comisión dinámica 5-8%, widget, badge, admin, cron) — 2026-03-24
 - [x] Smoke test code review flows 2/3/4: 12 bugs críticos/altos corregidos (driver approval gating, race conditions, admin soft delete, whitelist PATCH, syntax errors, scripts truncados) — 2026-03-26
 
+### 2026-04-08 — Smoke test code review (4 flujos)
+- ✅ HIGH: Seller confirm no detectaba SubOrders de merchants en estado PREPARING (mixto multi-vendor)
+- ✅ HIGH: driverRejectOrder no incrementaba assignmentAttempts en Order (retry cron contaba mal)
+- ✅ HIGH: GET /api/orders sin paginación — ahora tiene take/skip + count + excluye soft-deleted
+- ✅ HIGH: Variable shadowing `status` en GET /api/orders (metrics siempre reportaban "200")
+- ✅ Consumer mis-pedidos adaptado al nuevo formato { orders, pagination }
+- ✅ SubOrders incluidas en response de GET /api/orders (para tracking multi-vendor)
+- ✅ TypeScript compila limpio — 0 errores
+
 ### 2026-04-08 — Reparación archivos truncados + fixes compilación
 - ✅ CRITICAL: 5 archivos truncados reparados (retry-assignments, assignment-engine, orders/[id], merchant/confirm, CartSidebar)
 - ✅ CRITICAL: función calculateEstimatedEarnings faltante en assignment-engine (ganancia estimada del driver)

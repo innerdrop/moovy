@@ -129,8 +129,11 @@ export default function MisPedidosPage() {
 
     const loadOrders = useCallback(async (silent = false) => {
         try {
-            const res = await fetch("/api/orders");
-            if (res.ok) setOrders(await res.json());
+            const res = await fetch("/api/orders?limit=100");
+            if (res.ok) {
+                const data = await res.json();
+                setOrders(Array.isArray(data) ? data : data.orders ?? []);
+            }
         } catch (e) {
             console.error("Error loading orders:", e);
         } finally {

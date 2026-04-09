@@ -181,8 +181,10 @@ export async function POST(
             }
 
             // Check if ALL SubOrders are now confirmed to advance parent Order
+            // Note: merchant SubOrders go to "PREPARING", seller SubOrders go to "CONFIRMED"
+            // Both mean the vendor has acknowledged the order
             const allConfirmed = order.subOrders.every((sub) =>
-                sub.id === subOrderId || sub.status === "CONFIRMED"
+                sub.id === subOrderId || sub.status === "CONFIRMED" || sub.status === "PREPARING"
             );
 
             if (allConfirmed) {
