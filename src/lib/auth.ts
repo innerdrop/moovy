@@ -80,10 +80,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         select: { id: true }
                     });
 
-                    // Build roles array from UserRole table, fallback to legacy role
-                    const rolesFromTable = user.roles && user.roles.length > 0
-                        ? user.roles.map((r: { role: string }) => r.role)
-                        : [];
+                    // Auto-heal: asegurar que UserRole refleje los perfiles reales
+                    // (Merchant / Driver aprobado / SellerProfile activo). Sin esto,
+                    // usuarios con drift histórico se quedan fuera del portal aunque
+                    // tengan el perfil correcto en DB. Ver src/lib/auto-heal-roles.ts
+                    // para los criterios exactos de cada rol.
+                    let rolesFromTable: string[] = [];
+                    try {
+                        const { autoHealUserRoles } = await import("@/lib/auto-heal-roles");
+                        rolesFromTable = await autoHealUserRoles(user.id);
+                    } catch (err) {
+                        console.error("[Auth] Auto-heal roles failed, fallback to raw query:", err);
+                        rolesFromTable = user.roles && user.roles.length > 0
+                            ? user.roles.map((r: { role: string }) => r.role)
+                            : [];
+                    }
                     // Always include legacy User.role for backward compatibility
                     const activeRoles = [...new Set([...rolesFromTable, user.role].filter(Boolean))];
 
@@ -206,97 +217,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 }
             }
 
-            // Re-fetch roles from DB when client calls update() with refreshRoles flag (e.g. after activating SELLER role)
+            // Re-fetch roles from DB when client calls update() with refreshRoles flag
+            // (ej: activar SELLER role en caliente, aprobar un driver, etc).
+            // El auto-heal compartido vive en src/lib/auto-heal-roles.ts y se llama
+            // también desde authorize() para reparar drift en cada login nuevo.
             if (trigger === "update" && token.id && (token as any).refreshRoles) {
                 try {
                     const { prisma } = await import("@/lib/prisma");
+                    const { autoHealUserRoles } = await import("@/lib/auto-heal-roles");
                     const userId = token.id as string;
 
                     const freshUser = await prisma.user.findUnique({
                         where: { id: userId },
-                        select: {
-                            role: true,
-                            roles: { where: { isActive: true }, select: { role: true } },
-                        },
+                        select: { role: true },
                     });
                     if (freshUser) {
-                        const rolesFromTable = freshUser.roles.map((r) => r.role);
-
-                        // Auto-heal: if Driver is APPROVED but UserRole DRIVER doesn't exist or is inactive,
-                        // create/activate it so the JWT includes DRIVER role
-                        if (!rolesFromTable.includes("DRIVER")) {
-                            const approvedDriver = await prisma.driver.findUnique({
-                                where: { userId },
-                                select: { approvalStatus: true, isActive: true },
-                            });
-                            if (approvedDriver && (approvedDriver.approvalStatus === "APPROVED" || approvedDriver.isActive)) {
-                                // Upsert the UserRole
-                                const existingRole = await prisma.userRole.findUnique({
-                                    where: { userId_role: { userId, role: "DRIVER" } },
-                                });
-                                if (existingRole && !existingRole.isActive) {
-                                    await prisma.userRole.update({
-                                        where: { userId_role: { userId, role: "DRIVER" } },
-                                        data: { isActive: true },
-                                    });
-                                } else if (!existingRole) {
-                                    await prisma.userRole.create({
-                                        data: { userId, role: "DRIVER", isActive: true },
-                                    });
-                                }
-                                rolesFromTable.push("DRIVER");
-                            }
-                        }
-
-                        // Auto-heal: if SellerProfile exists and is active but UserRole SELLER
-                        // doesn't exist or is inactive, create/activate it
-                        if (!rolesFromTable.includes("SELLER")) {
-                            const activeSeller = await prisma.sellerProfile.findUnique({
-                                where: { userId },
-                                select: { isActive: true },
-                            });
-                            if (activeSeller?.isActive) {
-                                const existingRole = await prisma.userRole.findUnique({
-                                    where: { userId_role: { userId, role: "SELLER" } },
-                                });
-                                if (existingRole && !existingRole.isActive) {
-                                    await prisma.userRole.update({
-                                        where: { userId_role: { userId, role: "SELLER" } },
-                                        data: { isActive: true },
-                                    });
-                                } else if (!existingRole) {
-                                    await prisma.userRole.create({
-                                        data: { userId, role: "SELLER", isActive: true },
-                                    });
-                                }
-                                rolesFromTable.push("SELLER");
-                            }
-                        }
-
-                        // Auto-heal: if Merchant exists for this user but UserRole COMERCIO
-                        // doesn't exist or is inactive, create/activate it
-                        if (!rolesFromTable.includes("COMERCIO")) {
-                            const ownedMerchant = await prisma.merchant.findFirst({
-                                where: { ownerId: userId },
-                                select: { id: true },
-                            });
-                            if (ownedMerchant) {
-                                const existingRole = await prisma.userRole.findUnique({
-                                    where: { userId_role: { userId, role: "COMERCIO" } },
-                                });
-                                if (existingRole && !existingRole.isActive) {
-                                    await prisma.userRole.update({
-                                        where: { userId_role: { userId, role: "COMERCIO" } },
-                                        data: { isActive: true },
-                                    });
-                                } else if (!existingRole) {
-                                    await prisma.userRole.create({
-                                        data: { userId, role: "COMERCIO", isActive: true },
-                                    });
-                                }
-                                rolesFromTable.push("COMERCIO");
-                            }
-                        }
+                        const rolesFromTable = await autoHealUserRoles(userId);
 
                         // Only mutate token.roles if they actually changed
                         const newRoles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];

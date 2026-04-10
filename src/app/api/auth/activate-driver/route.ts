@@ -89,13 +89,20 @@ export async function POST(request: NextRequest) {
         await prisma.$transaction(async (tx) => {
             await tx.driver.create({ data: driverData as any });
 
-            // Create DRIVER role (inactive until admin approves)
+            // Add DRIVER role — active from the start so the JWT includes it and
+            // portal switcher shows the tab. Access control is gated by Driver.approvalStatus
+            // in the protected layout (see src/lib/role-access.ts#getDriverAccess).
             const existingRole = await tx.userRole.findUnique({
                 where: { userId_role: { userId, role: "DRIVER" } },
             });
             if (!existingRole) {
                 await tx.userRole.create({
-                    data: { userId, role: "DRIVER", isActive: false }
+                    data: { userId, role: "DRIVER", isActive: true }
+                });
+            } else if (!existingRole.isActive) {
+                await tx.userRole.update({
+                    where: { userId_role: { userId, role: "DRIVER" } },
+                    data: { isActive: true },
                 });
             }
         });
