@@ -1,8 +1,7 @@
 import React from "react";
-import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { hasRole, hasAnyRole, getUserRoles } from "@/lib/auth-utils";
-import { getSellerAccess } from "@/lib/role-access";
+import { getUserRoles } from "@/lib/auth-utils";
+import { requireSellerAccess } from "@/lib/roles";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -20,34 +19,16 @@ import { MessageCircle } from "lucide-react";
 
 export default async function VendedorLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
+    const userId = (session?.user as { id?: string } | undefined)?.id;
 
-    // Security: require SELLER or ADMIN role
-    if (!session) {
-        redirect("/vendedor/registro");
-    }
+    // Gate canónico: verifica sesión → no archivado → no suspendido →
+    // seller profile registrado → activo → no suspendido. Admin bypass incluido.
+    // Ver src/lib/roles.ts.
+    await requireSellerAccess(userId);
 
-    if (!hasRole(session, "SELLER") && !hasRole(session, "ADMIN")) {
-        redirect("/mi-perfil");
-    }
-
-    // Check user-level suspension and archive status
-    if ((session.user as any).isSuspended) {
-        redirect("/cuenta-suspendida");
-    }
-    if ((session.user as any).isArchived) {
-        redirect("/cuenta-archivada");
-    }
-
-    // Verify seller profile is registered, active and not suspended.
-    // Admins bypass this check (they may not have a seller profile).
-    if (!hasAnyRole(session, ["ADMIN"])) {
-        const access = await getSellerAccess((session.user as any).id);
-        if (!access.canAccess) {
-            redirect(access.redirectTo!);
-        }
-    }
-
-    const userRoles = getUserRoles(session);
+    // Si llegamos acá, el gate pasó y session es non-null.
+    const authedSession = session!;
+    const userRoles = getUserRoles(authedSession);
 
     const navItems = [
         { href: "/vendedor/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -100,10 +81,10 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                     {/* User Info */}
                     <div className="flex items-center gap-3 mb-4 px-2">
                         <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
-                            {session.user?.name?.charAt(0) || "V"}
+                            {authedSession.user?.name?.charAt(0) || "V"}
                         </div>
                         <div className="overflow-hidden flex-1">
-                            <p className="font-medium text-sm truncate">{session.user?.name}</p>
+                            <p className="font-medium text-sm truncate">{authedSession.user?.name}</p>
                             <p className="text-xs text-gray-400">Vendedor</p>
                         </div>
                     </div>

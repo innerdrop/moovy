@@ -23,12 +23,14 @@ async function emitSocket(event: string, room: string, data: Record<string, unkn
 }
 
 async function notifyAdminOfStuckOrder(orderId: string, orderNumber: string, reason: string): Promise<void> {
-    const adminRoles = await prisma.userRole.findMany({
-        where: { role: "ADMIN", isActive: true },
-        select: { userId: true },
+    // Leemos ADMIN desde el campo legacy User.role. No derivamos desde UserRole
+    // porque ADMIN no depende de domain state (no tiene Merchant/Driver/Seller asociado).
+    const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", deletedAt: null },
+        select: { id: true },
     });
 
-    for (const { userId } of adminRoles) {
+    for (const { id: userId } of admins) {
         // Send via socket to admin
         emitSocket("stuck_order_alert", `admin:${userId}`, {
             orderId,

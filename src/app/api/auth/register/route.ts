@@ -127,13 +127,10 @@ export async function POST(request: NextRequest) {
                         archivedAt: null,
                     }
                 });
-
-                // Reactivate USER role or create it
-                await tx.userRole.upsert({
-                    where: { userId_role: { userId: newUser.id, role: 'USER' } },
-                    update: { isActive: true },
-                    create: { userId: newUser.id, role: 'USER', isActive: true },
-                });
+                // Nota: ya no tocamos UserRole. El rol base USER sale del campo
+                // legacy User.role y se agrega a token.roles en el authorize().
+                // COMERCIO/DRIVER/SELLER se derivan de domain state en cada
+                // request (ver src/lib/roles.ts).
             } else {
                 // 1. Create the new user with PENDING bonus (not credited yet)
                 newUser = await tx.user.create({
@@ -154,15 +151,7 @@ export async function POST(request: NextRequest) {
                         privacyConsentAt: data.acceptPrivacy ? new Date() : null,
                     }
                 });
-
-                // Create UserRole entry
-                await tx.userRole.create({
-                    data: {
-                        userId: newUser.id,
-                        role: 'USER',
-                        isActive: true,
-                    }
-                });
+                // Nota: ya no tocamos UserRole. Ver comentario arriba.
             }
 
             // 2. If referred, create Referral record (but NO points yet)

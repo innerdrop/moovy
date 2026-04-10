@@ -86,26 +86,10 @@ export async function POST(request: NextRequest) {
         // Encrypt sensitive fiscal data
         driverData = encryptDriverData(driverData);
 
-        await prisma.$transaction(async (tx) => {
-            await tx.driver.create({ data: driverData as any });
-
-            // Add DRIVER role — active from the start so the JWT includes it and
-            // portal switcher shows the tab. Access control is gated by Driver.approvalStatus
-            // in the protected layout (see src/lib/role-access.ts#getDriverAccess).
-            const existingRole = await tx.userRole.findUnique({
-                where: { userId_role: { userId, role: "DRIVER" } },
-            });
-            if (!existingRole) {
-                await tx.userRole.create({
-                    data: { userId, role: "DRIVER", isActive: true }
-                });
-            } else if (!existingRole.isActive) {
-                await tx.userRole.update({
-                    where: { userId_role: { userId, role: "DRIVER" } },
-                    data: { isActive: true },
-                });
-            }
-        });
+        // Solo creamos el Driver. El rol DRIVER se deriva de Driver.approvalStatus
+        // en cada request (ver src/lib/roles.ts#computeUserAccess), ya no escribimos UserRole.
+        // El gate real de acceso lo hace requireDriverAccess() en el layout protegido.
+        await prisma.driver.create({ data: driverData as any });
 
         // Send admin notification email (non-blocking)
         sendDriverRequestNotification(

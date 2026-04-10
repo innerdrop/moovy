@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendDriverRejectionEmail } from "@/lib/email";
+import { rejectDriverTransition } from "@/lib/roles";
 
 // PUT - Reject driver application (admin only)
 export async function PUT(
@@ -21,43 +22,37 @@ export async function PUT(
 
         const { id } = await context.params;
         const body = await request.json().catch(() => ({}));
-        const reason = body.reason || null;
+        const reason: string = typeof body.reason === "string" && body.reason.trim().length > 0
+            ? body.reason.trim()
+            : "Sin motivo especificado";
 
         const driver = await prisma.driver.findUnique({
             where: { id },
-            include: {
-                user: { select: { id: true, name: true, email: true } }
-            }
+            select: {
+                id: true,
+                userId: true,
+                user: { select: { id: true, name: true, email: true } },
+            },
         });
 
         if (!driver) {
             return NextResponse.json({ error: "Repartidor no encontrado" }, { status: 404 });
         }
 
-        await prisma.$transaction(async (tx) => {
-            await tx.driver.update({
-                where: { id },
-                data: {
-                    approvalStatus: "REJECTED",
-                    rejectionReason: reason,
-                    isActive: false,
-                }
-            });
-            // Deactivate DRIVER role
-            await tx.userRole.updateMany({
-                where: { userId: driver.userId, role: "DRIVER" },
-                data: { isActive: false }
-            });
+        // Transición centralizada con audit log. No tocamos UserRole.
+        await rejectDriverTransition(id, reason, {
+            adminId: session.user.id,
+            adminEmail: session.user.email ?? "unknown",
         });
 
         // Send rejection email (non-blocking)
-        if (driver.user.email) {
-            sendDriverRejectionEmail(driver.user.email, driver.user.name || "Repartidor", reason || undefined);
+        if (driver.user?.email) {
+            sendDriverRejectionEmail(driver.user.email, driver.user.name || "Repartidor", reason);
         }
 
         return NextResponse.json({
             success: true,
-            driver: { ...driver, approvalStatus: "REJECTED", isActive: false }
+            driver: { id: driver.id, userId: driver.userId, approvalStatus: "REJECTED" },
         });
     } catch (error) {
         console.error("Error rejecting driver:", error);

@@ -1,8 +1,123 @@
 # Moovy — Tareas pendientes
 Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 3
-Última actualización: 2026-04-10 (role-access.ts + auto-heal UserRole en login + fix crítico layout repartidor)
+Última actualización: 2026-04-10 (roles derivados: single source of truth en src/lib/roles.ts)
 
-## Cambio 2026-04-10 — Foundation rediseño flujo de roles
+## Cambio 2026-04-10 (PM) — Rediseño completo: roles derivados, single source of truth
+
+Rama: `feat/roles-single-source-of-truth`
+
+Contexto: el sistema anterior (role-access.ts + auto-heal-roles.ts + UserRole como
+fuente paralela) dejaba abierta toda una clase de bugs por drift entre el estado
+del dominio (Merchant/Driver/SellerProfile) y la tabla UserRole. Cada endpoint de
+register/activate/cancel tenía que acordarse de tocar la tabla, y el drift lo
+parchábamos a posteriori con auto-heal en login. Mauro pidió rediseñar esto "a
+la altura de las grandes apps" — decidí eliminar el problema de raíz.
+
+Principio: **los roles NO se guardan, se DERIVAN**. COMERCIO/DRIVER/SELLER se
+derivan del estado del dominio en cada request. ADMIN y USER se siguen leyendo
+de `User.role` (legacy, sin estado de dominio propio).
+
+Solución:
+
+1. **`src/lib/roles.ts` — único punto de verdad**
+   - `computeUserAccess(userId)`: una sola query con todos los includes
+     (ownedMerchants, driver, sellerProfile) y devuelve el `UserAccess`
+     completo: `{ userId, isAdmin, isSuspended, isArchived, merchant, driver,
+     seller }` con status derivado por dominio (NONE/PENDING/APPROVED/REJECTED/
+     SUSPENDED/INACTIVE/ACTIVE).
+   - Envuelto en `React.cache()` para deduplicación automática por request.
+   - `requireMerchantAccess(userId)`, `requireDriverAccess(userId)`,
+     `requireSellerAccess(userId)`: gates canónicos que verifican sesión →
+     archived → suspended → registered → approved/active y disparan el
+     `redirect()` correcto. Usan exhaustive switch con check `never` para
+     que TypeScript detecte estados no cubiertos en compile time.
+   - `deriveUserRoles(access)`: deriva el array `["USER", "COMERCIO", ...]`
+     para cachear en el JWT.
+   - Transiciones (`approveMerchant`, `rejectMerchant`, `approveDriver`,
+     `rejectDriver`, `suspendMerchant`, `reactivateMerchant`, etc.): todas
+     con audit log consistente usando el campo `details: JSON.stringify(...)`
+     (no `metadata`, que no existe en el modelo AuditLog).
+
+2. **`src/lib/auth.ts` refactorizado**
+   - `authorize()` llama `computeUserAccess()` en vez de leer `UserRole`
+     con `where: { isActive: true }`.
+   - Callback `jwt()` llama `deriveUserRoles(computeUserAccess())` para
+     refrescar el JWT. El array `roles[]` del JWT ahora es un **cache** del
+     estado derivado, no la fuente de verdad.
+   - Auto-heal eliminado: ya no hace falta, porque no hay drift posible.
+
+3. **Layouts protegidos simplificados**
+   - `/comercios/(protected)/layout.tsx`, `/repartidor/(protected)/layout.tsx`,
+     `/vendedor/(protected)/layout.tsx` ahora llaman al gate canónico
+     (`requireMerchantAccess` etc.) en una sola línea. Sin duplicación, sin
+     checks dispersos, sin bypass inconsistentes.
+   - Admin bypass incluido dentro del gate (un admin sin Merchant entra igual).
+
+4. **Endpoints de register/activate/cancel limpiados**
+   - `api/auth/register/driver` — ya no crea UserRole (dos paths: PATH A
+     existing user, PATH B new user).
+   - `api/auth/register` (buyer/merchant) — ya no upsertea ni crea UserRole.
+   - `api/auth/activate-merchant` — solo crea el Merchant.
+   - `api/auth/activate-driver` — solo crea el Driver.
+   - `api/auth/activate-seller` — check de "already seller" ahora es
+     `SellerProfile.isActive`, no UserRole.
+   - `api/seller/activate` — upsert de SellerProfile con `isActive: true`.
+   - `api/auth/cancel-merchant` — solo elimina Merchant.
+   - `api/auth/cancel-driver` — solo elimina Driver.
+   - `api/admin/merchants/create` — ya no crea UserRole en PATH A/B.
+   - `api/admin/users/[id]/delete` — `derivedRoles` calculado desde
+     relations incluidas, sin query a UserRole.
+   - `api/admin/users/bulk-delete` — mismo patrón, por usuario.
+   - `api/profile/delete` — ya no borra UserRole (los roles se derivan y
+     se apagan solos porque `deletedAt != null`).
+
+5. **Endpoints que leían admins por UserRole migrados a User.role**
+   - `src/lib/assignment-engine.ts` → `notifyOps()`.
+   - `src/app/api/cron/retry-assignments/route.ts` → `notifyAdminOfStuckOrder()`.
+
+6. **Archivos eliminados**
+   - `src/lib/role-access.ts` — reemplazado por `roles.ts`.
+   - `src/lib/auto-heal-roles.ts` — innecesario sin drift.
+
+7. **`src/lib/auth-utils.ts` intacto a propósito**
+   - 126 archivos lo usan (`hasRole`, `hasAnyRole`, `getUserRoles`).
+   - Ahora actúa como **cache layer**: lee el array `roles[]` del JWT, que
+     ya viene poblado por `computeUserAccess()`. Indirecta pero correcta.
+   - Refactor masivo de los 126 callers = riesgo sin beneficio, se queda así.
+
+8. **Tabla `UserRole` en el schema**
+   - Se deja porque `auth-utils.ts` lee `roles[]` del JWT (no la tabla) y
+     ningún código escribe a ella nunca más.
+   - Deprecar/dropear en cleanup futuro.
+
+9. **Script de validación: `scripts/validate-role-flows.ts`**
+   - 12 tests (6 estáticos + 6 dinámicos contra DB real).
+   - Estáticos: legacy files borrados, exports canónicos en `roles.ts`,
+     cero writes a `userRole` en endpoints, approve/reject usan transitions,
+     layouts protegidos usan gates, `auth.ts` usa `computeUserAccess`.
+   - Dinámicos: merchants aprobados acceden, pending no, drivers cumplen
+     `approvalStatus`, sellers cumplen `isActive`, users soft-deleted
+     devuelven null, admins tienen `isAdmin: true`.
+   - Usa dynamic import para evitar problemas de resolución de alias TSX.
+   - Ejecutar con `npx tsx scripts/validate-role-flows.ts` antes de deploy.
+
+10. **Bug histórico resuelto**
+    - El drift donde un `Merchant` existente tenía `UserRole COMERCIO` en
+      `isActive: false` y el `authorize()` filtraba `isActive: true` no
+      emitiendo el rol → `proxy.ts` lo bouncenaba a `/`. Imposible de
+      reproducir ahora porque el rol se deriva del Merchant directamente.
+
+Validación:
+- `npx tsc --noEmit` → 0 errores (excepto los 3 pre-existentes del baseline).
+- `grep -r "tx.userRole.(create|createMany|upsert|update|updateMany|delete|deleteMany)" src/` → 0 matches.
+- `grep -r "prisma.userRole.(create|createMany|upsert|update|updateMany|delete|deleteMany)" src/` → 0 matches.
+- Script de validación listo para ejecutar en la máquina de Mauro.
+
+Nota operativa: el script `validate-role-flows.ts` debe ejecutarse en Windows
+porque `node_modules/esbuild` está instalado para esa plataforma. Los tests
+estáticos corren en segundos; los dinámicos requieren DB local (PostGIS docker).
+
+## Cambio 2026-04-10 (AM) — Foundation rediseño flujo de roles
 
 Rama: `feat/rediseno-flujo-roles-y-docs`
 

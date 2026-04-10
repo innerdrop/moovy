@@ -42,13 +42,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists (ignore soft-deleted users)
+        // Check if email already exists (ignore soft-deleted users).
+        // Ya no consultamos UserRole: el rol DRIVER se deriva de Driver.approvalStatus
+        // en cada request. Ver src/lib/roles.ts.
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email },
             select: {
                 id: true,
                 deletedAt: true,
-                roles: { where: { isActive: true }, select: { role: true } },
                 driver: { select: { id: true } },
             }
         });
@@ -87,22 +88,14 @@ export async function POST(request: NextRequest) {
 
         await prisma.$transaction(async (tx) => {
             if (existingUser) {
-                // --- PATH A: User already exists (has a store/merchant account) ---
-                // Add DRIVER role if not already present
-                const hasDriverRole = existingUser.roles.some((r: { role: string }) => r.role === "DRIVER");
-                if (!hasDriverRole) {
-                    await tx.userRole.create({
-                        data: { userId: existingUser.id, role: "DRIVER", isActive: true }
-                    });
-                }
-
-                // Create Driver linked to existing user
+                // PATH A: user already exists → solo creamos el Driver.
+                // No tocamos UserRole: el rol DRIVER se deriva del Driver existiendo
+                // (con approvalStatus como gate). Ver src/lib/roles.ts.
                 await tx.driver.create({
                     data: { ...driverData, userId: existingUser.id }
                 });
             } else {
-                // --- PATH B: Brand new user ---
-                // 1. Create User with legacy role USER (base account)
+                // PATH B: user nuevo → creamos User + Driver.
                 const newUser = await tx.user.create({
                     data: {
                         email: data.email,
@@ -115,15 +108,6 @@ export async function POST(request: NextRequest) {
                     }
                 });
 
-                // 2. Create UserRole entries: USER (base) + DRIVER
-                await tx.userRole.createMany({
-                    data: [
-                        { userId: newUser.id, role: "USER", isActive: true },
-                        { userId: newUser.id, role: "DRIVER", isActive: true },
-                    ]
-                });
-
-                // 3. Create Driver
                 await tx.driver.create({
                     data: { ...driverData, userId: newUser.id }
                 });

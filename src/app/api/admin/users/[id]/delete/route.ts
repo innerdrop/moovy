@@ -39,7 +39,6 @@ export async function POST(
         ownedMerchants: { select: { id: true } },
         driver: { select: { id: true } },
         sellerProfile: { select: { id: true } },
-        roles: { select: { role: true } },
       },
     });
 
@@ -53,18 +52,13 @@ export async function POST(
     const { ipAddress, userAgent } = extractRequestInfo(request);
 
     if (restore) {
-      // Restore: set deletedAt = null and reactivate roles
-      await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id },
-          data: { deletedAt: null },
-        });
-
-        await tx.userRole.updateMany({
-          where: { userId: id },
-          data: { isActive: true },
-        });
-      }, { isolationLevel: "Serializable" });
+      // Restore: set deletedAt = null. Ya no tocamos UserRole porque los roles
+      // COMERCIO/DRIVER/SELLER se derivan del estado del Merchant/Driver/SellerProfile
+      // en cada request. El rol USER sale del campo legacy User.role.
+      await prisma.user.update({
+        where: { id },
+        data: { deletedAt: null },
+      });
 
       // Log activity
       await logAdminAction({
@@ -104,18 +98,19 @@ export async function POST(
         user: { id, email: user.email, deletedAt: null },
       });
     } else {
-      // Delete: set deletedAt = now and deactivate roles
+      // Derived role list for logging (no UserRole query needed).
+      const derivedRoles: string[] = ["USER"];
+      if (user.ownedMerchants?.length) derivedRoles.push("COMERCIO");
+      if (user.driver) derivedRoles.push("DRIVER");
+      if (user.sellerProfile) derivedRoles.push("SELLER");
+
+      // Delete: set deletedAt = now and deactivate domain objects
+      // (UserRole ya no se toca; los roles derivados se apagan solos vía deletedAt).
       await prisma.$transaction(async (tx) => {
         // Update user
         await tx.user.update({
           where: { id },
           data: { deletedAt: new Date() },
-        });
-
-        // Deactivate user roles
-        await tx.userRole.updateMany({
-          where: { userId: id },
-          data: { isActive: false },
         });
 
         // Deactivate merchants if exist
@@ -153,7 +148,7 @@ export async function POST(
         details: {
           email: user.email,
           name: user.name,
-          roles: user.roles.map((r) => r.role),
+          roles: derivedRoles,
         },
         ipAddress,
         userAgent,
@@ -168,7 +163,7 @@ export async function POST(
         details: {
           email: user.email,
           name: user.name,
-          roles: user.roles.map((r) => r.role),
+          roles: derivedRoles,
           deletedAt: new Date().toISOString(),
           merchants: user.ownedMerchants?.map((m) => m.id) || [],
           driver: user.driver?.id || null,
@@ -181,7 +176,7 @@ export async function POST(
           userId: id,
           email: user.email,
           adminId: session.user.id,
-          roles: user.roles.map((r) => r.role),
+          roles: derivedRoles,
         },
         "User soft-deleted"
       );

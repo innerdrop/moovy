@@ -75,11 +75,13 @@ async function emitSocket(event: string, room: string, data: Record<string, unkn
 
 /** Notify all ADMIN users via push */
 async function notifyOps(title: string, body: string, orderId?: string): Promise<void> {
-    const adminRoles = await prisma.userRole.findMany({
-        where: { role: "ADMIN", isActive: true },
-        select: { userId: true },
+    // Leemos ADMIN desde el campo legacy User.role (es la fuente de verdad para
+    // ADMIN, ya que no se deriva de domain state como COMERCIO/DRIVER/SELLER).
+    const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", deletedAt: null },
+        select: { id: true },
     });
-    for (const { userId } of adminRoles) {
+    for (const { id: userId } of admins) {
         sendPushToUser(userId, { title, body, url: "/ops", tag: "ops-alert", orderId }).catch(
             (err) => deliveryLogger.error({ error: err }, "Ops notification error")
         );

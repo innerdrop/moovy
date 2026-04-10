@@ -12,21 +12,17 @@ export async function POST() {
 
         const userId = (session.user as any).id;
 
-        // Create SellerProfile if it doesn't exist
+        // Create SellerProfile if it doesn't exist.
+        // El rol SELLER se deriva de SellerProfile.isActive en cada request
+        // (ver src/lib/roles.ts), ya no escribimos UserRole.
         const seller = await prisma.sellerProfile.upsert({
             where: { userId },
-            update: {},
+            update: { isActive: true },
             create: {
                 userId,
                 displayName: session.user.name || null,
+                isActive: true,
             },
-        });
-
-        // Add SELLER role if not already present
-        await prisma.userRole.upsert({
-            where: { userId_role: { userId, role: "SELLER" } },
-            update: { isActive: true },
-            create: { userId, role: "SELLER" },
         });
 
         return NextResponse.json({ success: true, seller });

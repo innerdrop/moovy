@@ -52,8 +52,10 @@ export async function POST(request: NextRequest) {
                 where: { OR: [{ referrerId: userId }, { refereeId: userId }] },
             });
 
-            // Delete user roles
-            await tx.userRole.deleteMany({ where: { userId } });
+            // Nota: ya no borramos UserRole. Los roles se derivan del dominio
+            // (Merchant/Driver/SellerProfile) y se apagan solos porque el User
+            // queda con deletedAt != null (ver src/lib/roles.ts#computeUserAccess,
+            // que retorna null para usuarios soft-deleted).
 
             // Delete addresses
             await tx.address.deleteMany({ where: { userId } });

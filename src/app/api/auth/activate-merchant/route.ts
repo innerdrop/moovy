@@ -102,24 +102,9 @@ export async function POST(request: NextRequest) {
         // Encrypt sensitive fiscal data
         merchantData = encryptMerchantData(merchantData);
 
-        await prisma.$transaction(async (tx) => {
-            await tx.merchant.create({ data: merchantData as any });
-
-            // Add COMERCIO role if not present
-            const existingRole = await tx.userRole.findUnique({
-                where: { userId_role: { userId, role: "COMERCIO" } },
-            });
-            if (!existingRole) {
-                await tx.userRole.create({
-                    data: { userId, role: "COMERCIO", isActive: true },
-                });
-            } else if (!existingRole.isActive) {
-                await tx.userRole.update({
-                    where: { userId_role: { userId, role: "COMERCIO" } },
-                    data: { isActive: true },
-                });
-            }
-        });
+        // Solo creamos el Merchant. El rol COMERCIO se deriva de Merchant.approvalStatus
+        // en cada request (ver src/lib/roles.ts), ya no escribimos UserRole.
+        await prisma.merchant.create({ data: merchantData as any });
 
         // Notify admin (non-blocking)
         sendMerchantRequestNotification(

@@ -40,13 +40,14 @@ export async function POST(request: NextRequest) {
             slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
         }
 
-        // Check if user already exists (ignore soft-deleted users)
+        // Check if user already exists (ignore soft-deleted users).
+        // Ya no consultamos UserRole: el rol COMERCIO se deriva de Merchant.approvalStatus
+        // en cada request (ver src/lib/roles.ts).
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email.toLowerCase() },
             select: {
                 id: true,
                 deletedAt: true,
-                roles: { where: { isActive: true }, select: { role: true } },
                 ownedMerchants: { select: { id: true }, take: 1 },
             },
         });
@@ -83,22 +84,14 @@ export async function POST(request: NextRequest) {
 
         await prisma.$transaction(async (tx) => {
             if (existingUser) {
-                // User exists — add COMERCIO role + create merchant
-                const hasMerchantRole = existingUser.roles.some(
-                    (r: { role: string }) => r.role === "COMERCIO"
-                );
-                if (!hasMerchantRole) {
-                    await tx.userRole.create({
-                        data: { userId: existingUser.id, role: "COMERCIO", isActive: true },
-                    });
-                }
-
+                // User exists → solo creamos Merchant. El rol COMERCIO se deriva
+                // de Merchant.approvalStatus en cada request.
                 const merchant = await tx.merchant.create({
                     data: { ...merchantData, ownerId: existingUser.id },
                 });
                 createdMerchantId = merchant.id;
             } else {
-                // New user — create user + roles + merchant
+                // User nuevo → creamos User + Merchant, sin UserRole.
                 if (!data.password) {
                     throw new Error("Se requiere contraseña para usuarios nuevos");
                 }
@@ -115,13 +108,6 @@ export async function POST(request: NextRequest) {
                         lastName: fullName.split(" ").slice(1).join(" ") || "",
                         role: "USER",
                     },
-                });
-
-                await tx.userRole.createMany({
-                    data: [
-                        { userId: newUser.id, role: "USER", isActive: true },
-                        { userId: newUser.id, role: "COMERCIO", isActive: true },
-                    ],
                 });
 
                 const merchant = await tx.merchant.create({

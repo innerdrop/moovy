@@ -36,14 +36,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                     const { prisma } = await import("@/lib/prisma");
 
+                    // Query mínima: solo necesitamos password y campos planos.
+                    // Los roles/acceso se derivan después via computeUserAccess
+                    // (ver src/lib/roles.ts para el principio de diseño).
                     const user = await prisma.user.findUnique({
                         where: { email: email.toLowerCase() },
-                        include: {
-                            roles: {
-                                where: { isActive: true },
-                                select: { role: true }
-                            }
-                        }
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            password: true,
+                            role: true,
+                            image: true,
+                            referralCode: true,
+                            deletedAt: true,
+                        },
                     });
 
                     if (!user) {
@@ -75,38 +82,36 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     // Reset rate limit on successful login
                     await resetRateLimit(rateLimitKey);
 
-                    const merchant = await prisma.merchant.findFirst({
-                        where: { ownerId: user.id },
-                        select: { id: true }
-                    });
+                    // Derivar roles y acceso desde el estado de dominio (Merchant.approvalStatus,
+                    // Driver.approvalStatus, SellerProfile.isActive). Esto reemplaza el viejo
+                    // auto-heal de UserRole: ya no leemos la tabla UserRole acá, los roles se
+                    // calculan en cada login a partir de los perfiles reales.
+                    // Ver src/lib/roles.ts → computeUserAccess() para el detalle.
+                    const { computeUserAccess } = await import("@/lib/roles");
+                    const access = await computeUserAccess(user.id);
 
-                    // Auto-heal: asegurar que UserRole refleje los perfiles reales
-                    // (Merchant / Driver aprobado / SellerProfile activo). Sin esto,
-                    // usuarios con drift histórico se quedan fuera del portal aunque
-                    // tengan el perfil correcto en DB. Ver src/lib/auto-heal-roles.ts
-                    // para los criterios exactos de cada rol.
-                    let rolesFromTable: string[] = [];
-                    try {
-                        const { autoHealUserRoles } = await import("@/lib/auto-heal-roles");
-                        rolesFromTable = await autoHealUserRoles(user.id);
-                    } catch (err) {
-                        console.error("[Auth] Auto-heal roles failed, fallback to raw query:", err);
-                        rolesFromTable = user.roles && user.roles.length > 0
-                            ? user.roles.map((r: { role: string }) => r.role)
-                            : [];
-                    }
-                    // Always include legacy User.role for backward compatibility
-                    const activeRoles = [...new Set([...rolesFromTable, user.role].filter(Boolean))];
+                    // Roles en el JWT: si el user TIENE un perfil (no importa el status),
+                    // lo incluimos. El gate de approved/pending/suspended lo hace cada layout
+                    // protegido via requireXAccess(). Esto permite que PortalSwitcher muestre
+                    // tabs para portales en los que el user tiene un perfil aunque todavía
+                    // no esté aprobado (ej: ir a /comercios/pendiente-aprobacion).
+                    const activeRoles: string[] = ["USER"];
+                    if (access?.isAdmin) activeRoles.push("ADMIN");
+                    if (access && access.merchant.status !== "none") activeRoles.push("COMERCIO");
+                    if (access && access.driver.status !== "none") activeRoles.push("DRIVER");
+                    if (access && access.seller.status !== "none") activeRoles.push("SELLER");
+                    // Deduplicate + include legacy User.role for backward compat
+                    const uniqueRoles = [...new Set([...activeRoles, user.role].filter(Boolean))];
 
                     return {
                         id: user.id,
                         email: user.email,
                         name: user.name,
                         role: user.role,
-                        roles: activeRoles,
+                        roles: uniqueRoles,
                         image: user.image,
                         referralCode: user.referralCode,
-                        merchantId: merchant?.id || null,
+                        merchantId: access?.merchant.merchantId ?? null,
                     };
                 } catch (error) {
                     console.error("[Auth] Authorize error:", error);
@@ -217,48 +222,58 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 }
             }
 
-            // Re-fetch roles from DB when client calls update() with refreshRoles flag
-            // (ej: activar SELLER role en caliente, aprobar un driver, etc).
-            // El auto-heal compartido vive en src/lib/auto-heal-roles.ts y se llama
-            // también desde authorize() para reparar drift en cada login nuevo.
+            // Re-derive roles from DB when client calls update() with refreshRoles flag.
+            // Esto se dispara desde PortalSwitcher, endpoints de activación de rol,
+            // endpoints admin approve/reject, etc. En cada caso, re-lee el estado de
+            // dominio via computeUserAccess() y reconstruye el array de roles del JWT.
+            // Ver src/lib/roles.ts para el detalle.
             if (trigger === "update" && token.id && (token as any).refreshRoles) {
                 try {
-                    const { prisma } = await import("@/lib/prisma");
-                    const { autoHealUserRoles } = await import("@/lib/auto-heal-roles");
+                    const { computeUserAccess } = await import("@/lib/roles");
                     const userId = token.id as string;
 
-                    const freshUser = await prisma.user.findUnique({
-                        where: { id: userId },
-                        select: { role: true },
-                    });
-                    if (freshUser) {
-                        const rolesFromTable = await autoHealUserRoles(userId);
+                    // Importante: computeUserAccess está cacheado por request vía React cache(),
+                    // pero el JWT callback corre fuera del ciclo de request de un componente,
+                    // así que acá hace una query fresca cada vez que se dispara este trigger.
+                    const access = await computeUserAccess(userId);
 
-                        // Only mutate token.roles if they actually changed
-                        const newRoles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];
+                    if (access) {
+                        // Reconstruir roles con el mismo criterio que authorize()
+                        const newRoleArray: string[] = ["USER"];
+                        if (access.isAdmin) newRoleArray.push("ADMIN");
+                        if (access.merchant.status !== "none") newRoleArray.push("COMERCIO");
+                        if (access.driver.status !== "none") newRoleArray.push("DRIVER");
+                        if (access.seller.status !== "none") newRoleArray.push("SELLER");
+
+                        // Legacy: mantener User.role plano dentro del array
+                        const { prisma } = await import("@/lib/prisma");
+                        const freshUser = await prisma.user.findUnique({
+                            where: { id: userId },
+                            select: { role: true },
+                        });
+
+                        const newRoles = [
+                            ...new Set(
+                                [...newRoleArray, freshUser?.role ?? ""].filter(Boolean)
+                            ),
+                        ];
                         const currentRoles = (token.roles as string[]) || [];
                         if (JSON.stringify(newRoles.sort()) !== JSON.stringify(currentRoles.sort())) {
                             token.roles = newRoles;
                         }
 
-                        // Only mutate token.role if it changed
-                        if (token.role !== freshUser.role) {
+                        if (freshUser && token.role !== freshUser.role) {
                             token.role = freshUser.role;
                         }
 
-                        // Also refresh merchantId in case user became a merchant
-                        const merchant = await prisma.merchant.findFirst({
-                            where: { ownerId: userId },
-                            select: { id: true },
-                        });
-                        const newMerchantId = merchant?.id || null;
+                        const newMerchantId = access.merchant.merchantId;
                         if (token.merchantId !== newMerchantId) {
                             token.merchantId = newMerchantId;
                         }
-
-                        // Clear the refreshRoles flag after processing
-                        delete (token as any).refreshRoles;
                     }
+
+                    // Clear the refreshRoles flag after processing
+                    delete (token as any).refreshRoles;
                 } catch (err) {
                     console.error("[Auth] Failed to refresh roles on update:", err);
                 }
