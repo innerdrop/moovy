@@ -40,17 +40,19 @@ export async function POST(request: NextRequest) {
             slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
         }
 
-        // Check if user already exists
+        // Check if user already exists (ignore soft-deleted users)
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email.toLowerCase() },
-            include: {
+            select: {
+                id: true,
+                deletedAt: true,
                 roles: { where: { isActive: true }, select: { role: true } },
                 ownedMerchants: { select: { id: true }, take: 1 },
             },
         });
 
-        // If user already has a merchant, reject
-        if (existingUser?.ownedMerchants && existingUser.ownedMerchants.length > 0) {
+        // If user already has a merchant and is NOT deleted, reject
+        if (existingUser && !existingUser.deletedAt && existingUser.ownedMerchants && existingUser.ownedMerchants.length > 0) {
             return NextResponse.json(
                 { error: "Este email ya tiene un comercio registrado" },
                 { status: 409 }

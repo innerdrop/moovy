@@ -13,7 +13,10 @@ import {
     ChevronLeft,
     ChevronRight,
     AlertCircle,
+    Trash2,
 } from "lucide-react";
+import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 
 interface UserRole {
     role: string;
@@ -181,6 +184,8 @@ export default function UsuariosPage() {
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [tabCounts, setTabCounts] = useState<Record<TabType, number>>({
         todos: 0,
         pendientes: 0,
@@ -282,6 +287,71 @@ export default function UsuariosPage() {
     const handleTabChange = (tab: TabType) => {
         setActiveTab(tab);
         setPage(1);
+        setSelectedUsers(new Set()); // Clear selections on tab change
+    };
+
+    // Handle checkbox toggle
+    const handleSelectUser = (userId: string) => {
+        const newSelected = new Set(selectedUsers);
+        if (newSelected.has(userId)) {
+            newSelected.delete(userId);
+        } else {
+            newSelected.add(userId);
+        }
+        setSelectedUsers(newSelected);
+    };
+
+    // Handle select all
+    const handleSelectAll = () => {
+        if (selectedUsers.size === users.length) {
+            setSelectedUsers(new Set());
+        } else {
+            setSelectedUsers(new Set(users.map((u) => u.id)));
+        }
+    };
+
+    // Handle bulk delete
+    const handleBulkDelete = async () => {
+        if (selectedUsers.size === 0) {
+            toast.error("Selecciona al menos un usuario");
+            return;
+        }
+
+        const ok = await confirm({
+            title: "Eliminar usuarios",
+            message: `¿Estás seguro de que querés eliminar ${selectedUsers.size} usuarios? Esta acción se puede revertir desde el panel de administración.`,
+            confirmLabel: "Eliminar",
+            variant: "danger",
+        });
+
+        if (!ok) return;
+
+        setDeleteLoading(true);
+        try {
+            const res = await fetch("/api/admin/users/bulk-delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userIds: Array.from(selectedUsers),
+                }),
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                toast.success(`${data.deletedCount} usuarios eliminados correctamente`);
+                setSelectedUsers(new Set());
+                await fetchUsers();
+                await fetchTabCounts();
+            } else {
+                const error = await res.json();
+                toast.error(error.error || "Error al eliminar usuarios");
+            }
+        } catch (error) {
+            console.error("Error bulk-deleting users:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setDeleteLoading(false);
+        }
     };
 
     // Get status badge color
@@ -368,6 +438,29 @@ export default function UsuariosPage() {
                     </select>
                 </div>
 
+                {/* Bulk Action Bar */}
+                {selectedUsers.size > 0 && (
+                    <div className="mb-6 sticky bottom-0 z-10 flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div>
+                            <p className="text-sm font-semibold text-red-900">
+                                {selectedUsers.size} usuario{selectedUsers.size !== 1 ? "s" : ""} seleccionado{selectedUsers.size !== 1 ? "s" : ""}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={deleteLoading}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
+                        >
+                            {deleteLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="w-4 h-4" />
+                            )}
+                            Eliminar seleccionados
+                        </button>
+                    </div>
+                )}
+
                 {/* Table */}
                 {users.length > 0 ? (
                     <>
@@ -375,6 +468,14 @@ export default function UsuariosPage() {
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-900">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUsers.size === users.length && users.length > 0}
+                                                onChange={handleSelectAll}
+                                                className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                                            />
+                                        </th>
                                         <th className="px-6 py-3 text-left font-semibold text-gray-900">Usuario</th>
                                         <th className="px-6 py-3 text-left font-semibold text-gray-900">Roles</th>
                                         <th className="px-6 py-3 text-left font-semibold text-gray-900">Estado</th>
@@ -390,7 +491,17 @@ export default function UsuariosPage() {
                                         : users.map((user) => {
                                               const status = getUserStatus(user);
                                               return (
-                                                  <tr key={user.id} className="border-b hover:bg-gray-50 transition-colors">
+                                                  <tr key={user.id} className={`border-b transition-colors ${selectedUsers.has(user.id) ? "bg-red-50" : "hover:bg-gray-50"}`}>
+                                                      {/* Checkbox Column */}
+                                                      <td className="px-4 py-4">
+                                                          <input
+                                                              type="checkbox"
+                                                              checked={selectedUsers.has(user.id)}
+                                                              onChange={() => handleSelectUser(user.id)}
+                                                              className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                                                          />
+                                                      </td>
+
                                                       {/* User Column */}
                                                       <td className="px-6 py-4">
                                                           <div className="flex items-center gap-3">

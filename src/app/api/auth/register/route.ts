@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists
+        // Check if email already exists (ignore soft-deleted users)
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email },
-            select: { id: true }
+            select: { id: true, deletedAt: true }
         });
 
-        if (existingUser) {
+        if (existingUser && !existingUser.deletedAt) {
             return NextResponse.json(
                 { error: "Ya existe una cuenta con ese email" },
                 { status: 409 }
@@ -99,34 +99,71 @@ export async function POST(request: NextRequest) {
 
         // Use a transaction to ensure everything is created or nothing is
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Create the new user with PENDING bonus (not credited yet)
-            const newUser = await tx.user.create({
-                data: {
-                    email: data.email,
-                    password: hashedPassword,
-                    name: fullName,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    phone: data.phone || null,
-                    role: 'USER',
-                    pointsBalance: 0,  // Start with 0, bonus is pending
-                    pendingBonusPoints: pendingBonus,  // Pending until first purchase
-                    bonusActivated: false,  // Not yet activated
-                    referralCode: newUserReferralCode,
-                    referredById: referrerId,
-                    termsConsentAt: data.acceptTerms ? new Date() : null,
-                    privacyConsentAt: data.acceptPrivacy ? new Date() : null,
-                }
-            });
+            let newUser;
 
-            // Create UserRole entry
-            await tx.userRole.create({
-                data: {
-                    userId: newUser.id,
-                    role: 'USER',
-                    isActive: true,
-                }
-            });
+            // If a soft-deleted user exists with this email, reactivate it
+            if (existingUser && existingUser.deletedAt) {
+                newUser = await tx.user.update({
+                    where: { id: existingUser.id },
+                    data: {
+                        password: hashedPassword,
+                        name: fullName,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        phone: data.phone || null,
+                        role: 'USER',
+                        pointsBalance: 0,
+                        pendingBonusPoints: pendingBonus,
+                        bonusActivated: false,
+                        referralCode: newUserReferralCode,
+                        referredById: referrerId,
+                        termsConsentAt: data.acceptTerms ? new Date() : null,
+                        privacyConsentAt: data.acceptPrivacy ? new Date() : null,
+                        deletedAt: null,
+                        isSuspended: false,
+                        suspendedAt: null,
+                        suspendedUntil: null,
+                        suspensionReason: null,
+                        archivedAt: null,
+                    }
+                });
+
+                // Reactivate USER role or create it
+                await tx.userRole.upsert({
+                    where: { userId_role: { userId: newUser.id, role: 'USER' } },
+                    update: { isActive: true },
+                    create: { userId: newUser.id, role: 'USER', isActive: true },
+                });
+            } else {
+                // 1. Create the new user with PENDING bonus (not credited yet)
+                newUser = await tx.user.create({
+                    data: {
+                        email: data.email,
+                        password: hashedPassword,
+                        name: fullName,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        phone: data.phone || null,
+                        role: 'USER',
+                        pointsBalance: 0,  // Start with 0, bonus is pending
+                        pendingBonusPoints: pendingBonus,  // Pending until first purchase
+                        bonusActivated: false,  // Not yet activated
+                        referralCode: newUserReferralCode,
+                        referredById: referrerId,
+                        termsConsentAt: data.acceptTerms ? new Date() : null,
+                        privacyConsentAt: data.acceptPrivacy ? new Date() : null,
+                    }
+                });
+
+                // Create UserRole entry
+                await tx.userRole.create({
+                    data: {
+                        userId: newUser.id,
+                        role: 'USER',
+                        isActive: true,
+                    }
+                });
+            }
 
             // 2. If referred, create Referral record (but NO points yet)
             // Points will be awarded when new user makes their first qualifying purchase

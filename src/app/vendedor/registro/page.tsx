@@ -71,20 +71,44 @@ function SellerRegistroContent() {
         e.preventDefault();
         setError("");
 
+        // Validar CUIT formato
+        const cuitDigits = formData.cuit.replace(/\D/g, "");
+        if (cuitDigits.length !== 11) {
+            setError("El CUIT debe tener 11 dígitos");
+            return;
+        }
+
         if (!formData.acceptTerms || !formData.acceptPrivacy) {
             setError("Debés aceptar los Términos para Vendedores y la Política de Privacidad");
+            return;
+        }
+
+        // NO hacemos API call aquí. Solo validamos client-side y avanzamos a Step 2.
+        // La SellerProfile se crea en Step 2 cuando ya tenemos displayName y bio.
+        setStep(2);
+    };
+
+    const handleStep2Submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+
+        if (!formData.displayName.trim()) {
+            setError("Debés ingresar un nombre público");
             return;
         }
 
         setIsLoading(true);
 
         try {
-            // Activar rol SELLER + crear SellerProfile con CUIT
+            // Ahora activamos el vendedor con TODOS los datos: CUIT + displayName + bio + términos
+            // La SellerProfile se crea con toda la información de una sola vez
             const res = await fetch("/api/auth/activate-seller", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     cuit: formData.cuit,
+                    displayName: formData.displayName,
+                    bio: formData.bio,
                     acceptedTerms: true,
                 })
             });
@@ -102,38 +126,6 @@ function SellerRegistroContent() {
             }
 
             // Refrescar JWT para que incluya el nuevo rol SELLER
-            await updateSession();
-
-            setStep(2);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleStep2Submit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-        setIsLoading(true);
-
-        try {
-            // Actualizar perfil vendedor
-            const res = await fetch("/api/seller/profile", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    displayName: formData.displayName,
-                    bio: formData.bio,
-                })
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || "Error al guardar perfil");
-            }
-
-            // Asegurar que la sesión tenga SELLER antes de redirigir al panel
             await updateSession();
 
             setStep(3);

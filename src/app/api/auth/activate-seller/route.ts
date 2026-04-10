@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
 
         const userId = (session.user as any).id;
 
-        // Parse body (may be empty for legacy calls)
-        let body: { cuit?: string; acceptedTerms?: boolean } = {};
+        // Parse body
+        let body: { cuit?: string; acceptedTerms?: boolean; displayName?: string; bio?: string } = {};
         try {
             body = await request.json();
         } catch {
@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
         if (!body.acceptedTerms) {
             return NextResponse.json(
                 { error: "Debés aceptar los Términos para Vendedores" },
+                { status: 400 }
+            );
+        }
+
+        if (!body.displayName || !body.displayName.trim()) {
+            return NextResponse.json(
+                { error: "El nombre público es obligatorio" },
                 { status: 400 }
             );
         }
@@ -76,21 +83,29 @@ export async function POST(request: NextRequest) {
                 data: { userId, role: "SELLER", isActive: true }
             });
 
-            // 2. Create SellerProfile with CUIT and terms acceptance
+            // 2. Create SellerProfile with all required fields: CUIT, displayName, bio, and terms acceptance
             const existingProfile = await tx.sellerProfile.findUnique({
                 where: { userId }
             });
 
             if (!existingProfile) {
-                const profileData = { userId, cuit: body.cuit || null, acceptedTermsAt: body.acceptedTerms ? new Date() : null };
+                const profileData = {
+                    userId,
+                    cuit: body.cuit || null,
+                    displayName: body.displayName || null,
+                    bio: body.bio || null,
+                    acceptedTermsAt: body.acceptedTerms ? new Date() : null,
+                };
                 const encryptedData = encryptSellerData(profileData);
                 await tx.sellerProfile.create({
                     data: encryptedData
                 });
             } else {
-                // Update existing profile with CUIT and terms
+                // Update existing profile with all data (should not happen in normal flow)
                 const updateData = {
                     cuit: body.cuit || existingProfile.cuit,
+                    displayName: body.displayName || existingProfile.displayName,
+                    bio: body.bio || existingProfile.bio,
                     acceptedTermsAt: body.acceptedTerms ? new Date() : existingProfile.acceptedTermsAt,
                 };
                 const encryptedData = encryptSellerData(updateData);

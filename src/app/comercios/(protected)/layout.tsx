@@ -31,7 +31,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         redirect("/comercios/login");
     }
 
-    // Check suspension and archive status
+    // Check user-level suspension and archive status
     if ((session.user as any).isSuspended) {
         redirect("/cuenta-suspendida");
     }
@@ -44,7 +44,7 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     if (!hasAnyRole(session, ["ADMIN"])) {
         const merchant = await prisma.merchant.findFirst({
             where: { ownerId: (session.user as any).id },
-            select: { approvalStatus: true },
+            select: { approvalStatus: true, isSuspended: true },
         });
 
         if (!merchant) {
@@ -53,6 +53,11 @@ export default async function ComerciosLayout({ children }: { children: React.Re
 
         if (merchant.approvalStatus !== "APPROVED") {
             redirect("/comercios/pendiente-aprobacion");
+        }
+
+        // Check if merchant role is suspended
+        if (merchant.isSuspended) {
+            redirect("/cuenta-suspendida?role=comercio");
         }
     }
 

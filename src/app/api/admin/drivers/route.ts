@@ -57,9 +57,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Mínimo 8 caracteres" }, { status: 400 });
         }
 
-        // Check if email already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
+        // Check if email already exists (ignore soft-deleted users)
+        const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true, deletedAt: true } });
+        if (existingUser && !existingUser.deletedAt) {
             return NextResponse.json({ error: "Ya existe un usuario con ese email" }, { status: 400 });
         }
 

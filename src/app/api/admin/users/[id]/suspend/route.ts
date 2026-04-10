@@ -24,7 +24,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { reason, until } = body;
+    const { reason, until, role } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -36,6 +36,15 @@ export async function POST(
     if (!reason || typeof reason !== "string") {
       return NextResponse.json(
         { error: "Razón de suspensión requerida" },
+        { status: 400 }
+      );
+    }
+
+    // Validate role if provided
+    const validRoles = ["COMERCIO", "DRIVER", "SELLER"];
+    if (role && !validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: "Rol de suspensión inválido" },
         { status: 400 }
       );
     }
@@ -72,22 +81,15 @@ export async function POST(
     const now = new Date();
     const { ipAddress, userAgent } = extractRequestInfo(request);
 
-    // Suspend user and all related profiles
-    await prisma.$transaction([
-      // Suspend user
-      prisma.user.update({
-        where: { id },
-        data: {
-          isSuspended: true,
-          suspendedAt: now,
-          suspendedUntil: untilDate,
-          suspensionReason: reason,
-        },
-      }),
+    // If role is specified, suspend only that specific entity
+    // Otherwise, suspend the User entirely (all access blocked)
+    if (role) {
+      // Suspend by role
+      const transactions = [];
 
-      // Suspend merchant if exists
-      ...(user.ownedMerchants && user.ownedMerchants.length > 0
-        ? user.ownedMerchants.map((merchant) =>
+      if (role === "COMERCIO" && user.ownedMerchants && user.ownedMerchants.length > 0) {
+        transactions.push(
+          ...user.ownedMerchants.map((merchant) =>
             prisma.merchant.update({
               where: { id: merchant.id },
               data: {
@@ -98,38 +100,96 @@ export async function POST(
               },
             })
           )
-        : []),
+        );
+      } else if (role === "DRIVER" && user.driver) {
+        transactions.push(
+          prisma.driver.update({
+            where: { id: user.driver.id },
+            data: {
+              isSuspended: true,
+              suspendedAt: now,
+              suspendedUntil: untilDate,
+              suspensionReason: reason,
+            },
+          })
+        );
+      } else if (role === "SELLER" && user.sellerProfile) {
+        transactions.push(
+          prisma.sellerProfile.update({
+            where: { id: user.sellerProfile.id },
+            data: {
+              isSuspended: true,
+              suspendedAt: now,
+              suspendedUntil: untilDate,
+              suspensionReason: reason,
+            },
+          })
+        );
+      }
 
-      // Suspend driver if exists
-      ...(user.driver
-        ? [
-            prisma.driver.update({
-              where: { id: user.driver.id },
-              data: {
-                isSuspended: true,
-                suspendedAt: now,
-                suspendedUntil: untilDate,
-                suspensionReason: reason,
-              },
-            }),
-          ]
-        : []),
+      if (transactions.length > 0) {
+        await prisma.$transaction(transactions);
+      }
+    } else {
+      // Suspend user entirely (all access blocked)
+      await prisma.$transaction([
+        // Suspend user
+        prisma.user.update({
+          where: { id },
+          data: {
+            isSuspended: true,
+            suspendedAt: now,
+            suspendedUntil: untilDate,
+            suspensionReason: reason,
+          },
+        }),
 
-      // Suspend seller if exists
-      ...(user.sellerProfile
-        ? [
-            prisma.sellerProfile.update({
-              where: { id: user.sellerProfile.id },
-              data: {
-                isSuspended: true,
-                suspendedAt: now,
-                suspendedUntil: untilDate,
-                suspensionReason: reason,
-              },
-            }),
-          ]
-        : []),
-    ]);
+        // Suspend merchant if exists
+        ...(user.ownedMerchants && user.ownedMerchants.length > 0
+          ? user.ownedMerchants.map((merchant) =>
+              prisma.merchant.update({
+                where: { id: merchant.id },
+                data: {
+                  isSuspended: true,
+                  suspendedAt: now,
+                  suspendedUntil: untilDate,
+                  suspensionReason: reason,
+                },
+              })
+            )
+          : []),
+
+        // Suspend driver if exists
+        ...(user.driver
+          ? [
+              prisma.driver.update({
+                where: { id: user.driver.id },
+                data: {
+                  isSuspended: true,
+                  suspendedAt: now,
+                  suspendedUntil: untilDate,
+                  suspensionReason: reason,
+                },
+              }),
+            ]
+          : []),
+
+        // Suspend seller if exists
+        ...(user.sellerProfile
+          ? [
+              prisma.sellerProfile.update({
+                where: { id: user.sellerProfile.id },
+                data: {
+                  isSuspended: true,
+                  suspendedAt: now,
+                  suspendedUntil: untilDate,
+                  suspensionReason: reason,
+                },
+              }),
+            ]
+          : []),
+      ]);
+    }
 
     // Log admin action
     await logAdminAction({
@@ -142,6 +202,7 @@ export async function POST(
         reason,
         until: untilDate ? untilDate.toISOString() : null,
         permanent: !untilDate,
+        role: role || "FULL_USER",
       },
       ipAddress,
       userAgent,
@@ -156,19 +217,23 @@ export async function POST(
       details: {
         reason,
         until: untilDate ? untilDate.toISOString() : null,
+        role: role || "FULL_USER",
       },
     });
 
     adminLogger.info(
-      { userId: id, adminId: session.user.id, reason, until },
+      { userId: id, adminId: session.user.id, reason, until, role: role || "FULL_USER" },
       "Usuario suspendido"
     );
 
     return NextResponse.json({
       success: true,
-      message: `Usuario ${id} suspendido exitosamente`,
+      message: role
+        ? `Rol ${role} del usuario ${id} suspendido exitosamente`
+        : `Usuario ${id} suspendido exitosamente`,
       suspended: true,
       until: untilDate ? untilDate.toISOString() : null,
+      role: role || null,
     });
   } catch (error) {
     adminLogger.error({ error }, "Error al suspender usuario");

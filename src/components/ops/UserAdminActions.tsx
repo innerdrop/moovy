@@ -10,8 +10,8 @@ import {
   Award,
   AlertCircle,
   Loader2,
-  ChevronDown,
-  ChevronUp,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
@@ -23,12 +23,28 @@ export interface UserAdminActionsProps {
   suspendedUntil: string | null;
   suspensionReason: string | null;
   archivedAt: string | null;
+  deletedAt: string | null;
   merchant?: {
     id: string;
+    isSuspended: boolean;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
     commissionOverride: number | null;
     commissionOverrideReason: string | null;
     loyaltyTier: string;
     loyaltyTierLocked: boolean;
+  } | null;
+  driver?: {
+    id: string;
+    isSuspended: boolean;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
+  } | null;
+  seller?: {
+    id: string;
+    isSuspended: boolean;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
   } | null;
   onRefresh: () => void;
 }
@@ -42,12 +58,16 @@ export function UserAdminActions({
   suspendedUntil,
   suspensionReason,
   archivedAt,
+  deletedAt,
   merchant,
+  driver,
+  seller,
   onRefresh,
 }: UserAdminActionsProps) {
   const [suspendLoading, setSuspendLoading] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [merchantLoading, setMerchantLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Suspension form state
   const [showSuspendForm, setShowSuspendForm] = useState(false);
@@ -56,6 +76,9 @@ export function UserAdminActions({
     "permanent"
   );
   const [suspendUntilDate, setSuspendUntilDate] = useState("");
+  const [suspendRole, setSuspendRole] = useState<"FULL" | "COMERCIO" | "DRIVER" | "SELLER">(
+    "FULL"
+  );
 
   // Commission form state
   const [showCommissionForm, setShowCommissionForm] = useState(false);
@@ -77,9 +100,18 @@ export function UserAdminActions({
       return;
     }
 
+    const roleLabel =
+      suspendRole === "FULL"
+        ? "toda la cuenta"
+        : suspendRole === "COMERCIO"
+          ? "el comercio"
+          : suspendRole === "DRIVER"
+            ? "el rol de repartidor"
+            : "el rol de vendedor";
+
     const ok = await confirm({
-      title: "Suspender cuenta",
-      message: `¿Suspender a ${userName}?${
+      title: "Suspender",
+      message: `¿Suspender ${roleLabel} de ${userName}?${
         suspendType === "temporary"
           ? ` Hasta ${new Date(suspendUntilDate).toLocaleDateString("es-AR")}`
           : " (Permanente)"
@@ -98,14 +130,16 @@ export function UserAdminActions({
         body: JSON.stringify({
           reason: suspendReason,
           until: suspendType === "temporary" ? suspendUntilDate : null,
+          role: suspendRole === "FULL" ? null : suspendRole,
         }),
       });
 
       if (res.ok) {
-        toast.success("Cuenta suspendida correctamente");
+        toast.success("Suspensión aplicada correctamente");
         setSuspendReason("");
         setSuspendType("permanent");
         setSuspendUntilDate("");
+        setSuspendRole("FULL");
         setShowSuspendForm(false);
         onRefresh();
       } else {
@@ -120,10 +154,18 @@ export function UserAdminActions({
     }
   };
 
-  const handleUnsuspend = async () => {
+  const handleUnsuspend = async (role?: "COMERCIO" | "DRIVER" | "SELLER") => {
+    const roleLabel = !role
+      ? "toda la cuenta"
+      : role === "COMERCIO"
+        ? "el comercio"
+        : role === "DRIVER"
+          ? "el rol de repartidor"
+          : "el rol de vendedor";
+
     const ok = await confirm({
-      title: "Reactivar cuenta",
-      message: `¿Reactivar la cuenta de ${userName}?`,
+      title: "Reactivar",
+      message: `¿Reactivar ${roleLabel} de ${userName}?`,
       confirmLabel: "Reactivar",
       variant: "default",
     });
@@ -134,10 +176,14 @@ export function UserAdminActions({
     try {
       const res = await fetch(`/api/admin/users/${userId}/unsuspend`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: role || null,
+        }),
       });
 
       if (res.ok) {
-        toast.success("Cuenta reactivada correctamente");
+        toast.success("Reactivación completada correctamente");
         onRefresh();
       } else {
         const error = await res.json();
@@ -285,6 +331,72 @@ export function UserAdminActions({
     }
   };
 
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: "Eliminar cuenta",
+      message: `¿Estás seguro de que querés eliminar la cuenta de ${userName}? Esta acción se puede revertir desde el panel de administración.`,
+      confirmLabel: "Eliminar",
+      variant: "danger",
+    });
+
+    if (!ok) return;
+
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restore: false }),
+      });
+
+      if (res.ok) {
+        toast.success("Cuenta eliminada correctamente");
+        onRefresh();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Error al eliminar");
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Error de conexión");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    const ok = await confirm({
+      title: "Restaurar cuenta",
+      message: `¿Restaurar la cuenta de ${userName}?`,
+      confirmLabel: "Restaurar",
+      variant: "default",
+    });
+
+    if (!ok) return;
+
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restore: true }),
+      });
+
+      if (res.ok) {
+        toast.success("Cuenta restaurada correctamente");
+        onRefresh();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Error al restaurar");
+      }
+    } catch (error) {
+      console.error("Error restoring user:", error);
+      toast.error("Error de conexión");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Suspension Section */}
@@ -293,131 +405,308 @@ export function UserAdminActions({
           <Lock className="w-5 h-5 text-red-600" /> Suspensión
         </h3>
 
-        {isSuspended ? (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-900 font-semibold mb-2">
-              ⚠️ Cuenta suspendida
-            </p>
-            {suspensionReason && (
-              <p className="text-sm text-red-800 mb-2">
-                <strong>Razón:</strong> {suspensionReason}
+        {/* Show current suspensions */}
+        <div className="space-y-3 mb-6">
+          {isSuspended && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-900 font-semibold mb-2">
+                ⚠️ Cuenta completamente suspendida
               </p>
-            )}
-            {suspendedUntil ? (
-              <p className="text-sm text-red-800 mb-3">
-                <strong>Hasta:</strong>{" "}
-                {new Date(suspendedUntil).toLocaleDateString("es-AR")}
-              </p>
-            ) : (
-              <p className="text-sm text-red-800 mb-3">
-                <strong>Duración:</strong> Permanente
-              </p>
-            )}
-            <button
-              onClick={handleUnsuspend}
-              disabled={suspendLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
-            >
-              {suspendLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Unlock className="w-4 h-4" />
+              {suspensionReason && (
+                <p className="text-sm text-red-800 mb-2">
+                  <strong>Razón:</strong> {suspensionReason}
+                </p>
               )}
-              Reactivar cuenta
-            </button>
-          </div>
-        ) : (
-          <>
-            {!showSuspendForm ? (
+              {suspendedUntil ? (
+                <p className="text-sm text-red-800 mb-3">
+                  <strong>Hasta:</strong>{" "}
+                  {new Date(suspendedUntil).toLocaleDateString("es-AR")}
+                </p>
+              ) : (
+                <p className="text-sm text-red-800 mb-3">
+                  <strong>Duración:</strong> Permanente
+                </p>
+              )}
               <button
-                onClick={() => setShowSuspendForm(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition"
+                onClick={() => handleUnsuspend()}
+                disabled={suspendLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
               >
-                <Lock className="w-4 h-4" /> Suspender cuenta
-              </button>
-            ) : (
-              <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Razón de suspensión
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Violación de términos, actividad fraudulenta"
-                    value={suspendReason}
-                    onChange={(e) => setSuspendReason(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Tipo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        value="permanent"
-                        checked={suspendType === "permanent"}
-                        onChange={(e) =>
-                          setSuspendType(e.target.value as "permanent")
-                        }
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm text-gray-700">Permanente</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        value="temporary"
-                        checked={suspendType === "temporary"}
-                        onChange={(e) =>
-                          setSuspendType(e.target.value as "temporary")
-                        }
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm text-gray-700">Temporal</span>
-                    </label>
-                  </div>
-                </div>
-
-                {suspendType === "temporary" && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Hasta
-                    </label>
-                    <input
-                      type="date"
-                      value={suspendUntilDate}
-                      onChange={(e) => setSuspendUntilDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                    />
-                  </div>
+                {suspendLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Unlock className="w-4 h-4" />
                 )}
+                Reactivar cuenta completa
+              </button>
+            </div>
+          )}
 
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={handleSuspend}
-                    disabled={suspendLoading}
-                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
-                  >
-                    {suspendLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Suspender"
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setShowSuspendForm(false)}
-                    className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold rounded-lg transition"
-                  >
-                    Cancelar
-                  </button>
-                </div>
+          {merchant?.isSuspended && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-900 font-semibold mb-2">
+                ⚠️ Comercio suspendido
+              </p>
+              {merchant.suspensionReason && (
+                <p className="text-sm text-orange-800 mb-2">
+                  <strong>Razón:</strong> {merchant.suspensionReason}
+                </p>
+              )}
+              {merchant.suspendedUntil ? (
+                <p className="text-sm text-orange-800 mb-3">
+                  <strong>Hasta:</strong>{" "}
+                  {new Date(merchant.suspendedUntil).toLocaleDateString("es-AR")}
+                </p>
+              ) : (
+                <p className="text-sm text-orange-800 mb-3">
+                  <strong>Duración:</strong> Permanente
+                </p>
+              )}
+              <button
+                onClick={() => handleUnsuspend("COMERCIO")}
+                disabled={suspendLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
+              >
+                {suspendLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Unlock className="w-4 h-4" />
+                )}
+                Reactivar comercio
+              </button>
+            </div>
+          )}
+
+          {driver?.isSuspended && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900 font-semibold mb-2">
+                ⚠️ Repartidor suspendido
+              </p>
+              {driver.suspensionReason && (
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>Razón:</strong> {driver.suspensionReason}
+                </p>
+              )}
+              {driver.suspendedUntil ? (
+                <p className="text-sm text-blue-800 mb-3">
+                  <strong>Hasta:</strong>{" "}
+                  {new Date(driver.suspendedUntil).toLocaleDateString("es-AR")}
+                </p>
+              ) : (
+                <p className="text-sm text-blue-800 mb-3">
+                  <strong>Duración:</strong> Permanente
+                </p>
+              )}
+              <button
+                onClick={() => handleUnsuspend("DRIVER")}
+                disabled={suspendLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
+              >
+                {suspendLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Unlock className="w-4 h-4" />
+                )}
+                Reactivar repartidor
+              </button>
+            </div>
+          )}
+
+          {seller?.isSuspended && (
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <p className="text-sm text-purple-900 font-semibold mb-2">
+                ⚠️ Vendedor suspendido
+              </p>
+              {seller.suspensionReason && (
+                <p className="text-sm text-purple-800 mb-2">
+                  <strong>Razón:</strong> {seller.suspensionReason}
+                </p>
+              )}
+              {seller.suspendedUntil ? (
+                <p className="text-sm text-purple-800 mb-3">
+                  <strong>Hasta:</strong>{" "}
+                  {new Date(seller.suspendedUntil).toLocaleDateString("es-AR")}
+                </p>
+              ) : (
+                <p className="text-sm text-purple-800 mb-3">
+                  <strong>Duración:</strong> Permanente
+                </p>
+              )}
+              <button
+                onClick={() => handleUnsuspend("SELLER")}
+                disabled={suspendLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
+              >
+                {suspendLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Unlock className="w-4 h-4" />
+                )}
+                Reactivar vendedor
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Suspension form */}
+        {!showSuspendForm ? (
+          <button
+            onClick={() => setShowSuspendForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition"
+          >
+            <Lock className="w-4 h-4" /> Suspender
+          </button>
+        ) : (
+          <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Qué suspender
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="FULL"
+                    checked={suspendRole === "FULL"}
+                    onChange={(e) =>
+                      setSuspendRole(e.target.value as "FULL")
+                    }
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Toda la cuenta (bloquear acceso completo)
+                  </span>
+                </label>
+                {merchant && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="COMERCIO"
+                      checked={suspendRole === "COMERCIO"}
+                      onChange={(e) =>
+                        setSuspendRole(e.target.value as "COMERCIO")
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-700">
+                      Solo el comercio
+                    </span>
+                  </label>
+                )}
+                {driver && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="DRIVER"
+                      checked={suspendRole === "DRIVER"}
+                      onChange={(e) =>
+                        setSuspendRole(e.target.value as "DRIVER")
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-700">
+                      Solo el rol de repartidor
+                    </span>
+                  </label>
+                )}
+                {seller && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="SELLER"
+                      checked={suspendRole === "SELLER"}
+                      onChange={(e) =>
+                        setSuspendRole(e.target.value as "SELLER")
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-700">
+                      Solo el rol de vendedor
+                    </span>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Razón de suspensión
+              </label>
+              <input
+                type="text"
+                placeholder="Ej: Violación de términos, actividad fraudulenta"
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Tipo
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="permanent"
+                    checked={suspendType === "permanent"}
+                    onChange={(e) =>
+                      setSuspendType(e.target.value as "permanent")
+                    }
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">Permanente</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="temporary"
+                    checked={suspendType === "temporary"}
+                    onChange={(e) =>
+                      setSuspendType(e.target.value as "temporary")
+                    }
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">Temporal</span>
+                </label>
+              </div>
+            </div>
+
+            {suspendType === "temporary" && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Hasta
+                </label>
+                <input
+                  type="date"
+                  value={suspendUntilDate}
+                  onChange={(e) => setSuspendUntilDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                />
               </div>
             )}
-          </>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleSuspend}
+                disabled={suspendLoading}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
+              >
+                {suspendLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Suspender"
+                )}
+              </button>
+              <button
+                onClick={() => setShowSuspendForm(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold rounded-lg transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -643,6 +932,55 @@ export function UserAdminActions({
           </div>
         </>
       )}
+
+      {/* Delete Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-red-200 p-8">
+        <h3 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-red-600" /> Zona de peligro
+        </h3>
+
+        {deletedAt ? (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-900 font-semibold mb-2">
+              🗑️ Cuenta eliminada
+            </p>
+            <p className="text-sm text-red-800 mb-3">
+              <strong>Eliminada el:</strong>{" "}
+              {new Date(deletedAt).toLocaleDateString("es-AR")}
+            </p>
+            <button
+              onClick={handleRestore}
+              disabled={deleteLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
+            >
+              {deleteLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RotateCcw className="w-4 h-4" />
+              )}
+              Restaurar cuenta
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-gray-600 mb-4">
+              Eliminar permanentemente esta cuenta de la base de datos. Esta acción puede revertirse desde el panel de administración.
+            </p>
+            <button
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
+            >
+              {deleteLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Eliminar cuenta
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

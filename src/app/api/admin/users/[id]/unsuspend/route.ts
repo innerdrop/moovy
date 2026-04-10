@@ -23,10 +23,21 @@ export async function POST(
     }
 
     const { id } = await params;
+    const body = await request.json();
+    const { role } = body || {};
 
     if (!id) {
       return NextResponse.json(
         { error: "ID de usuario requerido" },
+        { status: 400 }
+      );
+    }
+
+    // Validate role if provided
+    const validRoles = ["COMERCIO", "DRIVER", "SELLER"];
+    if (role && !validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: "Rol de reactivación inválido" },
         { status: 400 }
       );
     }
@@ -50,22 +61,15 @@ export async function POST(
 
     const { ipAddress, userAgent } = extractRequestInfo(request);
 
-    // Unsuspend user and all related profiles
-    await prisma.$transaction([
-      // Unsuspend user
-      prisma.user.update({
-        where: { id },
-        data: {
-          isSuspended: false,
-          suspendedAt: null,
-          suspendedUntil: null,
-          suspensionReason: null,
-        },
-      }),
+    // If role is specified, unsuspend only that specific entity
+    // Otherwise, unsuspend the User entirely + all entities
+    if (role) {
+      // Unsuspend by role
+      const transactions = [];
 
-      // Unsuspend merchant if exists
-      ...(user.ownedMerchants && user.ownedMerchants.length > 0
-        ? user.ownedMerchants.map((merchant) =>
+      if (role === "COMERCIO" && user.ownedMerchants && user.ownedMerchants.length > 0) {
+        transactions.push(
+          ...user.ownedMerchants.map((merchant) =>
             prisma.merchant.update({
               where: { id: merchant.id },
               data: {
@@ -76,38 +80,96 @@ export async function POST(
               },
             })
           )
-        : []),
+        );
+      } else if (role === "DRIVER" && user.driver) {
+        transactions.push(
+          prisma.driver.update({
+            where: { id: user.driver.id },
+            data: {
+              isSuspended: false,
+              suspendedAt: null,
+              suspendedUntil: null,
+              suspensionReason: null,
+            },
+          })
+        );
+      } else if (role === "SELLER" && user.sellerProfile) {
+        transactions.push(
+          prisma.sellerProfile.update({
+            where: { id: user.sellerProfile.id },
+            data: {
+              isSuspended: false,
+              suspendedAt: null,
+              suspendedUntil: null,
+              suspensionReason: null,
+            },
+          })
+        );
+      }
 
-      // Unsuspend driver if exists
-      ...(user.driver
-        ? [
-            prisma.driver.update({
-              where: { id: user.driver.id },
-              data: {
-                isSuspended: false,
-                suspendedAt: null,
-                suspendedUntil: null,
-                suspensionReason: null,
-              },
-            }),
-          ]
-        : []),
+      if (transactions.length > 0) {
+        await prisma.$transaction(transactions);
+      }
+    } else {
+      // Unsuspend user entirely + all entities
+      await prisma.$transaction([
+        // Unsuspend user
+        prisma.user.update({
+          where: { id },
+          data: {
+            isSuspended: false,
+            suspendedAt: null,
+            suspendedUntil: null,
+            suspensionReason: null,
+          },
+        }),
 
-      // Unsuspend seller if exists
-      ...(user.sellerProfile
-        ? [
-            prisma.sellerProfile.update({
-              where: { id: user.sellerProfile.id },
-              data: {
-                isSuspended: false,
-                suspendedAt: null,
-                suspendedUntil: null,
-                suspensionReason: null,
-              },
-            }),
-          ]
-        : []),
-    ]);
+        // Unsuspend merchant if exists
+        ...(user.ownedMerchants && user.ownedMerchants.length > 0
+          ? user.ownedMerchants.map((merchant) =>
+              prisma.merchant.update({
+                where: { id: merchant.id },
+                data: {
+                  isSuspended: false,
+                  suspendedAt: null,
+                  suspendedUntil: null,
+                  suspensionReason: null,
+                },
+              })
+            )
+          : []),
+
+        // Unsuspend driver if exists
+        ...(user.driver
+          ? [
+              prisma.driver.update({
+                where: { id: user.driver.id },
+                data: {
+                  isSuspended: false,
+                  suspendedAt: null,
+                  suspendedUntil: null,
+                  suspensionReason: null,
+                },
+              }),
+            ]
+          : []),
+
+        // Unsuspend seller if exists
+        ...(user.sellerProfile
+          ? [
+              prisma.sellerProfile.update({
+                where: { id: user.sellerProfile.id },
+                data: {
+                  isSuspended: false,
+                  suspendedAt: null,
+                  suspendedUntil: null,
+                  suspensionReason: null,
+                },
+              }),
+            ]
+          : []),
+      ]);
+    }
 
     // Log admin action
     await logAdminAction({
@@ -116,7 +178,9 @@ export async function POST(
       action: ACTIVITY_ACTIONS.ADMIN_UNSUSPENDED,
       entityType: "User",
       entityId: id,
-      details: {},
+      details: {
+        role: role || "FULL_USER",
+      },
       ipAddress,
       userAgent,
     });
@@ -127,18 +191,23 @@ export async function POST(
       entityType: "User",
       entityId: id,
       userId: session.user.id,
-      details: {},
+      details: {
+        role: role || "FULL_USER",
+      },
     });
 
     adminLogger.info(
-      { userId: id, adminId: session.user.id },
+      { userId: id, adminId: session.user.id, role: role || "FULL_USER" },
       "Usuario reactivado"
     );
 
     return NextResponse.json({
       success: true,
-      message: `Usuario ${id} reactivado exitosamente`,
+      message: role
+        ? `Rol ${role} del usuario ${id} reactivado exitosamente`
+        : `Usuario ${id} reactivado exitosamente`,
       suspended: false,
+      role: role || null,
     });
   } catch (error) {
     adminLogger.error({ error }, "Error al reactivar usuario");

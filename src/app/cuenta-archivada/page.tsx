@@ -50,6 +50,14 @@ export default async function CuentaArchivadaPage() {
           >
             Contactar Soporte
           </a>
+
+          {/* Back to Store Button */}
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white text-[#e60012] border-2 border-[#e60012] rounded-lg hover:bg-red-50 transition font-medium text-sm"
+          >
+            Volver a la Tienda
+          </Link>
         </div>
 
         {/* Logout Button */}

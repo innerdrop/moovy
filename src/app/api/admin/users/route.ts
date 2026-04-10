@@ -58,9 +58,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Mínimo 8 caracteres" }, { status: 400 });
         }
 
-        // Check if email already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
+        // Check if email already exists (ignore soft-deleted users)
+        const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true, deletedAt: true } });
+        if (existingUser && !existingUser.deletedAt) {
             return NextResponse.json({ error: "Ya existe un usuario con ese email" }, { status: 400 });
         }
 
@@ -132,10 +132,10 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ success: true, message: "Contraseña actualizada" });
         }
 
-        // Check if new email already exists (for another user)
+        // Check if new email already exists (for another active user)
         if (email && email !== existingUser.email) {
-            const emailExists = await prisma.user.findUnique({ where: { email } });
-            if (emailExists) {
+            const emailExists = await prisma.user.findUnique({ where: { email }, select: { id: true, deletedAt: true } });
+            if (emailExists && !emailExists.deletedAt) {
                 return NextResponse.json({ error: "Ya existe un usuario con ese email" }, { status: 400 });
             }
         }

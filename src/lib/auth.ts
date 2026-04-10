@@ -126,8 +126,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 }
             }
 
-            // Check suspension and archive status on signin and update
-            if ((trigger === "signIn" || trigger === "update") && token.id) {
+            // Check suspension and archive status on signin only (not on every update)
+            // For trigger === "update", only re-check if explicitly requested via token.refreshSuspension
+            if ((trigger === "signIn" || (trigger === "update" && (token as any).refreshSuspension)) && token.id) {
                 try {
                     const { prisma } = await import("@/lib/prisma");
                     const userId = token.id as string;
@@ -143,11 +144,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     });
 
                     if (userStatus) {
-                        // Check archive status
-                        if (userStatus.archivedAt) {
-                            (token as any).isArchived = true;
-                        } else {
-                            (token as any).isArchived = false;
+                        // Check archive status - only mutate if value changed
+                        const newIsArchived = Boolean(userStatus.archivedAt);
+                        const currentIsArchived = (token as any).isArchived || false;
+                        if (currentIsArchived !== newIsArchived) {
+                            (token as any).isArchived = newIsArchived;
                         }
 
                         // Check suspension status
@@ -177,23 +178,36 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                                 (token as any).isSuspended = false;
                                 (token as any).suspendedUntil = null;
                             } else {
-                                // Still suspended
-                                (token as any).isSuspended = true;
-                                (token as any).suspendedUntil = userStatus.suspendedUntil?.toISOString() || null;
-                                (token as any).suspensionReason = userStatus.suspensionReason;
+                                // Still suspended - only mutate if value changed
+                                const newIsSuspended = true;
+                                const newSuspendedUntil = userStatus.suspendedUntil?.toISOString() || null;
+                                if ((token as any).isSuspended !== newIsSuspended || (token as any).suspendedUntil !== newSuspendedUntil) {
+                                    (token as any).isSuspended = newIsSuspended;
+                                    (token as any).suspendedUntil = newSuspendedUntil;
+                                    (token as any).suspensionReason = userStatus.suspensionReason;
+                                }
                             }
                         } else {
-                            (token as any).isSuspended = false;
-                            (token as any).suspendedUntil = null;
+                            // Not suspended - only mutate if value changed
+                            const newIsSuspended = false;
+                            if ((token as any).isSuspended !== newIsSuspended) {
+                                (token as any).isSuspended = newIsSuspended;
+                                (token as any).suspendedUntil = null;
+                            }
                         }
+                    }
+
+                    // Clear the refresh flag after processing
+                    if ((token as any).refreshSuspension) {
+                        delete (token as any).refreshSuspension;
                     }
                 } catch (err) {
                     console.error("[Auth] Failed to check suspension status:", err);
                 }
             }
 
-            // Re-fetch roles from DB when client calls update() (e.g. after activating SELLER role)
-            if (trigger === "update" && token.id) {
+            // Re-fetch roles from DB when client calls update() with refreshRoles flag (e.g. after activating SELLER role)
+            if (trigger === "update" && token.id && (token as any).refreshRoles) {
                 try {
                     const { prisma } = await import("@/lib/prisma");
                     const userId = token.id as string;
@@ -284,15 +298,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             }
                         }
 
-                        token.roles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];
-                        token.role = freshUser.role;
+                        // Only mutate token.roles if they actually changed
+                        const newRoles = [...new Set([...rolesFromTable, freshUser.role].filter(Boolean))];
+                        const currentRoles = (token.roles as string[]) || [];
+                        if (JSON.stringify(newRoles.sort()) !== JSON.stringify(currentRoles.sort())) {
+                            token.roles = newRoles;
+                        }
+
+                        // Only mutate token.role if it changed
+                        if (token.role !== freshUser.role) {
+                            token.role = freshUser.role;
+                        }
 
                         // Also refresh merchantId in case user became a merchant
                         const merchant = await prisma.merchant.findFirst({
                             where: { ownerId: userId },
                             select: { id: true },
                         });
-                        token.merchantId = merchant?.id || null;
+                        const newMerchantId = merchant?.id || null;
+                        if (token.merchantId !== newMerchantId) {
+                            token.merchantId = newMerchantId;
+                        }
+
+                        // Clear the refreshRoles flag after processing
+                        delete (token as any).refreshRoles;
                     }
                 } catch (err) {
                     console.error("[Auth] Failed to refresh roles on update:", err);
@@ -314,15 +343,39 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
 
             if (token && session.user) {
-                session.user.id = token.id as string;
-                (session.user as any).role = token.role;
-                (session.user as any).roles = token.roles || [token.role];
-                (session.user as any).referralCode = token.referralCode;
-                (session.user as any).merchantId = token.merchantId;
-                (session.user as any).isSuspended = (token as any).isSuspended || false;
-                (session.user as any).suspendedUntil = (token as any).suspendedUntil || null;
-                (session.user as any).suspensionReason = (token as any).suspensionReason || null;
-                (session.user as any).isArchived = (token as any).isArchived || false;
+                // Only mutate if values actually changed
+                if (session.user.id !== token.id) {
+                    session.user.id = token.id as string;
+                }
+                if ((session.user as any).role !== token.role) {
+                    (session.user as any).role = token.role;
+                }
+                const newRoles = token.roles || [token.role];
+                if (JSON.stringify((session.user as any).roles || []) !== JSON.stringify(newRoles)) {
+                    (session.user as any).roles = newRoles;
+                }
+                if ((session.user as any).referralCode !== token.referralCode) {
+                    (session.user as any).referralCode = token.referralCode;
+                }
+                if ((session.user as any).merchantId !== token.merchantId) {
+                    (session.user as any).merchantId = token.merchantId;
+                }
+                const newIsSuspended = (token as any).isSuspended || false;
+                if ((session.user as any).isSuspended !== newIsSuspended) {
+                    (session.user as any).isSuspended = newIsSuspended;
+                }
+                const newSuspendedUntil = (token as any).suspendedUntil || null;
+                if ((session.user as any).suspendedUntil !== newSuspendedUntil) {
+                    (session.user as any).suspendedUntil = newSuspendedUntil;
+                }
+                const newSuspensionReason = (token as any).suspensionReason || null;
+                if ((session.user as any).suspensionReason !== newSuspensionReason) {
+                    (session.user as any).suspensionReason = newSuspensionReason;
+                }
+                const newIsArchived = (token as any).isArchived || false;
+                if ((session.user as any).isArchived !== newIsArchived) {
+                    (session.user as any).isArchived = newIsArchived;
+                }
             }
             return session;
         },

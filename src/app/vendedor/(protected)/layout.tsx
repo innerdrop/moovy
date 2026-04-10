@@ -2,6 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasRole, getUserRoles } from "@/lib/auth-utils";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -29,12 +30,22 @@ export default async function VendedorLayout({ children }: { children: React.Rea
         redirect("/mi-perfil");
     }
 
-    // Check suspension and archive status
+    // Check user-level suspension and archive status
     if ((session.user as any).isSuspended) {
         redirect("/cuenta-suspendida");
     }
     if ((session.user as any).isArchived) {
         redirect("/cuenta-archivada");
+    }
+
+    // Check if seller role is suspended
+    const sellerProfile = await prisma.sellerProfile.findFirst({
+        where: { userId: (session.user as any).id },
+        select: { isSuspended: true },
+    });
+
+    if (sellerProfile?.isSuspended) {
+        redirect("/cuenta-suspendida?role=seller");
     }
 
     const userRoles = getUserRoles(session);

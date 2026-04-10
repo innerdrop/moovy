@@ -10,7 +10,7 @@ import { CartSyncProvider } from "@/hooks/useCartSync";
 
 export default function Providers({ children }: { children: ReactNode }) {
     return (
-        <SessionProvider>
+        <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
             <CartSyncProvider>
                 {children}
             </CartSyncProvider>

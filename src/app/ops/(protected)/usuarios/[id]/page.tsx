@@ -71,6 +71,10 @@ interface MerchantData {
     phone: string | null;
     address: string | null;
     approvalStatus: string;
+    isSuspended: boolean;
+    suspendedAt: string | null;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
     commissionRate: number;
     commissionOverride: number | null;
     commissionOverrideReason: string | null;
@@ -110,6 +114,10 @@ interface DriverData {
     isOnline: boolean;
     totalDeliveries: number;
     rating: number | null;
+    isSuspended: boolean;
+    suspendedAt: string | null;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
     approvalStatus: string;
     approvedAt: string | null;
     rejectionReason: string | null;
@@ -126,6 +134,10 @@ interface SellerData {
     isVerified: boolean;
     totalSales: number;
     rating: number | null;
+    isSuspended: boolean;
+    suspendedAt: string | null;
+    suspendedUntil: string | null;
+    suspensionReason: string | null;
     commissionRate: number;
     mpLinkedAt: string | null;
     isOnline: boolean;
@@ -1406,12 +1418,28 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     suspendedUntil={user.suspendedUntil}
                     suspensionReason={user.suspensionReason}
                     archivedAt={user.archivedAt}
+                    deletedAt={user.deletedAt}
                     merchant={user.merchant ? {
                         id: user.merchant.id,
+                        isSuspended: user.merchant.isSuspended,
+                        suspendedUntil: user.merchant.suspendedUntil,
+                        suspensionReason: user.merchant.suspensionReason,
                         commissionOverride: user.merchant.commissionOverride,
                         commissionOverrideReason: user.merchant.commissionOverrideReason,
                         loyaltyTier: user.merchant.loyaltyTier,
                         loyaltyTierLocked: user.merchant.loyaltyTierLocked,
+                    } : undefined}
+                    driver={user.driver ? {
+                        id: user.driver.id,
+                        isSuspended: user.driver.isSuspended,
+                        suspendedUntil: user.driver.suspendedUntil,
+                        suspensionReason: user.driver.suspensionReason,
+                    } : undefined}
+                    seller={user.seller ? {
+                        id: user.seller.id,
+                        isSuspended: user.seller.isSuspended,
+                        suspendedUntil: user.seller.suspendedUntil,
+                        suspensionReason: user.seller.suspensionReason,
                     } : undefined}
                     onRefresh={fetchUser}
                 />

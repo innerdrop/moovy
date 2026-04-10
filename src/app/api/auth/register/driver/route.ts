@@ -42,17 +42,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists
+        // Check if email already exists (ignore soft-deleted users)
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email },
-            include: {
+            select: {
+                id: true,
+                deletedAt: true,
                 roles: { where: { isActive: true }, select: { role: true } },
                 driver: { select: { id: true } },
             }
         });
 
-        // If user exists AND already has a driver profile, reject
-        if (existingUser?.driver) {
+        // If user exists, is NOT deleted, AND already has a driver profile, reject
+        if (existingUser && !existingUser.deletedAt && existingUser?.driver) {
             return NextResponse.json(
                 { error: "Ya tenés una cuenta de repartidor con ese email" },
                 { status: 409 }

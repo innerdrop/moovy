@@ -92,15 +92,14 @@ export default function ProfilePage() {
             .catch(() => { /* no driver profile yet */ });
 
         // Check seller status via API (independent of JWT)
-        // Covers the case where user registered as seller but JWT wasn't refreshed
         if (!hasSeller) {
             fetch("/api/seller/profile")
                 .then(res => res.ok ? res.json() : null)
                 .then(data => {
                     if (data?.isActive) {
                         setSellerStatus("ACTIVE");
-                        // Refresh JWT so hasSeller becomes true on next render
-                        updateSession({ refreshRoles: true });
+                        // Don't call updateSession here — it causes render loops.
+                        // The JWT auto-heal on next signIn will pick up the SELLER role.
                     }
                 })
                 .catch(() => { /* no seller profile yet */ });
@@ -114,7 +113,7 @@ export default function ProfilePage() {
                     if (!data?.exists) return;
                     if (data.approvalStatus === "APPROVED") {
                         setMerchantStatus("ACTIVE");
-                        updateSession({ refreshRoles: true });
+                        // Don't call updateSession here — it causes render loops.
                     } else {
                         setMerchantStatus("PENDING_VERIFICATION");
                     }
