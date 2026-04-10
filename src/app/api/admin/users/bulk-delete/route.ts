@@ -44,29 +44,25 @@ export async function POST(request: Request) {
 
     const { ipAddress, userAgent } = extractRequestInfo(request);
 
-    // Fetch all users to be deleted (for logging)
+    // Fetch all users to be deleted (for logging).
+    // Los roles se derivan del dominio (Merchant/Driver/SellerProfile), no de UserRole.
     const usersToDelete = await prisma.user.findMany({
       where: { id: { in: userIds } },
       include: {
-        roles: { select: { role: true } },
         ownedMerchants: { select: { id: true } },
         driver: { select: { id: true } },
         sellerProfile: { select: { id: true } },
       },
     });
 
-    // Update all users in transaction
+    // Update all users in transaction.
+    // No tocamos UserRole: los roles derivados se apagan solos vía deletedAt
+    // (computeUserAccess retorna null si el user está soft-deleted).
     await prisma.$transaction(async (tx) => {
       // Soft-delete users
       await tx.user.updateMany({
         where: { id: { in: userIds } },
         data: { deletedAt: new Date() },
-      });
-
-      // Deactivate all user roles
-      await tx.userRole.updateMany({
-        where: { userId: { in: userIds } },
-        data: { isActive: false },
       });
 
       // Deactivate associated merchants
@@ -90,6 +86,11 @@ export async function POST(request: Request) {
 
     // Log each deletion individually for audit trail
     for (const user of usersToDelete) {
+      const derivedRoles: string[] = ["USER"];
+      if (user.ownedMerchants?.length) derivedRoles.push("COMERCIO");
+      if (user.driver) derivedRoles.push("DRIVER");
+      if (user.sellerProfile) derivedRoles.push("SELLER");
+
       await logAdminAction({
         adminUserId: session.user.id,
         targetUserId: user.id,
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
         details: {
           email: user.email,
           name: user.name,
-          roles: user.roles.map((r) => r.role),
+          roles: derivedRoles,
           bulkOperation: true,
         },
         ipAddress,
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
         details: {
           email: user.email,
           name: user.name,
-          roles: user.roles.map((r) => r.role),
+          roles: derivedRoles,
           bulkOperation: true,
           deletedAt: new Date().toISOString(),
         },

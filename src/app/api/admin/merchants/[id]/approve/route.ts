@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendMerchantApprovalEmail } from "@/lib/email";
+import { approveMerchantTransition } from "@/lib/roles";
 
 // PUT/POST - Approve merchant application (admin only)
 export async function POST(
@@ -30,9 +31,13 @@ export async function PUT(
 
         const merchant = await prisma.merchant.findUnique({
             where: { id },
-            include: {
-                owner: { select: { id: true, name: true, email: true } }
-            }
+            select: {
+                id: true,
+                name: true,
+                approvalStatus: true,
+                ownerId: true,
+                owner: { select: { id: true, name: true, email: true } },
+            },
         });
 
         if (!merchant) {
@@ -43,32 +48,22 @@ export async function PUT(
             return NextResponse.json({ error: "El comercio ya está aprobado" }, { status: 409 });
         }
 
-        await prisma.$transaction(async (tx) => {
-            await tx.merchant.update({
-                where: { id },
-                data: {
-                    approvalStatus: "APPROVED",
-                    approvedAt: new Date(),
-                    rejectionReason: null,
-                    isActive: true,
-                    isVerified: true,
-                }
-            });
-            // Ensure COMERCIO role is active
-            await tx.userRole.updateMany({
-                where: { userId: merchant.ownerId, role: "COMERCIO" },
-                data: { isActive: true }
-            });
+        // Transición centralizada: escribe approvalStatus, flags legacy y audit log.
+        // Ya no tocamos UserRole acá porque el rol COMERCIO se deriva de Merchant.approvalStatus
+        // en cada request. Ver src/lib/roles.ts.
+        await approveMerchantTransition(id, {
+            adminId: session.user.id,
+            adminEmail: session.user.email ?? "unknown",
         });
 
         // Send approval email (non-blocking)
-        if (merchant.owner.email) {
+        if (merchant.owner?.email) {
             sendMerchantApprovalEmail(merchant.owner.email, merchant.name);
         }
 
         return NextResponse.json({
             success: true,
-            merchant: { ...merchant, approvalStatus: "APPROVED", isActive: true, isVerified: true }
+            merchant: { id: merchant.id, name: merchant.name, approvalStatus: "APPROVED" },
         });
     } catch (error) {
         console.error("Error approving merchant:", error);

@@ -40,13 +40,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists (ignore soft-deleted users)
+        // Check if email already exists (ignore soft-deleted users).
+        // Ya no consultamos UserRole: el rol COMERCIO se deriva de Merchant.approvalStatus
+        // en cada request. Ver src/lib/roles.ts.
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email },
             select: {
                 id: true,
                 deletedAt: true,
-                roles: { where: { isActive: true }, select: { role: true } },
                 ownedMerchants: { select: { id: true }, take: 1 },
             }
         });
@@ -99,22 +100,13 @@ export async function POST(request: NextRequest) {
 
         await prisma.$transaction(async (tx) => {
             if (existingUser) {
-                // --- PATH A: User already exists (has a store/driver account) ---
-                // Add MERCHANT role if not already present
-                const hasMerchantRole = existingUser.roles.some((r: { role: string }) => r.role === "COMERCIO");
-                if (!hasMerchantRole) {
-                    await tx.userRole.create({
-                        data: { userId: existingUser.id, role: "COMERCIO", isActive: true }
-                    });
-                }
-
-                // Create Merchant linked to existing user
+                // PATH A: user already exists → solo creamos el Merchant.
+                // No tocamos UserRole: el rol COMERCIO se deriva del Merchant existiendo.
                 await tx.merchant.create({
                     data: { ...merchantData, ownerId: existingUser.id }
                 });
             } else {
-                // --- PATH B: Brand new user ---
-                // 1. Create User with legacy role USER (base account)
+                // PATH B: user nuevo → creamos User + Merchant.
                 const newUser = await tx.user.create({
                     data: {
                         email: data.email,
@@ -127,15 +119,6 @@ export async function POST(request: NextRequest) {
                     }
                 });
 
-                // 2. Create UserRole entries: USER (base) + MERCHANT
-                await tx.userRole.createMany({
-                    data: [
-                        { userId: newUser.id, role: "USER", isActive: true },
-                        { userId: newUser.id, role: "COMERCIO", isActive: true },
-                    ]
-                });
-
-                // 3. Create Merchant
                 await tx.merchant.create({
                     data: { ...merchantData, ownerId: newUser.id }
                 });

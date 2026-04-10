@@ -6,7 +6,8 @@ import { applyRateLimit } from "@/lib/rate-limit";
 /**
  * POST /api/auth/cancel-driver
  * Cancel a pending driver request. Only works if approvalStatus is PENDING.
- * Deletes the Driver record and the DRIVER UserRole.
+ * Deletes the Driver record. El rol DRIVER se deriva de Driver existiendo,
+ * así que al borrar el Driver el rol desaparece en el próximo JWT.
  */
 export async function POST(request: NextRequest) {
     const limited = await applyRateLimit(request, "auth:cancel-driver", 5, 15 * 60_000);
@@ -38,13 +39,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Delete driver record and UserRole in a transaction
-        await prisma.$transaction(async (tx) => {
-            await tx.driver.delete({ where: { userId } });
-            await tx.userRole.deleteMany({
-                where: { userId, role: "DRIVER" },
-            });
-        });
+        // Borramos el Driver. El rol DRIVER se deriva en cada request,
+        // así que al no existir Driver el rol desaparece automáticamente.
+        await prisma.driver.delete({ where: { userId } });
 
         return NextResponse.json({ success: true });
     } catch (error) {

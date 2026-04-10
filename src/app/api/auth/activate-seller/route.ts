@@ -43,11 +43,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if already a seller
-        const existingRole = await prisma.userRole.findUnique({
-            where: { userId_role: { userId, role: "SELLER" } }
+        // Check if already a seller — derivado de SellerProfile (no UserRole).
+        const existingProfile = await prisma.sellerProfile.findUnique({
+            where: { userId },
+            select: { id: true, isActive: true },
         });
-        if (existingRole) {
+        if (existingProfile && existingProfile.isActive) {
             return NextResponse.json(
                 { error: "Ya tenés el rol de vendedor" },
                 { status: 409 }
@@ -76,37 +77,34 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Create seller role + SellerProfile in transaction
+        // Crear/activar SellerProfile. El rol SELLER se deriva de SellerProfile.isActive
+        // en cada request (ver src/lib/roles.ts), ya no escribimos UserRole.
         await prisma.$transaction(async (tx) => {
-            // 1. Create UserRole
-            await tx.userRole.create({
-                data: { userId, role: "SELLER", isActive: true }
-            });
-
-            // 2. Create SellerProfile with all required fields: CUIT, displayName, bio, and terms acceptance
-            const existingProfile = await tx.sellerProfile.findUnique({
+            const existing = await tx.sellerProfile.findUnique({
                 where: { userId }
             });
 
-            if (!existingProfile) {
+            if (!existing) {
                 const profileData = {
                     userId,
                     cuit: body.cuit || null,
                     displayName: body.displayName || null,
                     bio: body.bio || null,
                     acceptedTermsAt: body.acceptedTerms ? new Date() : null,
+                    isActive: true,
                 };
                 const encryptedData = encryptSellerData(profileData);
                 await tx.sellerProfile.create({
                     data: encryptedData
                 });
             } else {
-                // Update existing profile with all data (should not happen in normal flow)
+                // Reactivar perfil existente (el check anterior rechaza si ya estaba activo)
                 const updateData = {
-                    cuit: body.cuit || existingProfile.cuit,
-                    displayName: body.displayName || existingProfile.displayName,
-                    bio: body.bio || existingProfile.bio,
-                    acceptedTermsAt: body.acceptedTerms ? new Date() : existingProfile.acceptedTermsAt,
+                    cuit: body.cuit || existing.cuit,
+                    displayName: body.displayName || existing.displayName,
+                    bio: body.bio || existing.bio,
+                    acceptedTermsAt: body.acceptedTerms ? new Date() : existing.acceptedTermsAt,
+                    isActive: true,
                 };
                 const encryptedData = encryptSellerData(updateData);
                 await tx.sellerProfile.update({

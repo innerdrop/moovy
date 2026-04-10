@@ -6,7 +6,8 @@ import { applyRateLimit } from "@/lib/rate-limit";
 /**
  * POST /api/auth/cancel-merchant
  * Cancel a pending merchant request. Only works if approvalStatus is PENDING.
- * Deletes the Merchant record and the COMERCIO UserRole.
+ * Deletes the Merchant record. El rol COMERCIO se deriva de Merchant existiendo,
+ * así que al borrar el Merchant el rol desaparece automáticamente en el próximo JWT.
  */
 export async function POST(request: NextRequest) {
     const limited = await applyRateLimit(request, "auth:cancel-merchant", 5, 15 * 60_000);
@@ -38,13 +39,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Delete merchant record and UserRole in a transaction
-        await prisma.$transaction(async (tx) => {
-            await tx.merchant.delete({ where: { id: merchant.id } });
-            await tx.userRole.deleteMany({
-                where: { userId, role: "COMERCIO" },
-            });
-        });
+        // Borramos el Merchant. El rol COMERCIO se deriva en cada request,
+        // así que al no existir el Merchant el rol desaparece automáticamente.
+        await prisma.merchant.delete({ where: { id: merchant.id } });
 
         return NextResponse.json({ success: true });
     } catch (error) {
