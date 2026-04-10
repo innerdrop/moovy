@@ -1,6 +1,62 @@
 # Moovy — Tareas pendientes
 Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 3
-Última actualización: 2026-04-08 (post-fix archivos truncados)
+Última actualización: 2026-04-10 (role-access.ts + auto-heal UserRole en login + fix crítico layout repartidor)
+
+## Cambio 2026-04-10 — Foundation rediseño flujo de roles
+
+Rama: `feat/rediseno-flujo-roles-y-docs`
+
+Problema detectado: el layout de `/repartidor/(protected)` no tenía check de rol
+ni de approvalStatus — un buyer podía entrar al dashboard del driver. El botón
+CONECTAR silenciaba los errores 403 (pending/suspended) sin mostrar feedback al
+usuario. Los endpoints de register/activate eran inconsistentes en cómo seteaban
+`UserRole.isActive` (driver a veces false, a veces true).
+
+Solución — chunk 1 de varios (foundation, sin tocar schema):
+
+1. Creado `src/lib/role-access.ts` con `getMerchantAccess`, `getDriverAccess`,
+   `getSellerAccess`. Cada helper hace UNA query y devuelve
+   `{ canAccess, reason, redirectTo, message }` cubriendo toda la cadena:
+   registered → approved → not suspended → active.
+2. Los 3 layouts protegidos llaman al helper correspondiente. Admins bypasean
+   explícitamente en el call site porque pueden no tener fila de Merchant/Driver/
+   SellerProfile.
+3. `/repartidor/(protected)/layout.tsx` ahora bloquea:
+   - No logged in → /repartidor/login
+   - Sin rol DRIVER/ADMIN → /repartidor/login
+   - User suspended/archived → páginas correspondientes
+   - Driver pending/rejected/suspended/inactive → /repartidor/pendiente-aprobacion
+4. Creada `/repartidor/pendiente-aprobacion/page.tsx` como contraparte del mismo
+   patrón usado en `/comercios`.
+5. Normalizado `activate-driver`: ahora crea UserRole DRIVER con `isActive: true`
+   (consistente con merchant, seller y register/driver). El gating real pasa por
+   `approvalStatus` en la DB vía `role-access.ts`.
+6. Fix silent failures en el dashboard de driver (connect + disconnect): ahora
+   muestran toast con el mensaje real del backend en vez de ignorar errores.
+7. CLAUDE.md actualizado con la decisión de arquitectura.
+8. **Auto-heal de UserRole en login (bug en producción)**: al probar la rama,
+   Mauro detectó que al ir a `/comercios` desde Mi Perfil lo bouncenaba a `/`.
+   Causa: su `UserRole COMERCIO` estaba en `isActive: false` (drift histórico),
+   el `authorize()` de `auth.ts` filtra `where: { isActive: true }`, y el JWT
+   se emitía sin el rol → `proxy.ts` línea 143 bouncea al inicio. El auto-heal
+   que ya existía en `auth.ts` SOLO disparaba en el trigger `update` con
+   `refreshRoles: true`, nunca en login normal. Solución: extraído a helper
+   `src/lib/auto-heal-roles.ts` (`autoHealUserRoles(userId)`), ahora llamado
+   desde `authorize()` Y desde el trigger `update` (el código inline duplicado
+   fue reemplazado). Cada login nuevo auto-repara drift de UserRole para
+   COMERCIO, DRIVER (si approved o active) y SELLER (si active). El auto-heal
+   NO revisa `Merchant.approvalStatus` — inyecta el rol igual aunque esté
+   PENDING, porque el gate de aprobación es responsabilidad exclusiva de
+   `role-access.ts` en el layout protegido. Separar gating de role-presence
+   evita que `proxy.ts` bounce al inicio a usuarios que deberían ver
+   `/comercios/pendiente-aprobacion`.
+
+Lo que NO entra en esta rama (chunks futuros):
+- Setup Checklist Hero (patrón Stripe/Shopify para onboarding post-registro)
+- Schema de DriverDocument/MerchantDocument para rechazo per-documento
+- UI de review per-documento en OPS
+- Modal completo del botón CONECTAR con estado per-documento
+- Endpoint `access-status` para poder mostrar el modal sin recargar
 
 ## P0 — Sin esto no se lanza
 

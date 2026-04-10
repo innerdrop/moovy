@@ -1,8 +1,8 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { hasRole, getUserRoles } from "@/lib/auth-utils";
-import { prisma } from "@/lib/prisma";
+import { hasRole, hasAnyRole, getUserRoles } from "@/lib/auth-utils";
+import { getSellerAccess } from "@/lib/role-access";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -38,14 +38,13 @@ export default async function VendedorLayout({ children }: { children: React.Rea
         redirect("/cuenta-archivada");
     }
 
-    // Check if seller role is suspended
-    const sellerProfile = await prisma.sellerProfile.findFirst({
-        where: { userId: (session.user as any).id },
-        select: { isSuspended: true },
-    });
-
-    if (sellerProfile?.isSuspended) {
-        redirect("/cuenta-suspendida?role=seller");
+    // Verify seller profile is registered, active and not suspended.
+    // Admins bypass this check (they may not have a seller profile).
+    if (!hasAnyRole(session, ["ADMIN"])) {
+        const access = await getSellerAccess((session.user as any).id);
+        if (!access.canAccess) {
+            redirect(access.redirectTo!);
+        }
     }
 
     const userRoles = getUserRoles(session);

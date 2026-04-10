@@ -1,28 +1,36 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasAnyRole } from "@/lib/auth-utils";
+import { getDriverAccess } from "@/lib/role-access";
 import MobileOnlyGuard from "@/components/ui/MobileOnlyGuard";
 
 export default async function RepartidorProtectedLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
 
+    // Must be logged in
+    if (!session?.user) {
+        redirect("/repartidor/login");
+    }
+
+    // Must have DRIVER or ADMIN role
+    if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
+        redirect("/repartidor/login");
+    }
+
     // Check user-level suspension and archive status
-    if (session) {
-        if ((session.user as any).isSuspended) {
-            redirect("/cuenta-suspendida");
-        }
-        if ((session.user as any).isArchived) {
-            redirect("/cuenta-archivada");
-        }
+    if ((session.user as any).isSuspended) {
+        redirect("/cuenta-suspendida");
+    }
+    if ((session.user as any).isArchived) {
+        redirect("/cuenta-archivada");
+    }
 
-        // Check if driver role is suspended
-        const { prisma } = await import("@/lib/prisma");
-        const driver = await prisma.driver.findFirst({
-            where: { userId: (session.user as any).id },
-            select: { isSuspended: true },
-        });
-
-        if (driver?.isSuspended) {
-            redirect("/cuenta-suspendida?role=driver");
+    // Verify driver is registered, approved and not suspended.
+    // Admins bypass this check (they may not have a driver row).
+    if (!hasAnyRole(session, ["ADMIN"])) {
+        const access = await getDriverAccess((session.user as any).id);
+        if (!access.canAccess) {
+            redirect(access.redirectTo!);
         }
     }
 

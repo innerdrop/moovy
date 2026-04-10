@@ -269,13 +269,16 @@ export default function RiderDashboard() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isOnline: false })
             });
+            const data = await res.json().catch(() => ({}));
             if (res.ok) {
-                const data = await res.json();
                 setIsOnline(data.isOnline);
                 await fetchDashboard(true);
+            } else {
+                toast.error(data?.error || "No pudimos desconectarte. Intentá de nuevo.");
             }
         } catch (e) {
             console.error(e);
+            toast.error("Error de conexión. Revisá tu internet e intentá de nuevo.");
         } finally {
             setIsToggling(false);
         }
@@ -303,13 +306,19 @@ export default function RiderDashboard() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isOnline: true })
             });
+            const data = await res.json().catch(() => ({}));
             if (res.ok) {
-                const data = await res.json();
                 setIsOnline(data.isOnline);
                 await fetchDashboard(true);
+                toast.success("Estás conectado. Vas a recibir pedidos cercanos.");
+            } else {
+                // Show backend error message so the user knows WHY they couldn't connect
+                // (pending approval, suspended, deactivated, etc.)
+                toast.error(data?.error || "No pudimos conectarte. Intentá de nuevo en un momento.");
             }
         } catch (e) {
             console.error(e);
+            toast.error("Error de conexión. Revisá tu internet e intentá de nuevo.");
         } finally {
             setIsToggling(false);
         }

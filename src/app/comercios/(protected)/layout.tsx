@@ -2,7 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasAnyRole, getUserRoles } from "@/lib/auth-utils";
-import { prisma } from "@/lib/prisma";
+import { getMerchantAccess } from "@/lib/role-access";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -39,25 +39,12 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         redirect("/cuenta-archivada");
     }
 
-    // AUDIT FIX 2.4: Verify merchant is approved before allowing portal access
-    // Admins bypass this check
+    // Verify merchant is registered, approved and not suspended.
+    // Admins bypass this check (they may not own a merchant row).
     if (!hasAnyRole(session, ["ADMIN"])) {
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: (session.user as any).id },
-            select: { approvalStatus: true, isSuspended: true },
-        });
-
-        if (!merchant) {
-            redirect("/comercios/login");
-        }
-
-        if (merchant.approvalStatus !== "APPROVED") {
-            redirect("/comercios/pendiente-aprobacion");
-        }
-
-        // Check if merchant role is suspended
-        if (merchant.isSuspended) {
-            redirect("/cuenta-suspendida?role=comercio");
+        const access = await getMerchantAccess((session.user as any).id);
+        if (!access.canAccess) {
+            redirect(access.redirectTo!);
         }
     }
 
