@@ -26,6 +26,9 @@ interface SettingsFormProps {
         habilitacionMunicipalUrl?: string | null;
         registroSanitarioUrl?: string | null;
         approvalStatus: string;
+        hasCuit?: boolean;
+        hasBankAccount?: boolean;
+        category?: string | null;
     };
 }
 
@@ -230,59 +233,8 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                 </div>
             </form>
 
-            {/* Document Status */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    Estado de Documentos
-                </h2>
-                <p className="text-sm text-gray-500">
-                    Documentos que presentaste al registrarte. Nuestro equipo los revisa para verificar tu comercio.
-                </p>
-
-                <div className="space-y-2">
-                    {[
-                        { label: "Constancia AFIP", value: merchant.constanciaAfipUrl },
-                        { label: "Habilitación Municipal", value: merchant.habilitacionMunicipalUrl },
-                        { label: "Registro Sanitario", value: merchant.registroSanitarioUrl },
-                    ].map((doc) => (
-                        <div key={doc.label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm text-gray-700">{doc.label}</span>
-                            <div className="flex items-center gap-2">
-                                {doc.value ? (
-                                    <>
-                                        <a
-                                            href={doc.value}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 transition-colors"
-                                            title={`Ver ${doc.label}`}
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </a>
-                                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Presentado</span>
-                                    </>
-                                ) : (
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-200 text-gray-500">No presentado</span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {merchant.approvalStatus === "APPROVED" && (
-                    <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg">
-                        <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                        <p className="text-sm font-medium">Tu comercio está verificado y aprobado</p>
-                    </div>
-                )}
-                {merchant.approvalStatus === "PENDING" && (
-                    <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
-                        <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                        <p className="text-sm font-medium">Documentos en revisión — te notificaremos cuando estén aprobados</p>
-                    </div>
-                )}
-            </div>
+            {/* Document Status & Upload */}
+            <DocumentsSection merchant={merchant} />
 
             {/* MercadoPago */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
@@ -332,6 +284,163 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+// ─── Documents Section Component ─────────────────────────────────────────────
+function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"] }) {
+    const [uploading, setUploading] = useState<string | null>(null);
+    const [docs, setDocs] = useState({
+        constanciaAfipUrl: merchant.constanciaAfipUrl || null,
+        habilitacionMunicipalUrl: merchant.habilitacionMunicipalUrl || null,
+        registroSanitarioUrl: merchant.registroSanitarioUrl || null,
+    });
+    const [docError, setDocError] = useState("");
+    const [docSuccess, setDocSuccess] = useState("");
+
+    const FOOD_TYPES = ["Restaurante", "Pizzería", "Hamburguesería", "Parrilla", "Cafetería",
+        "Heladería", "Panadería/Pastelería", "Sushi", "Comida Saludable", "Rotisería", "Bebidas", "Vinoteca/Licorería"];
+    const isFoodBusiness = FOOD_TYPES.includes(merchant.category || "");
+
+    const handleUploadDoc = async (field: string, file: File) => {
+        setUploading(field);
+        setDocError("");
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await fetch("/api/upload?folder=registration-docs", { method: "POST", body: formData });
+            if (!uploadRes.ok) throw new Error("Error al subir archivo");
+            const { url } = await uploadRes.json();
+
+            // Save to merchant
+            const saveRes = await fetch("/api/merchant/update-docs", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ [field]: url }),
+            });
+            if (!saveRes.ok) throw new Error("Error al guardar documento");
+
+            setDocs(prev => ({ ...prev, [field]: url }));
+            setDocSuccess("Documento guardado correctamente");
+            setTimeout(() => setDocSuccess(""), 3000);
+        } catch (err: any) {
+            setDocError(err.message);
+        } finally {
+            setUploading(null);
+        }
+    };
+
+    const docItems = [
+        { key: "constanciaAfipUrl", label: "Constancia AFIP", value: docs.constanciaAfipUrl, required: true },
+        { key: "habilitacionMunicipalUrl", label: "Habilitación Municipal", value: docs.habilitacionMunicipalUrl, required: true },
+        ...(isFoodBusiness ? [{ key: "registroSanitarioUrl", label: "Registro Sanitario", value: docs.registroSanitarioUrl, required: true }] : []),
+    ];
+
+    return (
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Documentación
+            </h2>
+            <p className="text-sm text-gray-500">
+                Documentos obligatorios para operar tu comercio. Podés subirlos ahora o actualizarlos en cualquier momento.
+            </p>
+
+            {docError && (
+                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100">
+                    {docError}
+                </div>
+            )}
+            {docSuccess && (
+                <div className="p-3 bg-green-50 text-green-600 rounded-lg text-sm font-medium border border-green-100">
+                    {docSuccess}
+                </div>
+            )}
+
+            {/* Fiscal data status */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-700">CUIT</span>
+                    {merchant.hasCuit ? (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Cargado</span>
+                    ) : (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-600">Faltante</span>
+                    )}
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-700">CBU o Alias bancario</span>
+                    {merchant.hasBankAccount ? (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Cargado</span>
+                    ) : (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-600">Faltante</span>
+                    )}
+                </div>
+            </div>
+
+            {/* Uploadable documents */}
+            <div className="space-y-3">
+                {docItems.map((doc) => (
+                    <div key={doc.key} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">{doc.label}</span>
+                            <div className="flex items-center gap-2">
+                                {doc.value ? (
+                                    <>
+                                        <a
+                                            href={doc.value}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 transition-colors"
+                                            title={`Ver ${doc.label}`}
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </a>
+                                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Presentado</span>
+                                    </>
+                                ) : (
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-600">
+                                        {doc.required ? "Obligatorio" : "Opcional"}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        {/* Upload / Replace button */}
+                        <label className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer">
+                            {uploading === doc.key ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <FileText className="w-4 h-4" />
+                            )}
+                            {doc.value ? "Reemplazar documento" : "Subir documento"}
+                            <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                disabled={uploading !== null}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleUploadDoc(doc.key, file);
+                                    e.target.value = "";
+                                }}
+                            />
+                        </label>
+                    </div>
+                ))}
+            </div>
+
+            {merchant.approvalStatus === "APPROVED" && (
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg">
+                    <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm font-medium">Tu comercio está verificado y aprobado</p>
+                </div>
+            )}
+            {merchant.approvalStatus === "PENDING" && (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm font-medium">Documentos en revisión — te notificaremos cuando estén aprobados</p>
+                </div>
+            )}
         </div>
     );
 }

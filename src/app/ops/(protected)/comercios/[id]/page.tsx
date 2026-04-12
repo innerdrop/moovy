@@ -712,6 +712,44 @@ export default function MerchantDetailPage() {
                                 <div className="space-y-4">
                                     <h3 className="font-bold text-gray-900 mb-4">Datos Fiscales y Legales</h3>
 
+                                    {/* Documentation completeness summary */}
+                                    {(() => {
+                                        const FOOD_TYPES = ["Restaurante", "Pizzería", "Hamburguesería", "Parrilla", "Cafetería",
+                                            "Heladería", "Panadería/Pastelería", "Sushi", "Comida Saludable", "Rotisería", "Bebidas", "Vinoteca/Licorería"];
+                                        const isFood = FOOD_TYPES.includes(merchant.category || "");
+                                        const docs = [
+                                            { ok: !!merchant.cuit, label: "CUIT" },
+                                            { ok: !!merchant.bankAccount, label: "CBU/Alias" },
+                                            { ok: !!merchant.constanciaAfipUrl, label: "AFIP" },
+                                            { ok: !!merchant.habilitacionMunicipalUrl, label: "Habilitación" },
+                                            ...(isFood ? [{ ok: !!merchant.registroSanitarioUrl, label: "Sanitario" }] : []),
+                                        ];
+                                        const complete = docs.filter(d => d.ok).length;
+                                        const total = docs.length;
+                                        const allComplete = complete === total;
+                                        return (
+                                            <div className={`p-3 rounded-lg border ${allComplete ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        {allComplete ? (
+                                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                                        ) : (
+                                                            <AlertCircle className="w-5 h-5 text-red-500" />
+                                                        )}
+                                                        <span className={`text-sm font-semibold ${allComplete ? "text-green-700" : "text-red-700"}`}>
+                                                            Documentación: {complete}/{total}
+                                                        </span>
+                                                    </div>
+                                                    {!allComplete && (
+                                                        <span className="text-xs text-red-600 font-medium">
+                                                            Falta: {docs.filter(d => !d.ok).map(d => d.label).join(", ")}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
                                     <div className="grid sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1207,10 +1245,17 @@ export default function MerchantDetailPage() {
     );
 }
 
-function DocRow({ label, url }: { label: string; url: string | null }) {
+function DocRow({ label, url, required = true }: { label: string; url: string | null; required?: boolean }) {
     return (
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-700">{label}</span>
+            <div className="flex items-center gap-2">
+                {url ? (
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                ) : (
+                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                )}
+                <span className="text-sm text-gray-700">{label}</span>
+            </div>
             {url ? (
                 <a
                     href={url}
@@ -1219,10 +1264,12 @@ function DocRow({ label, url }: { label: string; url: string | null }) {
                     className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
                 >
                     <Eye className="w-4 h-4" />
-                    Ver documento
+                    Ver
                 </a>
             ) : (
-                <span className="text-xs text-gray-400">No presentado</span>
+                <span className={`text-xs font-medium px-2 py-1 rounded-full ${required ? "bg-red-100 text-red-600" : "bg-gray-200 text-gray-500"}`}>
+                    {required ? "Faltante" : "No presentado"}
+                </span>
             )}
         </div>
     );

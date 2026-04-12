@@ -32,6 +32,22 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate CUIT (11 digits)
+        if (!data.cuit || data.cuit.replace(/\D/g, "").length < 11) {
+            return NextResponse.json(
+                { error: "El CUIT es obligatorio y debe tener 11 dígitos" },
+                { status: 400 }
+            );
+        }
+
+        // Validate CBU/Alias (required, min 6 chars)
+        if (!data.cbu || data.cbu.trim().length < 6) {
+            return NextResponse.json(
+                { error: "El CBU o Alias bancario es obligatorio" },
+                { status: 400 }
+            );
+        }
+
         // Validate legal acceptance
         if (!data.acceptedTerms || !data.acceptedPrivacy) {
             return NextResponse.json(

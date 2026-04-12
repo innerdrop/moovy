@@ -148,6 +148,18 @@ function ComercioRegistroContent() {
     const handleFinalSubmit = async () => {
         setError("");
 
+        // Validar CUIT obligatorio
+        if (!formData.cuit || formData.cuit.replace(/\D/g, "").length < 11) {
+            setError("El CUIT es obligatorio y debe tener 11 dígitos");
+            return;
+        }
+
+        // Validar CBU/Alias obligatorio
+        if (!formData.cbu || formData.cbu.trim().length < 6) {
+            setError("El CBU o Alias bancario es obligatorio");
+            return;
+        }
+
         // Validar checkboxes obligatorios
         if (!formData.acceptedTerms || !formData.acceptedPrivacy) {
             setError("Debés aceptar los Términos para Comercios y la Política de Privacidad");

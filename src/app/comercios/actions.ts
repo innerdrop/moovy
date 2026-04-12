@@ -592,10 +592,36 @@ export async function toggleMerchantOpen(isOpen: boolean) {
     try {
         const merchant = await prisma.merchant.findFirst({
             where: { ownerId: session.user.id },
+            include: {
+                products: { where: { isActive: true }, select: { id: true }, take: 3 },
+            },
         });
 
         if (!merchant) {
             return { error: "No se encontró un comercio asociado a tu cuenta." };
+        }
+
+        // Si quiere ABRIR la tienda, verificar requisitos obligatorios
+        if (isOpen) {
+            const missing: string[] = [];
+
+            // Documentación fiscal obligatoria
+            if (!merchant.cuit) missing.push("CUIT");
+            if (!merchant.bankAccount) missing.push("CBU o Alias bancario");
+            if (!merchant.constanciaAfipUrl) missing.push("Constancia AFIP");
+            if (!merchant.habilitacionMunicipalUrl) missing.push("Habilitación Municipal");
+
+            // Configuración operativa obligatoria
+            if (!merchant.scheduleJson) missing.push("Horarios de atención");
+            if (merchant.products.length < 1) missing.push("Al menos 1 producto publicado");
+            if (!merchant.address || !merchant.latitude) missing.push("Dirección del comercio");
+
+            if (missing.length > 0) {
+                return {
+                    error: `No podés abrir tu tienda todavía. Te falta completar: ${missing.join(", ")}. Revisá la guía paso a paso en tu panel.`,
+                    missingRequirements: missing,
+                };
+            }
         }
 
         await prisma.merchant.update({

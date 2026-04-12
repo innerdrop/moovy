@@ -126,11 +126,14 @@ export async function POST(request: Request) {
         if (isR2Configured()) {
             try {
                 const publicUrl = await uploadToR2(key, finalBuffer, contentType);
+                console.log(`[Upload] R2 success: ${key} → ${publicUrl} (${(finalBuffer.length / 1024).toFixed(0)}KB)`);
                 return NextResponse.json({ url: publicUrl });
             } catch (r2Error) {
-                console.error("R2 upload failed, falling back to filesystem:", r2Error);
+                console.error("[Upload] R2 FAILED, falling back to filesystem:", r2Error);
                 // Fall through to filesystem
             }
+        } else {
+            console.warn("[Upload] R2 NOT configured, using filesystem fallback. Images will NOT persist across deploys!");
         }
 
         // ── Filesystem (desarrollo / fallback) ───────────────────

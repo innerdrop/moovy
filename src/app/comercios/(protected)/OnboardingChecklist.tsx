@@ -2,17 +2,29 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Circle, ChevronRight, X } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, X, AlertTriangle, Lock } from "lucide-react";
 
 interface OnboardingStatus {
     merchantId: string;
     merchantName: string;
     approvalStatus: string;
+    // Documentation
+    hasCuit: boolean;
+    hasBankAccount: boolean;
+    hasConstanciaAfip: boolean;
+    hasHabilitacion: boolean;
+    hasRegistroSanitario: boolean;
+    isFoodBusiness: boolean;
+    docsComplete: boolean;
+    // Operational
     hasLogo: boolean;
     hasSchedule: boolean;
     hasProducts: boolean;
     productCount: number;
-    hasDeliverySettings: boolean;
+    hasAddress: boolean;
+    hasMercadoPago: boolean;
+    // Overall
+    canOpenStore: boolean;
     isComplete: boolean;
 }
 
@@ -43,15 +55,31 @@ export default function OnboardingChecklist() {
     if (error || !status) return null;
     if (status.approvalStatus !== "APPROVED" || status.isComplete || dismissed) return null;
 
-    const steps = [
-        { id: "logo", label: "Subí tu logo", completed: status.hasLogo, href: "/comercios/mi-comercio" },
-        { id: "schedule", label: "Configurá horarios", completed: status.hasSchedule, href: "/comercios/mi-comercio" },
-        { id: "products", label: `Agregá productos (${status.productCount}/3)`, completed: status.hasProducts, href: "/comercios/productos/nuevo" },
-        { id: "delivery", label: "Configurá entregas", completed: status.hasDeliverySettings, href: "/comercios/configuracion" },
+    // Required documentation steps
+    const docSteps = [
+        { id: "cuit", label: "CUIT cargado", completed: status.hasCuit, href: "/comercios/configuracion", required: true },
+        { id: "bank", label: "CBU o Alias bancario", completed: status.hasBankAccount, href: "/comercios/configuracion", required: true },
+        { id: "afip", label: "Constancia AFIP", completed: status.hasConstanciaAfip, href: "/comercios/configuracion", required: true },
+        { id: "habilitacion", label: "Habilitación Municipal", completed: status.hasHabilitacion, href: "/comercios/configuracion", required: true },
+        ...(status.isFoodBusiness ? [{
+            id: "sanitario", label: "Registro Sanitario", completed: status.hasRegistroSanitario, href: "/comercios/configuracion", required: true
+        }] : []),
     ];
 
-    const completedCount = steps.filter((s) => s.completed).length;
-    const progressPercent = (completedCount / steps.length) * 100;
+    // Operational steps
+    const opSteps = [
+        { id: "logo", label: "Subí tu logo", completed: status.hasLogo, href: "/comercios/mi-comercio", required: false },
+        { id: "schedule", label: "Configurá horarios", completed: status.hasSchedule, href: "/comercios/mi-comercio", required: true },
+        { id: "products", label: `Publicá productos (${status.productCount}/1 mín.)`, completed: status.hasProducts, href: "/comercios/productos/nuevo", required: true },
+        { id: "address", label: "Dirección del comercio", completed: status.hasAddress, href: "/comercios/mi-comercio", required: true },
+        { id: "mp", label: "Vinculá MercadoPago", completed: status.hasMercadoPago, href: "/comercios/configuracion", required: false },
+    ];
+
+    const allSteps = [...docSteps, ...opSteps];
+    const requiredSteps = allSteps.filter(s => s.required);
+    const completedRequired = requiredSteps.filter(s => s.completed).length;
+    const completedTotal = allSteps.filter(s => s.completed).length;
+    const progressPercent = (completedTotal / allSteps.length) * 100;
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -62,11 +90,16 @@ export default function OnboardingChecklist() {
                         className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
                         style={{ backgroundColor: "#e60012" }}
                     >
-                        {completedCount}/{steps.length}
+                        {completedTotal}/{allSteps.length}
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-gray-900">Completá tu perfil</p>
-                        <p className="text-[11px] text-gray-400">Para empezar a recibir pedidos</p>
+                        <p className="text-[11px] text-gray-400">
+                            {status.canOpenStore
+                                ? "¡Tu tienda está lista para abrir!"
+                                : "Completá los pasos obligatorios para poder abrir tu tienda"
+                            }
+                        </p>
                     </div>
                 </div>
                 <button
@@ -88,9 +121,22 @@ export default function OnboardingChecklist() {
                 </div>
             </div>
 
-            {/* Steps list — vertical on mobile, clean and tappable */}
+            {/* Store lock warning */}
+            {!status.canOpenStore && (
+                <div className="mx-4 mb-2 flex items-center gap-2 text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-100">
+                    <Lock className="w-4 h-4 flex-shrink-0" />
+                    <p className="text-xs font-medium">
+                        Tu tienda permanecerá cerrada hasta que completes los pasos obligatorios ({completedRequired}/{requiredSteps.length})
+                    </p>
+                </div>
+            )}
+
+            {/* Documentation section */}
             <div className="border-t border-gray-50">
-                {steps.map((step, i) => (
+                <div className="px-4 py-2 bg-gray-50/50">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Documentación</p>
+                </div>
+                {docSteps.map((step, i) => (
                     <Link
                         key={step.id}
                         href={step.href}
@@ -98,7 +144,44 @@ export default function OnboardingChecklist() {
                             step.completed
                                 ? "bg-green-50/50"
                                 : "hover:bg-red-50/50 active:bg-red-50"
-                        } ${i < steps.length - 1 ? "border-b border-gray-50" : ""}`}
+                        } ${i < docSteps.length - 1 ? "border-b border-gray-50" : ""}`}
+                    >
+                        {step.completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        ) : (
+                            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                        )}
+                        <span
+                            className={`text-sm font-medium flex-1 ${
+                                step.completed ? "text-green-700 line-through decoration-green-300" : "text-gray-700"
+                            }`}
+                        >
+                            {step.label}
+                        </span>
+                        {!step.completed && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-100 text-red-600 mr-1">Obligatorio</span>
+                        )}
+                        {!step.completed && (
+                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                        )}
+                    </Link>
+                ))}
+            </div>
+
+            {/* Operational section */}
+            <div className="border-t border-gray-100">
+                <div className="px-4 py-2 bg-gray-50/50">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Configuración</p>
+                </div>
+                {opSteps.map((step, i) => (
+                    <Link
+                        key={step.id}
+                        href={step.href}
+                        className={`flex items-center gap-3 px-4 py-3 transition ${
+                            step.completed
+                                ? "bg-green-50/50"
+                                : "hover:bg-red-50/50 active:bg-red-50"
+                        } ${i < opSteps.length - 1 ? "border-b border-gray-50" : ""}`}
                     >
                         {step.completed ? (
                             <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
@@ -112,6 +195,12 @@ export default function OnboardingChecklist() {
                         >
                             {step.label}
                         </span>
+                        {!step.completed && step.required && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-100 text-red-600 mr-1">Obligatorio</span>
+                        )}
+                        {!step.completed && !step.required && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 mr-1">Recomendado</span>
+                        )}
                         {!step.completed && (
                             <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                         )}
@@ -121,4 +210,3 @@ export default function OnboardingChecklist() {
         </div>
     );
 }
-  

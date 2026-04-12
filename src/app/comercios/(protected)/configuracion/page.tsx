@@ -55,6 +55,9 @@ export default async function ConfiguracionPage() {
                     habilitacionMunicipalUrl: merchant.habilitacionMunicipalUrl,
                     registroSanitarioUrl: merchant.registroSanitarioUrl,
                     approvalStatus: merchant.approvalStatus,
+                    hasCuit: Boolean(merchant.cuit),
+                    hasBankAccount: Boolean(merchant.bankAccount),
+                    category: merchant.category,
                 }}
             />
         </div>
