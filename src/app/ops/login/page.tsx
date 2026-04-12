@@ -29,7 +29,7 @@ function OpsLoginContent() {
                 setError(result.error || "Error de autenticación");
             } else {
                 // Success: Client-side redirect to preserve host/IP (fixes mobile access issue)
-                router.push("/ops");
+                router.push("/ops/dashboard");
                 router.refresh();
             }
         });

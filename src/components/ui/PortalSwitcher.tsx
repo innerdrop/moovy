@@ -12,12 +12,20 @@ import {
  * Portal definitions — each portal with its route, icon, label, required role, and accent color.
  * "tienda" has no role requirement (always visible).
  */
+// NOTA: Todos los hrefs apuntan al destino final (dashboard directo) para
+// evitar el "parpadeo" que causaba pasar por páginas raíz con redirect().
+// Ver /vendedor/page.tsx y /ops/page.tsx: ambas eran redirects intermedios
+// que, durante la navegación client-side de Next.js, mostraban brevemente
+// la página de origen antes de llegar al dashboard final. Al apuntar
+// directo al dashboard nos ahorramos una navegación y el flash visual.
+// /comercios no necesita /dashboard porque NO tiene page.tsx en la raíz
+// (el route group (protected) resuelve directo al layout protegido).
 const PORTALS = [
     { id: "tienda", href: "/", icon: Home, label: "Tienda", role: null, color: "text-[#e60012]", bg: "bg-red-50" },
-    { id: "vendedor", href: "/vendedor", icon: ShoppingBag, label: "Vendedor", role: "SELLER", color: "text-purple-600", bg: "bg-purple-50" },
+    { id: "vendedor", href: "/vendedor/dashboard", icon: ShoppingBag, label: "Vendedor", role: "SELLER", color: "text-purple-600", bg: "bg-purple-50" },
     { id: "comercio", href: "/comercios", icon: Store, label: "Comercio", role: "MERCHANT", color: "text-blue-600", bg: "bg-blue-50" },
     { id: "repartidor", href: "/repartidor/dashboard", icon: Truck, label: "Repartidor", role: "DRIVER", color: "text-emerald-600", bg: "bg-emerald-50" },
-    { id: "ops", href: "/ops", icon: Shield, label: "OPS", role: "ADMIN", color: "text-slate-600", bg: "bg-slate-100" },
+    { id: "ops", href: "/ops/dashboard", icon: Shield, label: "OPS", role: "ADMIN", color: "text-slate-600", bg: "bg-slate-100" },
 ] as const;
 
 type PortalId = typeof PORTALS[number]["id"];

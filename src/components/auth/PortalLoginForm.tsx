@@ -152,7 +152,7 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                     const role = sessionData?.user?.role;
 
                     if (role === "ADMIN") {
-                        router.push("/ops");
+                        router.push("/ops/dashboard");
                     } else if (role === "DRIVER") {
                         router.push("/repartidor/dashboard");
                     } else if (role === "MERCHANT") {

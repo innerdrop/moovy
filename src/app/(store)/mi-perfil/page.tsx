@@ -301,9 +301,11 @@ export default function ProfilePage() {
                                     onClick={async () => {
                                         if (!hasSeller) {
                                             await updateSession({ refreshRoles: true });
-                                            window.location.href = "/vendedor";
+                                            // Directo al dashboard para evitar el parpadeo del redirect
+                                            // intermedio en /vendedor/page.tsx. Ver fix/portal-switcher-direct-links.
+                                            window.location.href = "/vendedor/dashboard";
                                         } else {
-                                            router.push("/vendedor");
+                                            router.push("/vendedor/dashboard");
                                         }
                                     }}
                                     className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
@@ -372,7 +374,9 @@ export default function ProfilePage() {
                                 </button>
                             )}
                             {hasAdmin && (
-                                <Link href="/ops" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
+                                // Directo al dashboard para evitar el parpadeo del redirect
+                                // intermedio en /ops/page.tsx.
+                                <Link href="/ops/dashboard" className="flex items-center justify-between p-4 hover:bg-gray-50 transition group">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
                                             <LayoutDashboard className="w-4 h-4" />

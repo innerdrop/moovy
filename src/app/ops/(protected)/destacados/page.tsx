@@ -248,7 +248,7 @@ export default function DestacadosPage() {
                 <div className="max-w-7xl mx-auto px-8 py-6">
                     <div className="flex items-center gap-3 mb-6">
                         <Link
-                            href="/ops"
+                            href="/ops/dashboard"
                             className="p-2 hover:bg-gray-100 rounded-lg transition"
                         >
                             <ChevronLeft className="w-5 h-5" />

@@ -224,7 +224,7 @@ export default function PromoBannerPage() {
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/ops"><ArrowLeft className="w-6 h-6 text-gray-600 hover:text-gray-900" /></Link>
+            <Link href="/ops/dashboard"><ArrowLeft className="w-6 h-6 text-gray-600 hover:text-gray-900" /></Link>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Banner Promocional</h1>
               <p className="text-xs text-gray-500">{slides.length} slide{slides.length !== 1 ? "s" : ""} — {enabledSlides.length} activo{enabledSlides.length !== 1 ? "s" : ""}</p>

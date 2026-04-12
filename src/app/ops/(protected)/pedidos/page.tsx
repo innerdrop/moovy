@@ -174,7 +174,7 @@ export default function AdminPedidosPage() {
                         <Download className="w-4 h-4" />
                         CSV
                     </a>
-                    <Link href="/ops" className="btn-secondary flex items-center gap-2">
+                    <Link href="/ops/dashboard" className="btn-secondary flex items-center gap-2">
                         <Home className="w-4 h-4" />
                         Inicio
                     </Link>

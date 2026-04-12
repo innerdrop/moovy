@@ -95,7 +95,7 @@ export default function RevenuePage() {
                     <p className="text-gray-500">Visión general de ingresos y comisiones</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Link href="/ops" className="btn-secondary flex items-center gap-2">
+                    <Link href="/ops/dashboard" className="btn-secondary flex items-center gap-2">
                         <Home className="w-4 h-4" />
                         Inicio
                     </Link>

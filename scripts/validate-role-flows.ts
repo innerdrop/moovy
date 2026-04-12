@@ -164,9 +164,9 @@ async function testApprovedMerchantsAccess() {
             failures.push(`ownerId=${m.ownerId} → computeUserAccess retornó null`);
             continue;
         }
-        if (access.merchant.status !== "active") {
+        if (access.merchant.status !== "approved") {
             failures.push(
-                `merchant=${m.id} owner=${m.ownerId} → merchant.status=${access.merchant.status} (esperado "active")`
+                `merchant=${m.id} owner=${m.ownerId} → merchant.status=${access.merchant.status} (esperado "approved")`
             );
         }
     }
@@ -266,7 +266,7 @@ async function testSellersAccess() {
     const { computeUserAccess } = await import("../src/lib/roles");
 
     const sellers = await prisma.sellerProfile.findMany({
-        select: { id: true, userId: true, isActive: true },
+        select: { id: true, userId: true, isActive: true, isSuspended: true },
         take: 30,
     });
 
@@ -277,12 +277,16 @@ async function testSellersAccess() {
 
     const failures: string[] = [];
     for (const s of sellers) {
+        // Skip suspended sellers: no son parte del happy/rejected path que queremos verificar
+        if (s.isSuspended) continue;
         const access = await computeUserAccess(s.userId);
         if (!access) {
             failures.push(`seller=${s.id} userId=${s.userId} → null`);
             continue;
         }
-        const expected = s.isActive ? "active" : "inactive";
+        // PortalStatus mapping: isActive=true → "approved", isActive=false → "rejected"
+        // Ver deriveSellerAccess() en src/lib/roles.ts
+        const expected = s.isActive ? "approved" : "rejected";
         if (access.seller.status !== expected) {
             failures.push(
                 `seller=${s.id} → seller.status=${access.seller.status} (esperado ${expected})`

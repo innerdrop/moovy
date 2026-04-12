@@ -5,7 +5,17 @@ import { prisma } from "@/lib/prisma";
 import { sendDriverApprovalEmail } from "@/lib/email";
 import { approveDriverTransition } from "@/lib/roles";
 
-// PUT - Approve driver application (admin only)
+// PUT/POST - Approve driver application (admin only).
+// POST es wrapper sobre PUT para matchear la convención que usa el frontend
+// (usuarios/[id]/page.tsx llama con method: "POST"). Mismo patrón que
+// /api/admin/merchants/[id]/approve.
+export async function POST(
+    request: Request,
+    context: { params: Promise<{ id: string }> }
+) {
+    return PUT(request, context);
+}
+
 export async function PUT(
     request: Request,
     context: { params: Promise<{ id: string }> }
