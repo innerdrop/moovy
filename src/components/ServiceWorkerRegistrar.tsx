@@ -43,35 +43,23 @@ export default function ServiceWorkerRegistrar() {
                     registration.update();
                 }, 60 * 60 * 1000);
 
-                // Listen for SW updates — only reload if user is not interacting
+                // Log when a new SW is found — NO auto-reload.
+                // El nuevo SW se instala en background y toma control
+                // en la próxima navegación natural del usuario.
+                // Antes hacíamos window.location.reload() acá, lo cual
+                // generaba un loop de recarga cada ~60s que interrumpía
+                // formularios y la experiencia del usuario.
                 registration.addEventListener("updatefound", () => {
                     const newWorker = registration.installing;
                     if (!newWorker) return;
 
                     newWorker.addEventListener("statechange", () => {
-                        if (
-                            newWorker.state === "activated" &&
-                            navigator.serviceWorker.controller
-                        ) {
-                            // Check if user has focus on an input — don't interrupt them
-                            const activeEl = document.activeElement;
-                            const isTyping = activeEl instanceof HTMLInputElement ||
-                                activeEl instanceof HTMLTextAreaElement ||
-                                activeEl instanceof HTMLSelectElement ||
-                                activeEl?.getAttribute("contenteditable") === "true";
-
-                            if (isTyping) {
-                                console.log("[PWA] New SW ready, deferring reload (user is typing)");
-                                // Defer reload until user blurs the input
-                                const handler = () => {
-                                    window.location.reload();
-                                };
-                                activeEl.addEventListener("blur", handler, { once: true });
-                                return;
+                        if (newWorker.state === "installed") {
+                            if (navigator.serviceWorker.controller) {
+                                console.log("[PWA] New Service Worker installed. Will activate on next visit.");
+                            } else {
+                                console.log("[PWA] Service Worker installed for the first time.");
                             }
-
-                            console.log("[PWA] New Service Worker activated, reloading...");
-                            window.location.reload();
                         }
                     });
                 });

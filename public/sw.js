@@ -14,20 +14,21 @@ const PRECACHE_URLS = [
 
 // ─── INSTALL ──────────────────────────────────────────────
 self.addEventListener('install', function (event) {
-    console.log('[SW] Installing Service Worker v2');
+    console.log('[SW] Installing Service Worker v3');
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
             console.log('[SW] Pre-caching app shell');
             return cache.addAll(PRECACHE_URLS);
-        }).then(function () {
-            self.skipWaiting(); // Activate immediately
         })
+        // NO self.skipWaiting() — el nuevo SW espera a que el usuario
+        // cierre todas las tabs y vuelva a entrar. Esto evita el reload
+        // loop que interrumpía formularios y la experiencia del usuario.
     );
 });
 
 // ─── ACTIVATE ─────────────────────────────────────────────
 self.addEventListener('activate', function (event) {
-    console.log('[SW] Activating Service Worker v2');
+    console.log('[SW] Activating Service Worker v3');
     event.waitUntil(
         // Clean up old caches
         caches.keys().then(function (cacheNames) {
@@ -39,9 +40,10 @@ self.addEventListener('activate', function (event) {
                         return caches.delete(name);
                     })
             );
-        }).then(function () {
-            return clients.claim(); // Take control of all pages
         })
+        // NO clients.claim() — las páginas abiertas siguen usando el SW
+        // anterior hasta que el usuario navegue o recargue manualmente.
+        // Esto evita el ciclo de reload automático que rompía la UX.
     );
 });
 
