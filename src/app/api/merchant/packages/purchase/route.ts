@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 
         // Create MercadoPago preference
         const externalRef = `pkg_${crypto.randomUUID()}`;
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://somosmoovy.com";
         const isLocalDev = appUrl.includes("localhost") || appUrl.includes("127.0.0.1");
         const notificationUrl = isLocalDev ? undefined : `${appUrl}/api/webhooks/mercadopago`;
 

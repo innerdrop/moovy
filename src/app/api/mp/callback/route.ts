@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Exchange code for tokens
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "https://somosmoovy.com";
         const redirectUri = `${baseUrl}/api/mp/callback`;
 
         const tokens = await exchangeOAuthCode(code, redirectUri);
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 }
 
 function redirectWithError(type: string, error: string) {
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "https://somosmoovy.com";
     const path = type === "seller" ? "/vendedor/configuracion" : "/comercios/configuracion";
     return NextResponse.redirect(`${baseUrl}${path}?mp=error&message=${encodeURIComponent(error)}`);
 }

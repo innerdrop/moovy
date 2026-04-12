@@ -873,7 +873,7 @@ export async function POST(request: Request) {
         // --- MERCADOPAGO: Create preference and return early ---
         if (paymentMethod === "mercadopago") {
             try {
-                const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+                const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "https://somosmoovy.com";
 
                 // Fetch order with relations needed for preference
                 const orderForPref = await prisma.order.findUnique({

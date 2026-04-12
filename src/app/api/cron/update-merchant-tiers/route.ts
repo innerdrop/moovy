@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
             <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
               ${newTierConfig.benefits?.join(", ") || "Acceso a nuevos beneficios"}
             </p>
-            ${emailButton('Ver mi dashboard', `${process.env.NEXT_PUBLIC_APP_URL}/comercios/dashboard`, 'green')}
+            ${emailButton('Ver mi dashboard', `${process.env.NEXT_PUBLIC_APP_URL || "https://somosmoovy.com"}/comercios/dashboard`, 'green')}
           `);
 
           await sendEmail({

@@ -6,6 +6,18 @@ import { hasAnyRole } from "@/lib/auth-utils";
 
 type PortalType = 'client' | 'comercio' | 'conductor' | 'ops';
 
+/**
+ * Builds a public-facing URL using Nginx forwarding headers.
+ * In production, Nginx sends Host: somosmoovy.com and X-Forwarded-Proto: https,
+ * but request.url reflects the internal connection (localhost:3002).
+ * This helper ensures redirects go to the public domain, not the internal one.
+ */
+function publicUrl(path: string, request: NextRequest): URL {
+    const proto = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('host') || 'somosmoovy.com';
+    return new URL(path, `${proto}://${host}`);
+}
+
 function getPortalFromHost(host: string | null): PortalType {
     if (!host) return 'client';
     const cleanHost = host.toLowerCase().split(':')[0];
@@ -138,37 +150,37 @@ export default auth(async (request) => {
     // Protect /comercios/* routes (except login)
     if (pathname.startsWith('/comercios') && !pathname.startsWith('/comercios/login')) {
         if (!session) {
-            return NextResponse.redirect(new URL('/comercios/login', request.url));
+            return NextResponse.redirect(publicUrl('/comercios/login', request));
         }
         if (!hasAnyRole(session, ['MERCHANT', 'COMERCIO', 'ADMIN'])) {
-            return NextResponse.redirect(new URL('/', request.url));
+            return NextResponse.redirect(publicUrl('/', request));
         }
     }
 
     // Protect /repartidor/* routes (except login and registro)
     if (pathname.startsWith('/repartidor') && !pathname.startsWith('/repartidor/login') && !pathname.startsWith('/repartidor/registro')) {
         if (!session) {
-            return NextResponse.redirect(new URL('/repartidor/login', request.url));
+            return NextResponse.redirect(publicUrl('/repartidor/login', request));
         }
         if (!hasAnyRole(session, ['DRIVER', 'ADMIN'])) {
-            return NextResponse.redirect(new URL('/', request.url));
+            return NextResponse.redirect(publicUrl('/', request));
         }
     }
 
     // Protect /ops/* routes (except login)
     if (pathname.startsWith('/ops') && !pathname.startsWith('/ops/login')) {
         if (!session) {
-            return NextResponse.redirect(new URL('/ops/login', request.url));
+            return NextResponse.redirect(publicUrl('/ops/login', request));
         }
         if (!hasAnyRole(session, ['ADMIN'])) {
-            return NextResponse.redirect(new URL('/ops/login?error=Unauthorized', request.url));
+            return NextResponse.redirect(publicUrl('/ops/login?error=Unauthorized', request));
         }
     }
 
     // Protect client paths
     const clientProtectedPaths = ['/mi-perfil', '/checkout', '/mis-pedidos'];
     if (clientProtectedPaths.some(path => pathname.startsWith(path)) && !session) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        return NextResponse.redirect(publicUrl('/login', request));
     }
 
     return NextResponse.next();

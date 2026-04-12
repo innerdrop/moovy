@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Tipo inválido. Usar ?type=merchant o ?type=seller" }, { status: 400 });
         }
 
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "https://somosmoovy.com";
         const redirectUri = `${baseUrl}/api/mp/callback`;
 
         // Sign state to prevent CSRF

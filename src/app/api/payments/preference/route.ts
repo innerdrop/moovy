@@ -61,7 +61,7 @@ export async function POST(request: Request) {
         }
 
         // Build and create MP Preference
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "https://somosmoovy.com";
         const preferenceBody = buildPreferenceBody(order, baseUrl);
 
         const preference = await preferenceApi.create({ body: preferenceBody });
