@@ -802,12 +802,18 @@ model Referral {
 }
 
 model SavedCart {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  items      Json
-  merchantId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  items           Json
+  merchantId      String?
+  reminderCount   Int       @default(0)      // Cuántos recordatorios se enviaron
+  lastRemindedAt  DateTime?                  // Último recordatorio enviado
+  recoveredAt     DateTime?                  // Si el usuario volvió después de un recordatorio
+  cartValue       Float     @default(0)      // Valor total del carrito (para analytics)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([updatedAt])                       // Para el cron de carritos abandonados
 }
 
 model SupportChat {

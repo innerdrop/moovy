@@ -1,6 +1,50 @@
 # Moovy — Tareas pendientes
-Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 3
-Última actualización: 2026-04-10 (roles derivados: single source of truth en src/lib/roles.ts)
+Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 2
+Última actualización: 2026-04-12 (fix referral bug + recuperación carritos abandonados + fix reset-admin truncado)
+
+## Cambio 2026-04-12 (PM) — Recuperación de carritos abandonados + fix referidos
+
+Rama: `feat/referral-fix-cart-recovery`
+
+### 1. Fix bug referidos (status PENDING nunca pasaba a COMPLETED)
+- `activatePendingBonuses()` otorgaba puntos pero no actualizaba `Referral.status`
+- `/api/referrals` filtraba por `COMPLETED` → la página de invitar amigos siempre mostraba 0
+- Fix: después de otorgar puntos, `updateMany` el Referral a `COMPLETED` con montos reales
+- Archivos: `src/lib/points.ts`
+
+### 2. Recuperación de carritos abandonados (feature completa)
+- Schema: `SavedCart` + campos `reminderCount`, `lastRemindedAt`, `recoveredAt`, `cartValue` + índice
+- Cron: `/api/cron/cart-recovery` detecta carritos sin actividad, envía hasta 2 recordatorios
+- Email: `sendCartAbandonmentEmail()` con lista de productos, total, CTA a checkout
+- Push: título y body diferenciados por 1er/2do recordatorio
+- Config: 5 keys MoovyConfig (habilitado, horas 1er/2do recordatorio, max recordatorios, valor mínimo)
+- Cart API: resetea reminder tracking cuando usuario modifica carrito
+- Email registry: 2 entries (#175, #176) en categoría "Recuperación"
+- Requiere: `npx prisma db push` para los nuevos campos + seed para las config keys
+
+### 3. Fix reset-admin.ts truncado
+- Faltaban `}`, `finally { prisma.$disconnect() }` y `main()`
+- Archivo: `scripts/reset-admin.ts`
+
+## Cambio 2026-04-12 — Fixes críticos UX + herramientas admin
+
+Ramas: `fix/portal-switcher-direct-links` + `fix/auto-refresh-global-60s` + `feat/reset-admin-script`
+
+### 1. Fix portal switcher + registro loop + approve/reject drivers
+- OPS: links "volver" en destacados y banner-promo apuntaban a `/ops` (flash), corregido a `/ops/dashboard`
+- Registro repartidor/vendedor: loop infinito `/registro` ↔ `/dashboard` por useEffect que leía JWT stale. Extraído a Server Component con `computeUserAccess()` como gate
+- OPS approve/reject drivers: endpoints solo exportaban PUT pero frontend llamaba POST → 405. Agregado wrapper POST (mismo patrón merchants)
+
+### 2. Fix Service Worker auto-reload en producción
+- `sw.js` con `skipWaiting()` + `clients.claim()` + auto-reload en ServiceWorkerRegistrar creaba ciclo de recarga cada ~60s que interrumpía formularios
+- Eliminados `skipWaiting()` y `clients.claim()`. Eliminado auto-reload. SW ahora se actualiza en la próxima visita natural
+- Push notifications, cache offline y fallback offline siguen funcionando
+
+### 3. Script reset-admin + configuración VPS
+- Creado `scripts/reset-admin.ts`: lee `ADMIN_RESET_EMAIL` + `ADMIN_PASSWORD` del .env, hashea con bcrypt(12), actualiza DB y asigna rol ADMIN
+- Variables .env: `ADMIN_EMAIL` para notificaciones (email.ts), `ADMIN_RESET_EMAIL` + `ADMIN_PASSWORD` para el script
+- NEXT_PUBLIC_APP_URL del VPS corregido a `https://somosmoovy.com` (antes apuntaba a localhost:3000)
+- Uso: `npx tsx scripts/reset-admin.ts` (local o VPS vía SSH)
 
 ## Cambio 2026-04-10 (PM) — Rediseño completo: roles derivados, single source of truth
 
@@ -338,7 +382,7 @@ Lo que NO entra en esta rama (chunks futuros):
 - Promoted listings (merchants pagan por posicionamiento) — S — Est: +$1-5k/mes
 - Suscripción delivery pass (envío gratis por $X/mes) — M — Est: +$15-50k/mes
 - Cross-selling en checkout (productos complementarios) — M — Est: +15-25% ticket
-- Recuperación de carritos abandonados (email/push 2h después) — M — Est: +5-10% conversión
+- ~~Recuperación de carritos abandonados (email/push 2h después) — M — Est: +5-10% conversión~~ ✅ Implementado con cron + email + push + config dinámica
 - Descuentos bulk B2B (hoteles, oficinas, hospitales) — M
 
 ### Eficiencia operativa
@@ -442,6 +486,11 @@ Lo que NO entra en esta rama (chunks futuros):
 - ✅ Tracking muestra cards independientes por SubOrder (estado, driver, mapa, items)
 - ✅ Fees desglosados por vendor en resumen del pedido
 - ✅ Validación Zod: OrderGroupSchema acepta deliveryFee + distanceKm
+
+### 2026-04-12 — Fix referidos + Recuperación carritos abandonados
+- ✅ Fix bug referidos: Referral.status nunca pasaba de PENDING a COMPLETED (puntos se otorgaban pero stats mostraban 0)
+- ✅ Recuperación carritos abandonados: cron + email + push + config dinámica + email registry
+- ✅ Fix reset-admin.ts truncado (faltaban cierre de bloques)
 
 ### 2026-04-07 — UX Smoke Test Improvements
 - ✅ Búsqueda por descripción + Chat bubble draggable (fix hooks order)

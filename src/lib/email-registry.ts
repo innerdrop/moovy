@@ -711,6 +711,47 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             ${emailButton('Ver en panel OPS', `${baseUrl}/ops/clientes`, 'red')}
         `),
     },
+    // ─── Recuperación de carritos ────────────────────────────────────────
+    {
+        id: 'cart_abandonment_1st',
+        number: 175,
+        name: 'Carrito abandonado (1er recordatorio)',
+        category: 'Recuperación',
+        recipient: 'comprador' as const,
+        priority: 'P1' as const,
+        status: 'implemented' as const,
+        trigger: 'POST /api/cron/cart-recovery',
+        subject: '${nombre}, dejaste algo en tu carrito 🛒',
+        functionName: 'sendCartAbandonmentEmail',
+        file: 'src/lib/email-p0.ts',
+        generatePreview: () => emailLayout(`
+            ${emailBadge('Tu carrito', '#FEF3C7', '#92400E')}
+            <h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¿Te olvidaste de algo?</h2>
+            <p style="color: #718096; margin: 0 0 20px;">Guardamos tu carrito para que puedas completar tu pedido cuando quieras.</p>
+            ${emailInfoBox('<table style="width: 100%;"><tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;"><strong>Medialunas artesanales x6</strong></td><td style="text-align: right; font-weight: 600;">$3.500</td></tr><tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;"><strong>Café con leche grande</strong> <span style="color: #718096; font-size: 13px;"> × 2</span></td><td style="text-align: right; font-weight: 600;">$5.000</td></tr><tr><td style="padding: 14px 0 0; font-weight: 700; font-size: 16px;">Total</td><td style="text-align: right; font-weight: 700; color: #e60012; font-size: 16px;">$8.500</td></tr></table>')}
+            ${emailButton('Completar mi pedido', `${baseUrl}/checkout`, 'red')}
+        `),
+    },
+    {
+        id: 'cart_abandonment_2nd',
+        number: 176,
+        name: 'Carrito abandonado (2do recordatorio)',
+        category: 'Recuperación',
+        recipient: 'comprador' as const,
+        priority: 'P1' as const,
+        status: 'implemented' as const,
+        trigger: 'POST /api/cron/cart-recovery',
+        subject: '¡Tu carrito te espera, ${nombre}! 🛒',
+        functionName: 'sendCartAbandonmentEmail',
+        file: 'src/lib/email-p0.ts',
+        generatePreview: () => emailLayout(`
+            ${emailBadge('Tu carrito', '#FEF3C7', '#92400E')}
+            <h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¡Tus productos siguen esperándote!</h2>
+            <p style="color: #718096; margin: 0 0 20px;">No te quedes sin ellos — otros compradores también los están viendo.</p>
+            ${emailInfoBox('<table style="width: 100%;"><tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;"><strong>Medialunas artesanales x6</strong></td><td style="text-align: right; font-weight: 600;">$3.500</td></tr><tr><td style="padding: 14px 0 0; font-weight: 700; font-size: 16px;">Total</td><td style="text-align: right; font-weight: 700; color: #e60012; font-size: 16px;">$3.500</td></tr></table>')}
+            ${emailButton('Completar mi pedido', `${baseUrl}/checkout`, 'red')}
+        `),
+    },
 ];
 
 // ─── Helpers de búsqueda ────────────────────────────────────────────────────

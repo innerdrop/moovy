@@ -58,17 +58,28 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, message: "Carrito vaciado" });
         }
 
-        // Upsert the cart
+        // Calculate cart value for analytics
+        const cartValue = Array.isArray(items)
+            ? items.reduce((sum: number, item: { price?: number; quantity?: number }) =>
+                sum + ((item.price || 0) * (item.quantity || 1)), 0)
+            : 0;
+
+        // Upsert the cart — reset reminder tracking on any modification
         await prisma.savedCart.upsert({
             where: { userId: session.user.id },
             update: {
                 items: items,
-                merchantId: merchantId || null
+                merchantId: merchantId || null,
+                cartValue,
+                reminderCount: 0,        // Reset reminders when cart changes
+                lastRemindedAt: null,
+                recoveredAt: null
             },
             create: {
                 userId: session.user.id,
                 items: items,
-                merchantId: merchantId || null
+                merchantId: merchantId || null,
+                cartValue
             }
         });
 

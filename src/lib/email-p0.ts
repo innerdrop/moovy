@@ -1,7 +1,7 @@
 /**
  * MOOVY — Emails P0 (obligatorios para lanzar)
  *
- * 23 funciones nuevas organizadas por categoría.
+ * 24 funciones organizadas por categoría.
  * Todas usan el layout y helpers centralizados de email.ts.
  *
  * IMPORTANTE: Cada función debe ser llamada desde la ruta API correspondiente.
@@ -1256,4 +1256,83 @@ export async function sendOwnerDataDeletionRequestEmail(data: {
         }))
     );
     return results.every(Boolean);
+}
+
+// ─── RECUPERACIÓN DE CARRITOS ───────────────────────────────────────────────
+
+/**
+ * Email de carrito abandonado — recordatorio al comprador
+ * Se envía 2h después del abandono (1er recordatorio) y 24h (2do).
+ * El 2do tiene urgencia incrementada.
+ */
+export async function sendCartAbandonmentEmail(data: {
+    email: string;
+    userName: string;
+    items: Array<{ name: string; price: number; quantity: number; image?: string }>;
+    totalItems: number;
+    totalValue: number;
+    isSecondReminder: boolean;
+    checkoutUrl: string;
+}): Promise<boolean> {
+    const formatPrice = (price: number) =>
+        new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(price);
+
+    // Build items HTML (max 5 shown)
+    const itemsHtml = data.items.map(item => `
+        <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;">
+                <strong style="color: #2d3748;">${item.name}</strong>
+                ${item.quantity > 1 ? `<span style="color: #718096; font-size: 13px;"> × ${item.quantity}</span>` : ''}
+            </td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7; text-align: right; color: #2d3748; font-weight: 600;">
+                ${formatPrice(item.price * item.quantity)}
+            </td>
+        </tr>
+    `).join('');
+
+    const moreItemsText = data.totalItems > data.items.length
+        ? `<p style="color: #718096; font-size: 13px; text-align: center; margin-top: 8px;">
+            y ${data.totalItems - data.items.length} producto${data.totalItems - data.items.length > 1 ? 's' : ''} más...
+           </p>`
+        : '';
+
+    const subject = data.isSecondReminder
+        ? `¡Tu carrito te espera, ${data.userName}! 🛒`
+        : `${data.userName}, dejaste algo en tu carrito 🛒`;
+
+    const heading = data.isSecondReminder
+        ? `<h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¡Tus productos siguen esperándote!</h2>
+           <p style="color: #718096; margin: 0 0 20px;">No te quedes sin ellos — otros compradores también los están viendo.</p>`
+        : `<h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¿Te olvidaste de algo?</h2>
+           <p style="color: #718096; margin: 0 0 20px;">Guardamos tu carrito para que puedas completar tu pedido cuando quieras.</p>`;
+
+    const html = emailLayout(`
+        ${emailBadge('Tu carrito', '#FEF3C7', '#92400E')}
+
+        ${heading}
+
+        ${emailInfoBox(`
+            <table style="width: 100%; border-collapse: collapse;">
+                ${itemsHtml}
+                <tr>
+                    <td style="padding: 14px 0 0; font-weight: 700; color: #2d3748; font-size: 16px;">Total</td>
+                    <td style="padding: 14px 0 0; text-align: right; font-weight: 700; color: #e60012; font-size: 16px;">${formatPrice(data.totalValue)}</td>
+                </tr>
+            </table>
+            ${moreItemsText}
+        `)}
+
+        ${emailButton('Completar mi pedido', data.checkoutUrl, 'red')}
+
+        <p style="color: #a0aec0; font-size: 12px; text-align: center; margin-top: 20px;">
+            Si ya completaste tu compra, podés ignorar este mensaje.
+        </p>
+    `);
+
+    return sendEmail({
+        to: data.email,
+        subject,
+        html,
+        tag: data.isSecondReminder ? 'cart_abandonment_2nd' : 'cart_abandonment_1st'
+    });
 }

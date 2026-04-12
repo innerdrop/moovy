@@ -359,6 +359,19 @@ export async function activatePendingBonuses(
                 orderId
             );
             totalBonus += config.refereeBonus;
+
+            // Mark referral as COMPLETED with actual awarded amounts
+            await prisma.referral.updateMany({
+                where: {
+                    refereeId: userId,
+                    status: "PENDING"
+                },
+                data: {
+                    status: "COMPLETED",
+                    referrerPoints: config.referralBonus,
+                    refereePoints: config.refereeBonus
+                }
+            });
         }
 
         // Mark bonuses as activated

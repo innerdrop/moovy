@@ -143,6 +143,12 @@ async function main() {
         { key: "referral_bonus", value: "200", description: "Puntos bonus por referir" },
         { key: "min_points_to_redeem", value: "100", description: "Mínimo de puntos para canjear" },
         { key: "max_discount_percent", value: "50", description: "Máximo % de descuento con puntos" },
+        // Cart recovery
+        { key: "cart_recovery_enabled", value: "true", description: "Habilitar recuperación de carritos abandonados" },
+        { key: "cart_recovery_first_reminder_hours", value: "2", description: "Horas hasta 1er recordatorio de carrito" },
+        { key: "cart_recovery_second_reminder_hours", value: "24", description: "Horas hasta 2do recordatorio de carrito" },
+        { key: "cart_recovery_max_reminders", value: "2", description: "Máximo de recordatorios por carrito" },
+        { key: "cart_recovery_min_cart_value", value: "5000", description: "Valor mínimo del carrito para enviar recordatorio (ARS)" },
     ];
 
     for (const cfg of configs) {
