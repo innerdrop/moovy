@@ -2,10 +2,10 @@
  * Production seed: inicializa TODA la configuración operativa de MOOVY.
  * Safe to run multiple times (uses upsert / findFirst checks).
  *
- * IMPORTANTE: La contraseña del admin se lee de la variable de entorno ADMIN_PASSWORD.
- * Antes de ejecutar, configurala:
- *   $env:ADMIN_PASSWORD = "TuClaveSegura123"    (PowerShell)
- *   export ADMIN_PASSWORD="TuClaveSegura123"      (Bash/SSH)
+ * IMPORTANTE: La contraseña del admin se lee de OPS_LOGIN_PASSWORD (o ADMIN_PASSWORD como fallback).
+ * Antes de ejecutar, verificá que esté en el .env o configurala:
+ *   $env:OPS_LOGIN_PASSWORD = "TuClaveSegura123"    (PowerShell)
+ *   export OPS_LOGIN_PASSWORD="TuClaveSegura123"      (Bash/SSH)
  *
  * Run: npx tsx prisma/seed-production.ts
  */
@@ -20,12 +20,12 @@ async function main() {
 
     // ─── 1. Admin user ──────────────────────────────────────────────
     const adminEmail = "maurod@me.com";
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminPassword = process.env.OPS_LOGIN_PASSWORD || process.env.ADMIN_PASSWORD;
 
     if (!adminPassword) {
-        console.error("❌ ERROR: Debes configurar la variable ADMIN_PASSWORD antes de ejecutar.");
-        console.error("   PowerShell:  $env:ADMIN_PASSWORD = \"TuClaveSegura123\"");
-        console.error("   Bash/SSH:    export ADMIN_PASSWORD=\"TuClaveSegura123\"");
+        console.error("❌ ERROR: Debes configurar OPS_LOGIN_PASSWORD (o ADMIN_PASSWORD) en el .env.");
+        console.error("   PowerShell:  $env:OPS_LOGIN_PASSWORD = \"TuClaveSegura123\"");
+        console.error("   Bash/SSH:    export OPS_LOGIN_PASSWORD=\"TuClaveSegura123\"");
         process.exit(1);
     }
 
