@@ -45,4 +45,8 @@ async function createAdmin() {
     } catch (e: any) {
         console.error("❌ Error:", e.message);
     } finally {
-        await pr
+        await prisma.$disconnect();
+    }
+}
+
+createAdmin();
