@@ -1,22 +1,38 @@
-// Script to create admin user
+// Script to create/reset admin user
+// Usage: npx tsx scripts/create-admin.ts [email]
+// If email is passed as argument, it overrides .env
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// Priority: CLI argument > ADMIN_RESET_EMAIL > ADMIN_EMAIL
+const email = process.argv[2] || process.env.ADMIN_RESET_EMAIL || process.env.ADMIN_EMAIL;
+const pass = process.env.ADMIN_PASSWORD;
+
+if (!email || !pass) {
+    console.log("❌ Falta email (pasalo como argumento o seteá ADMIN_RESET_EMAIL en .env) y/o ADMIN_PASSWORD en el .env");
+    process.exit(1);
+}
+
+console.log(`🔧 Creando/actualizando admin con email: ${email}`);
 
 const prisma = new PrismaClient();
 
 async function createAdmin() {
-    const hashedPassword = await bcrypt.hash("Admin*2026", 12);
+    const hashedPassword = await bcrypt.hash(pass!, 12);
 
     try {
         const user = await prisma.user.upsert({
-            where: { email: "somosmoovy@gmail.com" },
+            where: { email },
             update: {
                 role: "ADMIN",
                 password: hashedPassword,
             },
             create: {
-                email: "somosmoovy@gmail.com",
-                name: "Moovy Admin",
+                email,
+                name: "Admin MOOVY",
                 password: hashedPassword,
                 role: "ADMIN",
                 pointsBalance: 0,
@@ -24,7 +40,7 @@ async function createAdmin() {
         });
         console.log("✅ Admin creado:", user.email, "- Rol:", user.role);
     } catch (e: any) {
-        console.error("Error:", e.message);
+        console.error("❌ Error:", e.message);
     } finally {
         await prisma.$disconnect();
     }

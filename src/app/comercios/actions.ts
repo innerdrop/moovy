@@ -160,7 +160,7 @@ export async function createProduct(formData: FormData) {
         description: formData.get("description"),
         price: formData.get("price"),
         stock: formData.get("stock"),
-        imageUrl: formData.get("imageUrl"),
+        imageUrls: formData.get("imageUrls"),
         categoryId: formData.get("categoryId"),
     };
 
