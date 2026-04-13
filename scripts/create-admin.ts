@@ -8,20 +8,23 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Priority: CLI argument > ADMIN_RESET_EMAIL > ADMIN_EMAIL
-const email = process.argv[2] || process.env.ADMIN_RESET_EMAIL || process.env.ADMIN_EMAIL;
-const pass = process.env.ADMIN_PASSWORD;
+const emailArg = process.argv[2] || process.env.ADMIN_RESET_EMAIL || process.env.ADMIN_EMAIL;
+const passArg = process.env.ADMIN_PASSWORD;
 
-if (!email || !pass) {
+if (!emailArg || !passArg) {
     console.log("❌ Falta email (pasalo como argumento o seteá ADMIN_RESET_EMAIL en .env) y/o ADMIN_PASSWORD en el .env");
     process.exit(1);
 }
+
+const email: string = emailArg;
+const pass: string = passArg;
 
 console.log(`🔧 Creando/actualizando admin con email: ${email}`);
 
 const prisma = new PrismaClient();
 
 async function createAdmin() {
-    const hashedPassword = await bcrypt.hash(pass!, 12);
+    const hashedPassword = await bcrypt.hash(pass, 12);
 
     try {
         const user = await prisma.user.upsert({
@@ -42,8 +45,4 @@ async function createAdmin() {
     } catch (e: any) {
         console.error("❌ Error:", e.message);
     } finally {
-        await prisma.$disconnect();
-    }
-}
-
-createAdmin();
+        await pr
