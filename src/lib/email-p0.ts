@@ -33,34 +33,21 @@ export async function sendMerchantRequestReceivedEmail(data: {
     contactName: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Solicitud Recibida', '#dbeafe', '#1e40af')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            &iexcl;Hola ${data.contactName}!
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Recibimos tu solicitud para registrar <strong>${data.businessName}</strong> en MOOVY.
-            Nuestro equipo va a revisar tu informaci&oacute;n y documentaci&oacute;n en las pr&oacute;ximas 24-48 horas h&aacute;biles.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud recibida</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${data.contactName}, recibimos tu solicitud para registrar <strong>${data.businessName}</strong> en MOOVY. Nuestro equipo va a revisar tu informaci&oacute;n y documentaci&oacute;n en las pr&oacute;ximas 24 a 48 horas h&aacute;biles.
         </p>
-
-        ${emailInfoBox(`
-            <h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">&iquest;Qu&eacute; sigue?</h4>
-            <ol style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
-                <li>Verificamos tu documentaci&oacute;n fiscal y legal</li>
-                <li>Revisamos que la informaci&oacute;n de tu comercio est&eacute; completa</li>
-                <li>Te notificamos por email si tu tienda fue aprobada o si necesitamos algo m&aacute;s</li>
-            </ol>
-        `)}
-
-        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 20px;">
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            Verificamos la documentaci&oacute;n fiscal y legal, que la informaci&oacute;n de tu comercio est&eacute; completa, y te notificamos por email cuando est&eacute; resuelto.
+        </p>
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0;">
             Si ten&eacute;s alguna duda, respond&eacute; este correo o escribinos por WhatsApp.
         </p>
     `);
 
     return sendEmail({
         to: data.email,
-        subject: '📋 Recibimos tu solicitud de comercio - MOOVY',
+        subject: 'Solicitud de comercio recibida \u2014 MOOVY',
         html,
         tag: 'merchant_request_received',
     });
@@ -76,33 +63,20 @@ export async function sendMerchantApprovedEmail(data: {
     contactName: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('¡Aprobada!', '#def7ec', '#03543f')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            &iexcl;Felicitaciones, ${data.contactName}! &#x1f389;
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Tu comercio <strong>${data.businessName}</strong> fue <strong style="color: #059669;">aprobado</strong> y ya est&aacute; activo en MOOVY.
-            Los clientes ya pueden ver tu tienda y hacerte pedidos.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu comercio fue aprobado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${data.contactName}, <strong>${data.businessName}</strong> ya est&aacute; activo en MOOVY. Los clientes ya pueden ver tu tienda y hacerte pedidos.
+        </p>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            Te recomendamos configurar tus horarios de atenci&oacute;n, agregar tus productos al cat&aacute;logo, vincular tu cuenta de MercadoPago para recibir pagos, y activar las notificaciones push para no perderte pedidos.
         </p>
 
-        ${emailInfoBox(`
-            <h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">Pr&oacute;ximos pasos recomendados</h4>
-            <ul style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
-                <li>Configur&aacute; tus horarios de atenci&oacute;n</li>
-                <li>Agreg&aacute; tus productos al cat&aacute;logo</li>
-                <li>Vincul&aacute; tu cuenta de MercadoPago para recibir pagos</li>
-                <li>Activ&aacute; las notificaciones push para no perderte pedidos</li>
-            </ul>
-        `)}
-
-        ${emailButton('Ir a mi panel de comercio', `${baseUrl}/comercios`, 'green')}
+        ${emailButton('Ir a mi panel', `${baseUrl}/comercios`, 'green')}
     `);
 
     return sendEmail({
         to: data.email,
-        subject: '🎉 ¡Tu comercio fue aprobado en MOOVY!',
+        subject: 'Tu comercio fue aprobado \u2014 MOOVY',
         html,
         tag: 'merchant_approved',
     });
@@ -119,32 +93,23 @@ export async function sendMerchantRejectedEmail(data: {
     reason?: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Solicitud No Aprobada', '#fef2f2', '#991b1b')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Hola ${data.contactName}
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Lamentamos informarte que la solicitud de tu comercio <strong>${data.businessName}</strong>
-            no pudo ser aprobada en este momento.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${data.contactName}, la solicitud de <strong>${data.businessName}</strong> no pudo ser aprobada en este momento.
         </p>
 
-        ${data.reason ? emailAlertBox(`
-            <h4 style="margin: 0 0 8px 0; font-size: 14px;">Motivo</h4>
-            <p style="margin: 0; font-size: 14px;">${data.reason}</p>
-        `, 'warning') : ''}
+        ${data.reason ? emailAlertBox(`<strong>Motivo:</strong> ${data.reason}`, 'warning') : ''}
 
-        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
             Pod&eacute;s corregir la informaci&oacute;n y volver a intentarlo, o contactarnos si cre&eacute;s que hubo un error.
         </p>
 
-        ${emailButton('Contactar Soporte', `${baseUrl}/ayuda`, 'blue')}
+        ${emailButton('Contactar soporte', `${baseUrl}/ayuda`, 'blue')}
     `);
 
     return sendEmail({
         to: data.email,
-        subject: '📋 Actualización sobre tu solicitud de comercio - MOOVY',
+        subject: 'Actualizaci\u00f3n sobre tu solicitud de comercio \u2014 MOOVY',
         html,
         tag: 'merchant_rejected',
     });
@@ -171,35 +136,18 @@ export async function sendDriverRequestReceivedEmail(data: {
     };
 
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Solicitud Recibida', '#dbeafe', '#1e40af')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            &iexcl;Hola ${data.driverName}!
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Recibimos tu solicitud para ser repartidor MOOVY${data.vehicleType ? ` con <strong>${vehicleLabel[data.vehicleType] || data.vehicleType}</strong>` : ''}.
-            Nuestro equipo va a revisar tu documentaci&oacute;n en las pr&oacute;ximas 24-48 horas h&aacute;biles.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud recibida</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${data.driverName}, recibimos tu solicitud para ser repartidor MOOVY${data.vehicleType ? ` con <strong>${vehicleLabel[data.vehicleType] || data.vehicleType}</strong>` : ''}. Nuestro equipo va a revisar tu documentaci&oacute;n (DNI, licencia, seguro y datos fiscales) en las pr&oacute;ximas 24 a 48 horas h&aacute;biles.
         </p>
-
-        ${emailInfoBox(`
-            <h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">&iquest;Qu&eacute; revisamos?</h4>
-            <ul style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
-                <li>DNI (frente y dorso)</li>
-                <li>Licencia de conducir (si aplica)</li>
-                <li>Seguro del veh&iacute;culo (si aplica)</li>
-                <li>Datos fiscales (CUIT)</li>
-            </ul>
-        `)}
-
-        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 20px;">
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0;">
             Te notificaremos por email cuando tu solicitud sea revisada.
         </p>
     `);
 
     return sendEmail({
         to: data.email,
-        subject: '📋 Recibimos tu solicitud de repartidor - MOOVY',
+        subject: 'Solicitud de repartidor recibida \u2014 MOOVY',
         html,
         tag: 'driver_request_received',
     });
@@ -215,33 +163,23 @@ export async function sendDriverRejectedEmail(data: {
     reason?: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Solicitud No Aprobada', '#fef2f2', '#991b1b')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Hola ${data.driverName}
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Lamentamos informarte que tu solicitud para ser repartidor en MOOVY
-            no pudo ser aprobada en este momento.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${data.driverName}, tu solicitud para ser repartidor en MOOVY no pudo ser aprobada en este momento.
         </p>
 
-        ${data.reason ? emailAlertBox(`
-            <h4 style="margin: 0 0 8px 0; font-size: 14px;">Motivo</h4>
-            <p style="margin: 0; font-size: 14px;">${data.reason}</p>
-        `, 'warning') : ''}
+        ${data.reason ? emailAlertBox(`<strong>Motivo:</strong> ${data.reason}`, 'warning') : ''}
 
-        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-            Pod&eacute;s actualizar tu documentaci&oacute;n y volver a postularte,
-            o contactarnos si cre&eacute;s que hubo un error.
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
+            Pod&eacute;s actualizar tu documentaci&oacute;n y volver a postularte, o contactarnos si cre&eacute;s que hubo un error.
         </p>
 
-        ${emailButton('Contactar Soporte', `${baseUrl}/ayuda`, 'blue')}
+        ${emailButton('Contactar soporte', `${baseUrl}/ayuda`, 'blue')}
     `);
 
     return sendEmail({
         to: data.email,
-        subject: '📋 Actualización sobre tu solicitud de repartidor - MOOVY',
+        subject: 'Actualizaci\u00f3n sobre tu solicitud de repartidor \u2014 MOOVY',
         html,
         tag: 'driver_rejected',
     });
@@ -263,46 +201,21 @@ export async function sendPaymentPendingEmail(data: {
     paymentMethod: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Pago Pendiente', '#fffbeb', '#92400e')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Tu pago est&aacute; en proceso, ${data.customerName}
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Recibimos tu pedido <strong>#${data.orderNumber}</strong> pero el pago a&uacute;n est&aacute; pendiente de confirmaci&oacute;n.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Pago en proceso</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${data.customerName}, recibimos tu pedido <strong>#${data.orderNumber}</strong> por <strong>$${data.total.toLocaleString('es-AR')}</strong> pero el pago a&uacute;n est&aacute; pendiente de confirmaci&oacute;n.
         </p>
 
-        ${emailInfoBox(`
-            <table style="width: 100%;">
-                <tr>
-                    <td style="color: #718096; font-size: 14px; padding: 4px 0;">Pedido</td>
-                    <td style="text-align: right; color: #2d3748; font-weight: 500;">#${data.orderNumber}</td>
-                </tr>
-                <tr>
-                    <td style="color: #718096; font-size: 14px; padding: 4px 0;">Total</td>
-                    <td style="text-align: right; color: #e60012; font-weight: bold; font-size: 18px;">$${data.total.toLocaleString('es-AR')}</td>
-                </tr>
-                <tr>
-                    <td style="color: #718096; font-size: 14px; padding: 4px 0;">M&eacute;todo</td>
-                    <td style="text-align: right; color: #2d3748;">${data.paymentMethod}</td>
-                </tr>
-            </table>
-        `)}
-
-        ${emailAlertBox(`
-            <p style="margin: 0; font-size: 14px;">
-                <strong>No te preocupes.</strong> Algunos m&eacute;todos de pago pueden demorar unos minutos en confirmarse.
-                Te avisaremos apenas se acredite.
-            </p>
-        `, 'info')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 0 0 24px 0;">
+            Algunos m&eacute;todos de pago pueden demorar unos minutos en confirmarse. Te avisaremos apenas se acredite.
+        </p>
 
         ${emailButton('Ver mi pedido', `${baseUrl}/mis-pedidos`)}
     `);
 
     return sendEmail({
         to: data.email,
-        subject: `⏳ Pago pendiente - Pedido #${data.orderNumber}`,
+        subject: `Pago pendiente \u2014 Pedido #${data.orderNumber}`,
         html,
         tag: 'payment_pending',
     });
@@ -320,36 +233,23 @@ export async function sendPaymentRejectedEmail(data: {
     reason?: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Pago Rechazado', '#fef2f2', '#991b1b')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Tu pago no pudo ser procesado
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Hola ${data.customerName}, lamentablemente el pago de tu pedido <strong>#${data.orderNumber}</strong>
-            por <strong style="color: #e60012;">$${data.total.toLocaleString('es-AR')}</strong> fue rechazado.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Pago rechazado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${data.customerName}, el pago de tu pedido <strong>#${data.orderNumber}</strong> por <strong>$${data.total.toLocaleString('es-AR')}</strong> no pudo ser procesado.
         </p>
 
-        ${data.reason ? emailAlertBox(`
-            <p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> ${data.reason}</p>
-        `, 'error') : ''}
+        ${data.reason ? emailAlertBox(`<strong>Motivo:</strong> ${data.reason}`, 'error') : ''}
 
-        ${emailInfoBox(`
-            <h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">&iquest;Qu&eacute; pod&eacute;s hacer?</h4>
-            <ul style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
-                <li>Verific&aacute; que tu tarjeta tenga fondos suficientes</li>
-                <li>Intent&aacute; con otro medio de pago</li>
-                <li>Contact&aacute; a tu banco si el problema persiste</li>
-            </ul>
-        `)}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
+            Verific&aacute; que tu tarjeta tenga fondos suficientes o intent&aacute; con otro medio de pago. Si el problema persiste, contact&aacute; a tu banco.
+        </p>
 
-        ${emailButton('Reintentar compra', `${baseUrl}/tienda`)}
+        ${emailButton('Volver a la tienda', `${baseUrl}/tienda`)}
     `);
 
     return sendEmail({
         to: data.email,
-        subject: `❌ Pago rechazado - Pedido #${data.orderNumber}`,
+        subject: `Pago rechazado \u2014 Pedido #${data.orderNumber}`,
         html,
         tag: 'payment_rejected',
     });
@@ -369,34 +269,24 @@ export async function sendOrderRejectedByMerchantEmail(data: {
     total: number;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Pedido Rechazado', '#fef2f2', '#991b1b')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Tu pedido fue cancelado por el comercio
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Hola ${data.customerName}, lamentablemente <strong>${data.merchantName}</strong>
-            no pudo aceptar tu pedido <strong>#${data.orderNumber}</strong>.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Pedido cancelado por el comercio</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${data.customerName}, <strong>${data.merchantName}</strong> no pudo aceptar tu pedido <strong>#${data.orderNumber}</strong>.
         </p>
 
-        ${data.reason ? emailAlertBox(`
-            <p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> ${data.reason}</p>
-        `, 'warning') : ''}
+        ${data.reason ? emailAlertBox(`<strong>Motivo:</strong> ${data.reason}`, 'warning') : ''}
 
-        ${data.willRefund ? emailAlertBox(`
-            <p style="margin: 0; font-size: 14px;">
-                <strong>Reembolso:</strong> Se te devolver&aacute;n <strong>$${data.total.toLocaleString('es-AR')}</strong>
-                autom&aacute;ticamente al medio de pago original. Puede demorar entre 2 y 10 d&iacute;as h&aacute;biles.
-            </p>
-        `, 'success') : ''}
+        ${data.willRefund ? `
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
+            Se te devolver&aacute;n <strong>$${data.total.toLocaleString('es-AR')}</strong> autom&aacute;ticamente al medio de pago original. Puede demorar entre 2 y 10 d&iacute;as h&aacute;biles.
+        </p>` : ''}
 
-        ${emailButton('Hacer otro pedido', `${baseUrl}/tienda`)}
+        ${emailButton('Volver a la tienda', `${baseUrl}/tienda`)}
     `);
 
     return sendEmail({
         to: data.email,
-        subject: `📋 Tu pedido #${data.orderNumber} fue rechazado`,
+        subject: `Pedido #${data.orderNumber} cancelado por el comercio`,
         html,
         tag: 'order_rejected_merchant',
     });
@@ -414,35 +304,25 @@ export async function sendOrderDeliveredEmail(data: {
     deliveryTime?: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('¡Entregado!', '#def7ec', '#03543f')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            &iexcl;Tu pedido lleg&oacute;! &#x1f389;
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Hola ${data.customerName}, tu pedido <strong>#${data.orderNumber}</strong>
-            por <strong>$${data.total.toLocaleString('es-AR')}</strong> fue entregado exitosamente.
-            ${data.deliveryTime ? `Tiempo de entrega: <strong>${data.deliveryTime}</strong>.` : ''}
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Pedido entregado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${data.customerName}, tu pedido <strong>#${data.orderNumber}</strong> por <strong>$${data.total.toLocaleString('es-AR')}</strong> fue entregado exitosamente.${data.deliveryTime ? ` Tiempo de entrega: ${data.deliveryTime}.` : ''}
         </p>
 
-        ${emailAlertBox(`
-            <p style="margin: 0; font-size: 14px;">
-                &#x2b50; <strong>&iquest;C&oacute;mo fue tu experiencia?</strong> Tu calificaci&oacute;n nos ayuda a mejorar
-                y a reconocer a los mejores comercios y repartidores.
-            </p>
-        `, 'info')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 0 0 24px 0;">
+            Tu calificaci&oacute;n nos ayuda a mejorar y a reconocer a los mejores comercios y repartidores de Ushuaia.
+        </p>
 
         ${emailButton('Calificar pedido', `${baseUrl}/mis-pedidos`)}
 
-        <p style="color: #9ca3af; font-size: 14px; text-align: center; margin-top: 20px;">
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 24px 0 0 0;">
             Si tuviste alg&uacute;n problema con tu pedido, contact&aacute; a soporte dentro de las 48 horas.
         </p>
     `);
 
     return sendEmail({
         to: data.email,
-        subject: `✅ ¡Tu pedido #${data.orderNumber} fue entregado!`,
+        subject: `Pedido #${data.orderNumber} entregado`,
         html,
         tag: 'order_delivered',
     });
@@ -461,22 +341,15 @@ export async function sendOrderCancelledByBuyerEmail(data: {
     paymentMethod: string;
 }) {
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('Pedido Cancelado', '#f3f4f6', '#4b5563')}
-        </div>
-        <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Cancelaste tu pedido
-        </h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Hola ${data.customerName}, confirmamos la cancelaci&oacute;n de tu pedido <strong>#${data.orderNumber}</strong>.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Pedido cancelado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${data.customerName}, confirmamos la cancelaci&oacute;n de tu pedido <strong>#${data.orderNumber}</strong>.
         </p>
 
-        ${data.willRefund && data.paymentMethod !== 'cash' ? emailAlertBox(`
-            <p style="margin: 0; font-size: 14px;">
-                <strong>Reembolso:</strong> $${data.total.toLocaleString('es-AR')} ser&aacute;n devueltos
-                a tu medio de pago original. Puede demorar entre 2 y 10 d&iacute;as h&aacute;biles.
-            </p>
-        `, 'success') : ''}
+        ${data.willRefund && data.paymentMethod !== 'cash' ? `
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 0 0 24px 0;">
+            Se te devolver&aacute;n <strong>$${data.total.toLocaleString('es-AR')}</strong> al medio de pago original. Puede demorar entre 2 y 10 d&iacute;as h&aacute;biles.
+        </p>` : ''}
 
         ${emailButton('Volver a la tienda', `${baseUrl}/tienda`)}
     `);

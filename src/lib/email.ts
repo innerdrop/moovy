@@ -13,7 +13,7 @@ export const transporter = nodemailer.createTransport({
     },
 });
 
-export const baseUrl = process.env.NEXTAUTH_URL || "https://www.somosmoovy.com";
+export const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://somosmoovy.com";
 export const companyLogo = `${baseUrl}/logo-moovy.svg`;
 export const fromEmail = `"MOOVY" <${process.env.SMTP_USER || "somosmoovy@gmail.com"}>`;
 export const adminEmail = process.env.NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || process.env.SMTP_USER || "somosmoovy@gmail.com";
@@ -71,64 +71,94 @@ export function invalidateAlertEmailsCache() {
 }
 
 // ─── Layout base reutilizable ───────────────────────────────────────────────
-export function emailLayout(content: string, options?: { footerExtra?: string }): string {
+export function emailLayout(content: string, options?: { footerExtra?: string; accentColor?: string }): string {
     const year = new Date().getFullYear();
+    const accent = options?.accentColor || '#e60012';
     return `
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin: 0; padding: 0; background-color: #f3f4f6;">
-<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${companyLogo}" alt="MOOVY" style="height: 50px; width: auto;" />
-    </div>
-    <div style="background-color: #f9fafb; border-radius: 12px; padding: 30px;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOOVY</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">
+<tr><td align="center" style="padding: 0;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">
+
+    <!-- Header -->
+    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">
+        <img src="${companyLogo}" alt="MOOVY" style="height: 32px; width: auto;" />
+    </td></tr>
+
+    <!-- Accent line -->
+    <tr><td style="padding: 0 40px;">
+        <div style="height: 3px; background: ${accent}; border-radius: 2px;"></div>
+    </td></tr>
+
+    <!-- Content -->
+    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
         ${content}
-    </div>
-    <div style="text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;">
-        <p>&copy; ${year} MOOVY&trade;. Ushuaia, Tierra del Fuego.</p>
-        <p>Este es un correo autom&aacute;tico, por favor no lo respondas.</p>
+    </td></tr>
+
+    <!-- Footer -->
+    <tr><td style="padding: 0 40px;">
+        <div style="height: 1px; background: #f0f0f0;"></div>
+    </td></tr>
+    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; ${year} MOOVY. Ushuaia, Tierra del Fuego.</p>
+        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>
         ${options?.footerExtra || ''}
-    </div>
-</div>
+    </td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>`;
 }
 
 // ─── Helpers de estilo ──────────────────────────────────────────────────────
 export function emailButton(text: string, href: string, color: 'red' | 'green' | 'blue' | 'purple' = 'red'): string {
-    const gradients: Record<string, string> = {
-        red: 'linear-gradient(to right, #e60012, #ff4d5e)',
-        green: 'linear-gradient(to right, #059669, #10b981)',
-        blue: 'linear-gradient(to right, #2563eb, #3b82f6)',
-        purple: 'linear-gradient(to right, #7C3AED, #8B5CF6)',
+    const colors: Record<string, string> = {
+        red: '#e60012',
+        green: '#059669',
+        blue: '#1a1a1a',
+        purple: '#7C3AED',
     };
+    const bg = colors[color] || colors.red;
     return `
-    <div style="text-align: center; margin: 30px 0;">
+    <div style="text-align: center; margin: 32px 0;">
         <a href="${href}"
-           style="display: inline-block; background: ${gradients[color]}; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+           style="display: inline-block; background-color: ${bg}; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">
             ${text}
         </a>
     </div>`;
 }
 
 export function emailBadge(text: string, bgColor: string, textColor: string): string {
-    return `<div style="background-color: ${bgColor}; color: ${textColor}; padding: 8px 16px; border-radius: 20px; display: inline-block; font-size: 14px; font-weight: 600; margin-bottom: 10px;">${text}</div>`;
+    return `<div style="display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">${text}</div>`;
 }
 
 export function emailInfoBox(content: string): string {
-    return `<div style="background-color: white; border-radius: 10px; padding: 20px; margin: 20px 0; border: 1px solid #edf2f7;">${content}</div>`;
+    return `<div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;">${content}</div>`;
 }
 
 export function emailAlertBox(content: string, type: 'warning' | 'error' | 'success' | 'info' = 'info'): string {
     const styles: Record<string, { bg: string; border: string; text: string }> = {
         warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
         error: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
-        success: { bg: '#f0fdf4', border: '#22c55e', text: '#166534' },
-        info: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
+        success: { bg: '#f0fdf4', border: '#059669', text: '#166534' },
+        info: { bg: '#f5f5f5', border: '#1a1a1a', text: '#1a1a1a' },
     };
     const s = styles[type];
-    return `<div style="background: ${s.bg}; border-left: 4px solid ${s.border}; border-radius: 10px; padding: 20px; margin: 20px 0; color: ${s.text};">${content}</div>`;
+    return `<div style="background: ${s.bg}; border-left: 3px solid ${s.border}; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: ${s.text}; font-size: 14px; line-height: 1.6;">${content}</div>`;
+}
+
+/** Separador visual sutil */
+export function emailDivider(): string {
+    return `<div style="height: 1px; background: #f0f0f0; margin: 28px 0;"></div>`;
 }
 
 // ─── Helper de envío con logging ────────────────────────────────────────────
@@ -160,30 +190,30 @@ export async function sendEmail(params: {
  */
 export async function sendWelcomeEmail(email: string, firstName: string, referralCode: string) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">&iexcl;Hola ${firstName}! &#x1f44b;</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            &iexcl;Bienvenido a la comunidad MOOVY! Ya pod&eacute;s empezar a disfrutar de todos los beneficios.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Bienvenido, ${firstName}</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            Tu cuenta en MOOVY est&aacute; activa. Ya pod&eacute;s explorar los comercios de Ushuaia
+            y recibir tus pedidos donde est&eacute;s.
         </p>
 
-        <div style="background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); border-radius: 10px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <h3 style="color: #b45309; margin: 0 0 10px 0; font-size: 16px;">&#x2b50; Tu c&oacute;digo de referido</h3>
-            <p style="color: #78350f; font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">${referralCode}</p>
-            <p style="color: #92400e; font-size: 12px; margin: 8px 0 0 0;">Compart&iacute;lo y gana puntos MOOVER cuando tus amigos compren</p>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 8px 0;">
+            Cada compra suma puntos MOOVER que pod&eacute;s canjear por descuentos.
+            Tambi&eacute;n pod&eacute;s invitar amigos con tu c&oacute;digo personal y ganar puntos extra cuando hagan su primer pedido.
+        </p>
+
+        ${emailDivider()}
+
+        <div style="text-align: center; margin: 0 0 8px 0;">
+            <p style="color: #999; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px 0; font-weight: 600;">Tu c&oacute;digo de referido</p>
+            <p style="color: #e60012; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: 3px; font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;">${referralCode}</p>
         </div>
 
-        <h3 style="color: #111827; font-size: 16px; margin-top: 25px;">&iquest;Qu&eacute; pod&eacute;s hacer con MOOVY?</h3>
-        <ul style="color: #6b7280; font-size: 14px; line-height: 1.8; padding-left: 20px;">
-            <li>&#x1f6cd;&#xfe0f; <strong>Comprar</strong> en comercios locales</li>
-            <li>&#x1f680; <strong>Recibir</strong> tus pedidos en minutos</li>
-            <li>&#x2b50; <strong>Sumar puntos MOOVER</strong> con cada compra</li>
-            <li>&#x1f381; <strong>Canjear</strong> tus puntos por descuentos exclusivos</li>
-            <li>&#x1f465; <strong>Referir amigos</strong> y ganar m&aacute;s puntos</li>
-        </ul>
+        ${emailDivider()}
 
-        ${emailButton('Empezar a comprar', `${baseUrl}/tienda`)}
+        ${emailButton('Explorar la tienda', `${baseUrl}/tienda`)}
     `);
 
-    return sendEmail({ to: email, subject: '¡Bienvenido a MOOVY! 🎉', html, tag: 'welcome' });
+    return sendEmail({ to: email, subject: 'Bienvenido a MOOVY', html, tag: 'welcome' });
 }
 
 /**
@@ -204,11 +234,11 @@ export async function sendOrderConfirmationEmail(orderData: {
 }) {
     const itemsHtml = orderData.items.map(item => `
         <tr>
-            <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7; color: #4a5568;">
-                ${item.name} ${item.variantName ? `<br><small style="color: #a0aec0;">${item.variantName}</small>` : ''}
-                <div style="font-size: 12px; color: #a0aec0;">x${item.quantity}</div>
+            <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; color: #333; font-size: 14px;">
+                ${item.name}${item.variantName ? ` <span style="color: #999;">&middot; ${item.variantName}</span>` : ''}
+                <span style="color: #999;"> &times; ${item.quantity}</span>
             </td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7; text-align: right; color: #2d3748; font-weight: 500;">
+            <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; text-align: right; color: #1a1a1a; font-size: 14px; font-weight: 500; white-space: nowrap;">
                 $${(item.price * item.quantity).toLocaleString('es-AR')}
             </td>
         </tr>
@@ -218,48 +248,51 @@ export async function sendOrderConfirmationEmail(orderData: {
         orderData.paymentMethod === 'mercadopago' ? 'Mercado Pago' : 'Transferencia / Otros';
 
     const html = emailLayout(`
-        <div style="text-align: center; margin-bottom: 25px;">
-            ${emailBadge('Pedido Confirmado', '#def7ec', '#03543f')}
-            <h2 style="color: #111827; margin-top: 0;">&iexcl;Gracias por tu compra, ${orderData.customerName}!</h2>
-            <p style="color: #6b7280; font-size: 16px;">Recibimos tu pedido <strong>#${orderData.orderNumber}</strong> y ya estamos trabajando en &eacute;l.</p>
-        </div>
-
-        ${emailInfoBox(`
-            <h3 style="color: #1a202c; font-size: 16px; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #f7fafc; padding-bottom: 10px;">Resumen del Pedido</h3>
-            <table style="width: 100%; border-collapse: collapse;">${itemsHtml}</table>
-            <table style="width: 100%; margin-top: 15px;">
-                <tr>
-                    <td style="color: #718096; font-size: 14px; padding: 4px 0;">Subtotal</td>
-                    <td style="text-align: right; color: #2d3748; font-size: 14px; padding: 4px 0;">$${orderData.subtotal.toLocaleString('es-AR')}</td>
-                </tr>
-                ${orderData.deliveryFee > 0 ? `<tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Env&iacute;o</td><td style="text-align: right; color: #2d3748; font-size: 14px; padding: 4px 0;">$${orderData.deliveryFee.toLocaleString('es-AR')}</td></tr>` : ''}
-                ${orderData.discount > 0 ? `<tr><td style="color: #e53e3e; font-size: 14px; padding: 4px 0;">Descuento (Puntos)</td><td style="text-align: right; color: #e53e3e; font-size: 14px; padding: 4px 0;">-$${orderData.discount.toLocaleString('es-AR')}</td></tr>` : ''}
-                <tr>
-                    <td style="color: #1a202c; font-weight: bold; font-size: 18px; padding: 15px 0 0 0;">Total</td>
-                    <td style="text-align: right; color: #e60012; font-weight: bold; font-size: 18px; padding: 15px 0 0 0;">$${orderData.total.toLocaleString('es-AR')}</td>
-                </tr>
-            </table>
-        `)}
-
-        ${emailInfoBox(`
-            <h4 style="color: #718096; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em; margin: 0 0 10px 0;">M&eacute;todo de Pago</h4>
-            <p style="color: #2d3748; font-weight: 500; margin: 0;">${paymentMethodLabel}</p>
-        `)}
-        ${emailInfoBox(`
-            <h4 style="color: #718096; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em; margin: 0 0 10px 0;">${orderData.isPickup ? 'Retiro en Local' : 'Direcci&oacute;n de Env&iacute;o'}</h4>
-            <p style="color: #2d3748; font-weight: 500; margin: 0;">${orderData.isPickup ? 'Retir&aacute;s tu pedido por el comercio' : orderData.address}</p>
-        `)}
-
-        ${emailButton('Ver estado de mi pedido', `${baseUrl}/mis-pedidos`)}
-
-        <p style="color: #a0aec0; font-size: 14px; text-align: center; margin-top: 20px;">
-            Si ten&eacute;s alguna duda con tu pedido, escribinos por WhatsApp al soporte.
+        <h2 style="color: #1a1a1a; margin: 0 0 8px 0; font-size: 22px; font-weight: 600;">Pedido confirmado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 28px 0;">
+            Gracias, ${orderData.customerName}. Recibimos tu pedido <strong>#${orderData.orderNumber}</strong> y ya estamos trabajando en &eacute;l.
         </p>
+
+        <!-- Items -->
+        <table style="width: 100%; border-collapse: collapse; margin: 0 0 16px 0;">${itemsHtml}</table>
+
+        <!-- Totals -->
+        <table style="width: 100%; margin: 0 0 8px 0;">
+            <tr>
+                <td style="color: #777; font-size: 14px; padding: 4px 0;">Subtotal</td>
+                <td style="text-align: right; color: #1a1a1a; font-size: 14px; padding: 4px 0;">$${orderData.subtotal.toLocaleString('es-AR')}</td>
+            </tr>
+            ${orderData.deliveryFee > 0 ? `<tr><td style="color: #777; font-size: 14px; padding: 4px 0;">${orderData.isPickup ? 'Retiro en local' : 'Env&iacute;o'}</td><td style="text-align: right; color: #1a1a1a; font-size: 14px; padding: 4px 0;">$${orderData.deliveryFee.toLocaleString('es-AR')}</td></tr>` : ''}
+            ${orderData.discount > 0 ? `<tr><td style="color: #e60012; font-size: 14px; padding: 4px 0;">Descuento (puntos)</td><td style="text-align: right; color: #e60012; font-size: 14px; padding: 4px 0;">&minus;$${orderData.discount.toLocaleString('es-AR')}</td></tr>` : ''}
+        </table>
+        <div style="height: 1px; background: #e5e5e5; margin: 8px 0;"></div>
+        <table style="width: 100%; margin: 0 0 28px 0;">
+            <tr>
+                <td style="color: #1a1a1a; font-weight: 600; font-size: 16px; padding: 8px 0 0 0;">Total</td>
+                <td style="text-align: right; color: #1a1a1a; font-weight: 600; font-size: 16px; padding: 8px 0 0 0;">$${orderData.total.toLocaleString('es-AR')}</td>
+            </tr>
+        </table>
+
+        ${emailDivider()}
+
+        <!-- Details -->
+        <table style="width: 100%; margin: 0 0 28px 0;">
+            <tr>
+                <td style="color: #999; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; padding: 0 0 6px 0; font-weight: 600;">Pago</td>
+                <td style="color: #999; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; padding: 0 0 6px 0; font-weight: 600; text-align: right;">${orderData.isPickup ? 'Retiro' : 'Entrega'}</td>
+            </tr>
+            <tr>
+                <td style="color: #1a1a1a; font-size: 14px; padding: 0; vertical-align: top;">${paymentMethodLabel}</td>
+                <td style="color: #1a1a1a; font-size: 14px; padding: 0; text-align: right; vertical-align: top; max-width: 200px;">${orderData.isPickup ? 'Retir&aacute;s por el comercio' : orderData.address}</td>
+            </tr>
+        </table>
+
+        ${emailButton('Ver estado del pedido', `${baseUrl}/mis-pedidos`)}
     `);
 
     return sendEmail({
         to: orderData.email,
-        subject: `¡Confirmación de tu pedido ${orderData.orderNumber}! 🛍️`,
+        subject: `Pedido #${orderData.orderNumber} confirmado`,
         html,
         tag: 'order_confirmation',
     });
@@ -270,19 +303,17 @@ export async function sendOrderConfirmationEmail(orderData: {
  */
 export async function sendPasswordResetEmail(email: string, resetLink: string) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">Restablecer contrase&ntilde;a</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Recibimos una solicitud para restablecer tu contrase&ntilde;a.
-            Hac&eacute; click en el bot&oacute;n de abajo para crear una nueva contrase&ntilde;a.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Restablecer contrase&ntilde;a</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            Recibimos una solicitud para restablecer tu contrase&ntilde;a. Us&aacute; el bot&oacute;n de abajo para crear una nueva. El enlace es v&aacute;lido por 1 hora.
         </p>
-        ${emailButton('Restablecer Contraseña', resetLink)}
-        <p style="color: #9ca3af; font-size: 14px;">
-            Este enlace expirar&aacute; en 1 hora. Si no solicitaste restablecer tu contrase&ntilde;a,
-            pod&eacute;s ignorar este correo.
+        ${emailButton('Crear nueva contrase\u00f1a', resetLink)}
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 24px 0 0 0;">
+            Si no solicitaste este cambio, pod&eacute;s ignorar este correo. Tu contrase&ntilde;a actual no se ver&aacute; afectada.
         </p>
     `);
 
-    return sendEmail({ to: email, subject: 'Restablecer contraseña - MOOVY', html, tag: 'password_reset' });
+    return sendEmail({ to: email, subject: 'Restablecer contrase\u00f1a \u2014 MOOVY', html, tag: 'password_reset' });
 }
 
 /**
@@ -293,21 +324,21 @@ export async function sendDriverRequestNotification(
     driverEmail: string | null
 ) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de repartidor</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Un usuario quiere ser repartidor en MOOVY:
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Nueva solicitud de repartidor</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            Un usuario quiere sumarse como repartidor en MOOVY.
         </p>
         ${emailInfoBox(`
-            <p style="margin: 5px 0; color: #4a5568;"><strong>Nombre:</strong> ${driverName || "No especificado"}</p>
-            <p style="margin: 5px 0; color: #4a5568;"><strong>Email:</strong> ${driverEmail || "No especificado"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Nombre:</strong> ${driverName || "No especificado"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email:</strong> ${driverEmail || "No especificado"}</p>
         `)}
-        <p style="color: #6b7280; font-size: 14px;">
-            Revis&aacute; la solicitud desde el panel de administraci&oacute;n en <strong>Operaciones &rarr; Repartidores</strong>.
+        <p style="color: #555; font-size: 14px; margin: 20px 0 0 0;">
+            Revis&aacute; la documentaci&oacute;n desde Operaciones &rarr; Repartidores.
         </p>
-        ${emailButton('Ir al panel OPS', `${baseUrl}/ops/repartidores`, 'blue')}
+        ${emailButton('Revisar solicitud', `${baseUrl}/ops/repartidores`, 'blue')}
     `);
 
-    return sendEmail({ to: adminEmail, subject: '🚗 Nueva solicitud de repartidor', html, tag: 'driver_request_admin' });
+    return sendEmail({ to: adminEmail, subject: 'Nueva solicitud de repartidor \u2014 MOOVY', html, tag: 'driver_request_admin' });
 }
 
 /**
@@ -315,18 +346,14 @@ export async function sendDriverRequestNotification(
  */
 export async function sendDriverApprovalEmail(email: string, firstName: string) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">&iexcl;Bienvenido al equipo, ${firstName}! &#x1f697;</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Tu solicitud para ser repartidor MOOVY fue <strong style="color: #059669;">aprobada</strong>.
-            Ya pod&eacute;s empezar a recibir pedidos y generar ingresos.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${firstName}, tu solicitud para ser repartidor MOOVY fue aprobada. Ya pod&eacute;s conectarte desde tu panel y empezar a recibir pedidos.
         </p>
-        ${emailButton('Ir al panel de repartidor', `${baseUrl}/repartidor`, 'green')}
-        <p style="color: #9ca3af; font-size: 14px; text-align: center;">
-            Si ten&eacute;s dudas, escribinos por WhatsApp al soporte.
-        </p>
+        ${emailButton('Ir a mi panel', `${baseUrl}/repartidor`, 'green')}
     `);
 
-    return sendEmail({ to: email, subject: '🎉 ¡Tu solicitud de repartidor fue aprobada!', html, tag: 'driver_approved' });
+    return sendEmail({ to: email, subject: 'Tu solicitud fue aprobada \u2014 MOOVY', html, tag: 'driver_approved' });
 }
 
 /**
@@ -340,25 +367,25 @@ export async function sendMerchantRequestNotification(
 ) {
     const alertEmails = await getAlertEmails();
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de comercio</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Un nuevo comercio quiere sumarse a MOOVY:
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Nueva solicitud de comercio</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            Un nuevo comercio quiere sumarse a MOOVY.
         </p>
         ${emailInfoBox(`
-            <p style="margin: 5px 0; color: #4a5568;"><strong>Comercio:</strong> ${businessName}</p>
-            <p style="margin: 5px 0; color: #4a5568;"><strong>Due&ntilde;o:</strong> ${ownerName || "No especificado"}</p>
-            <p style="margin: 5px 0; color: #4a5568;"><strong>Email:</strong> ${ownerEmail || "No especificado"}</p>
-            <p style="margin: 5px 0; color: #4a5568;"><strong>Categor&iacute;a:</strong> ${category || "No especificada"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Comercio:</strong> ${businessName}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Due&ntilde;o:</strong> ${ownerName || "No especificado"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email:</strong> ${ownerEmail || "No especificado"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Categor&iacute;a:</strong> ${category || "No especificada"}</p>
         `)}
-        <p style="color: #6b7280; font-size: 14px;">
+        <p style="color: #555; font-size: 14px; margin: 20px 0 0 0;">
             Revis&aacute; la documentaci&oacute;n y aprob&aacute; o rechaz&aacute; desde el panel de operaciones.
         </p>
-        ${emailButton('Ir al panel OPS', `${baseUrl}/ops/comercios`, 'blue')}
+        ${emailButton('Revisar solicitud', `${baseUrl}/ops/comercios`, 'blue')}
     `);
 
     const results = await Promise.all(
         alertEmails.map(email =>
-            sendEmail({ to: email, subject: `🏪 Nueva solicitud de comercio: ${businessName}`, html, tag: 'merchant_request_admin' })
+            sendEmail({ to: email, subject: `Nueva solicitud de comercio: ${businessName} \u2014 MOOVY`, html, tag: 'merchant_request_admin' })
         )
     );
     return results.some(r => r);
@@ -369,26 +396,14 @@ export async function sendMerchantRequestNotification(
  */
 export async function sendMerchantApprovalEmail(email: string, businessName: string) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">&iexcl;Felicitaciones, ${businessName}! &#x1f389;</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Tu solicitud para vender en MOOVY fue <strong style="color: #059669;">aprobada</strong>.
-            Ya pod&eacute;s cargar tus productos y empezar a recibir pedidos.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu comercio fue aprobado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            <strong>${businessName}</strong> ya est&aacute; activo en MOOVY. Pod&eacute;s configurar tus horarios de atenci&oacute;n, subir tus productos con fotos y precios, y empezar a recibir pedidos.
         </p>
-        ${emailAlertBox(`
-            <strong>Pr&oacute;ximos pasos:</strong>
-            <ol style="margin: 10px 0 0 0; padding-left: 20px;">
-                <li>Configur&aacute; tus horarios de atenci&oacute;n</li>
-                <li>Sub&iacute; tus productos con fotos y precios</li>
-                <li>Activ&aacute; tu panel para recibir pedidos</li>
-            </ol>
-        `, 'success')}
-        ${emailButton('Ir a mi panel de comercio', `${baseUrl}/comercios`, 'green')}
-        <p style="color: #9ca3af; font-size: 14px; text-align: center;">
-            Si ten&eacute;s dudas, escribinos por WhatsApp al soporte.
-        </p>
+        ${emailButton('Ir a mi panel', `${baseUrl}/comercios`, 'green')}
     `);
 
-    return sendEmail({ to: email, subject: `🎉 ¡Tu comercio ${businessName} fue aprobado en MOOVY!`, html, tag: 'merchant_approved' });
+    return sendEmail({ to: email, subject: `Tu comercio ${businessName} fue aprobado \u2014 MOOVY`, html, tag: 'merchant_approved' });
 }
 
 /**
@@ -396,18 +411,18 @@ export async function sendMerchantApprovalEmail(email: string, businessName: str
  */
 export async function sendMerchantRejectionEmail(email: string, businessName: string, reason?: string) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">Solicitud de comercio no aprobada</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Lamentamos informarte que la solicitud de <strong>${businessName}</strong> en MOOVY no fue aprobada en esta oportunidad.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            La solicitud de <strong>${businessName}</strong> no pudo ser aprobada en esta oportunidad.
         </p>
         ${reason ? emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning') : ''}
-        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-            Pod&eacute;s corregir los datos indicados y volver a registrarte, o contactarnos por WhatsApp si ten&eacute;s preguntas.
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
+            Pod&eacute;s corregir los datos indicados y volver a registrarte, o contactarnos si ten&eacute;s preguntas.
         </p>
         ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
     `);
 
-    return sendEmail({ to: email, subject: `Solicitud de comercio ${businessName} — MOOVY`, html, tag: 'merchant_rejected' });
+    return sendEmail({ to: email, subject: `Solicitud de comercio ${businessName} \u2014 MOOVY`, html, tag: 'merchant_rejected' });
 }
 
 /**
@@ -415,16 +430,16 @@ export async function sendMerchantRejectionEmail(email: string, businessName: st
  */
 export async function sendDriverRejectionEmail(email: string, firstName: string, reason?: string) {
     const html = emailLayout(`
-        <h2 style="color: #111827; margin-top: 0;">Solicitud de repartidor no aprobada</h2>
-        <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Hola ${firstName}, lamentamos informarte que tu solicitud para ser repartidor en MOOVY no fue aprobada en esta oportunidad.
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${firstName}, tu solicitud para ser repartidor en MOOVY no pudo ser aprobada en esta oportunidad.
         </p>
         ${reason ? emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning') : ''}
-        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-            Pod&eacute;s corregir la documentaci&oacute;n indicada y volver a registrarte, o contactarnos por WhatsApp si ten&eacute;s preguntas.
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
+            Pod&eacute;s corregir la documentaci&oacute;n indicada y volver a postularte, o contactarnos si ten&eacute;s preguntas.
         </p>
         ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
     `);
 
-    return sendEmail({ to: email, subject: 'Solicitud de repartidor — MOOVY', html, tag: 'driver_rejected' });
+    return sendEmail({ to: email, subject: 'Solicitud de repartidor \u2014 MOOVY', html, tag: 'driver_rejected' });
 }
