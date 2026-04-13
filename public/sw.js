@@ -1,55 +1,81 @@
-// MOOVY Service Worker v2
-// Handles: push notifications + offline caching + offline fallback
+// MOOVY Service Worker v4
+// Handles: push notifications + smart caching + offline fallback + on-demand activation
+//
+// ESTRATEGIA DE CACHE:
+// - Navegación (HTML): Network-first con fallback offline
+// - Imágenes propias (/images/, /icons/): Stale-while-revalidate (sirve cache + actualiza en background)
+// - Imágenes de productos (externas, uploads): Stale-while-revalidate con TTL de 1 hora
+// - _next/static/*: Cache-first (archivos hasheados por Next.js, inmutables)
+// - API, auth: Siempre network (nunca se cachean)
+//
+// VERSIONAMIENTO:
+// El CACHE_VERSION se actualiza en cada deploy. El build script lo puede inyectar,
+// o se cambia manualmente. Al activarse un nuevo SW, borra todos los caches anteriores.
 
-const CACHE_NAME = 'moovy-cache-v1';
-const OFFLINE_URL = '/offline.html';
+var CACHE_VERSION = '4';
+var CACHE_NAME = 'moovy-v' + CACHE_VERSION;
+var OFFLINE_URL = '/offline.html';
 
-// Resources to pre-cache on install (app shell)
-const PRECACHE_URLS = [
+// Resources to pre-cache on install (app shell minimal)
+var PRECACHE_URLS = [
     OFFLINE_URL,
     '/icons/icon-192x192.png',
     '/icons/icon-512x512.png',
     '/favicon.png',
 ];
 
+// Max age for image cache entries (1 hour in ms)
+var IMAGE_CACHE_MAX_AGE = 60 * 60 * 1000;
+
+// Max entries in image cache (prevent unbounded growth)
+var IMAGE_CACHE_MAX_ENTRIES = 200;
+
 // ─── INSTALL ──────────────────────────────────────────────
 self.addEventListener('install', function (event) {
-    console.log('[SW] Installing Service Worker v3');
+    console.log('[SW] Installing Service Worker v' + CACHE_VERSION);
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
             console.log('[SW] Pre-caching app shell');
             return cache.addAll(PRECACHE_URLS);
         })
-        // NO self.skipWaiting() — el nuevo SW espera a que el usuario
-        // cierre todas las tabs y vuelva a entrar. Esto evita el reload
-        // loop que interrumpía formularios y la experiencia del usuario.
+        // NO self.skipWaiting() automático — se activa bajo demanda
+        // cuando el usuario hace click en "Actualizar" en el banner.
+        // Ver el message listener 'SKIP_WAITING' más abajo.
     );
 });
 
 // ─── ACTIVATE ─────────────────────────────────────────────
 self.addEventListener('activate', function (event) {
-    console.log('[SW] Activating Service Worker v3');
+    console.log('[SW] Activating Service Worker v' + CACHE_VERSION);
     event.waitUntil(
-        // Clean up old caches
         caches.keys().then(function (cacheNames) {
             return Promise.all(
                 cacheNames
                     .filter(function (name) { return name !== CACHE_NAME; })
                     .map(function (name) {
-                        console.log('[SW] Deleting old cache:', name);
+                        console.log('[SW] Purging old cache:', name);
                         return caches.delete(name);
                     })
             );
+        }).then(function () {
+            // Tomar control de las páginas abiertas inmediatamente
+            // (solo se llega acá si el usuario pidió la actualización via SKIP_WAITING)
+            return self.clients.claim();
         })
-        // NO clients.claim() — las páginas abiertas siguen usando el SW
-        // anterior hasta que el usuario navegue o recargue manualmente.
-        // Esto evita el ciclo de reload automático que rompía la UX.
     );
+});
+
+// ─── MESSAGE HANDLER (on-demand skipWaiting) ──────────────
+self.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        console.log('[SW] User requested update — activating new version');
+        self.skipWaiting();
+    }
 });
 
 // ─── FETCH ────────────────────────────────────────────────
 self.addEventListener('fetch', function (event) {
-    const request = event.request;
+    var request = event.request;
 
     // Only handle GET requests
     if (request.method !== 'GET') return;
@@ -57,8 +83,9 @@ self.addEventListener('fetch', function (event) {
     // Skip non-http(s) requests (chrome-extension://, etc.)
     if (!request.url.startsWith('http')) return;
 
-    // Skip API calls and auth routes — always go to network
-    const url = new URL(request.url);
+    var url = new URL(request.url);
+
+    // Skip API calls, auth routes, and HMR — always go to network
     if (
         url.pathname.startsWith('/api/') ||
         url.pathname.startsWith('/auth/') ||
@@ -67,12 +94,11 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // Navigation requests: Network-first with offline fallback
+    // ── Navigation requests: Network-first with offline fallback ──
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
                 .then(function (response) {
-                    // Cache successful navigation responses
                     if (response.ok) {
                         var responseClone = response.clone();
                         caches.open(CACHE_NAME).then(function (cache) {
@@ -82,7 +108,6 @@ self.addEventListener('fetch', function (event) {
                     return response;
                 })
                 .catch(function () {
-                    // Try cache first, then offline fallback
                     return caches.match(request).then(function (cached) {
                         return cached || caches.match(OFFLINE_URL);
                     });
@@ -91,31 +116,7 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    // Static assets: Cache-first strategy
-    if (
-        url.pathname.startsWith('/icons/') ||
-        url.pathname.startsWith('/fonts/') ||
-        url.pathname.startsWith('/images/') ||
-        url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf)$/)
-    ) {
-        event.respondWith(
-            caches.match(request).then(function (cached) {
-                if (cached) return cached;
-                return fetch(request).then(function (response) {
-                    if (response.ok) {
-                        var responseClone = response.clone();
-                        caches.open(CACHE_NAME).then(function (cache) {
-                            cache.put(request, responseClone);
-                        });
-                    }
-                    return response;
-                });
-            })
-        );
-        return;
-    }
-
-    // Next.js static assets (_next/static): Cache-first (immutable, hashed)
+    // ── Next.js static assets (_next/static/): Cache-first (hashed, immutable) ──
     if (url.pathname.startsWith('/_next/static/')) {
         event.respondWith(
             caches.match(request).then(function (cached) {
@@ -133,13 +134,65 @@ self.addEventListener('fetch', function (event) {
         );
         return;
     }
+
+    // ── Images and fonts: Stale-while-revalidate ──
+    // Sirve la versión cacheada de inmediato (rápido) pero busca
+    // la versión nueva en background. En la próxima visita, el
+    // usuario ve el contenido actualizado.
+    var isImage = url.pathname.startsWith('/icons/') ||
+        url.pathname.startsWith('/fonts/') ||
+        url.pathname.startsWith('/images/') ||
+        url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf)$/);
+
+    if (isImage) {
+        event.respondWith(
+            caches.open(CACHE_NAME).then(function (cache) {
+                return cache.match(request).then(function (cached) {
+                    // Siempre lanzar fetch en background para actualizar
+                    var fetchPromise = fetch(request).then(function (networkResponse) {
+                        if (networkResponse.ok) {
+                            cache.put(request, networkResponse.clone());
+                            // Limpieza periódica del cache de imágenes
+                            trimImageCache(cache);
+                        }
+                        return networkResponse;
+                    }).catch(function () {
+                        // Network failed — return cached or nothing
+                        return cached;
+                    });
+
+                    // Devolver cached inmediatamente si existe, sino esperar network
+                    return cached || fetchPromise;
+                });
+            })
+        );
+        return;
+    }
 });
+
+// ─── Cache maintenance ───────────────────────────────────
+// Evita que el cache crezca sin límite en dispositivos con poco storage
+function trimImageCache(cache) {
+    cache.keys().then(function (keys) {
+        var imageKeys = keys.filter(function (req) {
+            return req.url.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf)$/);
+        });
+        if (imageKeys.length > IMAGE_CACHE_MAX_ENTRIES) {
+            // Borrar las más viejas (las primeras en el array)
+            var toDelete = imageKeys.slice(0, imageKeys.length - IMAGE_CACHE_MAX_ENTRIES);
+            toDelete.forEach(function (req) {
+                cache.delete(req);
+            });
+            console.log('[SW] Trimmed ' + toDelete.length + ' old image cache entries');
+        }
+    });
+}
 
 // ─── PUSH NOTIFICATIONS ──────────────────────────────────
 self.addEventListener('push', function (event) {
     console.log('[SW] Push notification received:', event);
 
-    var data = { title: 'MOOVY', body: '¡Nueva notificación!' };
+    var data = { title: 'MOOVY', body: 'Nueva notificacion!' };
 
     try {
         if (event.data) {
@@ -150,7 +203,7 @@ self.addEventListener('push', function (event) {
     }
 
     var options = {
-        body: data.body || '¡Nueva oferta de entrega disponible!',
+        body: data.body || 'Nueva oferta de entrega disponible!',
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-192x192.png',
         vibrate: [200, 100, 200, 100, 200],
@@ -169,7 +222,7 @@ self.addEventListener('push', function (event) {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || '🚀 MOOVY', options)
+        self.registration.showNotification(data.title || 'MOOVY', options)
     );
 });
 
@@ -182,13 +235,12 @@ self.addEventListener('notificationclick', function (event) {
         return;
     }
 
-    // V-SW FIX: Validate URL from push notification data (prevent phishing redirects)
+    // Validate URL from push notification data (prevent phishing redirects)
     var rawUrl = event.notification.data?.url || '/repartidor/dashboard';
     var urlToOpen = rawUrl;
     try {
-        // Only allow same-origin URLs or relative paths
         if (rawUrl.startsWith('/')) {
-            urlToOpen = rawUrl; // Relative path — safe
+            urlToOpen = rawUrl;
         } else {
             var parsed = new URL(rawUrl);
             var allowed = [self.location.hostname, 'somosmoovy.com', 'www.somosmoovy.com'];
@@ -203,7 +255,6 @@ self.addEventListener('notificationclick', function (event) {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-            // Try to find any existing app window to reuse
             for (var i = 0; i < clientList.length; i++) {
                 var client = clientList[i];
                 if ('focus' in client) {

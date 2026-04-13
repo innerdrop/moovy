@@ -19,9 +19,63 @@ const nextConfig: NextConfig = {
   // Allow mobile devices on local network to access dev server
   allowedDevOrigins: [appHost, "localhost", "127.0.0.1", "192.168.68.114"],
 
-  // Security Headers
+  // Security + Cache Headers
   async headers() {
     return [
+      // ── Service Worker: no-cache (siempre verificar si hay versión nueva) ──
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Pragma",
+            value: "no-cache",
+          },
+        ],
+      },
+      // ── Next.js static assets: inmutables (hasheados por el build) ──
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // ── Imágenes propias: cache corto para que se actualicen ──
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/icons/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+      // ── Fonts: cache largo (raramente cambian) ──
+      {
+        source: "/fonts/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // ── Security headers (todas las rutas) ──
       {
         source: "/:path*",
         headers: [
