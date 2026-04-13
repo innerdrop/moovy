@@ -24,14 +24,14 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = process.env.ADMIN_RESET_EMAIL || process.env.ADMIN_EMAIL;
+const ADMIN_EMAIL = process.env.OPS_LOGIN_EMAIL || process.env.ADMIN_RESET_EMAIL || process.env.ADMIN_EMAIL;
 
 async function main() {
     console.log("\n🧹 MOOVY — Limpieza total de base de datos");
     console.log("=============================================\n");
 
     if (!ADMIN_EMAIL) {
-        console.error("❌ Falta ADMIN_RESET_EMAIL o ADMIN_EMAIL en el .env");
+        console.error("❌ Falta OPS_LOGIN_EMAIL (o ADMIN_RESET_EMAIL) en el .env");
         process.exit(1);
     }
 
@@ -43,7 +43,7 @@ async function main() {
 
     if (!admin) {
         console.error(`❌ No se encontró usuario con email: ${ADMIN_EMAIL}`);
-        console.error("   Verificá ADMIN_RESET_EMAIL o ADMIN_EMAIL en el .env");
+        console.error("   Verificá OPS_LOGIN_EMAIL en el .env");
         process.exit(1);
     }
 

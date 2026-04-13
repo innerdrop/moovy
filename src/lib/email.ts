@@ -16,7 +16,7 @@ export const transporter = nodemailer.createTransport({
 export const baseUrl = process.env.NEXTAUTH_URL || "https://www.somosmoovy.com";
 export const companyLogo = `${baseUrl}/logo-moovy.svg`;
 export const fromEmail = `"MOOVY" <${process.env.SMTP_USER || "somosmoovy@gmail.com"}>`;
-export const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || "somosmoovy@gmail.com";
+export const adminEmail = process.env.NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || process.env.SMTP_USER || "somosmoovy@gmail.com";
 
 // ownerEmail legacy (fallback estático). Usar getAlertEmails() en su lugar.
 export const ownerEmail = adminEmail;

@@ -188,8 +188,8 @@ DB: DATABASE_URL, SHADOW_DATABASE_URL
 Auth: AUTH_SECRET, NEXTAUTH_SECRET, CRON_SECRET
 App: NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_SOCKET_URL, SOCKET_PORT, SOCKET_INTERNAL_URL
 MP: MP_ACCESS_TOKEN, MP_PUBLIC_KEY, MP_WEBHOOK_SECRET, MP_APP_ID
-Email: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ADMIN_EMAIL (notificaciones admin)
-Admin: ADMIN_RESET_EMAIL, ADMIN_PASSWORD (para scripts/reset-admin.ts)
+Email: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, NOTIFICATION_EMAIL (notificaciones admin, fallback ADMIN_EMAIL)
+OPS Admin: OPS_LOGIN_EMAIL (email login OPS), OPS_LOGIN_PASSWORD (password OPS). Fallback legacy: ADMIN_RESET_EMAIL, ADMIN_PASSWORD
 Push: NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
 Maps: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
 Redis: REDIS_URL (opcional — si no está, rate limiter usa in-memory con fallback automático)
@@ -199,7 +199,8 @@ start.ps1: crear rama | finish.ps1: cerrar rama y merge a develop | publish.ps1:
 devmain.ps1: deploy a producción | sync.ps1: pull develop
 validate-ops-config.ts: validación de integridad del panel OPS (9 tests: settings, puntos, moovyconfig, biblia, sync, tiers, audit, fórmula, duplicados)
 fix-ops-config.ts: corrige configs faltantes (PointsConfig, MoovyConfig keys, sync timeouts, loyalty tiers) + re-verifica
-reset-admin.ts: resetea contraseña del admin desde ADMIN_RESET_EMAIL + ADMIN_PASSWORD del .env. Uso: `npx tsx scripts/reset-admin.ts`
+reset-admin.ts: resetea contraseña del admin desde OPS_LOGIN_EMAIL + OPS_LOGIN_PASSWORD del .env. Uso: `npx tsx scripts/reset-admin.ts`
+create-admin.ts: crea/resetea admin OPS. Acepta email como argumento CLI. Uso: `npx tsx scripts/create-admin.ts [email]`. Limpia deletedAt y isSuspended automáticamente.
 
 ## Regla de testing obligatorio
 Cada feature que toque parámetros financieros, de asignación, o configurables DEBE incluir:

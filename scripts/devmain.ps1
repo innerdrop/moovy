@@ -116,16 +116,17 @@ if ($CleanProd) {
     # MODO CLEAN: borrar DB, crear schema, ejecutar seed de producción
     Write-Host "[DB] Limpiando DB de producción y ejecutando seed..." -ForegroundColor Yellow
 
-    if (-not $env:ADMIN_PASSWORD) {
-        Write-Host "[ERROR] Debes configurar ADMIN_PASSWORD antes de usar -CleanProd" -ForegroundColor Red
-        Write-Host '  $env:ADMIN_PASSWORD = "TuClaveSegura123"' -ForegroundColor Yellow
+    $adminPass = if ($env:OPS_LOGIN_PASSWORD) { $env:OPS_LOGIN_PASSWORD } else { $env:ADMIN_PASSWORD }
+    if (-not $adminPass) {
+        Write-Host "[ERROR] Debes configurar OPS_LOGIN_PASSWORD (o ADMIN_PASSWORD) antes de usar -CleanProd" -ForegroundColor Red
+        Write-Host '  $env:OPS_LOGIN_PASSWORD = "TuClaveSegura123"' -ForegroundColor Yellow
         exit
     }
 
     $remoteCommand += " && " +
         "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && " +
         "npx prisma db push --accept-data-loss && " +
-        "ADMIN_PASSWORD='$($env:ADMIN_PASSWORD)' npx tsx prisma/seed-production.ts"
+        "ADMIN_PASSWORD='$($adminPass)' npx tsx prisma/seed-production.ts"
 } elseif ($SyncLocal) {
     # MODO SYNC LOCAL: subir dump y reemplazar DB (legacy, PELIGROSO)
     Write-Host "[DB] Subiendo base de datos local al servidor..." -ForegroundColor Yellow

@@ -3,7 +3,7 @@
 #   .\scripts\reset-production.ps1
 #
 # IMPORTANTE: Antes de ejecutar, configura tu contraseña:
-#   $env:ADMIN_PASSWORD = "TuContraseñaActual"
+#   $env:OPS_LOGIN_PASSWORD = "TuContraseñaActual"
 
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Red
@@ -11,11 +11,12 @@ Write-Host "  RESET BASE DE DATOS - PRODUCCION" -ForegroundColor Red
 Write-Host "=============================================" -ForegroundColor Red
 Write-Host ""
 
-# Verificar que ADMIN_PASSWORD esta configurada
-if (-not $env:ADMIN_PASSWORD) {
-    Write-Host "[X] ERROR: Debes configurar ADMIN_PASSWORD antes de ejecutar." -ForegroundColor Red
+# Verificar que OPS_LOGIN_PASSWORD (o ADMIN_PASSWORD legacy) esta configurada
+$adminPass = if ($env:OPS_LOGIN_PASSWORD) { $env:OPS_LOGIN_PASSWORD } else { $env:ADMIN_PASSWORD }
+if (-not $adminPass) {
+    Write-Host "[X] ERROR: Debes configurar OPS_LOGIN_PASSWORD antes de ejecutar." -ForegroundColor Red
     Write-Host ""
-    Write-Host '   $env:ADMIN_PASSWORD = "TuContraseña"' -ForegroundColor Yellow
+    Write-Host '   $env:OPS_LOGIN_PASSWORD = "TuContraseña"' -ForegroundColor Yellow
     Write-Host ""
     exit 1
 }
@@ -70,7 +71,7 @@ if ($errorSummary.Count -gt 0) {
     Write-Host "=============================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Admin: maurod@me.com" -ForegroundColor Cyan
-    Write-Host "  Password: (la que configuraste en ADMIN_PASSWORD)" -ForegroundColor Cyan
+    Write-Host "  Password: (la que configuraste en OPS_LOGIN_PASSWORD)" -ForegroundColor Cyan
     Write-Host "  Modo mantenimiento: ACTIVADO" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Incluye: StoreSettings, PointsConfig, MoovyConfig," -ForegroundColor Gray
