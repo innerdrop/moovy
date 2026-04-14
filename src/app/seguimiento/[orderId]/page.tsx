@@ -65,10 +65,10 @@ interface DriverPosition {
 
 // ─── Status config ───
 const STATUS_STEPS = [
-    { key: "PENDING", label: "Confirmando", icon: CircleDot, color: "text-amber-500" },
+    { key: "PENDING", label: "Recibido", icon: CircleDot, color: "text-amber-500" },
     { key: "CONFIRMED", label: "Confirmado", icon: CheckCircle2, color: "text-emerald-500" },
     { key: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-orange-500" },
-    { key: "READY", label: "Listo", icon: PackageCheck, color: "text-blue-500" },
+    { key: "READY", label: "Listo para retirar", icon: PackageCheck, color: "text-blue-500" },
     { key: "PICKED_UP", label: "En camino", icon: Bike, color: "text-violet-500" },
     { key: "DELIVERED", label: "Entregado", icon: PartyPopper, color: "text-emerald-600" },
 ];
