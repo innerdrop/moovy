@@ -487,6 +487,38 @@ export default function RiderDashboard() {
 
     const pedidoActivo = pedidosActivos[0];
 
+    // ── Etapa del viaje (contextual disclosure) ──
+    // to_merchant: yendo al comercio (DRIVER_ASSIGNED / sin status)
+    // at_merchant: llegó al comercio, esperando pickup (DRIVER_ARRIVED)
+    // to_customer: ya retiró, yendo al cliente (PICKED_UP / IN_DELIVERY)
+    type RiderStage = "to_merchant" | "at_merchant" | "to_customer";
+    const riderStage: RiderStage = (() => {
+        const ds = (pedidoActivo?.deliveryStatus || "").toUpperCase();
+        if (ds === "DRIVER_ARRIVED") return "at_merchant";
+        if (["PICKED_UP", "IN_DELIVERY"].includes(ds)) return "to_customer";
+        return "to_merchant";
+    })();
+
+    // ── Proximidad al destino actual (Haversine, metros) ──
+    // Se usa para pre-arrival auto-expand del BottomSheet. Null si no hay
+    // location o coordenadas del destino.
+    const proximityMeters: number | null = (() => {
+        if (!pedidoActivo || !location?.latitude || !location?.longitude) return null;
+        const destLat = riderStage === "to_customer" ? pedidoActivo.customerLat : pedidoActivo.merchantLat;
+        const destLng = riderStage === "to_customer" ? pedidoActivo.customerLng : pedidoActivo.merchantLng;
+        if (!destLat || !destLng) return null;
+        const R = 6371000;
+        const toRad = (d: number) => (d * Math.PI) / 180;
+        const dLat = toRad(destLat - location.latitude);
+        const dLng = toRad(destLng - location.longitude);
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(location.latitude)) *
+                Math.cos(toRad(destLat)) *
+                Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    })();
+
     return (
         <div className={`h-dvh w-screen relative bg-[var(--rider-bg)] ${!isMapExpanded ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}>
 
@@ -569,6 +601,7 @@ export default function RiderDashboard() {
                                 navDestinationName={navData?.destinationName}
                                 navIsPickedUp={navData?.isPickedUp}
                                 navIsNavigating={navData?.isNavigating}
+                                proximityMeters={proximityMeters}
                             >
                                 <div className="pb-10">
                                     {pedidoActivo ? (
@@ -592,28 +625,33 @@ export default function RiderDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Route card */}
+                                            {/* Route card — disclosure contextual por etapa.
+                                              - to_merchant: destaca COMERCIO (nombre, dirección). Destino colapsado en gris.
+                                              - at_merchant: destaca COMERCIO (muy prominente). Destino en gris.
+                                              - to_customer: destaca CLIENTE (dirección, nombre) + teléfono accesible. Comercio en gris. */}
                                             <div className="bg-gray-50 dark:bg-[#22252f] rounded-[24px] p-4 border border-gray-100 dark:border-white/10">
                                                 <div className="flex items-start gap-4">
                                                     <div className="flex flex-col items-center gap-1 mt-1">
-                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${["ready", "driver_assigned"].includes(pedidoActivo.estado) ? "bg-blue-500" : pedidoActivo.estado === "driver_arrived" ? "bg-amber-500" : "bg-gray-300"}`} />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${riderStage === "to_merchant" ? "bg-blue-500" : riderStage === "at_merchant" ? "bg-amber-500" : "bg-gray-300"}`} />
                                                         <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200" />
-                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${pedidoActivo.estado === "driver_arrived" ? "bg-blue-500" : pedidoActivo.estado === "picked_up" ? "bg-blue-500" : "bg-gray-300"}`} />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${riderStage === "at_merchant" ? "bg-blue-500" : riderStage === "to_customer" ? "bg-blue-500" : "bg-gray-300"}`} />
                                                         <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200" />
-                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${pedidoActivo.estado === "picked_up" ? "bg-[var(--rider-online)]" : "bg-gray-300"}`} />
+                                                        <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${riderStage === "to_customer" ? "bg-[var(--rider-online)]" : "bg-gray-300"}`} />
                                                     </div>
                                                     <div className="flex-1 space-y-6">
-                                                        <div>
+                                                        {/* Comercio — prominente en to_merchant / at_merchant, secundario en to_customer */}
+                                                        <div className={riderStage === "to_customer" ? "opacity-50" : ""}>
                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mb-1">Comercio</p>
-                                                            <p className="font-bold text-[var(--rider-text)] leading-tight">{pedidoActivo.comercio}</p>
-                                                            {pedidoActivo.estado !== "picked_up" && (
+                                                            <p className={`font-bold text-[var(--rider-text)] leading-tight ${riderStage === "at_merchant" ? "text-lg" : ""}`}>{pedidoActivo.comercio}</p>
+                                                            {riderStage !== "to_customer" && (
                                                                 <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{pedidoActivo.direccion}</p>
                                                             )}
                                                         </div>
-                                                        <div>
+                                                        {/* Cliente — secundario en to_merchant / at_merchant, prominente en to_customer */}
+                                                        <div className={riderStage !== "to_customer" ? "opacity-50" : ""}>
                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mb-1">Destino</p>
-                                                            <p className="font-bold text-[var(--rider-text)] leading-tight">{pedidoActivo.direccionCliente || "Ubicación del cliente"}</p>
-                                                            {pedidoActivo.estado === "picked_up" && (
+                                                            <p className={`font-bold text-[var(--rider-text)] leading-tight ${riderStage === "to_customer" ? "text-lg" : ""}`}>{pedidoActivo.direccionCliente || "Ubicación del cliente"}</p>
+                                                            {riderStage === "to_customer" && (
                                                                 <div className="flex items-center gap-2 mt-1 py-1 px-3 bg-green-50 text-green-700 rounded-full w-fit">
                                                                     <User className="w-3 h-3" />
                                                                     <span className="text-[10px] font-bold uppercase">{pedidoActivo.nombreCliente || "Cliente"}</span>
@@ -621,8 +659,9 @@ export default function RiderDashboard() {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    {pedidoActivo.telefonoCliente && (
-                                                        <a href={`tel:${pedidoActivo.telefonoCliente}`} className="w-12 h-12 bg-white dark:bg-[#22252f] rounded-2xl flex items-center justify-center shadow-md active:scale-95 border border-gray-100 dark:border-white/10">
+                                                    {/* Teléfono cliente: solo aparece cuando el rider está yendo al cliente (no antes) */}
+                                                    {riderStage === "to_customer" && pedidoActivo.telefonoCliente && (
+                                                        <a href={`tel:${pedidoActivo.telefonoCliente}`} className="w-12 h-12 bg-white dark:bg-[#22252f] rounded-2xl flex items-center justify-center shadow-md active:scale-95 border border-gray-100 dark:border-white/10" title="Llamar al cliente">
                                                             <Phone className="w-5 h-5 text-[var(--rider-online)]" />
                                                         </a>
                                                     )}

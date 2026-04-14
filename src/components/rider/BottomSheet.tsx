@@ -43,7 +43,17 @@ interface BottomSheetProps {
     navDestinationName?: string;
     navIsPickedUp?: boolean;
     navIsNavigating?: boolean;
+    // Distancia en metros del driver al destino actual. Usado para pre-arrival
+    // auto-expand: cuando se pasa a <100m, el sheet sube a "mid" para que la
+    // acción primaria esté al alcance sin swipe extra.
+    proximityMeters?: number | null;
 }
+
+// Haptic feedback nativo — navigator.vibrate es no-op en dispositivos sin motor
+const haptic = {
+    light: () => { try { navigator?.vibrate?.(10); } catch {} },
+    medium: () => { try { navigator?.vibrate?.(50); } catch {} },
+};
 
 // ── Helpers (moved from NavigationHUD) ──
 
@@ -80,6 +90,7 @@ export default function BottomSheet({
     navDestinationName,
     navIsPickedUp,
     navIsNavigating,
+    proximityMeters,
 }: BottomSheetProps) {
     const isDark = useColorScheme() === "dark";
     const [state, setState] = useState<SheetState>(() => {
@@ -116,6 +127,38 @@ export default function BottomSheet({
         }
         prevNavRef.current = !!navIsNavigating;
     }, [navIsNavigating]);
+
+    // ── Haptic en avance de paso ──
+    // Cada vez que la instrucción de navegación cambia (nuevo giro), vibración
+    // corta para que el rider perciba el cambio sin mirar la pantalla.
+    const prevStepKeyRef = useRef<string>("");
+    useEffect(() => {
+        if (!navCurrentStep) { prevStepKeyRef.current = ""; return; }
+        const key = (navCurrentStep.instruction || "") + "|" + (navCurrentStep.maneuver || "");
+        if (prevStepKeyRef.current && prevStepKeyRef.current !== key) {
+            haptic.light();
+        }
+        prevStepKeyRef.current = key;
+    }, [navCurrentStep]);
+
+    // ── Pre-arrival auto-expand + haptic ──
+    // Cuando el driver está a <100m del destino actual (comercio si va al
+    // comercio, cliente si ya retiró), el sheet sube automáticamente a "mid"
+    // y vibra medium. Así la acción primaria (SwipeToConfirm) queda visible
+    // sin que el rider tenga que swipear. Solo dispara en la transición
+    // >=100 → <100 (no re-dispara si oscila cerca del umbral).
+    const wasPreArrivalRef = useRef(false);
+    useEffect(() => {
+        const inPreArrival =
+            proximityMeters !== null &&
+            proximityMeters !== undefined &&
+            proximityMeters < 100;
+        if (inPreArrival && !wasPreArrivalRef.current) {
+            haptic.medium();
+            setState(prev => prev === "minimized" ? "mid" : prev);
+        }
+        wasPreArrivalRef.current = inPreArrival;
+    }, [proximityMeters]);
 
     const getTranslateY = useCallback((s: SheetState): string => {
         switch (s) {
@@ -438,16 +481,4 @@ export default function BottomSheet({
             {/* ── Scrollable body (visible unless hidden) ── */}
             <div
                 className={`flex-1 ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}
-                style={{
-                    opacity: state === "hidden" ? 0 : 1,
-                    transition: "opacity 0.25s ease",
-                    pointerEvents: state === "hidden" ? "none" : "auto",
-                }}
-            >
-                <div style={{ padding: "16px 16px 80px", display: "flex", flexDirection: "column", gap: 12 }}>
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-}
+          
