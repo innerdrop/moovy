@@ -22,10 +22,14 @@ import {
     Zap,
     Settings,
     Star,
-    TrendingUp
+    TrendingUp,
+    WifiOff
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useBattery } from "@/hooks/useBattery";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useOnline } from "@/hooks/useOnline";
 import { MapSkeleton } from "@/components/rider/MapWrapper";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useSocketAuth } from "@/hooks/useSocketAuth";
@@ -121,6 +125,8 @@ interface PendingOrderOffer {
 export default function RiderDashboard() {
     const { data: session } = useSession();
     const { location, heading, error: locationHookError } = useGeolocation();
+    const battery = useBattery();
+    const isOnlineNet = useOnline();
     const [dashboardData, setDashboardData] = useState<{
         driverId?: string;
         stats: DashboardStats;
@@ -487,6 +493,18 @@ export default function RiderDashboard() {
 
     const pedidoActivo = pedidosActivos[0];
 
+    // ── Wake Lock: mantener pantalla encendida durante pedido activo ──
+    // Rider no toca la pantalla mientras maneja pero necesita ver el mapa.
+    useWakeLock(!!pedidoActivo);
+
+    // Indicador de batería baja (<15% y no cargando) — aviso visual al rider
+    const showLowBattery =
+        battery.supported &&
+        battery.level !== null &&
+        battery.level < 0.15 &&
+        battery.charging === false;
+    const batteryPercent = battery.level !== null ? Math.round(battery.level * 100) : null;
+
     // ── Etapa del viaje (contextual disclosure) ──
     // to_merchant: yendo al comercio (DRIVER_ASSIGNED / sin status)
     // at_merchant: llegó al comercio, esperando pickup (DRIVER_ARRIVED)
@@ -561,10 +579,29 @@ export default function RiderDashboard() {
                                         <Home className="w-5 h-5 text-[var(--rider-accent)]" />
                                     </button>
                                     <div className="flex flex-col items-end gap-2 pointer-events-auto">
+                                        {/* Chip de conectividad al servicio (driver toggle) */}
                                         <div className={`px-5 py-2.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-xl flex items-center gap-2 border transition-all duration-300 ${isOnline ? 'bg-[var(--rider-online)]/90 text-white border-[var(--rider-online)]/50' : 'bg-white/95 text-gray-400 border-gray-200'}`}>
                                             <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
                                             <span className="text-[12px] font-semibold uppercase tracking-[0.8px]">{isOnline ? 'Conectado' : 'Offline'}</span>
                                         </div>
+
+                                        {/* Banner sin señal de red — crítico en zonas intermitentes de Ushuaia */}
+                                        {!isOnlineNet && (
+                                            <div className="px-4 py-2 rounded-full shadow-lg bg-red-500 text-white flex items-center gap-2 animate-pulse">
+                                                <WifiOff className="w-3.5 h-3.5" />
+                                                <span className="text-[11px] font-bold uppercase tracking-wider">Sin señal</span>
+                                            </div>
+                                        )}
+
+                                        {/* Batería baja — aviso discreto cuando <15% y no cargando */}
+                                        {showLowBattery && (
+                                            <div className="px-4 py-2 rounded-full shadow-lg bg-amber-500 text-white flex items-center gap-2">
+                                                <BatteryLow className="w-3.5 h-3.5" />
+                                                <span className="text-[11px] font-bold uppercase tracking-wider">
+                                                    Batería {batteryPercent}%
+                                                </span>
+                                            </div>
+                                        )}
                                         {pedidoActivo && (
                                             <div className="flex flex-col gap-2">
                                                 <a
