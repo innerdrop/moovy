@@ -103,6 +103,20 @@ export default function BottomSheet({
         }
     }, [state, onStateChange]);
 
+    // ── Auto-minimize al arrancar navegación ──
+    // Cuando el rider acepta un pedido y empieza a navegar, el mapa debe ser
+    // la UI primaria. Forzamos minimizado aunque localStorage tuviera otro
+    // estado de una sesión anterior. Si el rider swipea el sheet para arriba
+    // durante el viaje, queda como lo dejó (localStorage persiste el cambio).
+    const prevNavRef = useRef(false);
+    useEffect(() => {
+        const navStarting = !!navIsNavigating && !prevNavRef.current;
+        if (navStarting) {
+            setState("minimized");
+        }
+        prevNavRef.current = !!navIsNavigating;
+    }, [navIsNavigating]);
+
     const getTranslateY = useCallback((s: SheetState): string => {
         switch (s) {
             case "expanded": return "15%";
@@ -192,44 +206,44 @@ export default function BottomSheet({
                 className="flex items-center gap-3"
                 style={{ padding: "0 16px 14px", position: "relative", zIndex: 1 }}
             >
-                {/* Maneuver icon — white box */}
+                {/* Maneuver icon — glanceable al manejar (60px contenedor + 8x8 icon) */}
                 <div
                     className="flex-shrink-0 flex items-center justify-center"
                     style={{
-                        width: 52, height: 52, borderRadius: 16,
+                        width: 60, height: 60, borderRadius: 18,
                         background: isDark ? "#1a1d27" : "#fff",
                         boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.4)" : "0 4px 16px rgba(0,0,0,0.15)",
                     }}
                 >
                     <span style={{ color: "#e60012" }}>
-                        {getManeuverIcon(navCurrentStep.maneuver, "w-7 h-7 stroke-[2.5]")}
+                        {getManeuverIcon(navCurrentStep.maneuver, "w-8 h-8 stroke-[2.5]")}
                     </span>
                 </div>
 
-                {/* Instruction text */}
+                {/* Instruction text — tipografía bumped para lectura rápida */}
                 <div className="flex-1 min-w-0">
                     <p
                         className="font-extrabold leading-tight tracking-tight"
-                        style={{ color: "#fff", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                        style={{ color: "#fff", fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                     >
                         {stripHtml(navCurrentStep.instruction)}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-baseline gap-2 mt-1">
                         <span
                             className="font-black tracking-tight"
-                            style={{ color: "rgba(255,255,255,0.95)", fontSize: 20, lineHeight: 1 }}
+                            style={{ color: "#fff", fontSize: 28, lineHeight: 1 }}
                         >
                             {navCurrentStep.distance}
                         </span>
                         <span
                             className="font-bold uppercase tracking-wider"
                             style={{
-                                color: "rgba(255,255,255,0.55)", fontSize: 8,
+                                color: "rgba(255,255,255,0.6)", fontSize: 9,
                                 background: "rgba(0,0,0,0.15)",
                                 padding: "2px 7px", borderRadius: 5,
                             }}
                         >
-                            Distancia
+                            al giro
                         </span>
                     </div>
                 </div>
