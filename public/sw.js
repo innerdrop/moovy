@@ -1,4 +1,4 @@
-// MOOVY Service Worker v4
+// MOOVY Service Worker v5
 // Handles: push notifications + smart caching + offline fallback + on-demand activation
 //
 // ESTRATEGIA DE CACHE:
@@ -12,7 +12,7 @@
 // El CACHE_VERSION se actualiza en cada deploy. El build script lo puede inyectar,
 // o se cambia manualmente. Al activarse un nuevo SW, borra todos los caches anteriores.
 
-var CACHE_VERSION = '4';
+var CACHE_VERSION = '5';
 var CACHE_NAME = 'moovy-v' + CACHE_VERSION;
 var OFFLINE_URL = '/offline.html';
 
@@ -132,6 +132,15 @@ self.addEventListener('fetch', function (event) {
                 });
             })
         );
+        return;
+    }
+
+    // ── Cross-origin requests: pass-through al navegador ──
+    // Si interceptamos imágenes de otros dominios (ej: Cloudflare R2 en pub-*.r2.dev),
+    // el fetch del SW aplica políticas CORS que <img> no aplicaría, y si el servidor
+    // no responde con Access-Control-Allow-Origin la imagen aparece rota en mobile.
+    // Solución: no tocar requests cross-origin — que el browser los maneje directo.
+    if (url.origin !== self.location.origin) {
         return;
     }
 
