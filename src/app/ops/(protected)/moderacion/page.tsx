@@ -20,6 +20,7 @@ import {
     Package,
     AlertTriangle,
     Clock,
+    Trash2,
 } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
 
@@ -71,6 +72,9 @@ export default function ModeracionPage() {
     // Rejection modal
     const [rejectingId, setRejectingId] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState("");
+    // Delete modal (eliminación definitiva con razón opcional)
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteReason, setDeleteReason] = useState("");
 
     const fetchListings = async () => {
         setLoading(true);
@@ -135,6 +139,33 @@ export default function ModeracionPage() {
             }
         } catch (error) {
             console.error("Error rejecting listing:", error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deletingId) return;
+        setActionLoading(deletingId);
+        try {
+            const res = await fetch(`/api/admin/listings/${deletingId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: deleteReason.trim() || undefined }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || "No se pudo eliminar el listing");
+                return;
+            }
+            // Cerrar modales y refrescar
+            if (selectedListing?.id === deletingId) setSelectedListing(null);
+            setDeletingId(null);
+            setDeleteReason("");
+            fetchListings();
+        } catch (error) {
+            console.error("Error deleting listing:", error);
+            alert("Error de conexión al eliminar el listing");
         } finally {
             setActionLoading(null);
         }
@@ -294,7 +325,7 @@ export default function ModeracionPage() {
                                                             setRejectReason("");
                                                         }}
                                                         disabled={actionLoading === listing.id}
-                                                        className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition-all"
+                                                        className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 transition-all"
                                                     >
                                                         {actionLoading === listing.id ? (
                                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -311,6 +342,17 @@ export default function ModeracionPage() {
                                                         ) : "Aprobar"}
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => {
+                                                        setDeletingId(listing.id);
+                                                        setDeleteReason("");
+                                                    }}
+                                                    disabled={actionLoading === listing.id}
+                                                    title="Eliminar listing"
+                                                    className="p-2 rounded-xl bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -359,7 +401,7 @@ export default function ModeracionPage() {
                                                 setRejectReason("");
                                             }}
                                             disabled={actionLoading === listing.id}
-                                            className="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-500 border border-red-100"
+                                            className="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100"
                                         >
                                             {actionLoading === listing.id ? (
                                                 <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -376,6 +418,17 @@ export default function ModeracionPage() {
                                             ) : "Aprobar"}
                                         </button>
                                     )}
+                                    <button
+                                        onClick={() => {
+                                            setDeletingId(listing.id);
+                                            setDeleteReason("");
+                                        }}
+                                        disabled={actionLoading === listing.id}
+                                        className="px-3 py-2.5 rounded-xl bg-red-50 text-red-500 border border-red-100"
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -524,14 +577,14 @@ export default function ModeracionPage() {
                             )}
 
                             {/* Actions */}
-                            <div className="flex gap-3 pt-2 border-t border-slate-100">
+                            <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
                                 {selectedListing.isActive ? (
                                     <button
                                         onClick={() => {
                                             setRejectingId(selectedListing.id);
                                             setRejectReason("");
                                         }}
-                                        className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                        className="flex-1 min-w-[140px] py-3 rounded-xl font-bold text-sm bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 transition-all flex items-center justify-center gap-2"
                                     >
                                         <XCircle className="w-4 h-4" />
                                         Pausar / Rechazar
@@ -540,7 +593,7 @@ export default function ModeracionPage() {
                                     <button
                                         onClick={() => toggleActive(selectedListing.id, selectedListing.isActive)}
                                         disabled={actionLoading === selectedListing.id}
-                                        className="flex-1 py-3 rounded-xl font-bold text-sm bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 transition-all flex items-center justify-center gap-2"
+                                        className="flex-1 min-w-[140px] py-3 rounded-xl font-bold text-sm bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 transition-all flex items-center justify-center gap-2"
                                     >
                                         {actionLoading === selectedListing.id ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -549,6 +602,16 @@ export default function ModeracionPage() {
                                         )}
                                     </button>
                                 )}
+                                <button
+                                    onClick={() => {
+                                        setDeletingId(selectedListing.id);
+                                        setDeleteReason("");
+                                    }}
+                                    className="flex-1 min-w-[140px] py-3 rounded-xl font-bold text-sm bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Eliminar
+                                </button>
                                 <button
                                     onClick={() => setSelectedListing(null)}
                                     className="px-6 py-3 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
@@ -600,6 +663,63 @@ export default function ModeracionPage() {
                                 </button>
                                 <button
                                     onClick={() => setRejectingId(null)}
+                                    className="px-6 py-3 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ Delete Modal ═══ */}
+            {deletingId && (
+                <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={() => setDeletingId(null)}>
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-red-100 rounded-xl">
+                                    <Trash2 className="w-6 h-6 text-red-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg">Eliminar Listing</h3>
+                                    <p className="text-sm text-slate-500">Esta acción no se puede deshacer</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                                El listing se va a ocultar del marketplace. Queda registro en audit log para trazabilidad.
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Razón <span className="text-slate-400 font-normal">(opcional)</span>
+                                </label>
+                                <textarea
+                                    value={deleteReason}
+                                    onChange={(e) => setDeleteReason(e.target.value)}
+                                    placeholder="Ej: Producto prohibido, cuenta fraudulenta, a pedido del vendedor..."
+                                    maxLength={500}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 resize-none h-24 text-sm"
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1 text-right">{deleteReason.length}/500</p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={actionLoading === deletingId}
+                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                >
+                                    {actionLoading === deletingId ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <><Trash2 className="w-4 h-4" /> Confirmar Eliminación</>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setDeletingId(null)}
                                     className="px-6 py-3 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
                                 >
                                     Cancelar

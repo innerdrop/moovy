@@ -615,6 +615,10 @@ model Listing {
   auctionStatus   String?        // ACTIVE | ENDED | SOLD | NO_BIDS | CANCELLED
   auctionWinnerId String?        // userId del ganador final
   winnerPaymentDeadline DateTime? // 24h después de cierre para pagar
+  // --- Soft delete (moderación OPS) ---
+  deletedAt       DateTime?      // cuando OPS elimina el listing (soft delete)
+  deletedBy       String?        // userId del admin que eliminó
+  deletedReason   String?        // razón opcional de la eliminación
   // --- Timestamps ---
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -631,6 +635,7 @@ model Listing {
   @@index([listingType])
   @@index([auctionStatus])
   @@index([auctionEndsAt])
+  @@index([deletedAt])
 }
 
 model Bid {

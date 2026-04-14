@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status");
 
-    const where: any = {};
+    // Siempre filtrar soft-deleted (listings eliminados por OPS no vuelven a aparecer)
+    const where: any = { deletedAt: null };
 
     // Status convenience filter
     if (status === "active") where.isActive = true;
