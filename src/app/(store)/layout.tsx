@@ -29,6 +29,7 @@ export default function StoreLayout({
     const [showSplash, setShowSplash] = useState(false);
     const [contentReady, setContentReady] = useState(false);
     const [promoSettings, setPromoSettings] = useState<any>(null);
+    const [supportChatEnabled, setSupportChatEnabled] = useState(true); // default optimista — si falla fetch, igual se muestra
 
     // Mount + splash — runs exactly once
     useEffect(() => {
@@ -88,6 +89,12 @@ export default function StoreLayout({
                         buttonText: data.promoPopupButtonText,
                         dismissable: data.promoPopupDismissable ?? true
                     });
+                }
+
+                // Feature flag: globo de chat de soporte (controlado desde OPS)
+                // default true cuando el campo no existe para que no rompa despliegues sin db push
+                if (typeof data.supportChatEnabled === "boolean") {
+                    setSupportChatEnabled(data.supportChatEnabled);
                 }
             })
             .catch(err => console.error("Error fetching settings:", err));
@@ -201,8 +208,8 @@ export default function StoreLayout({
             {/* Sidebars y Modales */}
             <CartSidebar />
 
-            {/* Live Chat Support Widget */}
-            <ChatWidget />
+            {/* Live Chat Support Widget — toggleable desde OPS > Ajustes */}
+            {supportChatEnabled && <ChatWidget />}
 
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}

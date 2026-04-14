@@ -55,6 +55,7 @@ export async function PUT(request: Request) {
         if (typeof data.showComerciosCard === "boolean") updateData.showComerciosCard = data.showComerciosCard;
         if (typeof data.heroSliderEnabled === "boolean") updateData.heroSliderEnabled = data.heroSliderEnabled;
         if (typeof data.heroSliderShowArrows === "boolean") updateData.heroSliderShowArrows = data.heroSliderShowArrows;
+        if (typeof data.supportChatEnabled === "boolean") updateData.supportChatEnabled = data.supportChatEnabled;
 
         // Strings
         if (data.closedMessage !== undefined) updateData.closedMessage = data.closedMessage || "";

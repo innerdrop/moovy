@@ -148,6 +148,20 @@ export default async function ConfigurationPage() {
                                 />
                             </div>
 
+                            <div className="flex items-center justify-between p-5 bg-emerald-50/40 rounded-2xl border border-emerald-100/60">
+                                <div className="max-w-[70%]">
+                                    <h3 className="font-extrabold text-gray-900 text-sm">Chat de Soporte</h3>
+                                    <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                                        Mostrar el globo de chat en línea para compradores logueados
+                                    </p>
+                                </div>
+                                <Switch
+                                    name="supportChatEnabled"
+                                    defaultChecked={(settings as any)?.supportChatEnabled ?? true}
+                                    activeColor="bg-emerald-500"
+                                />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4 pt-2">
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100">
                                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">

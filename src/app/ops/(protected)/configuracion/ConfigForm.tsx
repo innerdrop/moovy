@@ -44,6 +44,7 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
             heroSliderEnabled: formData.get("heroSliderEnabled") === "on",
             heroSliderShowArrows: formData.get("heroSliderShowArrows") === "on",
             heroSliderInterval: parseInt(formData.get("heroSliderInterval") as string || "5") * 1000,
+            supportChatEnabled: formData.get("supportChatEnabled") === "on",
         };
 
         try {

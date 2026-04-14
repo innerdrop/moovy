@@ -694,6 +694,7 @@ model StoreSettings {
   heroSliderEnabled     Boolean  @default(true)
   heroSliderInterval    Int      @default(5000)
   heroSliderShowArrows  Boolean  @default(true)
+  supportChatEnabled    Boolean  @default(true)
   promoBannerButtonLink String   @default("/productos?categoria=pizzas")
   promoBannerButtonText String   @default("Ver locales")
   promoBannerEnabled    Boolean  @default(true)
