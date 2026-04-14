@@ -17,7 +17,8 @@ export async function GET(request: Request) {
         const status = searchParams.get("status");
         const search = searchParams.get("search");
 
-        const where: any = {};
+        // Siempre filtrar soft-deleted
+        const where: any = { deletedAt: null };
 
         if (merchantId) {
             where.merchantId = merchantId;
@@ -128,7 +129,9 @@ export async function POST(request: Request) {
     }
 }
 
-// PATCH - Update product (toggle active, update fields)
+// PATCH - Toggle active SOLAMENTE.
+// Para updates más complejos usar /api/admin/products/[id] (PUT/PATCH), que
+// respeta las reglas de moderación estricta sobre productos de comercio.
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
@@ -138,83 +141,49 @@ export async function PATCH(request: Request) {
         }
 
         const data = await request.json();
-        const { id, action, ...updateData } = data;
+        const { id, action } = data;
 
         if (!id) {
             return NextResponse.json({ error: "ID requerido" }, { status: 400 });
         }
 
-        let update: any = {};
+        // Solo toggle_active está permitido acá.
+        // Cualquier otra modificación va por /api/admin/products/[id] que tiene
+        // las reglas de moderación estricta.
+        if (action !== "toggle_active") {
+            return NextResponse.json(
+                { error: "Acción no soportada. Para editar productos usar PUT /api/admin/products/[id]" },
+                { status: 400 }
+            );
+        }
 
-        switch (action) {
-            case "toggle_active":
-                const product = await prisma.product.findUnique({ where: { id } });
-                update.isActive = !product?.isActive;
-                break;
-            case "update":
-                if (updateData.price) updateData.price = parseFloat(updateData.price);
-                if (updateData.costPrice) updateData.costPrice = parseFloat(updateData.costPrice);
-                if (updateData.stock) updateData.stock = parseInt(updateData.stock);
+        const existing = await prisma.product.findUnique({
+            where: { id },
+            select: { isActive: true, deletedAt: true },
+        });
 
-                // Handle Category updates
-                if (updateData.categoryIds) {
-                    const categoryIds = updateData.categoryIds;
-                    delete updateData.categoryIds;
-
-                    // Delete existing categories for this product and create new ones
-                    await prisma.productCategory.deleteMany({
-                        where: { productId: id }
-                    });
-
-                    update.categories = {
-                        create: categoryIds.map((catId: string) => ({
-                            categoryId: catId
-                        }))
-                    };
-                }
-                update = { ...update, ...updateData };
-                break;
-            default:
-                update = updateData;
+        if (!existing || (existing as any).deletedAt) {
+            return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
         }
 
         const updated = await prisma.product.update({
             where: { id },
-            data: update
+            data: { isActive: !existing.isActive },
         });
 
         return NextResponse.json({ message: "Producto actualizado", product: updated });
     } catch (error) {
-        console.error("Error updating product:", error);
+        console.error("Error toggling product:", error);
         return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
     }
 }
 
-// DELETE - Soft delete product
-export async function DELETE(request: Request) {
-    try {
-        const session = await auth();
-
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get("id");
-
-        if (!id) {
-            return NextResponse.json({ error: "ID requerido" }, { status: 400 });
-        }
-
-        // Soft delete - just deactivate
-        await prisma.product.update({
-            where: { id },
-            data: { isActive: false }
-        });
-
-        return NextResponse.json({ message: "Producto eliminado" });
-    } catch (error) {
-        console.error("Error deleting product:", error);
-        return NextResponse.json({ error: "Error al eliminar" }, { status: 500 });
-    }
+// DELETE plural endpoint está deprecado.
+// La eliminación real se hace vía DELETE /api/admin/products/[id] que aplica
+// soft-delete con razón opcional + audit log.
+export async function DELETE() {
+    return NextResponse.json(
+        { error: "Usar DELETE /api/admin/products/[id] con body { reason?: string }" },
+        { status: 410 }
+    );
 }

@@ -17,7 +17,10 @@ import {
     Trash2,
     Upload,
     ImageIcon,
-    X
+    X,
+    Lock,
+    Store,
+    AlertTriangle
 } from "lucide-react";
 
 interface Category {
@@ -37,6 +40,8 @@ interface Product {
     minStock: number;
     isActive: boolean;
     isFeatured: boolean;
+    merchantId: string | null;
+    merchant?: { id: string; name: string } | null;
     categories: Array<{ category: Category }>;
     images?: Array<{ url: string }>;
 }
@@ -65,6 +70,15 @@ export default function EditProductPage() {
     const [isActive, setIsActive] = useState(true);
     const [isFeatured, setIsFeatured] = useState(false);
     const [imageUrl, setImageUrl] = useState("");
+
+    // Product type — productos de comercio son read-only (solo categoría, isActive, isFeatured editables)
+    // Productos master (merchantId === null) son editables por OPS.
+    const [isMerchantProduct, setIsMerchantProduct] = useState<boolean>(false);
+    const [merchantName, setMerchantName] = useState<string | null>(null);
+
+    // Delete modal con razón opcional
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteReason, setDeleteReason] = useState("");
 
     // Confirmation Modal State
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -100,6 +114,8 @@ export default function EditProductPage() {
                     setMinStock(product.minStock.toString());
                     setIsActive(product.isActive);
                     setIsFeatured(product.isFeatured);
+                    setIsMerchantProduct(!!product.merchantId);
+                    setMerchantName(product.merchant?.name || null);
                     if (product.categories[0]) {
                         setCategoryId(product.categories[0].category.id);
                     }
@@ -167,21 +183,27 @@ export default function EditProductPage() {
                 setIsSaving(true);
 
                 try {
+                    // Payload se construye según tipo de producto.
+                    // Producto de comercio: solo categoría + flags de plataforma.
+                    // Producto master: todos los campos editables.
+                    const payload: any = {
+                        categoryId,
+                        isActive,
+                        isFeatured,
+                    };
+                    if (!isMerchantProduct) {
+                        payload.name = name;
+                        payload.description = description;
+                        payload.price = Number(price);
+                        payload.costPrice = Number(costPrice);
+                        payload.stock = Number(stock);
+                        payload.minStock = Number(minStock);
+                        payload.imageUrl = imageUrl;
+                    }
                     const res = await fetch(`/api/admin/products/${productId}`, {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            name,
-                            description,
-                            price: Number(price),
-                            costPrice: Number(costPrice),
-                            stock: Number(stock),
-                            minStock: Number(minStock),
-                            categoryId,
-                            isActive,
-                            isFeatured,
-                            imageUrl,
-                        }),
+                        body: JSON.stringify(payload),
                     });
 
                     if (res.ok) {
@@ -204,34 +226,31 @@ export default function EditProductPage() {
     };
 
     const handleDelete = () => {
-        setConfirmAction({
-            title: "Eliminar Producto",
-            message: `¿Estás seguro de eliminar "${name}"? Esta acción no se puede deshacer.`,
-            confirmText: "Eliminar",
-            confirmColor: "bg-red-600 hover:bg-red-700",
-            icon: "delete",
-            onConfirm: async () => {
-                setShowConfirmModal(false);
-                setIsDeleting(true);
-                try {
-                    const res = await fetch(`/api/admin/products/${productId}`, {
-                        method: "DELETE",
-                    });
+        setDeleteReason("");
+        setShowDeleteModal(true);
+    };
 
-                    if (res.ok) {
-                        router.push("/ops/productos");
-                    } else {
-                        const data = await res.json();
-                        setError(data.error || "Error al eliminar el producto");
-                    }
-                } catch (err) {
-                    setError("Error de conexión");
-                } finally {
-                    setIsDeleting(false);
-                }
+    const confirmDelete = async () => {
+        setShowDeleteModal(false);
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/admin/products/${productId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: deleteReason.trim() || undefined }),
+            });
+
+            if (res.ok) {
+                router.push("/ops/productos");
+            } else {
+                const data = await res.json();
+                setError(data.error || "Error al eliminar el producto");
             }
-        });
-        setShowConfirmModal(true);
+        } catch {
+            setError("Error de conexión");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     if (isLoading) {
@@ -273,6 +292,27 @@ export default function EditProductPage() {
                 </button>
             </div>
 
+            {/* Banner: producto de comercio — contenido read-only */}
+            {isMerchantProduct && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0 h-fit">
+                        <Lock className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="flex-1 text-sm">
+                        <p className="font-bold text-amber-900 mb-1 flex items-center gap-2">
+                            <Store className="w-4 h-4" />
+                            Producto de {merchantName || "comercio"}
+                        </p>
+                        <p className="text-amber-800 leading-relaxed">
+                            El contenido lo controla el comercio. Desde OPS solo podés moderar <strong>categoría</strong>,
+                            <strong> estado activo/inactivo</strong> y <strong>destacado</strong>.
+                            Para modificar nombre, precio, descripción, fotos o stock, contactá al comercio para que
+                            lo edite desde su portal. Si hay un problema urgente, usá <strong>Desactivar</strong>.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Success Message */}
             {success && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center gap-3">
@@ -298,6 +338,7 @@ export default function EditProductPage() {
                     <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-[#e60012]" />
                         Imagen del Producto
+                        {isMerchantProduct && <Lock className="w-4 h-4 text-amber-500" />}
                     </h2>
 
                     <div className="flex items-center gap-6">
@@ -305,13 +346,15 @@ export default function EditProductPage() {
                             {imageUrl ? (
                                 <>
                                     <UploadImage src={imageUrl} alt={name} fill className="object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setImageUrl("")}
-                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
+                                    {!isMerchantProduct && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setImageUrl("")}
+                                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
                                 </>
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
@@ -322,24 +365,32 @@ export default function EditProductPage() {
                         </div>
 
                         <div className="flex-1">
-                            <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
-                                {uploading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Upload className="w-4 h-4" />
-                                )}
-                                {uploading ? "Subiendo..." : "Subir imagen"}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                    disabled={uploading}
-                                />
-                            </label>
-                            <p className="text-xs text-slate-500 mt-2">
-                                Formatos: JPG, PNG, WebP. Se optimizará automáticamente.
-                            </p>
+                            {isMerchantProduct ? (
+                                <p className="text-xs text-slate-500">
+                                    La imagen la gestiona el comercio desde su portal.
+                                </p>
+                            ) : (
+                                <>
+                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+                                        {uploading ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Upload className="w-4 h-4" />
+                                        )}
+                                        {uploading ? "Subiendo..." : "Subir imagen"}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            className="hidden"
+                                            disabled={uploading}
+                                        />
+                                    </label>
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Formatos: JPG, PNG, WebP. Se optimizará automáticamente.
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -353,29 +404,33 @@ export default function EditProductPage() {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                                 Nombre del producto *
+                                {isMerchantProduct && <Lock className="w-3 h-3 text-amber-500" />}
                             </label>
                             <input
                                 type="text"
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => !isMerchantProduct && setName(e.target.value)}
                                 placeholder="Ej: Leche La Serenísima 1L"
-                                className="input"
+                                className={`input ${isMerchantProduct ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
                                 required
+                                readOnly={isMerchantProduct}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                                 Descripción
+                                {isMerchantProduct && <Lock className="w-3 h-3 text-amber-500" />}
                             </label>
                             <textarea
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={(e) => !isMerchantProduct && setDescription(e.target.value)}
                                 placeholder="Descripción corta del producto"
-                                className="input min-h-[80px]"
+                                className={`input min-h-[80px] ${isMerchantProduct ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
                                 rows={3}
+                                readOnly={isMerchantProduct}
                             />
                         </div>
 
@@ -408,37 +463,41 @@ export default function EditProductPage() {
 
                     <div className="grid md:grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                                 Costo *
+                                {isMerchantProduct && <Lock className="w-3 h-3 text-amber-500" />}
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
                                 <input
                                     type="number"
                                     value={costPrice}
-                                    onChange={(e) => setCostPrice(e.target.value)}
+                                    onChange={(e) => !isMerchantProduct && setCostPrice(e.target.value)}
                                     placeholder="0"
-                                    className="input !pl-10"
+                                    className={`input !pl-10 ${isMerchantProduct ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
                                     required
                                     min="0"
+                                    readOnly={isMerchantProduct}
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                                 Precio de venta *
+                                {isMerchantProduct && <Lock className="w-3 h-3 text-amber-500" />}
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
                                 <input
                                     type="number"
                                     value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
+                                    onChange={(e) => !isMerchantProduct && setPrice(e.target.value)}
                                     placeholder="0"
-                                    className="input !pl-10"
+                                    className={`input !pl-10 ${isMerchantProduct ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
                                     required
                                     min="0"
+                                    readOnly={isMerchantProduct}
                                 />
                             </div>
                         </div>
@@ -463,30 +522,34 @@ export default function EditProductPage() {
 
                     <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                                 Stock actual
+                                {isMerchantProduct && <Lock className="w-3 h-3 text-amber-500" />}
                             </label>
                             <input
                                 type="number"
                                 value={stock}
-                                onChange={(e) => setStock(e.target.value)}
+                                onChange={(e) => !isMerchantProduct && setStock(e.target.value)}
                                 placeholder="0"
-                                className="input"
+                                className={`input ${isMerchantProduct ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
                                 min="0"
+                                readOnly={isMerchantProduct}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                                 Stock mínimo (alerta)
+                                {isMerchantProduct && <Lock className="w-3 h-3 text-amber-500" />}
                             </label>
                             <input
                                 type="number"
                                 value={minStock}
-                                onChange={(e) => setMinStock(e.target.value)}
+                                onChange={(e) => !isMerchantProduct && setMinStock(e.target.value)}
                                 placeholder="5"
-                                className="input"
+                                className={`input ${isMerchantProduct ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
                                 min="0"
+                                readOnly={isMerchantProduct}
                             />
                         </div>
                     </div>
@@ -541,6 +604,67 @@ export default function EditProductPage() {
                     </button>
                 </div>
             </form>
+
+            {/* Delete Modal con razón opcional */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-red-100 rounded-xl">
+                                    <Trash2 className="w-6 h-6 text-red-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg">Eliminar Producto</h3>
+                                    <p className="text-sm text-slate-500">Esta acción no se puede deshacer</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <p>
+                                    El producto se va a ocultar de la tienda y del panel. Queda registro en audit log.
+                                    Historial de ventas preservado.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Razón <span className="text-slate-400 font-normal">(opcional)</span>
+                                </label>
+                                <textarea
+                                    value={deleteReason}
+                                    onChange={(e) => setDeleteReason(e.target.value)}
+                                    placeholder="Ej: Producto prohibido, denuncia, a pedido del comercio..."
+                                    maxLength={500}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 resize-none h-24 text-sm"
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1 text-right">{deleteReason.length}/500</p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 transition font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={isDeleting}
+                                    className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-medium flex items-center justify-center gap-2"
+                                >
+                                    {isDeleting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <><Trash2 className="w-4 h-4" /> Confirmar</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Confirmation Modal */}
             {showConfirmModal && confirmAction && (

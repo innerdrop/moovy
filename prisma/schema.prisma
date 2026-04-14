@@ -188,6 +188,10 @@ model Product {
   minStock    Int                       @default(5)
   isActive    Boolean                   @default(true)
   isFeatured  Boolean                   @default(false)
+  // --- Soft delete (moderación OPS) ---
+  deletedAt     DateTime?  // cuando OPS elimina el producto
+  deletedBy     String?    // userId del admin que eliminó
+  deletedReason String?    // razón opcional de la eliminación
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
   cartItems   CartItem[]
@@ -202,6 +206,7 @@ model Product {
   packageCategory   PackageCategory? @relation(fields: [packageCategoryId], references: [id])
 
   @@index([merchantId])
+  @@index([deletedAt])
 }
 
 model ProductCategory {
