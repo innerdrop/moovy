@@ -44,6 +44,7 @@ export default function DireccionesPage() {
 
     const handleAddAddress = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitting) return; // Defensa extra contra doble submit
         if (!newAddress.street) return;
 
         setSubmitting(true);
@@ -58,6 +59,7 @@ export default function DireccionesPage() {
             });
 
             if (res.ok) {
+                toast.success("Dirección guardada");
                 setIsAdding(false);
                 setNewAddress({
                     label: "Mi Casa",
@@ -69,9 +71,20 @@ export default function DireccionesPage() {
                     longitude: null,
                 });
                 fetchAddresses();
+            } else if (res.status === 409) {
+                // Dedup server-side: ya existe una dirección con misma etiqueta + lugar
+                const data = await res.json();
+                toast.error(data.error || "Esa dirección ya está guardada");
+                // Cerrar el form — la dirección ya está en la lista, no hay nada que hacer
+                setIsAdding(false);
+                fetchAddresses();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || "No se pudo guardar la dirección");
             }
         } catch (error) {
             console.error("Error adding address", error);
+            toast.error("Error de conexión. Intentá de nuevo.");
         } finally {
             setSubmitting(false);
         }
