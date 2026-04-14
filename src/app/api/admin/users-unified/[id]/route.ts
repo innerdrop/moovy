@@ -236,6 +236,10 @@ export async function GET(
         }
 
         // Compute stats
+        // - totalSpent: SOLO pedidos DELIVERED. Es el LTV real del cliente.
+        //   Mostramos este número como "Total gastado" en la UI (lo que ya se cobró).
+        // - openOrdersValue: pedidos activos (no DELIVERED, no CANCELLED, no REFUNDED).
+        //   Permite a OPS ver actividad en curso sin mezclarla con el LTV consolidado.
         const allOrdersCount = await prisma.order.count({
             where: { userId: id, deletedAt: null },
         });
@@ -245,9 +249,22 @@ export async function GET(
             _sum: { total: true },
         });
 
+        const openOrders = await prisma.order.aggregate({
+            where: {
+                userId: id,
+                deletedAt: null,
+                status: { notIn: ["DELIVERED", "CANCELLED"] },
+                paymentStatus: { not: "REFUNDED" },
+            },
+            _sum: { total: true },
+            _count: true,
+        });
+
         const stats = {
             totalOrders: allOrdersCount,
             totalSpent: deliveredOrders._sum.total || 0,
+            openOrdersValue: openOrders._sum.total || 0,
+            openOrdersCount: openOrders._count || 0,
             memberSince: user.createdAt,
         };
 

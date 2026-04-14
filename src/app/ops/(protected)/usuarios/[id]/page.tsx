@@ -56,7 +56,13 @@ interface UserData {
     addresses: Address[];
     recentOrders: Order[];
     pointsTransactions: PointsTransaction[];
-    stats: { totalOrders: number; totalSpent: number; memberSince: string };
+    stats: {
+        totalOrders: number;
+        totalSpent: number;
+        openOrdersValue?: number;
+        openOrdersCount?: number;
+        memberSince: string;
+    };
 }
 
 interface MerchantData {
@@ -510,6 +516,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                             <p className="text-xl font-bold text-green-700">
                                 {formatPrice(user.stats.totalSpent)}
                             </p>
+                            {(user.stats.openOrdersCount ?? 0) > 0 && (
+                                <p className="text-[10px] text-green-700/70 mt-1 font-medium">
+                                    + {formatPrice(user.stats.openOrdersValue ?? 0)} en {user.stats.openOrdersCount} pedido{user.stats.openOrdersCount === 1 ? "" : "s"} abierto{user.stats.openOrdersCount === 1 ? "" : "s"}
+                                </p>
+                            )}
                         </div>
                         <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
                             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1">
