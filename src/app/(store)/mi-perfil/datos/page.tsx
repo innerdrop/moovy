@@ -106,8 +106,8 @@ export default function DatosPersonalesPage() {
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-start gap-3">
                     <Shield className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-blue-700">
-                        Tu email es tu identificador único y no puede ser modificado. 
-                        Para cambiarlo, contacta a soporte.
+                        El email, nombre y apellido no se pueden modificar una vez cargados.
+                        Si necesitás hacer un cambio, <Link href="/soporte" className="font-medium underline">contacta a soporte</Link>.
                     </p>
                 </div>
 
@@ -157,40 +157,73 @@ export default function DatosPersonalesPage() {
                         </div>
                     </div>
 
+                    {/* Identity Fields — locked after first save */}
+                    {userData?.firstName && userData?.lastName ? (
+                        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                                <h2 className="font-semibold text-gray-700 text-sm">Datos de Identidad</h2>
+                            </div>
+                            <div className="p-4 border-b border-gray-50">
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Nombre</label>
+                                <div className="flex items-center gap-3">
+                                    <User className="w-5 h-5 text-gray-300" />
+                                    <span className="text-gray-600">{userData.firstName}</span>
+                                </div>
+                            </div>
+                            <div className="p-4">
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Apellido</label>
+                                <div className="flex items-center gap-3">
+                                    <User className="w-5 h-5 text-gray-300" />
+                                    <span className="text-gray-600">{userData.lastName}</span>
+                                </div>
+                            </div>
+                            <div className="px-4 pb-4">
+                                <p className="text-xs text-gray-400">
+                                    El nombre y apellido no se pueden modificar una vez cargados.{" "}
+                                    <Link href="/soporte" className="text-[#e60012] hover:underline">
+                                        Solicitar cambio
+                                    </Link>
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                                <h2 className="font-semibold text-gray-700 text-sm">Datos de Identidad</h2>
+                            </div>
+                            <div className="p-4 border-b border-gray-50">
+                                <label htmlFor="firstName" className="block text-xs font-medium text-gray-500 mb-2">
+                                    Nombre
+                                </label>
+                                <input
+                                    type="text"
+                                    id="firstName"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/20 focus:border-[#e60012] transition"
+                                    placeholder="Tu nombre"
+                                />
+                            </div>
+                            <div className="p-4">
+                                <label htmlFor="lastName" className="block text-xs font-medium text-gray-500 mb-2">
+                                    Apellido
+                                </label>
+                                <input
+                                    type="text"
+                                    id="lastName"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/20 focus:border-[#e60012] transition"
+                                    placeholder="Tu apellido"
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* Editable Fields Section */}
                     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                         <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                            <h2 className="font-semibold text-gray-700 text-sm">Información Editable</h2>
-                        </div>
-
-                        {/* First Name */}
-                        <div className="p-4 border-b border-gray-50">
-                            <label htmlFor="firstName" className="block text-xs font-medium text-gray-500 mb-2">
-                                Nombre
-                            </label>
-                            <input
-                                type="text"
-                                id="firstName"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/20 focus:border-[#e60012] transition"
-                                placeholder="Tu nombre"
-                            />
-                        </div>
-
-                        {/* Last Name */}
-                        <div className="p-4 border-b border-gray-50">
-                            <label htmlFor="lastName" className="block text-xs font-medium text-gray-500 mb-2">
-                                Apellido
-                            </label>
-                            <input
-                                type="text"
-                                id="lastName"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60012]/20 focus:border-[#e60012] transition"
-                                placeholder="Tu apellido"
-                            />
+                            <h2 className="font-semibold text-gray-700 text-sm">Contacto</h2>
                         </div>
 
                         {/* Phone */}

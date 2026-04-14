@@ -305,9 +305,18 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         const roleData = roleType === "merchant" ? user.merchant : user.driver;
         if (!roleData) return;
 
+        const roleName = roleType === "merchant" ? "Comercio" : "Repartidor";
+
+        // Pedir motivo de rechazo (obligatorio)
+        const reason = window.prompt(`Motivo de rechazo para ${roleName} (obligatorio):`);
+        if (!reason || !reason.trim()) {
+            toast.error("Debés indicar un motivo de rechazo");
+            return;
+        }
+
         const ok = await confirm({
-            title: `Rechazar ${roleType === "merchant" ? "Comercio" : "Repartidor"}`,
-            message: `¿Confirmar el rechazo de "${roleType === "merchant" ? (roleData as MerchantData).name : "Repartidor"}"?`,
+            title: `Rechazar ${roleName}`,
+            message: `¿Confirmar el rechazo de "${roleType === "merchant" ? (roleData as MerchantData).name : "Repartidor"}"?\n\nMotivo: ${reason.trim()}`,
             confirmLabel: "Rechazar",
             variant: "danger",
         });
@@ -320,10 +329,14 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 ? `/api/admin/merchants/${roleData.id}/reject`
                 : `/api/admin/drivers/${roleData.id}/reject`;
 
-            const res = await fetch(endpoint, { method: "POST" });
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: reason.trim() }),
+            });
 
             if (res.ok) {
-                toast.success(`${roleType === "merchant" ? "Comercio" : "Repartidor"} rechazado correctamente`);
+                toast.success(`${roleName} rechazado correctamente`);
                 fetchUser();
             } else {
                 toast.error("Error al rechazar");
@@ -589,56 +602,47 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
                     {expandedMerchant && (
                         <div className="p-8 space-y-6">
-                            {/* Approval Status */}
-                            {user.merchant.approvalStatus === "PENDING" && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <Clock className="w-5 h-5 text-yellow-600" />
-                                        <p className="font-bold text-yellow-900">
-                                            Este comercio está pendiente de aprobación
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-3">
+                            {/* Approval Status — editable */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-bold text-gray-600">Estado de aprobación:</p>
+                                    <span
+                                        className={`px-4 py-2 rounded-lg text-sm font-bold ${
+                                            statusLabels[user.merchant.approvalStatus]?.color ||
+                                            "bg-gray-100 text-gray-800"
+                                        }`}
+                                    >
+                                        {statusLabels[user.merchant.approvalStatus]?.label ||
+                                            user.merchant.approvalStatus}
+                                    </span>
+                                </div>
+                                {user.merchant.rejectionReason && (
+                                    <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                                        Motivo: {user.merchant.rejectionReason}
+                                    </p>
+                                )}
+                                <div className="flex gap-2 flex-wrap">
+                                    {user.merchant.approvalStatus !== "APPROVED" && (
                                         <button
                                             onClick={() => handleApproveRole("merchant")}
                                             disabled={processing}
-                                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-2"
+                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded-lg transition inline-flex items-center gap-1.5"
                                         >
-                                            {processing ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <CheckCircle className="w-4 h-4" />
-                                            )}
+                                            {processing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
                                             Aprobar
                                         </button>
+                                    )}
+                                    {user.merchant.approvalStatus !== "REJECTED" && (
                                         <button
                                             onClick={() => handleRejectRole("merchant")}
                                             disabled={processing}
-                                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-2"
+                                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded-lg transition inline-flex items-center gap-1.5"
                                         >
-                                            {processing ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <XCircle className="w-4 h-4" />
-                                            )}
+                                            {processing ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
                                             Rechazar
                                         </button>
-                                    </div>
+                                    )}
                                 </div>
-                            )}
-
-                            {/* Status Badge */}
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold text-gray-600">Estado de aprobación:</p>
-                                <span
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold ${
-                                        statusLabels[user.merchant.approvalStatus]?.color ||
-                                        "bg-gray-100 text-gray-800"
-                                    }`}
-                                >
-                                    {statusLabels[user.merchant.approvalStatus]?.label ||
-                                        user.merchant.approvalStatus}
-                                </span>
                             </div>
 
                             {/* Loyalty Tier */}
@@ -759,63 +763,78 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             </div>
 
-                            {/* Documents */}
-                            {(user.merchant.cuit ||
-                                user.merchant.constanciaAfipUrl ||
-                                user.merchant.habilitacionMunicipalUrl ||
-                                user.merchant.registroSanitarioUrl) && (
-                                <div className="border-t border-slate-200 pt-4">
-                                    <p className="text-xs font-bold text-gray-500 uppercase mb-4">
-                                        Documentos
-                                    </p>
-                                    <div className="space-y-2">
-                                        {user.merchant.cuit && (
-                                            <p className="text-sm text-gray-700">
-                                                <span className="font-bold">CUIT:</span> {user.merchant.cuit}
-                                            </p>
+                            {/* Documents — siempre visible, muestra estado de cada doc */}
+                            <div className="border-t border-slate-200 pt-4">
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-4">
+                                    Documentación
+                                </p>
+                                <div className="space-y-3">
+                                    {/* CUIT */}
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">CUIT</span>
+                                        {user.merchant.cuit ? (
+                                            <span className="text-gray-900 font-mono font-bold">{user.merchant.cuit}</span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
+                                                <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                            </span>
                                         )}
-                                        {user.merchant.constanciaAfipUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <span className="font-bold">Constancia AFIP:</span>{" "}
-                                                <a
-                                                    href={user.merchant.constanciaAfipUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-3 h-3" /> Ver documento
-                                                </a>
-                                            </p>
+                                    </div>
+                                    {/* Constancia AFIP */}
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">Constancia AFIP</span>
+                                        {user.merchant.constanciaAfipUrl ? (
+                                            <a href={user.merchant.constanciaAfipUrl} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
+                                                <Eye className="w-3 h-3" /> Ver documento
+                                            </a>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
+                                                <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                            </span>
                                         )}
-                                        {user.merchant.habilitacionMunicipalUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <span className="font-bold">Habilitación Municipal:</span>{" "}
-                                                <a
-                                                    href={user.merchant.habilitacionMunicipalUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-3 h-3" /> Ver documento
-                                                </a>
-                                            </p>
+                                    </div>
+                                    {/* Habilitación Municipal */}
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">Habilitación Municipal</span>
+                                        {user.merchant.habilitacionMunicipalUrl ? (
+                                            <a href={user.merchant.habilitacionMunicipalUrl} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
+                                                <Eye className="w-3 h-3" /> Ver documento
+                                            </a>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
+                                                <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                            </span>
                                         )}
-                                        {user.merchant.registroSanitarioUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <span className="font-bold">Registro Sanitario:</span>{" "}
-                                                <a
-                                                    href={user.merchant.registroSanitarioUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-3 h-3" /> Ver documento
-                                                </a>
-                                            </p>
+                                    </div>
+                                    {/* Registro Sanitario */}
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">Registro Sanitario</span>
+                                        {user.merchant.registroSanitarioUrl ? (
+                                            <a href={user.merchant.registroSanitarioUrl} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
+                                                <Eye className="w-3 h-3" /> Ver documento
+                                            </a>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-gray-400 text-xs font-medium">
+                                                <Clock className="w-3 h-3" /> No requerido
+                                            </span>
                                         )}
                                     </div>
                                 </div>
-                            )}
+                                {/* Resumen documentación */}
+                                {(() => {
+                                    const required = ["cuit", "constanciaAfipUrl", "habilitacionMunicipalUrl"] as const;
+                                    const submitted = required.filter(k => user.merchant![k]);
+                                    const total = required.length;
+                                    const allDone = submitted.length === total;
+                                    return (
+                                        <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium ${allDone ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                                            {allDone
+                                                ? `Documentación completa (${total}/${total})`
+                                                : `Documentación incompleta (${submitted.length}/${total} obligatorios)`}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
 
                             {/* Stats */}
                             <div className="border-t border-slate-200 pt-4">
@@ -854,56 +873,47 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
                     {expandedDriver && (
                         <div className="p-8 space-y-6">
-                            {/* Approval Status */}
-                            {user.driver.approvalStatus === "PENDING" && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <Clock className="w-5 h-5 text-yellow-600" />
-                                        <p className="font-bold text-yellow-900">
-                                            Este repartidor está pendiente de aprobación
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-3">
+                            {/* Approval Status — editable */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-bold text-gray-600">Estado de aprobación:</p>
+                                    <span
+                                        className={`px-4 py-2 rounded-lg text-sm font-bold ${
+                                            statusLabels[user.driver.approvalStatus]?.color ||
+                                            "bg-gray-100 text-gray-800"
+                                        }`}
+                                    >
+                                        {statusLabels[user.driver.approvalStatus]?.label ||
+                                            user.driver.approvalStatus}
+                                    </span>
+                                </div>
+                                {user.driver.rejectionReason && (
+                                    <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                                        Motivo: {user.driver.rejectionReason}
+                                    </p>
+                                )}
+                                <div className="flex gap-2 flex-wrap">
+                                    {user.driver.approvalStatus !== "APPROVED" && (
                                         <button
                                             onClick={() => handleApproveRole("driver")}
                                             disabled={processing}
-                                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-2"
+                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded-lg transition inline-flex items-center gap-1.5"
                                         >
-                                            {processing ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <CheckCircle className="w-4 h-4" />
-                                            )}
+                                            {processing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
                                             Aprobar
                                         </button>
+                                    )}
+                                    {user.driver.approvalStatus !== "REJECTED" && (
                                         <button
                                             onClick={() => handleRejectRole("driver")}
                                             disabled={processing}
-                                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-bold py-2 rounded-lg transition flex items-center justify-center gap-2"
+                                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded-lg transition inline-flex items-center gap-1.5"
                                         >
-                                            {processing ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <XCircle className="w-4 h-4" />
-                                            )}
+                                            {processing ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
                                             Rechazar
                                         </button>
-                                    </div>
+                                    )}
                                 </div>
-                            )}
-
-                            {/* Status */}
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold text-gray-600">Estado de aprobación:</p>
-                                <span
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold ${
-                                        statusLabels[user.driver.approvalStatus]?.color ||
-                                        "bg-gray-100 text-gray-800"
-                                    }`}
-                                >
-                                    {statusLabels[user.driver.approvalStatus]?.label ||
-                                        user.driver.approvalStatus}
-                                </span>
                             </div>
 
                             {/* Basic Info */}
@@ -999,80 +1009,58 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             </div>
 
-                            {/* Documents */}
-                            {(user.driver.dniFrenteUrl ||
-                                user.driver.dniDorsoUrl ||
-                                user.driver.licenciaUrl ||
-                                user.driver.seguroUrl ||
-                                user.driver.vtvUrl) && (
-                                <div className="border-t border-slate-200 pt-4">
-                                    <p className="text-xs font-bold text-gray-500 uppercase mb-4">
-                                        Documentos
-                                    </p>
-                                    <div className="space-y-2">
-                                        {user.driver.dniFrenteUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <a
-                                                    href={user.driver.dniFrenteUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <FileText className="w-4 h-4" /> DNI Frente
+                            {/* Documents — siempre visible, muestra estado de cada doc */}
+                            <div className="border-t border-slate-200 pt-4">
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-4">
+                                    Documentación
+                                </p>
+                                <div className="space-y-3">
+                                    {[
+                                        { label: "CUIT", value: user.driver.cuit, isText: true },
+                                        { label: "DNI Frente", url: user.driver.dniFrenteUrl },
+                                        { label: "DNI Dorso", url: user.driver.dniDorsoUrl },
+                                        { label: "Licencia de conducir", url: user.driver.licenciaUrl },
+                                        { label: "Seguro vehicular", url: user.driver.seguroUrl },
+                                        { label: "RTO (Revisión Técnica)", url: user.driver.vtvUrl },
+                                    ].map((doc) => (
+                                        <div key={doc.label} className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-600">{doc.label}</span>
+                                            {doc.isText && doc.value ? (
+                                                <span className="text-gray-900 font-mono font-bold">{doc.value}</span>
+                                            ) : doc.url ? (
+                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
+                                                    <Eye className="w-3 h-3" /> Ver documento
                                                 </a>
-                                            </p>
-                                        )}
-                                        {user.driver.dniDorsoUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <a
-                                                    href={user.driver.dniDorsoUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <FileText className="w-4 h-4" /> DNI Dorso
-                                                </a>
-                                            </p>
-                                        )}
-                                        {user.driver.licenciaUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <a
-                                                    href={user.driver.licenciaUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <FileText className="w-4 h-4" /> Licencia de conducir
-                                                </a>
-                                            </p>
-                                        )}
-                                        {user.driver.seguroUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <a
-                                                    href={user.driver.seguroUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <FileText className="w-4 h-4" /> Seguro
-                                                </a>
-                                            </p>
-                                        )}
-                                        {user.driver.vtvUrl && (
-                                            <p className="text-sm text-gray-700">
-                                                <a
-                                                    href={user.driver.vtvUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[#e60012] hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    <FileText className="w-4 h-4" /> VTV
-                                                </a>
-                                            </p>
-                                        )}
-                                    </div>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
+                                                    <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
+                                {/* Resumen documentación */}
+                                {(() => {
+                                    const docs = [
+                                        user.driver.cuit,
+                                        user.driver.dniFrenteUrl,
+                                        user.driver.dniDorsoUrl,
+                                        user.driver.licenciaUrl,
+                                        user.driver.seguroUrl,
+                                        user.driver.vtvUrl,
+                                    ];
+                                    const submitted = docs.filter(Boolean).length;
+                                    const total = docs.length;
+                                    const allDone = submitted === total;
+                                    return (
+                                        <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium ${allDone ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                                            {allDone
+                                                ? `Documentación completa (${total}/${total})`
+                                                : `Documentación incompleta (${submitted}/${total} obligatorios)`}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                         </div>
                     )}
                 </div>

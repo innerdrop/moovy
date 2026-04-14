@@ -315,11 +315,25 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                            <input name="firstName" type="text" defaultValue={merchant.firstName} className="input" disabled={isLoading} />
+                            {merchant.firstName ? (
+                                <>
+                                    <input name="firstName" type="hidden" value={merchant.firstName} />
+                                    <p className="py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-600">{merchant.firstName}</p>
+                                </>
+                            ) : (
+                                <input name="firstName" type="text" defaultValue="" className="input" disabled={isLoading} />
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                            <input name="lastName" type="text" defaultValue={merchant.lastName} className="input" disabled={isLoading} />
+                            {merchant.lastName ? (
+                                <>
+                                    <input name="lastName" type="hidden" value={merchant.lastName} />
+                                    <p className="py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-600">{merchant.lastName}</p>
+                                </>
+                            ) : (
+                                <input name="lastName" type="text" defaultValue="" className="input" disabled={isLoading} />
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -329,6 +343,11 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                             <input name="ownerPhone" type="tel" defaultValue={merchant.ownerPhone} placeholder="+54 9 ..." className="input" disabled={isLoading} />
                         </div>
                     </div>
+                    {(merchant.firstName || merchant.lastName) && (
+                        <p className="text-xs text-gray-400 mt-2">
+                            El nombre y apellido no se pueden modificar. <a href="/soporte" className="text-[#e60012] hover:underline">Solicitar cambio</a>
+                        </p>
+                    )}
                 </div>
 
                 {/* Hidden deliveryFee for backwards compat */}

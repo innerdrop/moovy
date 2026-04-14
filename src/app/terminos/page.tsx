@@ -236,7 +236,7 @@ export default function TerminosPage() {
                 <li>
                   <strong>Responsabilidad:</strong> Son responsables de:
                   <ul className="list-circle list-inside ml-4 mt-2 space-y-1">
-                    <li>Documentación: DNI vigente, licencia, VTV, seguro</li>
+                    <li>Documentación: DNI vigente, licencia, RTO, seguro</li>
                     <li>Vehículo en buen estado mecánico</li>
                     <li>Manejo seguro e irresponsabilidad en la ruta</li>
                     <li>Póliza de seguro (no obligatoria pero recomendada)</li>

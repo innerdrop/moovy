@@ -59,19 +59,36 @@ export async function PATCH(request: Request) {
 
         const data = await request.json();
 
+        // Check if identity fields are already set (locked after first save)
+        const currentUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { firstName: true, lastName: true },
+        });
+
+        const nameAlreadySet = !!(currentUser?.firstName && currentUser?.lastName);
+
         // Prepare update data
         const updateData: any = {};
-        if (data.name !== undefined) updateData.name = data.name;
-        if (data.firstName !== undefined) updateData.firstName = data.firstName;
-        if (data.lastName !== undefined) updateData.lastName = data.lastName;
         if (data.phone !== undefined) updateData.phone = data.phone;
 
-        // Handle name split if full name provided but not parts
-        if (data.name && !data.firstName && !data.lastName) {
-            const parts = data.name.trim().split(" ");
-            if (parts.length > 0) {
-                updateData.firstName = parts[0];
-                updateData.lastName = parts.slice(1).join(" ") || "";
+        // Name fields: only allow update if not already set
+        if (!nameAlreadySet) {
+            if (data.name !== undefined) updateData.name = data.name;
+            if (data.firstName !== undefined) updateData.firstName = data.firstName;
+            if (data.lastName !== undefined) updateData.lastName = data.lastName;
+
+            // Handle name split if full name provided but not parts
+            if (data.name && !data.firstName && !data.lastName) {
+                const parts = data.name.trim().split(" ");
+                if (parts.length > 0) {
+                    updateData.firstName = parts[0];
+                    updateData.lastName = parts.slice(1).join(" ") || "";
+                }
+            }
+        } else {
+            // If name is already set, update the display name to match existing
+            if (data.name !== undefined) {
+                updateData.name = `${currentUser.firstName} ${currentUser.lastName}`.trim();
             }
         }
 

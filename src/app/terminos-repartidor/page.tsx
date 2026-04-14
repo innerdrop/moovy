@@ -80,7 +80,7 @@ export default function TerminosRepartidorPage() {
                         <ul className="list-disc list-inside space-y-1 text-gray-600 mb-4">
                             <li>Licencia de conducir vigente correspondiente a la categoría del vehículo</li>
                             <li>Seguro automotor vigente con cobertura de responsabilidad civil hacia terceros (obligatorio según Ley 24.449)</li>
-                            <li>Verificación Técnica Vehicular (VTV) vigente</li>
+                            <li>Revisión Técnica Obligatoria (RTO) vigente</li>
                             <li>Vehículo en condiciones mecánicas y de seguridad adecuadas</li>
                             <li>Documentación del vehículo al día (título, patente)</li>
                         </ul>
@@ -103,7 +103,7 @@ export default function TerminosRepartidorPage() {
                             <li>Foto de DNI (frente y dorso)</li>
                             <li>Licencia de conducir vigente (vehículos motorizados)</li>
                             <li>Comprobante de seguro vehicular vigente (vehículos motorizados)</li>
-                            <li>VTV vigente (vehículos motorizados)</li>
+                            <li>RTO vigente (vehículos motorizados)</li>
                             <li>Constancia de CUIT/CUIL</li>
                         </ul>
                         <p className="text-gray-600 mt-4">
@@ -194,7 +194,7 @@ export default function TerminosRepartidorPage() {
                         </p>
                         <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
                             <li>Incumplimiento de estos Términos o del Código de Conducta</li>
-                            <li>Documentación vencida o no válida (licencia, seguro, VTV)</li>
+                            <li>Documentación vencida o no válida (licencia, seguro, RTO)</li>
                             <li>Reiteradas calificaciones negativas de compradores o comercios</li>
                             <li>Sospecha de fraude, manipulación de pedidos o actividad ilícita</li>
                             <li>Conducción bajo efectos del alcohol o sustancias</li>

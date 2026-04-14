@@ -1,7 +1,7 @@
 "use client";
 
 // Comercio Registration Page - Formulario de registro para comercios
-import { useState, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -29,6 +29,7 @@ import {
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import ImageUpload from "@/components/ui/ImageUpload";
 import DocumentUpload from "@/components/ui/DocumentUpload";
+import { toast } from "@/store/toast";
 
 // Tipos de negocio que requieren registro sanitario (alimentos)
 const FOOD_BUSINESS_TYPES = [
@@ -59,6 +60,16 @@ function ComercioRegistroContent() {
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const errorRef = useRef<HTMLDivElement>(null);
+
+    // Scroll al error + toast cuando hay un nuevo error de validación
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            // Scroll suave al mensaje de error visible
+            errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [error]);
 
     // Form data
     const [formData, setFormData] = useState({
@@ -145,18 +156,28 @@ function ComercioRegistroContent() {
         setFormData({ ...formData, cuit: formatCuit(e.target.value) });
     };
 
+    const focusField = useCallback((name: string) => {
+        const el = document.querySelector<HTMLInputElement>(`[name="${name}"]`);
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.focus();
+        }
+    }, []);
+
     const handleFinalSubmit = async () => {
         setError("");
 
         // Validar CUIT obligatorio
         if (!formData.cuit || formData.cuit.replace(/\D/g, "").length < 11) {
             setError("El CUIT es obligatorio y debe tener 11 dígitos");
+            focusField("cuit");
             return;
         }
 
         // Validar CBU/Alias obligatorio
         if (!formData.cbu || formData.cbu.trim().length < 6) {
             setError("El CBU o Alias bancario es obligatorio");
+            focusField("cbu");
             return;
         }
 
@@ -285,7 +306,7 @@ function ComercioRegistroContent() {
                         </p>
 
                         {error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                            <div ref={errorRef} className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                                 {error}
                             </div>
                         )}
@@ -408,7 +429,7 @@ function ComercioRegistroContent() {
                         <p className="text-sm text-gray-500 text-center mb-6">Paso 2: Datos de contacto y acceso</p>
 
                         {error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                            <div ref={errorRef} className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                                 {error}
                             </div>
                         )}
@@ -418,10 +439,12 @@ function ComercioRegistroContent() {
                             setError("");
                             if (formData.password !== formData.confirmPassword) {
                                 setError("Las contraseñas no coinciden");
+                                focusField("confirmPassword");
                                 return;
                             }
                             if (formData.password.length < 8) {
                                 setError("La contraseña debe tener al menos 8 caracteres");
+                                focusField("password");
                                 return;
                             }
                             setStep(3);
@@ -597,7 +620,7 @@ function ComercioRegistroContent() {
                         </p>
 
                         {error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                            <div ref={errorRef} className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                                 {error}
                             </div>
                         )}

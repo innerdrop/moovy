@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MoreHorizontal, X, Store, Megaphone, Star, Settings } from "lucide-react";
+import { MoreHorizontal, X, Store, Megaphone, Star, Settings, Building2 } from "lucide-react";
 import { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
 
 const moreItems = [
+    { href: "/comercios/mi-comercio", icon: Building2, label: "Mi Comercio" },
     { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
     { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
     { href: "/comercios/resenas", icon: Star, label: "Reseñas" },

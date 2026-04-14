@@ -92,9 +92,17 @@ export const CreateOrderSchema = z.object({
     (data) => {
         if (data.deliveryType !== "SCHEDULED" || !data.scheduledSlotStart) return true;
         const start = new Date(data.scheduledSlotStart);
-        const hour = start.getHours();
-        // Must be within business hours (9 AM - 10 PM)
-        return hour >= 9 && hour < 22;
+        // Usar timezone de Ushuaia para validar horario de negocio (VPS corre en UTC)
+        const ushuaiaHour = parseInt(
+            new Intl.DateTimeFormat("en-US", {
+                timeZone: "America/Argentina/Ushuaia",
+                hour: "numeric",
+                hourCycle: "h23",
+            }).formatToParts(start).find(p => p.type === "hour")?.value || "0",
+            10
+        );
+        // Must be within business hours (9 AM - 10 PM Ushuaia time)
+        return ushuaiaHour >= 9 && ushuaiaHour < 22;
     },
     { message: "El horario debe estar dentro del horario de atención (9:00 - 22:00)", path: ["scheduledSlotStart"] }
 ).refine(

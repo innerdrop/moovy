@@ -11,7 +11,12 @@
  * Si el merchant no configuró horario (scheduleJson === null), se aplica
  * un horario default razonable para Ushuaia.
  *
- * Última actualización: 2026-04-03
+ * TIMEZONE: Todas las comparaciones horarias usan America/Argentina/Ushuaia
+ * (UTC-3) via Intl.DateTimeFormat, independientemente de la timezone del
+ * servidor. Esto es CRÍTICO porque el VPS corre en UTC y los horarios de
+ * los merchants están en hora local de Ushuaia.
+ *
+ * Última actualización: 2026-04-13
  */
 
 // ── Tipos ────────────────────────────────────────────────────────────
@@ -54,13 +59,58 @@ export const DEFAULT_MERCHANT_SCHEDULE: WeekSchedule = {
 
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
+/** Timezone canónica de Ushuaia — SIEMPRE usar esta para comparaciones horarias */
+const USHUAIA_TZ = "America/Argentina/Ushuaia";
+
 // ── Funciones ────────────────────────────────────────────────────────
 
 /**
- * Convierte day de JS (0=domingo) a key de schedule (1=lunes, 7=domingo)
+ * Obtiene la hora, minutos y día de la semana en timezone de Ushuaia.
+ * Usa Intl.DateTimeFormat para que funcione correctamente independientemente
+ * de la timezone del servidor (UTC en VPS, local en dev).
+ *
+ * Retorna { hours, minutes, jsDayOfWeek } donde jsDayOfWeek es 0=domingo
+ * (misma convención que Date.getDay()).
  */
-function jsDateToScheduleDay(date: Date): string {
-    const jsDay = date.getDay();
+function getUshuaiaTime(date: Date): { hours: number; minutes: number; jsDayOfWeek: number } {
+    // Intl.DateTimeFormat con hourCycle h23 nos da la hora en 0-23
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: USHUAIA_TZ,
+        hour: "numeric",
+        minute: "numeric",
+        weekday: "short",
+        hourCycle: "h23",
+    });
+
+    const parts = formatter.formatToParts(date);
+    let hours = 0;
+    let minutes = 0;
+    let weekday = "";
+
+    for (const part of parts) {
+        if (part.type === "hour") hours = parseInt(part.value, 10);
+        if (part.type === "minute") minutes = parseInt(part.value, 10);
+        if (part.type === "weekday") weekday = part.value;
+    }
+
+    // Mapear weekday corto en inglés a número JS (0=dom, 1=lun, etc.)
+    const weekdayMap: Record<string, number> = {
+        "Sun": 0, "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6,
+    };
+    const jsDayOfWeek = weekdayMap[weekday] ?? date.getDay();
+
+    return { hours, minutes, jsDayOfWeek };
+}
+
+/**
+ * Convierte day de JS (0=domingo) a key de schedule (1=lunes, 7=domingo).
+ * Acepta tanto un Date (extrae el día en timezone Ushuaia) como un número
+ * directo de jsDayOfWeek.
+ */
+function jsDateToScheduleDay(dateOrJsDay: Date | number): string {
+    const jsDay = typeof dateOrJsDay === "number"
+        ? dateOrJsDay
+        : getUshuaiaTime(dateOrJsDay).jsDayOfWeek;
     return jsDay === 0 ? "7" : String(jsDay);
 }
 
@@ -124,8 +174,9 @@ function findNextOpenTime(
     schedule: WeekSchedule,
     now: Date
 ): { time: string; dayName: string } | null {
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const todayKey = jsDateToScheduleDay(now);
+    const ushuaiaTime = getUshuaiaTime(now);
+    const currentMinutes = ushuaiaTime.hours * 60 + ushuaiaTime.minutes;
+    const todayKey = jsDateToScheduleDay(ushuaiaTime.jsDayOfWeek);
 
     // Primero: ¿hay un turno más tarde hoy?
     const todayRanges = schedule[todayKey];
@@ -140,10 +191,10 @@ function findNextOpenTime(
     }
 
     // Buscar en los próximos 7 días
+    // Usamos offset sobre el día de Ushuaia, no sobre el Date del servidor
     for (let offset = 1; offset <= 7; offset++) {
-        const futureDate = new Date(now);
-        futureDate.setDate(futureDate.getDate() + offset);
-        const dayKey = jsDateToScheduleDay(futureDate);
+        const futureJsDay = (ushuaiaTime.jsDayOfWeek + offset) % 7;
+        const dayKey = jsDateToScheduleDay(futureJsDay);
         const ranges = schedule[dayKey];
         if (ranges && ranges.length > 0) {
             const dayName = offset === 1 ? "Mañana" : scheduleDayToName(dayKey);
@@ -173,14 +224,17 @@ export function checkMerchantSchedule(merchant: {
     const isUsingDefault = !parsedSchedule;
     const schedule = parsedSchedule || DEFAULT_MERCHANT_SCHEDULE;
 
-    // Obtener horario de hoy
-    const todayKey = jsDateToScheduleDay(currentTime);
+    // Obtener hora actual en timezone de Ushuaia (NO del servidor)
+    const ushuaiaTime = getUshuaiaTime(currentTime);
+
+    // Obtener horario de hoy según día en Ushuaia
+    const todayKey = jsDateToScheduleDay(ushuaiaTime.jsDayOfWeek);
     const todaySchedule = schedule[todayKey] || null;
 
-    // Verificar si estamos dentro del horario
+    // Verificar si estamos dentro del horario (usando hora de Ushuaia)
     let isWithinSchedule = false;
     if (todaySchedule) {
-        const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+        const currentMinutes = ushuaiaTime.hours * 60 + ushuaiaTime.minutes;
         isWithinSchedule = isTimeInRanges(currentMinutes, todaySchedule);
     }
 

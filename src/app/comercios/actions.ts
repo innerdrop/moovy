@@ -406,7 +406,12 @@ export async function updateMerchant(formData: FormData) {
         deliveryFee: formData.get("deliveryFee"),
         minOrderAmount: formData.get("minOrderAmount"),
         deliveryRadiusKm: formData.get("deliveryRadiusKm"),
-        allowPickup: formData.get("allowPickup"),
+        // allowPickup uses hidden input "false" + checkbox "true" pattern.
+        // FormData.get() returns the first value (always "false"). Use getAll() and take last.
+        allowPickup: (() => {
+            const vals = formData.getAll("allowPickup");
+            return vals.length > 0 ? vals[vals.length - 1] : null;
+        })(),
         latitude: formData.get("latitude"),
         longitude: formData.get("longitude"),
         firstName: formData.get("firstName"),
@@ -481,8 +486,11 @@ export async function updateMerchant(formData: FormData) {
                     ...(data.minOrderAmount !== undefined && { minOrderAmount: data.minOrderAmount || 0 }),
                     ...(data.deliveryRadiusKm !== undefined && { deliveryRadiusKm: data.deliveryRadiusKm || 5 }),
                     ...(data.allowPickup !== undefined && { allowPickup: data.allowPickup }),
-                    latitude: finalLatitude,
-                    longitude: finalLongitude,
+                    // Solo actualizar coords si se envió address en el form (MiComercioForm sí, SettingsForm no)
+                    ...(data.address !== undefined && {
+                        latitude: finalLatitude,
+                        longitude: finalLongitude,
+                    }),
                     ...(data.instagramUrl !== undefined && { instagramUrl: data.instagramUrl || null }),
                     ...(data.facebookUrl !== undefined && { facebookUrl: data.facebookUrl || null }),
                     ...(data.whatsappNumber !== undefined && { whatsappNumber: data.whatsappNumber || null }),
