@@ -72,6 +72,13 @@ function useAdvancedMarker({
             return;
         }
 
+        // Defensive: if marker library hasn't finished loading, skip this render.
+        // The effect re-runs when position/map/etc change, so it'll try again.
+        if (typeof google === "undefined" || !google.maps?.marker?.AdvancedMarkerElement) {
+            console.warn("[RiderMap] google.maps.marker.AdvancedMarkerElement no disponible todavía");
+            return;
+        }
+
         const content = buildContent ? buildContent() : undefined;
 
         if (!markerRef.current) {

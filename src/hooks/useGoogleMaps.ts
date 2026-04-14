@@ -15,7 +15,7 @@
 import { useJsApiLoader } from "@react-google-maps/api";
 
 // Ref estable fuera del componente para evitar re-renders
-const LIBRARIES: ("places" | "geometry")[] = ["places", "geometry"];
+const LIBRARIES: ("places" | "geometry" | "marker")[] = ["places", "geometry", "marker"];
 
 export function useGoogleMaps() {
     return useJsApiLoader({
