@@ -481,4 +481,16 @@ export default function BottomSheet({
             {/* ── Scrollable body (visible unless hidden) ── */}
             <div
                 className={`flex-1 ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}
-          
+                style={{
+                    opacity: state === "hidden" ? 0 : 1,
+                    transition: "opacity 0.25s ease",
+                    pointerEvents: state === "hidden" ? "none" : "auto",
+                }}
+            >
+                <div style={{ padding: "16px 16px 80px", display: "flex", flexDirection: "column", gap: 12 }}>
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}

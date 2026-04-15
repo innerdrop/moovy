@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { useBattery } from "@/hooks/useBattery";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useOnline } from "@/hooks/useOnline";
 import { MapSkeleton } from "@/components/rider/MapWrapper";
@@ -125,7 +124,6 @@ interface PendingOrderOffer {
 export default function RiderDashboard() {
     const { data: session } = useSession();
     const { location, heading, error: locationHookError } = useGeolocation();
-    const battery = useBattery();
     const isOnlineNet = useOnline();
     const [dashboardData, setDashboardData] = useState<{
         driverId?: string;
@@ -497,13 +495,9 @@ export default function RiderDashboard() {
     // Rider no toca la pantalla mientras maneja pero necesita ver el mapa.
     useWakeLock(!!pedidoActivo);
 
-    // Indicador de batería baja (<15% y no cargando) — aviso visual al rider
-    const showLowBattery =
-        battery.supported &&
-        battery.level !== null &&
-        battery.level < 0.15 &&
-        battery.charging === false;
-    const batteryPercent = battery.level !== null ? Math.round(battery.level * 100) : null;
+    // NOTA: el aviso de bateria baja (showBatteryWarning + banner con dismiss)
+    // ya esta declarado arriba (linea ~160) y renderizado abajo (linea ~1084).
+    // No agregamos otro indicador compacto para no duplicar informacion.
 
     // ── Etapa del viaje (contextual disclosure) ──
     // to_merchant: yendo al comercio (DRIVER_ASSIGNED / sin status)
@@ -590,16 +584,6 @@ export default function RiderDashboard() {
                                             <div className="px-4 py-2 rounded-full shadow-lg bg-red-500 text-white flex items-center gap-2 animate-pulse">
                                                 <WifiOff className="w-3.5 h-3.5" />
                                                 <span className="text-[11px] font-bold uppercase tracking-wider">Sin señal</span>
-                                            </div>
-                                        )}
-
-                                        {/* Batería baja — aviso discreto cuando <15% y no cargando */}
-                                        {showLowBattery && (
-                                            <div className="px-4 py-2 rounded-full shadow-lg bg-amber-500 text-white flex items-center gap-2">
-                                                <BatteryLow className="w-3.5 h-3.5" />
-                                                <span className="text-[11px] font-bold uppercase tracking-wider">
-                                                    Batería {batteryPercent}%
-                                                </span>
                                             </div>
                                         )}
                                         {pedidoActivo && (
