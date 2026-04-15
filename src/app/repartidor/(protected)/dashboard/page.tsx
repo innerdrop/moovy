@@ -159,6 +159,12 @@ export default function RiderDashboard() {
     const [batteryDismissed, setBatteryDismissed] = useState(false);
     const showBatteryWarning = battery.supported && battery.level !== null && battery.level <= 0.20 && !battery.charging && !batteryDismissed;
 
+    // Wake Lock — mantiene la pantalla encendida mientras haya un pedido activo.
+    // CRÍTICO: este hook va ACÁ (antes de los early returns de loading/error)
+    // para respetar las reglas de orden de hooks de React.
+    const hasActiveOrder = !!dashboardData?.pedidosActivos?.[0];
+    useWakeLock(hasActiveOrder);
+
     // Pull-to-refresh state
     const [pullDistance, setPullDistance] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -491,10 +497,9 @@ export default function RiderDashboard() {
 
     const pedidoActivo = pedidosActivos[0];
 
-    // ── Wake Lock: mantener pantalla encendida durante pedido activo ──
-    // Rider no toca la pantalla mientras maneja pero necesita ver el mapa.
-    useWakeLock(!!pedidoActivo);
-
+    // NOTA: useWakeLock se llama arriba (antes de los early returns) para
+    // respetar las reglas de orden de hooks de React. No moverlo acá.
+    //
     // NOTA: el aviso de bateria baja (showBatteryWarning + banner con dismiss)
     // ya esta declarado arriba (linea ~160) y renderizado abajo (linea ~1084).
     // No agregamos otro indicador compacto para no duplicar informacion.
