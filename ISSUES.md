@@ -1,10 +1,10 @@
 # Moovy — Issues pre-lanzamiento
 
-**Generado:** 2026-04-15
-**Rama:** `docs/pre-launch-issues-audit`
-**Alcance:** Auditoría integral (7 roles + recorrido visual de somosmoovy.com + audit de ~170 endpoints) para identificar bloqueantes y mejoras previas al lanzamiento.
+**Generado:** 2026-04-15 (auditoría inicial) + **2026-04-15 UX pass** (recorrido completo de pantallas en producción con usuario real de 4 roles + admin)
+**Ramas:** `docs/pre-launch-issues-audit` (técnico), `docs/pre-launch-ux-audit` (UX)
+**Alcance:** Auditoría integral (7 roles + recorrido visual de somosmoovy.com + audit de ~170 endpoints + UX pass sobre 25+ pantallas con cuenta multi-rol y cuenta admin) para identificar bloqueantes y mejoras previas al lanzamiento.
 
-**Total:** 32 issues | **Críticos:** 8 | **Importantes:** 15 | **Menores:** 9
+**Total:** 59 issues | **Críticos:** 13 | **Importantes:** 30 | **Menores:** 16
 
 ---
 
@@ -287,3 +287,302 @@ Para cualquier cambio en este ISSUES.md que toque dinero, asignación o parámet
 - `npx tsx scripts/validate-ops-config.ts`
 - Script específico de integridad de puntos (crear en ISSUE-006)
 - Smoke test manual de los 4 flujos (PROJECT_STATUS.md)
+
+---
+
+# UX Pass — 2026-04-15
+
+Pasada por las pantallas reales de producción con cuenta multi-rol (`maugrod@gmail.com`, roles USER/COMERCIO/DRIVER/SELLER) y cuenta admin (`maurod@me.com`) aplicando el protocolo de 7 preguntas. 19 hallazgos. Chrome se cerró un par de veces mid-audit, así que el checkout (agregar al carrito + 3 pantallas del flujo de pago) no se pudo completar end-to-end — queda para smoke test manual pre-lanzamiento.
+
+## 🔴 CRÍTICOS UX
+
+### ISSUE-033 — `/moover` crashea con error genérico "Algo salió mal"
+**Actor:** comprador
+**Pregunta fallida:** 4 (¿qué pasó después de actuar?) y 5 (¿qué hacer si algo falla?)
+**Qué ve hoy:** La bottom nav dice "MOOVER" y sugiere que esa es la sección de puntos. Al tipear `/moover` o al tocar el link (desde algún otro lado si existe), la página muestra "Algo salió mal / Ocurrió un error inesperado" con botones Reintentar / Ir al inicio. La ruta real es `/puntos`.
+**Qué debería ver:** O la ruta `/moover` redirige a `/puntos` (301), o la página `/moover` existe y muestra el mismo contenido. El mensaje genérico "Algo salió mal" sin contexto asusta al usuario nuevo que está explorando.
+**Severidad:** crítico
+**Esfuerzo:** S (30 min — agregar redirect en `src/app/moover/page.tsx` o en `next.config.js`)
+**Dónde:** error visible en `https://somosmoovy.com/moover`. Verificar si el link del bottom nav apunta a `/puntos` o a `/moover` (en screenshots parecía `/puntos`, pero el nombre del ítem "MOOVER" genera la confusión).
+
+### ISSUE-034 — Comercio muestra badge "Sin conexión" en la pantalla de pedidos
+**Actor:** comercio
+**Pregunta fallida:** 4 (¿sabe qué pasó?) — si hay un pedido nuevo, no se entera
+**Qué ve hoy:** En `/comercios/pedidos` aparece un badge rojo "Sin conexión" junto al título "Pedidos", con un ícono de refresh. El Socket.IO está caído y la UI lo muestra pero no auto-recupera ni alerta audible.
+**Qué debería ver:** Auto-reintentar la conexión sin intervención. Si no se puede, mostrar un banner sticky con "Tu conexión se cortó. Tocá para reintentar. Mientras tanto podés perderte pedidos." + sonido de alerta si dura >30s. Mientras el socket esté caído, hacer polling cada 10s al endpoint REST como fallback.
+**Severidad:** crítico — un comercio que pierde pedidos pierde plata y reputación
+**Esfuerzo:** M
+**Dónde:** `src/hooks/useSocket.ts` + `src/app/comercios/(protected)/pedidos/**`
+
+### ISSUE-035 — Rutas naturales de comprador (`/pedidos`, `/perfil`) tiran 404
+**Actor:** comprador
+**Pregunta fallida:** 1 (¿sabe dónde está?) y 2 (¿qué puede hacer?)
+**Qué ve hoy:** Al tipear directamente `/pedidos` o `/perfil` (rutas intuitivas que cualquiera probaría, especialmente si compartís un link desde WhatsApp o guardás un favorito), la página muestra 404 "Página no encontrada" sin bottom nav ni header. La 404 no sugiere alternativas: no dice "¿Buscabas Mis Pedidos?" con link a `/mis-pedidos`. Las rutas reales son `/mis-pedidos` y `/mi-perfil`.
+**Qué debería ver:** `/pedidos` y `/perfil` redirigen 301 a sus equivalentes con `/mis-` prefijo. Y la página de 404 debe tener header + bottom nav + sugerencias clickeables.
+**Severidad:** crítico — bloquea share de links por WhatsApp, favorites, memoria muscular de usuarios que vienen de otras apps donde la ruta es `/pedidos`
+**Esfuerzo:** S (redirects en `next.config.js` + mejora de `src/app/not-found.tsx`)
+
+## 🟡 IMPORTANTES UX
+
+### ISSUE-036 — Home: la misma tienda aparece 4 veces en distintas secciones
+**Actor:** comprador
+**Pregunta fallida:** 3 (¿tiene información para decidir?)
+**Qué ve hoy:** "La Estancia" aparece en "Abiertos ahora", "Nuevos en MOOVY", "Los más pedidos" y "Mejor calificados". La primera impresión es que hay un solo comercio pero cuatro secciones hablando de él. En lugar de dar variedad, transmite pobreza de oferta.
+**Qué debería ver:** Reglas de diversidad: si hay <3 comercios totales, mostrar una sola sección "Comercios en Moovy" con todos. Si hay ≥3, garantizar que cada sección tenga al menos 2 comercios distintos y nunca repetir el mismo comercio en 2+ secciones. "Los más pedidos" debe ocultarse si no hay pedidos todavía (launch week = sin datos).
+**Severidad:** importante
+**Esfuerzo:** M
+
+### ISSUE-037 — Dashboard comercio: contador de progreso inconsistente (5/7, 5/8 y 5/9 visibles)
+**Actor:** comercio
+**Pregunta fallida:** 3 (¿información para decidir?) y 5 (¿qué hacer si algo falla?)
+**Qué ve hoy:** En `/comercios` (dashboard) el banner dice "5/9 Completa los pasos obligatorios" arriba, pero abajo aparece "Tu tienda permanecerá cerrada hasta que completes los pasos obligatorios (5/7)" — y según el viewport también aparece "5/8". Tres números distintos para el mismo contador.
+**Qué debería ver:** Un único contador coherente, derivado del mismo cálculo server-side. Sugerencia: "5 de 7 requisitos obligatorios" (no contar los "Recomendados" en el número). En el check de apertura, usar exactamente esos 7.
+**Severidad:** importante — rompe confianza del merchant en la plataforma desde el día 1
+**Esfuerzo:** S
+
+### ISSUE-038 — Dashboard comercio: chip "Abierto" verde cuando la tienda está cerrada
+**Actor:** comercio
+**Pregunta fallida:** 1 (¿sabe dónde está?) y 2 (¿qué puede hacer?)
+**Qué ve hoy:** Junto al título "Dashboard" hay un chip verde "● Abierto" mientras el banner dice "Tu tienda permanecerá cerrada hasta que completes los pasos obligatorios". Contradicción visual directa.
+**Qué debería ver:** El chip debe reflejar estado real. Tres estados posibles: "Pendiente" (gris, requisitos incompletos), "Cerrada" (rojo, cumple requisitos pero el merchant la cerró manualmente), "Abierta" (verde, lista y recibiendo). En este caso sería "Pendiente".
+**Severidad:** importante
+**Esfuerzo:** S
+
+### ISSUE-039 — Portal repartidor: formato de moneda US en app argentina ($1,235 en vez de $1.235)
+**Actor:** repartidor
+**Pregunta fallida:** 3 (información para decidir)
+**Qué ve hoy:** En el dashboard driver, "Ganancias hoy $1,235" con coma como separador de miles (formato US). En Argentina la coma es decimal y el punto es separador de miles. Leer "$1,235" un argentino lo interpreta como "un peso con veintitrés centavos".
+**Qué debería ver:** `$1.235` o `$1.235,00` usando `Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })`.
+**Severidad:** importante — un driver que no entiende lo que cobra pierde confianza
+**Esfuerzo:** S — auditar todos los usos de `.toLocaleString()` y `toFixed()` en el proyecto, envolver en helper centralizado `formatARS()`
+
+### ISSUE-040 — Detalle de comercio: falta horario visible y pedido mínimo
+**Actor:** comprador
+**Pregunta fallida:** 3 (información para decidir) — no sabe si el comercio está abierto AHORA ni cuánto tiene que gastar mínimo
+**Qué ve hoy:** `/tienda/la-estancia` muestra rating, tiempo de entrega (30-45 min), dirección, chip "Envío Gratis" y lista de productos. No muestra: estado "Abierto/Cerrado ahora", horarios de atención del día, pedido mínimo, radio de entrega.
+**Qué debería ver:** Chip verde "Abierto hasta las 22:00" o rojo "Cerrado. Abre mañana 9:00". Debajo, "Pedido mínimo: $3.000" si aplica. "Envía a tu zona" o "No envía a tu zona" basado en la dirección guardada del usuario.
+**Severidad:** importante — el usuario arma el carrito, va a checkout, y ahí descubre que el local está cerrado o que no llega a su barrio
+**Esfuerzo:** M
+
+### ISSUE-041 — Detalle de producto: no muestra nombre del comercio ni tiempo de entrega
+**Actor:** comprador
+**Pregunta fallida:** 1 (¿dónde está?) y 3 (información para decidir)
+**Qué ve hoy:** `/productos/coca-cola-...` muestra imagen, nombre, precio, "En stock", descripción "500ml" y botón Agregar. No dice de qué comercio es ni cuánto tarda en llegar.
+**Qué debería ver:** Bajo el precio, un chip clickeable con el nombre del comercio y tiempo de entrega: "De La Estancia · 30-45 min".
+**Severidad:** importante
+**Esfuerzo:** S
+
+### ISSUE-042 — Sin breadcrumbs en flujos multi-paso (catálogo, checkout)
+**Actor:** comprador
+**Pregunta fallida:** 1 (¿dónde está?) y 2 (qué puede hacer)
+**Qué ve hoy:** Al entrar a un producto, solo hay un `<` (flecha atrás). No dice "Inicio > La Estancia > Coca Cola". Si el usuario llega desde un link directo, no sabe de qué comercio es ni cómo volver a él sin perder el scroll.
+**Qué debería ver:** Breadcrumb clickeable en desktop; en mobile, mantener la `<` pero mostrar un subtítulo "La Estancia" bajo el nombre del producto con link.
+**Severidad:** importante
+**Esfuerzo:** S
+
+### ISSUE-043 — Dashboard comercio: tachado visual sobre items completados se lee como "eliminado"
+**Actor:** comercio
+**Pregunta fallida:** 2 (qué puede hacer) y 4 (feedback claro)
+**Qué ve hoy:** En la lista de setup, los items completados ("CUIT cargado", "CBU o Alias bancario", "Configurá horarios") aparecen con texto verde pero **con línea de tachado encima**. En UI occidental, strike-through significa eliminado/invalidado, no completado.
+**Qué debería ver:** Texto verde + ícono ✓ + SIN tachado. Opcional: opacidad reducida (70%) para diferenciar de los pendientes sin transmitir "anulado".
+**Severidad:** importante
+**Esfuerzo:** S
+
+### ISSUE-044 — Perfil: ícono de tacho para eliminar dirección PRINCIPAL sin confirmación
+**Actor:** comprador
+**Pregunta fallida:** 7 (confirmación antes de destructivo)
+**Qué ve hoy:** En `/mi-perfil/direcciones` junto a la dirección marcada como PRINCIPAL hay un tacho clickeable. No sabemos si tiene confirmación (no llegué a clickear en el audit), pero si no la tiene, un toque accidental deja al usuario sin dirección y el próximo checkout falla.
+**Qué debería ver:** Tacho dispara modal "¿Eliminar Mi Casa? No podrás hacer pedidos a esta dirección. [Cancelar] [Eliminar]". Si es la ÚNICA dirección, no permitir eliminar, reemplazar CTA por "Editar" o "Reemplazar".
+**Severidad:** importante
+**Esfuerzo:** S
+**Nota:** Verificar con click real si ya tiene confirmación; si la tiene, bajar a menor.
+
+### ISSUE-045 — Puntos: falta progress bar a próximo nivel y explicación del valor del punto
+**Actor:** comprador
+**Pregunta fallida:** 2 (qué puede hacer) y 3 (información para decidir)
+**Qué ve hoy:** `/puntos` muestra "0 puntos" grande + "Tu nivel: MOOVER" + código de referido. No hay progress bar hacia SILVER (5 pedidos en 90 días) ni mención del valor del punto ("1 punto = $1, mínimo 500 pts para canjear, hasta 20% del subtotal"). Esas reglas viven solo en Biblia Financiera v3.
+**Qué debería ver:** Bajo el balance, un bloque "Vos gastás 1 punto = $1 de descuento. Desde 500 pts podés canjear. Máximo 20% del pedido." Debajo, tabla visual de niveles con checkmark en donde estás y progress hacia el siguiente.
+**Severidad:** importante — sin esto, el sistema de puntos no motiva porque el usuario no entiende qué ganará
+**Esfuerzo:** M
+
+### ISSUE-046 — Bottom nav dice "MOOVER" pero ruta es `/puntos` — inconsistencia marca vs ruta
+**Actor:** comprador
+**Pregunta fallida:** 1 (¿dónde está?)
+**Qué ve hoy:** Al tocar el tab "MOOVER" del bottom nav se va a `/puntos` (se ve bien). Pero al tipear `/moover` crashea (ver ISSUE-033). La URL no refleja el nombre de la marca que el usuario lee en pantalla.
+**Qué debería ver:** Elegir una de las dos: renombrar la ruta a `/moover` (más consistente con el branding) o renombrar el tab del bottom nav a "Puntos" (más descriptivo). Recomendación: `/moover` porque MOOVER es el sistema de loyalty y ya está siendo marketing; hacer redirect de `/puntos` → `/moover`.
+**Severidad:** importante (también hace ISSUE-033 más urgente)
+**Esfuerzo:** S
+
+### ISSUE-047 — Portal vendedor: toggle "Cerrado / No recibo pedidos" con semántica ambigua
+**Actor:** vendedor marketplace
+**Pregunta fallida:** 2 y 4
+**Qué ve hoy:** Un switch con label "● Cerrado / No recibo pedidos". No queda claro si el switch off = cerrado (como está ahora) o switch off = abierto. El punto rojo al lado del texto refuerza "cerrado" pero el copy "No recibo pedidos" es la subexplicación, no el estado.
+**Qué debería ver:** Un único label grande: "Abierto a ventas" / "Cerrado a ventas" dependiendo del estado real, con color de fondo (verde/rojo) que refuerce. El switch debe quedar visualmente subordinado al estado.
+**Severidad:** importante
+**Esfuerzo:** S
+
+## 🟢 MENORES UX
+
+### ISSUE-048 — Home comprador: dos barras de búsqueda (una en header, otra hero)
+En desktop se ven dos inputs de búsqueda: uno compacto en el header y uno grande bajo "¿Se te antoja algo?". Simplificar a uno (el del hero en home, el del header en páginas internas).
+
+### ISSUE-049 — Tienda: categoría única "Otros (2)" cuando solo hay 2 productos
+Mostrar la lista sin filtro de categoría si hay <5 productos. El filtro "Otros" para 2 productos es visual overhead sin valor.
+
+### ISSUE-050 — Dashboard ops: "Facturado hoy $0 · Max $0" confunde
+El métrico "Max: $0" junto a "Facturado hoy: $0" no tiene sentido en lanzamiento (nunca hubo max distinto de 0). Ocultar hasta que haya datos o reemplazar por "Récord: $0".
+
+### ISSUE-051 — Portal repartidor: $1,235 sin info de zona, vehículo ni batería
+El dashboard driver no muestra el vehículo configurado, la zona asignada ni el nivel de batería (que es crítico para evitar quedarse sin GPS mid-entrega). Agregar strip superior con estos 3 datos.
+
+---
+
+## Respuestas a las 3 preguntas finales
+
+### ¿Cuál es la pantalla con más problemas?
+
+**Dashboard del comercio (`/comercios`).** Concentra tres bugs visibles en la misma pantalla: (a) contador inconsistente 5/7 vs 5/8 vs 5/9, (b) chip "Abierto" verde mientras la tienda está cerrada, (c) tachado sobre items completados. A esto se suma que la pantalla hermana (`/comercios/pedidos`) muestra "Sin conexión" — el merchant abre el panel y lo primero que ve son contradicciones y errores. Primera impresión del actor más crítico del negocio (el que cobra al instante, nuestra principal propuesta de valor) comprometida.
+
+### ¿Hay algún flujo completo que esté roto, no solo una pantalla?
+
+**Sí, dos:**
+
+1. **Flujo de descubrimiento → navegación de rutas intuitivas.** Un usuario que viene de apps como PedidosYa tipea `/pedidos` o `/perfil` por memoria muscular → 404. Un usuario que lee "MOOVER" en el bottom nav y quiere recordar la URL tipea `/moover` → crash. Estas 3 rutas naturales rotas rompen el flujo antes de que el usuario encuentre lo que busca.
+
+2. **Flujo del comercio en sus primeros 10 minutos (ISSUE-034 + ISSUE-037 + ISSUE-038 + ISSUE-043 combinados).** Un merchant nuevo entra, ve "Abierto" pero también "permanecerá cerrada", el contador de progreso cambia según la pantalla, los items completados se ven tachados como si hubieran sido eliminados, y al ir a Pedidos aparece "Sin conexión". No hay un solo momento de confianza en los primeros 30 segundos.
+
+### ¿Cuál es el issue de UX que más daño haría al lanzamiento si queda sin resolver?
+
+**ISSUE-034 — "Sin conexión" en portal comercio.** Razones:
+
+- Un comercio que no recibe la notificación del pedido pierde plata real (la venta se cancela, el buyer se frustra, el rating del comercio baja).
+- En ciudad chica de 80k habitantes, un solo comercio que se queje públicamente ("me dejó de llegar") contamina la percepción de toda la plataforma en 48h.
+- Es probabilísticamente cierto que va a pasar (el badge ya aparece en producción aunque no haya tráfico real — imaginá con 20 comercios conectados).
+- El fix no es complejo (polling fallback + alerta audible + auto-reconnect agresivo) pero requiere trabajo deliberado.
+
+Si tuviera que elegir UNO solo para tapar, sería este.
+
+## Ajuste a la estimación total
+
+Con los 19 issues UX sumados:
+
+| Categoría | Total issues | Días estimados |
+|-----------|-------------|----------------|
+| Críticos (10) | ISSUE-001 a 008 + UX-033, 034, 035 | 7-10 días |
+| Importantes (25) | ISSUE-009 a 023 + UX-036 a 047 | 10-14 días |
+| Menores (16) | ISSUE-024 a 032 + UX-048 a 051 | 4-6 días post-lanzamiento |
+| **Total pre-lanzamiento** | **35** | **17-24 días full** |
+
+El incremento por el UX pass es moderado (~3-4 días) porque muchos issues UX son S (<2h cada uno) — redirects, renombres, copy fixes, componentes existentes.
+
+---
+
+# Checkout end-to-end — 2026-04-15 (segunda pasada)
+
+Pude completar el flujo con `maugrod@gmail.com`: agregar Coca Cola al carrito, `/carrito` → `/checkout` método de entrega → confirmar → **el pedido se creó (ID `#MOV-7F43`, estado Pendiente, método Efectivo, La Estancia, $1.000)**. Hallazgos en vivo:
+
+## 🔴 CRÍTICOS adicionales
+
+### ISSUE-052 — Post-confirmación redirige a `/productos` en vez de a la pantalla del pedido (y se dispara modal de puntos encima)
+**Actor:** comprador
+**Pregunta fallida:** 4 (¿sabe qué pasó después de actuar?) catastróficamente
+**Qué pasa:** Al tocar "Confirmar Pedido" en el último paso del checkout, la app:
+1. Crea el pedido correctamente (aparece en `/mis-pedidos`).
+2. Redirige al usuario a `/productos` (pantalla de listado de productos del marketplace).
+3. Encima de esa pantalla, muestra un modal "¡GANASTE! +1.000 PUNTOS MOOVY / Ver mis puntos / Cerrar".
+
+Esto deja al comprador **desorientado**: pagó (se comprometió a pagar efectivo), pero en vez de ver "Pedido recibido, #MOV-XXXX, estamos avisando al comercio" con tracking, ve una pantalla genérica de productos + un modal de puntos. No sabe si el pedido se creó. No tiene link directo al tracking. Tiene que navegar manualmente a Pedidos.
+**Qué debería pasar:** Redirect a `/pedido/[id]` (o `/mis-pedidos/[id]`) con una pantalla "¡Gracias! Tu pedido está en camino" que muestre:
+- Número de pedido grande y copiable
+- Estado inicial "Esperando confirmación de La Estancia"
+- Resumen (items, total, método de pago)
+- Tiempo estimado
+- Botón "Seguir pedido" / "Ver mapa"
+- Opcional modal de puntos después, sin bloquear
+
+**Severidad:** crítico — una pantalla post-checkout ausente en el momento más emocional del flujo destruye confianza
+**Esfuerzo:** S (crear `src/app/pedido/[id]/confirmado/page.tsx` + cambiar el redirect del handler de Confirmar en checkout)
+
+### ISSUE-053 — Puntos otorgados al CREAR el pedido, antes de CONFIRMED/DELIVERED (evidencia viva de ISSUE-006)
+**Actor:** comprador (validado en vivo)
+**Qué pasó en el test:** Balance previo **0 puntos**. Se crea pedido MOV-7F43 estado "Pendiente" (sin aceptar por comercio, sin entregar, método Efectivo = sin pago todavía). Aparece modal "+1.000 puntos" y `/puntos` ahora muestra balance **1.000**.
+
+Dos problemas superpuestos:
+
+1. **Timing**: los puntos se dieron en estado Pendiente, violando la regla "earn ONLY en DELIVERED" de Biblia Financiera v3. Confirma ISSUE-006 con evidencia directa. Si el comercio rechaza el pedido o el buyer lo cancela, los puntos **no se revierten** (según ISSUE-006 la lógica de reversión no existe en ese path).
+
+2. **Monto**: 1.000 puntos por $1.000 = **100% cashback**, cuando Biblia dice 10 pts por cada $1.000 (1%). Hay dos hipótesis:
+   - **A) El código está pagando 100x lo debido** (regresión del fix de 2026-04-07 documentado en CLAUDE.md, o que el fix solo corrigió el display pero no el cálculo del earn real).
+   - **B) Es el welcome bonus de mes 1 ($1.000 pts por signup), que debería haberse acreditado al registrarse pero está disparándose aquí por timing incorrecto.**
+
+Cualquiera sea el caso, hay que auditar `src/lib/points.ts` + `src/app/api/orders/route.ts:849-866` con queries directas a DB:
+```ts
+SELECT * FROM "PointsTransaction" WHERE "userId" = <maugrod user_id> ORDER BY "createdAt" DESC LIMIT 5;
+```
+Esto va a decir si es type=EARN (problema A, bug de cálculo) o type=BONUS_SIGNUP (problema B, timing equivocado).
+
+**Severidad:** crítico — dinero regalado sin control
+**Esfuerzo:** L (requiere investigar causa + fix + script de validación + reversión + tests)
+
+### ISSUE-054 — "NO HAY REPARTIDORES DISPONIBLES" visible en checkout sin canal para avisar al usuario
+**Actor:** comprador
+**Pregunta fallida:** 5 (¿qué hacer si algo falla?)
+**Qué ve hoy:** En `/checkout` paso 1 aparece un warning amarillo "NO HAY REPARTIDORES DISPONIBLES / Podés realizar tu compra, pero deberás retirarla personalmente por el local." El selector "ENVÍO A DOMICILIO" queda en gris y se fuerza "RETIRO EN LOCAL".
+**Por qué es crítico:** El valor principal de Moovy para el comprador es delivery. Un usuario que viene a pedir cena (-10°C afuera en Ushuaia) encuentra este mensaje en su primer pedido y:
+1. No sabe cuándo va a volver a estar disponible el delivery.
+2. No hay canal para pedir aviso ("Avisame cuando haya repartidor").
+3. No sabe si es algo temporal (11pm, hora valle) o estructural (siempre pasa).
+4. La decisión forzada es "retiro en local" — literalmente lo opuesto al producto.
+
+**Qué debería ver:**
+- Mensaje más cálido: "Justo ahora no hay repartidores cerca. Estamos coordinando. Esto suele durar menos de 15 minutos."
+- Botón "Avisame cuando haya repartidor" → push notification cuando `Driver.isOnline=true` en la zona del user.
+- Alternativa "Programar entrega" destacada (para más tarde cuando haya driver).
+- "Retiro en local" como 3ra opción, no la única.
+
+**Severidad:** crítico — en ciudad chica, este mensaje en 3 pedidos seguidos hace que el usuario desinstale
+**Esfuerzo:** M
+
+## 🟡 IMPORTANTES adicionales
+
+### ISSUE-055 — Breadcrumb del checkout: nombres no describen los pasos y los 3 se ven activos
+**Qué ve hoy:** Tabs "Método / Confirmar / Pago" con los 3 subrayados en rojo al mismo tiempo. "Método" cubre método de entrega; "Confirmar" cubre método de pago + tipo de entrega (Inmediata/Programada); "Pago" debería ser el paso final pero nunca llegamos porque al confirmar se creó el pedido.
+**Qué debería ver:** 3 tabs con un solo activo por paso: **Entrega** (domicilio/retiro, dirección) → **Pago** (método de pago, puntos a usar, cupón) → **Confirmar** (resumen final con total desglosado y botón de pago). Renombrar y reordenar.
+**Severidad:** importante
+**Esfuerzo:** M
+
+### ISSUE-056 — Paso "Confirmar" mezcla conceptos (Tipo de entrega dentro de Método de Pago)
+**Qué ve hoy:** En el paso 2 "Confirmar", el bloque "Método de Pago" contiene subsecciones: "Tenés 0 puntos", "Tipo de entrega: Inmediata / Programada", "Efectivo", "Mercado Pago". Mezcla dos decisiones distintas.
+**Qué debería ver:** "Tipo de entrega (Inmediata/Programada)" pertenece al paso de Entrega (ISSUE-055). "Método de Pago" queda con solo: puntos, cupón, efectivo/MP.
+**Severidad:** importante
+
+### ISSUE-057 — Carrito y checkout muestran "Comercio" como etiqueta en vez del nombre real del vendor
+**Qué ve hoy:** En `/carrito` y en `/checkout` resumen, el agrupador dice "Comercio" (literal, label genérico) en vez de "La Estancia".
+**Qué debería ver:** Nombre real del merchant/seller con su ícono.
+**Severidad:** importante (pequeño pero reduce confianza)
+**Esfuerzo:** S
+
+### ISSUE-058 — Badge del carrito en header no se sincroniza con el contenido real
+**Qué ve hoy:** Después de agregar 1 Coca Cola y luego restar a 1 (o navegar), el badge del header mostraba "3" cuando el carrito tenía "(1)". Eventualmente se sincronizó a "1". Sugiere que el Zustand del carrito tiene dos contadores distintos (agregados vs estado actual) o que el badge no se hidrata del store.
+**Qué debería ver:** Badge siempre = `cart.items.reduce((s,i) => s + i.quantity, 0)`.
+**Severidad:** importante
+**Esfuerzo:** S
+
+### ISSUE-059 — Resumen de checkout no desglosa costo de envío (incluso cuando es $0 por retiro)
+**Qué ve hoy:** "Subtotal $1.000 / Total $1.000". No hay línea "Envío: $0 (retiro en local)" ni "Puntos aplicados: 0" ni "Cupón: —". El usuario no ve el desglose que después verá en el email de confirmación o en Mis Pedidos.
+**Qué debería ver:** Siempre desglosar: Subtotal, Envío (con valor y método), Descuentos (puntos y cupones si los hay), Total.
+**Severidad:** importante (transparencia de precio = valor fundacional de Moovy)
+**Esfuerzo:** S
+
+## Ajuste final a la estimación
+
+Con los 8 issues del checkout:
+
+| Categoría | Total issues | Días estimados |
+|-----------|-------------|----------------|
+| Críticos (13) | 001-008 + UX-033-035 + 052-054 | 9-13 días |
+| Importantes (30) | 009-023 + UX-036-047 + 055-059 | 12-17 días |
+| Menores (16) | 024-032 + UX-048-051 | 4-6 días post-lanzamiento |
+| **Total pre-lanzamiento** | **43** | **21-30 días full** |
+
+**ISSUE-053 es el que más me preocupa**: evidencia viva de que los puntos se regalan sin que el pedido esté entregado. Cada pedido Pendiente que nunca se acepte está regalando 1.000 puntos ($1.000 de pasivo por cada click en Confirmar). Antes de abrir el producto, **correr el query de `PointsTransaction` para confirmar si es type=EARN o type=BONUS_SIGNUP** y priorizar el fix según lo que se encuentre.
