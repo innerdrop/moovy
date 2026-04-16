@@ -506,13 +506,14 @@ export default function CheckoutPage() {
                 return;
             }
 
-            // Cash: clear cart, then show points celebration and redirect
+            // Cash: clear cart, then show points celebration and redirect to order detail
             clearCart();
             if (result.points?.earned) {
                 setEarnedPoints(result.points.earned);
                 showCelebration(result.points.earned);
             }
-            router.push("/mis-pedidos");
+            // ISSUE-052: redirigir al detalle del pedido, no a la lista genérica
+            router.push(`/mis-pedidos/${result.id}`);
         } catch (error) {
             console.error("Error submitting order:", error);
             toast.error(error instanceof Error ? error.message : "Error al procesar el pedido");
