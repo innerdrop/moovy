@@ -215,17 +215,17 @@ export default function HeroPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
               <Link
                 href="/ops/dashboard"
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 rounded-lg transition flex-shrink-0 mt-1"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   Banners de Inicio
                 </h1>
                 <p className="text-sm text-gray-500 mt-1">
@@ -239,7 +239,7 @@ export default function HeroPage() {
                 resetForm();
                 setShowForm(!showForm);
               }}
-              className="flex items-center gap-2 bg-[#e60012] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#cc000f] transition"
+              className="flex items-center justify-center gap-2 bg-[#e60012] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#cc000f] transition w-full sm:w-auto flex-shrink-0"
             >
               <Plus className="w-5 h-5" />
               Nuevo Banner
@@ -248,15 +248,15 @@ export default function HeroPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-            <h2 className="text-2xl font-black text-gray-900 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-4 sm:mb-6">
               {editingId ? "Editar Banner" : "Nuevo Banner"}
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Text Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -346,15 +346,15 @@ export default function HeroPage() {
               </div>
 
               {/* Image Upload Section */}
-              <div className="border-t pt-8">
-                <h3 className="text-xl font-black text-gray-900 mb-6">
+              <div className="border-t pt-6 sm:pt-8">
+                <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-4 sm:mb-6">
                   Imágenes del Banner
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   {/* Desktop Image */}
                   <div>
-                    <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border-2 border-dashed border-gray-300">
                       <input
                         ref={desktopInputRef}
                         type="file"
@@ -411,7 +411,7 @@ export default function HeroPage() {
 
                   {/* Mobile Image */}
                   <div>
-                    <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border-2 border-dashed border-gray-300">
                       <input
                         ref={mobileInputRef}
                         type="file"
@@ -471,7 +471,7 @@ export default function HeroPage() {
               </div>
 
               {/* Form Actions */}
-              <div className="flex gap-3 pt-8 border-t">
+              <div className="flex flex-col sm:flex-row gap-3 pt-6 sm:pt-8 border-t">
                 <button
                   type="submit"
                   className="flex-1 bg-[#e60012] text-white py-3 rounded-xl font-bold hover:bg-[#cc000f] transition"
@@ -582,7 +582,7 @@ export default function HeroPage() {
         )}
 
         {/* Info */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <div className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6">
           <h3 className="font-bold text-blue-900 mb-2">Medidas recomendadas</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-blue-800">
             <div>

@@ -245,17 +245,17 @@ export default function DestacadosPage() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <div className="bg-white border-b sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-8 py-6">
-                    <div className="flex items-center gap-3 mb-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <Link
                             href="/ops/dashboard"
-                            className="p-2 hover:bg-gray-100 rounded-lg transition"
+                            className="p-2 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
                         >
                             <ChevronLeft className="w-5 h-5" />
                         </Link>
-                        <div className="flex items-center gap-2">
-                            <Crown className="w-6 h-6 text-amber-600" />
-                            <h1 className="text-2xl font-bold text-gray-900">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 flex-shrink-0" />
+                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                                 Comercios Destacados
                             </h1>
                         </div>
@@ -263,73 +263,73 @@ export default function DestacadosPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                     {/* Slots Card */}
-                    <div className="bg-white rounded-xl border border-amber-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 font-medium">
+                    <div className="bg-white rounded-xl border border-amber-200 p-4 sm:p-6 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">
                                     Slots Utilizados
                                 </p>
-                                <p className="text-3xl font-bold text-amber-700 mt-2">
+                                <p className="text-2xl sm:text-3xl font-bold text-amber-700 mt-1 sm:mt-2">
                                     {premiumCount} /{" "}
                                     {storeSettings?.adMaxDestacadosSlots || 8}
                                 </p>
                             </div>
-                            <Badge className="w-12 h-12 bg-amber-100 text-amber-700" />
+                            <Badge className="w-8 h-8 sm:w-12 sm:h-12 bg-amber-100 text-amber-700 flex-shrink-0" />
                         </div>
                     </div>
 
                     {/* Platino Card */}
-                    <div className="bg-white rounded-lg border border-amber-100 p-6">
-                        <p className="text-sm text-gray-600 font-medium">
+                    <div className="bg-white rounded-lg border border-amber-100 p-4 sm:p-6 min-w-0">
+                        <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">
                             Platino
                         </p>
-                        <p className="text-3xl font-bold text-amber-600 mt-2">
+                        <p className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">
                             {platinos}
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-500 mt-1 sm:mt-2 truncate">
                             {formatPrice(storeSettings?.adPricePlatino || 0)}/mes
                         </p>
                     </div>
 
                     {/* Destacado Card */}
-                    <div className="bg-white rounded-lg border border-orange-100 p-6">
-                        <p className="text-sm text-gray-600 font-medium">
+                    <div className="bg-white rounded-lg border border-orange-100 p-4 sm:p-6 min-w-0">
+                        <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">
                             Destacado
                         </p>
-                        <p className="text-3xl font-bold text-orange-600 mt-2">
+                        <p className="text-2xl sm:text-3xl font-bold text-orange-600 mt-1 sm:mt-2">
                             {destacados}
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-500 mt-1 sm:mt-2 truncate">
                             {formatPrice(storeSettings?.adPriceDestacado || 0)}/mes
                         </p>
                     </div>
 
                     {/* Revenue Card */}
-                    <div className="bg-white rounded-lg border border-green-100 p-6">
-                        <p className="text-sm text-gray-600 font-medium">
+                    <div className="bg-white rounded-lg border border-green-100 p-4 sm:p-6 min-w-0">
+                        <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">
                             Revenue Estimado
                         </p>
-                        <p className="text-3xl font-bold text-green-600 mt-2">
+                        <p className="text-2xl sm:text-3xl font-bold text-green-600 mt-1 sm:mt-2">
                             {formatPrice(estimateRevenue())}
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">/mes</p>
+                        <p className="text-xs text-gray-500 mt-1 sm:mt-2">/mes</p>
                     </div>
                 </div>
 
                 {/* Pricing Reference Box */}
                 {storeSettings && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
-                            <div>
+                            <div className="min-w-0 flex-1">
                                 <h3 className="font-semibold text-blue-900 mb-3">
                                     Precios de Publicidad (Biblia Financiera)
                                 </h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                                     <div>
                                         <p className="text-sm font-medium text-blue-900">
                                             Platino
@@ -394,16 +394,16 @@ export default function DestacadosPage() {
 
                 {/* Merchants Table */}
                 {filteredMerchants.length === 0 ? (
-                    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                    <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 text-center">
                         <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 text-lg">
+                        <p className="text-gray-600 text-base sm:text-lg">
                             {merchants.length === 0
                                 ? "No hay comercios aprobados"
                                 : "No se encontraron comercios"}
                         </p>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -672,8 +672,180 @@ export default function DestacadosPage() {
                     </div>
                 )}
 
+                {/* Merchants Cards (Mobile) */}
+                {filteredMerchants.length > 0 && (
+                    <div className="md:hidden space-y-3">
+                        {filteredMerchants.map((merchant) => (
+                            <div
+                                key={merchant.id}
+                                className="bg-white rounded-lg border border-gray-200 p-4"
+                            >
+                                {/* Header: image + name + count */}
+                                <div className="flex items-start gap-3 mb-3">
+                                    {merchant.image && (
+                                        <UploadImage
+                                            src={merchant.image}
+                                            alt={merchant.name}
+                                            width={44}
+                                            height={44}
+                                            className="rounded object-cover flex-shrink-0"
+                                        />
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-gray-900 truncate">
+                                            {merchant.name}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            {merchant._count.orders} pedidos · Orden #{merchant.displayOrder}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Status + Tier badges */}
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                    {merchant.isPremium ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                            <Check className="w-3 h-3" />
+                                            Premium
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <X className="w-3 h-3" />
+                                            Básico
+                                        </span>
+                                    )}
+                                    {merchant.isPremium && (
+                                        <span
+                                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                TIER_CONFIG[
+                                                    merchant.premiumTier as keyof typeof TIER_CONFIG
+                                                ]?.color ||
+                                                TIER_CONFIG.basic.color
+                                            }`}
+                                        >
+                                            {TIER_CONFIG[
+                                                merchant.premiumTier as keyof typeof TIER_CONFIG
+                                            ]?.label || "—"}
+                                        </span>
+                                    )}
+                                    {merchant.isPremium && merchant.premiumUntil && (
+                                        <span
+                                            className={`text-xs font-medium ${
+                                                isExpired(merchant.premiumUntil)
+                                                    ? "text-red-600"
+                                                    : "text-gray-600"
+                                            }`}
+                                        >
+                                            {isExpired(merchant.premiumUntil)
+                                                ? `Expirado (${formatDate(merchant.premiumUntil)})`
+                                                : `Vence ${formatDate(merchant.premiumUntil)}`}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Edit mode */}
+                                {editingId === merchant.id ? (
+                                    <div className="space-y-3 pt-3 border-t border-gray-100">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={editForm.isPremium}
+                                                onChange={(e) =>
+                                                    setEditForm({
+                                                        ...editForm,
+                                                        isPremium: e.target.checked,
+                                                    })
+                                                }
+                                                className="rounded w-4 h-4"
+                                            />
+                                            <span className="text-sm text-gray-700">
+                                                Premium
+                                            </span>
+                                        </label>
+
+                                        {editForm.isPremium && (
+                                            <>
+                                                <select
+                                                    value={editForm.premiumTier}
+                                                    onChange={(e) =>
+                                                        setEditForm({
+                                                            ...editForm,
+                                                            premiumTier: e.target.value,
+                                                        })
+                                                    }
+                                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                                >
+                                                    <option value="platino">Platino</option>
+                                                    <option value="destacado">Destacado</option>
+                                                    <option value="premium">Premium</option>
+                                                </select>
+
+                                                <input
+                                                    type="date"
+                                                    value={editForm.premiumUntil}
+                                                    onChange={(e) =>
+                                                        setEditForm({
+                                                            ...editForm,
+                                                            premiumUntil: e.target.value,
+                                                        })
+                                                    }
+                                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                                />
+                                            </>
+                                        )}
+
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={editForm.displayOrder}
+                                            onChange={(e) =>
+                                                setEditForm({
+                                                    ...editForm,
+                                                    displayOrder: parseInt(
+                                                        e.target.value,
+                                                        10
+                                                    ),
+                                                })
+                                            }
+                                            className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                            placeholder="Orden"
+                                        />
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleUpdate(merchant.id)}
+                                                disabled={updating === merchant.id}
+                                                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold py-2 rounded transition disabled:opacity-50"
+                                            >
+                                                {updating === merchant.id ? (
+                                                    <Loader2 className="w-4 h-4 inline animate-spin" />
+                                                ) : (
+                                                    "Guardar"
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={handleEditCancel}
+                                                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 text-sm font-semibold py-2 rounded transition"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => handleEditOpen(merchant)}
+                                        className="w-full px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 text-sm font-semibold rounded transition"
+                                    >
+                                        Editar
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Info Section */}
-                <div className="mt-8 bg-amber-50 border border-amber-200 rounded-lg p-6">
+                <div className="mt-6 sm:mt-8 bg-amber-50 border border-amber-200 rounded-lg p-4 sm:p-6">
                     <h3 className="font-semibold text-amber-900 mb-3">
                         Guía de Tiers de Destacados
                     </h3>

@@ -285,7 +285,7 @@ function DeliverySimulator({ config }: { config: FullOpsConfig["delivery"] }) {
 
 export default function BibliaConfigClient({ initialConfig }: Props) {
   const [config, setConfig] = useState<FullOpsConfig>(initialConfig);
-  const [expanded, setExpanded] = useState<SectionKey | null>("delivery");
+  const [expanded, setExpanded] = useState<SectionKey | null>(null);
   const [dirty, setDirty] = useState<Set<SectionKey>>(new Set());
   const [saving, setSaving] = useState<SectionKey | null>(null);
   const toggle = (key: SectionKey) => setExpanded((prev) => (prev === key ? null : key));

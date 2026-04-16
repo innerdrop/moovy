@@ -137,23 +137,23 @@ export default function OpsLiveDashboardPage() {
             </div>
 
             {/* Live Stats Bar */}
-            <div className="grid grid-cols-4 gap-4">
-                <div className="bg-yellow-50 rounded-xl p-4 border-2 border-yellow-200 relative overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-yellow-50 rounded-xl p-3 sm:p-4 border-2 border-yellow-200 relative overflow-hidden min-w-0">
                     {stats.pending > 0 && <div className="absolute top-0 right-0 w-3 h-3 bg-yellow-500 rounded-full animate-ping m-2" />}
-                    <p className="text-sm font-medium text-yellow-700">Nuevos</p>
-                    <p className="text-3xl font-bold text-yellow-900">{stats.pending}</p>
+                    <p className="text-xs sm:text-sm font-medium text-yellow-700 truncate">Nuevos</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-yellow-900">{stats.pending}</p>
                 </div>
-                <div className="bg-red-50 rounded-xl p-4 border border-red-200">
-                    <p className="text-sm font-medium text-red-700">Preparando</p>
-                    <p className="text-3xl font-bold text-red-900">{stats.inProgress}</p>
+                <div className="bg-red-50 rounded-xl p-3 sm:p-4 border border-red-200 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-red-700 truncate">Preparando</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-red-900">{stats.inProgress}</p>
                 </div>
-                <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
-                    <p className="text-sm font-medium text-indigo-700">Listos</p>
-                    <p className="text-3xl font-bold text-indigo-900">{stats.ready}</p>
+                <div className="bg-indigo-50 rounded-xl p-3 sm:p-4 border border-indigo-200 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-indigo-700 truncate">Listos</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-indigo-900">{stats.ready}</p>
                 </div>
-                <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                    <p className="text-sm font-medium text-orange-700">En Camino</p>
-                    <p className="text-3xl font-bold text-orange-900">{stats.inDelivery}</p>
+                <div className="bg-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-orange-700 truncate">En Camino</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-orange-900">{stats.inDelivery}</p>
                 </div>
             </div>
 
