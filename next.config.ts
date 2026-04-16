@@ -165,6 +165,22 @@ const nextConfig: NextConfig = {
         destination: "/comercios/login",
         permanent: false,
       },
+      // ISSUE-033 + ISSUE-035: Rutas intuitivas que el usuario espera que funcionen
+      {
+        source: "/moover",
+        destination: "/puntos",
+        permanent: true,
+      },
+      {
+        source: "/pedidos",
+        destination: "/mis-pedidos",
+        permanent: true,
+      },
+      {
+        source: "/perfil",
+        destination: "/mi-perfil",
+        permanent: true,
+      },
     ];
   },
 
