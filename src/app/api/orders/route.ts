@@ -564,6 +564,29 @@ export async function POST(request: Request) {
                 throw new Error(`STOCK_ERROR:${JSON.stringify(stockErrors)}`);
             }
 
+            // --- SELF-PURCHASE PREVENTION (ISSUE-003) ---
+            // Block buyers from purchasing their own products/listings (anti-fraud: prevents points farming)
+            for (const item of items) {
+                const isListing = item.type === "listing";
+                if (isListing) {
+                    const listingOwner = await tx.listing.findUnique({
+                        where: { id: item.productId },
+                        select: { seller: { select: { userId: true } } },
+                    });
+                    if (listingOwner?.seller.userId === session.user.id) {
+                        throw new Error("SELF_PURCHASE");
+                    }
+                } else {
+                    const productOwner = await tx.product.findUnique({
+                        where: { id: item.productId },
+                        select: { merchant: { select: { ownerId: true } } },
+                    });
+                    if (productOwner?.merchant?.ownerId === session.user.id) {
+                        throw new Error("SELF_PURCHASE");
+                    }
+                }
+            }
+
             // Validate scheduled slot capacity
             const isScheduled = deliveryType === "SCHEDULED";
             if (isScheduled && scheduledSlotStart && scheduledSlotEnd) {
@@ -1171,6 +1194,13 @@ export async function POST(request: Request) {
                     { status: 409 }
                 );
             }
+        }
+
+        if (error?.message === "SELF_PURCHASE") {
+            return NextResponse.json(
+                { error: "No podés comprar tus propias publicaciones o productos" },
+                { status: 403 }
+            );
         }
 
         if (error?.message?.startsWith("SLOT_FULL:")) {
