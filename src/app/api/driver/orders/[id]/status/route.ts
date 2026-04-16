@@ -6,6 +6,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { socketEmitToRooms } from "@/lib/socket-emit";
+import { awardOrderPointsIfDelivered } from "@/lib/points";
 import logger from "@/lib/logger";
 
 const statusLogger = logger.child({ context: "driver-delivery-status" });
@@ -112,6 +113,23 @@ export async function PATCH(
             where: { id: orderId },
             data: updateData,
         });
+
+        // FIX 2026-04-15: otorgar puntos MOOVER s\u00f3lo ahora que pas\u00f3 a DELIVERED (Biblia v3).
+        // Idempotente: si ya se otorgaron (Order.pointsEarned !== null), no hace nada.
+        if (deliveryStatus === "DELIVERED") {
+            try {
+                const result = await awardOrderPointsIfDelivered(orderId);
+                statusLogger.info({
+                    orderId,
+                    awarded: result.awarded,
+                    skipped: result.skipped,
+                    reason: result.reason,
+                }, "Points award on DELIVERED");
+            } catch (pointsError) {
+                statusLogger.error({ orderId, error: pointsError }, "Error awarding points on DELIVERED");
+                // No fallar la transici\u00f3n por error en puntos
+            }
+        }
 
         // Notify buyer of status change
         if (deliveryStatus === "DELIVERED") {

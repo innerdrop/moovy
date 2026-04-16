@@ -158,12 +158,16 @@ export default auth(async (request) => {
     }
 
     // Protect /repartidor/* routes (except login and registro)
+    // FIX 2026-04-15: El chequeo de rol DRIVER fue removido del middleware porque el JWT
+    // `roles[]` puede estar desincronizado con el estado real del dominio (el user se activ\u00f3
+    // como driver despu\u00e9s del login y el JWT todav\u00eda no se refresc\u00f3). El layout
+    // `/repartidor/(protected)` ya usa `requireDriverAccess()` que consulta DB via
+    // `computeUserAccess()` — source of truth canónico — y redirige al lugar correcto
+    // (registro, pendiente, login, home) seg\u00fan el estado real del Driver.
+    // Mantener solo la validaci\u00f3n de sesi\u00f3n existente.
     if (pathname.startsWith('/repartidor') && !pathname.startsWith('/repartidor/login') && !pathname.startsWith('/repartidor/registro')) {
         if (!session) {
             return NextResponse.redirect(publicUrl('/repartidor/login', request));
-        }
-        if (!hasAnyRole(session, ['DRIVER', 'ADMIN'])) {
-            return NextResponse.redirect(publicUrl('/', request));
         }
     }
 

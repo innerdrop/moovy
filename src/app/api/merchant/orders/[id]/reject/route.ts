@@ -180,6 +180,17 @@ export async function POST(
             console.error(`[Merchant Reject] Stock restore error for order ${order.orderNumber}:`, stockError);
         }
 
+        // FIX 2026-04-15: revertir puntos (earn si lleg\u00f3 a DELIVERED, redeem si el buyer us\u00f3 puntos al crear)
+        try {
+            const { reverseOrderPoints } = await import("@/lib/points");
+            const result = await reverseOrderPoints(orderId, `rechazo del comercio (pedido #${order.orderNumber})`);
+            if (result.earnReverted > 0 || result.redeemReverted > 0) {
+                console.log(`[Merchant Reject] Points reverted: earn=${result.earnReverted}, redeem=${result.redeemReverted}`);
+            }
+        } catch (pointsError) {
+            console.error(`[Merchant Reject] Points reverse error for order ${order.orderNumber}:`, pointsError);
+        }
+
         // Log order rejection activity (fire-and-forget)
         const { ipAddress, userAgent } = extractRequestInfo(req);
         logUserActivity({

@@ -92,7 +92,13 @@ export default function ProfilePage() {
             .catch(() => { /* no driver profile yet */ });
 
         // Check seller status via API (independent of JWT)
-        if (!hasSeller) {
+        // FIX 2026-04-15: evitar llamada al endpoint cuando el JWT ya tiene SELLER.
+        // Esto tambi\u00e9n resuelve un 404 ruidoso en la console cuando el user tiene
+        // SELLER en roles[] (porque en este path no hace falta verificar status via API).
+        // La condici\u00f3n original `if (!hasSeller)` dispara en el primer render antes
+        // de que la sesi\u00f3n termine de cargar, generando el 404 visible en consola.
+        const sessionReady = !!session?.user?.email;
+        if (sessionReady && !hasSeller) {
             fetch("/api/seller/profile")
                 .then(res => res.ok ? res.json() : null)
                 .then(data => {
@@ -103,6 +109,9 @@ export default function ProfilePage() {
                     }
                 })
                 .catch(() => { /* no seller profile yet */ });
+        } else if (hasSeller) {
+            // El JWT ya confirma que es SELLER — marcamos activo sin pegarle al endpoint
+            setSellerStatus("ACTIVE");
         }
 
         // Check merchant status via API (independent of JWT)
@@ -322,14 +331,16 @@ export default function ProfilePage() {
                                     <ExternalLink className="w-4 h-4 text-gray-300" />
                                 </button>
                             )}
-                            {driverStatus === "ACTIVE" && (
+                            {(hasDriver || driverStatus === "ACTIVE") && (
                                 <button
                                     onClick={async () => {
+                                        // FIX 2026-04-15: proxy.ts ya no gatea por JWT roles[] para /repartidor/*
+                                        // (el layout protegido usa computeUserAccess como source of truth).
+                                        // Por eso ahora es seguro usar router.push() cuando el JWT ya tiene DRIVER
+                                        // (navegaci\u00f3n client-side instant\u00e1nea sin flicker). Si el JWT no tiene
+                                        // DRIVER a\u00fan, refrescamos y hacemos full reload para garantizar la cookie.
                                         if (!hasDriver) {
-                                            // Trigger JWT callback with trigger="update" (empty object required!)
-                                            // Without args, NextAuth v5 just GETs session without regenerating JWT
                                             await updateSession({ refreshRoles: true });
-                                            // Full navigation to send the updated JWT cookie to the proxy
                                             window.location.href = "/repartidor/dashboard";
                                         } else {
                                             router.push("/repartidor/dashboard");

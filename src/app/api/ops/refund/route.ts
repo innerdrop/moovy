@@ -84,6 +84,17 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // FIX 2026-04-15: revertir puntos al hacer refund manual (earn si hab\u00eda DELIVERED, redeem si us\u00f3 puntos)
+        try {
+            const { reverseOrderPoints } = await import("@/lib/points");
+            const result = await reverseOrderPoints(orderId, `reembolso manual: ${reason.trim()}`);
+            if (result.earnReverted > 0 || result.redeemReverted > 0) {
+                console.log(`[Ops Refund] Points reverted for #${order.orderNumber}: earn=${result.earnReverted}, redeem=${result.redeemReverted}`);
+            }
+        } catch (pointsError) {
+            console.error(`[Ops Refund] Points reverse error for #${order.orderNumber}:`, pointsError);
+        }
+
         return NextResponse.json({
             success: true,
             message: `Reembolso de ${formatCurrency(refundAmount)} registrado para pedido #${order.orderNumber}`,

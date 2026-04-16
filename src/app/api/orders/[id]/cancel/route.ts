@@ -104,25 +104,18 @@ export async function POST(
         }
     });
 
-    // BUG #16 FIX: Read PointsConfig from database instead of hardcoding pointsValue
-    // Refund points if used (non-blocking)
-    if (order.discount > 0) {
-        try {
-            const { recordPointsTransaction, getPointsConfig } = await import("@/lib/points");
-            // Get actual points configuration from database
-            const pointsConfig = await getPointsConfig();
-            const pointsValue = pointsConfig?.pointsValue ?? 0.01;
-            const pointsToRefund = Math.round(order.discount / pointsValue);
-            await recordPointsTransaction(
-                order.userId,
-                "ADJUSTMENT",
-                pointsToRefund,
-                `Devolución de ${pointsToRefund} puntos por cancelación de pedido #${order.orderNumber}`,
-                orderId
-            );
-        } catch (e) {
-            console.error("[Cancel] Failed to refund points:", e);
+    // FIX 2026-04-15: reverseOrderPoints() centraliza la l\u00f3gica de reversi\u00f3n:
+    // - Si la orden hab\u00eda alcanzado DELIVERED y se acreditaron puntos EARN, los revierte.
+    // - Si se canjearon puntos al crear la orden (pointsUsed), se devuelven al balance del usuario.
+    // Idempotente: setea pointsEarned = 0 y pointsUsed = 0 post-reversi\u00f3n para evitar duplicados.
+    try {
+        const { reverseOrderPoints } = await import("@/lib/points");
+        const result = await reverseOrderPoints(orderId, `cancelaci\u00f3n de pedido #${order.orderNumber}`);
+        if (result.earnReverted > 0 || result.redeemReverted > 0) {
+            console.log(`[Cancel] Points reverted for order ${orderId}: earn=${result.earnReverted}, redeem=${result.redeemReverted}`);
         }
+    } catch (e) {
+        console.error("[Cancel] Failed to reverse points:", e);
     }
 
     // Notify buyer via push (non-blocking)

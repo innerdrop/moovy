@@ -840,31 +840,24 @@ export async function POST(request: Request) {
             timeout: 30000,  // 30s max para la transacción completa
         });
 
-        // Process points earning (outside transaction)
-        // This calculates points earned on the order
-        try {
-            const config = await getPointsConfig();
-            const earned = Math.floor(subtotal * config.pointsPerDollar);
-            if (earned > 0) {
-                await recordPointsTransaction(
-                    session.user.id,
-                    "EARN",
-                    earned,
-                    `Ganaste ${earned} puntos por tu compra`,
-                    order.id
-                );
-                pointsResult.earned = earned;
+        // FIX 2026-04-15: NO se otorgan puntos EARN en la creaci\u00f3n de la orden.
+        // Los puntos se otorgan SOLO cuando el pedido pasa a DELIVERED (Biblia Financiera v3).
+        // El EARN se ejecuta en src/app/api/driver/orders/[id]/status/route.ts via awardOrderPointsIfDelivered().
+        // activatePendingBonuses tambi\u00e9n se mueve a DELIVERED (ah\u00ed corresponde: el referido se "completa"
+        // cuando hace su primer DELIVERED, no cuando crea el carrito).
+        // El REDEEM de puntos canjeados s\u00ed se mantiene dentro de la transacci\u00f3n de creaci\u00f3n porque
+        // el descuento se aplica al total del pago (ver l\u00edneas ~780).
+        if (validPointsUsed > 0) {
+            pointsResult.spent = validPointsUsed;
+            // Persistir en Order para poder revertir en cancel/reject/refund
+            try {
+                await prisma.order.update({
+                    where: { id: order.id },
+                    data: { pointsUsed: validPointsUsed },
+                });
+            } catch (persistError) {
+                orderLogger.error({ orderId: order.id, error: persistError }, "Error persisting pointsUsed on order");
             }
-
-            // Try to activate pending bonuses
-            const { bonusAwarded } = await import("@/lib/points").then(m => m.activatePendingBonuses(
-                session.user.id,
-                subtotal,
-                order.id
-            ));
-        } catch (pointsError) {
-            orderLogger.error({ orderId: order.id, error: pointsError }, "Error processing points earning for order");
-            // Don't fail the order if points fail, but log it
         }
 
         // AUDIT FIX 1.5: Coupon usage recording moved inside main transaction above

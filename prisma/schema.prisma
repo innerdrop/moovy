@@ -280,6 +280,8 @@ model Order {
   updatedAt           DateTime    @updatedAt
   cancelReason        String?
   commissionPaid      Boolean     @default(false)
+  pointsEarned        Int?        // Puntos otorgados al pasar a DELIVERED. Null = no otorgados todav\u00eda. Se usa para idempotencia y reversi\u00f3n.
+  pointsUsed          Int?        // Puntos canjeados por el comprador al crear la orden (para revertir en cancelaci\u00f3n/rechazo).
   driverRating        Int?
   merchantPayout      Float?      @default(0)
   moovyCommission     Float?      @default(0)

@@ -391,9 +391,133 @@ export async function activatePendingBonuses(
 }
 
 /**
+ * Award points when order is DELIVERED. Idempotent: if Order.pointsEarned is already set,
+ * returns without doing anything. Sets Order.pointsEarned to the amount awarded so that
+ * cancel/reject/refund paths can revert correctly.
+ *
+ * Only awards EARN (the REDEEM of pointsUsed is recorded at order creation by the caller,
+ * so user sees discount immediately when paying).
+ */
+export async function awardOrderPointsIfDelivered(
+    orderId: string
+): Promise<{ awarded: number; skipped: boolean; reason?: string }> {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: { id: true, userId: true, subtotal: true, status: true, pointsEarned: true },
+        });
+
+        if (!order) return { awarded: 0, skipped: true, reason: "order_not_found" };
+        if (order.status !== "DELIVERED") return { awarded: 0, skipped: true, reason: "not_delivered" };
+        if (order.pointsEarned !== null) return { awarded: 0, skipped: true, reason: "already_awarded" };
+
+        const config = await getPointsConfig();
+        const { level, earnMultiplier } = await getUserLevel(order.userId);
+        const earned = calculatePointsEarned(order.subtotal, config, earnMultiplier);
+
+        if (earned <= 0) {
+            // Marcar como otorgado (con 0) para no reintentar
+            await prisma.order.update({
+                where: { id: orderId },
+                data: { pointsEarned: 0 },
+            });
+            return { awarded: 0, skipped: true, reason: "zero_earn" };
+        }
+
+        await recordPointsTransaction(
+            order.userId,
+            "EARN",
+            earned,
+            `Ganaste ${earned} puntos por tu compra (nivel ${level})`,
+            orderId
+        );
+
+        await prisma.order.update({
+            where: { id: orderId },
+            data: { pointsEarned: earned },
+        });
+
+        // Try to activate signup/referral bonuses now that the user completed a DELIVERED order
+        try {
+            await activatePendingBonuses(order.userId, order.subtotal, orderId);
+        } catch (bonusError) {
+            console.error("[Points] Error activating bonuses after DELIVERED:", bonusError);
+        }
+
+        return { awarded: earned, skipped: false };
+    } catch (error) {
+        console.error("[Points] Error awarding order points:", error);
+        return { awarded: 0, skipped: true, reason: "error" };
+    }
+}
+
+/**
+ * Reverse points transactions for an order (cancel/reject/refund paths).
+ * - If EARN was awarded (Order.pointsEarned > 0), create an ADJUSTMENT with the negative amount.
+ * - If REDEEM was recorded at creation (Order.pointsUsed > 0), create an ADJUSTMENT with the positive amount
+ *   to give back to the user the points they used.
+ *
+ * Idempotent: after reversing, sets Order.pointsEarned = 0 and Order.pointsUsed = 0 to prevent duplicate reversals.
+ */
+export async function reverseOrderPoints(
+    orderId: string,
+    reason: string
+): Promise<{ earnReverted: number; redeemReverted: number }> {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: { id: true, userId: true, pointsEarned: true, pointsUsed: true },
+        });
+
+        if (!order) return { earnReverted: 0, redeemReverted: 0 };
+
+        let earnReverted = 0;
+        let redeemReverted = 0;
+
+        if (order.pointsEarned && order.pointsEarned > 0) {
+            await recordPointsTransaction(
+                order.userId,
+                "ADJUSTMENT",
+                -order.pointsEarned,
+                `Reversion de puntos por ${reason}`,
+                orderId
+            );
+            earnReverted = order.pointsEarned;
+        }
+
+        if (order.pointsUsed && order.pointsUsed > 0) {
+            await recordPointsTransaction(
+                order.userId,
+                "ADJUSTMENT",
+                order.pointsUsed,
+                `Devolucion de puntos canjeados por ${reason}`,
+                orderId
+            );
+            redeemReverted = order.pointsUsed;
+        }
+
+        if (earnReverted > 0 || redeemReverted > 0) {
+            await prisma.order.update({
+                where: { id: orderId },
+                data: { pointsEarned: 0, pointsUsed: 0 },
+            });
+        }
+
+        return { earnReverted, redeemReverted };
+    } catch (error) {
+        console.error("[Points] Error reversing order points:", error);
+        return { earnReverted: 0, redeemReverted: 0 };
+    }
+}
+
+/**
  * Process points for a completed order (Biblia v3)
  * Now considers user level for earn rate multiplier.
  * Points are awarded ONLY when order is DELIVERED.
+ *
+ * @deprecated Usar awardOrderPointsIfDelivered() (para EARN) + recordPointsTransaction(REDEEM)
+ * al crear la orden por separado. Esta funci\u00f3n queda para compatibilidad con callers viejos
+ * pero no debe usarse en c\u00f3digo nuevo.
  */
 export async function processOrderPoints(
     userId: string,
