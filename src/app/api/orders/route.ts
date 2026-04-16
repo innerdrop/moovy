@@ -170,7 +170,7 @@ export async function POST(request: Request) {
                                 freeDeliveryMinimum: null,
                             });
                             if (serverFee && serverFee.total > 0) {
-                                let groupValidatedFee = serverFee.total;
+                                const groupValidatedFee = serverFee.total;
 
                                 // Log si el frontend mandó un fee distinto (posible manipulación)
                                 if (groupClientFee > 0 && Math.abs(groupClientFee - serverFee.total) > serverFee.total * 0.25) {
@@ -181,22 +181,29 @@ export async function POST(request: Request) {
                                 }
 
                                 validatedGroupFees.set(groupKey, { deliveryFee: groupValidatedFee, distanceKm: groupDistKm });
-                            } else if (groupClientFee > 0) {
-                                // Server calc returned 0 but client sent a fee — use client as fallback
-                                validatedGroupFees.set(groupKey, { deliveryFee: groupClientFee, distanceKm: groupDistKm });
-                                orderLogger.warn({ groupKey, clientFee: groupClientFee }, "Server fee calc returned 0 for multi-vendor group, using client fee");
+                            } else {
+                                // ISSUE-008: NUNCA usar fee del cliente como fallback — retornar error
+                                orderLogger.error({ groupKey, clientFee: groupClientFee, distanceKm: groupDistKm }, "Server fee calc returned 0 for multi-vendor group");
+                                return NextResponse.json(
+                                    { error: "No pudimos calcular el envío para uno de los comercios. Intentá de nuevo." },
+                                    { status: 500 }
+                                );
                             }
-                        } catch {
-                            // Fallback to client fee if server calc fails
-                            if (groupClientFee > 0) {
-                                validatedGroupFees.set(groupKey, { deliveryFee: groupClientFee, distanceKm: groupDistKm });
-                                orderLogger.warn({ groupKey, clientFee: groupClientFee }, "Server fee calc error for multi-vendor group, using client fee");
-                            }
+                        } catch (calcError) {
+                            // ISSUE-008: NUNCA usar fee del cliente si falla el cálculo — retornar error
+                            orderLogger.error({ groupKey, clientFee: groupClientFee, error: calcError }, "Server fee calc error for multi-vendor group");
+                            return NextResponse.json(
+                                { error: "Error al calcular el costo de envío. Intentá de nuevo." },
+                                { status: 500 }
+                            );
                         }
-                    } else if (groupClientFee > 0) {
-                        // No distance but client sent fee — accept as fallback
-                        validatedGroupFees.set(groupKey, { deliveryFee: groupClientFee, distanceKm: groupDistKm });
-                        orderLogger.warn({ groupKey, clientFee: groupClientFee }, "No distanceKm for multi-vendor group, using client fee");
+                    } else {
+                        // ISSUE-008: Sin distancia = no se puede calcular, rechazar
+                        orderLogger.error({ groupKey }, "No distanceKm for multi-vendor group, cannot calculate fee");
+                        return NextResponse.json(
+                            { error: "Falta la distancia de envío para uno de los comercios. Volvé a seleccionar tu dirección." },
+                            { status: 400 }
+                        );
                     }
                 }
 
@@ -248,16 +255,15 @@ export async function POST(request: Request) {
                             { status: 400 }
                         );
                     }
-                } else if (deliveryFee && deliveryFee > 0) {
-                    // Sin distancia pero con fee del frontend — aceptar como fallback pero loguear
-                    validatedDeliveryFee = deliveryFee;
-                    orderLogger.warn(
-                        { clientFee: deliveryFee },
-                        "No distanceKm available, using client-sent delivery fee as fallback"
-                    );
                 } else {
+                    // ISSUE-008: Sin distancia = no se puede calcular, rechazar
+                    // NUNCA aceptar fee del cliente como fallback (vector de fraude)
+                    orderLogger.error(
+                        { clientFee: deliveryFee },
+                        "No distanceKm available, cannot calculate delivery fee server-side"
+                    );
                     return NextResponse.json(
-                        { error: "Se requiere el costo de envío para pedidos con delivery" },
+                        { error: "No pudimos calcular el envío. Volvé a seleccionar tu dirección e intentá de nuevo." },
                         { status: 400 }
                     );
                 }
