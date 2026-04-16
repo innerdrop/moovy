@@ -164,16 +164,16 @@ export default function AdminSoportePage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Centro de Soporte</h1>
-                <p className="text-gray-600 mt-2">Gestiona operadores, respuestas rápidas y estadísticas</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Centro de Soporte</h1>
+                <p className="text-gray-600 text-sm mt-1 sm:mt-2">Gestiona operadores, respuestas rápidas y estadísticas</p>
             </div>
 
             {/* Tabs */}
             <div className="bg-white rounded-lg shadow-sm border">
-                <div className="flex border-b">
+                <div className="flex border-b overflow-x-auto">
                     <button
                         onClick={() => setTab("chats")}
-                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                        className={`flex-1 min-w-max py-3 sm:py-4 px-4 sm:px-6 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
                             tab === "chats"
                                 ? "text-[#e60012] border-b-2 border-[#e60012]"
                                 : "text-gray-600 hover:text-gray-900"
@@ -183,7 +183,7 @@ export default function AdminSoportePage() {
                     </button>
                     <button
                         onClick={() => setTab("operators")}
-                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                        className={`flex-1 min-w-max py-3 sm:py-4 px-4 sm:px-6 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
                             tab === "operators"
                                 ? "text-[#e60012] border-b-2 border-[#e60012]"
                                 : "text-gray-600 hover:text-gray-900"
@@ -193,7 +193,7 @@ export default function AdminSoportePage() {
                     </button>
                     <button
                         onClick={() => setTab("canned")}
-                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                        className={`flex-1 min-w-max py-3 sm:py-4 px-4 sm:px-6 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
                             tab === "canned"
                                 ? "text-[#e60012] border-b-2 border-[#e60012]"
                                 : "text-gray-600 hover:text-gray-900"
@@ -203,7 +203,7 @@ export default function AdminSoportePage() {
                     </button>
                     <button
                         onClick={() => setTab("stats")}
-                        className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                        className={`flex-1 min-w-max py-3 sm:py-4 px-4 sm:px-6 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
                             tab === "stats"
                                 ? "text-[#e60012] border-b-2 border-[#e60012]"
                                 : "text-gray-600 hover:text-gray-900"
@@ -215,14 +215,14 @@ export default function AdminSoportePage() {
 
                 {/* Tab: Chats */}
                 {tab === "chats" && (
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         <p className="text-gray-600">Ver conversaciones en el portal de soporte operadores</p>
                     </div>
                 )}
 
                 {/* Tab: Operators */}
                 {tab === "operators" && (
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         <div className="space-y-6">
                             <div>
                                 <h3 className="text-lg font-semibold mb-4">Operadores Activos</h3>
@@ -231,16 +231,16 @@ export default function AdminSoportePage() {
                                         <p className="text-gray-500">No hay operadores</p>
                                     ) : (
                                         operators.map(op => (
-                                            <div key={op.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                                                <div>
-                                                    <p className="font-medium">{op.displayName}</p>
-                                                    <p className="text-sm text-gray-500">{op.user?.email}</p>
+                                            <div key={op.id} className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-gray-50">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-medium truncate">{op.displayName}</p>
+                                                    <p className="text-sm text-gray-500 truncate">{op.user?.email}</p>
                                                     <p className="text-xs text-gray-400 mt-1">
                                                         {op.activeChatCount || 0}/{op.maxChats} chats activos
                                                         {op.isOnline && " • 🟢 En línea"}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 flex-shrink-0">
                                                     <button
                                                         onClick={() => toggleOperator(op.id, op.isActive)}
                                                         className={`px-3 py-1 rounded text-sm font-medium transition ${
@@ -319,7 +319,7 @@ export default function AdminSoportePage() {
 
                 {/* Tab: Canned Responses */}
                 {tab === "canned" && (
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         <div className="space-y-6">
                             <div>
                                 <h3 className="text-lg font-semibold mb-4">Respuestas Rápidas</h3>
@@ -352,7 +352,7 @@ export default function AdminSoportePage() {
                             <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold mb-4">Agregar Respuesta Rápida</h3>
                                 <form onSubmit={handleCreateCanned} className="space-y-4 max-w-2xl">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Shortcut (ej: /saludo)</label>
                                             <input
@@ -421,33 +421,33 @@ export default function AdminSoportePage() {
 
                 {/* Tab: Stats */}
                 {tab === "stats" && (
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         {stats ? (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-4 gap-4">
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-gray-600">Total de chats</p>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                                    <div className="p-4 border rounded-lg min-w-0">
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate">Total de chats</p>
                                         <p className="text-2xl font-bold text-gray-900">{stats.counts.total}</p>
                                     </div>
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-gray-600">Hoy</p>
+                                    <div className="p-4 border rounded-lg min-w-0">
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate">Hoy</p>
                                         <p className="text-2xl font-bold text-gray-900">{stats.counts.today}</p>
                                     </div>
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-gray-600">Promedio de rating</p>
+                                    <div className="p-4 border rounded-lg min-w-0">
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate">Promedio rating</p>
                                         <p className="text-2xl font-bold text-yellow-600">
                                             {stats.avgRating.toFixed(1)} ⭐
                                         </p>
                                     </div>
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-gray-600">Tiempo promedio</p>
+                                    <div className="p-4 border rounded-lg min-w-0">
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate">Tiempo promedio</p>
                                         <p className="text-2xl font-bold text-gray-900">
                                             {Math.round(stats.avgResolutionMinutes)}m
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 border rounded-lg">
                                         <p className="font-semibold mb-3">Por estado</p>
                                         <div className="space-y-2">

@@ -107,29 +107,29 @@ export default function MerchantLoyaltyPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Award className="w-8 h-8" style={{ color: "#e60012" }} />
-            Lealtad de Comercios
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <Award className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" style={{ color: "#e60012" }} />
+            <span className="truncate">Lealtad de Comercios</span>
           </h1>
-          <p className="text-gray-600 mt-1">Gestiona los tiers de lealtad y comisiones dinámicas</p>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Gestiona los tiers de lealtad y comisiones dinámicas</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRecalculate}
             disabled={recalculating}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
           >
-            {recalculating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+            {recalculating ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />}
             Recalcular
           </button>
           <button
             onClick={() => setShowTierEdit(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium hover:opacity-90"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90"
             style={{ backgroundColor: "#e60012" }}
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
             Configurar Tiers
           </button>
         </div>
@@ -137,9 +137,9 @@ export default function MerchantLoyaltyPage() {
 
       {/* Tier Configuration */}
       {showTierEdit && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-200">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Configuración de Tiers</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Configuración de Tiers</h2>
             <button onClick={() => setShowTierEdit(false)} className="text-gray-400 hover:text-gray-600">
               <X className="w-6 h-6" />
             </button>
@@ -155,11 +155,12 @@ export default function MerchantLoyaltyPage() {
 
       {/* Merchants List */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">Comercios ({merchants.length})</h2>
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900">Comercios ({merchants.length})</h2>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -199,6 +200,34 @@ export default function MerchantLoyaltyPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-200">
+          {merchants.map((merchant) => (
+            <div key={merchant.id} className="p-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900 truncate">{merchant.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{merchant.email}</p>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${tierBgClasses[merchant.loyaltyTier]}`}>
+                  {merchant.loyaltyTier}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                <span>
+                  <span className="font-semibold text-gray-900">{merchant.loyaltyOrderCount}</span> pedidos 30d
+                </span>
+                <span>
+                  {new Date(merchant.loyaltyUpdatedAt).toLocaleDateString("es-AR")}
+                </span>
+              </div>
+            </div>
+          ))}
+          {merchants.length === 0 && (
+            <p className="p-8 text-center text-sm text-gray-500">Sin comercios</p>
+          )}
         </div>
       </div>
     </div>
@@ -252,7 +281,7 @@ function TierEditCard({ tier, onUpdated }: { tier: TierConfig; onUpdated: () => 
 
   return (
     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Min Orders/Month</label>
           <input

@@ -380,21 +380,21 @@ export default function UsuariosPage() {
     return (
         <div className="min-h-screen bg-white">
             {/* Header */}
-            <div className="border-b border-gray-200 px-6 py-8">
-                <h1 className="text-3xl font-bold text-gray-900">Usuarios</h1>
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-6 sm:py-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Usuarios</h1>
                 <p className="text-gray-600 text-sm mt-1">
                     Total: <span className="font-semibold">{total}</span> usuarios registrados
                 </p>
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-gray-200 px-6 overflow-x-auto">
+            <div className="border-b border-gray-200 px-4 sm:px-6 overflow-x-auto">
                 <div className="flex gap-2 min-w-min py-4">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => handleTabChange(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                            className={`flex items-center gap-2 px-3 sm:px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
                                 activeTab === tab.id
                                     ? "border-red-600 text-red-600"
                                     : "border-transparent text-gray-600 hover:text-gray-900"
@@ -408,7 +408,7 @@ export default function UsuariosPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-6">
                 {/* Search Bar and Filters */}
                 <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end">
                     {/* Search Input */}
@@ -461,10 +461,10 @@ export default function UsuariosPage() {
                     </div>
                 )}
 
-                {/* Table */}
+                {/* Table (desktop) */}
                 {users.length > 0 ? (
                     <>
-                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200">
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
@@ -580,6 +580,95 @@ export default function UsuariosPage() {
                                           })}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Cards (mobile) */}
+                        <div className="md:hidden space-y-3">
+                            {loading
+                                ? Array.from({ length: 5 }).map((_, i) => (
+                                    <div key={i} className="p-4 border border-gray-200 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+                                                <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                                : users.map((user) => {
+                                    const status = getUserStatus(user);
+                                    return (
+                                        <div
+                                            key={user.id}
+                                            className={`p-4 border rounded-lg transition-colors ${
+                                                selectedUsers.has(user.id)
+                                                    ? "bg-red-50 border-red-200"
+                                                    : "bg-white border-gray-200"
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedUsers.has(user.id)}
+                                                    onChange={() => handleSelectUser(user.id)}
+                                                    className="w-4 h-4 rounded border-gray-300 cursor-pointer mt-1 flex-shrink-0"
+                                                />
+                                                {user.image ? (
+                                                    <img
+                                                        src={user.image}
+                                                        alt={user.name || user.email}
+                                                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                                                        {(user.name || user.email)[0].toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="font-semibold text-gray-900 truncate">
+                                                                {user.name || "Sin nombre"}
+                                                            </p>
+                                                            <p className="text-gray-500 text-xs truncate">{user.email}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => router.push(`/ops/usuarios/${user.id}`)}
+                                                            className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            aria-label="Ver detalle"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                                        <span
+                                                            className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${getStatusColor(status.color)}`}
+                                                        >
+                                                            {status.label}
+                                                        </span>
+                                                        {user.roles && user.roles.length > 0 ? (
+                                                            user.roles.map((r) => (
+                                                                <span
+                                                                    key={r.role}
+                                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${getRoleBadgeColor(r.role)}`}
+                                                                >
+                                                                    {getRoleIcon(r.role)}
+                                                                    {r.role}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-800">
+                                                                <Users className="w-3 h-3" />
+                                                                USER
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                         </div>
 
                         {/* Pagination */}

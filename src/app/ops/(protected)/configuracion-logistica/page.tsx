@@ -381,23 +381,23 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+    <section className="bg-white rounded-[2rem] p-5 sm:p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
       <div className={`absolute top-0 right-0 w-32 h-32 ${accentColor} -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500`} />
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-2xl ${iconColor} flex items-center justify-center`}>
-            <Icon className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${iconColor} flex items-center justify-center flex-shrink-0`}>
+            <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <h2 className="text-xl font-black text-gray-900 leading-none">{title}</h2>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{subtitle}</p>
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight truncate">{title}</h2>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{subtitle}</p>
           </div>
         </div>
         {onSave && (
           <button
             onClick={onSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50 shadow-lg shadow-blue-600/20"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50 shadow-lg shadow-blue-600/20 w-full sm:w-auto flex-shrink-0"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar
@@ -415,7 +415,7 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+      className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
         active
           ? "bg-gray-900 text-white shadow-md"
           : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -822,9 +822,9 @@ export default function ConfigLogisticaPage() {
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
-          <div className="w-12 h-12 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20 not-italic">
-            <Settings className="w-7 h-7 text-white" />
+        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-3 italic">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-navy flex items-center justify-center shadow-lg shadow-navy/20 not-italic flex-shrink-0">
+            <Settings className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </div>
           Motor Logístico
         </h1>
@@ -833,11 +833,13 @@ export default function ConfigLogisticaPage() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {TABS.map((tab, i) => (
-          <TabButton key={tab} label={tab} active={activeTab === i} onClick={() => setActiveTab(i)} />
-        ))}
+      {/* Tabs: scrollable horizontally on mobile, wrap on larger screens */}
+      <div className="-mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto">
+        <div className="flex gap-2 sm:flex-wrap min-w-max sm:min-w-0 pb-1">
+          {TABS.map((tab, i) => (
+            <TabButton key={tab} label={tab} active={activeTab === i} onClick={() => setActiveTab(i)} />
+          ))}
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════

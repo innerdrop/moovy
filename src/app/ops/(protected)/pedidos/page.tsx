@@ -163,25 +163,25 @@ export default function AdminPedidosPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
-                    <p className="text-gray-600">{totalOrders} pedidos en total</p>
+                    <p className="text-gray-600 text-sm">{totalOrders} pedidos en total</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <a
                         href="/api/ops/export?type=orders"
-                        className="btn-secondary flex items-center gap-2"
+                        className="btn-secondary flex items-center gap-2 text-sm"
                         download
                     >
                         <Download className="w-4 h-4" />
                         CSV
                     </a>
-                    <Link href="/ops/dashboard" className="btn-secondary flex items-center gap-2">
+                    <Link href="/ops/dashboard" className="btn-secondary flex items-center gap-2 text-sm">
                         <Home className="w-4 h-4" />
                         Inicio
                     </Link>
                     {selectedOrders.length > 0 && (
                         <button
                             onClick={() => setShowDeleteModal(true)}
-                            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-2"
+                            className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition flex items-center gap-2 text-sm"
                         >
                             <Trash2 className="w-4 h-4" />
                             Eliminar ({selectedOrders.length})
@@ -211,29 +211,29 @@ export default function AdminPedidosPage() {
             </div>
 
             {/* Search & Date Filters */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-3 md:gap-4">
+                <div className="relative flex-1 min-w-0">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Buscar por N° pedido, cliente..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                     />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <input
                         type="date"
                         value={dateFrom}
                         onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-                        className="px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                        className="flex-1 min-w-0 px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                     />
                     <input
                         type="date"
                         value={dateTo}
                         onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-                        className="px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                        className="flex-1 min-w-0 px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                     />
                     {(dateFrom || dateTo) && (
                         <button
