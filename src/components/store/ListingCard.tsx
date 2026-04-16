@@ -157,12 +157,11 @@ export default function ListingCard({ listing, showAddButton = false, variant = 
     /* ════════════════════════════════════════════════
        MARKETPLACE VARIANT — Violet Premium Card
        ════════════════════════════════════════════════ */
-    const isAuction = listing.listingType === "AUCTION";
-    const auctionActive = isAuction && listing.auctionStatus === "ACTIVE";
-    const countdown = useCountdown(auctionActive ? listing.auctionEndsAt : null);
-    const displayPrice = isAuction
-        ? (listing.currentBid || listing.startingPrice || listing.price)
-        : listing.price;
+    // ISSUE-002: Subastas ocultas para lanzamiento — forzar todo a DIRECT
+    const isAuction = false; // listing.listingType === "AUCTION" — reactivar en Fase 2
+    const auctionActive = false; // isAuction && listing.auctionStatus === "ACTIVE"
+    const countdown = useCountdown(null); // auctionActive ? listing.auctionEndsAt : null
+    const displayPrice = listing.price;
 
     if (isMp) {
         const mpBadgeClass = mpConditionBadge[listing.condition] || "mp-badge-usado";

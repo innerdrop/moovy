@@ -67,11 +67,20 @@ export async function POST(request: NextRequest) {
         const {
             title, description, price, stock, condition, categoryId,
             weightKg, lengthCm, widthCm, heightCm, imageUrl,
-            // Campos de subasta
+            // Campos de subasta (deshabilitados para lanzamiento — ISSUE-002)
             listingType, auctionDuration, startingPrice, bidIncrement,
         } = body;
 
-        const isAuction = listingType === "AUCTION";
+        // ISSUE-002: Subastas deshabilitadas para lanzamiento. Solo precio fijo.
+        // Reactivar en Fase 2 removiendo este bloque y descomentando la validación de abajo.
+        if (listingType === "AUCTION") {
+            return NextResponse.json(
+                { error: "Las subastas no están disponibles en este momento. Publicá a precio fijo." },
+                { status: 400 }
+            );
+        }
+
+        const isAuction = false; // Forzado a false — subastas deshabilitadas
 
         // Validate required fields
         if (!title) {
@@ -81,8 +90,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // ISSUE-002: Validación de subasta comentada para lanzamiento (reactivar en Fase 2)
+        /*
         if (isAuction) {
-            // Validaciones específicas de subasta
             if (!startingPrice || typeof startingPrice !== "number" || startingPrice <= 0) {
                 return NextResponse.json(
                     { error: "El precio base de la subasta debe ser un número positivo" },
@@ -102,6 +112,8 @@ export async function POST(request: NextRequest) {
                 );
             }
         } else {
+        */
+        {
             // Venta directa: precio obligatorio
             if (price === undefined || price === null || typeof price !== "number" || price <= 0) {
                 return NextResponse.json(

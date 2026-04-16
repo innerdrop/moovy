@@ -11,6 +11,13 @@ export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // ISSUE-002: Subastas deshabilitadas para lanzamiento. Reactivar en Fase 2.
+    return NextResponse.json(
+        { error: "Las subastas no están disponibles en este momento." },
+        { status: 403 }
+    );
+
+    // eslint-disable-next-line no-unreachable
     try {
         const { id: listingId } = await params;
 

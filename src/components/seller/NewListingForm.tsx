@@ -158,48 +158,33 @@ export default function NewListingForm({ categories }: NewListingFormProps) {
                     </div>
                 </div>
 
-                {/* Selector de tipo */}
+                {/* ISSUE-002: Selector de tipo oculto para lanzamiento — solo venta directa
+                   Reactivar en Fase 2 descomentando el bloque original */}
+                {/* Selector de tipo (deshabilitado)
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Tipo de publicación
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setListingType("DIRECT")}
-                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition ${
-                                !isAuction
-                                    ? "border-emerald-500 bg-emerald-50"
-                                    : "border-gray-200 hover:border-gray-300"
-                            }`}
-                        >
+                        <button type="button" onClick={() => setListingType("DIRECT")}
+                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition ${!isAuction ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-gray-300"}`}>
                             <ShoppingBag className={`w-5 h-5 ${!isAuction ? "text-emerald-600" : "text-gray-400"}`} />
                             <div className="text-left">
-                                <p className={`font-semibold text-sm ${!isAuction ? "text-emerald-700" : "text-gray-700"}`}>
-                                    Venta directa
-                                </p>
+                                <p className={`font-semibold text-sm ${!isAuction ? "text-emerald-700" : "text-gray-700"}`}>Venta directa</p>
                                 <p className="text-xs text-gray-500">Precio fijo</p>
                             </div>
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => setListingType("AUCTION")}
-                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition ${
-                                isAuction
-                                    ? "border-violet-500 bg-violet-50"
-                                    : "border-gray-200 hover:border-gray-300"
-                            }`}
-                        >
+                        <button type="button" onClick={() => setListingType("AUCTION")}
+                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition ${isAuction ? "border-violet-500 bg-violet-50" : "border-gray-200 hover:border-gray-300"}`}>
                             <Gavel className={`w-5 h-5 ${isAuction ? "text-violet-600" : "text-gray-400"}`} />
                             <div className="text-left">
-                                <p className={`font-semibold text-sm ${isAuction ? "text-violet-700" : "text-gray-700"}`}>
-                                    Subasta
-                                </p>
+                                <p className={`font-semibold text-sm ${isAuction ? "text-violet-700" : "text-gray-700"}`}>Subasta</p>
                                 <p className="text-xs text-gray-500">Al mejor postor</p>
                             </div>
                         </button>
                     </div>
                 </div>
+                */}
 
                 {error && (
                     <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4">

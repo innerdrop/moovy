@@ -13,6 +13,10 @@ import { verifyBearerToken } from "@/lib/env-validation";
  * Protegido con CRON_SECRET.
  */
 export async function POST(req: NextRequest) {
+    // ISSUE-002: Subastas deshabilitadas para lanzamiento. Cron inactivo.
+    // Reactivar en Fase 2 removiendo este return.
+    return NextResponse.json({ message: "Auctions disabled for launch", closed: 0 });
+
     // Auth: CRON_SECRET
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");

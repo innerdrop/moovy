@@ -18,7 +18,11 @@ export async function GET(request: Request) {
 
         const where: any = { isActive: true };
 
-        // Filtro por tipo de listing
+        // ISSUE-002: Subastas ocultas para lanzamiento — solo mostrar DIRECT
+        // Reactivar en Fase 2 removiendo el filtro forzado y descomentando el bloque original
+        where.listingType = "DIRECT";
+        /*
+        // Filtro por tipo de listing (original — reactivar en Fase 2)
         if (listingType === "AUCTION") {
             where.listingType = "AUCTION";
             where.auctionStatus = "ACTIVE";
@@ -26,6 +30,7 @@ export async function GET(request: Request) {
             where.listingType = "DIRECT";
         }
         // Si no se especifica, devuelve ambos tipos
+        */
 
         if (categoryId) {
             where.categoryId = categoryId;

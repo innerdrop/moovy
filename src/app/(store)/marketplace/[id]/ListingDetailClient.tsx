@@ -101,7 +101,10 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl, 
 
     const cond = conditionConfig[listing.condition] || { text: listing.condition, cssClass: "mp-badge-usado" };
     const sellerName = listing.seller.displayName || "Vendedor";
-    const isAuction = listing.listingType === "AUCTION";
+    // ISSUE-002: Subastas ocultas para lanzamiento. Si alguien llega por link directo
+    // a una subasta vieja, se trata como no disponible en vez de mostrar el panel de ofertas.
+    const isAuction = false; // listing.listingType === "AUCTION" — reactivar en Fase 2
+    const isLegacyAuction = listing.listingType === "AUCTION"; // para mostrar aviso
     const isLowStock = !isAuction && listing.stock > 0 && listing.stock <= 3;
     const memberSince = listing.seller.createdAt
         ? new Date(listing.seller.createdAt).toLocaleDateString("es-AR", { month: "long", year: "numeric" })
@@ -265,6 +268,14 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl, 
                         <h1 className="text-xl lg:text-3xl xl:text-4xl font-extrabold text-gray-900 leading-tight">
                             {listing.title}
                         </h1>
+
+                        {/* ISSUE-002: Aviso para subastas legacy accedidas por link directo */}
+                        {isLegacyAuction && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                                <p className="font-semibold">Esta publicación ya no está disponible</p>
+                                <p className="mt-1 text-amber-600">Las subastas están pausadas temporalmente. Explorá el marketplace para ver publicaciones a precio fijo.</p>
+                            </div>
+                        )}
 
                         {/* Price / Auction + Share */}
                         {isAuction ? (

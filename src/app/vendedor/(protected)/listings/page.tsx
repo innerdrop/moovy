@@ -159,12 +159,14 @@ export default function VendedorListingsPage() {
                         {listings.filter((l) => l.isActive).length}
                     </p>
                 </div>
+                {/* ISSUE-002: Stat de subastas oculta para lanzamiento — reactivar en Fase 2
                 <div className="bg-violet-50 rounded-xl p-4 border border-violet-200">
                     <p className="text-sm text-violet-800">Subastas</p>
                     <p className="text-2xl font-bold text-violet-900">
                         {listings.filter((l) => l.listingType === "AUCTION" && l.auctionStatus === "ACTIVE").length}
                     </p>
                 </div>
+                */}
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                     <p className="text-sm text-gray-600">Inactivas</p>
                     <p className="text-2xl font-bold text-gray-900">
@@ -192,13 +194,10 @@ export default function VendedorListingsPage() {
                             text: listing.condition,
                             color: "bg-gray-100 text-gray-700",
                         };
-                        const isAuction = listing.listingType === "AUCTION";
-                        const auctionStatus = isAuction && listing.auctionStatus
-                            ? auctionStatusConfig[listing.auctionStatus] || { text: listing.auctionStatus, color: "bg-gray-100 text-gray-600" }
-                            : null;
-                        const displayPrice = isAuction
-                            ? (listing.currentBid || listing.startingPrice || listing.price)
-                            : listing.price;
+                        // ISSUE-002: Subastas ocultas para lanzamiento
+                        const isAuction = false; // listing.listingType === "AUCTION" — reactivar en Fase 2
+                        const auctionStatus = null;
+                        const displayPrice = listing.price;
 
                         return (
                             <div
