@@ -52,7 +52,7 @@ export async function PATCH(
 
         // Validate state transitions for deliveryStatus
         const validTransitions: Record<string, string[]> = {
-            DRIVER_ASSIGNED: ["DRIVER_ARRIVED", "PICKED_UP"],  // Allow skip for backward compat
+            DRIVER_ASSIGNED: ["DRIVER_ARRIVED"],  // ISSUE-007: secuencia estricta, sin skip
             DRIVER_ARRIVED: ["PICKED_UP"],
             PICKED_UP: ["DELIVERED"],
             DELIVERED: [],
@@ -170,9 +170,9 @@ export async function PATCH(
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error("Error updating delivery status:", error);
+        statusLogger.error({ error }, "Error updating delivery status");
         return NextResponse.json(
-            { error: "Error al actualizar el estado" },
+            { error: "Error al actualizar el estado del pedido" },
             { status: 500 }
         );
     }
