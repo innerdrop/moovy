@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useSocketAuth } from "./useSocketAuth";
 
@@ -53,6 +53,8 @@ export function useRealtimeOrders({
     // Auto-fetch socket auth token
     const { token: socketToken } = useSocketAuth(enabled);
     const socketRef = useRef<Socket | null>(null);
+    const [connected, setConnected] = useState(false);
+    const [disconnectedSince, setDisconnectedSince] = useState<Date | null>(null);
     const callbacksRef = useRef({
         onNewOrder,
         onStatusChange,
@@ -86,7 +88,8 @@ export function useRealtimeOrders({
             transports: ["websocket", "polling"],
             reconnection: true,
             reconnectionDelay: 1000,
-            reconnectionAttempts: 10,
+            reconnectionDelayMax: 10000,
+            reconnectionAttempts: Infinity,
             auth: { token: socketToken },
         });
 
@@ -94,6 +97,8 @@ export function useRealtimeOrders({
 
         socket.on("connect", () => {
             console.log(`[RealtimeOrders] Connected as ${role}`);
+            setConnected(true);
+            setDisconnectedSince(null);
 
             // Join appropriate room based on role
             switch (role) {
@@ -146,17 +151,22 @@ export function useRealtimeOrders({
             callbacksRef.current.onOrderUnassignable?.(data.orderId, data.orderNumber);
         });
 
-        socket.on("disconnect", () => {
-            console.log("[RealtimeOrders] Disconnected");
+        socket.on("disconnect", (reason) => {
+            console.log("[RealtimeOrders] Disconnected:", reason);
+            setConnected(false);
+            setDisconnectedSince(new Date());
         });
 
         socket.on("connect_error", (error) => {
             console.warn("[RealtimeOrders] Connection error:", error.message);
+            setConnected(false);
+            setDisconnectedSince((prev) => prev || new Date());
         });
 
         return () => {
             socket.disconnect();
             socketRef.current = null;
+            setConnected(false);
         };
     }, [enabled, role, merchantId, userId, socketToken]);
 
@@ -169,7 +179,8 @@ export function useRealtimeOrders({
     }, []);
 
     return {
-        isConnected: socketRef.current?.connected ?? false,
+        isConnected: connected,
+        disconnectedSince,
         reconnect,
     };
 }

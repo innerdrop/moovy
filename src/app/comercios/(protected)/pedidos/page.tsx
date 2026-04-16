@@ -102,6 +102,55 @@ function PendingCountdown({ createdAt, timeoutSeconds = 300, onExpire }: { creat
     );
 }
 
+/** Sticky banner when socket connection is lost */
+function DisconnectionBanner({ since, onRetry }: { since: Date; onRetry: () => void }) {
+    const [elapsed, setElapsed] = useState(0);
+
+    useEffect(() => {
+        function tick() {
+            setElapsed(Math.floor((Date.now() - since.getTime()) / 1000));
+        }
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [since]);
+
+    // Only show after 5 seconds of disconnection (avoid flash on brief reconnects)
+    if (elapsed < 5) return null;
+
+    const isLong = elapsed > 30;
+
+    return (
+        <div className={`rounded-xl p-4 flex items-center justify-between gap-3 ${isLong ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}>
+            <div className="flex items-center gap-3 min-w-0">
+                <WifiOff className={`w-5 h-5 flex-shrink-0 ${isLong ? "text-red-500" : "text-amber-500"}`} />
+                <div className="min-w-0">
+                    <p className={`text-sm font-medium ${isLong ? "text-red-800" : "text-amber-800"}`}>
+                        {isLong
+                            ? "Conexión perdida — podés perderte pedidos nuevos"
+                            : "Reconectando al servidor..."}
+                    </p>
+                    <p className={`text-xs mt-0.5 ${isLong ? "text-red-600" : "text-amber-600"}`}>
+                        {isLong
+                            ? `Sin conexión hace ${elapsed > 60 ? `${Math.floor(elapsed / 60)} min` : `${elapsed}s`}. Estamos actualizando por REST cada 10s como respaldo.`
+                            : "Reintentando automáticamente..."}
+                    </p>
+                </div>
+            </div>
+            <button
+                onClick={onRetry}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0 transition ${isLong
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-amber-600 text-white hover:bg-amber-700"
+                }`}
+            >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reintentar
+            </button>
+        </div>
+    );
+}
+
 export default function ComercioPedidosPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -160,7 +209,7 @@ export default function ComercioPedidosPage() {
     }, []);
 
     // Real-time order updates via WebSocket
-    const { isConnected } = useRealtimeOrders({
+    const { isConnected, disconnectedSince, reconnect } = useRealtimeOrders({
         role: "merchant",
         merchantId: merchantId || undefined,
         enabled: !!merchantId,
@@ -207,10 +256,14 @@ export default function ComercioPedidosPage() {
 
     useEffect(() => {
         loadOrders();
-        // Fallback polling cada 60s (Socket.IO es el canal primario)
-        const intervalId = setInterval(() => loadOrders(true), 60000);
-        return () => clearInterval(intervalId);
     }, [loadOrders]);
+
+    // Adaptive polling: 10s when socket disconnected, 60s when connected
+    useEffect(() => {
+        const pollingInterval = isConnected ? 60000 : 10000;
+        const intervalId = setInterval(() => loadOrders(true), pollingInterval);
+        return () => clearInterval(intervalId);
+    }, [isConnected, loadOrders]);
 
     // ─── Dedicated endpoint handlers ────────────────────────────────────────
 
@@ -338,7 +391,7 @@ export default function ComercioPedidosPage() {
                     {/* Connection indicator */}
                     <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
                         {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                        {isConnected ? "En vivo" : "Sin conexión"}
+                        {isConnected ? "En vivo" : "Reconectando..."}
                     </span>
                     <button
                         onClick={() => loadOrders()}
@@ -349,6 +402,17 @@ export default function ComercioPedidosPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Disconnection Banner — sticky warning when socket is down */}
+            {!isConnected && disconnectedSince && (
+                <DisconnectionBanner
+                    since={disconnectedSince}
+                    onRetry={() => {
+                        reconnect();
+                        loadOrders(true);
+                    }}
+                />
+            )}
 
             {/* Pending Orders Alert */}
             {pendingCount > 0 && (
