@@ -1,0 +1,9 @@
+name,slug,description,price,costPrice,stock,minStock,categorySlug,packageCategory,maxWeightGrams,maxLengthCm,maxWidthCm,maxHeightCm,volumeScore,allowedVehicles
+Coca-Cola 1.5L,coca-cola-15l,Gaseosa cola 1.5 litros,1800,1200,50,10,bebidas,SMALL,2000,35,25,20,3,"BIKE,MOTO,CAR,TRUCK"
+Yerba Taragui 1kg,yerba-taragui-1kg,Yerba mate con palo,3200,2400,40,8,almacen,SMALL,2000,35,25,20,3,"BIKE,MOTO,CAR,TRUCK"
+Aceite Natura 1.5L,aceite-natura-15l,Aceite de girasol premium,2500,1900,30,5,almacen,MEDIUM,5000,50,40,30,6,"MOTO,CAR,TRUCK"
+Pack Cerveza Quilmes x6,pack-quilmes-x6,Pack de 6 latas 473ml,6500,4800,20,3,bebidas,MEDIUM,5000,50,40,30,6,"MOTO,CAR,TRUCK"
+Papel Higienico Scott x12,papel-scott-x12,Papel doble hoja x12 rollos,8500,6200,15,3,limpieza,LARGE,15000,80,60,50,10,"CAR,TRUCK"
+Alfajor Havanna,alfajor-havanna,Alfajor de chocolate,1500,1100,40,8,golosinas,MICRO,500,20,15,10,1,"BIKE,MOTO,CAR,TRUCK"
+Tostado Jamon y Queso,tostado-jamon-queso,Tostado clasico,1800,1000,30,5,sandwicheria,MICRO,500,20,15,10,1,"BIKE,MOTO,CAR,TRUCK"
+Queso Cremoso Tregar 1kg,queso-tregar-1kg,Queso cremoso,4500,3500,15,3,lacteos,SMALL,2000,35,25,20,3,"BIKE,MOTO,CAR,TRUCK"
