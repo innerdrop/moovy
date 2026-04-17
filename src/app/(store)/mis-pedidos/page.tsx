@@ -20,7 +20,8 @@ import {
     CreditCard,
     Banknote,
     Sparkles,
-    MapPin
+    MapPin,
+    Calendar
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────
@@ -72,6 +73,7 @@ const statusConfig: Record<string, {
     IN_DELIVERY: { label: "En camino", color: "text-[#e60012]", bg: "bg-red-50", dot: "bg-[#e60012]", icon: <Truck className="w-4 h-4" />, step: 7 },
     DELIVERED: { label: "Entregado", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500", icon: <CheckCircle className="w-4 h-4" />, step: 8 },
     CANCELLED: { label: "Cancelado", color: "text-gray-400", bg: "bg-gray-50", dot: "bg-gray-400", icon: <XCircle className="w-4 h-4" />, step: 0 },
+    SCHEDULED: { label: "Programado", color: "text-violet-600", bg: "bg-violet-50", dot: "bg-violet-500", icon: <Calendar className="w-4 h-4" />, step: 1 },
 };
 
 const TOTAL_STEPS = 7;
@@ -178,7 +180,7 @@ export default function MisPedidosPage() {
         return () => clearInterval(id);
     }, [isAuth, authStatus, loadOrders]);
 
-    const activeStatuses = useMemo(() => ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"], []);
+    const activeStatuses = useMemo(() => ["PENDING", "SCHEDULED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"], []);
     const activeOrders = useMemo(() => orders.filter(o => activeStatuses.includes(o.status)), [orders, activeStatuses]);
     const historyOrders = useMemo(() => orders.filter(o => !activeStatuses.includes(o.status)), [orders, activeStatuses]);
     const filtered = tab === "active" ? activeOrders : historyOrders;

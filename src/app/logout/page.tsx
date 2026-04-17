@@ -2,11 +2,13 @@
 "use client";
 
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { LogOut, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 
 export default function LogoutPage() {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
 
     const handleSignOut = async () => {
@@ -18,8 +20,15 @@ export default function LogoutPage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
             <div className="w-full max-w-sm">
                 {/* Logo */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-[#e60012] font-script">MOOVY</h1>
+                <div className="flex justify-center mb-8">
+                    <Image
+                        src="/logo-moovy.svg"
+                        alt="MOOVY"
+                        width={280}
+                        height={90}
+                        className="h-10 w-auto"
+                        priority
+                    />
                 </div>
 
                 {/* Card */}
@@ -51,13 +60,13 @@ export default function LogoutPage() {
                             )}
                         </button>
 
-                        <Link
-                            href="/"
+                        <button
+                            onClick={() => router.back()}
                             className="w-full py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2"
                         >
                             <ArrowLeft className="w-5 h-5" />
                             Volver
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </div>

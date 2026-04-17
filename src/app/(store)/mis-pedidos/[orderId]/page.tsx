@@ -114,6 +114,13 @@ interface OrderDetail {
 }
 
 // ─── Timeline steps ───────────────────────────────────────
+// Status label map for non-timeline statuses (shown in hero fallback)
+const statusLabelMap: Record<string, string> = {
+    SCHEDULED: "Entrega programada",
+    CANCELLED: "Pedido cancelado",
+    REJECTED: "Pedido rechazado",
+};
+
 const timeline = [
     { key: "PENDING", label: "Pedido recibido", icon: Clock },
     { key: "CONFIRMED", label: "Confirmado por el comercio", icon: CheckCircle },
@@ -375,7 +382,7 @@ export default function OrderDetailPage() {
                         </div>
                         <div className="flex-1">
                             <p className={`font-bold text-sm ${isCancelled ? "text-gray-500" : isDelivered ? "text-green-700" : "text-gray-900"}`}>
-                                {isCancelled ? "Pedido cancelado" : currentStepIdx >= 0 ? timeline[currentStepIdx].label : order.status}
+                                {isCancelled ? "Pedido cancelado" : currentStepIdx >= 0 ? timeline[currentStepIdx].label : (statusLabelMap[order.status] || order.status)}
                             </p>
                             <p className="text-xs text-gray-500">
                                 {isDelivered && deliveredDate

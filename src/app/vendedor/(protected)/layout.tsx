@@ -91,7 +91,7 @@ export default async function VendedorLayout({ children }: { children: React.Rea
 
                     {/* Logout Button */}
                     <Link
-                        href="/api/auth/signout"
+                        href="/logout"
                         className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 transition text-sm font-medium w-full"
                     >
                         <LogOut className="w-4 h-4" />
@@ -109,7 +109,7 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                         </div>
                         <span className="font-bold text-gray-900">Vendedor</span>
                     </div>
-                    <Link href="/api/auth/signout" className="p-2 text-gray-500 hover:text-red-600">
+                    <Link href="/logout" className="p-2 text-gray-500 hover:text-red-600">
                         <LogOut className="w-5 h-5" />
                     </Link>
                 </div>

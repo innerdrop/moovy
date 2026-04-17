@@ -98,7 +98,7 @@ export default async function CuentaSuspendidaPage() {
         {/* Logout Button */}
         <div className="border-t border-gray-200 pt-6">
           <Link
-            href="/api/auth/signout"
+            href="/logout"
             className="inline-flex items-center justify-center gap-2 text-gray-600 hover:text-[#e60012] transition font-medium text-sm"
           >
             <LogOut className="w-4 h-4" />

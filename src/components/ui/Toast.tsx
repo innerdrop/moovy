@@ -5,30 +5,26 @@ import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
 import { useToastStore } from "@/store/toast";
 import type { ToastType } from "@/store/toast";
 
-const TOAST_CONFIG: Record<ToastType, { icon: typeof CheckCircle; bg: string; border: string; text: string }> = {
+const TOAST_CONFIG: Record<ToastType, { icon: typeof CheckCircle; iconColor: string; accent: string }> = {
     success: {
         icon: CheckCircle,
-        bg: "bg-green-50",
-        border: "border-green-200",
-        text: "text-green-800",
+        iconColor: "text-[#e60012]",
+        accent: "border-l-[#e60012]",
     },
     error: {
         icon: XCircle,
-        bg: "bg-red-50",
-        border: "border-red-200",
-        text: "text-red-800",
+        iconColor: "text-red-500",
+        accent: "border-l-red-500",
     },
     warning: {
         icon: AlertTriangle,
-        bg: "bg-amber-50",
-        border: "border-amber-200",
-        text: "text-amber-800",
+        iconColor: "text-amber-500",
+        accent: "border-l-amber-500",
     },
     info: {
         icon: Info,
-        bg: "bg-blue-50",
-        border: "border-blue-200",
-        text: "text-blue-800",
+        iconColor: "text-blue-500",
+        accent: "border-l-blue-500",
     },
 };
 
@@ -40,31 +36,32 @@ function ToastItem({ id, type, message }: { id: string; type: ToastType; message
     const Icon = config.icon;
 
     useEffect(() => {
-        // Trigger enter animation
         const timer = requestAnimationFrame(() => setVisible(true));
         return () => cancelAnimationFrame(timer);
     }, []);
 
     const handleClose = () => {
         setVisible(false);
-        setTimeout(() => removeToast(id), 200);
+        setTimeout(() => removeToast(id), 300);
     };
 
     return (
         <div
             className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg max-w-sm w-full
-                ${config.bg} ${config.border}
-                transition-all duration-200 ease-out
-                ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}
+                flex items-center gap-3 px-5 py-3.5 rounded-2xl border-l-4
+                bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-sm
+                max-w-[340px] w-full
+                ${config.accent}
+                transition-all duration-300 ease-out
+                ${visible ? "translate-y-0 opacity-100 scale-100" : "-translate-y-3 opacity-0 scale-95"}
             `}
             role="alert"
         >
-            <Icon className={`w-5 h-5 flex-shrink-0 ${config.text}`} />
-            <p className={`text-sm font-medium flex-1 ${config.text}`}>{message}</p>
+            <Icon className={`w-5 h-5 flex-shrink-0 ${config.iconColor}`} />
+            <p className="text-sm font-semibold text-gray-900 flex-1 leading-snug">{message}</p>
             <button
                 onClick={handleClose}
-                className={`p-1 rounded-full hover:bg-black/5 transition ${config.text}`}
+                className="p-1 rounded-full hover:bg-gray-100 transition text-gray-400 hover:text-gray-600"
             >
                 <X className="w-4 h-4" />
             </button>
@@ -78,7 +75,7 @@ export default function ToastContainer() {
     if (toasts.length === 0) return null;
 
     return (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 md:bottom-6 md:right-6 md:left-auto md:translate-x-0 z-[9999] flex flex-col gap-2 items-center md:items-end pointer-events-none">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2.5 items-center pointer-events-none">
             {toasts.map((t) => (
                 <div key={t.id} className="pointer-events-auto">
                     <ToastItem id={t.id} type={t.type} message={t.message} />
