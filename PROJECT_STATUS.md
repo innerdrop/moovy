@@ -1,6 +1,55 @@
 # Moovy — Tareas pendientes
 Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 2
-Última actualización: 2026-04-12 (fix referral bug + recuperación carritos abandonados + fix reset-admin truncado)
+Última actualización: 2026-04-16 (consolidación tracking + UX polish checkout/toasts/logout/signout)
+
+## Cambio 2026-04-16 (PM) — UX polish: toasts, signOut, logout, SCHEDULED label
+
+Rama: `fix/ux-t`
+
+### 1. Toast redesign MOOVY-branded
+- Reescrito `src/components/ui/Toast.tsx` completo
+- Centrado arriba de la pantalla (top-20, left-1/2), fondo blanco, borde izquierdo de color
+- Success usa rojo MOOVY (#e60012), error rojo estándar, warning amber, info blue
+- Animación slide-down con scale + opacity
+- Botón de cierre, auto-dismiss respetado
+
+### 2. SignOut custom en 4 portales
+- `src/app/comercios/(protected)/layout.tsx` — 2 links de signOut cambiados de `/api/auth/signout` a `/logout`
+- `src/app/vendedor/(protected)/layout.tsx` — 2 links cambiados
+- `src/app/cuenta-suspendida/page.tsx` — 1 link cambiado
+- `src/app/cuenta-archivada/page.tsx` — 1 link cambiado
+- Elimina la página negra en inglés de NextAuth default signout
+
+### 3. Logout page mejorada
+- `src/app/logout/page.tsx` — Logo SVG real (`/logo-moovy.svg`) en vez de texto
+- Botón "Volver" usa `router.back()` en vez de link a `/` (vuelve a donde estaba)
+
+### 4. SCHEDULED label en español
+- `src/app/(store)/mis-pedidos/[orderId]/page.tsx` — statusLabelMap con "Entrega programada"
+- `src/app/(store)/mis-pedidos/page.tsx` — SCHEDULED en statusConfig + activeStatuses + Calendar icon
+
+### 5. Fix redirect seguimiento (truncación de rama anterior)
+- `src/app/seguimiento/[orderId]/page.tsx` — reparado redirect que estaba truncado
+
+## Cambio 2026-04-16 (AM) — Consolidación tracking + checkout UX
+
+Rama: `fix/no-drivers-checkout-ux`
+
+### 1. Consolidación de páginas de tracking
+- `/seguimiento/[id]` reemplazado por redirect a `/mis-pedidos/[id]`
+- `/mis-pedidos/[id]` ahora tiene Socket.IO real-time + RateDriverModal + scroll-to-map
+- `/mis-pedidos/page.tsx` — todos los links unificados a `/mis-pedidos/${id}`
+- `mp-return/page.tsx` — link de éxito ahora va directo al detalle del pedido
+
+### 2. Fix flash de confirmación post-pago efectivo
+- Eliminada pantalla de confirmación in-state en checkout (frágil, se perdía en remount)
+- Post-pago efectivo: clearCart → toast.success → router.push a `/mis-pedidos/${orderId}`
+- Patrón robusto: el detalle del pedido ES la confirmación (como PedidosYa/Amazon)
+
+### 3. Bloqueo botón "Inmediata" sin drivers
+- Botón deshabilitado (gris, cursor-not-allowed, opacity-60) cuando no hay drivers disponibles
+- Auto-selecciona SCHEDULED como alternativa
+- Texto "Sin repartidores ahora" con sugerencia de programar
 
 ## Cambio 2026-04-12 (PM) — Recuperación de carritos abandonados + fix referidos
 
@@ -307,8 +356,8 @@ Lo que NO entra en esta rama (chunks futuros):
 - [x] Sonido/vibración en notificaciones del merchant — `src/app/comercios/(protected)/pedidos/page.tsx` — S ✅ 2026-03-21
   El merchant ya tenía audio (new-order.wav). Agregado: navigator.vibrate() + Notification API cuando tab en background.
 
-- [x] Página de estado del pedido pública (sin auth) — `src/app/seguimiento/[orderId]/page.tsx` — S ✅ 2026-03-21
-  Nuevo endpoint /api/orders/[id]/tracking (datos no sensibles). Página funciona sin auth.
+- [x] Página de estado del pedido pública (sin auth) — `src/app/(store)/mis-pedidos/[orderId]/page.tsx` — S ✅ 2026-03-21
+  Endpoint /api/orders/[id]/tracking (datos no sensibles). Consolidado en `/mis-pedidos/[id]` (2026-04-16). `/seguimiento/[id]` redirige automáticamente.
 
 - [x] Retry automático de asignación si no hay drivers — `src/app/api/cron/retry-assignments/route.ts` — M ✅ 2026-03-21
   Cron cada 5min: busca pedidos CONFIRMED sin driver, reintenta asignación (max 3), escala a admin si falla.
@@ -491,6 +540,17 @@ Lo que NO entra en esta rama (chunks futuros):
 - ✅ Fix bug referidos: Referral.status nunca pasaba de PENDING a COMPLETED (puntos se otorgaban pero stats mostraban 0)
 - ✅ Recuperación carritos abandonados: cron + email + push + config dinámica + email registry
 - ✅ Fix reset-admin.ts truncado (faltaban cierre de bloques)
+
+### 2026-04-16 — Consolidación tracking + checkout UX + UX polish
+- ✅ Consolidación: `/seguimiento/[id]` → redirect a `/mis-pedidos/[id]` (una sola página de tracking)
+- ✅ Socket.IO real-time en detalle de pedido (reemplaza polling 10s, mantiene fallback 30s)
+- ✅ RateDriverModal en detalle de pedido (antes solo en `/seguimiento`)
+- ✅ Fix flash confirmación post-pago efectivo (eliminada pantalla in-state, router.push directo)
+- ✅ Bloqueo botón "Inmediata" sin drivers + auto-select SCHEDULED
+- ✅ SCHEDULED label en español ("Entrega programada") en mis-pedidos y detalle
+- ✅ Toast redesign MOOVY-branded (centrado, blanco, borde de color, animación)
+- ✅ SignOut custom en comercios/vendedor/suspendida/archivada (adiós página negra NextAuth)
+- ✅ Logout page: logo SVG real + botón Volver con router.back()
 
 ### 2026-04-07 — UX Smoke Test Improvements
 - ✅ Búsqueda por descripción + Chat bubble draggable (fix hooks order)

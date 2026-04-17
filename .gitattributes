@@ -1,0 +1,48 @@
+# Normalización de line endings para Moovy
+# Código fuente siempre con LF (Linux/Unix style)
+# Scripts de PowerShell/CMD con CRLF (Windows native)
+
+* text=auto eol=lf
+
+# Windows-native scripts deben mantener CRLF
+*.ps1 eol=crlf
+*.cmd eol=crlf
+*.bat eol=crlf
+
+# Binarios: git los detecta solo, pero los marcamos explícitamente
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.svg text eol=lf
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.zip binary
+*.mp4 binary
+*.webm binary
+
+# Archivos específicos de texto que deben ser LF sí o sí
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.prisma text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.env.example text eol=lf
