@@ -54,6 +54,7 @@ const navSections: NavSection[] = [
             { href: "/ops/live", icon: Radio, label: "En Vivo", badge: "live-indicator" },
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
+            { href: "/ops/fraude", icon: Shield, label: "Fraude" },
         ],
     },
     {

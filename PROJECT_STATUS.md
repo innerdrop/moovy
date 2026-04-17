@@ -1,6 +1,57 @@
 # Moovy — Tareas pendientes
 Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 2
-Última actualización: 2026-04-16 (consolidación tracking + UX polish checkout/toasts/logout/signout)
+Última actualización: 2026-04-17 (ISSUE-001 PIN doble de entrega RESUELTO — Fases 1-9)
+
+## Cambio 2026-04-17 — ISSUE-001 PIN doble de entrega (Fases 1-9 completas)
+
+Rama: `feat/pin`
+
+### Resumen
+Sistema completo de PIN doble para prevenir fraude del repartidor. El driver ya no puede marcar "entregado" sin validar dos códigos: uno del comercio (pickupPin) y otro del comprador (deliveryPin). Cierra el bloqueante más importante del lanzamiento. Ver detalle en CLAUDE.md → Decisiones tomadas → "ISSUE-001 PIN doble de entrega 2026-04-17" y en ISSUES.md → ISSUE-001 (marcado ✅ RESUELTO).
+
+### Archivos creados
+- `src/lib/pin.ts` — generación/comparación timing-safe + constantes (PIN_MAX_ATTEMPTS=5, PIN_FRAUD_THRESHOLD=3, PIN_GEOFENCE_METERS=100)
+- `src/lib/pin-verification.ts` — `verifyOrderOrSubOrderPin()` centraliza toda la lógica (ownership + estado + intentos + geofence + timing-safe + audit + alerta socket)
+- `src/app/api/driver/orders/[id]/verify-pin/route.ts` — endpoint driver para Orders
+- `src/app/api/driver/suborders/[id]/verify-pin/route.ts` — endpoint driver para SubOrders (multi-vendor)
+- `src/app/api/admin/fraud/pin-events/route.ts` — GET feed de eventos + drivers flagged
+- `src/app/api/admin/fraud/drivers/[id]/reset/route.ts` — POST para resetear score / levantar suspensión
+- `src/app/ops/(protected)/fraude/page.tsx` — panel admin con stats, tabla, feed, auto-refresh 30s
+- `scripts/test-pin-verification.ts` — 11 tests (funciones puras + sanity datos + invariantes + AuditLog)
+
+### Archivos modificados
+- `prisma/schema.prisma` — agregados `pickupPin`, `pickupPinVerifiedAt`, `pickupPinAttempts`, `deliveryPin`, `deliveryPinVerifiedAt`, `deliveryPinAttempts` en `Order` y `SubOrder`. `Driver.fraudScore Int @default(0)` + índice
+- `src/app/api/orders/route.ts` — genera `pickupPin`/`deliveryPin` con `generatePinPair()` al crear la orden (dentro del `$transaction`)
+- `src/app/api/driver/orders/[id]/status/route.ts` — bloquea `→ PICKED_UP` sin `pickupPinVerifiedAt` y `→ DELIVERED` sin `deliveryPinVerifiedAt`. Dispara `notifyBuyerDeliveryPin()` al PICKED_UP
+- `src/app/api/orders/[id]/route.ts` — sanitiza PINs según rol + estado (delivery solo visible en PICKED_UP/IN_DELIVERY)
+- `src/app/api/merchant/orders/[id]/route.ts` — sanitiza `pickupPin` (solo en DRIVER_ARRIVED)
+- `src/app/(store)/mis-pedidos/[orderId]/page.tsx` — badge destacado con `deliveryPin` + instructions
+- `src/components/repartidor/PinKeypad.tsx` — keypad numérico 6 dígitos con input masking
+- `src/app/repartidor/(protected)/pedidos/[id]/page.tsx` — integración del keypad + lógica verify-pin
+- `src/app/comercios/(protected)/pedidos/[id]/page.tsx` — card destacada con `pickupPin`
+- `src/lib/notifications.ts` — agregada `notifyBuyerDeliveryPin()` con tag distinto del push genérico de status
+- `src/components/ops/OpsSidebar.tsx` — entrada "Fraude" en sección Operaciones
+
+### Migración requerida
+```
+npx prisma db push        # aplica nuevos campos al DB local
+npx prisma generate       # regenera tipos Prisma Client
+```
+
+### Testing
+```
+npx tsx scripts/test-pin-verification.ts
+```
+Cubre: generación, verificación timing-safe, formato/sanitización, constantes, sanity de PINs en DB, bounds de `pickupPinAttempts`/`deliveryPinAttempts`, invariante `fraudScore >= PIN_FRAUD_THRESHOLD → isSuspended === true`, AuditLog parseable, simulación damage cap.
+
+### Fases post-launch (incrementales, no bloqueantes)
+- **Fase 11** — Offline mode: IndexedDB + service worker cache del PIN para validación sin red (driver pierde señal en el portal del edificio).
+- **Fase 12** — Flow "No pude entregar": botón activo tras 5min en destino, captura foto + GPS + motivo, crea `DeliveryAttempt` record.
+- **Fase 13** — Cron 5min: detecta drivers sin movimiento >10min con orden activa → alerta + auto-reassign si >15min.
+
+El sistema actual es production-ready sin estas fases.
+
+---
 
 ## Cambio 2026-04-16 (PM) — UX polish: toasts, signOut, logout, SCHEDULED label
 
@@ -564,4 +615,3 @@ Lo que NO entra en esta rama (chunks futuros):
 - ✅ Regla de marca: NUNCA mencionar competidores (documentado en CLAUDE.md)
 - ✅ Header: MapPin + Ushuaia reemplaza "Ingresar" (rama anterior mergeada)
 - ✅ Fondos blancos uniformes en toda la home
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

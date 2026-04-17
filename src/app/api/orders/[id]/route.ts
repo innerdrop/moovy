@@ -51,6 +51,28 @@ export async function GET(
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
+        // ISSUE-001: PIN doble — sanitización para el comprador.
+        // - pickupPin: NUNCA al comprador (es el código que el comercio le da al driver).
+        // - deliveryPin: sólo visible cuando el driver ya retiró el pedido (PICKED_UP / IN_DELIVERY).
+        //   Es el código que el comprador le dice al driver al recibir.
+        // Admin ve todo sin filtrar para soporte/auditoría.
+        if (!isAdmin) {
+            const canShowDeliveryPin = ["PICKED_UP", "IN_DELIVERY"].includes(order.status);
+            const sanitized: any = {
+                ...order,
+                pickupPin: null,
+                deliveryPin: canShowDeliveryPin ? (order as any).deliveryPin : null,
+                subOrders: (order as any).subOrders?.map((sub: any) => ({
+                    ...sub,
+                    pickupPin: null,
+                    deliveryPin: ["PICKED_UP", "IN_DELIVERY"].includes(sub.deliveryStatus || "")
+                        ? sub.deliveryPin
+                        : null,
+                })),
+            };
+            return NextResponse.json(sanitized);
+        }
+
         return NextResponse.json(order);
     } catch (error) {
         orderLogger.error(

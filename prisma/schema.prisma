@@ -26,6 +26,7 @@ enum DeliveryStatus {
   DRIVER_ARRIVED
   PICKED_UP
   DELIVERED
+  FAILED_DELIVERY
 }
 
 model User {
@@ -282,6 +283,16 @@ model Order {
   commissionPaid      Boolean     @default(false)
   pointsEarned        Int?        // Puntos otorgados al pasar a DELIVERED. Null = no otorgados todav\u00eda. Se usa para idempotencia y reversi\u00f3n.
   pointsUsed          Int?        // Puntos canjeados por el comprador al crear la orden (para revertir en cancelaci\u00f3n/rechazo).
+  // PIN doble (ISSUE-001) — verificaci\u00f3n de retiro en comercio + entrega al comprador
+  pickupPin             String?   // 6 d\u00edgitos. Lo ve el comercio, el driver lo ingresa al retirar.
+  pickupPinVerifiedAt   DateTime? // Timestamp cuando el driver valid\u00f3 el pickup PIN correctamente.
+  pickupPinAttempts     Int       @default(0) // Intentos fallidos del pickup PIN. >=5 = bloqueo temporal.
+  deliveryPin           String?   // 6 d\u00edgitos. Se env\u00eda al buyer cuando el driver sale del comercio.
+  deliveryPinVerifiedAt DateTime? // Timestamp cuando el driver valid\u00f3 el delivery PIN correctamente.
+  deliveryPinAttempts   Int       @default(0) // Intentos fallidos del delivery PIN.
+  // Entrega fallida (cliente ausente, direcci\u00f3n incorrecta, etc.)
+  failedDeliveryAt      DateTime? // Timestamp cuando el driver marca FAILED_DELIVERY.
+  failedDeliveryReason  String?   // CUSTOMER_ABSENT | ADDRESS_INCORRECT | REFUSED_RECEIPT | UNSAFE_LOCATION | OTHER
   driverRating        Int?
   merchantPayout      Float?      @default(0)
   moovyCommission     Float?      @default(0)
@@ -319,6 +330,7 @@ model Order {
   couponCode          String?
   orderChats          OrderChat[]
   locationHistory     DriverLocationHistory[]
+  deliveryAttempts    DeliveryAttempt[]
 
   @@index([status])
   @@index([paymentStatus])
@@ -381,6 +393,16 @@ model SubOrder {
   payoutStatus        String         @default("PENDING")
   paidOutAt           DateTime?
   items               OrderItem[]
+  // PIN doble (ISSUE-001) — PINs independientes por SubOrder (multi-vendor tiene un driver por vendedor)
+  pickupPin             String?
+  pickupPinVerifiedAt   DateTime?
+  pickupPinAttempts     Int            @default(0)
+  deliveryPin           String?
+  deliveryPinVerifiedAt DateTime?
+  deliveryPinAttempts   Int            @default(0)
+  failedDeliveryAt      DateTime?
+  failedDeliveryReason  String?
+  deliveryAttempts      DeliveryAttempt[]
 
   @@index([status])
   @@index([paymentStatus])
@@ -525,16 +547,21 @@ model Driver {
   suspendedUntil     DateTime?                 // null = permanent until manual reactivation
   suspensionReason   String?
   ubicacion          Unsupported("geography")?
+  // Anti-fraude PIN doble (ISSUE-001)
+  fraudScore         Int                       @default(0) // Acumulador de incidentes. 3+ = suspensi\u00f3n autom\u00e1tica.
+  lastFraudCheckAt   DateTime?                 // \u00daltima vez que el cron revis\u00f3 drivers sin movimiento.
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders              Order[]
   subOrders           SubOrder[]
   assignmentLogs      AssignmentLog[]
   locationHistory     DriverLocationHistory[]
+  deliveryAttempts    DeliveryAttempt[]
 
   @@index([isOnline])
   @@index([isActive])
   @@index([approvalStatus])
   @@index([isSuspended])
+  @@index([fraudScore])
 }
 
 model DriverLocationHistory {
@@ -555,6 +582,37 @@ model DriverLocationHistory {
   @@index([driverId, createdAt])
   @@index([orderId, createdAt])
   @@index([timestamp])
+}
+
+// Intentos de entrega fallida (ISSUE-001 Fase 12 — flujo "no pude entregar")
+// Registra cada vez que un driver marca FAILED_DELIVERY, con foto + GPS + timer.
+// Un pedido puede tener varios DeliveryAttempts (reintentos) pero solo el \u00faltimo cuenta como final.
+model DeliveryAttempt {
+  id           String    @id @default(cuid())
+  orderId      String?
+  subOrderId   String?
+  driverId     String
+  reason       String    // CUSTOMER_ABSENT | ADDRESS_INCORRECT | REFUSED_RECEIPT | UNSAFE_LOCATION | OTHER
+  photoUrl     String?   // Foto de la puerta / local / lugar. Requerida salvo ADDRESS_INCORRECT.
+  notes        String?   // Texto libre del driver (m\u00e1x 500 chars).
+  gpsLat       Float?
+  gpsLng       Float?
+  gpsAccuracy  Float?    // Precisi\u00f3n en metros reportada por el dispositivo.
+  distanceMeters Float?  // Distancia al destino esperado (para auditor\u00eda).
+  waitedSeconds  Int?    // Segundos que el driver esper\u00f3 en el lugar antes de marcar fallo.
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  createdAt    DateTime  @default(now())
+
+  order        Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  subOrder     SubOrder? @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  driver       Driver    @relation(fields: [driverId], references: [id])
+
+  @@index([orderId])
+  @@index([subOrderId])
+  @@index([driverId])
+  @@index([reason])
+  @@index([startedAt])
 }
 
 model SellerProfile {

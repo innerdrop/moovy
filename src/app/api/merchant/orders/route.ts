@@ -51,7 +51,25 @@ export async function GET() {
             take: 50, // Limit to recent orders
         });
 
-        return NextResponse.json(orders);
+        // ISSUE-001: PIN doble — solo mostrar pickupPin cuando el driver llegó al comercio.
+        // Defense-in-depth: aunque el merchant sea dueño del pedido, no exponemos el PIN
+        // hasta que sea necesario (DRIVER_ARRIVED). Esto previene leaks accidentales o
+        // ataques de phishing donde un falso driver llama antes de llegar.
+        const sanitizedOrders = orders.map((order: any) => {
+            const canShowPickup = order.deliveryStatus === "DRIVER_ARRIVED";
+            return {
+                ...order,
+                pickupPin: canShowPickup ? order.pickupPin : null,
+                deliveryPin: null, // Nunca exponer el deliveryPin al merchant
+                subOrders: order.subOrders?.map((sub: any) => ({
+                    ...sub,
+                    pickupPin: sub.deliveryStatus === "DRIVER_ARRIVED" ? sub.pickupPin : null,
+                    deliveryPin: null,
+                })),
+            };
+        });
+
+        return NextResponse.json(sanitizedOrders);
     } catch (error) {
         console.error("Error fetching merchant orders:", error);
         return NextResponse.json(
