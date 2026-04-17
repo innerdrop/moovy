@@ -586,3 +586,122 @@ Con los 8 issues del checkout:
 | **Total pre-lanzamiento** | **43** | **21-30 días full** |
 
 **ISSUE-053 es el que más me preocupa**: evidencia viva de que los puntos se regalan sin que el pedido esté entregado. Cada pedido Pendiente que nunca se acepte está regalando 1.000 puntos ($1.000 de pasivo por cada click en Confirmar). Antes de abrir el producto, **correr el query de `PointsTransaction` para confirmar si es type=EARN o type=BONUS_SIGNUP** y priorizar el fix según lo que se encuentre.
+
+---
+
+# Pre-lanzamiento final (última acción antes de abrir)
+
+Decisión tomada 2026-04-17: resolver ISSUE-004 (limpieza de data de prueba) con **reset total de data transaccional preservando reference/seed data**. Esta sección es el paquete operativo que se ejecuta como ÚLTIMO paso del pre-lanzamiento, una vez que todos los críticos de código estén cerrados.
+
+### PL-001 — Reset total de data de usuarios (el día antes del lanzamiento)
+
+**Qué se hace:** Borrar TODA la data transaccional y de usuarios de la DB de producción, preservando solo la configuración del sistema y el admin OPS.
+
+**Qué se preserva (reference + seed data):**
+- `MoovyConfig` (timeouts, flags, configuraciones dinámicas)
+- `PointsConfig` (earn rates, burn rates, niveles, expiración)
+- `StoreSettings` (commission rates, riderCommissionPercent)
+- `DeliveryRate` (tarifas por tipo de vehículo, Biblia v3)
+- `MerchantLoyaltyConfig` (4 tiers BRONCE/PLATA/ORO/DIAMANTE)
+- `Categories` (categorías de productos con scope STORE/MARKETPLACE/BOTH)
+- Advertisement packages (4 paquetes con precios)
+- Admin OPS del `.env` (única cuenta de usuario preservada, recreada desde `OPS_LOGIN_EMAIL` + `OPS_LOGIN_PASSWORD`)
+
+**Qué se borra (transactional + user data):**
+- `User` (excepto admin OPS), `UserRole`
+- `Merchant`, `Driver`, `SellerProfile`
+- `Product`, `Listing`, `PackagePurchase`
+- `Order`, `SubOrder`, `Payment`, `MpWebhookLog`
+- `PendingAssignment`, `AssignmentLog`, `DriverLocationHistory`
+- `Rating`, `Review`
+- `PointsTransaction`, `Referral`, `Favorite`
+- `Coupon` (salvo cupones de lanzamiento preconfigurados), `CouponUsage`
+- `Notification`, `PushSubscription`
+- `SupportTicket`, `SupportMessage`, `ChatMessage`
+- `SavedCart`, `AuditLog`
+
+**Cómo ejecutarlo:**
+1. Crear `scripts/pre-launch-reset.ts` que:
+   - Genere backup comprimido `pre-launch-backup-YYYYMMDD.sql.gz` antes de tocar nada (fallo = abort)
+   - Pida confirmación interactiva: escribir literal `RESET-LANZAMIENTO` para avanzar
+   - **Guard crítico**: abortar si `NODE_ENV === "production"` **Y** existen >1 usuarios no-admin **Y** hay órdenes DELIVERED reales (protección contra correr esto post-lanzamiento por accidente)
+   - Ejecute truncate en orden correcto respetando FKs, o `prisma db push --force-reset` (más simple, drop+recreate schema)
+   - Ejecute `prisma/seed-production.ts` para recrear admin + configs + categorías + tarifas
+   - Ejecute `npx tsx scripts/validate-ops-config.ts` como validación post-reset
+   - Loguee en archivo `pre-launch-reset.log` con timestamp, usuario que lo ejecutó, hash del backup
+2. Ejecutar primero en DB **local** contra copia de producción para validar que el flujo funciona
+3. Ejecutar en producción el día anterior al lanzamiento (no el mismo día por si algo falla)
+4. Mauro loguea como admin OPS y confirma que el panel funciona, las configuraciones están intactas, la DB está limpia
+5. Post-reset: el admin OPS no tiene permitido volver a ejecutar este script (el guard lo bloquea automáticamente cuando aparece el primer usuario real con pedido DELIVERED)
+
+**Severidad:** CRÍTICO — última acción antes de abrir. Sin esto, el sitio abre con "Chico lindo $100.000.000", logos posiblemente de marcas ajenas, vendedores "Tienda Prueba", y contadores ficticios.
+
+**Esfuerzo:** 3-4 horas (script + validación local + ejecución supervisada)
+
+### PL-002 — Ambiente de staging separado
+
+**Qué se hace:** Montar un segundo entorno idéntico a producción con una DB separada, para poder probar features nuevas sin tocar los datos reales de usuarios.
+
+**Por qué importa post-lanzamiento:** Una vez que tengamos 1 usuario real con 1 pedido real, **nunca más se puede probar en producción**. Sin staging, las opciones son: (a) probar en prod y romper cosas a usuarios reales, (b) no probar y lanzar features a ciegas. Ambas son inaceptables. Staging es el cinturón de seguridad obligatorio.
+
+**Cómo implementarlo:**
+1. Crear una DB PostgreSQL + PostGIS separada en el VPS de Hostinger (o proyecto aparte en Railway/Supabase por ~$10/mes)
+2. Duplicar el deploy script de producción a `devmain-staging.ps1` que apunte a otro dominio (ej: `staging.somosmoovy.com`)
+3. Configurar MercadoPago con credenciales sandbox en staging (prod usa producción)
+4. Configurar subdominio DNS + Nginx vhost separado
+5. Variables de entorno separadas: `DATABASE_URL_STAGING`, `NEXT_PUBLIC_APP_URL_STAGING`, etc.
+6. Script `scripts/sync-prod-to-staging.ts` que:
+   - Copie schema + reference/seed data de prod a staging
+   - NO copie data de usuarios reales (privacidad)
+   - O alternativamente: copie todo pero corra anonimización (reemplace nombres, emails, DNIs, direcciones por data sintética)
+7. Agregar reminder en CLAUDE.md: "toda feature nueva se prueba en staging antes de ir a producción"
+
+**Severidad:** CRÍTICO post-lanzamiento — sin esto no podemos iterar sin romper cosas
+
+**Esfuerzo:** 1 día completo + pruebas
+
+### PL-003 — Backups automáticos diarios con retención
+
+**Qué se hace:** Cron diario que haga `pg_dump` de la DB de producción, comprima, y suba a storage externo. Retención: 30 días diarios, 12 meses mensuales.
+
+**Por qué importa:** Un servidor puede caer, un disco puede romperse, un script mal corrido puede borrar la tabla equivocada. Sin backups probados, un incidente = fin del negocio. En Ushuaia donde todo se sabe, perder el historial de un comercio por un error técnico nos destruye la reputación en 48 horas.
+
+**Cómo implementarlo:**
+1. Cron en el VPS a las 3:00 AM diarias: `pg_dump moovy_db | gzip > /backups/moovy-$(date +%Y%m%d).sql.gz`
+2. Subir a storage externo (Hostinger tiene storage incluido, o S3/Backblaze B2 por ~$1-5/mes)
+3. Retención rolling: 30 días diarios, 12 meses últimos días de cada mes, 3 años últimos días de cada año
+4. Script de prueba de restore: `scripts/test-backup-restore.ts` que levante una DB temporal, restaure el backup del día anterior, valide counts de tablas clave, y borre la DB temporal
+5. Correr el test de restore **una vez al mes mínimo**: un backup que no probaste es un backup que no tenés
+6. Alerta por email si el backup falla 2 días seguidos
+
+**Severidad:** CRÍTICO post-lanzamiento
+
+**Esfuerzo:** 4-6 horas (cron + storage + script de test + primera validación)
+
+### PL-004 — Script de limpieza quirúrgica post-lanzamiento
+
+**Qué se hace:** Reemplazo del `pre-launch-reset.ts` una vez que haya data real. Script genérico que recibe IDs específicos y hace soft-delete preciso de registros, sin tocar lo de al lado.
+
+**Por qué importa:** Inevitablemente aparecerán registros tóxicos: spam de un seller, pedido fraudulento, usuario que pide borrado por Ley de Datos Personales, listing que viola términos. Borrarlos a mano en DB es peligroso (SQL libre = error de 3 caracteres = borrar tabla completa).
+
+**Cómo implementarlo:**
+1. `scripts/surgical-cleanup.ts` con subcomandos:
+   - `soft-delete-user --id=123 --reason="GDPR request"` → soft-delete user + anonimizar sus datos personales
+   - `soft-delete-listing --id=456 --reason="marca registrada"` → soft-delete listing + dejar registro en AuditLog
+   - `soft-delete-order --id=789 --reason="fraude confirmado"` → soft-delete + revertir puntos + flag en audit
+   - `reset-counters --seller=X` → resetear `timesSold`/`ratings` de un seller específico
+2. Todo dentro de `$transaction` con rollback ante cualquier error
+3. Todo registra en `AuditLog` con: qué se hizo, por qué, quién lo hizo, cuándo, IDs afectados
+4. Dry-run obligatorio por default, requiere `--apply` para ejecutar
+5. Export automático de lo afectado a `cleanups/YYYY-MM-DD-HHmmss.json` antes de aplicar (respaldo adicional)
+
+**Severidad:** IMPORTANTE post-lanzamiento
+
+**Esfuerzo:** 1 día
+
+---
+
+**Resumen de la sección Pre-lanzamiento final:**
+- PL-001 (reset total) se ejecuta **una sola vez**, el día antes del lanzamiento
+- PL-002, PL-003, PL-004 se implementan **dentro de las 2 primeras semanas post-lanzamiento** como parte de la infraestructura permanente
+- Después de PL-001 ejecutado, el mismo script queda bloqueado por su propio guard (no se puede volver a correr con usuarios reales adentro)
