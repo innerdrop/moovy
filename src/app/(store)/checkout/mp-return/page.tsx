@@ -134,8 +134,8 @@ export default function MpReturnPage() {
                     <p className="text-sm text-gray-500 mb-6">
                         Te enviamos un email con los detalles de tu compra.
                     </p>
-                    <Link href="/mis-pedidos" className="btn-primary inline-block">
-                        Ver mis pedidos
+                    <Link href={resolvedOrderId ? `/mis-pedidos/${resolvedOrderId}` : "/mis-pedidos"} className="btn-primary inline-block">
+                        Ver mi pedido
                     </Link>
                 </div>
             </div>

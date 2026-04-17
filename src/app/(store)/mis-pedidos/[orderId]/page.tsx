@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/delivery";
 import { toast } from "@/store/toast";
+import { io, Socket } from "socket.io-client";
+import { useSocketAuth } from "@/hooks/useSocketAuth";
 import {
     ArrowLeft,
     Package,
@@ -32,6 +34,7 @@ import {
 import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
 import RateSellerModal from "@/components/orders/RateSellerModal";
+import RateDriverModal from "@/components/orders/RateDriverModal";
 import OrderChatPanel from "@/components/orders/OrderChatPanel";
 import { buildDeliveryContext } from "@/lib/delivery-chat";
 import dynamic from "next/dynamic";
@@ -83,6 +86,7 @@ interface OrderDetail {
         id: string;
         latitude?: number;
         longitude?: number;
+        deliveries?: number;
         user: { name: string; phone?: string };
     };
     driverRating?: number;
@@ -139,43 +143,72 @@ export default function OrderDetailPage() {
     const [isReordering, setIsReordering] = useState(false);
     const [showMerchantRating, setShowMerchantRating] = useState(false);
     const [showSellerRating, setShowSellerRating] = useState(false);
+    const [showDriverRating, setShowDriverRating] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [driverLocation, setDriverLocation] = useState<any>(null);
+    const socketRef = useRef<Socket | null>(null);
+
+    // Get socket auth token (only when order is active)
+    const isActive = order && !["DELIVERED", "CANCELLED"].includes(order.status);
+    const { token: socketToken } = useSocketAuth(!!isActive);
 
     // Fetch order
-    useEffect(() => {
+    const fetchOrder = useCallback(async () => {
         if (!orderId) return;
-        (async () => {
-            try {
-                const res = await fetch(`/api/orders/${orderId}`);
-                if (!res.ok) throw new Error("Pedido no encontrado");
-                setOrder(await res.json());
-            } catch (e: unknown) {
-                setError(e instanceof Error ? e.message : "Error desconocido");
-            } finally {
-                setLoading(false);
-            }
-        })();
+        try {
+            const res = await fetch(`/api/orders/${orderId}`);
+            if (!res.ok) throw new Error("Pedido no encontrado");
+            setOrder(await res.json());
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Error desconocido");
+        } finally {
+            setLoading(false);
+        }
     }, [orderId]);
 
-    // Poll active orders
-    const isActive = order && !["DELIVERED", "CANCELLED"].includes(order.status);
+    useEffect(() => { fetchOrder(); }, [fetchOrder]);
+
+    // Socket.IO for real-time status updates (primary) + polling fallback
     useEffect(() => {
-        if (!isActive || !orderId) return;
-        const id = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/orders/${orderId}`);
-                if (res.ok) setOrder(await res.json());
-            } catch { /* silent */ }
-        }, 10000);
-        return () => clearInterval(id);
-    }, [isActive, orderId]);
+        if (!orderId || !isActive || !socketToken) return;
+
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "https://somosmoovy.com";
+        const socket = io(`${socketUrl}/logistica`, {
+            transports: ["websocket", "polling"],
+            auth: { token: socketToken },
+        });
+        socketRef.current = socket;
+
+        socket.on("connect", () => {
+            socket.emit("track_order", orderId);
+        });
+
+        // Real-time status updates
+        socket.on("order_status_changed", (data: { orderId: string; status: string }) => {
+            if (data.orderId === orderId) fetchOrder();
+        });
+        socket.on("order_status_update", (data: { orderId: string; status: string }) => {
+            if (data.orderId === orderId) fetchOrder();
+        });
+        socket.on("pedido_entregado", (data: { orderId: string }) => {
+            if (data.orderId === orderId) fetchOrder();
+        });
+
+        // Polling fallback every 30s (socket handles real-time, polling catches edge cases)
+        const pollId = setInterval(fetchOrder, 30000);
+
+        return () => {
+            socket.disconnect();
+            socketRef.current = null;
+            clearInterval(pollId);
+        };
+    }, [orderId, isActive, socketToken, fetchOrder]);
 
     // Fetch delivery context for active driver deliveries
     useEffect(() => {
         if (!order?.driver || !isActive || !orderId) return;
-        
+
         const fetchContext = async () => {
             try {
                 const res = await fetch(`/api/orders/${orderId}/delivery-context`);
@@ -184,9 +217,9 @@ export default function OrderDetailPage() {
                 }
             } catch { /* silent */ }
         };
-        
+
         fetchContext();
-        const id = setInterval(fetchContext, 15000); // Update every 15s
+        const id = setInterval(fetchContext, 15000);
         return () => clearInterval(id);
     }, [order?.driver, isActive, orderId]);
 
@@ -307,12 +340,12 @@ export default function OrderDetailPage() {
             {/* ── Header ── */}
             <div className="bg-white sticky top-0 z-30 border-b border-gray-100">
                 <div className="container mx-auto px-4 lg:px-6 xl:px-8 py-3 lg:py-4 flex items-center gap-3">
-                    <button
-                        onClick={() => router.back()}
+                    <Link
+                        href="/mis-pedidos"
                         className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition active:scale-95"
                     >
                         <ArrowLeft className="w-4 h-4 text-gray-700" />
-                    </button>
+                    </Link>
                     <div className="flex-1 min-w-0">
                         <h1 className="text-base font-bold text-gray-900 truncate">
                             Pedido #{order.orderNumber}
@@ -525,7 +558,7 @@ export default function OrderDetailPage() {
 
                 {/* ── Map (single-vendor only) ── */}
                 {showMap && !order.isMultiVendor && (
-                    <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                    <div id="tracking-map" className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                         <OrderTrackingMiniMap
                             orderId={order.id}
                             orderStatus={order.status}
@@ -659,6 +692,19 @@ export default function OrderDetailPage() {
                                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Repartidor</p>
                                 <p className="font-bold text-gray-900 text-sm">{order.driver.user.name}</p>
                             </div>
+                            {isDelivered && !order.driverRating ? (
+                                <button
+                                    onClick={() => setShowDriverRating(true)}
+                                    className="text-xs font-bold text-[#e60012] bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
+                                >
+                                    <Star className="w-3 h-3" /> Calificar
+                                </button>
+                            ) : order.driverRating ? (
+                                <div className="flex items-center gap-1 bg-yellow-50 px-2.5 py-1 rounded-lg">
+                                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                    <span className="text-xs font-bold text-gray-700">{order.driverRating}</span>
+                                </div>
+                            ) : null}
                             {order.driver.user.phone && (
                                 <a href={`tel:${order.driver.user.phone}`} className="w-9 h-9 bg-green-500 hover:bg-green-600 rounded-lg flex items-center justify-center text-white transition active:scale-95">
                                     <Phone className="w-4 h-4" />
@@ -789,13 +835,13 @@ export default function OrderDetailPage() {
                                     Cancelar
                                 </button>
                             )}
-                            <Link
-                                href={`/seguimiento/${order.id}`}
+                            <button
+                                onClick={() => document.getElementById("tracking-map")?.scrollIntoView({ behavior: "smooth", block: "center" })}
                                 className="flex-1 py-3 bg-[#e60012] hover:bg-[#cc000f] text-white rounded-xl text-sm font-bold text-center shadow-lg shadow-red-500/20 transition-colors flex items-center justify-center gap-2 active:scale-95"
                             >
                                 <Truck className="w-4 h-4" />
-                                Seguir en vivo
-                            </Link>
+                                Ver en el mapa
+                            </button>
                         </div>
                     )}
                     {isDelivered && (
@@ -870,6 +916,18 @@ export default function OrderDetailPage() {
                     orderNumber={order.orderNumber}
                     sellerName={order.subOrders[0].seller.displayName || "Vendedor"}
                     onClose={() => setShowSellerRating(false)}
+                    onSuccess={() => {
+                        fetch(`/api/orders/${orderId}`).then(r => r.json()).then(d => setOrder(d)).catch(() => {});
+                    }}
+                />
+            )}
+            {showDriverRating && order.driver && (
+                <RateDriverModal
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    driverName={order.driver.user.name}
+                    driverDeliveries={order.driver.deliveries ?? 0}
+                    onClose={() => setShowDriverRating(false)}
                     onSuccess={() => {
                         fetch(`/api/orders/${orderId}`).then(r => r.json()).then(d => setOrder(d)).catch(() => {});
                     }}

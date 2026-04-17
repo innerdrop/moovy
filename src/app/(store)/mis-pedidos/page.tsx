@@ -295,7 +295,7 @@ export default function MisPedidosPage() {
                             return (
                                 <Link
                                     key={order.id}
-                                    href={isActive ? `/seguimiento/${order.id}` : `/mis-pedidos/${order.id}`}
+                                    href={`/mis-pedidos/${order.id}`}
                                     className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition border border-gray-100 animate-fade-up ${isCancelled ? "opacity-60" : ""}`}
                                     style={{ animationDelay: `${idx * 60}ms` }}
                                 >

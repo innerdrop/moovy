@@ -1,7 +1,7 @@
 "use client";
 
 // Checkout Page - Página de Checkout
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -21,7 +21,8 @@ import {
     Store,
     User,
     Calendar,
-    Navigation
+    Navigation,
+    Clock
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import TimeSlotPicker, { type VendorSchedule } from "@/components/checkout/TimeSlotPicker";
@@ -78,7 +79,7 @@ export default function CheckoutPage() {
     // Get primary merchantId for delivery calc (first merchant group, if any)
     const primaryMerchantId = groups.find(g => g.vendorType === "merchant")?.vendorId.replace("merchant_", "") || null;
     const isMultiVendor = groups.length > 1;
-    const [orderSuccess, setOrderSuccess] = useState(false);
+    const orderSuccessRef = useRef(false);
     const [saveAddress, setSaveAddress] = useState(false);
     const [addressLabel, setAddressLabel] = useState("Casa");
 
@@ -89,7 +90,7 @@ export default function CheckoutPage() {
     // Points state
     const [pointsUsed, setPointsUsed] = useState(0);
     const [discountAmount, setDiscountAmount] = useState(0);
-    const [earnedPoints, setEarnedPoints] = useState(0);
+    // earnedPoints removed — points celebration handled by redirect to order detail
 
     const subtotal = getTotalPrice();
     const isPickup = deliveryMethod === "pickup";
@@ -107,12 +108,12 @@ export default function CheckoutPage() {
     const deliveryCost = totalDeliveryCost;
     const finalTotal = Math.max(0, subtotal + deliveryCost - discountAmount);
 
-    // Redirect if cart is empty
+    // Redirect if cart is empty (use ref to avoid race with Zustand's sync clearCart)
     useEffect(() => {
-        if (items.length === 0 && !orderSuccess) {
+        if (items.length === 0 && !orderSuccessRef.current) {
             router.push("/productos");
         }
-    }, [items, orderSuccess, router]);
+    }, [items, router]);
 
     // Redirect if not logged in
     useEffect(() => {
@@ -127,9 +128,8 @@ export default function CheckoutPage() {
             .then(res => res.json())
             .then(data => {
                 setHasDrivers(data.hasDrivers);
-                if (!data.hasDrivers) {
-                    setDeliveryMethod("pickup");
-                }
+                // Force scheduled delivery when no drivers available
+                if (!data.hasDrivers) setDeliveryType("SCHEDULED");
             })
             .catch(err => console.error("Error checking driver availability", err));
     }, []);
@@ -499,6 +499,12 @@ export default function CheckoutPage() {
             // Parse response before clearing cart to avoid useEffect race
             const result = await response.json();
 
+            // Extract order ID from response (API returns { order: { id } })
+            const orderId = result.order?.id || result.id;
+
+            // Prevent empty-cart redirect while we navigate away
+            orderSuccessRef.current = true;
+
             // MercadoPago: redirect to MP checkout (clear cart before hard navigation)
             if (result.initPoint) {
                 clearCart();
@@ -506,14 +512,15 @@ export default function CheckoutPage() {
                 return;
             }
 
-            // Cash: clear cart, then show points celebration and redirect to order detail
+            // Cash: clear cart, show toast, navigate directly to order detail.
+            // No in-page confirmation screen — state-based screens are fragile
+            // (session refresh, HMR, or Zustand race can cause them to flash/disappear).
             clearCart();
             if (result.points?.earned) {
-                setEarnedPoints(result.points.earned);
                 showCelebration(result.points.earned);
             }
-            // ISSUE-052: redirigir al detalle del pedido, no a la lista genérica
-            router.push(`/mis-pedidos/${result.id}`);
+            toast.success("¡Pedido confirmado! Te avisaremos cuando el comercio lo confirme.");
+            router.push(`/mis-pedidos/${orderId}`);
         } catch (error) {
             console.error("Error submitting order:", error);
             toast.error(error instanceof Error ? error.message : "Error al procesar el pedido");
@@ -530,45 +537,17 @@ export default function CheckoutPage() {
         );
     }
 
-    if (orderSuccess) {
-        return (
-            <div className="container mx-auto px-4 py-16 text-center">
-                <div className="max-w-md mx-auto relative">
-                    {/* Points celebration is now handled globally via Providers */}
-
-                    <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle className="w-10 h-10 text-green-600" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-navy mb-4">
-                        ¡Pedido Confirmado!
-                    </h1>
-                    <p className="text-gray-600 mb-8">
-                        Tu pedido fue recibido. Te avisaremos cuando el repartidor esté en camino.
-                        {earnedPoints > 0 && (
-                            <span className="block mt-4 font-semibold text-[#e60012]">
-                                ¡Sumaste {earnedPoints} puntos con esta compra! 🎉
-                            </span>
-                        )}
-                    </p>
-                    <Link href="/productos" className="btn-primary">
-                        Seguir Comprando
-                    </Link>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="container mx-auto px-4 py-8 pb-32 lg:px-6 xl:px-8">
             <div className="max-w-7xl mx-auto">
                 {/* Back Link */}
-                <Link
-                    href="/productos"
+                <button
+                    onClick={() => router.back()}
                     className="inline-flex items-center text-gray-600 hover:text-moovy mb-6 lg:text-base lg:mb-8"
                 >
                     <ChevronLeft className="w-5 h-5 mr-1" />
-                    Seguir comprando
-                </Link>
+                    Volver
+                </button>
 
                 <h1 className="text-3xl font-bold text-navy mb-8 lg:text-4xl lg:mb-10">Checkout</h1>
 
@@ -593,13 +572,29 @@ export default function CheckoutPage() {
                         {/* Step 1: Delivery Method & Address */}
                         {step === 1 && (
                             <div className="space-y-6">
-                                {/* DRIVER AVAILABILITY WARNING */}
+                                {/* DRIVER AVAILABILITY INFO */}
                                 {!hasDrivers && (
-                                    <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex items-start gap-4 animate-pulse">
-                                        <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
-                                        <div>
-                                            <p className="font-black text-amber-900 uppercase tracking-tight leading-tight">No hay repartidores disponibles</p>
-                                            <p className="text-sm text-amber-700 font-medium">Podés realizar tu compra, pero deberás retirarla personalmente por el local.</p>
+                                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-4">
+                                        <Clock className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
+                                        <div className="space-y-1.5">
+                                            <p className="font-semibold text-blue-900 leading-tight">Justo ahora no hay repartidores cerca</p>
+                                            <p className="text-sm text-blue-700">Esto suele durar menos de 15 minutos. Mientras tanto podés:</p>
+                                            <ul className="text-sm text-blue-700 space-y-1 ml-0.5">
+                                                <li className="flex items-center gap-2">
+                                                    <span className="text-blue-400">•</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setDeliveryMethod("home"); setDeliveryType("SCHEDULED"); }}
+                                                        className="font-semibold text-blue-600 hover:text-blue-800 underline underline-offset-2 transition"
+                                                    >
+                                                        Programar tu entrega para más tarde
+                                                    </button>
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <span className="text-blue-400">•</span>
+                                                    <span>Elegir retiro en local si lo preferís</span>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </div>
                                 )}
@@ -612,12 +607,15 @@ export default function CheckoutPage() {
 
                                     <div className="grid grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
                                         <button
-                                            onClick={() => setDeliveryMethod("home")}
-                                            disabled={!hasDrivers}
+                                            onClick={() => {
+                                                setDeliveryMethod("home");
+                                                // If no drivers available, suggest scheduled delivery
+                                                if (!hasDrivers) setDeliveryType("SCHEDULED");
+                                            }}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "home"
                                                 ? "border-moovy bg-moovy-light"
                                                 : "border-gray-100 hover:border-gray-200"
-                                                } ${!hasDrivers ? "opacity-30 cursor-not-allowed" : ""}`}
+                                                }`}
                                         >
                                             <Truck className={`w-8 h-8 ${deliveryMethod === "home" ? "text-moovy" : "text-gray-400"}`} />
                                             <span className="font-black uppercase tracking-widest text-xs">Envío a domicilio</span>
@@ -985,19 +983,26 @@ export default function CheckoutPage() {
                                         <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-3 lg:mb-4">
                                             <button
                                                 type="button"
+                                                disabled={!hasDrivers && deliveryMethod === "home"}
                                                 onClick={() => {
+                                                    if (!hasDrivers && deliveryMethod === "home") return;
                                                     setDeliveryType("IMMEDIATE");
                                                     setScheduledSlotStart(undefined);
                                                     setScheduledSlotEnd(undefined);
                                                 }}
                                                 className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                                                    deliveryType === "IMMEDIATE"
-                                                        ? "border-moovy bg-moovy-light text-moovy"
-                                                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                    !hasDrivers && deliveryMethod === "home"
+                                                        ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
+                                                        : deliveryType === "IMMEDIATE"
+                                                            ? "border-moovy bg-moovy-light text-moovy"
+                                                            : "border-gray-200 text-gray-600 hover:border-gray-300"
                                                 }`}
                                             >
                                                 <Truck className="w-4 h-4 mx-auto mb-1" />
                                                 Inmediata
+                                                {!hasDrivers && deliveryMethod === "home" && (
+                                                    <span className="block text-[10px] text-gray-400 font-normal mt-0.5">Sin repartidores ahora</span>
+                                                )}
                                             </button>
                                             <button
                                                 type="button"
@@ -1006,10 +1011,13 @@ export default function CheckoutPage() {
                                                     deliveryType === "SCHEDULED"
                                                         ? "border-moovy bg-moovy-light text-moovy"
                                                         : "border-gray-200 text-gray-600 hover:border-gray-300"
-                                                }`}
+                                                } ${!hasDrivers && deliveryMethod === "home" ? "ring-2 ring-blue-300 ring-offset-1" : ""}`}
                                             >
                                                 <Calendar className="w-4 h-4 mx-auto mb-1" />
                                                 Programada
+                                                {!hasDrivers && deliveryMethod === "home" && (
+                                                    <span className="block text-[10px] text-blue-600 font-semibold mt-0.5">Recomendada</span>
+                                                )}
                                             </button>
                                         </div>
 
