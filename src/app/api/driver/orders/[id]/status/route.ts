@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { notifyBuyer } from "@/lib/notifications";
+import { notifyBuyer, notifyBuyerDeliveryPin } from "@/lib/notifications";
 import { socketEmitToRooms } from "@/lib/socket-emit";
 import { awardOrderPointsIfDelivered } from "@/lib/points";
 import logger from "@/lib/logger";
@@ -48,6 +48,41 @@ export async function PATCH(
 
         if (order.driverId !== driver.id && !hasAnyRole(session, ["ADMIN"])) {
             return NextResponse.json({ error: "Este pedido no está asignado a vos" }, { status: 403 });
+        }
+
+        // ISSUE-001: PIN doble de entrega — bloquear transiciones sin PIN verificado.
+        // Admin puede saltar el chequeo (para casos de emergencia manual).
+        const isAdminOverride = hasAnyRole(session, ["ADMIN"]);
+        if (!isAdminOverride && !order.isPickup) {
+            // PICKED_UP requiere pickupPin verificado (driver retiró del comercio)
+            if (deliveryStatus === "PICKED_UP" && order.pickupPin && !order.pickupPinVerifiedAt) {
+                statusLogger.warn(
+                    { orderId, driverId: driver.id },
+                    "Blocked PICKED_UP transition: pickup PIN not verified"
+                );
+                return NextResponse.json(
+                    {
+                        error: "Ingresá el PIN de retiro del comercio antes de marcar como retirado",
+                        errorCode: "PICKUP_PIN_REQUIRED",
+                    },
+                    { status: 409 }
+                );
+            }
+
+            // DELIVERED requiere deliveryPin verificado (driver entregó al comprador)
+            if (deliveryStatus === "DELIVERED" && order.deliveryPin && !order.deliveryPinVerifiedAt) {
+                statusLogger.warn(
+                    { orderId, driverId: driver.id },
+                    "Blocked DELIVERED transition: delivery PIN not verified"
+                );
+                return NextResponse.json(
+                    {
+                        error: "Ingresá el PIN de entrega del comprador antes de marcar como entregado",
+                        errorCode: "DELIVERY_PIN_REQUIRED",
+                    },
+                    { status: 409 }
+                );
+            }
         }
 
         // Validate state transitions for deliveryStatus
@@ -138,6 +173,15 @@ export async function PATCH(
         } else if (deliveryStatus === "DRIVER_ARRIVED") {
             notifyBuyer(order.userId, "DRIVER_ARRIVED", order.orderNumber, { orderId: order.id })
                 .catch(err => console.error("[Push] Buyer notification error:", err));
+        } else if (deliveryStatus === "PICKED_UP") {
+            // ISSUE-001: al retirar del comercio, avisar al comprador Y enviar el PIN de entrega
+            // en un push dedicado. Dos notificaciones: una de estado, una de código.
+            notifyBuyer(order.userId, "PICKED_UP", order.orderNumber, { orderId: order.id })
+                .catch(err => console.error("[Push] Buyer notification error:", err));
+            if (order.deliveryPin) {
+                notifyBuyerDeliveryPin(order.userId, order.orderNumber, order.deliveryPin, order.id)
+                    .catch(err => console.error("[Push] Delivery PIN notification error:", err));
+            }
         }
 
         // Emit socket events to all interested rooms

@@ -25,7 +25,24 @@ Los 8 críticos suman ~6-9 días de trabajo full (bajó de 10-14 al decidir esco
 
 ## 🔴 CRÍTICOS — Bloquean el lanzamiento
 
-### ISSUE-001 — PIN doble de entrega no implementado
+### ISSUE-001 — PIN doble de entrega ✅ RESUELTO 2026-04-17
+**Estado:** Resuelto en rama `feat/pin` (Fases 1-9 completas). Quedan como mejoras incrementales post-launch: Fase 11 (offline mode con IndexedDB), Fases 12-13 (flow "no pude entregar" y fraud cron en background).
+**Qué se implementó (resumen):**
+1. **Schema**: `pickupPin`, `pickupPinVerifiedAt`, `pickupPinAttempts`, `deliveryPin`, `deliveryPinVerifiedAt`, `deliveryPinAttempts` en `Order` y `SubOrder`. `Driver.fraudScore` para rastrear incidentes.
+2. **Generación**: `src/lib/pin.ts` con `generatePinPair()` usando `crypto.randomInt` (timing-safe), 6 dígitos con leading zeros, pickup y delivery nunca coinciden. PINs se crean en `orders/route.ts` al crear la orden.
+3. **Verificación unificada**: `src/lib/pin-verification.ts` con `verifyOrderOrSubOrderPin()` que valida ownership + estado + límite 5 intentos + geofence 100m (con gracia GPS) + `timingSafeEqual` + audit log + alerta socket.
+4. **Endpoints**: `POST /api/driver/orders/[id]/verify-pin` y `POST /api/driver/suborders/[id]/verify-pin`, ambos aceptan `{ pinType: "pickup"|"delivery", pin, gps }`.
+5. **State machine**: driver status route bloquea `→ PICKED_UP` sin `pickupPinVerifiedAt` y `→ DELIVERED` sin `deliveryPinVerifiedAt`.
+6. **UI**: merchant ve pickupPin en DRIVER_ARRIVED (sanitizado server-side), driver tiene keypad 6 dígitos, buyer ve deliveryPin en PICKED_UP con badge destacado + push dedicado `notifyBuyerDeliveryPin` al retiro.
+7. **Fraud detection**: al llegar a 5 intentos fallidos, `fraudScore +1` + alerta socket a `admin:fraud`. Auto-suspensión cuando `fraudScore >= PIN_FRAUD_THRESHOLD (3)`. Audit: `PIN_VERIFIED`, `PIN_VERIFICATION_FAIL`, `PIN_LOCKED`, `PIN_GEOFENCE_FAIL`, `DRIVER_AUTO_SUSPENDED`, `DRIVER_FRAUD_RESET`.
+8. **Panel admin**: `/ops/fraude` con stats, tabla de drivers flagged, feed de eventos auto-refresh 30s, botones reset/reactivar. Entrada nueva en `OpsSidebar` sección Operaciones.
+9. **Testing**: `scripts/test-pin-verification.ts` con tests de funciones puras + sanity de datos + invariantes `fraudScore`/`isSuspended` + AuditLog.
+
+**Damage cap:** un driver malicioso puede quemar como máximo `PIN_FRAUD_THRESHOLD × PIN_MAX_ATTEMPTS = 3 × 5 = 15` fallos antes de la auto-suspensión. Exposición estimada ~$15,000 ARS antes de que el sistema se auto-proteja.
+
+---
+
+**Descripción original (pre-resolución, para histórico):**
 **Detectado por:** Logística, QA, Experto local (CONOCIDO-004)
 **Qué pasa:** El sistema del doble PIN (retiro en comercio + entrega al comprador) no existe en el código. Sin PIN, un driver puede marcar "entregado" sin haber llegado al destino. El GPS polling cada 10s no alcanza como validación porque el driver puede falsificar coordenadas (emuladores, mock location en Android).
 **Escenario:** Driver acepta pedido, va a su casa en vez del comercio, marca PICKED_UP, luego marca DELIVERED. El comprador nunca recibe y Moovy ya pagó al driver.

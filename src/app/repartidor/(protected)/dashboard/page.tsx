@@ -65,6 +65,9 @@ const ShiftSummaryModal = dynamic(
 
 const SwipeToConfirm = dynamic(() => import("@/components/rider/SwipeToConfirm"), { ssr: false });
 
+// ISSUE-001: keypad para PIN de retiro/entrega
+const PinKeypad = dynamic(() => import("@/components/rider/PinKeypad"), { ssr: false });
+
 // Haptic feedback patterns
 const haptic = {
     light: () => navigator?.vibrate?.(10),
@@ -141,6 +144,14 @@ export default function RiderDashboard() {
     const [isMapExpanded, setIsMapExpanded] = useState(false);
     const [advancingStatus, setAdvancingStatus] = useState(false);
     const [showShiftSummary, setShowShiftSummary] = useState(false);
+
+    // ISSUE-001: estado del modal de PIN (pickup/delivery)
+    const [pinModal, setPinModal] = useState<{
+        open: boolean;
+        type: "pickup" | "delivery";
+        orderId: string | null;
+        counterpartName: string | null;
+    }>({ open: false, type: "pickup", orderId: null, counterpartName: null });
 
     // SPA Navigation State
     const [activeView, setActiveView] = useState<string>("dashboard");
@@ -231,6 +242,95 @@ export default function RiderDashboard() {
     const handleOrderCancelled = useCallback((data: any) => {
         toast.warning(`Pedido #${data?.orderNumber || ""} cancelado`);
     }, []);
+
+    // ISSUE-001: avanza el deliveryStatus de un pedido. Separado del onConfirm
+    // del SwipeToConfirm para poder disparar la transición después de la
+    // verificación exitosa del PIN (modal).
+    const advanceDeliveryStatus = useCallback(async (orderId: string, nextStatus: string) => {
+        const successMsg =
+            nextStatus === "DRIVER_ARRIVED" ? "Llegaste al comercio"
+            : nextStatus === "PICKED_UP" ? "Pedido recogido"
+            : "Entrega completada";
+        setAdvancingStatus(true);
+        try {
+            const res = await fetch(`/api/driver/orders/${orderId}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ deliveryStatus: nextStatus }),
+            });
+            if (res.ok) {
+                toast.success(successMsg);
+                haptic.success();
+                await fetchDashboard(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                // PICKUP_PIN_REQUIRED / DELIVERY_PIN_REQUIRED — abrir modal de PIN
+                if (data?.errorCode === "PICKUP_PIN_REQUIRED") {
+                    setPinModal({
+                        open: true,
+                        type: "pickup",
+                        orderId,
+                        counterpartName: null,
+                    });
+                } else if (data?.errorCode === "DELIVERY_PIN_REQUIRED") {
+                    setPinModal({
+                        open: true,
+                        type: "delivery",
+                        orderId,
+                        counterpartName: null,
+                    });
+                } else {
+                    toast.error(data.error || "Error al actualizar");
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Error de conexion");
+        } finally {
+            setAdvancingStatus(false);
+        }
+    }, [fetchDashboard]);
+
+    // ISSUE-001: verifica el PIN contra el backend. Se pasa al PinKeypad.
+    // Incluye GPS para validación de geofence server-side.
+    const verifyPinAgainstBackend = useCallback(
+        async (pin: string): Promise<{
+            success: boolean;
+            error?: string;
+            errorCode?: string;
+            remainingAttempts?: number;
+            distanceMeters?: number;
+            alreadyVerified?: boolean;
+        }> => {
+            if (!pinModal.orderId) return { success: false, error: "No hay pedido activo" };
+            const endpoint =
+                pinModal.type === "pickup"
+                    ? `/api/driver/orders/${pinModal.orderId}/verify-pickup-pin`
+                    : `/api/driver/orders/${pinModal.orderId}/verify-delivery-pin`;
+            try {
+                const gps = location?.latitude && location?.longitude
+                    ? { lat: location.latitude, lng: location.longitude, accuracy: location.accuracy ?? undefined }
+                    : null;
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pin, gps }),
+                });
+                const data = await res.json().catch(() => ({}));
+                return {
+                    success: !!data.success,
+                    error: data.error,
+                    errorCode: data.errorCode,
+                    remainingAttempts: data.remainingAttempts,
+                    distanceMeters: data.distanceMeters,
+                    alreadyVerified: data.alreadyVerified,
+                };
+            } catch {
+                return { success: false, error: "Error de conexión" };
+            }
+        },
+        [pinModal.orderId, pinModal.type, location]
+    );
 
     // Connect to real-time socket for driver events
     useDriverSocket({
@@ -737,31 +837,28 @@ export default function RiderDashboard() {
                                                         ds === "DRIVER_ASSIGNED" ? "DRIVER_ARRIVED"
                                                         : ds === "DRIVER_ARRIVED" ? "PICKED_UP"
                                                         : "DELIVERED";
-                                                    const successMsg =
-                                                        nextStatus === "DRIVER_ARRIVED" ? "Llegaste al comercio"
-                                                        : nextStatus === "PICKED_UP" ? "Pedido recogido"
-                                                        : "Entrega completada";
-                                                    setAdvancingStatus(true);
-                                                    try {
-                                                        const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/status`, {
-                                                            method: "PATCH",
-                                                            headers: { "Content-Type": "application/json" },
-                                                            body: JSON.stringify({ deliveryStatus: nextStatus })
+                                                    // ISSUE-001: transiciones sensibles piden PIN PRIMERO.
+                                                    // Abrimos el modal y el advanceDeliveryStatus se dispara
+                                                    // desde onVerified. Para DRIVER_ARRIVED no hay PIN que pedir.
+                                                    if (nextStatus === "PICKED_UP") {
+                                                        setPinModal({
+                                                            open: true,
+                                                            type: "pickup",
+                                                            orderId: pedidoActivo.id,
+                                                            counterpartName: pedidoActivo.comercio || null,
                                                         });
-                                                        if (res.ok) {
-                                                            toast.success(successMsg);
-                                                            haptic.success();
-                                                            await fetchDashboard(true);
-                                                        } else {
-                                                            const data = await res.json();
-                                                            toast.error(data.error || "Error al actualizar");
-                                                        }
-                                                    } catch (e) {
-                                                        console.error(e);
-                                                        toast.error("Error de conexion");
-                                                    } finally {
-                                                        setAdvancingStatus(false);
+                                                        return;
                                                     }
+                                                    if (nextStatus === "DELIVERED") {
+                                                        setPinModal({
+                                                            open: true,
+                                                            type: "delivery",
+                                                            orderId: pedidoActivo.id,
+                                                            counterpartName: pedidoActivo.nombreCliente || null,
+                                                        });
+                                                        return;
+                                                    }
+                                                    await advanceDeliveryStatus(pedidoActivo.id, nextStatus);
                                                 }}
                                             />
                                         </div>
@@ -1152,6 +1249,24 @@ export default function RiderDashboard() {
                 onConfirmDisconnect={async () => {
                     setShowShiftSummary(false);
                     await performDisconnect();
+                }}
+            />
+
+            {/* ═══════════════════════════════════════════════
+               PIN KEYPAD (ISSUE-001)
+               Se abre cuando el driver intenta marcar PICKED_UP/DELIVERED.
+               Tras verificar el PIN correctamente, dispara la transición.
+            ═══════════════════════════════════════════════ */}
+            <PinKeypad
+                isOpen={pinModal.open}
+                pinType={pinModal.type}
+                counterpartName={pinModal.counterpartName}
+                onClose={() => setPinModal(prev => ({ ...prev, open: false }))}
+                onVerify={verifyPinAgainstBackend}
+                onVerified={async () => {
+                    if (!pinModal.orderId) return;
+                    const next = pinModal.type === "pickup" ? "PICKED_UP" : "DELIVERED";
+                    await advanceDeliveryStatus(pinModal.orderId, next);
                 }}
             />
 

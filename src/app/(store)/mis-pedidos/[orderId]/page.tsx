@@ -29,8 +29,11 @@ import {
     MessageCircle,
     X,
     ChevronRight,
-    FileText
+    FileText,
+    KeyRound,
+    ShieldCheck
 } from "lucide-react";
+import { formatPinForDisplay } from "@/lib/pin";
 import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
 import RateSellerModal from "@/components/orders/RateSellerModal";
@@ -95,6 +98,9 @@ interface OrderDetail {
     merchantRatingComment?: string;
     sellerRating?: number;
     sellerRatingComment?: string;
+    // ISSUE-001: PIN doble — deliveryPin sólo viene populado desde el backend cuando el pedido
+    // está en PICKED_UP / IN_DELIVERY. Para cualquier otro estado llega null.
+    deliveryPin?: string | null;
     isMultiVendor?: boolean;
     subOrders?: Array<{
         id: string;
@@ -106,6 +112,8 @@ interface OrderDetail {
         merchantId?: string;
         sellerId?: string;
         driverId?: string;
+        // Igual que en Order: el backend lo sanitiza según deliveryStatus.
+        deliveryPin?: string | null;
         merchant?: { id: string; name: string; latitude?: number; longitude?: number; address?: string };
         seller?: { id: string; displayName?: string };
         driver?: { id: string; latitude?: number; longitude?: number; user: { name: string; phone?: string } };
@@ -136,6 +144,42 @@ const timeline = [
 function paymentLabel(m: string) {
     const map: Record<string, string> = { CASH: "Efectivo", cash: "Efectivo", CARD: "Tarjeta", card: "Tarjeta", TRANSFER: "Transferencia", transfer: "Transferencia", mercadopago: "MercadoPago" };
     return map[m] || m || "No especificado";
+}
+
+// ─── DeliveryPinBadge ─────────────────────────────────────
+// ISSUE-001: PIN doble — tarjeta destacada con el código que el comprador debe leerle
+// al repartidor al recibir el pedido. Se muestra sólo cuando el driver ya retiró el pedido
+// del comercio (status PICKED_UP / IN_DELIVERY) y el backend lo expone al owner.
+function DeliveryPinBadge({ pin, driverName }: { pin: string; driverName?: string | null }) {
+    return (
+        <div className="rounded-2xl p-5 bg-gradient-to-br from-[#e60012] to-[#a8000e] text-white shadow-lg shadow-red-500/20 relative overflow-hidden">
+            <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full" />
+            <div className="absolute -right-10 bottom-0 w-24 h-24 bg-white/5 rounded-full" />
+            <div className="relative flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                    <KeyRound className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
+                        Código de entrega
+                    </p>
+                    <p className="text-sm font-bold truncate">
+                        Decíselo al repartidor{driverName ? ` ${driverName}` : ""}
+                    </p>
+                </div>
+                <ShieldCheck className="w-5 h-5 opacity-70 flex-shrink-0" />
+            </div>
+            <div className="relative bg-white/10 backdrop-blur rounded-xl py-4 px-3 border border-white/20">
+                <p className="text-center font-black text-4xl sm:text-5xl tracking-[0.4em] tabular-nums">
+                    {formatPinForDisplay(pin)}
+                </p>
+            </div>
+            <p className="relative text-xs opacity-90 mt-3 leading-relaxed">
+                Cuando el repartidor llegue, dictale este código. Así confirmamos que te entregó
+                a vos y nadie más. Nunca lo publiques ni lo compartas antes.
+            </p>
+        </div>
+    );
 }
 
 // ─── Component ────────────────────────────────────────────
@@ -412,6 +456,17 @@ export default function OrderDetailPage() {
                     )}
                 </div>
 
+                {/* ── PIN de entrega (single-vendor) ── */}
+                {/* ISSUE-001: se renderiza sólo si el backend expuso el deliveryPin
+                    (PICKED_UP o IN_DELIVERY) y no es un pedido multi-vendor.
+                    Para multi-vendor el PIN se muestra por cada SubOrder más abajo. */}
+                {!order.isMultiVendor && order.deliveryPin && (
+                    <DeliveryPinBadge
+                        pin={order.deliveryPin}
+                        driverName={order.driver?.user?.name ?? null}
+                    />
+                )}
+
                 {/* ── Timeline ── */}
                 {!isCancelled && (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -547,6 +602,18 @@ export default function OrderDetailPage() {
                                                     Llamar
                                                 </a>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* ISSUE-001: PIN de entrega por SubOrder.
+                                        Se muestra dentro de la tarjeta del SubOrder para que
+                                        quede claro qué código corresponde a qué entrega. */}
+                                    {so.deliveryPin && (
+                                        <div className="border-t border-gray-100 p-3">
+                                            <DeliveryPinBadge
+                                                pin={so.deliveryPin}
+                                                driverName={soDriver?.user?.name ?? null}
+                                            />
                                         </div>
                                     )}
 

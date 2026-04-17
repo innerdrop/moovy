@@ -14,6 +14,7 @@ import { orderLogger } from "@/lib/logger";
 import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-calculator";
 import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
+import { generatePinPair } from "@/lib/pin";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -649,6 +650,13 @@ export async function POST(request: Request) {
                 }
             }
 
+            // --- PIN DOBLE DE ENTREGA (ISSUE-001) ---
+            // Generar par {pickupPin, deliveryPin} para pedidos con delivery (no pickup).
+            // - Single-vendor: PINs en Order (Order es la unidad de entrega)
+            // - Multi-vendor: PINs por SubOrder (cada SubOrder tiene su propio driver)
+            // - Pickup: no hay driver, no se necesitan PINs
+            const orderPinPair = (!isPickup && !isMultiVendor) ? generatePinPair() : null;
+
             // Create the order
             const newOrder = await tx.order.create({
                 data: {
@@ -674,6 +682,9 @@ export async function POST(request: Request) {
                     deliveryType: isScheduled ? "SCHEDULED" : "IMMEDIATE",
                     scheduledSlotStart: scheduledSlotStart ? new Date(scheduledSlotStart) : null,
                     scheduledSlotEnd: scheduledSlotEnd ? new Date(scheduledSlotEnd) : null,
+                    // PIN doble: solo para single-vendor con delivery
+                    pickupPin: orderPinPair?.pickupPin || null,
+                    deliveryPin: orderPinPair?.deliveryPin || null,
                 },
             });
 
@@ -755,6 +766,11 @@ export async function POST(request: Request) {
                     const groupFeeData = validatedGroupFees.get(groupKey);
                     const groupDeliveryFee = isPickup ? 0 : (groupFeeData?.deliveryFee || 0);
 
+                    // PIN doble por SubOrder: solo para multi-vendor con delivery.
+                    // Cada SubOrder tiene su propio driver → necesita su propio par de PINs
+                    // independiente del resto.
+                    const subOrderPinPair = (!isPickup && isMultiVendor) ? generatePinPair() : null;
+
                     const subOrder = await tx.subOrder.create({
                         data: {
                             orderId: newOrder.id,
@@ -766,6 +782,9 @@ export async function POST(request: Request) {
                             total: groupSubtotal + groupDeliveryFee,
                             moovyCommission: groupCommission,
                             sellerPayout: groupPayout,
+                            // PIN doble: solo para multi-vendor con delivery
+                            pickupPin: subOrderPinPair?.pickupPin || null,
+                            deliveryPin: subOrderPinPair?.deliveryPin || null,
                         },
                     });
 
@@ -868,6 +887,20 @@ export async function POST(request: Request) {
             maxWait: 10000,  // 10s max wait para adquirir el lock
             timeout: 30000,  // 30s max para la transacción completa
         });
+
+        // PIN DOBLE: audit log (sin exponer PINs reales)
+        if (!isPickup) {
+            orderLogger.info(
+                {
+                    orderId: order.id,
+                    orderNumber: order.orderNumber,
+                    isMultiVendor,
+                    pinsGeneratedAt: isMultiVendor ? "subOrder" : "order",
+                    pinsCount: isMultiVendor ? (groups?.length || 0) * 2 : 2,
+                },
+                "PIN doble generado para pedido"
+            );
+        }
 
         // FIX 2026-04-15: NO se otorgan puntos EARN en la creaci\u00f3n de la orden.
         // Los puntos se otorgan SOLO cuando el pedido pasa a DELIVERED (Biblia Financiera v3).

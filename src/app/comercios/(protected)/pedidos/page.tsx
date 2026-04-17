@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { formatPrice } from "@/lib/delivery";
 import { formatTime } from "@/lib/timezone";
+import { formatPinForDisplay } from "@/lib/pin";
 import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import { toast } from "@/store/toast";
 import {
@@ -21,9 +22,17 @@ import {
     Wifi,
     WifiOff,
     SlidersHorizontal,
+    KeyRound,
     X
 } from "lucide-react";
 import OrderChatPanel from "@/components/orders/OrderChatPanel";
+
+interface SubOrder {
+    id: string;
+    merchantId: string | null;
+    deliveryStatus: string | null;
+    pickupPin: string | null;
+}
 
 interface Order {
     id: string;
@@ -35,6 +44,41 @@ interface Order {
     items: Array<{ id: string; name: string; quantity: number; price: number }>;
     address: { street: string; number: string; city: string } | null;
     user: { name: string | null; phone: string | null } | null;
+    driver?: { user: { name: string | null; phone: string | null } | null } | null;
+    // ISSUE-001: PIN doble — pickupPin visible sólo cuando deliveryStatus === DRIVER_ARRIVED.
+    // El backend (src/app/api/merchant/orders/route.ts) ya sanitiza: si no llegó el driver, viene null.
+    pickupPin: string | null;
+    deliveryStatus: string | null;
+    subOrders?: SubOrder[];
+}
+
+/**
+ * Tarjeta prominente con el PIN de retiro.
+ * Se muestra sólo cuando el driver llegó al comercio (DRIVER_ARRIVED).
+ * El comerciante debe leer este código al driver antes de entregar el pedido.
+ */
+function PickupPinBadge({ pin, driverName }: { pin: string; driverName?: string | null }) {
+    return (
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 mb-3 shadow-lg ring-2 ring-red-300">
+            <div className="flex items-start gap-3">
+                <div className="bg-white/20 rounded-lg p-2 flex-shrink-0">
+                    <KeyRound className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-red-100 uppercase tracking-wide mb-1">
+                        PIN de retiro
+                    </p>
+                    <p className="text-3xl font-mono font-black text-white tracking-widest">
+                        {formatPinForDisplay(pin)}
+                    </p>
+                    <p className="text-xs text-red-50 mt-2 leading-relaxed">
+                        Dale este código al repartidor{driverName ? ` (${driverName})` : ""} antes de entregar el pedido.
+                        Sin este código no podrá marcarlo como retirado.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -239,6 +283,11 @@ export default function ComercioPedidosPage() {
             setOrders(prev => prev.map(o =>
                 o.id === orderId ? { ...o, status } : o
             ));
+            // ISSUE-001: cuando el driver llega, el backend recién ahora expone el pickupPin.
+            // Hacemos un fetch fresco para traerlo (el socket solo manda status, no el PIN).
+            if (status === "DRIVER_ARRIVED") {
+                loadOrders(true);
+            }
         },
         onOrderCancelled: (orderId) => {
             setOrders(prev => prev.map(o =>
@@ -540,6 +589,25 @@ export default function ComercioPedidosPage() {
 
                                 {/* Order Body */}
                                 <div className="p-4">
+                                    {/* ISSUE-001: PIN de retiro — visible SOLO cuando el driver llegó.
+                                        Single-vendor usa order.pickupPin; multi-vendor usa subOrders[].pickupPin
+                                        (el backend ya sanitiza: nunca llega el PIN antes de DRIVER_ARRIVED). */}
+                                    {order.pickupPin && order.deliveryStatus === "DRIVER_ARRIVED" && (
+                                        <PickupPinBadge
+                                            pin={order.pickupPin}
+                                            driverName={order.driver?.user?.name ?? null}
+                                        />
+                                    )}
+                                    {order.subOrders?.map((sub) =>
+                                        sub.pickupPin && sub.deliveryStatus === "DRIVER_ARRIVED" ? (
+                                            <PickupPinBadge
+                                                key={sub.id}
+                                                pin={sub.pickupPin}
+                                                driverName={order.driver?.user?.name ?? null}
+                                            />
+                                        ) : null
+                                    )}
+
                                     {/* Customer & Time */}
                                     <div className="flex items-start justify-between mb-3">
                                         <div>
@@ -740,4 +808,3 @@ export default function ComercioPedidosPage() {
         </div>
     );
 }
-

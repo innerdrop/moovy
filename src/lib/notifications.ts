@@ -199,3 +199,30 @@ export async function notifyBuyer(
         tag: `order-${status.toLowerCase()}`,
     });
 }
+
+/**
+ * ISSUE-001: PIN doble — push dedicado con el código de entrega.
+ *
+ * Se dispara junto con el push de PICKED_UP cuando el driver ya retiró el pedido,
+ * para que el comprador tenga el código visible en el lock screen antes de que el
+ * repartidor toque timbre. El tag es distinto de `order-picked_up` para no
+ * colapsar con el push genérico.
+ *
+ * No incluimos el PIN completo en la URL de profundidad — el comprador lo ve en
+ * el cuerpo de la notificación y también en la pantalla de detalle del pedido.
+ */
+export async function notifyBuyerDeliveryPin(
+    userId: string,
+    orderNumber: string,
+    deliveryPin: string,
+    orderId?: string
+): Promise<number> {
+    const deepLink = orderId ? `/mis-pedidos/${orderId}` : '/mis-pedidos';
+
+    return sendPushToUser(userId, {
+        title: '🔐 Tu código de entrega',
+        body: `Decíselo al repartidor al recibir el pedido ${orderNumber}: ${deliveryPin}`,
+        url: deepLink,
+        tag: `order-pin-${orderNumber}`,
+    });
+}
