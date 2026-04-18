@@ -174,9 +174,11 @@ function DeliveryPinBadge({ pin, driverName }: { pin: string; driverName?: strin
                     {formatPinForDisplay(pin)}
                 </p>
             </div>
-            <p className="relative text-xs opacity-90 mt-3 leading-relaxed">
-                Cuando el repartidor llegue, dictale este código. Así confirmamos que te entregó
-                a vos y nadie más. Nunca lo publiques ni lo compartas antes.
+            <p className="relative text-xs opacity-95 mt-3 leading-relaxed">
+                Mostrale o dictale este código al repartidor cuando llegue.{" "}
+                <span className="font-semibold">Sin este código no podemos entregarte el pedido.</span>{" "}
+                Es la única forma de confirmar que te lo entregamos a vos y nadie más.
+                Nunca lo publiques ni lo compartas antes.
             </p>
         </div>
     );
