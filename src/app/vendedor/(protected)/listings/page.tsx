@@ -196,7 +196,10 @@ export default function VendedorListingsPage() {
                         };
                         // ISSUE-002: Subastas ocultas para lanzamiento
                         const isAuction = false; // listing.listingType === "AUCTION" — reactivar en Fase 2
-                        const auctionStatus = null;
+                        // Cast necesario: `const x = null` narrowea a `null` literal y TS infiere
+                        // `never` dentro del check `auctionStatus && ...`. El `as` widenea al
+                        // union real para que el JSX muerto no rompa el typecheck.
+                        const auctionStatus = null as { text: string; color: string } | null;
                         const displayPrice = listing.price;
 
                         return (
