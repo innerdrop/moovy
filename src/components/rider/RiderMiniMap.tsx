@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { GoogleMap, Polyline, InfoWindow } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
-import { Loader2, Compass, MapPin as MapPinIcon, Crosshair, Navigation2 } from "lucide-react";
+import { Loader2, MapPin as MapPinIcon } from "lucide-react";
+import { computeRoute, isRoutesApiEnabled } from "@/lib/routes-api";
 
 export interface NavUpdateData {
     currentStep: { instruction: string; distance: string; duration: string; maneuver?: string } | null;
@@ -104,7 +105,7 @@ function useAdvancedMarker({
             clickListenerRef.current = null;
         }
         if (onClick && markerRef.current) {
-            clickListenerRef.current = markerRef.current.addListener("click", onClick);
+            clickListenerRef.current = markerRef.current.addListener("gmp-click", onClick);
         }
 
         return () => {
@@ -156,11 +157,82 @@ const normalMapStyles = [
 // Navigation step info extracted from Directions API
 interface NavStepInfo {
     instruction: string;
-    distance: string;
-    duration: string;
+    distance: string;          // original API text (fallback)
+    distanceMeters: number;    // original API meters (fallback for duration interp)
+    duration: string;          // original API text
+    durationSeconds: number;   // original API seconds (for live ETA interp)
     maneuver?: string;
     endLat: number;
     endLng: number;
+    pathStartIdx: number;      // first index into routePath inclusive
+    pathEndIdx: number;        // last index into routePath inclusive
+}
+
+// ── Geo helpers (module scope — pure functions, no re-creation per render) ──
+const EARTH_RADIUS_M = 6371000;
+const DEG2RAD = Math.PI / 180;
+
+type LL = { lat: number; lng: number };
+
+function haversineMeters(a: LL, b: LL): number {
+    const dLat = (b.lat - a.lat) * DEG2RAD;
+    const dLng = (b.lng - a.lng) * DEG2RAD;
+    const lat1 = a.lat * DEG2RAD;
+    const lat2 = b.lat * DEG2RAD;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// Project `p` onto the segment from `a` to `b`, in local equirectangular meters.
+// Returns parametric t clamped to [0, 1] and the projected point.
+// For distances <200m the equirectangular approximation is within ~0.1% of haversine,
+// which is fine for turn-by-turn navigation on city streets.
+function projectOntoSegment(p: LL, a: LL, b: LL): { t: number; point: LL; distM: number } {
+    const midLat = (a.lat + b.lat) / 2;
+    const kLng = Math.cos(midLat * DEG2RAD);
+    const ax = 0, ay = 0;
+    const bx = (b.lng - a.lng) * kLng * EARTH_RADIUS_M * DEG2RAD;
+    const by = (b.lat - a.lat) * EARTH_RADIUS_M * DEG2RAD;
+    const px = (p.lng - a.lng) * kLng * EARTH_RADIUS_M * DEG2RAD;
+    const py = (p.lat - a.lat) * EARTH_RADIUS_M * DEG2RAD;
+    const segLenSq = (bx - ax) ** 2 + (by - ay) ** 2;
+    let t = segLenSq === 0 ? 0 : ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / segLenSq;
+    t = Math.max(0, Math.min(1, t));
+    const sx = ax + t * (bx - ax);
+    const sy = ay + t * (by - ay);
+    const distM = Math.sqrt((px - sx) ** 2 + (py - sy) ** 2);
+    const point: LL = {
+        lat: a.lat + (t * (by - ay)) / (EARTH_RADIUS_M * DEG2RAD),
+        lng: a.lng + (t * (bx - ax)) / (kLng * EARTH_RADIUS_M * DEG2RAD),
+    };
+    return { t, point, distM };
+}
+
+// Compute cumulative path lengths (meters) at each index so we can O(1)
+// lookup remaining distance within a step by subtracting two cumulative values.
+function computeCumulativeLengths(path: LL[]): number[] {
+    const out = new Array<number>(path.length);
+    out[0] = 0;
+    for (let i = 1; i < path.length; i++) {
+        out[i] = out[i - 1] + haversineMeters(path[i - 1], path[i]);
+    }
+    return out;
+}
+
+function formatLiveDistance(meters: number): string {
+    if (!isFinite(meters) || meters < 0) return "";
+    if (meters < 50) return `${Math.round(meters / 5) * 5} m`;   // 5m granularity under 50m
+    if (meters < 1000) return `${Math.round(meters / 10) * 10} m`; // 10m granularity
+    return `${(meters / 1000).toFixed(1)} km`;
+}
+
+function formatLiveDuration(seconds: number): string {
+    if (!isFinite(seconds) || seconds < 0) return "";
+    const mins = Math.max(1, Math.round(seconds / 60));
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
 function RiderMiniMapComponent({
@@ -201,12 +273,41 @@ function RiderMiniMapComponent({
     const hasDriverPositionRef = useRef(false);
 
     // ── TURN-BY-TURN NAVIGATION STATE ──
-    const [isHeadUp, setIsHeadUp] = useState(true); // Head-Up (rumbo arriba) vs North-Up (norte arriba)
+    // Head-Up fijo (rumbo del driver arriba). Se removió el toggle a
+    // North-Up porque Waze/Uber/Cabify no lo exponen en el portal de
+    // conducción: un toggle extra en la ruta confunde más de lo que ayuda
+    // y ocupaba un slot de control flotante que chocaba con HOME/CONECTADO.
+    // Las ramas legacy `else (North-Up)` quedan como código inalcanzable.
+    const isHeadUp = true;
     const [navSteps, setNavSteps] = useState<NavStepInfo[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [totalDistance, setTotalDistance] = useState("");
     const [totalDuration, setTotalDuration] = useState("");
     const prevHeadingRef = useRef<number>(0); // Smooth heading transitions
+
+    // Real-time nav state (R2.1/R2.2). `snappedSegmentIndex` is the index `i`
+    // such that the driver is on the segment routePath[i] → routePath[i+1].
+    // `liveStepDistanceText` is the distance from the snapped point to the
+    // end of the current step, recomputed on every GPS update.
+    const cumulativeLenRef = useRef<number[]>([]);  // cumulative meters per routePath index
+    const [snappedSegmentIndex, setSnappedSegmentIndex] = useState<number>(0);
+    const [distanceFromRouteM, setDistanceFromRouteM] = useState<number>(0);
+    const [liveStepDistanceText, setLiveStepDistanceText] = useState<string>("");
+    const [liveStepDurationText, setLiveStepDurationText] = useState<string>("");
+    const [liveTotalDistanceText, setLiveTotalDistanceText] = useState<string>("");
+    const [liveTotalDurationText, setLiveTotalDurationText] = useState<string>("");
+
+    // Deviation detection (R2.3). Counts consecutive GPS updates where the
+    // driver is > OFF_ROUTE_METERS from the snapped route. If it crosses
+    // OFF_ROUTE_STREAK the route re-fetches. The `suppressUntilRef` guard
+    // avoids re-fetch storms if the new route keeps deviating.
+    const offRouteStreakRef = useRef<number>(0);
+    const suppressUntilRef = useRef<number>(0);
+    const [refetchNonce, setRefetchNonce] = useState<number>(0);
+    const OFF_ROUTE_METERS = 60;
+    const OFF_ROUTE_STREAK = 3;        // ~30s at 10s polling
+    const OFF_ROUTE_COOLDOWN_MS = 20000;
+    const lastFetchedNonceRef = useRef<number>(0);
 
     const { isLoaded } = useGoogleMaps();
 
@@ -220,6 +321,14 @@ function RiderMiniMapComponent({
         setCurrentStepIndex(0);
         setTotalDistance("");
         setTotalDuration("");
+        setSnappedSegmentIndex(0);
+        setDistanceFromRouteM(0);
+        setLiveStepDistanceText("");
+        setLiveStepDurationText("");
+        setLiveTotalDistanceText("");
+        setLiveTotalDurationText("");
+        cumulativeLenRef.current = [];
+        offRouteStreakRef.current = 0;
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
@@ -241,9 +350,14 @@ function RiderMiniMapComponent({
         const hadDriverPosition = hasDriverPositionRef.current;
         hasDriverPositionRef.current = true;
 
-        if (newStage === currentStageRef.current && hadDriverPosition) {
+        // Deviation-triggered re-fetch (R2.3) bumps `refetchNonce`; honor it
+        // even if the stage hasn't changed. Otherwise skip redundant fetches
+        // on every GPS tick.
+        const forcedByNonce = refetchNonce !== lastFetchedNonceRef.current;
+        if (newStage === currentStageRef.current && hadDriverPosition && !forcedByNonce) {
             return;
         }
+        lastFetchedNonceRef.current = refetchNonce;
 
         clearRouteState();
         currentStageRef.current = newStage;
@@ -262,73 +376,145 @@ function RiderMiniMapComponent({
             return;
         }
 
-        const directionsService = new google.maps.DirectionsService();
         const origin = { lat: driverLat, lng: driverLng };
 
         if (navigationMode) {
             console.log("[RiderMap] Fetching route (stage change):", {
-                stage: newStage, origin, dest: destination, status: orderStatus
+                stage: newStage, origin, dest: destination, status: orderStatus,
+                backend: isRoutesApiEnabled() ? "routes-api" : "directions-legacy",
             });
         }
 
-        directionsService.route(
-            {
-                origin,
-                destination,
-                travelMode: google.maps.TravelMode.DRIVING,
-            },
-            (result, status) => {
-                if (status === google.maps.DirectionsStatus.OK && result) {
-                    const path: google.maps.LatLngLiteral[] = [];
-                    const steps: NavStepInfo[] = [];
+        // applyNormalizedLegs consume un shape común (steps con path como
+        // LatLng plano, distance/duration con value+text) que generan AMBOS
+        // backends. Mantiene la lógica de state updates en un solo lugar para
+        // que Routes API y DirectionsService produzcan el mismo resultado.
+        const applyNormalizedLegs = (legs: Array<{
+            distance: { value: number; text: string };
+            duration: { value: number; text: string };
+            steps: Array<{
+                instructions: string;
+                distance: { value: number; text: string };
+                duration: { value: number; text: string };
+                maneuver?: string;
+                path: Array<{ lat: number; lng: number }>;
+                end_location: { lat: number; lng: number };
+            }>;
+        }>) => {
+            const path: google.maps.LatLngLiteral[] = [];
+            const steps: NavStepInfo[] = [];
+            let totalDistValue = 0;
+            let totalDurValue = 0;
 
-                    let totalDistValue = 0;
-                    let totalDurValue = 0;
+            legs.forEach(leg => {
+                totalDistValue += leg.distance.value || 0;
+                totalDurValue += leg.duration.value || 0;
 
-                    result.routes[0].legs.forEach(leg => {
-                        totalDistValue += leg.distance?.value || 0;
-                        totalDurValue += leg.duration?.value || 0;
+                leg.steps.forEach(step => {
+                    const pathStartIdx = path.length;
+                    step.path.forEach(p => path.push({ lat: p.lat, lng: p.lng }));
+                    const pathEndIdx = Math.max(pathStartIdx, path.length - 1);
 
-                        leg.steps.forEach(step => {
-                            // Extract path points
-                            step.path.forEach(point => {
-                                path.push({ lat: point.lat(), lng: point.lng() });
-                            });
-
-                            // Extract navigation step info
-                            const endLoc = step.end_location;
-                            steps.push({
-                                instruction: step.instructions || "Continúe",
-                                distance: step.distance?.text || "",
-                                duration: step.duration?.text || "",
-                                maneuver: (step as any).maneuver || undefined,
-                                endLat: endLoc.lat(),
-                                endLng: endLoc.lng(),
-                            });
-                        });
+                    steps.push({
+                        instruction: step.instructions || "Continúe",
+                        distance: step.distance.text || "",
+                        distanceMeters: step.distance.value ?? 0,
+                        duration: step.duration.text || "",
+                        durationSeconds: step.duration.value ?? 0,
+                        maneuver: step.maneuver || undefined,
+                        endLat: step.end_location.lat,
+                        endLng: step.end_location.lng,
+                        pathStartIdx,
+                        pathEndIdx,
                     });
+                });
+            });
 
-                    setRoutePath(path);
-                    setRemainingPath(path);
-                    setAnimatedPath(path);
-                    setIsAnimating(false);
-                    setNavSteps(steps);
-                    setCurrentStepIndex(0);
-                    setTotalDistance(
-                        totalDistValue >= 1000
-                            ? `${(totalDistValue / 1000).toFixed(1)} km`
-                            : `${totalDistValue} m`
-                    );
-                    setTotalDuration(`${Math.ceil(totalDurValue / 60)} min`);
-                    prevOrderStatusRef.current = orderStatus;
-                } else {
-                    console.error("[RiderMap] Route failed:", status);
+            setRoutePath(path);
+            setRemainingPath(path);
+            setAnimatedPath(path);
+            setIsAnimating(false);
+            setNavSteps(steps);
+            setCurrentStepIndex(0);
+            setSnappedSegmentIndex(0);
+            offRouteStreakRef.current = 0;
+            cumulativeLenRef.current = computeCumulativeLengths(path);
+            setTotalDistance(
+                totalDistValue >= 1000
+                    ? `${(totalDistValue / 1000).toFixed(1)} km`
+                    : `${totalDistValue} m`
+            );
+            setTotalDuration(`${Math.ceil(totalDurValue / 60)} min`);
+            setLiveTotalDistanceText(formatLiveDistance(totalDistValue));
+            setLiveTotalDurationText(formatLiveDuration(totalDurValue));
+            prevOrderStatusRef.current = orderStatus;
+        };
+
+        let cancelled = false;
+
+        if (isRoutesApiEnabled()) {
+            // ── Nueva Routes API (Google, no deprecada) ──
+            // computeRoute ya devuelve un shape compatible con applyNormalizedLegs.
+            // Si la API falla (sin routes, HTTP error, sin API key, etc.) caemos
+            // a estado vacío — NO fallback a DirectionsService para no duplicar
+            // billing ni enmascarar configuraciones rotas en producción.
+            (async () => {
+                const result = await computeRoute(origin, destination);
+                if (cancelled) return;
+                if (!result || result.legs.length === 0) {
+                    console.error("[RiderMap] Routes API: sin ruta disponible");
                     setRoutePath([]);
                     setRemainingPath([]);
+                    return;
                 }
-            }
-        );
-    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode, clearRouteState]);
+                applyNormalizedLegs(result.legs);
+            })();
+        } else {
+            // ── Legacy DirectionsService (fallback mientras Routes API no esté activa) ──
+            // Este path desaparecerá cuando NEXT_PUBLIC_USE_ROUTES_API=true
+            // sea el default en producción. Warning de deprecación conocido
+            // (25-feb-2026), seguirá funcionando hasta que Google lo remueva.
+            const directionsService = new google.maps.DirectionsService();
+            directionsService.route(
+                {
+                    origin,
+                    destination,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (result, status) => {
+                    if (cancelled) return;
+                    if (status === google.maps.DirectionsStatus.OK && result) {
+                        // Convertir el shape de DirectionsService (LatLng con
+                        // métodos .lat()/.lng(), distance?.value/text opcionales)
+                        // al shape plano que consume applyNormalizedLegs.
+                        const normalizedLegs = result.routes[0].legs.map(leg => ({
+                            distance: { value: leg.distance?.value ?? 0, text: leg.distance?.text ?? "" },
+                            duration: { value: leg.duration?.value ?? 0, text: leg.duration?.text ?? "" },
+                            steps: leg.steps.map(step => ({
+                                instructions: step.instructions || "",
+                                distance: { value: step.distance?.value ?? 0, text: step.distance?.text ?? "" },
+                                duration: { value: step.duration?.value ?? 0, text: step.duration?.text ?? "" },
+                                maneuver: (step as unknown as { maneuver?: string }).maneuver,
+                                path: step.path.map(p => ({ lat: p.lat(), lng: p.lng() })),
+                                end_location: { lat: step.end_location.lat(), lng: step.end_location.lng() },
+                            })),
+                        }));
+                        applyNormalizedLegs(normalizedLegs);
+                    } else {
+                        console.error("[RiderMap] DirectionsService failed:", status);
+                        setRoutePath([]);
+                        setRemainingPath([]);
+                    }
+                }
+            );
+        }
+
+        return () => {
+            cancelled = true;
+        };
+    // `refetchNonce` participates so R2.3 can force a re-fetch without needing
+    // the stage to flip. Everything else is identical to before.
+    }, [isLoaded, driverLat, driverLng, merchantLat, merchantLng, customerLat, customerLng, orderStatus, navigationMode, clearRouteState, refetchNonce]);
 
     // ── Clean up on delivery completion ──
     useEffect(() => {
@@ -337,60 +523,137 @@ function RiderMiniMapComponent({
             currentStageRef.current = null;
             hasDriverPositionRef.current = false;
             prevOrderStatusRef.current = undefined;
-            setIsHeadUp(true); // Reset to Head-Up for next delivery
         }
     }, [navigationMode, clearRouteState]);
 
-    // ── Update remaining path as driver moves ──
+    // ── Polyline matching + real-time step tracking (R2.1 + R2.2 + R2.3) ──
+    //
+    // Una sola pasada por cada update de GPS. Calcula:
+    //   1. Segmento más cercano del routePath (snapping perpendicular,
+    //      haversine). Evita que el jitter del GPS descoloque el seguimiento.
+    //   2. Distancia perpendicular del driver a la ruta — si supera
+    //      OFF_ROUTE_METERS durante OFF_ROUTE_STREAK muestras, re-fetchea.
+    //   3. El paso actual: primer step cuyo pathEndIdx >= segmentIndex.
+    //   4. La distancia real restante dentro del paso actual, usando la
+    //      tabla de longitudes acumuladas (diferencia de dos sumas, O(1)).
+    //   5. Distancia/tiempo restante total de toda la ruta.
     useEffect(() => {
-        if (!navigationMode || !driverLat || !driverLng || routePath.length === 0) return;
+        if (!navigationMode || !driverLat || !driverLng || routePath.length < 2 || navSteps.length === 0) return;
+        const cum = cumulativeLenRef.current;
+        if (cum.length !== routePath.length) return;
 
-        const driverPos = { lat: driverLat, lng: driverLng };
-        let closestIndex = 0;
-        let closestDistance = Infinity;
+        const driverPos: LL = { lat: driverLat, lng: driverLng };
 
-        routePath.forEach((point, index) => {
-            const distance = Math.sqrt(
-                Math.pow(point.lat - driverPos.lat, 2) +
-                Math.pow(point.lng - driverPos.lng, 2)
-            );
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestIndex = index;
-            }
-        });
+        // --- 1. Ventana de búsqueda ---
+        // Para performance en rutas largas (~500 pts), buscamos en una ventana
+        // alrededor del último segmento snapeado, no toda la ruta. En el frame
+        // inicial (o si nos quedamos atrás por un refetch) recorremos todo.
+        const WINDOW = 30;
+        const winStart = Math.max(0, snappedSegmentIndex - WINDOW);
+        const winEnd = Math.min(routePath.length - 2, snappedSegmentIndex + WINDOW);
 
-        setRemainingPath(routePath.slice(closestIndex));
-    }, [navigationMode, driverLat, driverLng, routePath]);
+        let bestIdx = snappedSegmentIndex;
+        let bestDist = Infinity;
+        let bestT = 0;
 
-    // ── TURN-BY-TURN: Track current step based on proximity ──
-    useEffect(() => {
-        if (!navigationMode || !driverLat || !driverLng || navSteps.length === 0) return;
-
-        // Find which step the driver is closest to completing
-        // (closest to the end_location of each step)
-        const STEP_ADVANCE_THRESHOLD = 0.0003; // ~30 meters in lat/lng
-
-        for (let i = currentStepIndex; i < navSteps.length; i++) {
-            const step = navSteps[i];
-            const distToEnd = Math.sqrt(
-                Math.pow(step.endLat - driverLat, 2) +
-                Math.pow(step.endLng - driverLng, 2)
-            );
-
-            if (distToEnd < STEP_ADVANCE_THRESHOLD && i > currentStepIndex) {
-                // Driver passed this step's endpoint — advance
-                setCurrentStepIndex(i + 1 < navSteps.length ? i + 1 : i);
-                break;
-            } else if (distToEnd >= STEP_ADVANCE_THRESHOLD) {
-                // This is the current step (not yet reached its end)
-                if (i !== currentStepIndex) {
-                    setCurrentStepIndex(i);
+        const tryRange = (from: number, to: number) => {
+            for (let i = from; i <= to; i++) {
+                const proj = projectOntoSegment(driverPos, routePath[i], routePath[i + 1]);
+                if (proj.distM < bestDist) {
+                    bestDist = proj.distM;
+                    bestIdx = i;
+                    bestT = proj.t;
                 }
-                break;
             }
+        };
+        tryRange(winStart, winEnd);
+        // Si el ventaneo no encuentra nada razonable (>200m), rehacemos todo.
+        if (bestDist > 200) {
+            bestIdx = snappedSegmentIndex;
+            bestDist = Infinity;
+            bestT = 0;
+            tryRange(0, routePath.length - 2);
         }
-    }, [navigationMode, driverLat, driverLng, navSteps, currentStepIndex]);
+
+        // No retroceder: el driver nunca "desavanza" por jitter GPS.
+        if (bestIdx < snappedSegmentIndex) {
+            bestIdx = snappedSegmentIndex;
+            // recomputar bestT sobre el segmento actual
+            const proj = projectOntoSegment(driverPos, routePath[bestIdx], routePath[bestIdx + 1]);
+            bestT = proj.t;
+            bestDist = proj.distM;
+        }
+
+        if (bestIdx !== snappedSegmentIndex) setSnappedSegmentIndex(bestIdx);
+        setDistanceFromRouteM(bestDist);
+
+        // --- 2. Paso actual ---
+        // El step actual es el primero cuyo pathEndIdx >= bestIdx (es decir,
+        // el segmento snapeado cae dentro del rango del paso). Por construcción
+        // los ranges son monotónicos, así que basta con linear scan desde el
+        // último currentStepIndex hacia adelante.
+        let newStepIndex = currentStepIndex;
+        while (
+            newStepIndex < navSteps.length - 1 &&
+            bestIdx > navSteps[newStepIndex].pathEndIdx
+        ) {
+            newStepIndex++;
+        }
+        if (newStepIndex !== currentStepIndex) setCurrentStepIndex(newStepIndex);
+
+        // --- 3. Distancia/tiempo vivos del paso actual y del total ---
+        const curStep = navSteps[newStepIndex];
+        // Distancia desde el snapped point hasta el final del paso actual.
+        // cum[pathEndIdx+1] no existe para el último step; usamos el último
+        // punto de la ruta.
+        const stepEndCumIdx = Math.min(curStep.pathEndIdx + 1, cum.length - 1);
+        // Posición lineal del snapped point: cum[bestIdx] + t * segLen
+        const segLen = cum[bestIdx + 1] - cum[bestIdx];
+        const snappedCum = cum[bestIdx] + bestT * segLen;
+        const stepRemainingM = Math.max(0, cum[stepEndCumIdx] - snappedCum);
+        setLiveStepDistanceText(formatLiveDistance(stepRemainingM));
+        // Tiempo proporcional al ratio de distancia restante vs distancia
+        // original del paso. Si el paso es 0m (gira en el lugar) usamos 0s.
+        const stepRatio = curStep.distanceMeters > 0
+            ? stepRemainingM / curStep.distanceMeters
+            : 0;
+        setLiveStepDurationText(formatLiveDuration(curStep.durationSeconds * stepRatio));
+
+        // Total: distancia/tiempo desde snapped point hasta el final de la ruta.
+        const totalRemainingM = Math.max(0, cum[cum.length - 1] - snappedCum);
+        setLiveTotalDistanceText(formatLiveDistance(totalRemainingM));
+        // Tiempo total = suma del tiempo vivo del paso actual + duraciones
+        // completas de los pasos restantes. Aproximación que no depende del
+        // factor de velocidad real.
+        let remainingSeconds = curStep.durationSeconds * stepRatio;
+        for (let i = newStepIndex + 1; i < navSteps.length; i++) {
+            remainingSeconds += navSteps[i].durationSeconds;
+        }
+        setLiveTotalDurationText(formatLiveDuration(remainingSeconds));
+
+        // --- 4. Polyline mostrada: de snapped en adelante ---
+        // Mantenemos la UX existente (pinta el remainingPath) pero ahora
+        // corta exactamente en el segmento snapeado.
+        setRemainingPath(routePath.slice(bestIdx));
+
+        // --- 5. Deviation detection (R2.3) ---
+        if (bestDist > OFF_ROUTE_METERS) {
+            offRouteStreakRef.current += 1;
+        } else {
+            offRouteStreakRef.current = 0;
+        }
+        const now = Date.now();
+        if (
+            offRouteStreakRef.current >= OFF_ROUTE_STREAK &&
+            now >= suppressUntilRef.current
+        ) {
+            // Reset y fuerza re-fetch en el siguiente tick.
+            offRouteStreakRef.current = 0;
+            suppressUntilRef.current = now + OFF_ROUTE_COOLDOWN_MS;
+            console.log("[RiderMap] Off-route deviation detected — refetching route");
+            setRefetchNonce(n => n + 1);
+        }
+    }, [navigationMode, driverLat, driverLng, routePath, navSteps, snappedSegmentIndex, currentStepIndex]);
 
     // ── HEAD-UP CAMERA: Follow driver with heading rotation (2D) ──
     useEffect(() => {
@@ -614,17 +877,46 @@ function RiderMiniMapComponent({
 
     useEffect(() => {
         const isNavigating = navigationMode && navSteps.length > 0 && currentStepIndex < navSteps.length;
+
+        // Sobreescribimos `distance`/`duration` del paso actual y del total con
+        // los valores vivos calculados por polyline matching. El texto original
+        // de la Directions API (navStep.distance) es estático — era la causa
+        // del reporte "las indicaciones no se actualizan en tiempo real".
+        const baseCurrent = isNavigating ? navSteps[currentStepIndex] : null;
+        const liveCurrent = baseCurrent ? {
+            instruction: baseCurrent.instruction,
+            distance: liveStepDistanceText || baseCurrent.distance,
+            duration: liveStepDurationText || baseCurrent.duration,
+            maneuver: baseCurrent.maneuver,
+        } : null;
+
+        const baseNext = isNavigating && currentStepIndex + 1 < navSteps.length
+            ? navSteps[currentStepIndex + 1]
+            : null;
+        const liveNext = baseNext ? {
+            instruction: baseNext.instruction,
+            distance: baseNext.distance,           // siguiente giro: distancia estática de la API
+            duration: baseNext.duration,
+            maneuver: baseNext.maneuver,
+        } : null;
+
         onNavUpdateRef.current?.({
-            currentStep: isNavigating ? (navSteps[currentStepIndex] || null) : null,
-            nextStep: isNavigating && currentStepIndex + 1 < navSteps.length ? navSteps[currentStepIndex + 1] : null,
-            totalDistance,
-            totalDuration,
+            currentStep: liveCurrent,
+            nextStep: liveNext,
+            totalDistance: liveTotalDistanceText || totalDistance,
+            totalDuration: liveTotalDurationText || totalDuration,
             stepsRemaining: navSteps.length - currentStepIndex,
             destinationName,
             isPickedUp,
             isNavigating: !!isNavigating,
         });
-    }, [navigationMode, navSteps, currentStepIndex, totalDistance, totalDuration, destinationName, isPickedUp]);
+    }, [
+        navigationMode, navSteps, currentStepIndex,
+        totalDistance, totalDuration,
+        liveStepDistanceText, liveStepDurationText,
+        liveTotalDistanceText, liveTotalDurationText,
+        destinationName, isPickedUp,
+    ]);
 
     // ── Map options ──
     const mapOptions = useMemo(() => {
@@ -658,61 +950,9 @@ function RiderMiniMapComponent({
 
     return (
         <div className="h-full w-full relative">
-            {/* Navigation Mode Badge + View Toggle + Recenter */}
-            {navigationMode && (
-                <div className="absolute top-16 left-2 z-20 flex flex-col items-start gap-2">
-                    {/* Head-Up / North-Up Toggle */}
-                    <button
-                        onClick={() => {
-                            const newHeadUp = !isHeadUp;
-                            setIsHeadUp(newHeadUp);
-                            setUserInteracted(false);
-                            if (mapRef.current && driverLat && driverLng) {
-                                if (newHeadUp) {
-                                    // Switching TO Head-Up
-                                    mapRef.current.moveCamera({
-                                        center: { lat: driverLat, lng: driverLng },
-                                        zoom: 17,
-                                        heading: driverHeading,
-                                        tilt: 0,
-                                    });
-                                } else {
-                                    // Switching TO North-Up
-                                    mapRef.current.moveCamera({
-                                        center: { lat: driverLat, lng: driverLng },
-                                        zoom: 16,
-                                        heading: 0,
-                                        tilt: 0,
-                                    });
-                                }
-                            }
-                        }}
-                        className="bg-white/90 backdrop-blur-md text-gray-800 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 active:scale-95 transition-all border border-white"
-                    >
-                        {isHeadUp ? (
-                            <>
-                                <Compass className="w-3.5 h-3.5" />
-                                Rumbo
-                            </>
-                        ) : (
-                            <>
-                                <Navigation2 className="w-3.5 h-3.5" />
-                                Norte
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {/* Recenter Button (visible during Free Look) */}
-            {navigationMode && userInteracted && (
-                <button
-                    onClick={handleRecenter}
-                    className="absolute top-2 right-2 z-20 w-11 h-11 bg-white/95 backdrop-blur-md rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-all border border-gray-200"
-                >
-                    <Crosshair className="w-5 h-5 text-blue-600" />
-                </button>
-            )}
+            {/* Sin controles flotantes: HOME/CONECTADO/MAPS/Centrar viven en la
+                top-bar del dashboard. El mapa queda limpio, mostrando solo el
+                polyline y los markers. Rumbo siempre head-up (igual que Waze/Uber). */}
 
             <GoogleMap
                 mapContainerStyle={containerStyle}

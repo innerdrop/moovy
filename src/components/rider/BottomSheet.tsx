@@ -3,7 +3,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
     ChevronDown,
-    ChevronUp,
     ArrowUp,
     ArrowUpRight,
     ArrowRight,
@@ -18,8 +17,17 @@ import {
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 // ── Types ──
+//
+// Dos snap points (decisión 2026-04-17, feedback del founder tras fotos del
+// dashboard). Antes teníamos 4 estados (expanded/mid/minimized/hidden) y el
+// rider tenía que cruzar el punto intermedio para subir o bajar el sheet —
+// lento y confuso, especialmente manejando. El nuevo modelo sigue el patrón
+// Uber/Rappi: "peek" con nav strip + una fila de métrica visibles, y
+// "expanded" con el detalle completo. `hidden` se mantiene como escape hatch
+// por si en un futuro alguna vista decide ocultar el sheet por completo; en
+// el uso normal el sheet solo oscila peek ↔ expanded.
 
-type SheetState = "expanded" | "mid" | "minimized" | "hidden";
+type SheetState = "expanded" | "peek" | "hidden";
 
 const STORAGE_KEY = "moovy-rider-bottomsheet-state";
 
@@ -44,8 +52,8 @@ interface BottomSheetProps {
     navIsPickedUp?: boolean;
     navIsNavigating?: boolean;
     // Distancia en metros del driver al destino actual. Usado para pre-arrival
-    // auto-expand: cuando se pasa a <100m, el sheet sube a "mid" para que la
-    // acción primaria esté al alcance sin swipe extra.
+    // auto-expand: cuando se pasa a <100m, el sheet sube a "expanded" para que
+    // la acción primaria esté al alcance sin swipe extra.
     proximityMeters?: number | null;
 }
 
@@ -76,11 +84,22 @@ function stripHtml(html: string): string {
     return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ");
 }
 
+// Aliases para tolerar estados legacy guardados en localStorage por versiones
+// anteriores del componente (4 snaps).
+function normalizeState(raw: string | null): SheetState | null {
+    if (!raw) return null;
+    if (raw === "expanded") return "expanded";
+    if (raw === "peek" || raw === "minimized") return "peek";
+    if (raw === "mid") return "expanded"; // legacy "mid" se colapsa a expanded
+    if (raw === "hidden") return "hidden";
+    return null;
+}
+
 // ── Component ──
 
 export default function BottomSheet({
     children,
-    initialState = "minimized",
+    initialState = "peek",
     onStateChange,
     navCurrentStep,
     navNextStep,
@@ -95,10 +114,8 @@ export default function BottomSheet({
     const isDark = useColorScheme() === "dark";
     const [state, setState] = useState<SheetState>(() => {
         if (typeof window !== "undefined") {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved && ["expanded", "mid", "minimized"].includes(saved)) {
-                return saved as SheetState;
-            }
+            const normalized = normalizeState(localStorage.getItem(STORAGE_KEY));
+            if (normalized) return normalized;
         }
         return initialState;
     });
@@ -114,16 +131,16 @@ export default function BottomSheet({
         }
     }, [state, onStateChange]);
 
-    // ── Auto-minimize al arrancar navegación ──
+    // ── Auto-peek al arrancar navegación ──
     // Cuando el rider acepta un pedido y empieza a navegar, el mapa debe ser
-    // la UI primaria. Forzamos minimizado aunque localStorage tuviera otro
-    // estado de una sesión anterior. Si el rider swipea el sheet para arriba
-    // durante el viaje, queda como lo dejó (localStorage persiste el cambio).
+    // la UI primaria. Forzamos peek aunque localStorage tuviera "expanded" de
+    // una sesión anterior. Si el rider swipea el sheet para arriba durante el
+    // viaje, queda como lo dejó (localStorage persiste el cambio).
     const prevNavRef = useRef(false);
     useEffect(() => {
         const navStarting = !!navIsNavigating && !prevNavRef.current;
         if (navStarting) {
-            setState("minimized");
+            setState("peek");
         }
         prevNavRef.current = !!navIsNavigating;
     }, [navIsNavigating]);
@@ -143,10 +160,10 @@ export default function BottomSheet({
 
     // ── Pre-arrival auto-expand + haptic ──
     // Cuando el driver está a <100m del destino actual (comercio si va al
-    // comercio, cliente si ya retiró), el sheet sube automáticamente a "mid"
-    // y vibra medium. Así la acción primaria (SwipeToConfirm) queda visible
-    // sin que el rider tenga que swipear. Solo dispara en la transición
-    // >=100 → <100 (no re-dispara si oscila cerca del umbral).
+    // comercio, cliente si ya retiró), el sheet sube automáticamente a
+    // "expanded" y vibra medium. Así la acción primaria (SwipeToConfirm)
+    // queda visible sin que el rider tenga que swipear. Solo dispara en la
+    // transición >=100 → <100 (no re-dispara si oscila cerca del umbral).
     const wasPreArrivalRef = useRef(false);
     useEffect(() => {
         const inPreArrival =
@@ -155,7 +172,7 @@ export default function BottomSheet({
             proximityMeters < 100;
         if (inPreArrival && !wasPreArrivalRef.current) {
             haptic.medium();
-            setState(prev => prev === "minimized" ? "mid" : prev);
+            setState(prev => prev === "peek" ? "expanded" : prev);
         }
         wasPreArrivalRef.current = inPreArrival;
     }, [proximityMeters]);
@@ -163,9 +180,26 @@ export default function BottomSheet({
     const getTranslateY = useCallback((s: SheetState): string => {
         switch (s) {
             case "expanded": return "15%";
-            case "mid": return "calc(100% - 320px - max(80px, env(safe-area-inset-bottom)))";
-            case "minimized": return "calc(100% - 160px - max(80px, env(safe-area-inset-bottom)))";
+            // Peek: drag handle (~20px) + nav strip (~110px) = ~130px visibles.
+            // Mínimo indispensable para que el driver vea la instrucción del
+            // giro + distancia sin ocultar el mapa. Todo lo demás (métricas,
+            // card del comercio, chat, swipe-to-confirm) aparece al expandir.
+            // Waze y Uber usan este patrón: HUD compacto en peek, dashboard
+            // completo al expandir. Evita el scroll interno en peek.
+            case "peek": return "calc(100% - 130px - max(0px, env(safe-area-inset-bottom)))";
             case "hidden": return "100%";
+        }
+    }, []);
+
+    // ── Swipe dispatcher ──
+    // Modelo binario: swipe down desde expanded → peek; swipe up desde peek
+    // → expanded. Simple, predecible, sin parada intermedia que confunde.
+    const resolveSwipe = useCallback((delta: number) => {
+        const threshold = 50;
+        if (delta > threshold) {
+            setState(prev => prev === "expanded" ? "peek" : prev);
+        } else if (delta < -threshold) {
+            setState(prev => prev === "peek" ? "expanded" : prev === "hidden" ? "peek" : prev);
         }
     }, []);
 
@@ -184,16 +218,9 @@ export default function BottomSheet({
     const handleTouchEnd = useCallback(() => {
         if (!isDragging) return;
         setIsDragging(false);
-        const threshold = 50;
-        if (dragY > threshold) {
-            // Swipe down: expanded→mid→minimized
-            setState(prev => prev === "expanded" ? "mid" : prev === "mid" ? "minimized" : prev);
-        } else if (dragY < -threshold) {
-            // Swipe up: minimized→mid→expanded
-            setState(prev => prev === "minimized" ? "mid" : prev === "mid" ? "expanded" : prev === "hidden" ? "minimized" : prev);
-        }
+        resolveSwipe(dragY);
         setDragY(0);
-    }, [isDragging, dragY]);
+    }, [isDragging, dragY, resolveSwipe]);
 
     // ── Mouse handlers (desktop) ──
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -210,14 +237,9 @@ export default function BottomSheet({
     const handleMouseUp = useCallback(() => {
         if (!isDragging) return;
         setIsDragging(false);
-        const threshold = 50;
-        if (dragY > threshold) {
-            setState(prev => prev === "expanded" ? "mid" : prev === "mid" ? "minimized" : prev);
-        } else if (dragY < -threshold) {
-            setState(prev => prev === "minimized" ? "mid" : prev === "mid" ? "expanded" : prev === "hidden" ? "minimized" : prev);
-        }
+        resolveSwipe(dragY);
         setDragY(0);
-    }, [isDragging, dragY]);
+    }, [isDragging, dragY, resolveSwipe]);
 
     useEffect(() => {
         if (isDragging) {
@@ -230,12 +252,9 @@ export default function BottomSheet({
         }
     }, [isDragging, handleMouseMove, handleMouseUp]);
 
-    const cycleState = useCallback(() => {
-        setState(prev => {
-            if (prev === "minimized") return "mid";
-            if (prev === "mid") return "expanded";
-            return "minimized";
-        });
+    // Toggle directo peek ↔ expanded al tocar el handle / chevron.
+    const toggleState = useCallback(() => {
+        setState(prev => prev === "expanded" ? "peek" : "expanded");
     }, []);
 
     const clampedDrag = isDragging ? dragY : 0;
@@ -293,7 +312,7 @@ export default function BottomSheet({
 
                 {/* Expand / collapse toggle */}
                 <button
-                    onClick={cycleState}
+                    onClick={toggleState}
                     className="flex-shrink-0 flex items-center justify-center"
                     style={{
                         width: 32, height: 32, borderRadius: 999,
@@ -301,15 +320,14 @@ export default function BottomSheet({
                         border: "none",
                     }}
                 >
-                    {state === "expanded" ? (
-                        <ChevronDown className="w-4 h-4" style={{ color: "#fff" }} />
-                    ) : (
-                        <ChevronUp className="w-4 h-4" style={{ color: "#fff" }} />
-                    )}
+                    <ChevronDown
+                        className="w-4 h-4 transition-transform duration-200"
+                        style={{ color: "#fff", transform: state === "expanded" ? "rotate(0deg)" : "rotate(180deg)" }}
+                    />
                 </button>
             </div>
         );
-    }, [hasNav, navCurrentStep, state, cycleState]);
+    }, [hasNav, navCurrentStep, state, toggleState, isDark]);
 
     // Stats bar for the expanded state (only when navigating)
     const statsBar = useMemo(() => {
@@ -435,7 +453,7 @@ export default function BottomSheet({
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     onMouseDown={handleMouseDown}
-                    onClick={cycleState}
+                    onClick={toggleState}
                 >
                     <div style={{
                         width: 36, height: 4, borderRadius: 99,
@@ -460,13 +478,16 @@ export default function BottomSheet({
                 )}
             </div>
 
-            {/* ── Mid section: stats + dest (visible at mid & expanded) ── */}
+            {/* ── Mid section: stats + dest (visible only when expanded) ──
+                Con el modelo de 2 snaps, stats y destino solo aparecen al
+                expandir. En peek el rider ve únicamente la nav strip +
+                lo que pueda asomar del body. */}
             <div
                 style={{
                     background: isDark ? "#0f1117" : "#f8f9fb",
                     overflow: "hidden",
-                    maxHeight: state === "minimized" || state === "hidden" ? 0 : 200,
-                    opacity: state === "minimized" || state === "hidden" ? 0 : 1,
+                    maxHeight: state === "expanded" ? 200 : 0,
+                    opacity: state === "expanded" ? 1 : 0,
                     transition: "max-height 0.3s ease, opacity 0.25s ease",
                 }}
             >
@@ -478,13 +499,16 @@ export default function BottomSheet({
                 )}
             </div>
 
-            {/* ── Scrollable body (visible unless hidden) ── */}
+            {/* ── Scrollable body (visible unless hidden) ──
+                Scroll interno SOLO cuando expanded — en peek se congela para
+                que el gesto vertical sea del sheet, no del contenido. */}
             <div
                 className={`flex-1 ${state === "expanded" ? "overflow-y-auto" : "overflow-hidden"}`}
                 style={{
                     opacity: state === "hidden" ? 0 : 1,
                     transition: "opacity 0.25s ease",
                     pointerEvents: state === "hidden" ? "none" : "auto",
+                    touchAction: state === "expanded" ? "pan-y" : "none",
                 }}
             >
                 <div style={{ padding: "16px 16px 80px", display: "flex", flexDirection: "column", gap: 12 }}>

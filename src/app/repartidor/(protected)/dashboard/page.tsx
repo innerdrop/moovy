@@ -23,7 +23,8 @@ import {
     Settings,
     Star,
     TrendingUp,
-    WifiOff
+    WifiOff,
+    AlertTriangle
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -144,6 +145,18 @@ export default function RiderDashboard() {
     const [isMapExpanded, setIsMapExpanded] = useState(false);
     const [advancingStatus, setAdvancingStatus] = useState(false);
     const [showShiftSummary, setShowShiftSummary] = useState(false);
+
+    // Guard de desconexión con pedido activo. Si el driver intenta desconectarse
+    // y tiene una Order/SubOrder en DRIVER_ASSIGNED/DRIVER_ARRIVED/PICKED_UP,
+    // bloqueamos el flujo con un modal y lo mandamos de vuelta al pedido.
+    // Mismo patrón que PortalSwitcher (2026-04-15): el compromiso con el buyer
+    // es sagrado. El chequeo canónico lo hace el backend (toggle-status devuelve
+    // 409 con errorCode ACTIVE_ORDER); acá hacemos el check previo para evitar
+    // abrir el ShiftSummary innecesariamente.
+    const [blockedByActiveOrder, setBlockedByActiveOrder] = useState<{
+        orderId: string;
+        orderNumber: string;
+    } | null>(null);
 
     // ISSUE-001: estado del modal de PIN (pickup/delivery)
     const [pinModal, setPinModal] = useState<{
@@ -370,7 +383,12 @@ export default function RiderDashboard() {
         }
     };
 
-    // Perform the actual disconnect API call
+    // Perform the actual disconnect API call.
+    // El backend también valida el guard de pedido activo (devuelve 409 con
+    // errorCode ACTIVE_ORDER). Acá manejamos esa respuesta por si hubo un
+    // race condition: el driver confirmó el ShiftSummary y justo le entró
+    // un pedido nuevo que aceptó (o el merchant/seller disparó la asignación
+    // de una SubOrder). En ese caso bloqueamos con el mismo modal.
     const performDisconnect = async () => {
         try {
             setIsToggling(true);
@@ -382,6 +400,14 @@ export default function RiderDashboard() {
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
                 setIsOnline(data.isOnline);
+                await fetchDashboard(true);
+            } else if (res.status === 409 && data?.errorCode === "ACTIVE_ORDER" && data?.activeOrder) {
+                // Race: el driver intentó desconectarse pero tiene una entrega activa.
+                setBlockedByActiveOrder({
+                    orderId: data.activeOrder.id,
+                    orderNumber: data.activeOrder.orderNumber,
+                });
+                // Sync del estado local por las dudas (hay pedido => sigue online)
                 await fetchDashboard(true);
             } else {
                 toast.error(data?.error || "No pudimos desconectarte. Intentá de nuevo.");
@@ -397,7 +423,34 @@ export default function RiderDashboard() {
     // Toggle online/offline
     const toggleOnline = async () => {
         if (isOnline) {
-            setShowShiftSummary(true);
+            // Guard: antes de abrir el ShiftSummary, chequear si hay pedido activo.
+            // Si lo hay, mostramos modal bloqueante en vez del resumen de turno
+            // (no tiene sentido mostrar "cerrá tu turno" si tiene una entrega a
+            // mitad de camino). El endpoint /api/driver/active-order es la
+            // misma fuente de verdad que usa el PortalSwitcher (2026-04-15).
+            try {
+                setIsToggling(true);
+                const activeRes = await fetch("/api/driver/active-order", { cache: "no-store" });
+                if (activeRes.ok) {
+                    const active = await activeRes.json();
+                    if (active?.hasActive && active?.orderId && active?.orderNumber) {
+                        setBlockedByActiveOrder({
+                            orderId: active.orderId,
+                            orderNumber: active.orderNumber,
+                        });
+                        return;
+                    }
+                }
+                // Sin pedido activo o error de red → seguimos al flujo normal.
+                // El backend tiene el guard como última línea de defensa.
+                setShowShiftSummary(true);
+            } catch (e) {
+                console.error("[toggleOnline] active-order check failed:", e);
+                // No bloqueamos por error de red — backend es autoridad final.
+                setShowShiftSummary(true);
+            } finally {
+                setIsToggling(false);
+            }
             return;
         }
 
@@ -668,8 +721,10 @@ export default function RiderDashboard() {
                                 />
                             </div>
 
-                            {/* Top bar — floating controls */}
-                            <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+                            {/* Top bar — floating controls.
+                                z-30 keeps these above the BottomSheet (z-20) so CONECTADO / MAPS / Centrar
+                                never get hidden when the sheet rises. */}
+                            <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
                                 <div className="flex justify-between items-start px-4 pt-2">
                                     <button
                                         onClick={() => setIsMapExpanded(false)}
@@ -717,7 +772,7 @@ export default function RiderDashboard() {
 
                             {/* BottomSheet with order details */}
                             <BottomSheet
-                                initialState="minimized"
+                                initialState="peek"
                                 onStateChange={() => { }}
                                 navCurrentStep={navData?.currentStep}
                                 navNextStep={navData?.nextStep}
@@ -1251,6 +1306,57 @@ export default function RiderDashboard() {
                     await performDisconnect();
                 }}
             />
+
+            {/* ═══════════════════════════════════════════════
+               ACTIVE ORDER BLOCK MODAL
+               Se muestra cuando el driver intenta desconectarse con una
+               entrega en curso. Mismo patrón que PortalSwitcher (2026-04-15).
+               El active order ya es visible en el dashboard, así que basta
+               con cerrar el modal para volver a verlo.
+            ═══════════════════════════════════════════════ */}
+            {blockedByActiveOrder && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+                    onClick={() => setBlockedByActiveOrder(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-[#1a1d27] rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                                    Tenés una entrega en curso
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                    Completá el pedido{" "}
+                                    <span className="font-mono font-semibold">
+                                        #{blockedByActiveOrder.orderNumber}
+                                    </span>{" "}
+                                    antes de desconectarte. El comprador y el comercio
+                                    están esperando.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setBlockedByActiveOrder(null)}
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition flex-shrink-0"
+                                aria-label="Cerrar"
+                            >
+                                <X className="w-4 h-4 text-gray-400" />
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setBlockedByActiveOrder(null)}
+                            className="w-full px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition"
+                        >
+                            Volver al pedido
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ═══════════════════════════════════════════════
                PIN KEYPAD (ISSUE-001)
