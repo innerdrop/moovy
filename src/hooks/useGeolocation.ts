@@ -6,6 +6,7 @@ interface GeolocationState {
     location: {
         latitude: number;
         longitude: number;
+        accuracy: number | null;
     } | null;
     heading: number | null;
     speed: number | null;
@@ -34,6 +35,7 @@ export function useGeolocation() {
                     location: {
                         latitude: pos.coords.latitude,
                         longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy ?? null,
                     },
                     heading: pos.coords.heading,
                     speed: pos.coords.speed,
