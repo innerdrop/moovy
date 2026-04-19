@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/store/ProductCard";
+import MerchantScheduleWidget from "@/components/store/MerchantScheduleWidget";
+import { checkMerchantSchedule } from "@/lib/merchant-schedule";
 import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck } from "lucide-react";
 
 async function getMerchant(slug: string) {
@@ -36,6 +38,16 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         notFound();
     }
 
+    // Calcular estado real (pausa manual + horario) en timezone de Ushuaia.
+    // merchant.isOpen es SOLO la pausa manual; el estado que el buyer tiene
+    // que ver combina eso con el horario configurado. El guard server-side
+    // en /api/orders usa la misma función (defense in depth).
+    const scheduleResult = checkMerchantSchedule({
+        isOpen: merchant.isOpen,
+        scheduleJson: merchant.scheduleJson,
+    });
+    const isCurrentlyOpen = scheduleResult.isCurrentlyOpen;
+
     // Group products by category
     const productsByCategory: Record<string, any[]> = {};
 
@@ -46,12 +58,15 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
             productsByCategory[catName] = [];
         }
 
-        // Map product to include 'image' property for ProductCard
+        // Map product to include 'image' property for ProductCard.
+        // Pasamos el estado REAL (isCurrentlyOpen), no el flag crudo — así el
+        // ProductCard respeta el horario aunque el merchant no se haya pausado
+        // manualmente.
         const productWithImage = {
             ...product,
             image: product.images[0]?.url || null,
             merchantId: merchant.id,
-            merchant: { isOpen: merchant.isOpen }
+            merchant: { isOpen: isCurrentlyOpen }
         };
 
         productsByCategory[catName].push(productWithImage);
@@ -129,15 +144,31 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                             </div>
                         )}
                     </div>
+
+                    {/* Horarios de atención — widget expandible con estado real */}
+                    <div className="pb-4">
+                        <MerchantScheduleWidget
+                            isOpen={merchant.isOpen}
+                            scheduleJson={merchant.scheduleJson}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Closed Store Overlay/Banner */}
-            {!merchant.isOpen && (
+            {/* Banner de cierre — usa el estado REAL (pausa + horario), no solo isOpen.
+                Mensajes diferenciados para que el buyer sepa si es pausa temporal o
+                fuera de horario + cuándo vuelve a abrir. */}
+            {!isCurrentlyOpen && (
                 <div className="bg-red-50 border-y border-red-100 py-3">
-                    <div className="container mx-auto px-4 flex items-center justify-center gap-2 text-red-600 font-bold">
+                    <div className="container mx-auto px-4 flex items-center justify-center gap-2 text-red-600 font-bold text-center">
                         <Info className="w-5 h-5 flex-shrink-0" />
-                        <p className="text-sm md:text-base">ESTE COMERCIO ESTÁ CERRADO Y NO RECIBE PEDIDOS EN ESTE MOMENTO</p>
+                        <p className="text-sm md:text-base">
+                            {scheduleResult.isPaused
+                                ? "Este comercio está cerrado temporalmente y no recibe pedidos"
+                                : scheduleResult.nextOpenTime && scheduleResult.nextOpenDay
+                                    ? `Cerrado · Abre ${scheduleResult.nextOpenDay === "Hoy" ? "hoy" : scheduleResult.nextOpenDay} a las ${scheduleResult.nextOpenTime}`
+                                    : "Este comercio está cerrado en este momento"}
+                        </p>
                     </div>
                 </div>
             )}
