@@ -4,8 +4,18 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { formatTime } from "@/lib/timezone";
 import { prisma } from "@/lib/prisma";
+import { checkMerchantSchedule } from "@/lib/merchant-schedule";
 import KPIDashboard from "./KPIDashboard";
 import OnboardingChecklist from "./OnboardingChecklist";
+
+// ISSUE-038: categorías de comida que requieren registro sanitario.
+// Debe coincidir con /api/merchant/onboarding para que "canOpenStore"
+// se derive igual en el chip del dashboard.
+const FOOD_TYPES = [
+    "Restaurante", "Pizzería", "Hamburguesería", "Parrilla", "Cafetería",
+    "Heladería", "Panadería/Pastelería", "Sushi", "Comida Saludable",
+    "Rotisería", "Bebidas", "Vinoteca/Licorería",
+];
 
 export default async function ComerciosDashboardPage() {
     const session = await auth();
@@ -48,6 +58,61 @@ export default async function ComerciosDashboardPage() {
         })
     ]);
 
+    // ISSUE-038: Chip tri-estado (Pendiente / Cerrada / Abierta).
+    // "Pendiente" si no está APPROVED o faltan requisitos obligatorios.
+    // "Cerrada" si manualmente pausado o fuera de horario.
+    // "Abierta" si todo OK + dentro de horario en timezone Ushuaia.
+    // La misma lógica de requisitos vive en /api/merchant/onboarding.
+    const isFoodBusiness = FOOD_TYPES.includes(merchant.category || "");
+    const hasCuit = Boolean(merchant.cuit);
+    const hasBankAccount = Boolean(merchant.bankAccount);
+    const hasConstanciaAfip = Boolean(merchant.constanciaAfipUrl);
+    const hasHabilitacion = Boolean(merchant.habilitacionMunicipalUrl);
+    const hasRegistroSanitario = !isFoodBusiness || Boolean(merchant.registroSanitarioUrl);
+    const docsComplete = hasCuit && hasBankAccount && hasConstanciaAfip && hasHabilitacion && hasRegistroSanitario;
+    const hasSchedule = Boolean(merchant.scheduleJson);
+    const hasProducts = activeProducts >= 1;
+    const hasAddress = Boolean(merchant.address && merchant.latitude);
+    const canOpenStore = docsComplete && hasSchedule && hasProducts && hasAddress;
+
+    const scheduleResult = checkMerchantSchedule({
+        isOpen: merchant.isOpen,
+        scheduleJson: merchant.scheduleJson,
+    });
+
+    type ChipState = "pending" | "closed" | "open";
+    let chipState: ChipState;
+    let chipLabel: string;
+    let chipSubtitle: string | null = null;
+
+    if (merchant.approvalStatus !== "APPROVED" || !canOpenStore) {
+        chipState = "pending";
+        chipLabel = "Pendiente";
+        chipSubtitle = merchant.approvalStatus !== "APPROVED"
+            ? "Esperando aprobación"
+            : "Completá los requisitos";
+    } else if (!scheduleResult.isCurrentlyOpen) {
+        chipState = "closed";
+        chipLabel = "Cerrada";
+        if (scheduleResult.isPaused) {
+            chipSubtitle = "Pausada manualmente";
+        } else if (scheduleResult.nextOpenTime && scheduleResult.nextOpenDay) {
+            chipSubtitle = `Abre ${scheduleResult.nextOpenDay} ${scheduleResult.nextOpenTime}`;
+        } else {
+            chipSubtitle = "Fuera de horario";
+        }
+    } else {
+        chipState = "open";
+        chipLabel = "Abierta";
+    }
+
+    const chipStyles: Record<ChipState, { bg: string; text: string; dot: string; dotAnim: string }> = {
+        pending: { bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", dotAnim: "" },
+        closed: { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500", dotAnim: "" },
+        open: { bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500", dotAnim: "animate-pulse" },
+    };
+    const chip = chipStyles[chipState];
+
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
@@ -61,9 +126,19 @@ export default async function ComerciosDashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${merchant.isOpen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                        <span className={`w-2 h-2 rounded-full ${merchant.isOpen ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-                        {merchant.isOpen ? "Abierto" : "Cerrado"}
+                    <div
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${chip.bg} ${chip.text}`}
+                        title={chipSubtitle || undefined}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${chip.dot} ${chip.dotAnim}`} />
+                        <span className="flex items-baseline gap-1.5">
+                            <span>{chipLabel}</span>
+                            {chipSubtitle && (
+                                <span className="hidden sm:inline text-[11px] font-normal opacity-80">
+                                    · {chipSubtitle}
+                                </span>
+                            )}
+                        </span>
                     </div>
                     <Link
                         href="/comercios/productos/nuevo"

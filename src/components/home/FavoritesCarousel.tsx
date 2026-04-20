@@ -82,7 +82,7 @@ export default function FavoritesCarousel({ merchants }: FavoritesCarouselProps)
                                             ))}
                                         </div>
                                         <span className="text-xs md:text-sm text-gray-500 font-medium">
-                                            {(1000 + index * 300).toLocaleString()}
+                                            {(1000 + index * 300).toLocaleString("es-AR")}
                                         </span>
                                     </div>
                                 </div>

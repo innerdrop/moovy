@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, MapPin, Loader2, Plus, Trash2, Home, Briefcase, Map as MapIcon, CheckCircle } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { toast } from "@/store/toast";
+import { confirm } from "@/store/confirm";
 
 export default function DireccionesPage() {
     const [addresses, setAddresses] = useState<any[]>([]);
@@ -90,13 +91,35 @@ export default function DireccionesPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("¿Estás seguro de eliminar esta dirección?")) return;
+    const handleDelete = async (addr: { id: string; label: string; street: string; number: string }) => {
+        // ISSUE-044: si es la única dirección, bloquear — mejor que borrar todo
+        // y quedar sin forma de pedir. Le pedimos agregar otra antes.
+        if (addresses.length === 1) {
+            await confirm({
+                title: "No podés quedarte sin direcciones",
+                message:
+                    "Esta es tu única dirección guardada. Agregá otra antes de eliminarla — así podés seguir pidiendo sin cargarla de nuevo cada vez.",
+                confirmLabel: "Entendido",
+                cancelLabel: "Cerrar",
+                variant: "warning",
+            });
+            return;
+        }
+
+        const ok = await confirm({
+            title: `Eliminar "${addr.label}"`,
+            message: `¿Eliminar ${addr.street} ${addr.number}? Esta acción no se puede deshacer.`,
+            confirmLabel: "Eliminar",
+            cancelLabel: "Cancelar",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         try {
-            const res = await fetch(`/api/profile/addresses/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/profile/addresses/${addr.id}`, { method: "DELETE" });
             if (res.ok) {
-                setAddresses(addresses.filter(a => a.id !== id));
+                setAddresses(addresses.filter(a => a.id !== addr.id));
+                toast.success("Dirección eliminada");
             } else {
                 const errorData = await res.json();
                 toast.error(errorData.error || "No se pudo eliminar la dirección.");
@@ -253,8 +276,9 @@ export default function DireccionesPage() {
                                         </div>
 
                                         <button
-                                            onClick={() => handleDelete(addr.id)}
+                                            onClick={() => handleDelete(addr)}
                                             className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                                            aria-label={`Eliminar ${addr.label}`}
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>

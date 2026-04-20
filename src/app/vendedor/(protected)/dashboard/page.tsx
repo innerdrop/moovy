@@ -119,7 +119,8 @@ export default async function VendedorDashboardPage() {
                         <Tag className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Listings Activas</p>
+                        {/* ISSUE-047: mismo lenguaje que las cards individuales (Abiertas a ventas) */}
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Abiertas a ventas</p>
                         <p className="text-2xl font-bold text-gray-900">{activeListings}</p>
                     </div>
                 </div>
@@ -201,8 +202,11 @@ export default async function VendedorDashboardPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className="font-bold text-gray-900 text-sm">${listing.price.toLocaleString("es-AR")}</p>
+                                            {/* ISSUE-047: "Abierta/Cerrada a ventas" es más semántico
+                                                que "Activa/Inactiva" — deja claro al vendedor que es
+                                                disponibilidad al comprador, no estado técnico. */}
                                             <p className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block ${listing.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                                                {listing.isActive ? "Activa" : "Inactiva"}
+                                                {listing.isActive ? "Abierta a ventas" : "Cerrada a ventas"}
                                             </p>
                                         </div>
                                     </div>

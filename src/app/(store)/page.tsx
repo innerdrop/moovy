@@ -206,13 +206,55 @@ function getBestRated(merchants: any[]) {
 
 function getMostOrdered(merchants: any[], topIds: string[]) {
   if (topIds.length === 0) return [];
-  const idSet = new Set(topIds);
   // Preserve order from topIds (most orders first)
   const byId = new Map(merchants.map((m) => [m.id, m]));
   return topIds
     .filter((id) => byId.has(id))
     .map((id) => byId.get(id)!)
     .slice(0, 10);
+}
+
+/**
+ * ISSUE-036: regla de diversidad en filas de discovery.
+ * Evita que el mismo merchant aparezca en 2+ secciones curadas (transmite
+ * pobreza de oferta en launch week con pocos comercios).
+ *
+ * Prioridad: mostOrdered (señal más fuerte) → bestRated → newMerchants.
+ * Cada fila excluye merchants ya tomados por filas anteriores.
+ * Si una fila queda con <2 merchants, se oculta (devuelve []).
+ * Si hay <3 merchants activos en total, se ocultan TODAS las filas curadas
+ * (la fila principal "Abiertos ahora" sigue mostrando todo).
+ */
+function applyDiversityRule(
+  enrichedMerchants: any[],
+  topMerchantIds: string[]
+): { mostOrdered: any[]; bestRated: any[]; newMerchants: any[] } {
+  // Umbral de catálogo: <3 activos = launch-week mode, ocultar curadas
+  if (enrichedMerchants.length < 3) {
+    return { mostOrdered: [], bestRated: [], newMerchants: [] };
+  }
+
+  const taken = new Set<string>();
+
+  // Pass 1: Los más pedidos (organic, scarcest signal)
+  const rawMostOrdered = getMostOrdered(enrichedMerchants, topMerchantIds);
+  const mostOrdered = rawMostOrdered.length >= 2 ? rawMostOrdered : [];
+  mostOrdered.forEach((m) => taken.add(m.id));
+
+  // Pass 2: Mejor calificados (excluyendo ya tomados)
+  const rawBestRated = getBestRated(enrichedMerchants).filter(
+    (m) => !taken.has(m.id)
+  );
+  const bestRated = rawBestRated.length >= 2 ? rawBestRated : [];
+  bestRated.forEach((m) => taken.add(m.id));
+
+  // Pass 3: Nuevos en MOOVY (excluyendo ya tomados)
+  const rawNewMerchants = getNewMerchants(enrichedMerchants).filter(
+    (m) => !taken.has(m.id)
+  );
+  const newMerchants = rawNewMerchants.length >= 2 ? rawNewMerchants : [];
+
+  return { mostOrdered, bestRated, newMerchants };
 }
 
 // ============================================
@@ -317,10 +359,12 @@ export default async function LiveStoreView() {
     };
   });
 
-  // Build discovery rows from enriched merchants
-  const newMerchants = getNewMerchants(enrichedMerchants);
-  const bestRated = getBestRated(enrichedMerchants);
-  const mostOrdered = getMostOrdered(enrichedMerchants, topMerchantIds);
+  // ISSUE-036: regla de diversidad — merchants disjuntos entre filas curadas,
+  // ocultar filas con <2 merchants, ocultar todo si hay <3 activos en total.
+  const { mostOrdered, bestRated, newMerchants } = applyDiversityRule(
+    enrichedMerchants,
+    topMerchantIds
+  );
 
   return (
     <div>
@@ -341,9 +385,12 @@ export default async function LiveStoreView() {
       {promoSlides.length > 0 && <PromoBanner slides={promoSlides} interval={5000} />}
 
       {/* 3b. Nuevos en MOOVY — círculos con logo + borde animado */}
-      <AnimateIn animation="reveal">
-        <NewMerchantsRow merchants={newMerchants as any} />
-      </AnimateIn>
+      {/* ISSUE-036: oculto si <2 o si ya aparecen en otra fila curada */}
+      {newMerchants.length > 0 && (
+        <AnimateIn animation="reveal">
+          <NewMerchantsRow merchants={newMerchants as any} />
+        </AnimateIn>
+      )}
 
       {/* ── 5. OPS Hero Banner — intercalado entre filas de discovery ── */}
       {hasOpsSlides && (
@@ -361,26 +408,32 @@ export default async function LiveStoreView() {
       )}
 
       {/* 3c. Los más pedidos */}
-      <AnimateIn animation="reveal">
-        <MerchantDiscoveryRow
-          title="Los más pedidos"
-          icon={<TrendingUp className="w-4 h-4 text-orange-600" />}
-          merchants={mostOrdered}
-          viewAllHref="/tiendas?filter=populares"
-          accentColor="bg-orange-500"
-        />
-      </AnimateIn>
+      {/* ISSUE-036: oculto si no hay data de pedidos DELIVERED suficiente */}
+      {mostOrdered.length > 0 && (
+        <AnimateIn animation="reveal">
+          <MerchantDiscoveryRow
+            title="Los más pedidos"
+            icon={<TrendingUp className="w-4 h-4 text-orange-600" />}
+            merchants={mostOrdered}
+            viewAllHref="/tiendas?filter=populares"
+            accentColor="bg-orange-500"
+          />
+        </AnimateIn>
+      )}
 
       {/* 3d. Mejor calificados */}
-      <AnimateIn animation="reveal">
-        <MerchantDiscoveryRow
-          title="Mejor calificados"
-          icon={<Star className="w-4 h-4 text-yellow-600" />}
-          merchants={bestRated}
-          viewAllHref="/tiendas?filter=mejor-calificados"
-          accentColor="bg-yellow-500"
-        />
-      </AnimateIn>
+      {/* ISSUE-036: oculto si <2 merchants con rating ≥3.5 fuera de otras filas */}
+      {bestRated.length > 0 && (
+        <AnimateIn animation="reveal">
+          <MerchantDiscoveryRow
+            title="Mejor calificados"
+            icon={<Star className="w-4 h-4 text-yellow-600" />}
+            merchants={bestRated}
+            viewAllHref="/tiendas?filter=mejor-calificados"
+            accentColor="bg-yellow-500"
+          />
+        </AnimateIn>
+      )}
 
       {/* ── 6. PRODUCTOS — Lo más pedido ── */}
       <AnimateIn animation="reveal" delay={100}>

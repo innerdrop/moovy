@@ -153,8 +153,9 @@ export default function VendedorListingsPage() {
                     <p className="text-sm text-gray-500">Total</p>
                     <p className="text-2xl font-bold text-gray-900">{listings.length}</p>
                 </div>
+                {/* ISSUE-047: wording semántico. "Abiertas a ventas" = visible al comprador. */}
                 <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <p className="text-sm text-green-800">Activas</p>
+                    <p className="text-sm text-green-800">Abiertas a ventas</p>
                     <p className="text-2xl font-bold text-green-900">
                         {listings.filter((l) => l.isActive).length}
                     </p>
@@ -167,8 +168,9 @@ export default function VendedorListingsPage() {
                     </p>
                 </div>
                 */}
+                {/* ISSUE-047: contraparte de "Abiertas a ventas" — mismo lenguaje al vendedor. */}
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <p className="text-sm text-gray-600">Inactivas</p>
+                    <p className="text-sm text-gray-600">Cerradas a ventas</p>
                     <p className="text-2xl font-bold text-gray-900">
                         {listings.filter((l) => !l.isActive).length}
                     </p>

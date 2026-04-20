@@ -37,6 +37,7 @@ import { useDriverSocket } from "@/hooks/useDriverSocket";
 import { useBattery } from "@/hooks/useBattery";
 import type { NavUpdateData } from "@/components/rider/RiderMiniMap";
 import { toast } from "@/store/toast";
+import { formatARS } from "@/lib/format";
 
 // Views
 import HistoryView from "@/components/rider/views/HistoryView";
@@ -1046,7 +1047,7 @@ export default function RiderDashboard() {
                                         <Wallet className="w-5 h-5 text-[var(--rider-accent)]" />
                                     </div>
                                     <p className="text-2xl font-extrabold text-[var(--rider-text)] leading-none">
-                                        ${displayedEarnings.toLocaleString()}
+                                        ${formatARS(displayedEarnings)}
                                     </p>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Ganancias Hoy</p>
                                 </div>

@@ -1139,38 +1139,53 @@ export default function CheckoutPage() {
                                 </div>
                             ))}
 
+                            {/* ISSUE-059: desglose siempre visible — transparencia de precio
+                                es valor fundacional de Moovy. Mostramos Subtotal + método de
+                                entrega (Retiro/Envío con valor) + Descuentos + Total. */}
                             <div className="border-t pt-4 lg:pt-6 space-y-2 lg:space-y-3">
                                 <div className="flex justify-between text-sm lg:text-base">
                                     <span>Subtotal</span>
                                     <span>{formatPrice(subtotal)}</span>
                                 </div>
-                                {!isPickup && isMultiVendor && Object.keys(vendorDeliveryResults).length > 0 ? (
-                                    /* Multi-vendor: per-vendor delivery fees */
-                                    groups.filter(g => g.vendorType === "merchant").map((group) => {
-                                        const result = vendorDeliveryResults[group.vendorId];
-                                        if (!result?.isWithinRange) return null;
-                                        return (
-                                            <div key={group.vendorId} className="flex justify-between text-sm lg:text-base">
-                                                <span className="text-gray-500">Envío {group.vendorName}</span>
-                                                <span className={result.isFreeDelivery ? "text-green-600" : ""}>
-                                                    {result.isFreeDelivery ? "GRATIS" : formatPrice(result.totalCost)}
-                                                </span>
-                                            </div>
-                                        );
-                                    })
+                                {isPickup ? (
+                                    <div className="flex justify-between text-sm lg:text-base">
+                                        <span>Retiro en local</span>
+                                        <span className="text-green-600 font-medium">GRATIS</span>
+                                    </div>
+                                ) : isMultiVendor && Object.keys(vendorDeliveryResults).length > 0 ? (
+                                    /* Multi-vendor: per-vendor delivery fees (a domicilio) */
+                                    <>
+                                        {groups.filter(g => g.vendorType === "merchant").map((group) => {
+                                            const result = vendorDeliveryResults[group.vendorId];
+                                            if (!result?.isWithinRange) return null;
+                                            return (
+                                                <div key={group.vendorId} className="flex justify-between text-sm lg:text-base">
+                                                    <span className="text-gray-500">Envío a domicilio · {group.vendorName}</span>
+                                                    <span className={result.isFreeDelivery ? "text-green-600" : ""}>
+                                                        {result.isFreeDelivery ? "GRATIS" : formatPrice(result.totalCost)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
                                 ) : deliveryResult?.isWithinRange ? (
                                     <div className="flex justify-between text-sm lg:text-base">
-                                        <span>Envío</span>
+                                        <span>Envío a domicilio</span>
                                         <span className={deliveryResult.isFreeDelivery ? "text-green-600" : ""}>
                                             {deliveryResult.isFreeDelivery
                                                 ? "GRATIS"
                                                 : formatPrice(deliveryResult.totalCost)}
                                         </span>
                                     </div>
-                                ) : null}
+                                ) : (
+                                    <div className="flex justify-between text-sm lg:text-base text-gray-400 italic">
+                                        <span>Envío a domicilio</span>
+                                        <span>Ingresá tu dirección</span>
+                                    </div>
+                                )}
                                 {discountAmount > 0 && (
                                     <div className="flex justify-between text-sm lg:text-base text-green-600 font-medium">
-                                        <span>Descuento (Puntos)</span>
+                                        <span>Descuento (Puntos MOOVER)</span>
                                         <span>-{formatPrice(discountAmount)}</span>
                                     </div>
                                 )}

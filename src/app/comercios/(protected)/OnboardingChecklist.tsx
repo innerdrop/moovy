@@ -78,8 +78,12 @@ export default function OnboardingChecklist() {
     const allSteps = [...docSteps, ...opSteps];
     const requiredSteps = allSteps.filter(s => s.required);
     const completedRequired = requiredSteps.filter(s => s.completed).length;
-    const completedTotal = allSteps.filter(s => s.completed).length;
-    const progressPercent = (completedTotal / allSteps.length) * 100;
+    // ISSUE-037: un solo contador en toda la vista — el que importa es el de
+    // requisitos OBLIGATORIOS, porque es el que gatea si la tienda puede abrir.
+    // Los opcionales se ven abajo pero no cuentan en el número principal.
+    const progressPercent = requiredSteps.length > 0
+        ? (completedRequired / requiredSteps.length) * 100
+        : 100;
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -90,14 +94,14 @@ export default function OnboardingChecklist() {
                         className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
                         style={{ backgroundColor: "#e60012" }}
                     >
-                        {completedTotal}/{allSteps.length}
+                        {completedRequired}/{requiredSteps.length}
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-900">Completá tu perfil</p>
+                        <p className="text-sm font-semibold text-gray-900">Requisitos obligatorios</p>
                         <p className="text-[11px] text-gray-400">
                             {status.canOpenStore
                                 ? "¡Tu tienda está lista para abrir!"
-                                : "Completá los pasos obligatorios para poder abrir tu tienda"
+                                : "Completá los requisitos obligatorios para poder abrir tu tienda"
                             }
                         </p>
                     </div>
@@ -121,12 +125,12 @@ export default function OnboardingChecklist() {
                 </div>
             </div>
 
-            {/* Store lock warning */}
+            {/* Store lock warning — ISSUE-037: sin repetir el contador, ya está arriba */}
             {!status.canOpenStore && (
                 <div className="mx-4 mb-2 flex items-center gap-2 text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-100">
                     <Lock className="w-4 h-4 flex-shrink-0" />
                     <p className="text-xs font-medium">
-                        Tu tienda permanecerá cerrada hasta que completes los pasos obligatorios ({completedRequired}/{requiredSteps.length})
+                        Tu tienda permanecerá cerrada hasta que completes los requisitos obligatorios
                     </p>
                 </div>
             )}
@@ -153,7 +157,9 @@ export default function OnboardingChecklist() {
                         )}
                         <span
                             className={`text-sm font-medium flex-1 ${
-                                step.completed ? "text-green-700 line-through decoration-green-300" : "text-gray-700"
+                                // ISSUE-043: sin line-through (se leía como "eliminado").
+                                // Mantenemos verde + opacidad reducida + el ✓ del ícono ya marca el estado.
+                                step.completed ? "text-green-700 opacity-70" : "text-gray-700"
                             }`}
                         >
                             {step.label}
@@ -190,7 +196,9 @@ export default function OnboardingChecklist() {
                         )}
                         <span
                             className={`text-sm font-medium flex-1 ${
-                                step.completed ? "text-green-700 line-through decoration-green-300" : "text-gray-700"
+                                // ISSUE-043: sin line-through (se leía como "eliminado").
+                                // Mantenemos verde + opacidad reducida + el ✓ del ícono ya marca el estado.
+                                step.completed ? "text-green-700 opacity-70" : "text-gray-700"
                             }`}
                         >
                             {step.label}

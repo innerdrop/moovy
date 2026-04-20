@@ -8,6 +8,7 @@ import {
     Calendar,
     Loader2
 } from "lucide-react";
+import { formatARS } from "@/lib/format";
 
 interface DeliveryRecord {
     id: string;
@@ -88,7 +89,7 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                             <p className="text-xs text-white/80">Completadas</p>
                         </div>
                         <div className="bg-white/20 rounded-lg p-3 text-center">
-                            <p className="text-2xl font-bold">${stats.totalEarnings.toLocaleString()}</p>
+                            <p className="text-2xl font-bold">${formatARS(stats.totalEarnings)}</p>
                             <p className="text-xs text-white/80">Ganado</p>
                         </div>
                     </div>
@@ -159,7 +160,7 @@ export default function HistoryView({ onBack }: HistoryViewProps) {
                                             <div className="flex items-center justify-between pt-2 border-t dark:border-white/10">
                                                 <span className="text-xs text-gray-400">Pedido total</span>
                                                 <p className={`font-bold ${delivery.total > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                                                    {delivery.total > 0 ? `$${delivery.total.toLocaleString()}` : "-"}
+                                                    {delivery.total > 0 ? `$${formatARS(delivery.total)}` : "-"}
                                                 </p>
                                             </div>
                                         </div>

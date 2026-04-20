@@ -10,6 +10,7 @@ import {
     Power,
     Bike,
 } from "lucide-react";
+import { formatARS } from "@/lib/format";
 
 interface ShiftSummaryData {
     totalEarnings: number;
@@ -140,7 +141,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                 {/* Main earnings */}
                                 <div className="text-center mb-6">
                                     <p className="text-4xl font-extrabold bg-gradient-to-r from-[#e60012] to-[#b8000e] bg-clip-text text-transparent">
-                                        ${displayEarnings.toLocaleString()}
+                                        ${formatARS(displayEarnings)}
                                     </p>
                                     <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mt-1">
                                         Ganancia total del turno
@@ -161,7 +162,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                     <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <Star className="w-4 h-4 text-blue-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900 dark:text-white">
-                                            ${data.avgPerDelivery.toLocaleString()}
+                                            ${formatARS(data.avgPerDelivery)}
                                         </p>
                                         <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                                             Promedio
@@ -170,7 +171,7 @@ export function ShiftSummaryModal({ isOpen, onClose, onConfirmDisconnect }: Shif
                                     <div className="bg-gray-50 dark:bg-[#22252f] rounded-[18px] p-4">
                                         <Trophy className="w-4 h-4 text-amber-500 mb-2" />
                                         <p className="text-xl font-extrabold text-gray-900 dark:text-white">
-                                            ${data.bestDelivery?.earnings.toLocaleString() || "—"}
+                                            ${data.bestDelivery ? formatARS(data.bestDelivery.earnings) : "—"}
                                         </p>
                                         <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
                                             Mejor entrega

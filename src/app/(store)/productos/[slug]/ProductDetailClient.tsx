@@ -212,15 +212,38 @@ export default function ProductDetailClient() {
 
                 {/* Content */}
                 <div className="px-4 pt-4 pb-32">
-                    {/* Category */}
-                    {category && (
-                        <Link href={`/productos?categoria=${category.slug}`} className="inline-block text-xs font-semibold text-[#e60012] bg-red-50 px-2.5 py-1 rounded-full mb-2">
-                            {category.name}
-                        </Link>
-                    )}
+                    {/* ISSUE-041 + ISSUE-042: chips de categoría + comercio arriba
+                        para que el buyer sepa de inmediato de qué tienda es el producto,
+                        sin tener que scrollear hasta la merchant card. */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                        {category && (
+                            <Link href={`/productos?categoria=${category.slug}`} className="inline-block text-xs font-semibold text-[#e60012] bg-red-50 px-2.5 py-1 rounded-full">
+                                {category.name}
+                            </Link>
+                        )}
+                        {merchant && (
+                            <Link
+                                href={`/tienda/${merchant.slug}`}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition px-2.5 py-1 rounded-full"
+                            >
+                                <Store className="w-3 h-3" />
+                                {merchant.name}
+                            </Link>
+                        )}
+                    </div>
 
                     {/* Name + Price */}
                     <h1 className="text-xl font-bold text-gray-900 mb-1">{product.name}</h1>
+                    {/* ISSUE-042: subtítulo mobile con el comercio — clickeable,
+                        redundante con el chip de arriba pero más legible en un vistazo. */}
+                    {merchant && (
+                        <p className="text-xs text-gray-500 mb-1">
+                            Vendido por{" "}
+                            <Link href={`/tienda/${merchant.slug}`} className="font-medium text-gray-700 hover:text-[#e60012] transition">
+                                {merchant.name}
+                            </Link>
+                        </p>
+                    )}
                     <p className="text-2xl font-bold text-[#e60012] mb-1">{formatPrice(product.price)}</p>
                     <p className="text-xs text-amber-600 font-medium mb-3 flex items-center gap-1">
                         <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
@@ -416,20 +439,31 @@ export default function ProductDetailClient() {
 
             {/* ═══════ DESKTOP: Two-column layout ═══════ */}
             <div className="hidden lg:block mx-auto max-w-7xl px-4 xl:px-6 2xl:px-8 py-8 lg:py-10 xl:py-12">
-                {/* Breadcrumb */}
-                <nav className="mb-6 lg:mb-8">
-                    <ol className="flex items-center gap-2 text-sm text-gray-500 xl:text-base">
+                {/* ISSUE-042: Breadcrumb desktop — incluye el comercio entre
+                    la categoría y el nombre del producto, clickeable a la tienda. */}
+                <nav className="mb-6 lg:mb-8" aria-label="Breadcrumb">
+                    <ol className="flex items-center gap-2 text-sm text-gray-500 xl:text-base flex-wrap">
                         <li><Link href="/" className="hover:text-[#e60012] transition">Inicio</Link></li>
-                        <li>/</li>
+                        <li aria-hidden="true">/</li>
                         <li><Link href="/productos" className="hover:text-[#e60012] transition">Productos</Link></li>
                         {category && (
                             <>
-                                <li>/</li>
+                                <li aria-hidden="true">/</li>
                                 <li><Link href={`/productos?categoria=${category.slug}`} className="hover:text-[#e60012] transition">{category.name}</Link></li>
                             </>
                         )}
-                        <li>/</li>
-                        <li className="text-gray-900 font-medium truncate max-w-[200px] lg:max-w-sm">{product.name}</li>
+                        {merchant && (
+                            <>
+                                <li aria-hidden="true">/</li>
+                                <li>
+                                    <Link href={`/tienda/${merchant.slug}`} className="hover:text-[#e60012] transition truncate max-w-[200px] inline-block align-bottom">
+                                        {merchant.name}
+                                    </Link>
+                                </li>
+                            </>
+                        )}
+                        <li aria-hidden="true">/</li>
+                        <li className="text-gray-900 font-medium truncate max-w-[200px] lg:max-w-sm" aria-current="page">{product.name}</li>
                     </ol>
                 </nav>
 
@@ -470,11 +504,24 @@ export default function ProductDetailClient() {
 
                     {/* Info */}
                     <div className="flex flex-col">
-                        {category && (
-                            <Link href={`/productos?categoria=${category.slug}`} className="text-[#e60012] text-sm font-medium hover:underline mb-2 lg:text-base lg:mb-3">
-                                {category.name}
-                            </Link>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2 mb-2 lg:mb-3">
+                            {category && (
+                                <Link href={`/productos?categoria=${category.slug}`} className="text-[#e60012] text-sm font-medium hover:underline lg:text-base">
+                                    {category.name}
+                                </Link>
+                            )}
+                            {/* ISSUE-041: chip de comercio visible desde el primer vistazo */}
+                            {merchant && category && <span className="text-gray-300">·</span>}
+                            {merchant && (
+                                <Link
+                                    href={`/tienda/${merchant.slug}`}
+                                    className="inline-flex items-center gap-1 text-sm lg:text-base text-gray-600 hover:text-[#e60012] transition font-medium"
+                                >
+                                    <Store className="w-3.5 h-3.5" />
+                                    {merchant.name}
+                                </Link>
+                            )}
+                        </div>
                         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-2 lg:mb-4">{product.name}</h1>
                         <div className="flex items-center gap-3 mb-4 lg:mb-6 lg:gap-6">
                             <div>

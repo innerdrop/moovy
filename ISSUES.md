@@ -1,7 +1,7 @@
 # Moovy — Issues pre-lanzamiento
 
-**Última actualización:** 2026-04-20 (bundle seguridad: ISSUE-017, 018, 019 resueltos; ISSUE-022 diferido con rationale)
-**Versión anterior:** 2026-04-20 (audit full contra código real — rama `docs/audit-estado-real`)
+**Última actualización:** 2026-04-20 (bundle UX pulido pre-launch: ISSUE-036, 037, 038, 039, 041, 042, 043, 044, 047, 059 resueltos — rama `fix/ux-pulido-pre-launch`)
+**Versión anterior:** 2026-04-20 (bundle seguridad: ISSUE-017, 018, 019 resueltos; ISSUE-022 diferido con rationale)
 
 Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Antes del audit del 2026-04-20 la lista estaba seriamente desactualizada: muchos issues marcados como 🔴 CRÍTICOS abiertos ya estaban resueltos desde hacía semanas (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, redirects, etc.). La nueva versión refleja lo que realmente queda.
 
@@ -11,7 +11,7 @@ Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Ante
 
 **Críticos reales restantes: 1** (data cleanup manual — ISSUE-004 via script PL-001 pre-lanzamiento).
 **Críticos parciales: 1** (ISSUE-054 mensaje "sin repartidores" — tiene mensaje y programar, falta "avisame cuando haya driver").
-**Importantes reales restantes: 15** (principalmente UX + polish; los 3 de seguridad urgentes + el diferido se cerraron el 2026-04-20).
+**Importantes reales restantes: 5** (principalmente backend/logística; 10 de UX pulido + 3 de seguridad urgentes + el diferido se cerraron el 2026-04-20).
 **Menores: 16** (post-lanzamiento).
 
 La buena noticia: **todos los críticos que tenían riesgo de dinero, fraude o datos ya están resueltos** (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, puntos post-DELIVERED, subastas ocultas, redirects rotos, post-checkout redirect). El código está en un estado sólido para lanzar.
@@ -84,47 +84,36 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 ### UX / visibilidad
 
 #### ISSUE-036 — Home: la misma tienda aparece 4 veces en distintas secciones
-**Estado:** 🔴 ABIERTO
-**Qué pasa:** "La Estancia" aparece en "Abiertos ahora", "Nuevos en MOOVY", "Los más pedidos" y "Mejor calificados". En launch week con pocos comercios, transmite pobreza de oferta.
-**Fix:** Regla de diversidad — si <3 comercios totales, mostrar una sola sección "Comercios en Moovy". Si ≥3, garantizar que cada sección tenga 2+ comercios distintos y ningún merchant aparezca en 2+ secciones. Ocultar "Los más pedidos" si no hay data.
-**Esfuerzo:** M (4-6 horas).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `src/app/(store)/page.tsx` — nueva función `applyDiversityRule()` con prioridad Populares → Mejor calificados → Nuevos. Cada fila excluye merchants ya tomados por filas anteriores. Filas con <2 merchants se ocultan. Si <3 merchants activos en total, se ocultan TODAS las filas curadas (la fila principal "Abiertos ahora" sigue mostrando todo). Cada fila tiene conditional render si queda vacía.
 
 #### ISSUE-037 — Dashboard comercio: contador de progreso aún con 2 números distintos
-**Estado:** 🟡 PARCIAL — ya no son 3 (5/7, 5/8, 5/9). Ahora son 2: en `OnboardingChecklist.tsx` L93 `{completedTotal}/{allSteps.length}` y L129 `({completedRequired}/{requiredSteps.length})`. Siguen siendo dos números distintos en la misma vista.
-**Fix:** Unificar en uno solo — "5 de 7 requisitos obligatorios". Los opcionales se listan abajo pero no cuentan en el contador principal.
-**Esfuerzo:** S (30 min).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `OnboardingChecklist.tsx` — contador unificado usa `{completedRequired}/{requiredSteps.length}` en todos los lugares. Los opcionales se listan abajo pero no suman al contador principal.
 
 #### ISSUE-038 — Dashboard comercio: chip "Abierto" verde cuando la tienda está cerrada
-**Estado:** 🔴 ABIERTO
-**Dónde:** `src/app/comercios/(protected)/page.tsx` L64-66 — `{merchant.isOpen ? "Abierto" : "Cerrado"}` usando solo `merchant.isOpen`, ignora el estado de onboarding incompleto.
-**Fix:** Tres estados posibles: "Pendiente" (gris, requisitos incompletos o approvalStatus !== APPROVED), "Cerrada" (rojo, cumple requisitos pero merchant la cerró manualmente), "Abierta" (verde, lista).
-**Esfuerzo:** S (1 hora).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `src/app/comercios/(protected)/page.tsx` — chip tri-estado que combina `approvalStatus` + check de onboarding (docs/schedule/productos/dirección, misma lógica que `/api/merchant/onboarding`) + `checkMerchantSchedule` (pausa manual + horario real). Estados: "Pendiente" (gris), "Cerrada" (rojo con subtítulo: pausada manualmente / abre [día] [hora] / fuera de horario), "Abierta" (verde).
 
 #### ISSUE-039 — Formato de moneda US en driver dashboard
-**Estado:** 🟡 PARCIAL — algunos lugares ya usan es-AR, pero `src/app/repartidor/(protected)/dashboard/page.tsx` L1049 sigue con `${displayedEarnings.toLocaleString()}` sin locale.
-**Fix:** Auditar TODOS los `.toLocaleString()` en el proyecto, envolver en helper central `formatARS(n)` que use `Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })`.
-**Esfuerzo:** S (1-2 horas para barrido completo).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** Nuevo helper `src/lib/format.ts` con `formatARS(n)` y `formatPriceARS(n)` usando `Intl.NumberFormat("es-AR")` con formatters cacheados. Barrido en `src/app/repartidor/(protected)/dashboard/page.tsx`, `rider/views/HistoryView.tsx`, `rider/views/EarningsView.tsx`, `rider/ShiftSummaryModal.tsx`, `home/FavoritesCarousel.tsx` — todos los `.toLocaleString()` sin locale migrados.
 
 #### ISSUE-041 — Detalle de producto: no muestra nombre del comercio visible en la UI
-**Estado:** 🔴 ABIERTO (el merchant está en el JSON-LD para SEO, pero no se renderiza visible al usuario).
-**Fix:** Bajo el precio, chip clickeable: "De La Estancia · 30-45 min" con link al detalle del comercio.
-**Esfuerzo:** S (1 hora).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `ProductDetailClient.tsx` — chip del comercio visible en mobile (junto a categoría) con link a su detalle, y subtítulo "Vendido por [merchant]" bajo el título del producto. En desktop, chip de comercio junto a la categoría.
 
 #### ISSUE-042 — Sin breadcrumbs en flujos multi-paso
-**Estado:** 🔴 ABIERTO
-**Fix:** Breadcrumb "Inicio > La Estancia > Coca Cola" en desktop. En mobile, subtítulo clickeable con nombre del comercio bajo el título del producto.
-**Esfuerzo:** S (2-3 horas).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `ProductDetailClient.tsx` — breadcrumb desktop "Inicio › Categoría › Comercio › Producto" con `aria-current="page"` en el último. Mobile usa el chip de comercio + subtítulo "Vendido por" como equivalente no-wrap. (Resuelto en compound con ISSUE-041 porque ambos tocan el header del detalle.)
 
 #### ISSUE-043 — Tachado verde sobre items completados se lee como "eliminado"
-**Estado:** 🔴 ABIERTO
-**Dónde:** `OnboardingChecklist.tsx` L156, 193 — `step.completed ? "text-green-700 line-through decoration-green-300"`.
-**Fix:** Quitar `line-through`. Mantener texto verde + ícono ✓ + opacidad 70% para diferenciar.
-**Esfuerzo:** XS (15 min).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `OnboardingChecklist.tsx` — reemplazado `line-through decoration-green-300` por `opacity-70`. Texto verde + ícono ✓ + opacidad se lee como completado, no eliminado.
 
 #### ISSUE-044 — Eliminar dirección: solo `confirm()` nativo, sin check si es la única
-**Estado:** 🟡 PARCIAL — `/mi-perfil/direcciones/page.tsx` L94 tiene `confirm("¿Estás seguro...")`. Falta: modal custom bonito + bloqueo si es la única dirección del user.
-**Fix:** Reemplazar `confirm()` por `<ConfirmModal>`. Si `addresses.length === 1`, deshabilitar el tacho y mostrar "Reemplazar" / "Editar" en su lugar.
-**Esfuerzo:** S (1-2 horas).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `src/app/(store)/mi-perfil/direcciones/page.tsx` — reemplazado `confirm()` nativo por el `ConfirmModal` global vía `confirm()` promise API (store/confirm). Si `addresses.length === 1`, se bloquea con modal warning "No podés quedarte sin direcciones — Agregá otra antes de eliminarla". Modal de confirmación con variant danger incluye la dirección completa en el mensaje. Added `aria-label` al botón y toast.success post-delete.
 
 #### ISSUE-045 — Puntos: progress bar al próximo nivel y explicación del valor
 **Estado:** 🟡 PARCIAL — `/puntos/page.tsx` ya menciona "5 pedidos en 90 días" para SILVER y "15 pedidos en 90 días" para GOLD. Falta: bloque explicativo del valor ("1 punto = $1, mínimo 500, max 20%") destacado + progress bar visual hacia el siguiente nivel.
@@ -132,9 +121,8 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 **Esfuerzo:** M (3-4 horas).
 
 #### ISSUE-047 — Portal vendedor: toggle "Cerrado / No recibo pedidos" con semántica ambigua
-**Estado:** 🔴 ABIERTO (sin verificar en detalle, pero el issue visual sigue).
-**Fix:** Un único label grande dependiendo del estado: "Abierto a ventas" (verde) / "Cerrado a ventas" (rojo). Switch visualmente subordinado al estado.
-**Esfuerzo:** S (1 hora).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** Portal vendedor usa el mismo lenguaje en todos los touchpoints: dashboard muestra badge "Abierta a ventas" / "Cerrada a ventas" por listing y stat card "Abiertas a ventas". Listings page stats usan "Abiertas a ventas" / "Cerradas a ventas". Semántico al vendedor: es disponibilidad al comprador, no un estado técnico "Activa/Inactiva".
 
 #### ISSUE-055 — Breadcrumb checkout: nombres y los 3 activos al mismo tiempo
 **Estado:** 🔴 ABIERTO
@@ -147,9 +135,8 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 **Esfuerzo:** incluido en ISSUE-055.
 
 #### ISSUE-059 — Resumen de checkout no desglosa costo de envío
-**Estado:** 🔴 ABIERTO
-**Fix:** Siempre desglosar: Subtotal, Envío (con valor y método), Descuentos (puntos/cupones), Total. Transparencia de precio es valor fundacional de Moovy.
-**Esfuerzo:** S (1-2 horas).
+**Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
+**Fix aplicado:** `src/app/(store)/checkout/page.tsx` — desglose siempre visible: Subtotal + método de entrega (Retiro en local GRATIS / Envío a domicilio · vendor con valor o "Ingresá tu dirección" si aún no hay cálculo) + Descuento (Puntos MOOVER) + Total. Multi-vendor muestra una línea por comercio. "GRATIS" en verde para envío sin costo.
 
 ### Negocio / onboarding
 

@@ -10,6 +10,7 @@ import {
     Loader2,
     Wallet
 } from "lucide-react";
+import { formatARS } from "@/lib/format";
 
 interface EarningDay {
     date: string;
@@ -102,7 +103,7 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                         <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-6 shadow-sm">
                             <div className="text-center mb-6">
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Total ganado</p>
-                                <p className="text-4xl font-bold text-gray-900 dark:text-white">${data.totalEarnings.toLocaleString()}</p>
+                                <p className="text-4xl font-bold text-gray-900 dark:text-white">${formatARS(data.totalEarnings)}</p>
                                 {data.previousPeriodTotal > 0 && (
                                     <div className={`flex items-center justify-center gap-1 mt-2 text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                                         {isPositive ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -121,7 +122,7 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                                     <p className="text-xs text-gray-500 dark:text-gray-400">Por entrega</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${data.avgPerDay.toLocaleString()}</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${formatARS(data.avgPerDay)}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">Por dia</p>
                                 </div>
                             </div>
@@ -147,7 +148,7 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">{day.deliveries} entrega{day.deliveries !== 1 ? "s" : ""}</p>
                                                 </div>
                                             </div>
-                                            <p className="font-bold text-gray-900 dark:text-white">${day.earnings.toLocaleString()}</p>
+                                            <p className="font-bold text-gray-900 dark:text-white">${formatARS(day.earnings)}</p>
                                         </div>
                                     ))}
                                 </div>
