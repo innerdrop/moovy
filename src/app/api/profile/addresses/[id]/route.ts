@@ -1,9 +1,45 @@
 // API Route: Single Address Operations
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+// ISSUE-017: mismo regex que POST /api/profile/addresses
+// Letras (incluye acentos y ñ), dígitos, espacios y puntuación común de direcciones.
+// Rechaza <, >, {, }, backticks, comillas, $, &, etc. para prevenir XSS stored.
+const SAFE_TEXT_REGEX = /^[\p{L}\p{N}\s.,#\-/()°º'ª]+$/u;
+
+const AddressTextFieldOptional = z
+    .string()
+    .trim()
+    .max(150, "Máximo 150 caracteres")
+    .regex(SAFE_TEXT_REGEX, "Contiene caracteres no permitidos")
+    .optional()
+    .or(z.literal(""))
+    .nullable();
+
+const AddressPatchSchema = z.object({
+    label: AddressTextFieldOptional,
+    street: AddressTextFieldOptional,
+    number: AddressTextFieldOptional,
+    apartment: AddressTextFieldOptional,
+    neighborhood: AddressTextFieldOptional,
+    city: AddressTextFieldOptional,
+    province: AddressTextFieldOptional,
+    zipCode: z
+        .string()
+        .trim()
+        .max(12, "Código postal inválido")
+        .regex(/^[A-Za-z0-9\s\-]+$/, "Código postal inválido")
+        .optional()
+        .or(z.literal(""))
+        .nullable(),
+    latitude: z.number().min(-90).max(90).nullable().optional(),
+    longitude: z.number().min(-180).max(180).nullable().optional(),
+    isDefault: z.boolean().optional(),
+});
 
 // GET - Get single address
 export async function GET(
@@ -50,7 +86,18 @@ export async function PATCH(
         }
 
         const { id } = await context.params;
-        const data = await request.json();
+        const raw = await request.json();
+
+        // ISSUE-017: validación estricta contra XSS stored
+        const validation = AddressPatchSchema.safeParse(raw);
+        if (!validation.success) {
+            const message = validation.error.issues[0]?.message || "Datos inválidos";
+            return NextResponse.json(
+                { error: message, field: validation.error.issues[0]?.path?.join(".") },
+                { status: 400 }
+            );
+        }
+        const data = validation.data;
 
         // Check ownership first
         const existing = await prisma.address.findUnique({
@@ -73,17 +120,18 @@ export async function PATCH(
             return await tx.address.update({
                 where: { id },
                 data: {
-                    label: data.label,
-                    street: data.street,
-                    number: data.number,
-                    apartment: data.apartment,
-                    neighborhood: data.neighborhood,
-                    city: data.city,
-                    province: data.province,
-                    latitude: data.latitude,
-                    longitude: data.longitude,
-                    isDefault: data.isDefault,
-                    // Prisma ignores undefined values in update usually, but explicit cleaner is good practice if using spread
+                    // Prisma ignora undefined en update → solo updatea los campos que vinieron
+                    label: data.label ?? undefined,
+                    street: data.street ?? undefined,
+                    number: data.number ?? undefined,
+                    apartment: data.apartment ?? undefined,
+                    neighborhood: data.neighborhood ?? undefined,
+                    city: data.city ?? undefined,
+                    province: data.province ?? undefined,
+                    zipCode: data.zipCode ?? undefined,
+                    latitude: data.latitude ?? undefined,
+                    longitude: data.longitude ?? undefined,
+                    isDefault: data.isDefault ?? undefined,
                 }
             });
         });

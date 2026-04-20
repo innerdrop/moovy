@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import DOMPurify from "isomorphic-dompurify";
 
 interface EmailEntry {
   id: string;
@@ -514,7 +515,28 @@ export default function OpsEmailsPage() {
                       margin: "0 auto",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                     }}
-                    dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
+                    // ISSUE-018: sanitizamos antes de inyectar. Templates pueden
+                    // contener variables interpoladas del buyer/merchant (ej: nombres
+                    // con HTML). Sin DOMPurify, una variable maliciosa → XSS stored
+                    // contra el admin que abre el preview.
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(selectedEmail.html, {
+                        ALLOWED_TAGS: [
+                          "a", "b", "br", "center", "div", "em", "h1", "h2", "h3",
+                          "h4", "h5", "h6", "hr", "i", "img", "li", "ol", "p",
+                          "pre", "small", "span", "strong", "sub", "sup", "table",
+                          "tbody", "td", "th", "thead", "tr", "u", "ul", "style",
+                        ],
+                        ALLOWED_ATTR: [
+                          "align", "alt", "bgcolor", "border", "cellpadding",
+                          "cellspacing", "class", "color", "colspan", "content",
+                          "dir", "height", "href", "id", "lang", "name", "rel",
+                          "rowspan", "scope", "shape", "size", "src", "srcset",
+                          "style", "target", "title", "type", "valign", "value",
+                          "width",
+                        ],
+                      }),
+                    }}
                   />
                 </div>
               )}

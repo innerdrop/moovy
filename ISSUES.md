@@ -1,7 +1,7 @@
 # Moovy — Issues pre-lanzamiento
 
-**Última actualización:** 2026-04-20 (audit full contra código real — rama `docs/audit-estado-real`)
-**Versión anterior:** 2026-04-15 (audit inicial + UX pass + checkout e2e)
+**Última actualización:** 2026-04-20 (bundle seguridad: ISSUE-017, 018, 019 resueltos; ISSUE-022 diferido con rationale)
+**Versión anterior:** 2026-04-20 (audit full contra código real — rama `docs/audit-estado-real`)
 
 Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Antes del audit del 2026-04-20 la lista estaba seriamente desactualizada: muchos issues marcados como 🔴 CRÍTICOS abiertos ya estaban resueltos desde hacía semanas (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, redirects, etc.). La nueva versión refleja lo que realmente queda.
 
@@ -11,7 +11,7 @@ Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Ante
 
 **Críticos reales restantes: 1** (data cleanup manual — ISSUE-004 via script PL-001 pre-lanzamiento).
 **Críticos parciales: 1** (ISSUE-054 mensaje "sin repartidores" — tiene mensaje y programar, falta "avisame cuando haya driver").
-**Importantes reales restantes: 19** (principalmente UX + polish + 3 de seguridad no-urgentes).
+**Importantes reales restantes: 15** (principalmente UX + polish; los 3 de seguridad urgentes + el diferido se cerraron el 2026-04-20).
 **Menores: 16** (post-lanzamiento).
 
 La buena noticia: **todos los críticos que tenían riesgo de dinero, fraude o datos ya están resueltos** (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, puntos post-DELIVERED, subastas ocultas, redirects rotos, post-checkout redirect). El código está en un estado sólido para lanzar.
@@ -58,32 +58,15 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 **Fix:** Cuando `assignmentLogs.length >= MAX_RETRIES * 2`, cancelar orden con razón "No hay repartidores disponibles", disparar refund MP (si fue pagado), notificar buyer + otorgar bonus $500 pts.
 **Esfuerzo:** M (1 día).
 
-#### ISSUE-017 — Input de direcciones sin regex validation
-**Estado:** 🔴 ABIERTO
-**Qué pasa:** `src/app/api/profile/addresses/route.ts` acepta `label`, `street`, `neighborhood`, etc. con solo `trim()` y check de vacío. Sin Zod schema ni regex que bloquee `<`, `>`, `{`, `}`, backticks.
-**Impacto:** XSS stored si alguna vista los mete en `dangerouslySetInnerHTML` (ej: template email sin sanitizar).
-**Fix:** Agregar Zod schema con `z.string().trim().max(100).regex(/^[\w\sñáéíóúÑÁÉÍÓÚ.,#\-°º]+$/)` en POST y PATCH.
-**Esfuerzo:** S (1 hora).
-
-#### ISSUE-018 — `dangerouslySetInnerHTML` en panel de emails OPS sin sanitizar
-**Estado:** 🔴 ABIERTO
-**Dónde:** `src/app/ops/(protected)/emails/page.tsx` L517 — `dangerouslySetInnerHTML={{ __html: selectedEmail.html }}`.
-**Fix:** Envolver con `DOMPurify.sanitize(selectedEmail.html, { ALLOWED_TAGS: [...] })`. Templates son editados por admin, pero una variable del comprador sin escapar = XSS stored al admin.
-**Esfuerzo:** S (1 hora).
-
-#### ISSUE-019 — Socket.IO `track_order` sin validación de ownership
-**Estado:** 🔴 ABIERTO
-**Dónde:** `scripts/socket-server.ts` L259-262 — `socket.on("track_order", orderId => socket.join(\`order:${orderId}\`))` sin validar que el user sea buyer/merchant/driver/admin de esa orden.
-**Impacto:** Un usuario curioso puede escuchar updates de ubicación de otros drivers.
-**Fix:** Antes de `socket.join(...)`, query `Order.findUnique({ where: { id }, select: { userId, merchantId, driverId } })` y validar contra `socket.data.userId/merchantId/driverId` o `role === "ADMIN"`.
-**Esfuerzo:** S (1-2 horas).
-
-#### ISSUE-022 — Listings públicas exponen `seller.id`
-**Estado:** 🔴 ABIERTO
-**Dónde:** `src/app/api/listings/route.ts` L67-88 — el `include` de seller tiene `id: true`.
-**Impacto:** No es IDOR directo pero facilita enumeración y ataques dirigidos a sellers.
-**Fix:** Remover `id: true` del select de seller en endpoints públicos. Mantener solo `displayName`, `rating`, `avatar`, `isVerified`. Usar `slug` si hace falta URL.
-**Esfuerzo:** S (30 min).
+#### ISSUE-022 — Listings públicas exponen `seller.id` (DIFERIDO con rationale)
+**Estado:** 🟢 DIFERIDO — cerrado como "no-op" el 2026-04-20.
+**Análisis real:**
+1. `SellerProfile.id` es un CUID. No es enumerable por incremento.
+2. `ListingCard.tsx` L138, 241, 370 USA `seller.id` para navegar a `/marketplace/vendedor/${id}` — removerlo rompería la UX crítica del marketplace.
+3. El select público ya excluye todo campo sensible (userId, mpAccessToken, mpRefreshToken, mpEmail, cuit, bankAlias, bankCbu). Solo expone `displayName`, `rating`, `avatar`, `isVerified` + `sellerAvailability`.
+4. `SellerProfile` no tiene slug — no hay URL alternativa.
+**Conclusión:** removería UX crítica para mitigar un riesgo teórico (CUIDs no son enumerables y no hay campos siblings sensibles). El issue original reposa en un miedo sin amenaza concreta.
+**Acción futura (post-lanzamiento):** si se detecta abuso real (ej: scraping masivo), considerar agregar `slug` a `SellerProfile` y migrar las URLs.
 
 ### Asignación / logística
 
@@ -209,6 +192,10 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 
 | Issue | Evidencia |
 |-------|-----------|
+| ISSUE-017 Input direcciones sin regex | Resuelto 2026-04-20. `src/app/api/profile/addresses/route.ts` + `[id]/route.ts` ahora validan con Zod + regex unicode `/^[\p{L}\p{N}\s.,#\-/()°º'ª]+$/u` + max 150. Rechaza `<`, `>`, `{`, `}`, backticks, `$`, `&`, comillas. |
+| ISSUE-018 `dangerouslySetInnerHTML` emails OPS sin sanitizar | Resuelto 2026-04-20. `src/app/ops/(protected)/emails/page.tsx` L505+ envuelve con `DOMPurify.sanitize()` con whitelist de tags HTML-email (a, table, tr, td, img, style, etc.) y atributos seguros. |
+| ISSUE-019 Socket `track_order` sin ownership | Resuelto 2026-04-20. `scripts/socket-server.ts` — handler ahora hace `prisma.order.findUnique` con userId + driver.userId + merchant.ownerId + subOrders (multi-vendor). Solo entran buyer/merchant/driver/seller o ADMIN. Valida typeof + length del orderId. |
+| ISSUE-022 Listings exponen seller.id | Diferido con rationale (ver arriba). CUIDs no enumerables + UX dependiente + sin campos siblings sensibles. |
 | ISSUE-009 Multi-vendor doble contabilidad comisión | `orders/route.ts` L398 `moovyCommission = 0` por default, L402 condiciona cálculo a `if (merchantId)` singular. Multi-vendor pone `merchantId: null` y usa SubOrder commissions. No hay doble contabilidad. |
 | ISSUE-011 fitBounds resetea viewport | `src/components/orders/OrderTrackingMiniMap.tsx` L348 `preserveViewport: true` |
 | ISSUE-016 Refund OPS no revierte puntos | `src/app/api/ops/refund/route.ts` L89-90 llama `reverseOrderPoints(orderId, reason)` |
@@ -304,10 +291,10 @@ Reemplazo de PL-001 una vez con data real. Subcomandos `soft-delete-user --id`, 
 ### Priorización para lanzar (mínimo viable)
 
 **Día 1 (1 día de trabajo):**
-1. ISSUE-017 XSS direcciones — Zod regex (1h)
-2. ISSUE-018 Sanitizar dangerouslySetInnerHTML emails OPS (1h)
-3. ISSUE-019 Socket rooms ownership (2h)
-4. ISSUE-022 Remover seller.id (30min)
+1. ~~ISSUE-017 XSS direcciones — Zod regex (1h)~~ ✅ Resuelto 2026-04-20
+2. ~~ISSUE-018 Sanitizar dangerouslySetInnerHTML emails OPS (1h)~~ ✅ Resuelto 2026-04-20
+3. ~~ISSUE-019 Socket rooms ownership (2h)~~ ✅ Resuelto 2026-04-20
+4. ~~ISSUE-022 Remover seller.id (30min)~~ 🟢 Diferido con rationale 2026-04-20
 5. ISSUE-038 Chip "Abierto" con estado real (1h)
 6. ISSUE-043 Quitar line-through (15min)
 

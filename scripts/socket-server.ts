@@ -6,6 +6,11 @@ import "dotenv/config";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import crypto from "crypto";
+import { PrismaClient } from "@prisma/client";
+
+// Prisma client para validar ownership de orders (ISSUE-019).
+// Solo se usa en el handler de `track_order`; el resto del server es stateless.
+const prisma = new PrismaClient();
 
 const PORT = process.env.SOCKET_PORT || 3001;
 const NEXT_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -256,9 +261,75 @@ logistica.on("connection", (socket) => {
 
     // ── Customer/Public Events (any authenticated user) ─────────────────────
 
-    socket.on("track_order", (orderId: string) => {
-        console.log(`[Socket] Client tracking order: ${orderId}`);
-        socket.join(`order:${orderId}`);
+    // ISSUE-019: validamos ownership antes de meter al cliente al room.
+    // Sin este check, cualquier usuario autenticado podía escuchar el stream
+    // GPS de cualquier pedido simplemente mandando su orderId. Ahora solo
+    // el buyer, el merchant del pedido, el driver asignado o un ADMIN entran.
+    // Multi-vendor: también valida contra SubOrders (merchants y drivers
+    // distintos por comercio).
+    socket.on("track_order", async (orderId: string) => {
+        try {
+            if (typeof orderId !== "string" || orderId.length === 0 || orderId.length > 40) {
+                console.warn(`[Socket] track_order rejected: invalid orderId from ${socket.data.userId}`);
+                return;
+            }
+
+            // ADMIN bypass — ops panel puede tracar cualquier orden.
+            if (socket.data.role === "ADMIN") {
+                console.log(`[Socket] ADMIN ${socket.data.userId} tracking order: ${orderId}`);
+                socket.join(`order:${orderId}`);
+                return;
+            }
+
+            const socketUserId = socket.data.userId;
+            if (!socketUserId) {
+                console.warn(`[Socket] track_order rejected: no userId on socket`);
+                return;
+            }
+
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+                select: {
+                    userId: true,
+                    driver: { select: { userId: true } },
+                    merchant: { select: { ownerId: true } },
+                    subOrders: {
+                        select: {
+                            driver: { select: { userId: true } },
+                            merchant: { select: { ownerId: true } },
+                            seller: { select: { userId: true } },
+                        },
+                    },
+                },
+            });
+
+            if (!order) {
+                console.warn(`[Socket] track_order rejected: order not found (${orderId})`);
+                return;
+            }
+
+            const allowedUserIds = new Set<string>();
+            allowedUserIds.add(order.userId); // buyer
+            if (order.driver?.userId) allowedUserIds.add(order.driver.userId);
+            if (order.merchant?.ownerId) allowedUserIds.add(order.merchant.ownerId);
+            for (const so of order.subOrders) {
+                if (so.driver?.userId) allowedUserIds.add(so.driver.userId);
+                if (so.merchant?.ownerId) allowedUserIds.add(so.merchant.ownerId);
+                if (so.seller?.userId) allowedUserIds.add(so.seller.userId);
+            }
+
+            if (!allowedUserIds.has(socketUserId)) {
+                console.warn(
+                    `[Socket] track_order DENIED for user ${socketUserId} on order ${orderId} (not owner/merchant/driver)`
+                );
+                return;
+            }
+
+            console.log(`[Socket] User ${socketUserId} tracking order: ${orderId}`);
+            socket.join(`order:${orderId}`);
+        } catch (err) {
+            console.error(`[Socket] track_order error:`, err);
+        }
     });
 
     // ── Merchant Events (MERCHANT role only) ────────────────────────────────
