@@ -40,6 +40,29 @@ interface PointsTransaction {
     createdAt: string;
 }
 
+// ISSUE-045: Definiciones visuales de los niveles Biblia v3.
+// El backend devuelve solo el name (MOOVER/SILVER/GOLD/BLACK); acá mapeamos a ícono + copy.
+const LEVEL_VISUALS: Record<string, { icon: string; label: string; nextIcon?: string; nextLabel?: string }> = {
+    MOOVER: { icon: "🚀", label: "MOOVER", nextIcon: "🥈", nextLabel: "SILVER" },
+    SILVER: { icon: "🥈", label: "SILVER", nextIcon: "🥇", nextLabel: "GOLD" },
+    GOLD: { icon: "🥇", label: "GOLD", nextIcon: "👑", nextLabel: "BLACK" },
+    BLACK: { icon: "👑", label: "BLACK" },
+};
+
+interface UserLevelData {
+    level: "MOOVER" | "SILVER" | "GOLD" | "BLACK";
+    ordersInWindow: number;
+    earnMultiplier: number;
+    nextLevel: "MOOVER" | "SILVER" | "GOLD" | "BLACK" | null;
+    ordersToNextLevel: number;
+}
+
+interface PointsConfigData {
+    pointsValue: number;
+    minPointsToRedeem: number;
+    maxDiscountPercent: number;
+}
+
 export default function PuntosPage() {
     const { data: session, status: authStatus } = useSession();
     const [balance, setBalance] = useState(0);
@@ -47,6 +70,9 @@ export default function PuntosPage() {
     const [redeemableValue, setRedeemableValue] = useState(0);
     const [history, setHistory] = useState<PointsTransaction[]>([]);
     const [loading, setLoading] = useState(true);
+    // ISSUE-045: nivel dinamico + config para progress bar y bloque explicativo.
+    const [userLevel, setUserLevel] = useState<UserLevelData | null>(null);
+    const [pointsConfig, setPointsConfig] = useState<PointsConfigData | null>(null);
     const [showQR, setShowQR] = useState(false);
     const [copied, setCopied] = useState(false);
     const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -124,6 +150,13 @@ export default function PuntosPage() {
                 setPointsLifetime(data.pointsLifetime || 0);
                 setRedeemableValue(data.redeemableValue || 0);
                 setHistory(data.history || []);
+                // ISSUE-045: guardar nivel dinamico + config
+                if (data.userLevel) {
+                    setUserLevel(data.userLevel);
+                }
+                if (data.config) {
+                    setPointsConfig(data.config);
+                }
             }
         } catch (error) {
             console.error("Error loading points:", error);
@@ -803,22 +836,76 @@ export default function PuntosPage() {
                             <span className="text-xl text-white/70">puntos</span>
                         </div>
 
-                        {/* Membership Level - Clickable */}
-                        <button
-                            onClick={() => setShowLevelModal(true)}
-                            className="w-full bg-white/20 rounded-xl p-3 mb-4 hover:bg-white/30 transition active:scale-[0.98]"
-                        >
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-white/80">Tu nivel</span>
-                                <span className="font-bold text-lg flex items-center gap-1">
-                                    {"🚀 MOOVER"}
-                                </span>
-                            </div>
-                            <p className="text-[10px] text-white/60 mt-2 text-left">
-                                Tu nivel se calcula por pedidos entregados en los últimos 90 días.
-                                Tocá para ver los niveles.
-                            </p>
-                        </button>
+                        {/* ISSUE-045: Membership Level con progress bar al siguiente nivel */}
+                        {(() => {
+                            const lvlName = userLevel?.level ?? "MOOVER";
+                            const visual = LEVEL_VISUALS[lvlName] ?? LEVEL_VISUALS.MOOVER;
+                            const hasNext = userLevel?.nextLevel != null;
+                            const nextVisual = hasNext && userLevel?.nextLevel ? LEVEL_VISUALS[userLevel.nextLevel] : null;
+                            const orders = userLevel?.ordersInWindow ?? 0;
+                            const ordersToNext = userLevel?.ordersToNextLevel ?? 0;
+                            // Progress bar: pedidos actuales en la ventana vs pedidos que necesitaria para llegar al next
+                            // Si esta en BLACK (nivel maximo) mostramos barra full.
+                            const targetForNext = hasNext ? orders + ordersToNext : orders;
+                            const progressPercent = hasNext
+                                ? targetForNext > 0 ? Math.min(100, (orders / targetForNext) * 100) : 0
+                                : 100;
+
+                            return (
+                                <button
+                                    onClick={() => setShowLevelModal(true)}
+                                    className="w-full bg-white/20 rounded-xl p-3 mb-4 hover:bg-white/30 transition active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-white/80">Tu nivel</span>
+                                        <span className="font-bold text-lg flex items-center gap-1">
+                                            {visual.icon} {visual.label}
+                                        </span>
+                                    </div>
+
+                                    {/* Progress bar hacia el siguiente nivel */}
+                                    {hasNext && nextVisual ? (
+                                        <div className="mt-3">
+                                            <div className="flex items-center justify-between text-[11px] text-white/80 mb-1">
+                                                <span>
+                                                    {orders} {orders === 1 ? "pedido" : "pedidos"} (90 días)
+                                                </span>
+                                                <span className="font-semibold">
+                                                    {ordersToNext === 1
+                                                        ? `Falta 1 para ${nextVisual.icon} ${nextVisual.label}`
+                                                        : `Faltan ${ordersToNext} para ${nextVisual.icon} ${nextVisual.label}`}
+                                                </span>
+                                            </div>
+                                            <div
+                                                className="w-full h-2 bg-white/20 rounded-full overflow-hidden"
+                                                role="progressbar"
+                                                aria-valuenow={Math.round(progressPercent)}
+                                                aria-valuemin={0}
+                                                aria-valuemax={100}
+                                                aria-label={`Progreso al siguiente nivel ${nextVisual.label}`}
+                                            >
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 rounded-full transition-all duration-500"
+                                                    style={{ width: `${progressPercent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3">
+                                            <div className="flex items-center gap-2 text-[11px] text-yellow-200 font-semibold">
+                                                <Sparkles className="w-3.5 h-3.5" />
+                                                Nivel máximo alcanzado. Seguí pidiendo para mantenerlo.
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <p className="text-[10px] text-white/60 mt-2 text-left">
+                                        Tu nivel se calcula por pedidos entregados en los últimos 90 días.
+                                        Tocá para ver los niveles.
+                                    </p>
+                                </button>
+                            );
+                        })()}
 
                         {/* Action Buttons */}
                         <div className="flex gap-3">
@@ -838,6 +925,52 @@ export default function PuntosPage() {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* ISSUE-045: Bloque destacado con la regla de canje (Biblia v3).
+                    Le aclara al comprador en una mirada: cuánto vale un punto,
+                    cuándo puede canjear y cuál es el tope. Evita la confusión
+                    típica del primer canje ("¿500 pts son $500? ¿el descuento llega hasta todo el pedido?"). */}
+                <div className="mt-4 bg-white rounded-2xl p-4 border border-amber-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center">
+                            <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <h2 className="font-bold text-gray-900">Cómo funcionan tus puntos</h2>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+                            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">Valor</p>
+                            <p className="text-lg font-bold text-gray-900 leading-tight">
+                                1 pt = ${pointsConfig?.pointsValue ?? 1}
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">En el checkout</p>
+                        </div>
+                        <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+                            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">Mínimo</p>
+                            <p className="text-lg font-bold text-gray-900 leading-tight">
+                                {(pointsConfig?.minPointsToRedeem ?? 500).toLocaleString("es-AR")}
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">Para canjear</p>
+                        </div>
+                        <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+                            <p className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">Máximo</p>
+                            <p className="text-lg font-bold text-gray-900 leading-tight">
+                                {pointsConfig?.maxDiscountPercent ?? 20}%
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">Del subtotal</p>
+                        </div>
+                    </div>
+                    {balance >= (pointsConfig?.minPointsToRedeem ?? 500) ? (
+                        <p className="text-xs text-emerald-700 mt-3 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5" />
+                            Ya podés canjear tus puntos en el próximo pedido.
+                        </p>
+                    ) : (
+                        <p className="text-xs text-gray-500 mt-3">
+                            Te faltan {((pointsConfig?.minPointsToRedeem ?? 500) - balance).toLocaleString("es-AR")} pts para empezar a canjear.
+                        </p>
+                    )}
                 </div>
 
                 {/* Referral Code Section */}

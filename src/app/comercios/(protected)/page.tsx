@@ -1,10 +1,15 @@
 // Comercios Portal - Dashboard Page
-import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle, LayoutDashboard, ArrowRight, Star } from "lucide-react";
+import { Package, ShoppingCart, TrendingUp, Plus, Settings, Clock, AlertCircle, LayoutDashboard, ArrowRight, Star, Gift } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { formatTime } from "@/lib/timezone";
 import { prisma } from "@/lib/prisma";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
+import {
+    isInFirstMonthFree,
+    getFirstMonthFreeEndDate,
+    getFirstMonthFreeDaysRemaining,
+} from "@/lib/merchant-loyalty";
 import KPIDashboard from "./KPIDashboard";
 import OnboardingChecklist from "./OnboardingChecklist";
 
@@ -113,6 +118,23 @@ export default async function ComerciosDashboardPage() {
     };
     const chip = chipStyles[chipState];
 
+    // ISSUE-020: Mes 1 gratis (Biblia Financiera v3).
+    // Durante los primeros 30 días corridos desde createdAt, el comercio
+    // paga 0% de comisión. La lógica canónica vive en getEffectiveCommission;
+    // acá solo derivamos el banner informativo. Si hay commissionOverride
+    // el mes gratis no aplica (el override gana y puede ser un acuerdo especial).
+    const hasCommissionOverride = merchant.commissionOverride !== null && merchant.commissionOverride !== undefined;
+    const firstMonthFreeActive = !hasCommissionOverride && isInFirstMonthFree(merchant.createdAt);
+    const firstMonthFreeEndDate = getFirstMonthFreeEndDate(merchant.createdAt);
+    const firstMonthFreeDaysLeft = firstMonthFreeActive
+        ? getFirstMonthFreeDaysRemaining(merchant.createdAt)
+        : 0;
+    const firstMonthFreeEndLabel = firstMonthFreeEndDate.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
@@ -153,6 +175,27 @@ export default async function ComerciosDashboardPage() {
 
             {/* Onboarding Checklist - Only shown if merchant is approved and onboarding incomplete */}
             <OnboardingChecklist />
+
+            {/* ISSUE-020: Banner mes 1 gratis. Solo se muestra mientras la ventana
+                está activa. Cuando vence (día 31), desaparece solo y la comisión
+                pasa al tier del comercio (BRONCE 8% por default). */}
+            {firstMonthFreeActive && (
+                <div className="flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-emerald-900 px-5 py-4 rounded-2xl shadow-sm">
+                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Gift className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <span className="font-bold block">Tu primer mes en MOOVY: 0% de comisión</span>
+                        <span className="text-sm opacity-90">
+                            Te {firstMonthFreeDaysLeft === 1 ? "queda 1 día" : `quedan ${firstMonthFreeDaysLeft} días`} sin comisión. Vence el <strong>{firstMonthFreeEndLabel}</strong>.
+                        </span>
+                    </div>
+                    <div className="hidden sm:flex flex-col items-end flex-shrink-0">
+                        <span className="text-2xl font-bold text-emerald-600">0%</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Comisión</span>
+                    </div>
+                </div>
+            )}
 
             {/* Pending Orders Alert */}
             {pendingOrdersCount > 0 && (

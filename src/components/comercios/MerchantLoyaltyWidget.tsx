@@ -9,7 +9,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, Award, TrendingUp, Zap } from "lucide-react";
+import { AlertCircle, Award, Gift, TrendingUp, Zap } from "lucide-react";
 
 interface LoyaltyData {
   currentTier: string;
@@ -31,6 +31,13 @@ interface LoyaltyData {
     benefits: string[];
   } | null;
   lastUpdatedAt: string;
+  // ISSUE-020: Info de mes 1 gratis. active=true durante los primeros 30
+  // días corridos desde createdAt (a menos que haya commissionOverride).
+  firstMonthFree?: {
+    active: boolean;
+    endDate: string;
+    daysRemaining: number;
+  };
 }
 
 const tierBadgeClasses: Record<string, string> = {
@@ -95,8 +102,39 @@ export default function MerchantLoyaltyWidget({ merchantId }: { merchantId: stri
     ? Math.min(100, (data.recentOrderCount / data.nextTier.minOrders) * 100)
     : 100;
 
+  // ISSUE-020: banner mes 1 gratis en la parte superior del widget.
+  // Se muestra sólo mientras la ventana está activa; cuando vence desaparece solo.
+  const fmf = data.firstMonthFree;
+  const firstMonthEndLabel = fmf?.endDate
+    ? new Date(fmf.endDate).toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : null;
+
   return (
     <div className="space-y-6">
+      {/* ISSUE-020: Banner mes 1 gratis */}
+      {fmf?.active && (
+        <div className="flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-emerald-900 px-5 py-4 rounded-2xl shadow-sm">
+          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <Gift className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-bold block">Tu primer mes en MOOVY: 0% de comisión</span>
+            <span className="text-sm opacity-90">
+              Te {fmf.daysRemaining === 1 ? "queda 1 día" : `quedan ${fmf.daysRemaining} días`} sin comisión.
+              {firstMonthEndLabel && <> Vence el <strong>{firstMonthEndLabel}</strong>.</>}
+            </span>
+          </div>
+          <div className="hidden sm:flex flex-col items-end flex-shrink-0">
+            <span className="text-2xl font-bold text-emerald-600">0%</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Comisión</span>
+          </div>
+        </div>
+      )}
+
       {/* Current Tier Card */}
       <div className="bg-gradient-to-br from-purple-50 to-red-50 rounded-2xl p-6 border border-purple-200">
         <div className="flex items-start justify-between mb-4">

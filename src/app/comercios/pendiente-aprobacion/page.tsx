@@ -1,4 +1,4 @@
-import { Clock, Mail, ArrowLeft, CheckCircle2, FileText, Shield } from "lucide-react";
+import { Clock, Mail, ArrowLeft, CheckCircle2, FileText, Shield, Gift } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -77,10 +77,28 @@ export default function PendienteAprobacionPage() {
                     </div>
 
                     {/* Estimated time */}
-                    <div className="bg-[#fff5f5] rounded-xl p-4 mb-6 border border-red-100">
+                    <div className="bg-[#fff5f5] rounded-xl p-4 mb-4 border border-red-100">
                         <div className="flex items-center justify-center gap-2">
                             <Clock className="w-4 h-4 text-[#e60012]" />
                             <span className="text-sm font-semibold text-[#e60012]">Tiempo estimado: 24 a 48 horas</span>
+                        </div>
+                    </div>
+
+                    {/* ISSUE-020: Promesa mes 1 gratis (Biblia Financiera v3).
+                        Se muestra acá antes de la aprobación para que el comerciante
+                        entre al sistema conociendo el beneficio. Cuando ingrese al
+                        dashboard ya aprobado, verá el banner con la fecha exacta. */}
+                    <div className="bg-emerald-50 rounded-xl p-4 mb-6 border border-emerald-200 text-left">
+                        <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Gift className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-emerald-900">Tu primer mes: 0% de comisión</p>
+                                <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
+                                    Cuando tu comercio sea aprobado, arrancás con 30 días sin comisión. Cobrás el 100% de cada venta.
+                                </p>
+                            </div>
                         </div>
                     </div>
 

@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserPointsBalance, getPointsHistory, getPointsConfig, calculateMaxPointsDiscount } from "@/lib/points";
+import { getUserPointsBalance, getPointsHistory, getPointsConfig, calculateMaxPointsDiscount, getUserLevel } from "@/lib/points";
 import { getMooverLevel, getNextLevelPoints } from "@/lib/moover-level";
 
 export async function GET(request: Request) {
@@ -31,6 +31,11 @@ export async function GET(request: Request) {
         const pointsLifetime = lifetimeResult._sum.amount || 0;
 
         const level = getMooverLevel(pointsLifetime);
+
+        // ISSUE-045: nivel real Biblia v3 (pedidos DELIVERED últimos 90 días)
+        // Lo usamos para el progress bar del Hero y la badge dinámica del usuario.
+        const userLevel = await getUserLevel(session.user.id);
+
         const response: any = {
             balance,
             pointsLifetime,
@@ -38,6 +43,14 @@ export async function GET(request: Request) {
             mooverLevel: level.name,
             mooverLevelColor: level.color,
             nextLevelAt: getNextLevelPoints(pointsLifetime),
+            // Biblia v3: nivel canonico basado en 90 días de pedidos
+            userLevel: {
+                level: userLevel.level,
+                ordersInWindow: userLevel.ordersInWindow,
+                earnMultiplier: userLevel.earnMultiplier,
+                nextLevel: userLevel.nextLevel,
+                ordersToNextLevel: userLevel.ordersToNextLevel,
+            },
         };
 
         if (includeHistory) {

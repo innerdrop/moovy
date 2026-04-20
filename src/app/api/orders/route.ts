@@ -15,6 +15,7 @@ import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-
 import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 import { generatePinPair } from "@/lib/pin";
+import { getEffectiveCommission } from "@/lib/merchant-loyalty";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -473,10 +474,12 @@ export async function POST(request: Request) {
                 }
             }
 
-            // MERCHANT LOYALTY: Get effective commission from loyalty tier
-            const { getEffectiveCommission } = await import("@/lib/merchant-loyalty");
+            // MERCHANT LOYALTY: Get effective commission from loyalty tier.
+            // ISSUE-020: getEffectiveCommission puede devolver 0 legítimo durante
+            // el mes 1 gratis (Biblia v3). Usamos ?? en vez de || para no tratar
+            // 0 como falsy y caer al fallback del 8%.
             const loyaltyRate = await getEffectiveCommission(merchantId);
-            const rate = loyaltyRate || merchant.commissionRate || defaultMerchantCommission;
+            const rate = loyaltyRate ?? merchant.commissionRate ?? defaultMerchantCommission;
             moovyCommission = subtotal * (rate / 100);
             merchantPayout = subtotal - moovyCommission;
 
@@ -745,13 +748,17 @@ export async function POST(request: Request) {
                     let groupCommission = 0;
                     let groupPayout = 0;
 
-                    // Calculate commission for merchant groups
+                    // Calculate commission for merchant groups.
+                    // ISSUE-020: pasamos por getEffectiveCommission() para que
+                    // multi-vendor respete el loyalty tier y el mes 1 gratis.
+                    // Usamos ?? (no ||) porque el mes gratis puede devolver 0.
                     if (group.merchantId) {
+                        const gLoyaltyRate = await getEffectiveCommission(group.merchantId);
                         const gMerchant = await tx.merchant.findUnique({
                             where: { id: group.merchantId },
                             select: { commissionRate: true },
                         });
-                        const rate = gMerchant?.commissionRate || defaultMerchantCommission;
+                        const rate = gLoyaltyRate ?? gMerchant?.commissionRate ?? defaultMerchantCommission;
                         groupCommission = groupSubtotal * (rate / 100);
                         groupPayout = groupSubtotal - groupCommission;
                     } else if (group.sellerId) {

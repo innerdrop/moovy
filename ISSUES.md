@@ -116,9 +116,8 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 **Fix aplicado:** `src/app/(store)/mi-perfil/direcciones/page.tsx` — reemplazado `confirm()` nativo por el `ConfirmModal` global vía `confirm()` promise API (store/confirm). Si `addresses.length === 1`, se bloquea con modal warning "No podés quedarte sin direcciones — Agregá otra antes de eliminarla". Modal de confirmación con variant danger incluye la dirección completa en el mensaje. Added `aria-label` al botón y toast.success post-delete.
 
 #### ISSUE-045 — Puntos: progress bar al próximo nivel y explicación del valor
-**Estado:** 🟡 PARCIAL — `/puntos/page.tsx` ya menciona "5 pedidos en 90 días" para SILVER y "15 pedidos en 90 días" para GOLD. Falta: bloque explicativo del valor ("1 punto = $1, mínimo 500, max 20%") destacado + progress bar visual hacia el siguiente nivel.
-**Fix:** Agregar bloque destacado bajo el balance con la regla de canje. Progress bar con el % completado al próximo nivel.
-**Esfuerzo:** M (3-4 horas).
+**Estado:** ✅ RESUELTO (rama `feat/ux-flujo-checkout-y-onboarding`, 2026-04-20)
+**Fix aplicado:** `/api/points/route.ts` ahora expone `userLevel` usando la función canónica `getUserLevel(userId)` de `src/lib/points.ts` (Biblia v3: MOOVER/SILVER/GOLD/BLACK por pedidos DELIVERED últimos 90 días) con `ordersInWindow`, `nextLevel`, `ordersToNextLevel`. `/puntos/page.tsx` Hero Card muestra ícono + nombre del nivel real (no más `"🚀 MOOVER"` hardcodeado) + progress bar dorada con "X pedidos (90 días) — Faltan N para 🥈 SILVER" (o "Nivel máximo alcanzado" si BLACK). Bloque destacado "Cómo funcionan tus puntos" entre Hero y código de referido con 3 columnas (Valor 1pt=$1 / Mínimo 500 pts / Máximo 20% subtotal) leyendo `pointsConfig` del backend (no hardcoded — Biblia Financiera como fuente de verdad). Pie dinámico: "Ya podés canjear" si `balance >= minPointsToRedeem`, si no "Te faltan N pts". Accesibilidad: role=progressbar + aria-valuenow/min/max + aria-label.
 
 #### ISSUE-047 — Portal vendedor: toggle "Cerrado / No recibo pedidos" con semántica ambigua
 **Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
@@ -145,9 +144,8 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 **Esfuerzo:** incluido en ISSUE-055 + S (1 hora) para accesos.
 
 #### ISSUE-020 — Comisión mes 1 (0%) vs mes 2+ (8%): criterio de "mes" no documentado
-**Estado:** 🔴 ABIERTO
-**Fix:** Definir en código y Biblia: "30 días corridos desde `Merchant.createdAt`". Exponer en dashboard del merchant ("Tu período sin comisión vence el DD/MM/AAAA"). Test unitario con 3 fechas borde.
-**Esfuerzo:** S (2-3 horas).
+**Estado:** ✅ RESUELTO (rama `feat/ux-flujo-checkout-y-onboarding`, 2026-04-20)
+**Fix aplicado:** Criterio canónico "30 días corridos desde `Merchant.createdAt`" en `src/lib/merchant-loyalty.ts` (constante `FIRST_MONTH_FREE_DAYS=30` + 3 helpers `isInFirstMonthFree`, `getFirstMonthFreeEndDate`, `getFirstMonthFreeDaysRemaining`). `getEffectiveCommission()` aplica precedencia `commissionOverride > first-month-free (0%) > tier > fallback 8%`. Fix bug crítico pre-existente: path multi-vendor de `/api/orders/route.ts` leía `merchant.commissionRate` crudo en vez de `getEffectiveCommission()` (bypassaba mes gratis y lealtad). Single-vendor cambiado de `||` a `??`. Dashboard merchant (`comercios/(protected)/page.tsx`) muestra banner esmeralda "Tu primer mes en MOOVY: 0% — quedan X días — vence DD/MM/AAAA". `comercios/pendiente-aprobacion/page.tsx` muestra promesa. `MerchantLoyaltyWidget` con banner forward-compat. Script `scripts/test-first-month-free.ts` con 12+ asserts (funciones puras + integración Prisma real con 5 escenarios: BRONCE nuevo, DIAMANTE nuevo, override, BRONCE vencido, DIAMANTE vencido).
 
 #### ISSUE-021 — Onboarding vacío para buyer nuevo
 **Estado:** 🔴 ABIERTO

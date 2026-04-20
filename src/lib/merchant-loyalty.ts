@@ -9,12 +9,59 @@
  * - PLATA: 31-80 pedidos/mes → 7% comisión
  * - ORO: 81-150 pedidos/mes → 6% comisión
  * - DIAMANTE: 151+ pedidos/mes → 5% comisión
+ *
+ * MES 1 GRATIS (Biblia Financiera v3):
+ * Todo comercio nuevo paga 0% de comisión durante sus primeros
+ * FIRST_MONTH_FREE_DAYS días corridos desde createdAt. Es inversión
+ * de adquisición, no un beneficio opcional. Se aplica siempre salvo
+ * que el admin haya configurado un commissionOverride explícito.
  */
 
 import { prisma } from "@/lib/prisma";
 import logger from "@/lib/logger";
 
 const loyaltyLogger = logger.child({ context: "merchant-loyalty" });
+
+/**
+ * Duración del período sin comisión para comercios nuevos.
+ * Biblia v3: 30 días corridos desde Merchant.createdAt.
+ * Exportado como constante para que la UI y los tests compartan el valor.
+ */
+export const FIRST_MONTH_FREE_DAYS = 30;
+const FIRST_MONTH_FREE_MS = FIRST_MONTH_FREE_DAYS * 24 * 60 * 60 * 1000;
+
+/**
+ * Indica si un comercio está dentro de su ventana de mes gratis.
+ * Usa la fecha de creación del comercio (no la de aprobación) para
+ * coincidir con la promesa pública: "primer mes en MOOVY = 0%".
+ *
+ * @param createdAt DateTime del Merchant.createdAt
+ * @param now reloj inyectable para tests; default Date.now()
+ */
+export function isInFirstMonthFree(createdAt: Date, now: Date = new Date()): boolean {
+  const diffMs = now.getTime() - createdAt.getTime();
+  // Si diffMs < 0 (fecha futura por clock skew), igual estamos en la ventana.
+  return diffMs < FIRST_MONTH_FREE_MS;
+}
+
+/**
+ * Fecha exacta de fin del mes gratis.
+ * Se usa para mostrar al comercio "Tu período sin comisión vence el DD/MM/AAAA".
+ */
+export function getFirstMonthFreeEndDate(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + FIRST_MONTH_FREE_MS);
+}
+
+/**
+ * Días restantes del mes gratis. 0 si ya venció.
+ * Útil para mensajes urgentes tipo "Te quedan 3 días sin comisión".
+ */
+export function getFirstMonthFreeDaysRemaining(createdAt: Date, now: Date = new Date()): number {
+  const endDate = getFirstMonthFreeEndDate(createdAt);
+  const diffMs = endDate.getTime() - now.getTime();
+  if (diffMs <= 0) return 0;
+  return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+}
 
 export type MerchantTierType = "BRONCE" | "PLATA" | "ORO" | "DIAMANTE";
 
@@ -106,12 +153,22 @@ export async function calculateMerchantTier(merchantId: string): Promise<Merchan
  * Get the effective commission rate for a merchant based on their current tier.
  * This is the critical function used during order creation.
  * ALWAYS use this for commission calculations, never hardcode 8%.
+ *
+ * Prioridad (Biblia Financiera v3):
+ *   1. commissionOverride manual del admin (convenio especial) — gana siempre.
+ *   2. Mes 1 gratis: 0% durante los primeros FIRST_MONTH_FREE_DAYS desde createdAt.
+ *   3. Tier del programa de fidelización (BRONCE 8%, PLATA 7%, ORO 6%, DIAMANTE 5%).
+ *   4. Fallback 8% si no hay config.
+ *
+ * El override gana al mes gratis porque puede existir un acuerdo firmado
+ * (ej: "Convenio especial lanzamiento 5% desde el día uno") que un admin
+ * quiere respetar aunque implique cobrar más que 0.
  */
 export async function getEffectiveCommission(merchantId: string): Promise<number> {
   try {
     const merchant = await prisma.merchant.findUnique({
       where: { id: merchantId },
-      select: { loyaltyTier: true, commissionOverride: true },
+      select: { loyaltyTier: true, commissionOverride: true, createdAt: true },
     });
 
     if (!merchant) {
@@ -119,9 +176,18 @@ export async function getEffectiveCommission(merchantId: string): Promise<number
       return 8;
     }
 
-    // Special agreement override takes priority over loyalty tier
+    // Special agreement override takes priority over loyalty tier AND first-month-free
     if (merchant.commissionOverride !== null && merchant.commissionOverride !== undefined) {
       return merchant.commissionOverride;
+    }
+
+    // Mes 1 gratis: 0% durante los primeros 30 días corridos desde createdAt.
+    if (isInFirstMonthFree(merchant.createdAt)) {
+      loyaltyLogger.info(
+        { merchantId, createdAt: merchant.createdAt },
+        "Merchant in first-month-free window, commission = 0%"
+      );
+      return 0;
     }
 
     const tierConfig = await getTierConfig(merchant.loyaltyTier as MerchantTierType);
@@ -238,12 +304,24 @@ export async function getMerchantLoyaltyWidget(merchantId: string) {
         loyaltyTier: true,
         loyaltyOrderCount: true,
         loyaltyUpdatedAt: true,
+        createdAt: true,
+        commissionOverride: true,
       },
     });
 
     if (!merchant) {
       return null;
     }
+
+    // Info del mes gratis para que el dashboard muestre el banner y la fecha de vencimiento.
+    // Si hay commissionOverride, el mes gratis NO aplica (el override gana).
+    const hasOverride = merchant.commissionOverride !== null && merchant.commissionOverride !== undefined;
+    const firstMonthActive = !hasOverride && isInFirstMonthFree(merchant.createdAt);
+    const firstMonthFree = {
+      active: firstMonthActive,
+      endDate: getFirstMonthFreeEndDate(merchant.createdAt),
+      daysRemaining: firstMonthActive ? getFirstMonthFreeDaysRemaining(merchant.createdAt) : 0,
+    };
 
     // Get current tier config
     const currentTierConfig = await getTierConfig(merchant.loyaltyTier as MerchantTierType);
@@ -287,6 +365,7 @@ export async function getMerchantLoyaltyWidget(merchantId: string) {
           }
         : null,
       lastUpdatedAt: merchant.loyaltyUpdatedAt,
+      firstMonthFree,
     };
   } catch (error) {
     loyaltyLogger.error({ error, merchantId }, "Error getting loyalty widget data");
