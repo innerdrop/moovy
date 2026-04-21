@@ -1,10 +1,25 @@
 /**
  * Order Chat Types
- * Chat directo entre roles dentro de un pedido activo
- * Comprador ↔ Comercio/Vendedor | Comprador ↔ Repartidor
+ * Chat directo entre roles dentro de un pedido activo.
+ *
+ * Canales soportados:
+ *   BUYER_MERCHANT   — comprador ↔ comercio
+ *   BUYER_DRIVER     — comprador ↔ repartidor
+ *   BUYER_SELLER     — comprador ↔ vendedor marketplace (uno por SubOrder)
+ *   DRIVER_MERCHANT  — repartidor ↔ comercio (p. ej. "no encuentro el local")
+ *   DRIVER_SELLER    — repartidor ↔ vendedor marketplace (pickup marketplace)
+ *
+ * Convención de participantes:
+ *   BUYER_*   → participantA = buyer,  participantB = contraparte
+ *   DRIVER_*  → participantA = driver, participantB = contraparte
  */
 
-export type OrderChatType = "BUYER_MERCHANT" | "BUYER_DRIVER" | "BUYER_SELLER";
+export type OrderChatType =
+    | "BUYER_MERCHANT"
+    | "BUYER_DRIVER"
+    | "BUYER_SELLER"
+    | "DRIVER_MERCHANT"
+    | "DRIVER_SELLER";
 
 export interface OrderChat {
     id: string;
@@ -67,6 +82,9 @@ export const MERCHANT_QUICK_RESPONSES: QuickResponse[] = [
     { id: "m3", label: "Demora extra", message: "Va a demorar unos minutos más de lo estimado, disculpá las molestias" },
     { id: "m4", label: "Producto agotado", message: "Lamentablemente uno de los productos no está disponible. ¿Querés que lo reemplacemos por otro?" },
     { id: "m5", label: "Pedido entregado", message: "Tu pedido ya fue entregado. ¡Esperamos que lo disfrutes!" },
+    // Nuevas — para DRIVER_MERCHANT
+    { id: "m6", label: "Ya salió del local", message: "El pedido acaba de salir del local" },
+    { id: "m7", label: "Indicaciones para llegar", message: "Te paso referencias para llegar al local: " },
 ];
 
 export const SELLER_QUICK_RESPONSES: QuickResponse[] = [
@@ -75,6 +93,9 @@ export const SELLER_QUICK_RESPONSES: QuickResponse[] = [
     { id: "s3", label: "Stock agotado", message: "Lamentablemente el producto se agotó. ¿Te interesa otra opción?" },
     { id: "s4", label: "Consulta recibida", message: "Recibí tu consulta, te respondo a la brevedad" },
     { id: "s5", label: "Gracias por tu compra", message: "¡Gracias por tu compra! Cualquier duda estoy a disposición" },
+    // Nuevas — para DRIVER_SELLER
+    { id: "s6", label: "Listo para retirar", message: "El paquete está listo para que lo retires" },
+    { id: "s7", label: "Cómo llegar al pickup", message: "Para retirar tenés que: " },
 ];
 
 export const DRIVER_QUICK_RESPONSES: QuickResponse[] = [
@@ -99,4 +120,10 @@ export const DRIVER_QUICK_RESPONSES: QuickResponse[] = [
 
     // Buyer requests
     { id: "d12", label: "Confirmando dirección", message: "¿Vos sos? (confirmando que encontré el lugar correcto)" },
+
+    // Pickup (hacia comercio/vendedor) — nuevas para DRIVER_MERCHANT y DRIVER_SELLER
+    { id: "d13", label: "No veo el local", message: "No encuentro el local, ¿podés pasarme alguna referencia?" },
+    { id: "d14", label: "¿Pedido listo?", message: "¿Está listo el pedido para retirar?" },
+    { id: "d15", label: "Estoy afuera", message: "Estoy afuera del local, ¿salen?" },
+    { id: "d16", label: "Demora 5 min", message: "Estoy a 5 minutos de llegar al local" },
 ];
