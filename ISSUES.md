@@ -48,10 +48,8 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 ### Seguridad / backend
 
 #### ISSUE-010 — Driver se desconecta mid-delivery y el pedido queda huérfano
-**Estado:** 🔴 ABIERTO
-**Qué pasa:** `retry-assignments` cron solo busca `status: "CONFIRMED"` + `driverId: null`. Una orden en `PICKED_UP` con driver offline >15min no se reasigna ni alerta.
-**Fix:** Agregar query adicional en el cron que busque órdenes en `PICKED_UP` con driver offline y escale a admin + ofrezca reasignación.
-**Esfuerzo:** S (2-3 horas).
+**Estado:** ✅ RESUELTO 2026-04-21 en rama `fix/driver-offline-mid-delivery`.
+**Qué se hizo:** Extendido `src/app/api/cron/retry-assignments/route.ts` con dos queries nuevas (single-vendor + multi-vendor SubOrders) que detectan órdenes en `DRIVER_ASSIGNED` / `DRIVER_ARRIVED` / `PICKED_UP` cuyo driver está `isOnline: false` o con `lastLocationAt` más viejo de 15min. Escala a admin vía socket `driver_offline_mid_delivery` con payload que incluye `orderId`, `orderNumber`, `subOrderId?`, `driverId`, `driverName`, `deliveryStatus`, `minutesOffline`, `driverIsOnline`, `lastLocationAt` — el admin puede contactar al driver o reasignar manualmente. Se eliminó el early return cuando `stuckOrders.length === 0` para que el check de driver offline corra siempre. **No reasignamos automáticamente** porque el driver puede tener el paquete en mano (PICKED_UP) y la reasignación requiere coordinación humana. Constantes: `DRIVER_OFFLINE_THRESHOLD_MINUTES = 15`, `DRIVER_OFFLINE_ACTIVE_STATES = ["DRIVER_ASSIGNED","DRIVER_ARRIVED","PICKED_UP"]`, cap de 50 órdenes por query (una ciudad de 80k hab no debería tener >50 pedidos mid-delivery simultáneos). Socket emite a `admin:<userId>`, `admin:orders` y `admin:drivers` para que cualquier panel pueda renderizar el incidente.
 
 #### ISSUE-015 — Retry cron sin escalación final completa
 **Estado:** 🟡 PARCIAL — el cron SÍ escala a admin después de 3 intentos (`notifyAdminOfStuckOrder`), pero NO cancela, NO hace refund automático, NO da puntos bonus al comprador.
@@ -124,14 +122,12 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 **Fix aplicado:** Portal vendedor usa el mismo lenguaje en todos los touchpoints: dashboard muestra badge "Abierta a ventas" / "Cerrada a ventas" por listing y stat card "Abiertas a ventas". Listings page stats usan "Abiertas a ventas" / "Cerradas a ventas". Semántico al vendedor: es disponibilidad al comprador, no un estado técnico "Activa/Inactiva".
 
 #### ISSUE-055 — Breadcrumb checkout: nombres y los 3 activos al mismo tiempo
-**Estado:** 🔴 ABIERTO
-**Fix:** 3 tabs con un solo activo por paso: **Entrega** → **Pago** → **Confirmar**. Renombrar y reordenar.
-**Esfuerzo:** M (2-3 horas).
+**Estado:** ✅ RESUELTO (rama `fix/checkout-breadcrumb-y-tour-buyer`, 2026-04-21)
+**Fix aplicado:** Checkout rediseñado a 3 tabs **Entrega → Pago → Confirmar** con un solo activo por paso. Breadcrumb superior con `CheckCircle` en pasos completados, círculo gris con número en pendientes, y `aria-current="step"` en el activo. Step 1 Entrega: método (home/pickup) + dirección + ¿cuándo? (Inmediata/Programada + TimeSlotPicker). Step 2 Pago: PointsWidget + radio Efectivo/MP. Step 3 Confirmar: resumen con cards editables de dirección, tipo entrega, método de pago, puntos — botón final "Confirmar Pedido". Ver `src/app/(store)/checkout/page.tsx`.
 
 #### ISSUE-056 — Paso "Confirmar" mezcla tipo de entrega con método de pago
-**Estado:** 🔴 ABIERTO — depende de ISSUE-055.
-**Fix:** Mover "Tipo de entrega (Inmediata/Programada)" al paso Entrega. Dejar Pago con solo puntos, cupón, efectivo/MP.
-**Esfuerzo:** incluido en ISSUE-055.
+**Estado:** ✅ RESUELTO (rama `fix/checkout-breadcrumb-y-tour-buyer`, 2026-04-21)
+**Fix aplicado:** El bloque "¿Cuándo querés recibirlo?" (Inmediata vs Programada + `TimeSlotPicker`) se movió al paso Entrega junto al método (home/pickup) y la dirección — es una decisión del "cuándo" de la logística, no del pago. Step Pago quedó con solo `PointsWidget` + radio Efectivo/MP. Resuelto en el mismo commit que ISSUE-055.
 
 #### ISSUE-059 — Resumen de checkout no desglosa costo de envío
 **Estado:** ✅ RESUELTO (rama `fix/ux-pulido-pre-launch`, 2026-04-20)
@@ -140,8 +136,8 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 ### Negocio / onboarding
 
 #### ISSUE-012 — Navegación: sin breadcrumbs en checkout y accesos faltantes
-**Estado:** 🔴 ABIERTO — ver ISSUE-055 (breadcrumb checkout) + accesos a favoritos y puntos desde home.
-**Esfuerzo:** incluido en ISSUE-055 + S (1 hora) para accesos.
+**Estado:** 🟡 PARCIAL — breadcrumb checkout resuelto por ISSUE-055. Falta solo: accesos directos a favoritos y puntos desde la home.
+**Esfuerzo:** S (1 hora) para los accesos restantes.
 
 #### ISSUE-020 — Comisión mes 1 (0%) vs mes 2+ (8%): criterio de "mes" no documentado
 **Estado:** ✅ RESUELTO (rama `feat/ux-flujo-checkout-y-onboarding`, 2026-04-20)
@@ -285,7 +281,7 @@ Reemplazo de PL-001 una vez con data real. Subcomandos `soft-delete-user --id`, 
 
 **Día 2 (1 día de trabajo):**
 7. ISSUE-054 Botón "avisame cuando haya driver" (4-6h)
-8. ISSUE-010 Driver offline mid-delivery en cron (2-3h)
+8. ~~ISSUE-010 Driver offline mid-delivery en cron (2-3h)~~ ✅ RESUELTO 2026-04-21
 
 **Día del lanzamiento:**
 9. ISSUE-004 PL-001 reset total ejecutado en prod
