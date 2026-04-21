@@ -21,7 +21,8 @@ import {
     User,
     Calendar,
     Navigation,
-    Clock
+    Clock,
+    Bell
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import TimeSlotPicker, { type VendorSchedule } from "@/components/checkout/TimeSlotPicker";
@@ -89,6 +90,10 @@ export default function CheckoutPage() {
     // Points state
     const [pointsUsed, setPointsUsed] = useState(0);
     const [discountAmount, setDiscountAmount] = useState(0);
+
+    // ISSUE-054: suscripción "avisame cuando haya repartidor"
+    const [availabilitySubscribed, setAvailabilitySubscribed] = useState(false);
+    const [subscribingAvailability, setSubscribingAvailability] = useState(false);
     // earnedPoints removed — points celebration handled by redirect to order detail
 
     const subtotal = getTotalPrice();
@@ -376,6 +381,42 @@ export default function CheckoutPage() {
         }
     };
 
+    // ISSUE-054: suscribir al buyer al push "ya hay repartidor" para esta ubicación.
+    // Requiere address con lat/lng. merchantId es opcional — si hay más de un
+    // merchant en el carrito, mandamos el primario (primer grupo merchant).
+    const handleSubscribeToDriverAvailable = async () => {
+        if (!address.latitude || !address.longitude) {
+            toast.error("Necesitamos tu ubicación para avisarte. Completá la dirección primero.");
+            return;
+        }
+        if (availabilitySubscribed || subscribingAvailability) return;
+
+        setSubscribingAvailability(true);
+        try {
+            const res = await fetch("/api/notifications/driver-available-subscribe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    latitude: address.latitude,
+                    longitude: address.longitude,
+                    merchantId: primaryMerchantId || undefined,
+                }),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                toast.error(data?.error || "No pudimos registrar tu aviso. Intentá de nuevo.");
+                return;
+            }
+            setAvailabilitySubscribed(true);
+            toast.success("¡Listo! Te avisamos cuando haya repartidor en tu zona.");
+        } catch (err) {
+            console.error("Error subscribing to driver availability", err);
+            toast.error("No pudimos registrar tu aviso. Intentá de nuevo.");
+        } finally {
+            setSubscribingAvailability(false);
+        }
+    };
+
     const handleSubmitOrder = async () => {
         if (!isPickup && !deliveryResult?.isWithinRange) return;
 
@@ -594,27 +635,66 @@ export default function CheckoutPage() {
                             <div className="space-y-6">
                                 {/* DRIVER AVAILABILITY INFO */}
                                 {!hasDrivers && (
-                                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-4">
-                                        <Clock className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
-                                        <div className="space-y-1.5">
-                                            <p className="font-semibold text-blue-900 leading-tight">Justo ahora no hay repartidores cerca</p>
-                                            <p className="text-sm text-blue-700">Esto suele durar menos de 15 minutos. Mientras tanto podés:</p>
-                                            <ul className="text-sm text-blue-700 space-y-1 ml-0.5">
-                                                <li className="flex items-center gap-2">
-                                                    <span className="text-blue-400">•</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setDeliveryMethod("home"); setDeliveryType("SCHEDULED"); }}
-                                                        className="font-semibold text-blue-600 hover:text-blue-800 underline underline-offset-2 transition"
-                                                    >
-                                                        Programar tu entrega para más tarde
-                                                    </button>
-                                                </li>
-                                                <li className="flex items-center gap-2">
-                                                    <span className="text-blue-400">•</span>
-                                                    <span>Elegir retiro en local si lo preferís</span>
-                                                </li>
-                                            </ul>
+                                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5">
+                                        <div className="flex items-start gap-3 sm:gap-4 mb-3">
+                                            <Clock className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-blue-900 leading-tight">Justo ahora no hay repartidores cerca</p>
+                                                <p className="text-sm text-blue-700">Suele durar menos de 15 min en esta zona.</p>
+                                            </div>
+                                        </div>
+
+                                        {/* ISSUE-054: CTA primaria — avisame cuando haya repartidor */}
+                                        {availabilitySubscribed ? (
+                                            <div className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-50 border border-green-200 text-green-800 font-semibold px-4 py-3">
+                                                <CheckCircle className="w-5 h-5" />
+                                                Te avisamos cuando haya
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={handleSubscribeToDriverAvailable}
+                                                disabled={subscribingAvailability || !address.latitude || !address.longitude}
+                                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-moovy hover:bg-moovy-dark disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold px-4 py-3 transition-all shadow-sm hover:shadow-md"
+                                            >
+                                                {subscribingAvailability ? (
+                                                    <>
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                        Registrando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Bell className="w-5 h-5" />
+                                                        Avisame cuando haya repartidor
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                        {!availabilitySubscribed && (!address.latitude || !address.longitude) && (
+                                            <p className="text-xs text-blue-700/80 mt-2 text-center">
+                                                Completá tu dirección abajo para activar el aviso.
+                                            </p>
+                                        )}
+
+                                        {/* Alternativas secundarias */}
+                                        <div className="mt-4 pt-3 border-t border-blue-200/60">
+                                            <p className="text-xs text-blue-700 mb-2">Mientras tanto también podés:</p>
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setDeliveryMethod("home"); setDeliveryType("SCHEDULED"); }}
+                                                    className="flex-1 text-sm font-semibold text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 transition"
+                                                >
+                                                    Programar para más tarde
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeliveryMethod("pickup")}
+                                                    className="flex-1 text-sm font-semibold text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 transition"
+                                                >
+                                                    Retirar en local
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

@@ -1,7 +1,7 @@
 # Moovy — Issues pre-lanzamiento
 
-**Última actualización:** 2026-04-20 (bundle UX pulido pre-launch: ISSUE-036, 037, 038, 039, 041, 042, 043, 044, 047, 059 resueltos — rama `fix/ux-pulido-pre-launch`)
-**Versión anterior:** 2026-04-20 (bundle seguridad: ISSUE-017, 018, 019 resueltos; ISSUE-022 diferido con rationale)
+**Última actualización:** 2026-04-21 (bug crítico de resurrección de cuentas resuelto — rama `user-deletion-no-resurrection`. Nuevo ISSUE-060 documentado y cerrado en el mismo día.)
+**Versión anterior:** 2026-04-20 (bundle UX pulido pre-launch: ISSUE-036, 037, 038, 039, 041, 042, 043, 044, 047, 059 resueltos — rama `fix/ux-pulido-pre-launch`)
 
 Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Antes del audit del 2026-04-20 la lista estaba seriamente desactualizada: muchos issues marcados como 🔴 CRÍTICOS abiertos ya estaban resueltos desde hacía semanas (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, redirects, etc.). La nueva versión refleja lo que realmente queda.
 
@@ -10,13 +10,13 @@ Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Ante
 ## Resumen ejecutivo — dónde estamos
 
 **Críticos reales restantes: 1** (data cleanup manual — ISSUE-004 via script PL-001 pre-lanzamiento).
-**Críticos parciales: 1** (ISSUE-054 mensaje "sin repartidores" — tiene mensaje y programar, falta "avisame cuando haya driver").
+**Críticos parciales: 0** (ISSUE-054 resuelto completo el 2026-04-21).
 **Importantes reales restantes: 5** (principalmente backend/logística; 10 de UX pulido + 3 de seguridad urgentes + el diferido se cerraron el 2026-04-20).
 **Menores: 16** (post-lanzamiento).
 
 La buena noticia: **todos los críticos que tenían riesgo de dinero, fraude o datos ya están resueltos** (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, puntos post-DELIVERED, subastas ocultas, redirects rotos, post-checkout redirect). El código está en un estado sólido para lanzar.
 
-Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de prueba) + el detalle de ISSUE-054 (UX del "sin repartidores"). Ambos se pueden cerrar en 1 día de trabajo.
+Lo único bloqueante que queda es la decisión operativa de ISSUE-004 (limpiar data de prueba antes de abrir). Se ejecuta via script PL-001 el día del lanzamiento.
 
 **Estimación para estar listos:** 1-2 días de trabajo real + el día de ejecución de PL-001 (reset total antes de abrir).
 
@@ -33,13 +33,38 @@ Lo que queda bloqueante es la decisión operativa de ISSUE-004 (limpiar data de 
 
 **Esfuerzo:** 3-4 horas (script + validación local + ejecución supervisada).
 
+### ISSUE-060 — Resurrección de cuentas: email eliminado re-registra con data vieja
+**Estado:** ✅ RESUELTO 2026-04-21 en rama `user-deletion-no-resurrection`.
+**Descubierto por:** Mauro. Reporte: "eliminé un usuario desde OPS, el usuario volvió a crear la cuenta con el mismo mail, le trajo toda la información vieja (comercios aprobados, productos, etc.)".
+**Causa raíz:** `src/app/api/auth/register/route.ts` tenía un path "reactivar" que, si encontraba un `User` con `deletedAt != null` al recibir un registro con el mismo email, seteaba `deletedAt: null` y reseteaba algunos campos del User, PERO dejaba intactos los `Merchant`/`Driver`/`SellerProfile` colgados del `ownerId` viejo. Resultado: `approvalStatus: "APPROVED"`, fiscal data, tokens de MercadoPago, productos, y órdenes históricas "resucitaban" al nuevo login.
+**Cascada secundaria:** `src/app/api/profile/delete/route.ts` tampoco tocaba Merchants en absoluto (ni self-delete ni admin-delete apagaban el comercio), y `src/app/api/admin/users/[id]/delete/route.ts` solo ponía `isActive: false` en Merchant sin cambiar `approvalStatus` ni anular fiscal data.
+**Qué se hizo:**
+1. **auth/register/route.ts** — eliminado el path de "reactivación". Si existe `User` con `deletedAt != null` → 410 "Esta cuenta fue eliminada. Si creés que fue un error, escribinos a soporte." + audit log `ACCOUNT_RESURRECTION_BLOCKED`. Si existe con `deletedAt: null` → 409 "email en uso" (comportamiento previo). La transacción de creación quedó solo con el path "user nuevo".
+2. **auth/register/merchant/route.ts** — mismo check añadido antes de buscar merchants colgados. Rechaza con 410 si `existingUser.deletedAt != null`.
+3. **admin/users/[id]/delete/route.ts** — cascada completa dentro del `$transaction` serializable: Merchant queda `isActive: false`, `isOpen: false`, `approvalStatus: "REJECTED"`, `rejectionReason: "Cuenta eliminada por administrador"`, `isSuspended: true`, `suspendedAt: now`, y se nullean `cuit, cuil, bankAccount, ownerDni, mpAccessToken, mpRefreshToken, mpUserId, mpEmail`. Driver y SellerProfile reciben el mismo tratamiento (REJECTED + SUSPENDED + fiscal data nulleada). **El email del User NO se anonimiza** en admin-delete — es intencional, para que intentos futuros de registro con ese email sean rechazados con 410 (cuenta "quemada" por fraude/abuso/etc).
+4. **profile/delete/route.ts** — agregada la cascada que faltaba para Merchant (mismo apagado que admin-delete). También se agregaron `deletedAt: now`, `isSuspended: true`, `suspendedAt: now`, `suspensionReason: "Cuenta eliminada por el usuario"` al update del User (antes solo se anonimizaban campos sin marcar deletedAt explícitamente — el código confiaba en el audit log y el campo anonimizado, pero no seteaba deletedAt). Self-delete sigue anonimizando el email (`deleted-${userId}@deleted.moovy.local`) para liberar el unique y permitir re-registrarse con una cuenta FRESCA.
+5. **Audit log nueva acción:** `ACCOUNT_RESURRECTION_BLOCKED` registra todo intento de registro contra email soft-deleted, tanto en `auth/register` como en `auth/register/merchant`, con `details.source` indicando qué endpoint.
+6. **Script de detección:** `scripts/cleanup-resurrected-users.ts` (read-only). Tres heurísticas: (a) gap `updatedAt - createdAt > 7d` + merchants `APPROVED` aprobados pre-update; (b) `bonusActivated: false` + `pendingBonusPoints > 0` + cuenta de > 30d + merchants APPROVED; (c) `termsConsentAt > createdAt + 7d` (re-aceptación tardía). Reporta candidatos con todos los detalles para que el admin decida manualmente desde OPS. No modifica nada.
+
+**Defense in depth:** el fix no depende de una sola capa. El register bloquea, el admin-delete marca el email como "quemado", el self-delete anonimiza y libera el email para re-registrarse fresco, y el cleanup script detecta casos históricos que quedaron en la DB antes del fix.
+
+**Decisión de diseño — admin-delete NO anonimiza email:** El admin que elimina un usuario desde OPS está tomando una decisión deliberada (fraude, abuso, violación de términos). Si el email se anonimizara automáticamente, el usuario podría re-registrarse con una cuenta fresca sin intervención humana — contra intuición del admin. Manteniéndolo intacto, el email queda en la DB como "quemado" y todo intento futuro de re-registro retorna 410 con el mensaje "escribinos a soporte". Si el admin se equivocó al eliminar, puede restaurar desde OPS (botón existente) y la cuenta vuelve (aunque el Merchant queda REJECTED — re-aprobación manual, también por diseño).
+
+**Archivos modificados:** `src/app/api/auth/register/route.ts`, `src/app/api/auth/register/merchant/route.ts`, `src/app/api/admin/users/[id]/delete/route.ts`, `src/app/api/profile/delete/route.ts`, `scripts/cleanup-resurrected-users.ts` (nuevo).
+
+**TS clean.**
+
 ### ISSUE-054 — "NO HAY REPARTIDORES DISPONIBLES" sin canal para avisar al usuario
-**Estado:** 🟡 PARCIAL — el checkout ya tiene mensaje cálido + botón "Programar tu entrega". Falta:
-- Botón "Avisame cuando haya repartidor" → push cuando `Driver.isOnline=true` en la zona
-- Texto que indique que suele durar <15 min
-**Severidad:** crítico en ciudad chica — este mensaje en 3 pedidos seguidos hace desinstalar.
-**Dónde:** `src/app/(store)/checkout/page.tsx` L570-600 (sección de mensaje cuando no hay drivers).
-**Esfuerzo:** M (4-6 horas) — UI + endpoint `POST /api/notifications/driver-available-subscribe` + check en assignment engine cuando un driver va online.
+**Estado:** ✅ RESUELTO 2026-04-21 en rama `avisame-driver-disponible`.
+**Qué se hizo:**
+1. **Schema:** nuevo modelo `DriverAvailabilitySubscription` (id, userId, latitude, longitude, merchantId?, createdAt, expiresAt, notifiedAt?) con relaciones a `User` y `Merchant`. Índices en `userId`, `(notifiedAt, expiresAt)` y `merchantId`. Requiere `npx prisma db push` + `npx prisma generate`.
+2. **Endpoint `POST /api/notifications/driver-available-subscribe`:** auth + rate limit 10/min por IP + Zod (lat/lng rangos, merchantId opcional). TTL 4h. Max 3 activas por usuario (429 si se excede). Si ya existe sub activa con mismo user + ubicación a <~100m + mismo merchant, refresca `expiresAt` en vez de duplicar. DELETE con ownership check para cancelar.
+3. **Helper `src/lib/driver-availability.ts`:** `notifyAvailabilitySubscribers({driverId, driverLat, driverLng})` busca subs activas (no expiradas, no notificadas, cap 500), filtra por radio 5km con Haversine, y dispara push en chunks de 10 en paralelo. **Idempotencia:** `updateMany({where:{id, notifiedAt: null}})` atómico garantiza que si dos drivers se conectan en simultáneo, solo uno gana la carrera — el otro ve `count: 0` y skipea el push (evita doble notificación). Título: "🏍️ ¡Ya hay repartidor en tu zona!", body: "Entrá al checkout y completá tu pedido antes que vuelva a subir la demanda.", url `/checkout`. Errores se loguean, nunca se propagan.
+4. **Trigger en `PUT /api/driver/status`:** antes de update leemos el estado previo de `isOnline`. Después de actualizar PostGIS, SOLO si `wasOffline && driver.isOnline` (transición offline → online), llamamos `notifyAvailabilitySubscribers(...)` fire-and-forget con `.catch()` logging. No se dispara en toggles `DISPONIBLE ↔ OCUPADO` mientras el driver ya estaba online — solo en la conexión real.
+5. **UI checkout:** card de "no hay repartidores" rediseñada. CTA primaria "🔔 Avisame cuando haya repartidor" (botón rojo MOOVY, disabled si no hay lat/lng en el address; muestra hint "Completá tu dirección abajo para activar el aviso" si falta). Estado optimistic después del POST: badge verde con check "Te avisamos cuando haya". Texto actualizado: "Suele durar menos de 15 min en esta zona." Botones "Programar para más tarde" y "Retirar en local" quedan como secundarios debajo, separados por border.
+**Dónde:** `prisma/schema.prisma`, `src/app/api/notifications/driver-available-subscribe/route.ts`, `src/lib/driver-availability.ts`, `src/app/api/driver/status/route.ts`, `src/app/(store)/checkout/page.tsx`.
+**Rate limit + cap de suscripciones:** defiende contra abuso. 3 activas por usuario + TTL 4h auto-expira. Si el buyer cambió de idea o ya pidió por otro canal, tiene DELETE.
+**Observabilidad:** helper loguea candidates/notified/errors por ejecución. Si `notified > 0` loguea a nivel `info` con driverId — queda rastro en pino para auditar si un buyer dice "no me llegó".
 
 ---
 
@@ -264,10 +289,10 @@ Reemplazo de PL-001 una vez con data real. Subcomandos `soft-delete-user --id`, 
 
 | Categoría | Issues reales | Días de trabajo |
 |-----------|---------------|-----------------|
-| Críticos abiertos | 1 completo (ISSUE-004/PL-001) + 1 parcial (ISSUE-054) | 1 día |
+| Críticos abiertos | 1 (ISSUE-004/PL-001 — data cleanup) | 1 día |
 | Importantes abiertos | 19 (de los cuales varios son XS/S) | 6-9 días |
 | Menores | 16 | 4-6 días (post-lanzamiento) |
-| **Pre-lanzamiento mínimo viable** | **ISSUE-004 + ISSUE-054 + 4-5 importantes de seguridad** | **2-3 días** |
+| **Pre-lanzamiento mínimo viable** | **ISSUE-004 + 4-5 importantes de seguridad** | **1-2 días** |
 
 ### Priorización para lanzar (mínimo viable)
 
@@ -280,8 +305,8 @@ Reemplazo de PL-001 una vez con data real. Subcomandos `soft-delete-user --id`, 
 6. ISSUE-043 Quitar line-through (15min)
 
 **Día 2 (1 día de trabajo):**
-7. ISSUE-054 Botón "avisame cuando haya driver" (4-6h)
-8. ~~ISSUE-010 Driver offline mid-delivery en cron (2-3h)~~ ✅ RESUELTO 2026-04-21
+7. ~~ISSUE-054 Botón "avisame cuando haya driver"~~ ✅ RESUELTO 2026-04-21
+8. ~~ISSUE-010 Driver offline mid-delivery en cron~~ ✅ RESUELTO 2026-04-21
 
 **Día del lanzamiento:**
 9. ISSUE-004 PL-001 reset total ejecutado en prod

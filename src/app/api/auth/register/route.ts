@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/email";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { validatePasswordStrength, sanitizeEmail } from "@/lib/security";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -55,13 +56,46 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists (ignore soft-deleted users)
+        // Check if email already exists.
+        // Regla (2026-04-21): NUNCA "reactivar" usuarios soft-deleted. Si existe
+        // una cuenta con este email (activa o eliminada), se rechaza el registro.
+        // - Cuenta activa → 409 "email en uso"
+        // - Cuenta eliminada → 410 "cuenta eliminada, escribinos a soporte"
+        // Esto cierra el bug de resurrección: antes, al re-registrar con el mismo
+        // email de un usuario eliminado, se reactivaba la cuenta vieja con TODO su
+        // historial (Merchant aprobado, productos, órdenes, etc.) — claramente
+        // no deseado. El path correcto para liberar el email es profile/delete,
+        // que anonimiza a deleted-<id>@deleted.moovy.local y libera el unique.
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email },
             select: { id: true, deletedAt: true }
         });
 
-        if (existingUser && !existingUser.deletedAt) {
+        if (existingUser) {
+            if (existingUser.deletedAt) {
+                // Auditamos el intento (puede ser error honesto o vector de abuso).
+                await logAudit({
+                    action: "ACCOUNT_RESURRECTION_BLOCKED",
+                    entityType: "user",
+                    entityId: existingUser.id,
+                    userId: existingUser.id,
+                    details: {
+                        email: data.email,
+                        deletedAt: existingUser.deletedAt.toISOString(),
+                        source: "auth/register",
+                        timestamp: new Date().toISOString(),
+                    },
+                }).catch((e) => console.error("[Register] audit log failed:", e));
+
+                return NextResponse.json(
+                    {
+                        error:
+                            "Esta cuenta fue eliminada. Si creés que fue un error, escribinos a soporte.",
+                    },
+                    { status: 410 }
+                );
+            }
+
             return NextResponse.json(
                 { error: "Ya existe una cuenta con ese email" },
                 { status: 409 }
@@ -99,60 +133,32 @@ export async function POST(request: NextRequest) {
 
         // Use a transaction to ensure everything is created or nothing is
         const result = await prisma.$transaction(async (tx) => {
-            let newUser;
-
-            // If a soft-deleted user exists with this email, reactivate it
-            if (existingUser && existingUser.deletedAt) {
-                newUser = await tx.user.update({
-                    where: { id: existingUser.id },
-                    data: {
-                        password: hashedPassword,
-                        name: fullName,
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        phone: data.phone || null,
-                        role: 'USER',
-                        pointsBalance: 0,
-                        pendingBonusPoints: pendingBonus,
-                        bonusActivated: false,
-                        referralCode: newUserReferralCode,
-                        referredById: referrerId,
-                        termsConsentAt: data.acceptTerms ? new Date() : null,
-                        privacyConsentAt: data.acceptPrivacy ? new Date() : null,
-                        deletedAt: null,
-                        isSuspended: false,
-                        suspendedAt: null,
-                        suspendedUntil: null,
-                        suspensionReason: null,
-                        archivedAt: null,
-                    }
-                });
-                // Nota: ya no tocamos UserRole. El rol base USER sale del campo
-                // legacy User.role y se agrega a token.roles en el authorize().
-                // COMERCIO/DRIVER/SELLER se derivan de domain state en cada
-                // request (ver src/lib/roles.ts).
-            } else {
-                // 1. Create the new user with PENDING bonus (not credited yet)
-                newUser = await tx.user.create({
-                    data: {
-                        email: data.email,
-                        password: hashedPassword,
-                        name: fullName,
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        phone: data.phone || null,
-                        role: 'USER',
-                        pointsBalance: 0,  // Start with 0, bonus is pending
-                        pendingBonusPoints: pendingBonus,  // Pending until first purchase
-                        bonusActivated: false,  // Not yet activated
-                        referralCode: newUserReferralCode,
-                        referredById: referrerId,
-                        termsConsentAt: data.acceptTerms ? new Date() : null,
-                        privacyConsentAt: data.acceptPrivacy ? new Date() : null,
-                    }
-                });
-                // Nota: ya no tocamos UserRole. Ver comentario arriba.
-            }
+            // Create the new user with PENDING bonus (not credited yet).
+            // Nota: ya no existe path de "reactivación" de cuenta eliminada —
+            // ver check de existingUser más arriba. Si llegó acá, es siempre
+            // un usuario nuevo.
+            const newUser = await tx.user.create({
+                data: {
+                    email: data.email,
+                    password: hashedPassword,
+                    name: fullName,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    phone: data.phone || null,
+                    role: 'USER',
+                    pointsBalance: 0,  // Start with 0, bonus is pending
+                    pendingBonusPoints: pendingBonus,  // Pending until first purchase
+                    bonusActivated: false,  // Not yet activated
+                    referralCode: newUserReferralCode,
+                    referredById: referrerId,
+                    termsConsentAt: data.acceptTerms ? new Date() : null,
+                    privacyConsentAt: data.acceptPrivacy ? new Date() : null,
+                }
+            });
+            // Nota: ya no tocamos UserRole. El rol base USER sale del campo
+            // legacy User.role y se agrega a token.roles en el authorize().
+            // COMERCIO/DRIVER/SELLER se derivan de domain state en cada
+            // request (ver src/lib/roles.ts).
 
             // 2. If referred, create Referral record (but NO points yet)
             // Points will be awarded when new user makes their first qualifying purchase

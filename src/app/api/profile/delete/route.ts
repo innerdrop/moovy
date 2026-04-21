@@ -40,6 +40,16 @@ export async function POST(request: NextRequest) {
         });
 
         // Delete user data in transaction
+        // Regla (2026-04-21): cascada completa + anonimización del email.
+        // A diferencia de admin delete, el self-delete SÍ libera el email
+        // (deleted-${userId}@deleted.moovy.local) para que la persona pueda
+        // volver a registrarse con ese email más adelante, obteniendo una
+        // cuenta FRESCA (sin datos ni comercios viejos colgados). Esto evita
+        // el bug de resurrección porque el email queda anonimizado ⇒ la próxima
+        // registración no encuentra existingUser.
+        const now = new Date();
+        const selfDeleteReason = "Cuenta eliminada por el usuario";
+
         await prisma.$transaction(async (tx) => {
             // Delete push subscriptions
             await tx.pushSubscription.deleteMany({ where: { userId } });
@@ -63,10 +73,10 @@ export async function POST(request: NextRequest) {
             // Soft-delete orders (keep for financial records)
             await tx.order.updateMany({
                 where: { userId },
-                data: { deletedAt: new Date() },
+                data: { deletedAt: now },
             });
 
-            // Anonymize user record (keep for referential integrity)
+            // Anonymize user record (keep for referential integrity) + mark deleted
             await tx.user.update({
                 where: { id: userId },
                 data: {
@@ -81,16 +91,51 @@ export async function POST(request: NextRequest) {
                     referredById: null,
                     resetToken: null,
                     resetTokenExpiry: null,
+                    deletedAt: now,
+                    isSuspended: true,
+                    suspendedAt: now,
+                    suspensionReason: selfDeleteReason,
                 },
             });
 
-            // If user is a driver, deactivate
+            // Cascade Merchants (bug previo: profile/delete no tocaba comercios).
+            // Si el usuario era dueño de comercios, quedaban APPROVED + APROBADOS
+            // colgados de un User anonimizado. Acá los apagamos totalmente.
+            await tx.merchant.updateMany({
+                where: { ownerId: userId },
+                data: {
+                    isActive: false,
+                    isOpen: false,
+                    approvalStatus: "REJECTED",
+                    rejectionReason: selfDeleteReason,
+                    isSuspended: true,
+                    suspendedAt: now,
+                    suspensionReason: selfDeleteReason,
+                    cuit: null,
+                    cuil: null,
+                    bankAccount: null,
+                    ownerDni: null,
+                    mpAccessToken: null,
+                    mpRefreshToken: null,
+                    mpUserId: null,
+                    mpEmail: null,
+                },
+            });
+
+            // If user is a driver, deactivate + reject
             const driver = await tx.driver.findUnique({ where: { userId } });
             if (driver) {
                 await tx.driver.update({
                     where: { userId },
                     data: {
-                        availabilityStatus: "OFFLINE",
+                        isActive: false,
+                        isOnline: false,
+                        availabilityStatus: "FUERA_DE_SERVICIO",
+                        approvalStatus: "REJECTED",
+                        rejectionReason: selfDeleteReason,
+                        isSuspended: true,
+                        suspendedAt: now,
+                        suspensionReason: selfDeleteReason,
                         latitude: null,
                         longitude: null,
                         cuit: null,
@@ -98,7 +143,7 @@ export async function POST(request: NextRequest) {
                 });
             }
 
-            // If user is a seller, deactivate profile
+            // If user is a seller, deactivate profile + nullify fiscal data
             const seller = await tx.sellerProfile.findUnique({ where: { userId } });
             if (seller) {
                 await tx.sellerProfile.update({
@@ -107,7 +152,17 @@ export async function POST(request: NextRequest) {
                         displayName: "[Cuenta eliminada]",
                         bio: null,
                         isActive: false,
+                        isOnline: false,
+                        isSuspended: true,
+                        suspendedAt: now,
+                        suspensionReason: selfDeleteReason,
                         cuit: null,
+                        bankAlias: null,
+                        bankCbu: null,
+                        mpAccessToken: null,
+                        mpRefreshToken: null,
+                        mpUserId: null,
+                        mpEmail: null,
                     },
                 });
             }

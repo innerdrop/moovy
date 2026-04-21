@@ -83,6 +83,7 @@ model User {
   orderChatMessages  OrderChatMessage[]  @relation("OrderChatMessageSender")
   bids               Bid[]
   activityLogs       UserActivityLog[]
+  driverAvailabilitySubs DriverAvailabilitySubscription[]
 
   @@index([isSuspended])
   @@index([archivedAt])
@@ -107,10 +108,32 @@ model PushSubscription {
   p256dh    String   // Public key for encryption
   auth      String   // Auth secret for encryption
   createdAt DateTime @default(now())
-  
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId])
+}
+
+// ISSUE-054: Suscripción del buyer para recibir push cuando haya un driver disponible.
+// Se crea desde el checkout cuando el flujo detecta "no hay repartidores". Cuando un
+// driver pasa a isOnline=true cerca de la ubicación guardada, se dispara el push y
+// se marca notifiedAt. Auto-expira en 4h para no notificar cuando el buyer ya se olvidó.
+model DriverAvailabilitySubscription {
+  id         String    @id @default(cuid())
+  userId     String
+  latitude   Float     // Lat de la dirección del buyer para matchear con driver cercano.
+  longitude  Float
+  merchantId String?   // Opcional: si el pedido es de un comercio, notificar solo si el driver está cerca del comercio también.
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime  // Auto-expira en 4h (se setea en el endpoint).
+  notifiedAt DateTime? // Cuando se disparó el push. Null = pendiente.
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant   Merchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([notifiedAt, expiresAt])
+  @@index([merchantId])
 }
 
 model Address {
@@ -491,6 +514,7 @@ model Merchant {
   products         Product[]
   subOrders        SubOrder[]
   favorites        Favorite[]
+  driverAvailabilitySubs DriverAvailabilitySubscription[]
 
   @@index([isActive])
   @@index([ownerId])

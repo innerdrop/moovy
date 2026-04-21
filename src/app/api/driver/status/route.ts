@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { notifyAvailabilitySubscribers } from "@/lib/driver-availability";
 
 const VALID_STATUSES = ["DISPONIBLE", "OCUPADO", "FUERA_DE_SERVICIO"];
 
@@ -26,6 +27,15 @@ export async function PUT(request: Request) {
                 { status: 400 }
             );
         }
+
+        // ISSUE-054: Detectamos el edge offline → online antes de actualizar para
+        // disparar el push a buyers suscriptos solo en esa transición (no en
+        // cada actualización de estado mientras el driver ya estaba online).
+        const previous = await prisma.driver.findUnique({
+            where: { userId: session.user.id },
+            select: { isOnline: true },
+        });
+        const wasOffline = !previous?.isOnline;
 
         const driver = await prisma.driver.update({
             where: { userId: session.user.id },
@@ -56,6 +66,19 @@ export async function PUT(request: Request) {
                 SET ubicacion = ST_SetSRID(ST_MakePoint(${driver.longitude}, ${driver.latitude}), 4326)
                 WHERE id = ${driver.id}
             `;
+
+            // ISSUE-054: solo disparar el aviso a suscriptores cuando el driver acaba
+            // de conectarse (transición offline → online), no en toggles entre
+            // DISPONIBLE ↔ OCUPADO. Fire-and-forget para no bloquear la respuesta.
+            if (wasOffline) {
+                notifyAvailabilitySubscribers({
+                    driverId: driver.id,
+                    driverLat: driver.latitude,
+                    driverLng: driver.longitude,
+                }).catch((err) =>
+                    console.error("[driver/status] notifyAvailabilitySubscribers failed:", err)
+                );
+            }
         }
 
         return NextResponse.json({

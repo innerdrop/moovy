@@ -104,36 +104,98 @@ export async function POST(
       if (user.driver) derivedRoles.push("DRIVER");
       if (user.sellerProfile) derivedRoles.push("SELLER");
 
-      // Delete: set deletedAt = now and deactivate domain objects
+      // Delete: set deletedAt = now + cascade a domain objects.
       // (UserRole ya no se toca; los roles derivados se apagan solos vía deletedAt).
+      //
+      // Regla (2026-04-21): cascada completa para evitar bug de resurrección.
+      // El admin delete NO anonimiza el email del User (a diferencia de profile/delete)
+      // — mantiene el email en la DB para que el registro futuro con ese email
+      // sea rechazado con 410 "cuenta eliminada, escribinos a soporte". Esto es
+      // intencional: admin delete = cuenta "quemada" (fraude/abuso/etc). Si el
+      // admin decide restaurar, el restore trae la cuenta y sus datos de vuelta.
+      // El usuario que quiera volver usando el mismo email necesita intervención
+      // humana (lo cual es correcto para casos sensibles).
+      //
+      // Para Merchant/Driver/SellerProfile sí "apagamos" datos sensibles (cuit,
+      // cbu, mpAccessToken) porque ya no deben ser operativos. La estructura
+      // queda para auditoría/integridad referencial (órdenes históricas, etc.).
+      const now = new Date();
+      const cascadeReason = "Cuenta eliminada por administrador";
+
       await prisma.$transaction(async (tx) => {
-        // Update user
+        // Update user (NO anonimizar email — ver comentario arriba)
         await tx.user.update({
           where: { id },
-          data: { deletedAt: new Date() },
+          data: { deletedAt: now },
         });
 
-        // Deactivate merchants if exist
+        // Cascade Merchants: deactivate + reject approval + anonymize fiscal data
         if (user.ownedMerchants && user.ownedMerchants.length > 0) {
           await tx.merchant.updateMany({
             where: { ownerId: id },
-            data: { isActive: false },
+            data: {
+              isActive: false,
+              isOpen: false,
+              approvalStatus: "REJECTED",
+              rejectionReason: cascadeReason,
+              isSuspended: true,
+              suspendedAt: now,
+              suspensionReason: cascadeReason,
+              // Null out sensitive/operational fiscal data
+              cuit: null,
+              cuil: null,
+              bankAccount: null,
+              ownerDni: null,
+              mpAccessToken: null,
+              mpRefreshToken: null,
+              mpUserId: null,
+              mpEmail: null,
+            },
           });
         }
 
-        // Deactivate driver if exists
+        // Cascade Driver: same pattern
         if (user.driver) {
           await tx.driver.update({
             where: { id: user.driver.id },
-            data: { isActive: false },
+            data: {
+              isActive: false,
+              isOnline: false,
+              availabilityStatus: "FUERA_DE_SERVICIO",
+              approvalStatus: "REJECTED",
+              rejectionReason: cascadeReason,
+              isSuspended: true,
+              suspendedAt: now,
+              suspensionReason: cascadeReason,
+              // Null out sensitive data
+              cuit: null,
+              latitude: null,
+              longitude: null,
+            },
           });
         }
 
-        // Deactivate seller if exists
+        // Cascade SellerProfile: same pattern
         if (user.sellerProfile) {
           await tx.sellerProfile.update({
             where: { id: user.sellerProfile.id },
-            data: { isActive: false },
+            data: {
+              isActive: false,
+              isOnline: false,
+              isSuspended: true,
+              suspendedAt: now,
+              suspensionReason: cascadeReason,
+              displayName: "[Cuenta eliminada]",
+              bio: null,
+              // Null out sensitive data
+              cuit: null,
+              bankAlias: null,
+              bankCbu: null,
+              mpAccessToken: null,
+              mpRefreshToken: null,
+              mpUserId: null,
+              mpEmail: null,
+            },
           });
         }
       }, { isolationLevel: "Serializable" });

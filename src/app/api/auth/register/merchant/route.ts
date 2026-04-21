@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { sendMerchantRequestNotification } from "@/lib/email";
 import { encryptMerchantData } from "@/lib/fiscal-crypto";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -56,9 +57,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists (ignore soft-deleted users).
+        // Check if email already exists.
         // Ya no consultamos UserRole: el rol COMERCIO se deriva de Merchant.approvalStatus
         // en cada request. Ver src/lib/roles.ts.
+        //
+        // Regla (2026-04-21): NUNCA registrar un Merchant contra un User soft-deleted.
+        // Antes, si una cuenta había sido eliminada, el registro de comercio
+        // creaba un Merchant nuevo colgado del ownerId viejo → efecto "resurrección"
+        // (ver fix paralelo en auth/register/route.ts).
         const existingUser = await prisma.user.findUnique({
             where: { email: data.email },
             select: {
@@ -68,8 +74,32 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        // If user exists, is NOT deleted, AND already has a merchant, reject
-        if (existingUser && !existingUser.deletedAt && existingUser.ownedMerchants && existingUser.ownedMerchants.length > 0) {
+        if (existingUser?.deletedAt) {
+            await logAudit({
+                action: "ACCOUNT_RESURRECTION_BLOCKED",
+                entityType: "user",
+                entityId: existingUser.id,
+                userId: existingUser.id,
+                details: {
+                    email: data.email,
+                    deletedAt: existingUser.deletedAt.toISOString(),
+                    source: "auth/register/merchant",
+                    businessName: data.businessName,
+                    timestamp: new Date().toISOString(),
+                },
+            }).catch((e) => console.error("[Register Merchant] audit log failed:", e));
+
+            return NextResponse.json(
+                {
+                    error:
+                        "Esta cuenta fue eliminada. Si creés que fue un error, escribinos a soporte.",
+                },
+                { status: 410 }
+            );
+        }
+
+        // If user exists AND already has a merchant, reject
+        if (existingUser && existingUser.ownedMerchants && existingUser.ownedMerchants.length > 0) {
             return NextResponse.json(
                 { error: "Ya tenés un comercio registrado con ese email" },
                 { status: 409 }
