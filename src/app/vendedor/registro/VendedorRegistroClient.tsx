@@ -108,6 +108,7 @@ function SellerRegistroContent() {
                     displayName: formData.displayName,
                     bio: formData.bio,
                     acceptedTerms: true,
+                    acceptedPrivacy: true,
                 })
             });
 

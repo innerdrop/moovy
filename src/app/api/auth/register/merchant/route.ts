@@ -6,6 +6,8 @@ import { applyRateLimit } from "@/lib/rate-limit";
 import { sendMerchantRequestNotification } from "@/lib/email";
 import { encryptMerchantData } from "@/lib/fiscal-crypto";
 import { logAudit } from "@/lib/audit";
+import { recordConsent } from "@/lib/consent";
+import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
 
 export const dynamic = "force-dynamic";
 
@@ -144,13 +146,14 @@ export async function POST(request: NextRequest) {
         // Encrypt sensitive fiscal data before saving
         merchantData = encryptMerchantData(merchantData);
 
-        await prisma.$transaction(async (tx) => {
+        const resultUser = await prisma.$transaction(async (tx) => {
             if (existingUser) {
                 // PATH A: user already exists → solo creamos el Merchant.
                 // No tocamos UserRole: el rol COMERCIO se deriva del Merchant existiendo.
                 await tx.merchant.create({
                     data: { ...merchantData, ownerId: existingUser.id }
                 });
+                return { id: existingUser.id };
             } else {
                 // PATH B: user nuevo → creamos User + Merchant.
                 const newUser = await tx.user.create({
@@ -162,14 +165,41 @@ export async function POST(request: NextRequest) {
                         lastName: data.lastName,
                         phone: data.phone,
                         role: 'USER',
+                        termsConsentAt: new Date(),
+                        termsConsentVersion: TERMS_VERSION,
+                        privacyConsentAt: new Date(),
+                        privacyConsentVersion: PRIVACY_POLICY_VERSION,
                     }
                 });
 
                 await tx.merchant.create({
                     data: { ...merchantData, ownerId: newUser.id }
                 });
+                return { id: newUser.id };
             }
         });
+
+        // Ley 25.326 + AAIP: registrar consentimientos en ConsentLog
+        try {
+            await recordConsent({
+                userId: resultUser.id,
+                consentType: "TERMS",
+                version: TERMS_VERSION,
+                action: "ACCEPT",
+                request,
+                details: { context: "merchant_registration" },
+            });
+            await recordConsent({
+                userId: resultUser.id,
+                consentType: "PRIVACY",
+                version: PRIVACY_POLICY_VERSION,
+                action: "ACCEPT",
+                request,
+                details: { context: "merchant_registration" },
+            });
+        } catch (err) {
+            console.error("[REGISTER MERCHANT] Failed to persist consent log:", err);
+        }
 
         // Notify admin about new merchant application (non-blocking)
         sendMerchantRequestNotification(

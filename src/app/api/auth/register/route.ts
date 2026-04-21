@@ -6,6 +6,12 @@ import { sendWelcomeEmail } from "@/lib/email";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { validatePasswordStrength, sanitizeEmail } from "@/lib/security";
 import { logAudit } from "@/lib/audit";
+import { recordConsent } from "@/lib/consent";
+import {
+    PRIVACY_POLICY_VERSION,
+    TERMS_VERSION,
+    MARKETING_CONSENT_VERSION,
+} from "@/lib/legal-versions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +38,21 @@ export async function POST(request: NextRequest) {
         if (!data.firstName || !data.lastName || !data.email || !data.password) {
             return NextResponse.json(
                 { error: "Todos los campos obligatorios deben ser completados." },
+                { status: 400 }
+            );
+        }
+
+        // Ley 25.326: consentimiento explícito obligatorio
+        if (!data.acceptTerms || !data.acceptPrivacy) {
+            return NextResponse.json(
+                { error: "Debés aceptar los Términos y la Política de Privacidad." },
+                { status: 400 }
+            );
+        }
+
+        if (!data.age18Confirmed) {
+            return NextResponse.json(
+                { error: "Debés confirmar que sos mayor de 18 años (Ley 25.326)." },
                 { status: 400 }
             );
         }
@@ -151,8 +172,13 @@ export async function POST(request: NextRequest) {
                     bonusActivated: false,  // Not yet activated
                     referralCode: newUserReferralCode,
                     referredById: referrerId,
-                    termsConsentAt: data.acceptTerms ? new Date() : null,
-                    privacyConsentAt: data.acceptPrivacy ? new Date() : null,
+                    termsConsentAt: new Date(),
+                    termsConsentVersion: TERMS_VERSION,
+                    privacyConsentAt: new Date(),
+                    privacyConsentVersion: PRIVACY_POLICY_VERSION,
+                    age18Confirmed: true,
+                    marketingConsent: !!data.marketingConsent,
+                    marketingConsentAt: data.marketingConsent ? new Date() : null,
                 }
             });
             // Nota: ya no tocamos UserRole. El rol base USER sale del campo
@@ -179,6 +205,39 @@ export async function POST(request: NextRequest) {
         });
 
         // Registration successful
+
+        // Ley 25.326 + AAIP: registrar los consentimientos en ConsentLog.
+        // Se hace fuera de la $transaction para no bloquearla, porque si falla
+        // el log (ej: DB transient), el registro igual debe completarse — pero
+        // lo logueamos para que el admin pueda detectar inconsistencias.
+        try {
+            await recordConsent({
+                userId: result.id,
+                consentType: "TERMS",
+                version: TERMS_VERSION,
+                action: "ACCEPT",
+                request,
+            });
+            await recordConsent({
+                userId: result.id,
+                consentType: "PRIVACY",
+                version: PRIVACY_POLICY_VERSION,
+                action: "ACCEPT",
+                request,
+            });
+            if (data.marketingConsent) {
+                await recordConsent({
+                    userId: result.id,
+                    consentType: "MARKETING",
+                    version: MARKETING_CONSENT_VERSION,
+                    action: "ACCEPT",
+                    request,
+                });
+            }
+        } catch (err) {
+            // No tumbamos el registro si falla el log — pero lo dejamos en audit.
+            console.error("[REGISTER] Failed to persist consent log:", err);
+        }
 
         // Send welcome email (non-blocking)
         sendWelcomeEmail(data.email, data.firstName, newUserReferralCode);

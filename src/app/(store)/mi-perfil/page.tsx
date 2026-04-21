@@ -285,6 +285,18 @@ export default function ProfilePage() {
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-300" />
                         </Link>
+                        <Link href="/mi-perfil/privacidad" className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                    <Shield className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-medium text-gray-700 block">Privacidad y Datos</span>
+                                    <span className="text-[10px] text-gray-400">Exportar, revocar consentimientos (Ley 25.326)</span>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </Link>
                         <Link href="/mi-perfil/invitar" className="flex items-center justify-between p-4 hover:bg-gray-50 transition">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
