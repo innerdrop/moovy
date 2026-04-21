@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { encryptDriverData } from "@/lib/fiscal-crypto";
+import { recordConsent } from "@/lib/consent";
+import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
 
 export const dynamic = "force-dynamic";
 
@@ -79,14 +81,15 @@ export async function POST(request: NextRequest) {
             licenciaUrl: isMotorized ? (data.licenciaUrl || null) : null,
             seguroUrl: isMotorized ? (data.seguroUrl || null) : null,
             vtvUrl: isMotorized ? (data.vtvUrl || null) : null,
-            acceptedTermsAt: data.acceptTerms ? new Date() : null,
+            acceptedTermsAt: new Date(),
+            acceptedPrivacyAt: new Date(),
             isActive: false,
         };
 
         // Encrypt sensitive fiscal data before saving
         driverData = encryptDriverData(driverData);
 
-        await prisma.$transaction(async (tx) => {
+        const resultUser = await prisma.$transaction(async (tx) => {
             if (existingUser) {
                 // PATH A: user already exists → solo creamos el Driver.
                 // No tocamos UserRole: el rol DRIVER se deriva del Driver existiendo
@@ -94,6 +97,7 @@ export async function POST(request: NextRequest) {
                 await tx.driver.create({
                     data: { ...driverData, userId: existingUser.id }
                 });
+                return { id: existingUser.id };
             } else {
                 // PATH B: user nuevo → creamos User + Driver.
                 const newUser = await tx.user.create({
@@ -105,14 +109,41 @@ export async function POST(request: NextRequest) {
                         lastName: data.lastName,
                         phone: data.phone,
                         role: 'USER',
+                        termsConsentAt: new Date(),
+                        termsConsentVersion: TERMS_VERSION,
+                        privacyConsentAt: new Date(),
+                        privacyConsentVersion: PRIVACY_POLICY_VERSION,
                     }
                 });
 
                 await tx.driver.create({
                     data: { ...driverData, userId: newUser.id }
                 });
+                return { id: newUser.id };
             }
         });
+
+        // Ley 25.326 + AAIP: registrar consentimientos en ConsentLog
+        try {
+            await recordConsent({
+                userId: resultUser.id,
+                consentType: "TERMS",
+                version: TERMS_VERSION,
+                action: "ACCEPT",
+                request,
+                details: { context: "driver_registration" },
+            });
+            await recordConsent({
+                userId: resultUser.id,
+                consentType: "PRIVACY",
+                version: PRIVACY_POLICY_VERSION,
+                action: "ACCEPT",
+                request,
+                details: { context: "driver_registration" },
+            });
+        } catch (err) {
+            console.error("[REGISTER DRIVER] Failed to persist consent log:", err);
+        }
 
         return NextResponse.json({
             success: true,

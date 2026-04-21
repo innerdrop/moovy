@@ -20,9 +20,29 @@ export default function CookiesPage() {
                 </Link>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Política de Cookies</h1>
-                <p className="text-gray-500 mb-8">Última actualización: Marzo 2026</p>
+                <p className="text-gray-500 mb-2">Versión 1.1 — Última actualización: Abril 2026</p>
+                <p className="text-gray-500 mb-8 text-sm">
+                    Esta política complementa la{" "}
+                    <Link href="/privacidad" className="text-[#e60012] underline">Política de Privacidad</Link>{" "}
+                    y se enmarca en la Ley 25.326 de Protección de Datos Personales de la República Argentina.
+                </p>
 
                 <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 space-y-8">
+                    {/* 0. Tu control sobre las cookies */}
+                    <section className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-5">
+                        <h2 className="text-lg font-bold text-gray-900 mb-2">🍪 Tu control sobre las cookies</h2>
+                        <p className="text-gray-700 text-sm mb-2">
+                            Al ingresar por primera vez a MOOVY te mostramos un banner para que decidas qué cookies
+                            aceptás. Podés aceptar todas, rechazar las no esenciales, o configurarlas por categoría.
+                            Tu elección se guarda y podés cambiarla en cualquier momento desde{" "}
+                            <Link href="/mi-perfil/privacidad" className="text-[#e60012] underline">Mi perfil → Privacidad</Link>.
+                        </p>
+                        <p className="text-gray-700 text-sm">
+                            Las cookies esenciales (sesión, CSRF, seguridad) no se pueden desactivar porque sin ellas
+                            la plataforma no funciona — pero nunca se usan para marketing ni se comparten con terceros.
+                        </p>
+                    </section>
+
                     {/* 1. Qué son las Cookies */}
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 mb-4">1. ¿Qué son las Cookies?</h2>

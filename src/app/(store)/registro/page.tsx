@@ -38,6 +38,8 @@ function RegistrationForm() {
     const [referralCode, setReferralCode] = useState("");
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+    const [age18Confirmed, setAge18Confirmed] = useState(false);
+    const [marketingConsent, setMarketingConsent] = useState(false);
 
     useEffect(() => {
         const refParam = searchParams.get("ref");
@@ -65,6 +67,11 @@ function RegistrationForm() {
             return;
         }
 
+        if (!age18Confirmed) {
+            setError("Tenés que confirmar que sos mayor de 18 años para registrarte (Ley 25.326)");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -80,6 +87,8 @@ function RegistrationForm() {
                     referralCode: referralCode.trim() || undefined,
                     acceptTerms: true,
                     acceptPrivacy: true,
+                    age18Confirmed,
+                    marketingConsent,
                 }),
             });
 
@@ -339,12 +348,37 @@ function RegistrationForm() {
                                     y el tratamiento de mis datos personales conforme la Ley 25.326. <span className="text-red-500">*</span>
                                 </span>
                             </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={age18Confirmed}
+                                    onChange={(e) => setAge18Confirmed(e.target.checked)}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
+                                />
+                                <span className="text-sm text-gray-600">
+                                    Declaro bajo juramento que soy mayor de 18 años. <span className="text-red-500">*</span>
+                                </span>
+                            </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={marketingConsent}
+                                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
+                                />
+                                <span className="text-sm text-gray-600">
+                                    Quiero recibir ofertas, novedades y beneficios de MOOVY por email y notificaciones push.
+                                    Puedo revocar este consentimiento cuando quiera desde mi perfil.
+                                </span>
+                            </label>
                         </div>
 
                         {/* Submit */}
                         <button
                             type="submit"
-                            disabled={isLoading || success || !acceptTerms || !acceptPrivacy}
+                            disabled={isLoading || success || !acceptTerms || !acceptPrivacy || !age18Confirmed}
                             className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg mt-4 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-shadow"
                         >
                             {isLoading ? (
