@@ -10,6 +10,7 @@ import AppHeader from "@/components/layout/AppHeader";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ChatWidget } from "@/components/support/ChatWidget";
+import BuyerOnboardingTour from "@/components/onboarding/BuyerOnboardingTour";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
@@ -213,6 +214,9 @@ export default function StoreLayout({
 
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}
+
+            {/* ISSUE-021: Tour buyer primera vez — self-gated por onboardingCompletedAt */}
+            <BuyerOnboardingTour />
         </div>
     );
 }

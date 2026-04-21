@@ -17,7 +17,6 @@ import {
     ChevronLeft,
     Loader2,
     CheckCircle,
-    AlertCircle,
     Store,
     User,
     Calendar,
@@ -551,19 +550,40 @@ export default function CheckoutPage() {
 
                 <h1 className="text-3xl font-bold text-navy mb-8 lg:text-4xl lg:mb-10">Checkout</h1>
 
-                {/* Steps */}
+                {/* ISSUE-055: Breadcrumb con 3 pasos claros (Entrega → Pago → Confirmar).
+                    Solo el paso actual está destacado en moovy; los pasos completados
+                    tienen el check y los futuros quedan en gris. */}
                 <div className="flex mb-8 gap-4 lg:gap-6 lg:mb-10">
-                    {[1, 2, 3].map((s) => (
-                        <div
-                            key={s}
-                            className={`flex-1 text-center pb-4 border-b-2 lg:text-base lg:pb-6 ${step >= s ? "border-moovy text-moovy" : "border-gray-200 text-gray-400"
+                    {[
+                        { n: 1, label: "Entrega" },
+                        { n: 2, label: "Pago" },
+                        { n: 3, label: "Confirmar" },
+                    ].map(({ n, label }) => {
+                        const isActive = step === n;
+                        const isDone = step > n;
+                        return (
+                            <div
+                                key={n}
+                                className={`flex-1 text-center pb-4 border-b-2 lg:text-base lg:pb-6 ${
+                                    isActive
+                                        ? "border-moovy text-moovy"
+                                        : isDone
+                                            ? "border-moovy/40 text-moovy/70"
+                                            : "border-gray-200 text-gray-400"
                                 }`}
-                        >
-                            <span className="font-semibold lg:font-bold">
-                                {s === 1 ? "Método" : s === 2 ? (deliveryMethod === "home" ? "Envío" : "Confirmar") : "Pago"}
-                            </span>
-                        </div>
-                    ))}
+                                aria-current={isActive ? "step" : undefined}
+                            >
+                                <span className="font-semibold lg:font-bold inline-flex items-center gap-1.5">
+                                    {isDone ? (
+                                        <CheckCircle className="w-4 h-4" />
+                                    ) : (
+                                        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${isActive ? "bg-moovy text-white" : "bg-gray-200 text-gray-500"}`}>{n}</span>
+                                    )}
+                                    {label}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
@@ -804,19 +824,97 @@ export default function CheckoutPage() {
                                         </div>
                                     )}
 
+                                    {/* ISSUE-056: Tipo de entrega (Inmediata vs Programada)
+                                        vive en el paso Entrega — es una decisión del "cuándo"
+                                        de la entrega, no del pago. Antes estaba mezclado con
+                                        método de pago en el último paso. */}
+                                    {deliveryMethod === "home" && (
+                                        <div className="mt-6 lg:mt-8 pt-6 border-t border-gray-100">
+                                            <h3 className="text-sm lg:text-base font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 lg:w-5 lg:h-5" />
+                                                ¿Cuándo querés recibirlo?
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-3 lg:mb-4">
+                                                <button
+                                                    type="button"
+                                                    disabled={!hasDrivers}
+                                                    onClick={() => {
+                                                        if (!hasDrivers) return;
+                                                        setDeliveryType("IMMEDIATE");
+                                                        setScheduledSlotStart(undefined);
+                                                        setScheduledSlotEnd(undefined);
+                                                    }}
+                                                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                                                        !hasDrivers
+                                                            ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
+                                                            : deliveryType === "IMMEDIATE"
+                                                                ? "border-moovy bg-moovy-light text-moovy"
+                                                                : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                    }`}
+                                                >
+                                                    <Truck className="w-4 h-4 mx-auto mb-1" />
+                                                    Inmediata
+                                                    {!hasDrivers && (
+                                                        <span className="block text-[10px] text-gray-400 font-normal mt-0.5">Sin repartidores ahora</span>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeliveryType("SCHEDULED")}
+                                                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                                                        deliveryType === "SCHEDULED"
+                                                            ? "border-moovy bg-moovy-light text-moovy"
+                                                            : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                                    } ${!hasDrivers ? "ring-2 ring-blue-300 ring-offset-1" : ""}`}
+                                                >
+                                                    <Calendar className="w-4 h-4 mx-auto mb-1" />
+                                                    Programada
+                                                    {!hasDrivers && (
+                                                        <span className="block text-[10px] text-blue-600 font-semibold mt-0.5">Recomendada</span>
+                                                    )}
+                                                </button>
+                                            </div>
+
+                                            {deliveryType === "SCHEDULED" && (
+                                                <div className="bg-gray-50 rounded-lg p-4">
+                                                    <TimeSlotPicker
+                                                        onSelect={(start, end) => {
+                                                            setScheduledSlotStart(start);
+                                                            setScheduledSlotEnd(end);
+                                                        }}
+                                                        selectedStart={scheduledSlotStart}
+                                                        vendorSchedule={vendorSchedule}
+                                                        loading={scheduleLoading}
+                                                    />
+                                                    {scheduledSlotStart && (
+                                                        <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
+                                                            <CheckCircle className="w-4 h-4" />
+                                                            Entrega programada: {new Date(scheduledSlotStart).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}{" "}
+                                                            {new Date(scheduledSlotStart).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} -{" "}
+                                                            {new Date(scheduledSlotEnd!).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <button
                                         onClick={() => {
+                                            // ISSUE-055: siempre vamos a Pago (step 2), el costo
+                                            // de envío se muestra inline en el sidebar "Tu Pedido".
                                             if (deliveryMethod === "home") {
                                                 calculateDelivery();
-                                                setStep(2);
-                                            } else {
-                                                setStep(3);
                                             }
+                                            setStep(2);
                                         }}
-                                        disabled={deliveryMethod === "home" && (!address.street || !address.number)}
+                                        disabled={
+                                            (deliveryMethod === "home" && (!address.street || !address.number)) ||
+                                            (deliveryMethod === "home" && deliveryType === "SCHEDULED" && !scheduledSlotStart)
+                                        }
                                         className="btn-primary w-full py-3 lg:py-4 lg:text-base lg:font-semibold mt-4 lg:mt-6"
                                     >
-                                        Continuar
+                                        Continuar al pago
                                         <span className="lg:hidden text-xs font-normal opacity-80 ml-2">
                                             · {formatPrice(subtotal)}
                                         </span>
@@ -825,136 +923,9 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        {/* Step 2: Delivery */}
+                        {/* Step 2: Pago — SOLO método de pago + puntos.
+                            El tipo de entrega (Inmediata/Programada) vive en Step 1 (Entrega). */}
                         {step === 2 && (
-                            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md">
-                                <h2 className="text-xl lg:text-2xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
-                                    <Truck className="w-5 h-5 lg:w-6 lg:h-6 text-moovy" />
-                                    Costo de Envío
-                                </h2>
-
-                                <div className="mb-4 lg:mb-6 p-4 lg:p-5 bg-gray-50 rounded-lg lg:rounded-xl">
-                                    <p className="font-medium lg:text-base">Entregar en:</p>
-                                    <p className="text-gray-600 lg:text-base">
-                                        {address.street} {address.number}
-                                        {address.floor ? `, ${address.floor}` : ""}
-                                    </p>
-                                    <button
-                                        onClick={() => setStep(1)}
-                                        className="text-moovy text-sm lg:text-base hover:underline mt-1 lg:mt-2"
-                                    >
-                                        Cambiar dirección
-                                    </button>
-                                </div>
-
-                                {isCalculating ? (
-                                    <div className="text-center py-8">
-                                        <Loader2 className="w-8 h-8 animate-spin text-moovy mx-auto mb-2" />
-                                        <p className="text-gray-600">
-                                            Calculando envío{isMultiVendor ? ` para ${groups.length} comercios...` : "..."}
-                                        </p>
-                                    </div>
-                                ) : isMultiVendor && Object.keys(vendorDeliveryResults).length > 0 ? (
-                                    /* Multi-vendor: show per-vendor delivery results */
-                                    <div className="space-y-3">
-                                        {groups.filter(g => g.vendorType === "merchant").map((group) => {
-                                            const result = vendorDeliveryResults[group.vendorId];
-                                            if (!result) return null;
-                                            return (
-                                                <div
-                                                    key={group.vendorId}
-                                                    className={`p-4 rounded-lg ${result.isWithinRange
-                                                        ? "bg-green-50 border border-green-200"
-                                                        : "bg-red-50 border border-red-200"
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Store className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-sm font-semibold text-gray-700">{group.vendorName}</span>
-                                                    </div>
-                                                    {result.isWithinRange ? (
-                                                        <div className="flex items-center justify-between">
-                                                            <p className="text-sm text-gray-600">
-                                                                {result.distanceKm.toFixed(1)} km
-                                                                {result.isRealRoadDistance && (
-                                                                    <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase ml-1">Real</span>
-                                                                )}
-                                                            </p>
-                                                            <p className="font-bold text-moovy">
-                                                                {result.isFreeDelivery ? "GRATIS" : formatPrice(result.totalCost)}
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2 text-red-700 text-sm">
-                                                            <AlertCircle className="w-4 h-4" />
-                                                            <span>{result.message}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                        {allVendorsInRange && totalDeliveryCost > 0 && (
-                                            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                                                <span className="font-semibold text-gray-700">Total envíos</span>
-                                                <span className="text-xl font-bold text-moovy">{formatPrice(totalDeliveryCost)}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : deliveryResult ? (
-                                    /* Single vendor: original display */
-                                    <div className={`p-4 rounded-lg ${deliveryResult.isWithinRange
-                                        ? "bg-green-50 border border-green-200"
-                                        : "bg-red-50 border border-red-200"
-                                        }`}>
-                                        {deliveryResult.isWithinRange ? (
-                                            <>
-                                                <div className="flex items-center gap-2 text-green-700 mb-2">
-                                                    <CheckCircle className="w-5 h-5" />
-                                                    <span className="font-semibold">
-                                                        {deliveryResult.isFreeDelivery ? "¡Envío Gratis!" : "Envío disponible"}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-gray-600 flex items-center gap-1">
-                                                    Distancia: {deliveryResult.distanceKm.toFixed(1)} km
-                                                    {deliveryResult.isRealRoadDistance && (
-                                                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">Recorrido real</span>
-                                                    )}
-                                                </p>
-                                                {!deliveryResult.isFreeDelivery && (
-                                                    <p className="text-xl font-bold text-moovy mt-2">
-                                                        Costo: {formatPrice(deliveryResult.totalCost)}
-                                                    </p>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="flex items-center gap-2 text-red-700">
-                                                <AlertCircle className="w-5 h-5" />
-                                                <span>{deliveryResult.message}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-
-                                <div className="flex gap-4 lg:gap-6 mt-6 lg:mt-8">
-                                    <button
-                                        onClick={() => setStep(1)}
-                                        className="btn-outline flex-1 lg:py-4 lg:text-base lg:font-semibold"
-                                    >
-                                        Atrás
-                                    </button>
-                                    <button
-                                        onClick={() => setStep(3)}
-                                        disabled={!allVendorsInRange}
-                                        className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold"
-                                    >
-                                        Continuar
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Step 3: Payment */}
-                        {step === 3 && (
                             <div className="space-y-6 lg:space-y-8">
                                 <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md">
                                     <h2 className="text-xl lg:text-2xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
@@ -972,76 +943,6 @@ export default function CheckoutPage() {
                                                 setDiscountAmount(discount);
                                             }}
                                         />
-                                    </div>
-
-                                    {/* Delivery Type: Immediate vs Scheduled */}
-                                    <div className="mb-6 lg:mb-8">
-                                        <h3 className="text-sm lg:text-base font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
-                                            <Calendar className="w-4 h-4 lg:w-5 lg:h-5" />
-                                            Tipo de entrega
-                                        </h3>
-                                        <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-3 lg:mb-4">
-                                            <button
-                                                type="button"
-                                                disabled={!hasDrivers && deliveryMethod === "home"}
-                                                onClick={() => {
-                                                    if (!hasDrivers && deliveryMethod === "home") return;
-                                                    setDeliveryType("IMMEDIATE");
-                                                    setScheduledSlotStart(undefined);
-                                                    setScheduledSlotEnd(undefined);
-                                                }}
-                                                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                                                    !hasDrivers && deliveryMethod === "home"
-                                                        ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
-                                                        : deliveryType === "IMMEDIATE"
-                                                            ? "border-moovy bg-moovy-light text-moovy"
-                                                            : "border-gray-200 text-gray-600 hover:border-gray-300"
-                                                }`}
-                                            >
-                                                <Truck className="w-4 h-4 mx-auto mb-1" />
-                                                Inmediata
-                                                {!hasDrivers && deliveryMethod === "home" && (
-                                                    <span className="block text-[10px] text-gray-400 font-normal mt-0.5">Sin repartidores ahora</span>
-                                                )}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setDeliveryType("SCHEDULED")}
-                                                className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                                                    deliveryType === "SCHEDULED"
-                                                        ? "border-moovy bg-moovy-light text-moovy"
-                                                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                                                } ${!hasDrivers && deliveryMethod === "home" ? "ring-2 ring-blue-300 ring-offset-1" : ""}`}
-                                            >
-                                                <Calendar className="w-4 h-4 mx-auto mb-1" />
-                                                Programada
-                                                {!hasDrivers && deliveryMethod === "home" && (
-                                                    <span className="block text-[10px] text-blue-600 font-semibold mt-0.5">Recomendada</span>
-                                                )}
-                                            </button>
-                                        </div>
-
-                                        {deliveryType === "SCHEDULED" && (
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <TimeSlotPicker
-                                                    onSelect={(start, end) => {
-                                                        setScheduledSlotStart(start);
-                                                        setScheduledSlotEnd(end);
-                                                    }}
-                                                    selectedStart={scheduledSlotStart}
-                                                    vendorSchedule={vendorSchedule}
-                                                    loading={scheduleLoading}
-                                                />
-                                                {scheduledSlotStart && (
-                                                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
-                                                        <CheckCircle className="w-4 h-4" />
-                                                        Entrega programada: {new Date(scheduledSlotStart).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}{" "}
-                                                        {new Date(scheduledSlotStart).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} -{" "}
-                                                        {new Date(scheduledSlotEnd!).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
                                     </div>
 
                                     <div className="space-y-3 lg:space-y-4">
@@ -1080,26 +981,168 @@ export default function CheckoutPage() {
 
                                     <div className="flex gap-4 lg:gap-6 mt-6 lg:mt-8">
                                         <button
-                                            onClick={() => setStep(isPickup ? 1 : 2)}
+                                            onClick={() => setStep(1)}
+                                            className="btn-outline flex-1 lg:py-4 lg:text-base lg:font-semibold"
+                                        >
+                                            Atrás
+                                        </button>
+                                        <button
+                                            onClick={() => setStep(3)}
+                                            disabled={isPickup ? false : !allVendorsInRange}
+                                            className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold"
+                                        >
+                                            Continuar a confirmar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3: Confirmar — resumen final antes de procesar.
+                            El comprador revisa dirección, tipo entrega, método pago,
+                            puntos aplicados y total antes de Confirmar Pedido. */}
+                        {step === 3 && (
+                            <div className="space-y-6 lg:space-y-8">
+                                <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm lg:shadow-md">
+                                    <h2 className="text-xl lg:text-2xl font-bold text-navy mb-4 lg:mb-6 flex items-center gap-2">
+                                        <CheckCircle className="w-5 h-5 lg:w-6 lg:h-6 text-moovy" />
+                                        Revisá tu pedido
+                                    </h2>
+
+                                    <div className="space-y-3 lg:space-y-4">
+                                        {/* Dirección / Retiro */}
+                                        <div className="flex items-start justify-between gap-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="flex items-start gap-3 min-w-0">
+                                                {isPickup ? (
+                                                    <ShoppingBag className="w-5 h-5 text-moovy flex-shrink-0 mt-0.5" />
+                                                ) : (
+                                                    <MapPin className="w-5 h-5 text-moovy flex-shrink-0 mt-0.5" />
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                        {isPickup ? "Retiro en local" : "Dirección de entrega"}
+                                                    </p>
+                                                    {isPickup ? (
+                                                        <p className="text-sm lg:text-base text-navy font-medium">
+                                                            Pasás a retirar cuando esté listo
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-sm lg:text-base text-navy font-medium truncate">
+                                                            {address.street} {address.number}
+                                                            {address.floor ? ` · ${address.floor}` : ""}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setStep(1)}
+                                                className="text-moovy text-sm font-semibold hover:underline flex-shrink-0"
+                                            >
+                                                Cambiar
+                                            </button>
+                                        </div>
+
+                                        {/* Tipo de entrega (solo si home) */}
+                                        {!isPickup && (
+                                            <div className="flex items-start justify-between gap-4 p-4 bg-gray-50 rounded-xl">
+                                                <div className="flex items-start gap-3 min-w-0">
+                                                    {deliveryType === "SCHEDULED" ? (
+                                                        <Calendar className="w-5 h-5 text-moovy flex-shrink-0 mt-0.5" />
+                                                    ) : (
+                                                        <Truck className="w-5 h-5 text-moovy flex-shrink-0 mt-0.5" />
+                                                    )}
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                            ¿Cuándo?
+                                                        </p>
+                                                        {deliveryType === "SCHEDULED" && scheduledSlotStart ? (
+                                                            <p className="text-sm lg:text-base text-navy font-medium">
+                                                                Programada · {new Date(scheduledSlotStart).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}{" "}
+                                                                {new Date(scheduledSlotStart).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                                                                {scheduledSlotEnd ? ` - ${new Date(scheduledSlotEnd).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                                                            </p>
+                                                        ) : (
+                                                            <p className="text-sm lg:text-base text-navy font-medium">
+                                                                Inmediata · apenas el comercio confirme
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setStep(1)}
+                                                    className="text-moovy text-sm font-semibold hover:underline flex-shrink-0"
+                                                >
+                                                    Cambiar
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Método de pago */}
+                                        <div className="flex items-start justify-between gap-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="flex items-start gap-3 min-w-0">
+                                                <CreditCard className="w-5 h-5 text-moovy flex-shrink-0 mt-0.5" />
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Método de pago</p>
+                                                    <p className="text-sm lg:text-base text-navy font-medium">
+                                                        {paymentMethod === "cash" ? "💵 Efectivo al recibir" : "💳 Mercado Pago"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setStep(2)}
+                                                className="text-moovy text-sm font-semibold hover:underline flex-shrink-0"
+                                            >
+                                                Cambiar
+                                            </button>
+                                        </div>
+
+                                        {/* Puntos aplicados */}
+                                        {pointsUsed > 0 && (
+                                            <div className="flex items-start justify-between gap-4 p-4 bg-green-50 border border-green-100 rounded-xl">
+                                                <div className="flex items-start gap-3 min-w-0">
+                                                    <span className="text-xl flex-shrink-0">🎉</span>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">Puntos MOOVER</p>
+                                                        <p className="text-sm lg:text-base text-green-800 font-medium">
+                                                            {pointsUsed.toLocaleString("es-AR")} pts · -{formatPrice(discountAmount)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setStep(2)}
+                                                    className="text-green-700 text-sm font-semibold hover:underline flex-shrink-0"
+                                                >
+                                                    Cambiar
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-4 lg:gap-6 mt-6 lg:mt-8">
+                                        <button
+                                            onClick={() => setStep(2)}
                                             className="btn-outline flex-1 lg:py-4 lg:text-base lg:font-semibold"
                                         >
                                             Atrás
                                         </button>
                                         <button
                                             onClick={handleSubmitOrder}
-                                            disabled={isSubmitting || (deliveryType === "SCHEDULED" && !scheduledSlotStart)}
+                                            disabled={isSubmitting || (deliveryType === "SCHEDULED" && !scheduledSlotStart) || (!isPickup && !allVendorsInRange)}
                                             className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold flex items-center justify-center gap-2"
                                         >
-                                            <span className="flex items-center gap-2">
-                                                {isSubmitting ? (
-                                                    <>
-                                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                                        Procesando...
-                                                    </>
-                                                ) : (
-                                                    "Confirmar Pedido"
-                                                )}
-                                            </span>
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    Procesando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Confirmar Pedido
+                                                    <span className="lg:hidden text-xs font-normal opacity-80">
+                                                        · {formatPrice(finalTotal)}
+                                                    </span>
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>

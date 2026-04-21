@@ -57,6 +57,7 @@ model User {
   suspendedUntil     DateTime?           // null = permanent until manual reactivation
   suspensionReason   String?
   archivedAt         DateTime?           // separate from deletedAt — admin can view archived users
+  onboardingCompletedAt DateTime?        // ISSUE-021: tour buyer primera vez completado/saltado
   addresses          Address[]
   cart               CartItem[]
   driver             Driver?
