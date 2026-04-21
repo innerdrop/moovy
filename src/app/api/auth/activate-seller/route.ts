@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encryptSellerData, decryptSellerData } from "@/lib/fiscal-crypto";
+import { recordConsent } from "@/lib/consent";
+import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
 
 // POST - Activate SELLER role for authenticated user
 export async function POST(request: NextRequest) {
@@ -14,7 +16,7 @@ export async function POST(request: NextRequest) {
         const userId = (session.user as any).id;
 
         // Parse body
-        let body: { cuit?: string; acceptedTerms?: boolean; displayName?: string; bio?: string } = {};
+        let body: { cuit?: string; acceptedTerms?: boolean; acceptedPrivacy?: boolean; displayName?: string; bio?: string } = {};
         try {
             body = await request.json();
         } catch {
@@ -32,6 +34,13 @@ export async function POST(request: NextRequest) {
         if (!body.acceptedTerms) {
             return NextResponse.json(
                 { error: "Debés aceptar los Términos para Vendedores" },
+                { status: 400 }
+            );
+        }
+
+        if (!body.acceptedPrivacy) {
+            return NextResponse.json(
+                { error: "Debés aceptar la Política de Privacidad (Ley 25.326)" },
                 { status: 400 }
             );
         }
@@ -90,7 +99,8 @@ export async function POST(request: NextRequest) {
                     cuit: body.cuit || null,
                     displayName: body.displayName || null,
                     bio: body.bio || null,
-                    acceptedTermsAt: body.acceptedTerms ? new Date() : null,
+                    acceptedTermsAt: new Date(),
+                    acceptedPrivacyAt: new Date(),
                     isActive: true,
                 };
                 const encryptedData = encryptSellerData(profileData);
@@ -103,7 +113,8 @@ export async function POST(request: NextRequest) {
                     cuit: body.cuit || existing.cuit,
                     displayName: body.displayName || existing.displayName,
                     bio: body.bio || existing.bio,
-                    acceptedTermsAt: body.acceptedTerms ? new Date() : existing.acceptedTermsAt,
+                    acceptedTermsAt: new Date(),
+                    acceptedPrivacyAt: new Date(),
                     isActive: true,
                 };
                 const encryptedData = encryptSellerData(updateData);
@@ -113,6 +124,28 @@ export async function POST(request: NextRequest) {
                 });
             }
         });
+
+        // Ley 25.326 + AAIP: registrar consentimientos en ConsentLog
+        try {
+            await recordConsent({
+                userId,
+                consentType: "TERMS",
+                version: TERMS_VERSION,
+                action: "ACCEPT",
+                request,
+                details: { context: "seller_activation" },
+            });
+            await recordConsent({
+                userId,
+                consentType: "PRIVACY",
+                version: PRIVACY_POLICY_VERSION,
+                action: "ACCEPT",
+                request,
+                details: { context: "seller_activation" },
+            });
+        } catch (err) {
+            console.error("[ACTIVATE SELLER] Failed to persist consent log:", err);
+        }
 
         return NextResponse.json({ success: true, role: "SELLER", status: "ACTIVE" });
     } catch (error) {

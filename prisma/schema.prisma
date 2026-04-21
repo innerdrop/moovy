@@ -49,6 +49,14 @@ model User {
   updatedAt          DateTime            @updatedAt
   privacyConsentAt   DateTime?
   termsConsentAt     DateTime?
+  privacyConsentVersion String?           // Versión del documento aceptado (ej: "2.0")
+  termsConsentVersion   String?
+  age18Confirmed     Boolean             @default(false)  // Ley 25.326: declaración de mayoría de edad
+  marketingConsent   Boolean             @default(false)  // Ley 26.951 No Llame: opt-in explícito
+  marketingConsentAt DateTime?
+  marketingConsentRevokedAt DateTime?
+  cookiesConsent     String?             // JSON con preferencias: {essential:true, analytics, functional}
+  cookiesConsentAt   DateTime?
   resetToken         String?
   resetTokenExpiry   DateTime?
   deletedAt          DateTime?
@@ -84,6 +92,7 @@ model User {
   bids               Bid[]
   activityLogs       UserActivityLog[]
   driverAvailabilitySubs DriverAvailabilitySubscription[]
+  consentLogs        ConsentLog[]
 
   @@index([isSuspended])
   @@index([archivedAt])
@@ -554,6 +563,7 @@ model Driver {
   dniFrenteUrl       String?
   dniDorsoUrl        String?
   acceptedTermsAt    DateTime?
+  acceptedPrivacyAt  DateTime?
   isActive           Boolean                   @default(true)
   isOnline           Boolean                   @default(false)
   totalDeliveries    Int                       @default(0)
@@ -648,6 +658,7 @@ model SellerProfile {
   avatar         String?
   cuit           String?
   acceptedTermsAt DateTime?
+  acceptedPrivacyAt DateTime?
   bankAlias      String?
   bankCbu        String?
   isActive       Boolean   @default(true)
@@ -1294,6 +1305,26 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId])
   @@index([createdAt])
+}
+
+// Ley 25.326 + AAIP: registro inmutable de consentimientos aceptados o revocados.
+// Cada ACCEPT/REVOKE de TERMS, PRIVACY, MARKETING o COOKIES deja un asiento con
+// versión, IP y user-agent para poder demostrar cumplimiento ante la autoridad.
+model ConsentLog {
+  id          String   @id @default(cuid())
+  userId      String
+  consentType String   // TERMS | PRIVACY | MARKETING | COOKIES
+  version     String   // Versión del documento aceptado (ej: "2.0")
+  action      String   @default("ACCEPT") // ACCEPT | REVOKE
+  ipAddress   String?
+  userAgent   String?
+  details     String?  // JSON opcional: {categories: {analytics:true, functional:false}} para COOKIES
+  acceptedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consentType])
+  @@index([acceptedAt])
 }
 
 model Coupon {

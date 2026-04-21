@@ -11,6 +11,7 @@ import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ChatWidget } from "@/components/support/ChatWidget";
 import BuyerOnboardingTour from "@/components/onboarding/BuyerOnboardingTour";
+import CookieBanner from "@/components/legal/CookieBanner";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
@@ -217,6 +218,9 @@ export default function StoreLayout({
 
             {/* ISSUE-021: Tour buyer primera vez — self-gated por onboardingCompletedAt */}
             <BuyerOnboardingTour />
+
+            {/* Ley 25.326 + AAIP: banner de consentimiento de cookies — self-gated por localStorage */}
+            <CookieBanner />
         </div>
     );
 }
