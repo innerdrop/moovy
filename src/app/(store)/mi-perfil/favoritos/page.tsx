@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Heart, Store, Search } from "lucide-react";
+import { ArrowLeft, Heart } from "lucide-react";
 import MerchantCard from "@/components/store/MerchantCard";
 import ProductCard from "@/components/store/ProductCard";
 import ListingCard from "@/components/store/ListingCard";
+import EmptyState from "@/components/ui/EmptyState";
 import { useFavoritesStore } from "@/store/favorites";
 
 type TabType = "merchants" | "products" | "listings";
@@ -115,23 +116,15 @@ export default function FavoritosPage() {
                         <p className="text-gray-400 text-sm mt-3">Cargando favoritos...</p>
                     </div>
                 ) : totalFavorites === 0 ? (
-                    /* Empty state global */
-                    <div className="text-center py-16">
-                        <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Heart className="w-10 h-10 text-pink-400" />
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Todavia no tenes favoritos</h2>
-                        <p className="text-gray-500 mb-8">
-                            Toca el corazon en los productos y comercios que te gusten para guardarlos aca.
-                        </p>
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-2 bg-[#e60012] text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition"
-                        >
-                            <Search className="w-4 h-4" />
-                            Explorar
-                        </Link>
-                    </div>
+                    <EmptyState
+                        icon={Heart}
+                        tone="brand"
+                        size="lg"
+                        title="Todavía no tenés favoritos"
+                        description="Tocá el corazón en los productos y comercios que te gusten para guardarlos acá."
+                        primaryCta={{ label: "Explorar comercios", href: "/tiendas" }}
+                        secondaryCta={{ label: "Ver productos", href: "/productos" }}
+                    />
                 ) : (
                     <>
                         {/* Merchants Tab */}
@@ -204,14 +197,20 @@ export default function FavoritosPage() {
 }
 
 function EmptyTab({ label }: { label: string }) {
+    const ctaByLabel: Record<string, { label: string; href: string }> = {
+        comercios: { label: "Explorar comercios", href: "/tiendas" },
+        productos: { label: "Ver productos", href: "/productos" },
+        publicaciones: { label: "Ir al marketplace", href: "/marketplace" },
+    };
+    const cta = ctaByLabel[label] ?? { label: "Explorar", href: "/" };
     return (
-        <div className="text-center py-12">
-            <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Heart className="w-8 h-8 text-pink-300" />
-            </div>
-            <p className="text-gray-500 text-sm">
-                No tenes {label} en favoritos
-            </p>
-        </div>
+        <EmptyState
+            icon={Heart}
+            tone="neutral"
+            size="sm"
+            title={`No tenés ${label} en favoritos`}
+            description="Buscá lo que te gusta y tocá el corazón para guardarlo acá."
+            primaryCta={cta}
+        />
     );
 }

@@ -23,6 +23,7 @@ import {
     MapPin,
     Calendar
 } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 
 // ─── Types ────────────────────────────────────────────────
 interface Order {
@@ -267,26 +268,19 @@ export default function MisPedidosPage() {
 
                 {/* Orders */}
                 {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center py-20 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <ShoppingBag className="w-8 h-8 text-gray-300" />
-                        </div>
-                        <p className="font-semibold text-gray-600 mb-1">
-                            {tab === "active" ? "No tenes pedidos en curso" : "Todavia no hay historial"}
-                        </p>
-                        <p className="text-sm text-gray-400 mb-6 max-w-[260px]">
-                            {tab === "active"
-                                ? "Cuando hagas un pedido vas a poder seguirlo en tiempo real"
-                                : "Tus pedidos completados van a aparecer aca"}
-                        </p>
-                        <Link
-                            href="/productos"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#e60012] hover:bg-[#cc000f] text-white rounded-xl text-sm font-bold shadow-md shadow-red-500/15 transition-colors"
-                        >
-                            <Sparkles className="w-4 h-4" />
-                            Explorar productos
-                        </Link>
-                    </div>
+                    <EmptyState
+                        icon={ShoppingBag}
+                        tone="brand"
+                        size="md"
+                        title={tab === "active" ? "No tenés pedidos en curso" : "Todavía no hay historial"}
+                        description={
+                            tab === "active"
+                                ? "Cuando hagas un pedido vas a poder seguirlo en tiempo real desde acá."
+                                : "Tus pedidos completados van a aparecer acá."
+                        }
+                        primaryCta={{ label: "Explorar productos", href: "/productos" }}
+                        secondaryCta={{ label: "Ver comercios", href: "/tiendas" }}
+                    />
                 ) : (
                     <div className="space-y-3 lg:space-y-4">
                         {filtered.map((order, idx) => {

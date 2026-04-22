@@ -180,6 +180,13 @@ export default function MarketplacePage() {
     // Total count for hero (use totalListings ref to avoid flicker)
     const heroTotal = totalListings.current || total;
 
+    // ISSUE-030: umbral para mostrar los contadores duros en el hero.
+    // Debajo de este volumen, "3 publicaciones, 2 categorías" se lee vacío/
+    // experimental — preferimos un copy suave que transmita comunidad. Arriba
+    // del umbral, los números son señal de actividad y valen la pena.
+    const SHOW_STATS_COUNTS_AT = 10;
+    const showHardStats = heroTotal >= SHOW_STATS_COUNTS_AT;
+
     return (
         <div className="mp-page">
 
@@ -214,16 +221,28 @@ export default function MarketplacePage() {
                         </Link>
                     </div>
 
-                    {/* Stats row */}
+                    {/* Stats row — ISSUE-030: contadores duros solo con volumen.
+                        Debajo de 10 publicaciones mostramos un copy suave que
+                        transmite comunidad ("Publicaciones de vecinos") en vez
+                        de exponer números chicos que se leen experimental. */}
                     <div className="mt-3 flex items-center gap-4 text-xs text-white/50 sm:gap-6 sm:text-sm lg:gap-8 lg:text-base">
-                        <span className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3 text-green-400" />
-                            <strong className="font-bold text-white/70">{heroTotal || "…"}</strong> publicaciones
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3 text-purple-300" />
-                            <strong className="font-bold text-white/70">{categories.length}</strong> categorías
-                        </span>
+                        {showHardStats ? (
+                            <>
+                                <span className="flex items-center gap-1">
+                                    <TrendingUp className="h-3 w-3 text-green-400" />
+                                    <strong className="font-bold text-white/70">{heroTotal}</strong> publicaciones
+                                </span>
+                                <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3 text-purple-300" />
+                                    <strong className="font-bold text-white/70">{categories.length}</strong> categorías
+                                </span>
+                            </>
+                        ) : (
+                            <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3 text-purple-300" />
+                                Publicaciones de vecinos
+                            </span>
+                        )}
                         <span className="flex items-center gap-1">
                             <ShieldCheck className="h-3 w-3 text-blue-300" />
                             Compra protegida

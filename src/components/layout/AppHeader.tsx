@@ -338,8 +338,18 @@ export default function AppHeader({
                         )}
                     </div>
 
-                    {/* Center: Search Bar */}
-                    <div ref={searchRef} className="flex-1 max-w-xl mx-6 relative">
+                    {/* Center: Search Bar
+                        ISSUE-048: en home, dejamos que el hero rojo sea el único punto de búsqueda
+                        visible hasta que el usuario scrollea. Evita las 2 barras simultáneas. */}
+                    <div
+                        ref={searchRef}
+                        className={`flex-1 max-w-xl mx-6 relative transition-opacity duration-200 ${
+                            isHomepage && heroSearchVisible
+                                ? "opacity-0 pointer-events-none invisible"
+                                : "opacity-100"
+                        }`}
+                        aria-hidden={isHomepage && heroSearchVisible}
+                    >
                         <form onSubmit={handleSearchSubmit} className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -348,6 +358,7 @@ export default function AppHeader({
                                 onChange={(e) => handleSearchInputChange(e.target.value)}
                                 onFocus={() => { if (suggestions.length > 0) setShowResults(true); }}
                                 placeholder="Buscar productos, comercios..."
+                                tabIndex={isHomepage && heroSearchVisible ? -1 : 0}
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition placeholder:text-gray-400"
                             />
                             {searchLoading && (

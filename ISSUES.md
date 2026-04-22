@@ -232,13 +232,15 @@ Si el cron de cleanup no corre, la tabla crece sin límite. Fix: healthCheck en 
 **Fix aplicado:** Defense in depth: (1) `forgot-password/route.ts` ahora hashea el token con `sha256` antes de guardarlo en `User.resetToken` — el plaintext SOLO viaja por email. Si la DB se filtra, los tokens activos no sirven al atacante. (2) `reset-password/route.ts` hashea el token recibido, busca al user por hash + expiry > now, y luego hace `crypto.timingSafeEqual` sobre los hashes (defensa en profundidad ante side channels residuales del WHERE clause de Prisma — cache, B-tree lookups). Helper `timingSafeEqualHex` con guard de longitud + try/catch alrededor de `Buffer.from(.., "hex")`. **Pendiente operativo**: tokens activos previos al deploy (max 1h de vida) dejan de funcionar — los users que los reciban deben pedir un nuevo reset. Aceptable porque son ≤5 personas en la ventana de deploy.
 
 ### ISSUE-028 — Estados vacíos sin componente unificado
-Varias pantallas muestran listas vacías sin CTA. Fix: componente `<EmptyState icon title cta />` reutilizable.
+**Estado:** ✅ RESUELTO (rama `fix/menores-ux-buyer`, 2026-04-21)
+**Fix aplicado:** Nuevo componente `src/components/ui/EmptyState.tsx` con props `icon`, `title`, `description`, `primaryCta`, `secondaryCta`, `tone` (`neutral`/`brand`/`marketplace`) y `size` (`sm`/`md`/`lg`). Internamente soporta `href` (Link) y `onClick` (button). Accesibilidad: `role="status" aria-live="polite"`. Migradas las 3 superficies de mayor impacto: `favoritos/page.tsx` (estado global + per-tab `EmptyTab` helper con CTA mapeado por tab), `mis-pedidos/page.tsx` (tabs "En curso" / "Historial" con CTAs diferenciados), y el empty state `totalProducts === 0` de `store/[slug]/page.tsx`. Regla nueva: todo estado vacío DEBE tener al menos un CTA — un empty sin CTA es dead-end.
 
 ### ISSUE-029 — "1 vendido" en listings puede ser falso
 Contador `timesSold` incluye ventas de la propia cuenta del seller. Al tener ISSUE-003 resuelto, recalcular ahora es seguro.
 
 ### ISSUE-030 — "2 publicaciones, 10 categorías" en header marketplace es engañoso
-Ocultar contadores hasta tener volumen, o decir "Publicaciones de vecinos".
+**Estado:** ✅ RESUELTO (rama `fix/menores-ux-buyer`, 2026-04-21)
+**Fix aplicado:** En `marketplace/page.tsx` se agregó flag `showHardStats = heroTotal >= 10` (constante `SHOW_STATS_COUNTS_AT = 10`). Si supera el umbral, stats row conserva los dos contadores (publicaciones + categorías) + badge de compra protegida. Si no, cae a un copy suave: ícono `Users` + "Publicaciones de vecinos" + badge de compra protegida. Evita que en early-stage (5 publicaciones reales, 18 categorías seed vacías) el header transmita "plataforma vacía". Los números aparecen solos cuando hay volumen real para mostrar.
 
 ### ISSUE-031 — Merchant dashboard sin alerta "primer pedido"
 Al recibir primer pedido, no hay aviso especial. Fix: Check `merchant.totalOrders === 0` al crear orden → notificación con guía de 3 pasos.
@@ -247,10 +249,12 @@ Al recibir primer pedido, no hay aviso especial. Fix: Check `merchant.totalOrder
 Confirmar que `/api/delivery/calculate` rechaza con error claro.
 
 ### ISSUE-048 — Home comprador: dos barras de búsqueda
-Simplificar a una sola (hero en home, header en páginas internas).
+**Estado:** ✅ RESUELTO (rama `fix/menores-ux-buyer`, 2026-04-21)
+**Fix aplicado:** En desktop el home mostraba simultáneamente el botón rojo de búsqueda del hero (`HomeHero`) Y el input central del `AppHeader`. En mobile ya estaba bien resuelto vía el evento custom `moovy:hero-search-visibility` que emitía el IntersectionObserver del hero. Se extendió ese mismo patrón al desktop: el wrapper del input central del header ahora se oculta con transición `opacity/visibility/pointer-events-none` cuando `isHomepage && heroSearchVisible`, más `aria-hidden` y `tabIndex={-1}` en el input para accesibilidad cuando está invisible. En páginas internas (`/tiendas`, `/marketplace`, detalles, etc.) el header conserva su buscador — la regla aplica solo en home.
 
 ### ISSUE-049 — Tienda: categoría "Otros (2)" cuando solo hay 2 productos
-Mostrar lista sin filtro si <5 productos.
+**Estado:** ✅ RESUELTO (rama `fix/menores-ux-buyer`, 2026-04-21)
+**Fix aplicado:** En `store/[slug]/page.tsx` se agregó constante `FLAT_LIST_THRESHOLD = 5` y flag `useFlatList = totalProducts > 0 && totalProducts < FLAT_LIST_THRESHOLD`. Cuando es true, el componente renderiza una grilla plana con todos los productos (sin pills de categoría sticky, sin headers por categoría, sin contadores per-section). Cuando es false, conserva el layout agrupado con tabs y headers. Las category pills solo aparecen si hay más de una categoría (`!useFlatList && categories.length > 1`). El empty state (`totalProducts === 0`) migrado al `<EmptyState>` unificado con ícono `ShoppingBag` y CTA "Ver otros comercios" → `/tiendas`. Evita el patrón "Otros (2)" que se lee experimental cuando el merchant recién arranca.
 
 ### ISSUE-050 — "Facturado hoy $0 · Max $0" confunde
 Ocultar "Max" hasta tener datos.

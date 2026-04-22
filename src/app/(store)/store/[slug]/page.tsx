@@ -4,8 +4,15 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/store/ProductCard";
 import MerchantScheduleWidget from "@/components/store/MerchantScheduleWidget";
+import EmptyState from "@/components/ui/EmptyState";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
-import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck } from "lucide-react";
+import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck, ShoppingBag } from "lucide-react";
+
+// ISSUE-049: umbral para mostrar lista plana sin filtro de categorías.
+// Si el comercio tiene < 5 productos, el filtro por categorías genera
+// ruido visual ("Otros (2)") en vez de ayudar a explorar. Debajo de este
+// umbral mostramos todo junto en una sola grilla limpia.
+const FLAT_LIST_THRESHOLD = 5;
 
 async function getMerchant(slug: string) {
     const merchant = await prisma.merchant.findUnique({
@@ -48,29 +55,35 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
     });
     const isCurrentlyOpen = scheduleResult.isCurrentlyOpen;
 
-    // Group products by category
-    const productsByCategory: Record<string, any[]> = {};
+    // Normalizamos cada producto para el ProductCard (image + merchant con
+    // estado REAL). Pasamos el estado combinado (pausa + horario), no el flag
+    // crudo — así el card respeta el horario aunque el merchant no esté
+    // manualmente pausado.
+    const normalizedProducts = merchant.products.map(product => ({
+        ...product,
+        image: product.images[0]?.url || null,
+        merchantId: merchant.id,
+        merchant: { isOpen: isCurrentlyOpen },
+    }));
 
-    merchant.products.forEach(product => {
-        // Use first category or "Otros"
-        const catName = product.categories[0]?.category.name || "Otros";
-        if (!productsByCategory[catName]) {
-            productsByCategory[catName] = [];
+    const totalProducts = normalizedProducts.length;
+
+    // ISSUE-049: si hay < 5 productos, mostramos lista plana sin agrupar
+    // por categoría. Evita el "Otros (2)" cuando el merchant recién arranca
+    // y todavía no categorizó.
+    const useFlatList = totalProducts > 0 && totalProducts < FLAT_LIST_THRESHOLD;
+
+    // Group products by category (solo se usa cuando NO va en flat list).
+    const productsByCategory: Record<string, typeof normalizedProducts> = {};
+    if (!useFlatList) {
+        for (const product of normalizedProducts) {
+            const catName = product.categories[0]?.category.name || "Otros";
+            if (!productsByCategory[catName]) {
+                productsByCategory[catName] = [];
+            }
+            productsByCategory[catName].push(product);
         }
-
-        // Map product to include 'image' property for ProductCard.
-        // Pasamos el estado REAL (isCurrentlyOpen), no el flag crudo — así el
-        // ProductCard respeta el horario aunque el merchant no se haya pausado
-        // manualmente.
-        const productWithImage = {
-            ...product,
-            image: product.images[0]?.url || null,
-            merchantId: merchant.id,
-            merchant: { isOpen: isCurrentlyOpen }
-        };
-
-        productsByCategory[catName].push(productWithImage);
-    });
+    }
 
     const categories = Object.keys(productsByCategory);
 
@@ -173,50 +186,65 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                 </div>
             )}
 
-            {/* Categories Tabs (Simple scrollable list for now) */}
-            <div className="sticky top-[60px] z-10 bg-white shadow-sm mb-6">
-                <div className="container mx-auto px-4">
-                    <div className="flex overflow-x-auto py-3 gap-4 no-scrollbar">
-                        {categories.map(cat => (
-                            <a
-                                key={cat}
-                                href={`#cat-${cat}`}
-                                className="whitespace-nowrap px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700 hover:bg-[#e60012] hover:text-white transition"
-                            >
-                                {cat}
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Product Lists */}
-            <div className="container mx-auto px-4 space-y-8">
-                {categories.map(category => (
-                    <div key={category} id={`cat-${category}`} className="scroll-mt-32">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            {category}
-                            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                {productsByCategory[category].length}
-                            </span>
-                        </h2>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {productsByCategory[category].map((product: any) => (
-                                <ProductCard key={product.id} product={product} showAddButton />
+            {/* Categories Tabs — solo si tenemos suficientes productos para agrupar.
+                ISSUE-049: debajo de FLAT_LIST_THRESHOLD, las categorías generan más
+                ruido que valor (un solo grupo "Otros" con 2 productos). */}
+            {!useFlatList && categories.length > 1 && (
+                <div className="sticky top-[60px] z-10 bg-white shadow-sm mb-6">
+                    <div className="container mx-auto px-4">
+                        <div className="flex overflow-x-auto py-3 gap-4 no-scrollbar">
+                            {categories.map(cat => (
+                                <a
+                                    key={cat}
+                                    href={`#cat-${cat}`}
+                                    className="whitespace-nowrap px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700 hover:bg-[#e60012] hover:text-white transition"
+                                >
+                                    {cat}
+                                </a>
                             ))}
                         </div>
                     </div>
-                ))}
+                </div>
+            )}
 
-                {Object.keys(productsByCategory).length === 0 && (
-                    <div className="py-20 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                            <Info className="w-8 h-8" />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900">No hay productos</h3>
-                        <p className="text-gray-500">Este comercio aún no cargó productos.</p>
+            {/* Product Lists */}
+            <div className={`container mx-auto px-4 ${useFlatList ? "pt-6" : ""} space-y-8`}>
+                {useFlatList ? (
+                    // ISSUE-049: flat list sin headers de categoría ni contadores.
+                    // Grid limpio con los ≤4 productos del merchant.
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {normalizedProducts.map((product) => (
+                            <ProductCard key={product.id} product={product} showAddButton />
+                        ))}
                     </div>
+                ) : (
+                    categories.map(category => (
+                        <div key={category} id={`cat-${category}`} className="scroll-mt-32">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                {category}
+                                <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {productsByCategory[category].length}
+                                </span>
+                            </h2>
+
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {productsByCategory[category].map((product) => (
+                                    <ProductCard key={product.id} product={product} showAddButton />
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                )}
+
+                {totalProducts === 0 && (
+                    <EmptyState
+                        icon={ShoppingBag}
+                        tone="neutral"
+                        size="md"
+                        title="Todavía no cargaron productos"
+                        description="Este comercio está arrancando. Volvé a visitarlo en unos días para ver su catálogo."
+                        primaryCta={{ label: "Ver otros comercios", href: "/tiendas" }}
+                    />
                 )}
             </div>
         </div>
