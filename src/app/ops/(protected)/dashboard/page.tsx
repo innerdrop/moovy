@@ -217,11 +217,11 @@ export default async function AdminDashboard() {
     // datos existentes no se corrompen por un día de atraso). `healthy` no alerta.
     for (const cron of cronsHealth) {
         if (cron.status === "healthy") continue;
-        const messages: Record<typeof cron.status, string> = {
+        // Type narrowing: después del continue arriba, cron.status es solo los no-healthy.
+        const messages: Record<"stale" | "never-ran" | "failing", string> = {
             failing: `Cron "${cron.label}" falló en su último intento${cron.errorMessage ? `: ${cron.errorMessage.slice(0, 80)}` : ""}`,
             stale: `Cron "${cron.label}" no corre hace ${cron.ageHours ? `${Math.round(cron.ageHours)}h` : "demasiado tiempo"} (esperado cada ${cron.maxHours}h)`,
             "never-ran": `Cron "${cron.label}" nunca se ejecutó — revisar configuración del runner`,
-            healthy: "", // never reached
         };
         alerts.push({
             message: messages[cron.status],

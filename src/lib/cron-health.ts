@@ -22,13 +22,14 @@ import { prisma } from "@/lib/prisma";
  * duración y cantidad de items procesados. Re-throwea el error original si `fn` falla
  * para no ocultar fallas al caller (que debería seguir devolviendo 500 al cron runner).
  *
- * El `fn` puede retornar cualquier cosa; el healthcheck solo persiste `itemsProcessed`
- * si se lo devolvés explícitamente en el resultado shape `{ result, itemsProcessed }`.
- * Si devolvés otra cosa (no-object o sin `itemsProcessed`), se guarda sin count.
+ * El `fn` SIEMPRE devuelve el shape `{ result, itemsProcessed }`. `recordCronRun`
+ * extrae `result` y lo retorna al caller (T = tipo de `result`). `itemsProcessed`
+ * se persiste en `CronRunLog` para el dashboard OPS. Si el cron no procesa items
+ * contables (ej: healthcheck sin cleanup), pasá `itemsProcessed: 0`.
  */
 export async function recordCronRun<T>(
     jobName: string,
-    fn: () => Promise<T> | Promise<{ result: T; itemsProcessed?: number }>
+    fn: () => Promise<{ result: T; itemsProcessed?: number }>
 ): Promise<T> {
     const run = await prisma.cronRunLog.create({
         data: {
@@ -41,18 +42,7 @@ export async function recordCronRun<T>(
     const startedAtMs = Date.now();
 
     try {
-        const raw = await fn();
-        const isStructured =
-            raw !== null &&
-            typeof raw === "object" &&
-            "result" in (raw as object) &&
-            // evita confundir un objeto "normal" con un wrapper de conteo
-            Object.keys(raw as object).every((k) => k === "result" || k === "itemsProcessed");
-
-        const result = (isStructured ? (raw as any).result : raw) as T;
-        const itemsProcessed = isStructured
-            ? (raw as any).itemsProcessed ?? null
-            : null;
+        const { result, itemsProcessed } = await fn();
 
         await prisma.cronRunLog.update({
             where: { id: run.id },
@@ -60,7 +50,7 @@ export async function recordCronRun<T>(
                 completedAt: new Date(),
                 success: true,
                 durationMs: Date.now() - startedAtMs,
-                itemsProcessed,
+                itemsProcessed: itemsProcessed ?? null,
             },
         });
 

@@ -23,8 +23,12 @@ import { notifyBuyerDriverNear } from "./notifications";
 /** Radio de detección — Biblia UX: 300m ≈ 3-5 minutos caminando en Ushuaia */
 const NEAR_DESTINATION_METERS = 300;
 
-/** Estados de delivery en los que tiene sentido notificar proximidad */
-const DELIVERY_ACTIVE_STATES = ["PICKED_UP", "IN_DELIVERY"] as const;
+/** Estados de delivery en los que tiene sentido notificar proximidad.
+ *  Nota: el enum DeliveryStatus en schema.prisma no tiene IN_DELIVERY — post-PICKED_UP
+ *  el pedido pasa directo a DELIVERED o FAILED_DELIVERY. PICKED_UP ya implica
+ *  "el driver tiene el paquete y va en camino", que es exactamente el estado
+ *  en que queremos chequear proximidad al destino. */
+const DELIVERY_ACTIVE_STATES = ["PICKED_UP"] as const;
 
 /**
  * Chequea si el driver está a <300m del destino de alguna de sus entregas activas.

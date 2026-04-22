@@ -31,26 +31,26 @@ export async function POST(req: NextRequest) {
             "Starting location history cleanup"
         );
 
-        const result = await recordCronRun("cleanup-location-history", async () => {
-            const del = await prisma.driverLocationHistory.deleteMany({
+        const del = await recordCronRun("cleanup-location-history", async () => {
+            const deleted = await prisma.driverLocationHistory.deleteMany({
                 where: {
                     createdAt: { lt: thirtyDaysAgo },
                 },
             });
-            return { result: del, itemsProcessed: del.count };
+            return { result: deleted, itemsProcessed: deleted.count };
         });
 
         logger.info(
             {
-                deleted: result.count,
+                deleted: del.count,
                 cutoffDate: thirtyDaysAgo.toISOString(),
             },
             "Location history cleanup completed"
         );
 
         return NextResponse.json({
-            deleted: result.count,
-            message: `${result.count} registro(s) de ubicación eliminados (anteriores a ${thirtyDaysAgo.toLocaleDateString("es-AR")})`,
+            deleted: del.count,
+            message: `${del.count} registro(s) de ubicación eliminados (anteriores a ${thirtyDaysAgo.toLocaleDateString("es-AR")})`,
             cutoffDate: thirtyDaysAgo.toISOString(),
         });
     } catch (error) {
