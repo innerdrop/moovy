@@ -162,8 +162,9 @@ Lo único bloqueante que queda es la decisión operativa de ISSUE-004 (limpiar d
 ### Negocio / onboarding
 
 #### ISSUE-012 — Navegación: sin breadcrumbs en checkout y accesos faltantes
-**Estado:** 🟡 PARCIAL — breadcrumb checkout resuelto por ISSUE-055. Falta solo: accesos directos a favoritos y puntos desde la home.
-**Esfuerzo:** S (1 hora) para los accesos restantes.
+**Estado:** ✅ RESUELTO (rama `feat/home-accesos-favorito`, 2026-04-21) — breadcrumb checkout resuelto previamente por ISSUE-055; accesos directos a favoritos y puntos desde la home cerrados en esta rama.
+**Fix aplicado:** Nuevo componente `src/components/home/QuickAccessRow.tsx` (Server Component) insertado en `src/app/(store)/page.tsx` entre `HomeFeed` y `CategoryGrid` — la posición más alta del home después del hero/filtros, máxima descubribilidad. 2 cards lado a lado en mobile-first (`grid-cols-2`): **Favoritos** (gradiente rose/red + corazón MOOVY rojo en círculo) → `/mi-perfil/favoritos`, **Puntos MOOVER** (gradiente amber/orange + estrella amber) → `/puntos`. Logueado: UNA query a `User { pointsBalance, _count.favorites }` con `select` explícito → subtítulos dinámicos ("3 guardados · Entrá rápido a ellos", "1.250 pts · Canjealos en tu próxima compra"). Deslogueado: CTAs genéricos ("Iniciá sesión y tenelos siempre a mano", "Sumá con cada pedido · 10 pts por cada $1.000") con `href` `/login?redirect=<destino>`. Textos dinámicos por cardinalidad (0 / 1 / N+). Try/catch alrededor de la query — si falla, cae silenciosamente al estado deslogueado (home nunca se rompe por este widget). Envuelto en `AnimateIn animation="reveal"` para match del resto del home.
+**Motivo:** Favoritos no tenía acceso directo desde ningún lado (estaba enterrado en /mi-perfil/favoritos); Puntos ya tenía desde BottomNav y AppHeader pero gana un segundo punto de entrada con contexto (balance visible = señal de personalización).
 
 #### ISSUE-020 — Comisión mes 1 (0%) vs mes 2+ (8%): criterio de "mes" no documentado
 **Estado:** ✅ RESUELTO (rama `feat/ux-flujo-checkout-y-onboarding`, 2026-04-20)
@@ -314,7 +315,7 @@ Reemplazo de PL-001 una vez con data real. Subcomandos `soft-delete-user --id`, 
 10. Smoke test de los 4 flujos end-to-end
 11. Abrir las puertas
 
-Todo el resto (ISSUE-012, 013, 014, 020, 021, 036, 037, 039, 041, 042, 044, 045, 047, 055, 056, 059 + los 16 menores) se puede cerrar en las 2-3 semanas post-lanzamiento con el producto ya en vivo.
+Todo el resto (ISSUE-013, 014, 020, 021, 036, 037, 039, 041, 042, 044, 045, 047, 055, 056, 059 + los 16 menores) se puede cerrar en las 2-3 semanas post-lanzamiento con el producto ya en vivo.
 
 ---
 

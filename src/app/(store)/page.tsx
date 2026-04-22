@@ -24,6 +24,7 @@ import HomeFeed from "@/components/home/HomeFeed";
 import MerchantDiscoveryRow from "@/components/home/MerchantDiscoveryRow";
 import NewMerchantsRow from "@/components/home/NewMerchantsRow";
 import CategoryGrid from "@/components/home/CategoryGrid";
+import QuickAccessRow from "@/components/home/QuickAccessRow";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
@@ -373,6 +374,11 @@ export default async function LiveStoreView() {
         merchants={enrichedMerchants as any}
         categories={categories as any}
       />
+
+      {/* ── 1b. ACCESOS RÁPIDOS — Favoritos + Puntos MOOVER (ISSUE-012) ── */}
+      <AnimateIn animation="reveal">
+        <QuickAccessRow />
+      </AnimateIn>
 
       {/* ── 2b. CATEGORÍAS DE PRODUCTOS ── */}
       <AnimateIn animation="reveal">
