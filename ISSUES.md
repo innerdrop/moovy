@@ -100,8 +100,9 @@ Lo único bloqueante que queda es la decisión operativa de ISSUE-004 (limpiar d
 **Esfuerzo:** S (3-4 horas — incluye campo en Order, check en location handler, template de push).
 
 #### ISSUE-014 — Smart batching multi-vendor sin validación de capacidad de vehículo
-**Estado:** 🟡 PARCIAL — el assignment engine sí maneja `packageCategory` y `volumeScore` (ver `src/lib/assignment-engine.ts`). Falta validar explícitamente en el path de batching multi-vendor que la suma de volumen cabe en el vehículo antes de asignar el mismo driver a 2 comercios cercanos.
-**Fix:** En `startSubOrderAssignmentCycle`, antes de batchar, sumar `volumeScore` de ambas SubOrders y comparar contra capacidad del vehículo del driver candidato.
+**Estado:** ✅ RESUELTO (rama `feat/batch-capacity-check`, 2026-04-21)
+**Qué pasaba:** En `startSubOrderAssignmentCycle`, el loop de batching combinaba `[itemCategories, ...siblingItems]` en cada iteración — ignoraba los siblings ya aceptados en iteraciones previas. Si 3 SubOrders cabían individualmente con la original, las 3 terminaban batcheadas aunque juntas excedieran la capacidad (bug silencioso que sólo se manifestaba con 3+ vendedores cercanos y volúmenes medianos).
+**Fix implementado:** Acumulador `accumulatedItems` que arranca con los items originales y crece con cada sibling aceptado. En cada iteración se calcula `calculateOrderCategory([...accumulatedItems, ...siblingItems])` — el check de capacidad siempre refleja el TOTAL real que el driver debe cargar. Doble guardia: (a) si `combinedCategory.allowedVehicles` queda vacío → skip (capacidad excedida), (b) si la intersección con `subOrderCategory.allowedVehicles` queda vacía → skip (evita cambiar silenciosamente la clase de vehículo buscada). Logs con `combinedScore` y `batchedCount` para observabilidad.
 **Esfuerzo:** S (2-3 horas).
 
 ### UX / visibilidad

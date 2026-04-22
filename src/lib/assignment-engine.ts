@@ -571,9 +571,17 @@ export async function startSubOrderAssignmentCycle(
         });
 
         // --- Smart Batching: check sibling SubOrders ---
+        // ISSUE-014: antes de batchar, validamos que el volumen TOTAL acumulado
+        // (original + TODOS los siblings ya batcheados + este candidato) sigue
+        // cabiendo en al menos un vehículo. El bug original combinaba solo
+        // [original + sibling_N] en cada iteración, ignorando los siblings
+        // previamente aceptados — si 3 órdenes individualmente cabían con el
+        // original, las 3 terminaban batcheadas aunque juntas excedieran la
+        // capacidad del vehículo más grande (TRUCK).
         const batchRadiusKm = 3; // configurable in the future
         let batchedSubOrderIds: string[] = [];
         let combinedVehicles = subOrderCategory.allowedVehicles;
+        let combinedScore = subOrderCategory.totalScore;
 
         if (subOrder.order.isMultiVendor) {
             const siblingSubOrders = await prisma.subOrder.findMany({
@@ -593,6 +601,12 @@ export async function startSubOrderAssignmentCycle(
                 },
             });
 
+            // Accumulador de items a lo largo de iteraciones exitosas.
+            // Arranca con los items de la SubOrder original y crece con cada
+            // sibling que aceptamos — así el check de capacidad siempre refleja
+            // el TOTAL real que el driver tendría que cargar.
+            const accumulatedItems: typeof itemCategories = [...itemCategories];
+
             for (const sibling of siblingSubOrders) {
                 if (!sibling.merchant?.latitude || !sibling.merchant?.longitude) continue;
 
@@ -602,39 +616,79 @@ export async function startSubOrderAssignmentCycle(
                     sibling.merchant.latitude, sibling.merchant.longitude
                 );
 
-                if (dist <= batchRadiusKm) {
-                    // Calculate combined volume
-                    const siblingItems = sibling.items.map((item) => ({
-                        packageCategory: item.packageCategoryName || null,
-                        quantity: item.quantity,
-                        name: item.name || undefined,
-                    }));
-                    const combinedItems = [...itemCategories, ...siblingItems];
-                    const combinedCategory = await calculateOrderCategory(combinedItems, {
-                        merchantCategoryName: subOrder.merchant?.category ?? undefined,
-                    });
+                if (dist > batchRadiusKm) continue;
 
-                    // If combined volume still fits in at least one vehicle type, batch them
-                    if (combinedCategory.allowedVehicles.length > 0) {
-                        batchedSubOrderIds.push(sibling.id);
-                        combinedVehicles = combinedCategory.allowedVehicles;
-                        deliveryLogger.info(
-                            {
-                                subOrderId,
-                                siblingId: sibling.id,
-                                distance: dist.toFixed(2),
-                                combinedCategory: combinedCategory.category,
-                                combinedVehicles,
-                            },
-                            "Smart batch: sibling SubOrder qualifies for same driver"
-                        );
-                    } else {
-                        deliveryLogger.info(
-                            { subOrderId, siblingId: sibling.id, distance: dist.toFixed(2) },
-                            "Smart batch: sibling too heavy for single vehicle, assigning separately"
-                        );
-                    }
+                // Calculate combined volume with ALL previously batched items + this sibling
+                const siblingItems = sibling.items.map((item) => ({
+                    packageCategory: item.packageCategoryName || null,
+                    quantity: item.quantity,
+                    name: item.name || undefined,
+                }));
+                const tentativeItems = [...accumulatedItems, ...siblingItems];
+                const combinedCategory = await calculateOrderCategory(tentativeItems, {
+                    merchantCategoryName: subOrder.merchant?.category ?? undefined,
+                });
+
+                // Guardia de capacidad: si sumar este sibling deja combinedVehicles
+                // vacío, algún ítem (o el total acumulado) ya no entra en ningún
+                // vehículo. No batchamos este sibling — se asignará por separado
+                // en su propio ciclo.
+                if (combinedCategory.allowedVehicles.length === 0) {
+                    deliveryLogger.info(
+                        {
+                            subOrderId,
+                            siblingId: sibling.id,
+                            distance: dist.toFixed(2),
+                            combinedScore: combinedCategory.totalScore,
+                            combinedCategory: combinedCategory.category,
+                            previouslyBatched: batchedSubOrderIds.length,
+                        },
+                        "Smart batch: capacidad excedida sumando sibling, se asigna por separado"
+                    );
+                    continue;
                 }
+
+                // Sanity check: el set combinado de vehículos debe ser subconjunto
+                // de los vehículos que originalmente podían llevar la SubOrder
+                // inicial (solo puede reducirse al sumar volumen/restricciones).
+                // Si por cualquier razón NO es subconjunto (shipmentType detectado
+                // distinto, bug de datos, etc.) y la intersección queda vacía,
+                // rechazamos el batch para evitar cambiar silenciosamente la
+                // clase de vehículo buscada.
+                const intersection = combinedCategory.allowedVehicles.filter((v) =>
+                    subOrderCategory.allowedVehicles.includes(v)
+                );
+                if (intersection.length === 0) {
+                    deliveryLogger.warn(
+                        {
+                            subOrderId,
+                            siblingId: sibling.id,
+                            originalAllowed: subOrderCategory.allowedVehicles,
+                            combinedAllowed: combinedCategory.allowedVehicles,
+                        },
+                        "Smart batch: intersection vacía entre vehículos originales y combinados — se asigna por separado"
+                    );
+                    continue;
+                }
+
+                // Aceptamos el batch — actualizamos el acumulador
+                batchedSubOrderIds.push(sibling.id);
+                combinedVehicles = intersection;
+                combinedScore = combinedCategory.totalScore;
+                accumulatedItems.push(...siblingItems);
+
+                deliveryLogger.info(
+                    {
+                        subOrderId,
+                        siblingId: sibling.id,
+                        distance: dist.toFixed(2),
+                        combinedCategory: combinedCategory.category,
+                        combinedScore: combinedCategory.totalScore,
+                        combinedVehicles: intersection,
+                        batchedCount: batchedSubOrderIds.length,
+                    },
+                    "Smart batch: sibling SubOrder qualifies for same driver"
+                );
             }
         }
 
