@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance } from "@/lib/geo";
+import { checkAndNotifyNearDestination } from "@/lib/driver-proximity";
 
 export async function PUT(request: Request) {
     try {
@@ -141,6 +142,17 @@ export async function PUT(request: Request) {
                     historyError
                 );
             }
+
+            // ISSUE-013 — fire-and-forget: chequear si entró en radio de 300m del destino
+            // de alguna entrega activa y disparar push al buyer.
+            // No bloqueamos la respuesta HTTP del driver (la UI espera update rápido).
+            checkAndNotifyNearDestination({
+                driverId: driver.id,
+                driverLat: latitude,
+                driverLng: longitude,
+            }).catch((err) =>
+                console.error("[Proximity] Fire-and-forget falló:", err)
+            );
 
             return NextResponse.json({
                 updated: true,

@@ -226,3 +226,39 @@ export async function notifyBuyerDeliveryPin(
         tag: `order-pin-${orderNumber}`,
     });
 }
+
+/**
+ * ISSUE-013: Push "tu repartidor está cerca".
+ *
+ * Se dispara UNA sola vez cuando el driver entra en un radio de 300m del destino
+ * mientras el pedido está en fase PICKED_UP / IN_DELIVERY. El helper también
+ * recuerda el PIN de entrega en el body, para que el buyer lo tenga a mano sin
+ * entrar a la app. Idempotencia: el caller debe setear `nearDestinationNotified`
+ * atómicamente antes de invocar esta función — si el update atómico no afecta
+ * filas, no llamamos al push.
+ *
+ * Tag distinto de `order-pin-*` y `order-in_delivery` para no colapsar con
+ * notifications previas: queremos que aparezca como un push nuevo en el lock
+ * screen (el último, pero no reemplazando los anteriores de contexto).
+ */
+export async function notifyBuyerDriverNear(
+    userId: string,
+    orderNumber: string,
+    orderId: string,
+    deliveryPin?: string | null
+): Promise<number> {
+    const deepLink = `/mis-pedidos/${orderId}`;
+
+    // Si tenemos el PIN (pedido ya PICKED_UP), lo recordamos en el body.
+    // Si no (caso raro: push se disparó antes del PICKED_UP), body genérico.
+    const body = deliveryPin
+        ? `Tené listo el código de entrega: ${deliveryPin}`
+        : `Tu pedido ${orderNumber} está por llegar. Revisá la app.`;
+
+    return sendPushToUser(userId, {
+        title: '🏍️ Tu repartidor está cerca',
+        body,
+        url: deepLink,
+        tag: `order-near-${orderNumber}`,
+    });
+}

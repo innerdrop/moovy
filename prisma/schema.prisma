@@ -326,6 +326,8 @@ model Order {
   // Entrega fallida (cliente ausente, direcci\u00f3n incorrecta, etc.)
   failedDeliveryAt      DateTime? // Timestamp cuando el driver marca FAILED_DELIVERY.
   failedDeliveryReason  String?   // CUSTOMER_ABSENT | ADDRESS_INCORRECT | REFUSED_RECEIPT | UNSAFE_LOCATION | OTHER
+  // ISSUE-013 — push "tu repartidor esta cerca". Se marca true cuando el driver entra en radio de 300m del destino en fase delivery. Previene re-push.
+  nearDestinationNotified Boolean @default(false)
   driverRating        Int?
   merchantPayout      Float?      @default(0)
   moovyCommission     Float?      @default(0)
@@ -435,6 +437,8 @@ model SubOrder {
   deliveryPinAttempts   Int            @default(0)
   failedDeliveryAt      DateTime?
   failedDeliveryReason  String?
+  // ISSUE-013 — push "tu repartidor esta cerca" por SubOrder (multi-vendor: cada SubOrder tiene su driver)
+  nearDestinationNotified Boolean @default(false)
   deliveryAttempts      DeliveryAttempt[]
 
   @@index([status])

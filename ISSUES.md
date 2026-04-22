@@ -94,9 +94,9 @@ Lo único bloqueante que queda es la decisión operativa de ISSUE-004 (limpiar d
 ### Asignación / logística
 
 #### ISSUE-013 — Aviso push "tu repartidor está cerca"
-**Estado:** 🔴 ABIERTO
+**Estado:** ✅ RESUELTO (rama `feat/push-repartidor-cerca`, 2026-04-21)
 **Qué pasa:** El sistema emite `posicion_repartidor` por socket y el mapa actualiza, pero no hay push cuando el driver cruza <300m del destino. Con PIN de entrega (ISSUE-001 ✅ resuelto), es crítico que el comprador esté con el teléfono a mano.
-**Fix:** En el handler de ubicación del driver, si `distancia_al_destino < 300m` y flag `nearDestinationNotified === false`, disparar push al buyer con el deliveryPin recordado + marcar flag.
+**Fix implementado:** Campo `nearDestinationNotified Boolean @default(false)` en Order y SubOrder. Helper `src/lib/driver-proximity.ts` chequea distancia en cada GPS update del driver y si <300m hace `updateMany WHERE flag: false` atómico — si gana la carrera dispara push via `notifyBuyerDriverNear` con recordatorio del PIN. Multi-vendor soportado (cada SubOrder es independiente). Fire-and-forget desde `PUT /api/driver/location` para no bloquear el update GPS.
 **Esfuerzo:** S (3-4 horas — incluye campo en Order, check en location handler, template de push).
 
 #### ISSUE-014 — Smart batching multi-vendor sin validación de capacidad de vehículo
