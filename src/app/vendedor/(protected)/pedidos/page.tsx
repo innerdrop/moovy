@@ -23,6 +23,8 @@ interface SubOrder {
     createdAt: string;
     items: { id: string; name: string; quantity: number; price: number }[];
     orderId?: string;
+    // Driver a nivel SubOrder (multi-vendor: cada SubOrder tiene su driver).
+    driver?: { id: string; user: { name: string | null } | null } | null;
     order: {
         id?: string;
         orderNumber: string;
@@ -33,6 +35,9 @@ interface SubOrder {
         scheduledConfirmedAt?: string | null;
         status?: string;
         user: { name: string | null } | null;
+        // Fallback para single-vendor: si la SubOrder no tiene driver propio,
+        // usamos el driver del Order.
+        driver?: { id: string; user: { name: string | null } | null } | null;
     };
 }
 
@@ -364,19 +369,38 @@ export default function VendedorPedidosPage() {
                                     )}
                                 </div>
 
-                                {/* Chat con comprador */}
-                                {!["DELIVERED", "CANCELLED"].includes(order.status) && (order.orderId || order.order?.id) && (
-                                    <div className="mt-3 pt-3 border-t border-gray-100">
-                                        <OrderChatPanel
-                                            orderId={(order.orderId || order.order?.id) as string}
-                                            orderNumber={order.order.orderNumber}
-                                            chatType="BUYER_SELLER"
-                                            counterpartName={order.order.user?.name || "Comprador"}
-                                            userRole="seller"
-                                            compact
-                                        />
-                                    </div>
-                                )}
+                                {/* Chats del pedido: comprador + repartidor (si fue asignado) */}
+                                {!["DELIVERED", "CANCELLED"].includes(order.status) && (order.orderId || order.order?.id) && (() => {
+                                    const orderPrismaId = (order.orderId || order.order?.id) as string;
+                                    // Driver asignado a ESTA SubOrder (multi-vendor) con fallback
+                                    // al driver del Order (single-vendor).
+                                    const driver = order.driver || order.order?.driver || null;
+                                    const driverName = driver?.user?.name;
+                                    return (
+                                        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+                                            <OrderChatPanel
+                                                orderId={orderPrismaId}
+                                                orderNumber={order.order.orderNumber}
+                                                chatType="BUYER_SELLER"
+                                                subOrderId={order.id}
+                                                counterpartName={order.order.user?.name || "Comprador"}
+                                                userRole="seller"
+                                                compact
+                                            />
+                                            {driverName && (
+                                                <OrderChatPanel
+                                                    orderId={orderPrismaId}
+                                                    orderNumber={order.order.orderNumber}
+                                                    chatType="DRIVER_SELLER"
+                                                    subOrderId={order.id}
+                                                    counterpartName={driverName}
+                                                    userRole="seller"
+                                                    compact
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         );
                     })}

@@ -694,7 +694,7 @@ export default function ComercioPedidosPage() {
 
                                     {/* Chat con comprador */}
                                     {!["DELIVERED", "CANCELLED"].includes(order.status) && (
-                                        <div className="mt-3 pt-3 border-t border-gray-100">
+                                        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
                                             <OrderChatPanel
                                                 orderId={order.id}
                                                 orderNumber={order.orderNumber}
@@ -703,6 +703,17 @@ export default function ComercioPedidosPage() {
                                                 userRole="merchant"
                                                 compact
                                             />
+                                            {/* Chat con repartidor — solo si ya fue asignado */}
+                                            {order.driver?.user?.name && (
+                                                <OrderChatPanel
+                                                    orderId={order.id}
+                                                    orderNumber={order.orderNumber}
+                                                    chatType="DRIVER_MERCHANT"
+                                                    counterpartName={order.driver.user.name}
+                                                    userRole="merchant"
+                                                    compact
+                                                />
+                                            )}
                                         </div>
                                     )}
                                 </div>
