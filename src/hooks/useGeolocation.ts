@@ -14,7 +14,19 @@ interface GeolocationState {
     loading: boolean;
 }
 
-export function useGeolocation() {
+interface UseGeolocationOptions {
+    // ISSUE-025: Modo ahorro de batería. Cuando el driver tiene < 15% de batería
+    // sin cargar, pasamos a usar la red celular/wifi en vez del hardware GPS
+    // (enableHighAccuracy: false) y permitimos lecturas cacheadas hasta 30s
+    // (maximumAge: 30000). El GPS de alta precisión consume ~50mW sostenidos;
+    // desactivarlo duplica la autonomía del driver en turno. La precisión baja
+    // de ~5m a ~50m — aceptable para mostrar en el mini-mapa y para geofence
+    // del PIN (que tiene tolerancia de 100m + gracia de 50m).
+    lowPower?: boolean;
+}
+
+export function useGeolocation(options: UseGeolocationOptions = {}) {
+    const { lowPower = false } = options;
     const [state, setState] = useState<GeolocationState>({
         location: null,
         heading: null,
@@ -60,16 +72,19 @@ export function useGeolocation() {
                 setState(s => ({ ...s, error: err.message, loading: false }));
             },
             {
-                enableHighAccuracy: true,
+                // ISSUE-025: en lowPower, deshabilitamos GPS hardware y extendemos
+                // la caché a 30s. Esto reduce drásticamente el consumo de batería
+                // a costa de precisión (de ~5m a ~50m típicamente).
+                enableHighAccuracy: !lowPower,
                 timeout: 15000,
-                // FIX 5: Allow 10s cache to reduce battery drain
-                // (was 0 = forced hardware GPS on every update)
-                maximumAge: 10000,
+                maximumAge: lowPower ? 30000 : 10000,
             }
         );
 
         return () => navigator.geolocation.clearWatch(watchId);
-    }, []);
+        // NOTA: re-ejecutamos el effect cuando cambia lowPower para aplicar
+        // las nuevas opciones a watchPosition (no hay un setOptions en la API).
+    }, [lowPower]);
 
     return state;
 }

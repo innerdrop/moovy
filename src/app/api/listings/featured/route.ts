@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSoldCountsExcludingAutoPurchases } from "@/lib/listing-counts";
 
 // GET - Featured listings: verified sellers first, then by seller rating + total sales
 // This provides REAL "featured" items instead of just newest
@@ -32,7 +33,7 @@ export async function GET() {
                 },
                 images: { orderBy: { order: "asc" }, take: 1 },
                 category: { select: { id: true, name: true, slug: true } },
-                _count: { select: { orderItems: true } },
+                // ISSUE-029: `orderItems` NO va acá — se cuenta aparte excluyendo auto-compras.
             },
             orderBy: [
                 { seller: { isVerified: "desc" } },
@@ -42,17 +43,21 @@ export async function GET() {
             take: 8,
         });
 
+        // ISSUE-029: soldCount real excluye auto-compras (buyer userId != seller userId).
+        const soldCountMap = await getSoldCountsExcludingAutoPurchases(
+            listings.map((l: any) => l.id)
+        );
+
         // Flatten
         const result = listings.map((listing: any) => {
             const { user, ...sellerRest } = listing.seller;
-            const { _count, ...listingRest } = listing;
             return {
-                ...listingRest,
+                ...listing,
                 seller: {
                     ...sellerRest,
                     availability: user?.sellerAvailability || null,
                 },
-                soldCount: _count.orderItems,
+                soldCount: soldCountMap.get(listing.id) || 0,
             };
         });
 

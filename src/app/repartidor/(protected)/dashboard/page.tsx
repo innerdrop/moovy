@@ -38,6 +38,8 @@ import { useBattery } from "@/hooks/useBattery";
 import type { NavUpdateData } from "@/components/rider/RiderMiniMap";
 import { toast } from "@/store/toast";
 import { formatARS } from "@/lib/format";
+// ISSUE-051: strip superior con vehículo + ISSUE-025: mensajes de batería baja.
+import { vehicleTypeIcon, vehicleTypeToSpanish } from "@/lib/vehicle-type-mapping";
 
 // Views
 import HistoryView from "@/components/rider/views/HistoryView";
@@ -131,10 +133,21 @@ interface PendingOrderOffer {
 
 export default function RiderDashboard() {
     const { data: session } = useSession();
-    const { location, heading, error: locationHookError } = useGeolocation();
+    // ISSUE-025: pasamos un flag dinámico al hook de geolocalización. Cuando
+    // la batería baja del 15% sin cargar, el hook usa red celular en vez de
+    // GPS hardware y permite lecturas cacheadas 30s. El valor se computa unas
+    // líneas abajo (necesita `battery` primero), así que arrancamos en false
+    // y delegamos al hook re-ejecutar cuando cambia lowPower.
+    const batteryRaw = useBattery();
+    const lowPowerGps =
+        batteryRaw.supported && batteryRaw.level !== null && batteryRaw.level < 0.15 && !batteryRaw.charging;
+    const { location, heading, error: locationHookError } = useGeolocation({ lowPower: lowPowerGps });
     const isOnlineNet = useOnline();
     const [dashboardData, setDashboardData] = useState<{
         driverId?: string;
+        // ISSUE-051: vehículo del driver (MOTO / BIKE / CAR / TRUCK). Lo usa el
+        // strip superior para mostrar el ícono y el label normalizado en español.
+        vehicleType?: string | null;
         stats: DashboardStats;
         pedidosActivos: Order[];
         pedidosPendientes: PendingOrderOffer[];
@@ -182,10 +195,26 @@ export default function RiderDashboard() {
     const [recenterToggle, setRecenterToggle] = useState(false);
     const [dismissedOfferIds, setDismissedOfferIds] = useState<Set<string>>(new Set());
 
-    // Battery monitoring
-    const battery = useBattery();
+    // Battery monitoring — reusamos el `batteryRaw` capturado arriba (antes
+    // de useGeolocation) para no llamar dos veces al hook useBattery en el
+    // mismo componente.
+    const battery = batteryRaw;
     const [batteryDismissed, setBatteryDismissed] = useState(false);
     const showBatteryWarning = battery.supported && battery.level !== null && battery.level <= 0.20 && !battery.charging && !batteryDismissed;
+
+    // ISSUE-025: aviso one-shot al driver cuando entramos a modo ahorro GPS.
+    // Una sola vez por sesión (persistimos el estado en ref para no re-disparar
+    // toast si el nivel oscila alrededor del umbral del 15%).
+    const lowPowerNoticeShownRef = useRef(false);
+    useEffect(() => {
+        if (lowPowerGps && !lowPowerNoticeShownRef.current) {
+            lowPowerNoticeShownRef.current = true;
+            toast.warning(
+                "Batería baja — activamos modo ahorro GPS (ubicación menos precisa) para que sigas trabajando más tiempo.",
+                6000
+            );
+        }
+    }, [lowPowerGps]);
 
     // Wake Lock — mantiene la pantalla encendida mientras haya un pedido activo.
     // CRÍTICO: este hook va ACÁ (antes de los early returns de loading/error)
@@ -362,9 +391,15 @@ export default function RiderDashboard() {
     // Initial load + fallback polling every 30s
     useEffect(() => {
         fetchDashboard();
-        const interval = setInterval(() => fetchDashboard(true), 30000);
+        // ISSUE-025: en modo ahorro subimos el intervalo de polling de 30s a
+        // 60s. El socket sigue empujando refresh cuando hay cambios reales
+        // (socket.on "refresh"), así que el polling es solo fallback — bajar
+        // la frecuencia acá no degrada la UX pero ahorra batería y datos
+        // móviles en turnos largos.
+        const pollMs = lowPowerGps ? 60000 : 30000;
+        const interval = setInterval(() => fetchDashboard(true), pollMs);
         return () => clearInterval(interval);
-    }, [fetchDashboard]);
+    }, [fetchDashboard, lowPowerGps]);
 
     // Notification prompt
     useEffect(() => {
@@ -1068,6 +1103,81 @@ export default function RiderDashboard() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* ── ISSUE-051: STATUS STRIP (GPS + Vehículo + Batería) ──
+                                Resumen rápido del estado operativo del driver: si el GPS
+                                está respondiendo, qué vehículo tiene configurado, y el nivel
+                                de batería. El driver lo ve al abrir el dashboard para saber
+                                si está listo para salir — sin tener que entrar a Ajustes. */}
+                            <div className="px-5 pb-3">
+                                <div className="bg-white dark:bg-[#1a1d27] border border-gray-100 dark:border-white/10 rounded-[18px] px-3 py-2.5 flex items-center justify-between gap-2">
+                                    {/* GPS */}
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                        <MapPin className={`w-4 h-4 flex-shrink-0 ${location?.latitude ? "text-emerald-500" : "text-amber-500"}`} />
+                                        <div className="min-w-0">
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">GPS</p>
+                                            <p className="text-[11px] font-bold text-[var(--rider-text)] leading-tight truncate mt-0.5">
+                                                {location?.latitude ? "Activo" : "Sin señal"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Separator */}
+                                    <div className="w-px h-8 bg-gray-100 dark:bg-white/10 flex-shrink-0" />
+
+                                    {/* Vehículo */}
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                        <span className="text-base flex-shrink-0 leading-none" aria-hidden="true">
+                                            {vehicleTypeIcon(dashboardData?.vehicleType || "MOTO")}
+                                        </span>
+                                        <div className="min-w-0">
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">Vehículo</p>
+                                            <p className="text-[11px] font-bold text-[var(--rider-text)] leading-tight truncate capitalize mt-0.5">
+                                                {vehicleTypeToSpanish(dashboardData?.vehicleType || "MOTO")}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Separator */}
+                                    <div className="w-px h-8 bg-gray-100 dark:bg-white/10 flex-shrink-0" />
+
+                                    {/* Batería */}
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                                        {(() => {
+                                            if (!battery.supported || battery.level === null) {
+                                                return (
+                                                    <>
+                                                        <BatteryLow className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                                        <div className="min-w-0 text-right">
+                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">Batería</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 leading-tight truncate mt-0.5">—</p>
+                                                        </div>
+                                                    </>
+                                                );
+                                            }
+                                            const pct = Math.round(battery.level * 100);
+                                            const low = battery.level <= 0.15 && !battery.charging;
+                                            const warn = battery.level <= 0.30 && !battery.charging;
+                                            const colorCls = low ? "text-red-500" : warn ? "text-amber-500" : "text-emerald-500";
+                                            return (
+                                                <>
+                                                    {battery.charging ? (
+                                                        <Zap className={`w-4 h-4 text-emerald-500 flex-shrink-0`} />
+                                                    ) : (
+                                                        <BatteryLow className={`w-4 h-4 ${colorCls} flex-shrink-0`} />
+                                                    )}
+                                                    <div className="min-w-0 text-right">
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">Batería</p>
+                                                        <p className={`text-[11px] font-bold leading-tight truncate mt-0.5 ${low ? "text-red-500" : warn ? "text-amber-500" : "text-[var(--rider-text)]"}`}>
+                                                            {pct}%{battery.charging ? " ⚡" : ""}
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* ── STATS GRID ── */}
                             <div className="px-5 grid grid-cols-2 gap-4">

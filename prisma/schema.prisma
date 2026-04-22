@@ -518,6 +518,10 @@ model Merchant {
   loyaltyTierLocked Boolean                  @default(false) // true = admin override, cron won't change it
   loyaltyOrderCount Int                      @default(0) // Orders in current 30-day period
   loyaltyUpdatedAt DateTime                  @default(now()) // Last time tier was recalculated
+  // ISSUE-031: marca cuándo se envió la notif especial de "primer pedido"
+  // (one-time). Patrón atómico updateMany WHERE = null garantiza que el push
+  // de bienvenida se dispare una sola vez aunque lleguen 2 pedidos simultáneos.
+  firstOrderWelcomeSentAt DateTime?
   owner            User                      @relation(fields: [ownerId], references: [id])
   acquiredProducts MerchantAcquiredProduct[]
   categories       MerchantCategory[]
@@ -815,6 +819,9 @@ model StoreSettings {
   climateMultipliersJson   String  @default("{\"normal\":1.0,\"lluvia_leve\":1.15,\"temporal_fuerte\":1.30}")
   activeClimateCondition   String  @default("normal")
   operationalCostPercent   Float   @default(5)
+  // Array de zonas excluidas (sin cobertura). Shape por item:
+  // { id, name, lat, lng, radiusKm, reason, active, createdAt, updatedAt }
+  excludedZonesJson        String  @default("[]")
 
   // === OPS CONFIG: Commission defaults ===
   defaultMerchantCommission Float  @default(8)
@@ -1244,6 +1251,25 @@ model MoovyConfig {
   value       String
   description String
   updatedAt   DateTime @updatedAt
+}
+
+// ISSUE-026: Registro de ejecuciones de crons para healthcheck.
+// Cada cron (cleanup-location-history, retry-assignments, cart-recovery, etc.)
+// registra start/end y éxito/fracaso. El dashboard alerta si un cron esperado
+// no corrió en su ventana (ej: cleanup diario sin run en > 30h = alerta).
+model CronRunLog {
+  id             String    @id @default(cuid())
+  jobName        String
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  success        Boolean   @default(false)
+  durationMs     Int?
+  itemsProcessed Int?
+  errorMessage   String?
+  createdAt      DateTime  @default(now())
+
+  @@index([jobName, startedAt])
+  @@index([jobName, success, completedAt])
 }
 
 model AssignmentLog {

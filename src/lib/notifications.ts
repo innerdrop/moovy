@@ -303,3 +303,38 @@ export async function notifyBuyerDriverNear(
         tag: `order-near-${orderNumber}`,
     });
 }
+
+/**
+ * ISSUE-031: push especial de bienvenida al primer pedido del comercio.
+ *
+ * Se dispara UNA sola vez — la primera vez que un merchant recibe un pedido.
+ * El caller garantiza la idempotencia con un `prisma.merchant.updateMany
+ * ({where: {id, firstOrderWelcomeSentAt: null}, data: {firstOrderWelcomeSentAt: now}})`
+ * atómico ANTES de llamar a este helper. Si `update.count === 1`, ganamos la
+ * carrera y disparamos el push; si otro request ya llegó primero, skipea.
+ *
+ * El body guía al merchant con los 3 pasos del flujo operativo (confirmar →
+ * preparar → entregar). Tag distinto de `new-order` (que viaja en el mismo
+ * push batch) para que aparezcan como 2 notifications separadas en el lock
+ * screen y el merchant vea ambas — la genérica con el monto y la de bienvenida
+ * con la guía. Evita colapso visual.
+ */
+export async function notifyMerchantFirstOrderWelcome(
+    merchantId: string,
+    orderNumber: string,
+    total: number
+): Promise<number> {
+    const merchant = await prisma.merchant.findUnique({
+        where: { id: merchantId },
+        select: { ownerId: true },
+    });
+
+    if (!merchant) return 0;
+
+    return sendPushToUser(merchant.ownerId, {
+        title: '🎉 ¡Tu primer pedido en MOOVY!',
+        body: `Pedido ${orderNumber} por ${formatMoney(total)}. Confirmalo, preparalo y entregalo — te guiamos paso a paso desde el panel.`,
+        url: '/comercios/pedidos',
+        tag: `merchant-welcome-${merchantId}`,
+    });
+}

@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Star, Package, ArrowLeft, ShieldCheck, Clock, TrendingUp, Award } from "lucide-react";
 import ListingCard from "@/components/store/ListingCard";
+import { getSoldCountsExcludingAutoPurchases } from "@/lib/listing-counts";
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -26,7 +27,8 @@ async function getSeller(id: string) {
                 include: {
                     images: { orderBy: { order: "asc" } },
                     category: { select: { id: true, name: true, slug: true } },
-                    _count: { select: { orderItems: true, favorites: true } },
+                    // ISSUE-029: `orderItems` NO va acá — se cuenta aparte excluyendo auto-compras.
+                    _count: { select: { favorites: true } },
                 },
                 orderBy: { createdAt: "desc" },
             },
@@ -51,6 +53,11 @@ async function getSeller(id: string) {
     const { user, listings, ...sellerRest } = seller;
     const availability = user?.sellerAvailability || null;
 
+    // ISSUE-029: soldCount real excluye auto-compras del propio seller.
+    const soldCountMap = await getSoldCountsExcludingAutoPurchases(
+        listings.map((l: any) => l.id)
+    );
+
     const flatListings = listings.map((listing: any) => {
         const { _count, ...listingRest } = listing;
         return {
@@ -63,7 +70,7 @@ async function getSeller(id: string) {
                 isVerified: sellerRest.isVerified,
                 availability,
             },
-            soldCount: _count?.orderItems || 0,
+            soldCount: soldCountMap.get(listing.id) || 0,
             favCount: _count?.favorites || 0,
         };
     });

@@ -9,13 +9,14 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 import { httpRequestsTotal, httpRequestDuration } from "@/lib/metrics";
 import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/lib/mercadopago";
 import { applyRateLimit } from "@/lib/rate-limit";
-import { notifyMerchant, notifySeller } from "@/lib/notifications";
+import { notifyMerchant, notifySeller, notifyMerchantFirstOrderWelcome } from "@/lib/notifications";
 import { orderLogger } from "@/lib/logger";
 import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-calculator";
 import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 import { generatePinPair } from "@/lib/pin";
 import { getEffectiveCommission } from "@/lib/merchant-loyalty";
+import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -44,6 +45,7 @@ async function getOpsSettings() {
         climateMultipliers: (() => { try { return JSON.parse(s?.climateMultipliersJson ?? "{}"); } catch { return { normal: 1.0, lluvia: 1.10, nieve: 1.15, extremo: 1.25 }; } })(),
         activeClimateCondition: s?.activeClimateCondition ?? "normal",
         operationalCostPercent: s?.operationalCostPercent ?? 5,
+        excludedZonesJson: s?.excludedZonesJson ?? "[]",
         // Cash protocol
         cashMpOnlyDeliveries: s?.cashMpOnlyDeliveries ?? 10,
         cashLimitL1: s?.cashLimitL1 ?? 15000,
@@ -60,6 +62,32 @@ function generateOrderNumber(): string {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return `MOV-${code}`;
+}
+
+// ISSUE-031: dispara el push especial de bienvenida al primer pedido de un merchant.
+// Atómico: updateMany WHERE firstOrderWelcomeSentAt = null garantiza que aunque
+// lleguen 2 pedidos concurrentes, solo uno gana la carrera (count === 1) y dispara
+// el push. El otro ve count === 0 y skipea. Defense in depth para la notif
+// "bienvenida" que debe ser one-shot. Fire-and-forget: errores se loguean pero
+// nunca bubblean al cliente — el push es nice-to-have, no crítico para el flujo.
+async function tryNotifyMerchantFirstOrderWelcome(
+    merchantId: string,
+    orderNumber: string,
+    total: number
+): Promise<void> {
+    try {
+        const updated = await prisma.merchant.updateMany({
+            where: { id: merchantId, firstOrderWelcomeSentAt: null },
+            data: { firstOrderWelcomeSentAt: new Date() },
+        });
+        if (updated.count === 1) {
+            notifyMerchantFirstOrderWelcome(merchantId, orderNumber, total).catch((err) =>
+                orderLogger.error({ error: err, merchantId }, "Failed to send first-order welcome push")
+            );
+        }
+    } catch (err) {
+        orderLogger.error({ error: err, merchantId }, "Failed atomic first-order welcome check");
+    }
 }
 
 // POST - Create a new order
@@ -392,6 +420,39 @@ export async function POST(request: Request) {
                 { error: "Se requiere una dirección de entrega" },
                 { status: 400 }
             );
+        }
+
+        // === ZONA EXCLUIDA: guard server-side (defense in depth vs /api/delivery/calculate) ===
+        // Si el pedido es para entrega y la dirección cae en zona excluida activa, bloquear.
+        if (!isPickup) {
+            let destLat: number | null = addressData?.latitude ?? null;
+            let destLng: number | null = addressData?.longitude ?? null;
+            if ((destLat === null || destLng === null) && addressId) {
+                const existingAddr = await prisma.address.findUnique({
+                    where: { id: addressId },
+                    select: { latitude: true, longitude: true },
+                });
+                destLat = existingAddr?.latitude ?? null;
+                destLng = existingAddr?.longitude ?? null;
+            }
+            if (destLat !== null && destLng !== null) {
+                const zones = parseExcludedZones(opsSettings.excludedZonesJson);
+                const matchedZone = getExcludedZone(destLat, destLng, zones);
+                if (matchedZone) {
+                    orderLogger.info(
+                        { zone: matchedZone.name, destLat, destLng, userId: session.user.id },
+                        "Order rejected: destination in excluded zone"
+                    );
+                    return NextResponse.json(
+                        {
+                            error: "zone_excluded",
+                            zone: { name: matchedZone.name, reason: matchedZone.reason },
+                            message: `No realizamos envíos a ${matchedZone.name}: ${matchedZone.reason}. Probá con otra dirección o elegí retiro en local.`,
+                        },
+                        { status: 422 }
+                    );
+                }
+            }
         }
 
         // Calculate commission using loyalty program (dynamic rates)
@@ -1026,11 +1087,17 @@ export async function POST(request: Request) {
                     const buyerName = session.user.name || undefined;
                     if (groups && groups.length > 0) {
                         for (const group of groups) {
-                            if (group.merchantId) notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
+                            if (group.merchantId) {
+                                notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
+                                // ISSUE-031: bienvenida one-shot al primer pedido de este merchant.
+                                tryNotifyMerchantFirstOrderWelcome(group.merchantId, order.orderNumber, order.total);
+                            }
                             if (group.sellerId) notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify seller"));
                         }
                     } else if (merchantId) {
                         notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
+                        // ISSUE-031: bienvenida one-shot al primer pedido de este merchant.
+                        tryNotifyMerchantFirstOrderWelcome(merchantId, order.orderNumber, order.total);
                     }
                 } catch (e) {
                     orderLogger.error({ orderId: order.id, error: e }, "Failed to notify vendor (MP flow)");
@@ -1149,6 +1216,8 @@ export async function POST(request: Request) {
                 for (const group of groups) {
                     if (group.merchantId) {
                         notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
+                        // ISSUE-031: bienvenida one-shot al primer pedido de este merchant.
+                        tryNotifyMerchantFirstOrderWelcome(group.merchantId, order.orderNumber, order.total);
                     }
                     if (group.sellerId) {
                         notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify seller"));
@@ -1156,6 +1225,8 @@ export async function POST(request: Request) {
                 }
             } else if (merchantId) {
                 notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
+                // ISSUE-031: bienvenida one-shot al primer pedido de este merchant.
+                tryNotifyMerchantFirstOrderWelcome(merchantId, order.orderNumber, order.total);
             }
         } catch (e) {
             orderLogger.error({ orderId: order.id, error: e }, "Failed to notify vendor");

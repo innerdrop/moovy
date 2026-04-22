@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSoldCountsExcludingAutoPurchases } from "@/lib/listing-counts";
 
 // GET - Public listing of active listings with filters
 export async function GET(request: Request) {
@@ -88,7 +89,8 @@ export async function GET(request: Request) {
                     },
                     images: { orderBy: { order: "asc" } },
                     category: { select: { id: true, name: true, slug: true } },
-                    _count: { select: { orderItems: true, favorites: true } },
+                    // ISSUE-029: `orderItems` NO va acá — se cuenta aparte excluyendo auto-compras.
+                    _count: { select: { favorites: true } },
                 },
                 orderBy,
                 take: limit,
@@ -96,6 +98,12 @@ export async function GET(request: Request) {
             }),
             prisma.listing.count({ where }),
         ]);
+
+        // ISSUE-029: soldCount real = OrderItems cuyo Order.userId != SellerProfile.userId.
+        // Se calcula con un solo $queryRaw batch (join OrderItem→Order→Listing→SellerProfile).
+        const soldCountMap = await getSoldCountsExcludingAutoPurchases(
+            listings.map((l: any) => l.id)
+        );
 
         // Flatten seller.user.sellerAvailability into seller.availability + _count into soldCount/favCount
         const flatListings = listings.map((listing: any) => {
@@ -107,7 +115,7 @@ export async function GET(request: Request) {
                     ...sellerRest,
                     availability: user?.sellerAvailability || null,
                 },
-                soldCount: _count?.orderItems || 0,
+                soldCount: soldCountMap.get(listing.id) || 0,
                 favCount: _count?.favorites || 0,
             };
         });

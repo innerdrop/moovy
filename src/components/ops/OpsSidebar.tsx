@@ -35,6 +35,7 @@ import {
     Megaphone,
     Star,
     ClipboardList,
+    MapPin,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -104,6 +105,7 @@ const navSections: NavSection[] = [
             { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
+            { href: "/ops/zonas-excluidas", icon: MapPin, label: "Zonas Excluidas" },
             { href: "/ops/backups", icon: Archive, label: "Backups" },
             { href: "/ops/emails", icon: Mail, label: "Emails" },
         ],

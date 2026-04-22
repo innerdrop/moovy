@@ -16,6 +16,8 @@ import {
     UserPlus,
 } from "lucide-react";
 import Link from "next/link";
+// ISSUE-026: healthcheck de crons en la grilla de alertas superior.
+import { getCronsHealthSummary } from "@/lib/cron-health";
 
 async function getStats() {
     const now = new Date();
@@ -171,6 +173,9 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 export default async function AdminDashboard() {
     const stats = await getStats();
     const recentOrders = await getRecentOrders();
+    // ISSUE-026: trae el estado de los crons registrados. Cualquier cron fuera de
+    // su ventana esperada (ej: cleanup diario sin correr > 30h) sumará una alerta.
+    const cronsHealth = await getCronsHealthSummary().catch(() => []);
 
     const ordersTrend = stats.ordersYesterday > 0
         ? Math.round(((stats.ordersToday - stats.ordersYesterday) / stats.ordersYesterday) * 100)
@@ -204,6 +209,24 @@ export default async function AdminDashboard() {
             message: `${stats.pendingOrders} pedidos pendientes de confirmación`,
             href: "/ops/pedidos?estado=pendiente",
             type: "warning",
+        });
+    }
+
+    // ISSUE-026: healthcheck de crons. `failing` y `never-ran` son danger (algo rompe
+    // o nunca arrancó); `stale` es warning (el runner puede haberse caído, pero los
+    // datos existentes no se corrompen por un día de atraso). `healthy` no alerta.
+    for (const cron of cronsHealth) {
+        if (cron.status === "healthy") continue;
+        const messages: Record<typeof cron.status, string> = {
+            failing: `Cron "${cron.label}" falló en su último intento${cron.errorMessage ? `: ${cron.errorMessage.slice(0, 80)}` : ""}`,
+            stale: `Cron "${cron.label}" no corre hace ${cron.ageHours ? `${Math.round(cron.ageHours)}h` : "demasiado tiempo"} (esperado cada ${cron.maxHours}h)`,
+            "never-ran": `Cron "${cron.label}" nunca se ejecutó — revisar configuración del runner`,
+            healthy: "", // never reached
+        };
+        alerts.push({
+            message: messages[cron.status],
+            href: "/ops/configuracion-logistica",
+            type: cron.status === "stale" ? "warning" : "danger",
         });
     }
 
@@ -273,7 +296,12 @@ export default async function AdminDashboard() {
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.revenueToday)}</p>
                     <p className="text-xs text-gray-500 mt-1">Facturado hoy</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Mes: {formatPrice(stats.revenueMonth)}</p>
+                    {/* ISSUE-050: Ocultar "Mes: $0" cuando no hay data real. Un comparativo
+                        que siempre muestra $0 lee como "la plataforma está muerta". Solo
+                        mostramos la línea cuando hay volumen real del mes. */}
+                    {stats.revenueMonth > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">Mes: {formatPrice(stats.revenueMonth)}</p>
+                    )}
                 </div>
 
                 <Link href="/ops/pedidos" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition">
@@ -291,7 +319,10 @@ export default async function AdminDashboard() {
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{stats.ordersToday}</p>
                     <p className="text-xs text-gray-500 mt-1">Pedidos hoy</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Ayer: {stats.ordersYesterday}</p>
+                    {/* ISSUE-050: igual principio — "Ayer: 0" no aporta, solo ocupa. */}
+                    {stats.ordersYesterday > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">Ayer: {stats.ordersYesterday}</p>
+                    )}
                 </Link>
 
                 <Link href="/ops/pedidos" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition">
@@ -308,7 +339,10 @@ export default async function AdminDashboard() {
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{stats.activeOrders}</p>
                     <p className="text-xs text-gray-500 mt-1">En curso ahora</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Entregados hoy: {stats.deliveredToday}</p>
+                    {/* ISSUE-050: "Entregados hoy: 0" es ruido pre-launch. */}
+                    {stats.deliveredToday > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">Entregados hoy: {stats.deliveredToday}</p>
+                    )}
                 </Link>
 
                 <Link href="/ops/clientes" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition">

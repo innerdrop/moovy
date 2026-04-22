@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance, calculateDeliveryCost, DeliverySettings } from "@/lib/delivery";
+import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 import { deliveryLogger } from "@/lib/logger";
 
 const DeliveryCalcSchema = z.object({
@@ -77,6 +78,29 @@ export async function POST(request: Request) {
         });
 
         if (!settings) throw new Error("Configuración no encontrada");
+
+        // === ZONA EXCLUIDA: bloqueo antes de calcular fee ===
+        // Si el destino cae en un círculo de zona excluida activa, devolver 422 con razón.
+        const excludedZones = parseExcludedZones((settings as any).excludedZonesJson);
+        const matchedZone = getExcludedZone(lat, lng, excludedZones);
+        if (matchedZone) {
+            deliveryLogger.info(
+                { zone: matchedZone.name, lat, lng, merchantId },
+                "Destination falls within excluded zone"
+            );
+            return NextResponse.json(
+                {
+                    error: "zone_excluded",
+                    zone: { name: matchedZone.name, reason: matchedZone.reason },
+                    distanceKm: 0,
+                    totalCost: 0,
+                    isWithinRange: false,
+                    isFreeDelivery: false,
+                    message: `No realizamos envíos a ${matchedZone.name}: ${matchedZone.reason}. Probá con otra dirección o elegí retiro en local.`,
+                },
+                { status: 422 }
+            );
+        }
 
         // Determine origin (Strictly from Merchant now, no global fallback)
         let originLat: number | null = null;

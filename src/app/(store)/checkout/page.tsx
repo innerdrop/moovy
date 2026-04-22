@@ -22,7 +22,8 @@ import {
     Calendar,
     Navigation,
     Clock,
-    Bell
+    Bell,
+    AlertCircle
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import TimeSlotPicker, { type VendorSchedule } from "@/components/checkout/TimeSlotPicker";
@@ -35,6 +36,9 @@ interface DeliveryResult {
     isFreeDelivery: boolean;
     message: string;
     isRealRoadDistance?: boolean;
+    // ISSUE-032: Zona excluida (sin cobertura). Si viene, el backend devolvió 422
+    // con `error: "zone_excluded"`. La UI muestra un card rojo con el motivo.
+    zoneExcluded?: { name: string; reason: string };
 }
 
 export default function CheckoutPage() {
@@ -111,6 +115,35 @@ export default function CheckoutPage() {
     );
     const deliveryCost = totalDeliveryCost;
     const finalTotal = Math.max(0, subtotal + deliveryCost - discountAmount);
+
+    // ISSUE-032: Zonas excluidas bloqueantes — si algún vendor cae en zona sin cobertura,
+    // mostramos card rojo con nombre de zona + motivo + CTA a cambiar dirección.
+    // En single-vendor, el propio deliveryResult trae el flag. En multi-vendor pueden
+    // ser varias direcciones distintas (cada vendor se entrega en la misma dirección
+    // del buyer, así que si una cae en zona excluida, TODAS lo hacen — pero cubrimos
+    // los dos paths por defensa en profundidad).
+    const excludedZoneBlockers: Array<{ name: string; reason: string; vendorName?: string }> = [];
+    if (isMultiVendor) {
+        groups.filter(g => g.vendorType === "merchant").forEach(group => {
+            const r = vendorDeliveryResults[group.vendorId];
+            if (r?.zoneExcluded) {
+                excludedZoneBlockers.push({
+                    name: r.zoneExcluded.name,
+                    reason: r.zoneExcluded.reason,
+                    vendorName: group.vendorName,
+                });
+            }
+        });
+    } else if (deliveryResult?.zoneExcluded) {
+        excludedZoneBlockers.push({
+            name: deliveryResult.zoneExcluded.name,
+            reason: deliveryResult.zoneExcluded.reason,
+        });
+    }
+    // Deduplicar por zona (si 3 vendors reportan "Costa Susana", mostramos 1 solo card)
+    const uniqueExcludedZones = Array.from(
+        new Map(excludedZoneBlockers.map(z => [z.name, z])).values()
+    );
 
     // Redirect if cart is empty (use ref to avoid race with Zustand's sync clearCart)
     useEffect(() => {
@@ -332,7 +365,24 @@ export default function CheckoutPage() {
                 orderTotal: orderSubtotal,
             }),
         });
-        return calcResponse.json();
+        const data = await calcResponse.json();
+        // ISSUE-032: Zona excluida → el endpoint devuelve 422 con `error: "zone_excluded"`
+        // + `zone: { name, reason }` + `isWithinRange: false`. Mapeamos a nuestro shape
+        // con `zoneExcluded` seteado para que la UI muestre el card rojo.
+        if (!calcResponse.ok && data?.error === "zone_excluded" && data?.zone) {
+            return {
+                distanceKm: 0,
+                totalCost: 0,
+                isWithinRange: false,
+                isFreeDelivery: false,
+                message: data.message || `No realizamos envíos a ${data.zone.name}`,
+                zoneExcluded: {
+                    name: String(data.zone.name || ""),
+                    reason: String(data.zone.reason || ""),
+                },
+            };
+        }
+        return data;
     };
 
     const calculateDelivery = async () => {
@@ -849,6 +899,42 @@ export default function CheckoutPage() {
                                                             {address.floor ? ` (${address.floor})` : ""}
                                                         </p>
                                                         <p className="text-xs text-gray-400 mt-1">{address.city}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* ISSUE-032: Zona excluida — la dirección cae en una zona sin cobertura.
+                                                Card rojo con nombre + motivo + CTAs (cambiar dirección / retirar en local). */}
+                                            {uniqueExcludedZones.length > 0 && (
+                                                <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-5">
+                                                    <div className="flex items-start gap-3 mb-3">
+                                                        <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-red-900 leading-tight">
+                                                                No llegamos a esta dirección
+                                                            </p>
+                                                            {uniqueExcludedZones.map(z => (
+                                                                <p key={z.name} className="text-sm text-red-700">
+                                                                    <span className="font-semibold">{z.name}:</span> {z.reason}
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col sm:flex-row gap-2 mt-3 pt-3 border-t border-red-200/60">
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleNewAddress}
+                                                            className="flex-1 text-sm font-semibold text-red-700 hover:text-red-900 bg-white hover:bg-red-50 border border-red-200 rounded-lg px-3 py-2 transition"
+                                                        >
+                                                            Cambiar dirección
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDeliveryMethod("pickup")}
+                                                            className="flex-1 text-sm font-semibold text-red-700 hover:text-red-900 bg-white hover:bg-red-50 border border-red-200 rounded-lg px-3 py-2 transition"
+                                                        >
+                                                            Retirar en local
+                                                        </button>
                                                     </div>
                                                 </div>
                                             )}

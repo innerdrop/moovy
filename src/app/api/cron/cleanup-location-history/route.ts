@@ -5,22 +5,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createRequestLogger } from "@/lib/logger";
+// ISSUE-026: envolver en recordCronRun para que el dashboard OPS alerte si este cron no corre.
+import { recordCronRun } from "@/lib/cron-health";
 
 const logger = createRequestLogger("cleanup-location-history");
 
 export async function POST(req: NextRequest) {
+    // Auth: CRON_SECRET (se valida ANTES de registrar el run para que intentos
+    // no autorizados no ensucien el healthcheck con runs spurios).
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "");
+    const { verifyBearerToken } = await import("@/lib/env-validation");
+    if (!verifyBearerToken(token, process.env.CRON_SECRET)) {
+        logger.warn({ token: token?.slice(0, 8) }, "Unauthorized cleanup request");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
-        // Auth: CRON_SECRET
-        const authHeader = req.headers.get("authorization");
-        const token = authHeader?.replace("Bearer ", "");
-
-        // V-028 FIX: timing-safe comparison
-        const { verifyBearerToken } = await import("@/lib/env-validation");
-        if (!verifyBearerToken(token, process.env.CRON_SECRET)) {
-            logger.warn({ token: token?.slice(0, 8) }, "Unauthorized cleanup request");
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
         // Calculate cutoff: 30 days ago
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -30,11 +31,13 @@ export async function POST(req: NextRequest) {
             "Starting location history cleanup"
         );
 
-        // Delete old location history
-        const result = await prisma.driverLocationHistory.deleteMany({
-            where: {
-                createdAt: { lt: thirtyDaysAgo },
-            },
+        const result = await recordCronRun("cleanup-location-history", async () => {
+            const del = await prisma.driverLocationHistory.deleteMany({
+                where: {
+                    createdAt: { lt: thirtyDaysAgo },
+                },
+            });
+            return { result: del, itemsProcessed: del.count };
         });
 
         logger.info(

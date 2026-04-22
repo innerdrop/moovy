@@ -276,6 +276,10 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             driverId: driver.id,
+            // ISSUE-051: strip superior necesita vehicleType para mostrar chip "Vehículo".
+            // Lo exponemos acá (no en un endpoint nuevo) porque ya cargamos todo
+            // el driver arriba y evitamos un round-trip extra.
+            vehicleType: driver.vehicleType || null,
             stats: {
                 pedidosHoy: completedToday + enCamino,
                 enCamino: enCamino,
