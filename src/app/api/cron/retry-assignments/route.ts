@@ -10,10 +10,22 @@ import { prisma } from "@/lib/prisma";
 import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { verifyBearerToken } from "@/lib/env-validation";
 import { cronLogger } from "@/lib/logger";
+import { createRefund } from "@/lib/mercadopago";
+import { recordPointsTransaction, reverseOrderPoints } from "@/lib/points";
+import { notifyBuyerOrderAutoCancelled } from "@/lib/notifications";
 
 // ISSUE-010: Umbrales para detección de driver offline mid-delivery
 const DRIVER_OFFLINE_THRESHOLD_MINUTES = 15;
 const DRIVER_OFFLINE_ACTIVE_STATES = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP"] as const;
+
+// ISSUE-015: Umbrales de auto-cancelación por falta de repartidor
+// MAX_RETRIES (3) marca el momento en que empezamos a escalar a admin.
+// AUTO_CANCEL_THRESHOLD (6) marca el momento en que tiramos la toalla:
+// ~30min con cron cada 5min (3 retries propios + 3 retries admin-notified) sin
+// lograr asignar. El buyer merece un cierre limpio + refund + bonus compensatorio.
+const AUTO_CANCEL_THRESHOLD = 6;
+const AUTO_CANCEL_REASON = "No conseguimos repartidor disponible para tu pedido";
+const AUTO_CANCEL_BONUS_POINTS = 500;
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -108,6 +120,233 @@ async function notifyAdminOfOfflineDriver(params: {
     );
 }
 
+/**
+ * ISSUE-015: Auto-cancela un pedido stuck después de AUTO_CANCEL_THRESHOLD intentos
+ * fallidos de asignación. Hace todo lo que haría un merchant/reject manual:
+ * (1) marca Order + SubOrders como CANCELLED dentro de un $transaction atómico,
+ * (2) restaura stock de cada item,
+ * (3) libera driver si por alguna razón quedó colgado (defensivo),
+ * (4) limpia PendingAssignment,
+ * (5) dispara refund MP si el pedido fue PAID,
+ * (6) revierte puntos REDEEM si el buyer los canjeó al crear,
+ * (7) otorga bonus compensatorio de AUTO_CANCEL_BONUS_POINTS,
+ * (8) envía push al buyer + sockets a merchant/admin/buyer.
+ *
+ * Cada paso side-effect va en try/catch porque el cron no debe caer si una
+ * notificación o un refund falla: el $transaction ya garantiza que el pedido
+ * quedó CANCELLED (lo importante), los side effects se loguean y admin los
+ * resuelve manualmente si algo no ocurrió.
+ *
+ * Scope: single-vendor Orders. Multi-vendor SubOrder auto-cancel queda para
+ * una fase 2 porque el refund parcial (cancelar 1 de 3 vendedores) requiere
+ * lógica de prorrateo que no existe aún.
+ */
+async function autoCancelStuckOrder(
+    orderBrief: { id: string; orderNumber: string; userId: string },
+    attempts: number
+): Promise<{ success: boolean; refunded: boolean; bonusAwarded: number }> {
+    // Fetch full order details needed for the cascade
+    const fullOrder = await prisma.order.findUnique({
+        where: { id: orderBrief.id },
+        select: {
+            id: true,
+            orderNumber: true,
+            userId: true,
+            status: true,
+            driverId: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            merchantId: true,
+            items: { select: { productId: true, listingId: true, quantity: true } },
+        },
+    });
+
+    if (!fullOrder) {
+        cronLogger.warn({ orderId: orderBrief.id }, "Auto-cancel: order not found, skipping");
+        return { success: false, refunded: false, bonusAwarded: 0 };
+    }
+
+    if (fullOrder.status === "CANCELLED" || fullOrder.status === "DELIVERED") {
+        cronLogger.warn(
+            { orderId: fullOrder.id, status: fullOrder.status },
+            "Auto-cancel: order already finalized, skipping"
+        );
+        return { success: false, refunded: false, bonusAwarded: 0 };
+    }
+
+    // (1-4) Atomic cancel + sub-orders + stock + driver release + pending cleanup
+    await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+            where: { id: fullOrder.id },
+            data: {
+                status: "CANCELLED",
+                cancelReason: AUTO_CANCEL_REASON,
+                adminNotes: `[${new Date().toISOString()}] Auto-cancelado por cron: ${attempts} intentos fallidos de asignación (~${attempts * 5}min).`,
+                driverId: null,
+                pendingDriverId: null,
+            },
+        });
+
+        await tx.subOrder.updateMany({
+            where: { orderId: fullOrder.id, status: { not: "CANCELLED" } },
+            data: { status: "CANCELLED" },
+        });
+
+        for (const item of fullOrder.items) {
+            if (item.listingId) {
+                await tx.listing.update({
+                    where: { id: item.listingId },
+                    data: { stock: { increment: item.quantity } },
+                });
+            } else if (item.productId) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { increment: item.quantity } },
+                });
+            }
+        }
+
+        await tx.pendingAssignment.deleteMany({ where: { orderId: fullOrder.id } });
+    });
+
+    cronLogger.info(
+        { orderId: fullOrder.id, orderNumber: fullOrder.orderNumber, attempts },
+        "Auto-cancel: order + sub-orders + stock transaction committed"
+    );
+
+    // (5) Refund MP if paid
+    let refunded = false;
+    if (fullOrder.paymentMethod === "mercadopago" && fullOrder.paymentStatus === "PAID") {
+        try {
+            const payment = await prisma.payment.findFirst({
+                where: { orderId: fullOrder.id, mpStatus: "approved" },
+                select: { mpPaymentId: true },
+            });
+
+            if (payment?.mpPaymentId) {
+                const refundResult = await createRefund(payment.mpPaymentId);
+                if (refundResult) {
+                    await prisma.order.update({
+                        where: { id: fullOrder.id },
+                        data: { paymentStatus: "REFUNDED" },
+                    });
+                    await prisma.payment.update({
+                        where: { mpPaymentId: payment.mpPaymentId },
+                        data: {
+                            mpStatus: "refunded",
+                            mpStatusDetail: `Refund ID: ${refundResult.id} — Auto-cancelación sin repartidor disponible`,
+                        },
+                    });
+                    refunded = true;
+                    cronLogger.info(
+                        { orderId: fullOrder.id, orderNumber: fullOrder.orderNumber, refundId: refundResult.id },
+                        "Auto-cancel: refund successful"
+                    );
+                } else {
+                    cronLogger.error(
+                        { orderId: fullOrder.id, orderNumber: fullOrder.orderNumber },
+                        "Auto-cancel: REFUND FAILED. Manual refund required."
+                    );
+                    emitSocket("refund_failed", "admin:orders", {
+                        orderId: fullOrder.id,
+                        orderNumber: fullOrder.orderNumber,
+                        reason: "Auto-cancelación sin repartidor — refund MP falló",
+                    }).catch(() => {});
+                }
+            }
+        } catch (err) {
+            cronLogger.error(
+                { error: err instanceof Error ? err.message : String(err), orderId: fullOrder.id },
+                "Auto-cancel: refund exception"
+            );
+            emitSocket("refund_failed", "admin:orders", {
+                orderId: fullOrder.id,
+                orderNumber: fullOrder.orderNumber,
+                reason: "Auto-cancelación sin repartidor — excepción en refund",
+            }).catch(() => {});
+        }
+    }
+
+    // (6) Reverse points — REDEEM si el buyer canjeó al crear, idempotente vía pointsEarned/pointsUsed
+    try {
+        const result = await reverseOrderPoints(
+            fullOrder.id,
+            `auto-cancelación sin repartidor (pedido #${fullOrder.orderNumber})`
+        );
+        if (result.redeemReverted > 0 || result.earnReverted > 0) {
+            cronLogger.info(
+                { orderId: fullOrder.id, ...result },
+                "Auto-cancel: points reverted"
+            );
+        }
+    } catch (err) {
+        cronLogger.error(
+            { error: err instanceof Error ? err.message : String(err), orderId: fullOrder.id },
+            "Auto-cancel: points reverse error"
+        );
+    }
+
+    // (7) Bonus compensatorio de 500 pts
+    let bonusAwarded = 0;
+    try {
+        const ok = await recordPointsTransaction(
+            fullOrder.userId,
+            "BONUS",
+            AUTO_CANCEL_BONUS_POINTS,
+            `Compensación por pedido sin repartidor disponible (#${fullOrder.orderNumber})`,
+            fullOrder.id
+        );
+        if (ok) {
+            bonusAwarded = AUTO_CANCEL_BONUS_POINTS;
+            cronLogger.info(
+                { orderId: fullOrder.id, userId: fullOrder.userId, bonus: bonusAwarded },
+                "Auto-cancel: compensation bonus awarded"
+            );
+        }
+    } catch (err) {
+        cronLogger.error(
+            { error: err instanceof Error ? err.message : String(err), orderId: fullOrder.id, userId: fullOrder.userId },
+            "Auto-cancel: bonus award error"
+        );
+    }
+
+    // (8a) Push al buyer
+    try {
+        await notifyBuyerOrderAutoCancelled(
+            fullOrder.userId,
+            fullOrder.orderNumber,
+            fullOrder.id,
+            bonusAwarded,
+            refunded
+        );
+    } catch (err) {
+        cronLogger.error(
+            { error: err instanceof Error ? err.message : String(err), orderId: fullOrder.id },
+            "Auto-cancel: push notification error"
+        );
+    }
+
+    // (8b) Sockets a merchant + admin + buyer
+    const socketData = {
+        orderId: fullOrder.id,
+        orderNumber: fullOrder.orderNumber,
+        status: "CANCELLED",
+        cancelReason: AUTO_CANCEL_REASON,
+        auto: true,
+        attempts,
+        refunded,
+        bonusAwarded,
+    };
+
+    if (fullOrder.merchantId) {
+        emitSocket("order_cancelled", `merchant:${fullOrder.merchantId}`, socketData).catch(() => {});
+    }
+    emitSocket("order_cancelled", "admin:orders", socketData).catch(() => {});
+    emitSocket("order_cancelled", `customer:${fullOrder.userId}`, socketData).catch(() => {});
+
+    return { success: true, refunded, bonusAwarded };
+}
+
 export async function POST(req: NextRequest) {
     try {
         // Auth: CRON_SECRET
@@ -151,6 +390,7 @@ export async function POST(req: NextRequest) {
 
         let retried = 0;
         let escalated = 0;
+        let autoCancelled = 0;
 
         for (const order of stuckOrders) {
             // Count assignment log entries to track total attempts (initial + retries)
@@ -158,6 +398,50 @@ export async function POST(req: NextRequest) {
             const assignmentLogs = await prisma.assignmentLog.findMany({
                 where: { orderId: order.id },
             });
+
+            // ISSUE-015: Si superamos el umbral final, auto-cancelamos con
+            // refund + bonus compensatorio. Este check VA ANTES del de MAX_RETRIES
+            // porque cuando attempts >= AUTO_CANCEL_THRESHOLD también se cumple
+            // attempts >= MAX_RETRIES, pero el cierre definitivo tiene prioridad.
+            if (assignmentLogs.length >= AUTO_CANCEL_THRESHOLD) {
+                cronLogger.warn(
+                    { orderId: order.id, orderNumber: order.orderNumber, attempts: assignmentLogs.length },
+                    `Order has reached AUTO_CANCEL_THRESHOLD. Auto-cancelling with refund + bonus.`
+                );
+
+                try {
+                    const result = await autoCancelStuckOrder(
+                        { id: order.id, orderNumber: order.orderNumber, userId: order.userId },
+                        assignmentLogs.length
+                    );
+
+                    if (result.success) {
+                        autoCancelled++;
+
+                        // Escalate visibility al panel de admin también — por si quedó un refund
+                        // fallido u otra anomalía que necesite mirada humana.
+                        await notifyAdminOfStuckOrder(
+                            order.id,
+                            order.orderNumber,
+                            `AUTO-CANCELADO después de ${assignmentLogs.length} intentos fallidos (~${assignmentLogs.length * 5}min). Refund: ${result.refunded ? "OK" : "N/A o FALLÓ"}. Bonus: ${result.bonusAwarded}pts.`
+                        );
+                    } else {
+                        // autoCancelStuckOrder determinó que la orden ya estaba finalizada u otro edge case
+                        cronLogger.warn(
+                            { orderId: order.id, orderNumber: order.orderNumber },
+                            "Auto-cancel skipped (order already finalized or not found)"
+                        );
+                    }
+                } catch (err) {
+                    cronLogger.error(
+                        { error: err instanceof Error ? err.message : String(err), orderId: order.id, orderNumber: order.orderNumber },
+                        "Auto-cancel threw unexpectedly — cron continues with next order"
+                    );
+                    // No matamos el cron: seguimos con el resto de órdenes
+                }
+
+                continue;
+            }
 
             // If we've already attempted this order MAX_RETRIES times via this cron, escalate
             // Count only recent attempts (from when it became CONFIRMED and stuck)

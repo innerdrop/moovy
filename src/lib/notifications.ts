@@ -228,6 +228,47 @@ export async function notifyBuyerDeliveryPin(
 }
 
 /**
+ * ISSUE-015: Push cuando el sistema auto-cancela un pedido por falta de repartidor.
+ *
+ * Cuando el retry cron agota los 6 intentos de asignación (~30min), cancelamos
+ * automáticamente el pedido, disparamos el refund MP si corresponde, y
+ * notificamos al buyer con un mensaje que reconoce el problema + le avisa del
+ * bonus compensatorio de puntos MOOVER. Tag distinto de `order-cancelled` para
+ * que no colapse con una cancelación manual del merchant/buyer en el lock
+ * screen — el usuario debe ver el aviso claramente.
+ */
+export async function notifyBuyerOrderAutoCancelled(
+    userId: string,
+    orderNumber: string,
+    orderId: string,
+    bonusPoints: number,
+    wasRefunded: boolean
+): Promise<number> {
+    const deepLink = `/mis-pedidos/${orderId}`;
+
+    const refundLine = wasRefunded
+        ? 'Te devolvimos el pago.'
+        : '';
+    const bonusLine = bonusPoints > 0
+        ? `Te regalamos ${bonusPoints} puntos MOOVER por la espera.`
+        : '';
+    const body = [
+        `No conseguimos repartidor para tu pedido ${orderNumber}.`,
+        refundLine,
+        bonusLine,
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    return sendPushToUser(userId, {
+        title: '😔 No encontramos repartidor',
+        body,
+        url: deepLink,
+        tag: `order-autocancelled-${orderNumber}`,
+    });
+}
+
+/**
  * ISSUE-013: Push "tu repartidor está cerca".
  *
  * Se dispara UNA sola vez cuando el driver entra en un radio de 300m del destino
