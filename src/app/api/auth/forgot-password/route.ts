@@ -29,20 +29,28 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
-        // Generate reset token
+        // ISSUE-027: el token plaintext SOLO viaja por email; en la DB
+        // guardamos su hash sha256. Si la DB se filtra, los tokens activos no
+        // sirven al atacante. La validación en /reset-password hashea el
+        // token recibido y compara con `crypto.timingSafeEqual` — defensa en
+        // profundidad contra timing attacks en el WHERE clause.
         const resetToken = crypto.randomBytes(32).toString("hex");
+        const resetTokenHash = crypto
+            .createHash("sha256")
+            .update(resetToken)
+            .digest("hex");
         const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
-        // Save token to user
+        // Save HASHED token to user (plaintext only goes to email)
         await prisma.user.update({
             where: { id: user.id },
             data: {
-                resetToken,
+                resetToken: resetTokenHash,
                 resetTokenExpiry,
             },
         });
 
-        // Create reset link
+        // Create reset link with PLAINTEXT token (the user receives it)
         const baseUrl = process.env.NEXTAUTH_URL || "https://somosmoovy.com";
         const resetLink = `${baseUrl}/restablecer-contrasena?token=${resetToken}`;
 

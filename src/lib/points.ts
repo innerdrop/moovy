@@ -192,8 +192,20 @@ export async function getPointsConfig(): Promise<PointsConfig> {
 
 /**
  * Record a points transaction
- * Uses Prisma transaction for data integrity
+ * Uses Prisma transaction for data integrity.
+ *
+ * ISSUE-024: usamos `isolationLevel: Serializable` para prevenir el race
+ * condition en que un mismo user gasta puntos desde dos tabs/dispositivos
+ * simultáneos. Sin Serializable, ambas transacciones leen el mismo
+ * `pointsBalance` y persisten dos updates con el mismo `newBalance`,
+ * efectivamente regalando puntos. Con Serializable, una de las dos transacciones
+ * falla con P2034 (serialization failure) y la reintentamos hasta 3 veces con
+ * backoff lineal. Si después de 3 intentos sigue fallando, retornamos false y
+ * el caller decide cómo manejarlo (típicamente: error al user, que reintenta).
  */
+const POINTS_TX_MAX_RETRIES = 3;
+const POINTS_TX_RETRY_BASE_MS = 50;
+
 export async function recordPointsTransaction(
     userId: string,
     type: "EARN" | "REDEEM" | "BONUS" | "EXPIRE" | "ADJUSTMENT",
@@ -201,44 +213,67 @@ export async function recordPointsTransaction(
     description: string,
     orderId?: string
 ): Promise<boolean> {
-    try {
-        // Use a transaction to update balance and create record atomically
-        await prisma.$transaction(async (tx) => {
-            const user = await tx.user.findUnique({
-                where: { id: userId },
-                select: { pointsBalance: true }
-            });
+    for (let attempt = 1; attempt <= POINTS_TX_MAX_RETRIES; attempt++) {
+        try {
+            await prisma.$transaction(
+                async (tx) => {
+                    const user = await tx.user.findUnique({
+                        where: { id: userId },
+                        select: { pointsBalance: true }
+                    });
 
-            if (!user) throw new Error("User not found");
+                    if (!user) throw new Error("User not found");
 
-            const newBalance = (user.pointsBalance || 0) + amount;
+                    const newBalance = (user.pointsBalance || 0) + amount;
 
-            if (newBalance < 0) throw new Error("Insufficient points");
+                    if (newBalance < 0) throw new Error("Insufficient points");
 
-            // Update user
-            await tx.user.update({
-                where: { id: userId },
-                data: { pointsBalance: newBalance, updatedAt: new Date() }
-            });
+                    // Update user
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: { pointsBalance: newBalance, updatedAt: new Date() }
+                    });
 
-            // Create transaction record
-            await tx.pointsTransaction.create({
-                data: {
-                    userId,
-                    orderId: orderId || null,
-                    type,
-                    amount,
-                    balanceAfter: newBalance,
-                    description,
-                }
-            });
-        });
+                    // Create transaction record
+                    await tx.pointsTransaction.create({
+                        data: {
+                            userId,
+                            orderId: orderId || null,
+                            type,
+                            amount,
+                            balanceAfter: newBalance,
+                            description,
+                        }
+                    });
+                },
+                { isolationLevel: "Serializable" }
+            );
 
-        return true;
-    } catch (error) {
-        console.error("[Points] Error recording transaction:", error);
-        return false;
+            return true;
+        } catch (error: any) {
+            // Prisma serialization failure code (PostgreSQL 40001).
+            // En este caso, una transacción concurrente nos pisó la lectura
+            // de pointsBalance — reintentamos con backoff lineal corto.
+            const isSerializationFailure =
+                error?.code === "P2034" ||
+                error?.meta?.code === "40001" ||
+                /could not serialize/i.test(error?.message || "");
+
+            if (isSerializationFailure && attempt < POINTS_TX_MAX_RETRIES) {
+                const delay = POINTS_TX_RETRY_BASE_MS * attempt;
+                console.warn(
+                    `[Points] Serialization conflict for user ${userId} (attempt ${attempt}/${POINTS_TX_MAX_RETRIES}), retrying in ${delay}ms`
+                );
+                await new Promise((r) => setTimeout(r, delay));
+                continue;
+            }
+
+            console.error("[Points] Error recording transaction:", error);
+            return false;
+        }
     }
+
+    return false;
 }
 
 /**

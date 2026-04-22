@@ -218,7 +218,8 @@ Lo único bloqueante que queda es la decisión operativa de ISSUE-004 (limpiar d
 ## 🟢 MENORES — Pulir post-lanzamiento (sin cambios desde 2026-04-15)
 
 ### ISSUE-024 — Puntos: transacción sin `isolationLevel: Serializable`
-Race condition teórico si usuario gasta puntos desde 2 tabs simultáneas. Fix: agregar `{ isolationLevel: "Serializable" }` al `$transaction` en `src/lib/points.ts`.
+**Estado:** ✅ RESUELTO (rama `fix/menores-seguridad`, 2026-04-21)
+**Fix aplicado:** `recordPointsTransaction` en `src/lib/points.ts` ahora corre con `{ isolationLevel: "Serializable" }`. Si dos tabs gastan puntos en simultáneo, una de las transacciones falla con P2034 y se reintenta hasta 3 veces con backoff lineal (50/100/150ms). Después de 3 intentos retorna `false` (caller decide). Constantes `POINTS_TX_MAX_RETRIES=3` y `POINTS_TX_RETRY_BASE_MS=50`.
 
 ### ISSUE-025 — GPS polling 10s sin throttle por batería
 Driver puede quedarse sin batería mid-entrega. Fix: si `navigator.getBattery().level < 0.15`, aumentar intervalo a 30s y mostrar aviso.
@@ -227,7 +228,8 @@ Driver puede quedarse sin batería mid-entrega. Fix: si `navigator.getBattery().
 Si el cron de cleanup no corre, la tabla crece sin límite. Fix: healthCheck en dashboard OPS que avise si `lastRun > 24h`.
 
 ### ISSUE-027 — Timing attack en validación de reset-password token
-Comparación probablemente con `===`. Fix: `crypto.timingSafeEqual()`.
+**Estado:** ✅ RESUELTO (rama `fix/menores-seguridad`, 2026-04-21)
+**Fix aplicado:** Defense in depth: (1) `forgot-password/route.ts` ahora hashea el token con `sha256` antes de guardarlo en `User.resetToken` — el plaintext SOLO viaja por email. Si la DB se filtra, los tokens activos no sirven al atacante. (2) `reset-password/route.ts` hashea el token recibido, busca al user por hash + expiry > now, y luego hace `crypto.timingSafeEqual` sobre los hashes (defensa en profundidad ante side channels residuales del WHERE clause de Prisma — cache, B-tree lookups). Helper `timingSafeEqualHex` con guard de longitud + try/catch alrededor de `Buffer.from(.., "hex")`. **Pendiente operativo**: tokens activos previos al deploy (max 1h de vida) dejan de funcionar — los users que los reciban deben pedir un nuevo reset. Aceptable porque son ≤5 personas en la ventana de deploy.
 
 ### ISSUE-028 — Estados vacíos sin componente unificado
 Varias pantallas muestran listas vacías sin CTA. Fix: componente `<EmptyState icon title cta />` reutilizable.
