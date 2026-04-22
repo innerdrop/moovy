@@ -193,6 +193,14 @@ logistica.use((socket, next) => {
 logistica.on("connection", (socket) => {
     console.log(`[Socket] Client connected: ${socket.id} | User: ${socket.data.userId} | Role: ${socket.data.role}`);
 
+    // Auto-join al room personal del usuario para recibir notificaciones
+    // dirigidas a `user:<userId>` (ej: nuevo mensaje en OrderChat).
+    // Esto permite que un destinatario reciba el evento real-time sin
+    // importar su rol — todos los users autenticados entran a su propio room.
+    if (socket.data.userId) {
+        socket.join(`user:${socket.data.userId}`);
+    }
+
     // ── Driver Events (DRIVER role only) ────────────────────────────────────
 
     socket.on("driver_online", (driverId: string) => {

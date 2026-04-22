@@ -99,7 +99,17 @@ export async function GET(request: Request) {
             },
             include: {
                 merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
-                address: { select: { street: true, number: true, city: true, latitude: true, longitude: true } }
+                address: { select: { street: true, number: true, city: true, latitude: true, longitude: true } },
+                // Para chats DRIVER_SELLER multi-vendor: traer SubOrders con seller
+                // asociadas a ESTE driver (o a la order sin driver específico si
+                // es single-vendor delivery).
+                subOrders: {
+                    select: {
+                        id: true,
+                        driverId: true,
+                        seller: { select: { id: true, displayName: true, userId: true } }
+                    }
+                }
             },
             orderBy: { updatedAt: "desc" }
         });
@@ -126,9 +136,25 @@ export async function GET(request: Request) {
                 navLng = order.address.longitude || DEFAULT_LNG_ACTIVE;
             }
 
+            // Sellers de este pedido (marketplace multi-vendor) — para chat
+            // DRIVER_SELLER. Filtramos por SubOrders asignadas a ESTE driver o
+            // sin driver específico (fallback single-vendor).
+            const sellersEnPedido = ((order as any).subOrders ?? [])
+                .filter((so: any) => so?.seller && (so.driverId === driver.id || !so.driverId))
+                .map((so: any) => ({
+                    subOrderId: so.id as string,
+                    sellerName: (so.seller?.displayName ?? "Vendedor") as string
+                }));
+
+            // ¿Este pedido tiene comercio (merchant)? El chat DRIVER_MERCHANT
+            // solo se muestra si existe. En marketplace-only el merchant puede
+            // ser null.
+            const hasMerchant = !!order.merchant?.name;
+
             return {
                 id: order.id, // Actual Prisma ID for API calls
                 orderId: order.orderNumber || order.id.slice(-6), // Display ID for UI
+                orderNumber: order.orderNumber || order.id.slice(-6),
                 comercio: order.merchant?.name || "Comercio",
                 direccion: displayAddress,
                 direccionCliente: order.address ? `${order.address.street} ${order.address.number}` : null,
@@ -143,7 +169,10 @@ export async function GET(request: Request) {
                 merchantLat: order.merchant?.latitude,
                 merchantLng: order.merchant?.longitude,
                 customerLat: order.address?.latitude,
-                customerLng: order.address?.longitude
+                customerLng: order.address?.longitude,
+                // Chat targets
+                hasMerchant,
+                sellersEnPedido
             };
         });
 

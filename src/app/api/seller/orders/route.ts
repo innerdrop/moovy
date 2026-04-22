@@ -43,8 +43,17 @@ export async function GET(request: Request) {
             where,
             include: {
                 items: true,
+                // Driver asignado a ESTA SubOrder (multi-vendor tiene driver por SubOrder).
+                // Usado para el chat DRIVER_SELLER cuando el rider ya está en camino al pickup.
+                driver: {
+                    select: {
+                        id: true,
+                        user: { select: { name: true } },
+                    },
+                },
                 order: {
                     select: {
+                        id: true,
                         orderNumber: true,
                         createdAt: true,
                         deliveryType: true,
@@ -54,6 +63,14 @@ export async function GET(request: Request) {
                         status: true,
                         user: {
                             select: { name: true },
+                        },
+                        // Fallback single-vendor: si la SubOrder no tiene driver propio
+                        // (pedido single-vendor con driver a nivel Order), usamos este.
+                        driver: {
+                            select: {
+                                id: true,
+                                user: { select: { name: true } },
+                            },
                         },
                     },
                 },

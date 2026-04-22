@@ -745,17 +745,19 @@ export default function OrderDetailPage() {
                     </div>
                 )}
 
-                {/* ── Chat con vendedor ── */}
-                {order.subOrders?.some(so => so.seller) && isActive && (
+                {/* ── Chat con vendedor(es) — uno por SubOrder para multi-vendor ── */}
+                {isActive && order.subOrders?.filter(so => so.seller).map(so => (
                     <OrderChatPanel
+                        key={`chat-seller-${so.id}`}
                         orderId={order.id}
                         orderNumber={order.orderNumber}
                         chatType="BUYER_SELLER"
-                        counterpartName={order.subOrders?.find(so => so.seller)?.seller?.displayName || "Vendedor"}
+                        subOrderId={so.id}
+                        counterpartName={so.seller?.displayName || "Vendedor"}
                         userRole="buyer"
                         compact
                     />
-                )}
+                ))}
 
                 {/* ── Driver (single-vendor only — multi-vendor shows per SubOrder) ── */}
                 {order.driver && !order.isMultiVendor && (

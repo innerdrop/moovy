@@ -106,6 +106,9 @@ interface Order {
     items?: any[];
     telefonoCliente?: string;
     nombreCliente?: string;
+    // Chat targets: comercio (single-vendor) y vendedores (multi-vendor)
+    hasMerchant?: boolean;
+    sellersEnPedido?: Array<{ subOrderId: string; sellerName: string }>;
 }
 
 interface PendingOrderOffer {
@@ -852,13 +855,39 @@ export default function RiderDashboard() {
 
                                             {/* Chat con comprador */}
                                             <OrderChatPanel
-                                                orderId={pedidoActivo.orderId}
+                                                orderId={pedidoActivo.id}
                                                 orderNumber={pedidoActivo.orderNumber}
                                                 chatType="BUYER_DRIVER"
                                                 counterpartName={pedidoActivo.nombreCliente || "Comprador"}
                                                 userRole="driver"
                                                 compact
                                             />
+
+                                            {/* Chat con comercio — sólo si el pedido tiene merchant (no marketplace-only) */}
+                                            {pedidoActivo.hasMerchant && (
+                                                <OrderChatPanel
+                                                    orderId={pedidoActivo.id}
+                                                    orderNumber={pedidoActivo.orderNumber}
+                                                    chatType="DRIVER_MERCHANT"
+                                                    counterpartName={pedidoActivo.comercio || "Comercio"}
+                                                    userRole="driver"
+                                                    compact
+                                                />
+                                            )}
+
+                                            {/* Chat con vendedor(es) marketplace — uno por SubOrder */}
+                                            {Array.isArray(pedidoActivo.sellersEnPedido) && pedidoActivo.sellersEnPedido.map((s: any) => (
+                                                <OrderChatPanel
+                                                    key={`chat-driver-seller-${s.subOrderId}`}
+                                                    orderId={pedidoActivo.id}
+                                                    orderNumber={pedidoActivo.orderNumber}
+                                                    chatType="DRIVER_SELLER"
+                                                    subOrderId={s.subOrderId}
+                                                    counterpartName={s.sellerName || "Vendedor"}
+                                                    userRole="driver"
+                                                    compact
+                                                />
+                                            ))}
 
                                             {/* SwipeToConfirm */}
                                             <SwipeToConfirm

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { io, Socket } from "socket.io-client";
 import {
     OrderChat,
     OrderChatMessage,
@@ -12,11 +13,18 @@ import {
     SELLER_QUICK_RESPONSES,
     DRIVER_QUICK_RESPONSES,
 } from "@/types/order-chat";
+import { useSocketAuth } from "@/hooks/useSocketAuth";
 
 interface OrderChatPanelProps {
     orderId: string;
     orderNumber: string;
     chatType: OrderChatType;
+    /**
+     * Scopea el chat a una SubOrder. Requerido cuando hay múltiples sellers o
+     * para DRIVER_SELLER (cada SubOrder tiene su propio seller/driver). Opcional
+     * en BUYER_MERCHANT / BUYER_DRIVER / DRIVER_MERCHANT de pedidos single-vendor.
+     */
+    subOrderId?: string;
     /** Nombre del otro participante para mostrar en header */
     counterpartName?: string;
     /** Rol del usuario actual para seleccionar respuestas rápidas */
@@ -33,11 +41,138 @@ interface OrderChatPanelProps {
     };
 }
 
+// ─── Helpers para etiquetas por chatType + userRole ────────────────────────
+
+/**
+ * Label del otro participante (la "contraparte") según chatType y el rol
+ * que asume el usuario actual. Se usa en el botón cerrado y en el header.
+ */
+function counterpartLabel(chatType: OrderChatType, userRole: OrderChatPanelProps["userRole"]): string {
+    switch (chatType) {
+        case "BUYER_MERCHANT":
+            return userRole === "buyer" ? "Comercio" : "Comprador";
+        case "BUYER_DRIVER":
+            return userRole === "buyer" ? "Repartidor" : "Comprador";
+        case "BUYER_SELLER":
+            return userRole === "buyer" ? "Vendedor" : "Comprador";
+        case "DRIVER_MERCHANT":
+            return userRole === "driver" ? "Comercio" : "Repartidor";
+        case "DRIVER_SELLER":
+            return userRole === "driver" ? "Vendedor" : "Repartidor";
+        default:
+            return "Participante";
+    }
+}
+
+/** Paleta de color por chatType para diferenciar visualmente los canales. */
+function paletteFor(chatType: OrderChatType): {
+    solidBg: string;
+    solidHover: string;
+    lightBg: string;
+    lightText: string;
+    lightBorder: string;
+    lightHover: string;
+    headerGradient: string;
+    inputFocus: string;
+    myBubble: string;
+    myBubbleTime: string;
+    quickBg: string;
+    quickText: string;
+    quickBorder: string;
+    quickHover: string;
+    pillBg: string;
+    pillText: string;
+} {
+    switch (chatType) {
+        case "BUYER_DRIVER":
+            return {
+                solidBg: "bg-amber-600",
+                solidHover: "hover:bg-amber-700",
+                lightBg: "bg-amber-50",
+                lightText: "text-amber-700",
+                lightBorder: "border-amber-200",
+                lightHover: "hover:bg-amber-100",
+                headerGradient: "bg-gradient-to-r from-amber-600 to-amber-700",
+                inputFocus: "focus:ring-amber-500",
+                myBubble: "bg-amber-600 text-white",
+                myBubbleTime: "text-amber-100",
+                quickBg: "bg-amber-50",
+                quickText: "text-amber-700",
+                quickBorder: "border-amber-200",
+                quickHover: "hover:bg-amber-100",
+                pillBg: "bg-amber-100",
+                pillText: "text-amber-600",
+            };
+        case "DRIVER_MERCHANT":
+        case "DRIVER_SELLER":
+            // Canales driver↔contraparte: verde — distinto de buyer↔driver
+            return {
+                solidBg: "bg-emerald-600",
+                solidHover: "hover:bg-emerald-700",
+                lightBg: "bg-emerald-50",
+                lightText: "text-emerald-700",
+                lightBorder: "border-emerald-200",
+                lightHover: "hover:bg-emerald-100",
+                headerGradient: "bg-gradient-to-r from-emerald-600 to-emerald-700",
+                inputFocus: "focus:ring-emerald-500",
+                myBubble: "bg-emerald-600 text-white",
+                myBubbleTime: "text-emerald-100",
+                quickBg: "bg-emerald-50",
+                quickText: "text-emerald-700",
+                quickBorder: "border-emerald-200",
+                quickHover: "hover:bg-emerald-100",
+                pillBg: "bg-emerald-100",
+                pillText: "text-emerald-600",
+            };
+        case "BUYER_SELLER":
+            // Marketplace: violeta MOOVY
+            return {
+                solidBg: "bg-violet-600",
+                solidHover: "hover:bg-violet-700",
+                lightBg: "bg-violet-50",
+                lightText: "text-violet-700",
+                lightBorder: "border-violet-200",
+                lightHover: "hover:bg-violet-100",
+                headerGradient: "bg-gradient-to-r from-violet-600 to-violet-700",
+                inputFocus: "focus:ring-violet-500",
+                myBubble: "bg-violet-600 text-white",
+                myBubbleTime: "text-violet-100",
+                quickBg: "bg-violet-50",
+                quickText: "text-violet-700",
+                quickBorder: "border-violet-200",
+                quickHover: "hover:bg-violet-100",
+                pillBg: "bg-violet-100",
+                pillText: "text-violet-600",
+            };
+        case "BUYER_MERCHANT":
+        default:
+            return {
+                solidBg: "bg-[#e60012]",
+                solidHover: "hover:bg-red-700",
+                lightBg: "bg-blue-50",
+                lightText: "text-blue-700",
+                lightBorder: "border-blue-200",
+                lightHover: "hover:bg-blue-100",
+                headerGradient: "bg-gradient-to-r from-blue-600 to-blue-700",
+                inputFocus: "focus:ring-blue-500",
+                myBubble: "bg-blue-600 text-white",
+                myBubbleTime: "text-blue-200",
+                quickBg: "bg-blue-50",
+                quickText: "text-blue-700",
+                quickBorder: "border-blue-200",
+                quickHover: "hover:bg-blue-100",
+                pillBg: "bg-blue-100",
+                pillText: "text-blue-600",
+            };
+    }
+}
+
 export default function OrderChatPanel({
     orderId,
     orderNumber,
     chatType,
-    counterpartName = "Participante",
+    subOrderId,
+    counterpartName,
     userRole,
     compact = false,
     driverLocation,
@@ -49,9 +184,20 @@ export default function OrderChatPanel({
     const [loading, setLoading] = useState(false);
     const [showQuick, setShowQuick] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+    // Badge state (estado colapsado): cuántos mensajes sin leer tengo.
+    const [unreadCount, setUnreadCount] = useState(0);
+    // Guardamos el chatId aunque el panel esté cerrado — nos sirve para
+    // pollear `/existing` y para identificar eventos socket relevantes.
+    const [existingChatId, setExistingChatId] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const pollRef = useRef<NodeJS.Timeout>(null);
+    const unreadPollRef = useRef<NodeJS.Timeout>(null);
+    const socketRef = useRef<Socket | null>(null);
     const userId = (session?.user as any)?.id;
+
+    const palette = paletteFor(chatType);
+    const counterpart = counterpartName || counterpartLabel(chatType, userRole);
+    const roleLabel = counterpartLabel(chatType, userRole);
 
     const quickResponses: QuickResponse[] =
         userRole === "buyer" ? BUYER_QUICK_RESPONSES
@@ -59,31 +205,61 @@ export default function OrderChatPanel({
                 : userRole === "seller" ? SELLER_QUICK_RESPONSES
                     : DRIVER_QUICK_RESPONSES;
 
-    const roleLabel =
-        chatType === "BUYER_MERCHANT" ? (userRole === "buyer" ? "Comercio" : "Comprador")
-            : chatType === "BUYER_DRIVER" ? (userRole === "buyer" ? "Repartidor" : "Comprador")
-                : (userRole === "buyer" ? "Vendedor" : "Comprador");
+    // Auth token para abrir la conexión socket — reusamos el hook canónico
+    // que ya fetchea + cachea el JWT de socket.
+    const { token: socketToken } = useSocketAuth(!!session?.user);
 
-    // Initialize or load chat
+    // ─── Pre-fetch del chat existente (no crea nada) ─────────────────────
+    // Esto alimenta el badge de "mensaje sin leer" cuando el panel está
+    // cerrado. Se llama al montar y cada 15s (fallback por si el socket
+    // está caído o desconectado).
+    const checkExisting = useCallback(async () => {
+        if (!session?.user) return;
+        try {
+            const qs = new URLSearchParams({ orderId, chatType });
+            if (subOrderId) qs.set("subOrderId", subOrderId);
+            const res = await fetch(`/api/order-chat/existing?${qs.toString()}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.exists) {
+                setExistingChatId(data.chatId);
+                setUnreadCount(data.unreadCount || 0);
+            } else {
+                setExistingChatId(null);
+                setUnreadCount(0);
+            }
+        } catch (err) {
+            console.error("[OrderChatPanel] checkExisting failed:", err);
+        }
+    }, [session?.user, orderId, chatType, subOrderId]);
+
+    // Initialize or load chat — crea el chat si no existe, carga mensajes
     const initChat = useCallback(async () => {
         if (!session?.user) return;
         try {
+            const body: any = { orderId, chatType };
+            if (subOrderId) body.subOrderId = subOrderId;
             const res = await fetch("/api/order-chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId, chatType })
+                body: JSON.stringify(body)
             });
             if (res.ok) {
                 const data = await res.json();
                 setChat(data);
+                setExistingChatId(data.id);
                 setMessages(data.messages || []);
+                // El GET del endpoint [chatId] marca como leído — al abrir,
+                // reseteamos el badge de UI para no mostrar "nuevo" mientras
+                // el usuario ya está mirando.
+                setUnreadCount(0);
             }
         } catch (error) {
             console.error("Error initializing chat:", error);
         }
-    }, [session?.user, orderId, chatType]);
+    }, [session?.user, orderId, chatType, subOrderId]);
 
-    // Poll for new messages
+    // Poll for new messages — solo cuando el panel está abierto
     const loadMessages = useCallback(async () => {
         if (!chat?.id) return;
         try {
@@ -91,20 +267,35 @@ export default function OrderChatPanel({
             if (res.ok) {
                 const data = await res.json();
                 setMessages(data);
+                // Como el GET marca como leído del lado del backend, también
+                // reseteamos el contador local.
+                setUnreadCount(0);
             }
         } catch (error) {
             console.error("Error loading messages:", error);
         }
     }, [chat?.id]);
 
-    // Init on open
+    // Pre-fetch badge al montar + cada 15s cuando el panel está cerrado
+    useEffect(() => {
+        if (!session?.user) return;
+        checkExisting();
+        if (!isOpen) {
+            unreadPollRef.current = setInterval(checkExisting, 15000);
+            return () => {
+                if (unreadPollRef.current) clearInterval(unreadPollRef.current);
+            };
+        }
+    }, [session?.user, isOpen, checkExisting]);
+
+    // Init al abrir
     useEffect(() => {
         if (isOpen && !chat) {
             initChat();
         }
     }, [isOpen, chat, initChat]);
 
-    // Poll messages every 5s when open
+    // Poll messages cada 5s cuando el panel está abierto
     useEffect(() => {
         if (isOpen && chat?.id) {
             loadMessages();
@@ -114,6 +305,67 @@ export default function OrderChatPanel({
             };
         }
     }, [isOpen, chat?.id, loadMessages]);
+
+    // Socket real-time: escuchar `new_chat_message` en el room user:<userId>
+    // El socket-server auto-joinea a `user:<userId>` al autenticarse.
+    useEffect(() => {
+        if (!socketToken || !session?.user) return;
+
+        const envSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+        const isLocalHostEnv =
+            envSocketUrl.includes("localhost") || envSocketUrl.includes("127.0.0.1");
+        const socketUrl =
+            (isLocalHostEnv && typeof window !== "undefined" && !window.location.hostname.includes("localhost"))
+                ? `${window.location.protocol}//${window.location.hostname}:3001`
+                : envSocketUrl;
+
+        const socket = io(`${socketUrl}/logistica`, {
+            transports: ["websocket", "polling"],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 10000,
+            reconnectionAttempts: Infinity,
+            auth: { token: socketToken },
+        });
+        socketRef.current = socket;
+
+        const handleNewMessage = (payload: {
+            chatId: string;
+            orderId: string;
+            subOrderId?: string | null;
+            chatType: string;
+            senderId: string;
+            preview?: string;
+            timestamp?: string;
+        }) => {
+            // Filtrar: el evento debe ser para ESTE chat (por chatType + order
+            // + subOrder), y no debe ser un mensaje mío (los míos los pinto
+            // optimistic al enviarlos).
+            if (payload.orderId !== orderId) return;
+            if (payload.chatType !== chatType) return;
+            if (subOrderId && payload.subOrderId !== subOrderId) return;
+            if (!subOrderId && payload.subOrderId) return;
+            if (payload.senderId === userId) return;
+
+            if (isOpen && chat?.id) {
+                // Panel abierto: recargar mensajes ya para verlo al toque.
+                loadMessages();
+            } else {
+                // Panel cerrado: bumpear el badge y refrescar el chatId por
+                // si era el primer mensaje del chat.
+                setExistingChatId(payload.chatId);
+                setUnreadCount((prev) => prev + 1);
+            }
+        };
+
+        socket.on("new_chat_message", handleNewMessage);
+
+        return () => {
+            socket.off("new_chat_message", handleNewMessage);
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [socketToken, session?.user, orderId, chatType, subOrderId, userId, isOpen, chat?.id, loadMessages]);
 
     // Auto-scroll
     useEffect(() => {
@@ -149,45 +401,56 @@ export default function OrderChatPanel({
 
     if (!session?.user) return null;
 
-    // Collapsed state — just the button
+    // Collapsed state — solo el botón (con badge si hay mensajes sin leer)
     if (!isOpen) {
-        const isDriverChat = chatType === "BUYER_DRIVER";
+        const hasUnread = unreadCount > 0;
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all text-sm min-h-[44px] ${
+                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all text-sm min-h-[44px] ${
                     compact
-                        ? isDriverChat
-                            ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
-                            : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
-                        : isDriverChat
-                        ? "bg-amber-600 text-white hover:bg-amber-700 shadow-md hover:shadow-lg"
-                        : "bg-[#e60012] text-white hover:bg-red-700 shadow-md hover:shadow-lg"
+                        ? `${palette.lightBg} ${palette.lightText} ${palette.lightHover} border ${palette.lightBorder}`
+                        : `${palette.solidBg} text-white ${palette.solidHover} shadow-md hover:shadow-lg`
                 }`}
                 title={`Abrir chat con ${roleLabel.toLowerCase()}`}
+                aria-label={
+                    hasUnread
+                        ? `Abrir chat con ${roleLabel.toLowerCase()} — ${unreadCount} mensaje${unreadCount > 1 ? "s" : ""} sin leer`
+                        : `Abrir chat con ${roleLabel.toLowerCase()}`
+                }
             >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <span>Chatear con {roleLabel}</span>
+                {hasUnread && (
+                    <>
+                        {/* Badge contador — visible siempre que hay mensajes sin leer */}
+                        <span
+                            className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shadow-md ring-2 ring-white animate-pulse"
+                            aria-hidden="true"
+                        >
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                        {/* Dot halo para llamar la atención */}
+                        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 animate-ping opacity-75" aria-hidden="true" />
+                    </>
+                )}
             </button>
         );
     }
 
-    // Open state — full chat panel
+    // Open state — panel completo
     return (
         <div className={`bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden flex flex-col ${compact ? "h-80" : "h-96"}`}>
             {/* Header */}
-            <div className={`text-white px-4 py-3 flex items-center justify-between shrink-0 ${chatType === "BUYER_DRIVER"
-                ? "bg-gradient-to-r from-amber-600 to-amber-700"
-                : "bg-gradient-to-r from-blue-600 to-blue-700"
-                }`}>
-                <div className="flex-1">
-                    <p className="font-semibold text-sm">{counterpartName}</p>
-                    <p className="text-xs text-opacity-90">
+            <div className={`text-white px-4 py-3 flex items-center justify-between shrink-0 ${palette.headerGradient}`}>
+                <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{counterpart}</p>
+                    <p className="text-xs text-opacity-90 truncate">
                         Pedido #{orderNumber} — {roleLabel}
                     </p>
-                    {/* Delivery context for driver chats */}
+                    {/* Delivery context para chats de driver */}
                     {chatType === "BUYER_DRIVER" && driverLocation && (
                         <div className="text-xs text-opacity-75 mt-1 space-y-0.5">
                             {driverLocation.status === "approaching" && (
@@ -208,6 +471,7 @@ export default function OrderChatPanel({
                 <button
                     onClick={() => setIsOpen(false)}
                     className="text-white/80 hover:text-white text-lg shrink-0 ml-2"
+                    aria-label="Cerrar chat"
                 >
                     ✕
                 </button>
@@ -230,15 +494,15 @@ export default function OrderChatPanel({
                         <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                             <div
                                 className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${isMine
-                                    ? "bg-blue-600 text-white rounded-br-md"
+                                    ? `${palette.myBubble} rounded-br-md`
                                     : "bg-white text-gray-900 border border-gray-200 rounded-bl-md"
                                     }`}
                             >
                                 {!isMine && msg.sender?.name && (
-                                    <p className="text-xs font-semibold text-blue-600 mb-0.5">{msg.sender.name}</p>
+                                    <p className={`text-xs font-semibold ${palette.lightText} mb-0.5`}>{msg.sender.name}</p>
                                 )}
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
-                                <div className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? "text-blue-200" : "text-gray-400"}`}>
+                                <div className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? palette.myBubbleTime : "text-gray-400"}`}>
                                     <span>
                                         {new Date(msg.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                                     </span>
@@ -255,7 +519,7 @@ export default function OrderChatPanel({
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Responses — optimized for mobile and driver use */}
+            {/* Quick Responses */}
             {showQuick && (
                 <div className="border-t bg-white px-3 py-2 max-h-32 overflow-y-auto shrink-0">
                     <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
@@ -263,11 +527,7 @@ export default function OrderChatPanel({
                             <button
                                 key={qr.id}
                                 onClick={() => sendMessage(qr.message)}
-                                className={`text-xs py-2 px-2 rounded-lg transition-colors border font-medium whitespace-normal h-auto min-h-[44px] flex items-center justify-center ${
-                                    chatType === "BUYER_DRIVER"
-                                        ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                        : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                                }`}
+                                className={`text-xs py-2 px-2 rounded-lg transition-colors border font-medium whitespace-normal h-auto min-h-[44px] flex items-center justify-center ${palette.quickBg} ${palette.quickText} ${palette.quickBorder} ${palette.quickHover}`}
                                 title={qr.message}
                             >
                                 {qr.label}
@@ -277,19 +537,18 @@ export default function OrderChatPanel({
                 </div>
             )}
 
-            {/* Input — optimized for mobile with larger touch targets */}
+            {/* Input */}
             <form onSubmit={handleSubmit} className="border-t bg-white px-3 py-2 flex items-center gap-2 shrink-0">
                 <button
                     type="button"
                     onClick={() => setShowQuick(!showQuick)}
                     className={`p-2 rounded-lg transition-colors shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center ${
                         showQuick
-                            ? chatType === "BUYER_DRIVER"
-                                ? "bg-amber-100 text-amber-600"
-                                : "bg-blue-100 text-blue-600"
+                            ? `${palette.pillBg} ${palette.pillText}`
                             : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                     }`}
                     title="Respuestas rápidas"
+                    aria-label="Respuestas rápidas"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -300,21 +559,15 @@ export default function OrderChatPanel({
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Escribí tu mensaje..."
-                    className={`flex-1 px-3 py-2.5 border rounded-full text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
-                        chatType === "BUYER_DRIVER"
-                            ? "border-amber-200 focus:ring-amber-500"
-                            : "border-gray-200 focus:ring-blue-500"
-                    }`}
+                    className={`flex-1 px-3 py-2.5 border rounded-full text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-colors border-gray-200 ${palette.inputFocus}`}
+                    aria-label="Escribí tu mensaje"
                 />
                 <button
                     type="submit"
                     disabled={loading || !message.trim()}
-                    className={`text-white p-2 rounded-full hover:opacity-90 disabled:opacity-40 transition-colors shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center ${
-                        chatType === "BUYER_DRIVER"
-                            ? "bg-amber-600 hover:bg-amber-700"
-                            : "bg-blue-600 hover:bg-blue-700"
-                    }`}
+                    className={`text-white p-2 rounded-full hover:opacity-90 disabled:opacity-40 transition-colors shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center ${palette.solidBg} ${palette.solidHover}`}
                     title="Enviar"
+                    aria-label="Enviar mensaje"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
