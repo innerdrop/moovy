@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendMerchantRequestNotification } from "@/lib/email";
 import { encryptMerchantData } from "@/lib/fiscal-crypto";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { validateBankAccount } from "@/lib/bank-account";
 
 function generateSlug(name: string): string {
     return name
@@ -63,9 +64,16 @@ export async function POST(request: NextRequest) {
         if (!body.cuit || body.cuit.replace(/\D/g, "").length < 11) {
             return NextResponse.json({ error: "El CUIT es obligatorio y debe tener 11 dígitos" }, { status: 400 });
         }
-        if (!body.cbu || body.cbu.trim().length < 6) {
-            return NextResponse.json({ error: "El CBU o Alias bancario es obligatorio" }, { status: 400 });
+        // Validación canónica CBU (22 dígitos + checksum BCRA) o Alias (6-20 alfanum + chars).
+        // Autodetecta el tipo y devuelve mensaje humano si no valida.
+        const bankCheck = validateBankAccount(body.cbu);
+        if (!bankCheck.valid) {
+            return NextResponse.json(
+                { error: bankCheck.error || "CBU o Alias inválido" },
+                { status: 400 }
+            );
         }
+        body.cbu = bankCheck.normalized;
         if (!body.acceptedTerms) {
             return NextResponse.json(
                 { error: "Debés aceptar los Términos para Comercios" },

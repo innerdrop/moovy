@@ -476,6 +476,27 @@ model Merchant {
   constanciaAfipUrl         String?
   habilitacionMunicipalUrl  String?
   registroSanitarioUrl      String?
+  // Aprobación por documento (rama fix/onboarding-comercio-completo)
+  // PENDING | APPROVED | REJECTED. Default PENDING porque al registrar el doc
+  // aún no fue revisado por OPS. Cuando los 3 requeridos estan APPROVED,
+  // approveMerchantTransition corre automáticamente.
+  cuitStatus                      String    @default("PENDING")
+  cuitApprovedAt                  DateTime?
+  cuitRejectionReason             String?
+  bankAccountStatus               String    @default("PENDING")
+  bankAccountApprovedAt           DateTime?
+  bankAccountRejectionReason      String?
+  constanciaAfipStatus            String    @default("PENDING")
+  constanciaAfipApprovedAt        DateTime?
+  constanciaAfipRejectionReason   String?
+  habilitacionMunicipalStatus     String    @default("PENDING")
+  habilitacionMunicipalApprovedAt DateTime?
+  habilitacionMunicipalRejectionReason String?
+  // Registro sanitario sólo es requerido para rubros alimenticios. NOT_REQUIRED
+  // es un estado válido: la auto-activación lo cuenta como OK.
+  registroSanitarioStatus         String    @default("PENDING")
+  registroSanitarioApprovedAt     DateTime?
+  registroSanitarioRejectionReason String?
   acceptedTermsAt           DateTime?
   acceptedPrivacyAt         DateTime?
   category                  String?                   @default("Otro")
@@ -532,12 +553,37 @@ model Merchant {
   subOrders        SubOrder[]
   favorites        Favorite[]
   driverAvailabilitySubs DriverAvailabilitySubscription[]
+  documentChangeRequests MerchantDocumentChangeRequest[]
 
   @@index([isActive])
   @@index([ownerId])
   @@index([approvalStatus])
   @@index([loyaltyTier])
   @@index([isSuspended])
+}
+
+// Rama fix/onboarding-comercio-completo — una solicitud del merchant para
+// reemplazar un documento que ya fue APPROVED. Merchant no puede sobrescribir
+// un doc aprobado directamente; debe justificar el cambio y esperar que OPS
+// apruebe la solicitud. Append-only: cada request deja registro incluso tras
+// resolver (auditoría legal).
+model MerchantDocumentChangeRequest {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  // Campo que el merchant quiere cambiar. Valores permitidos:
+  // cuit | bankAccount | constanciaAfipUrl | habilitacionMunicipalUrl | registroSanitarioUrl
+  documentField   String
+  reason          String   // Por qué necesita cambiarlo (merchant-provided)
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  resolvedAt      DateTime?
+  resolvedBy      String?  // userId del admin que resolvió
+  resolutionNote  String?  // Comentario del admin al resolver
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([merchantId, status])
+  @@index([status, createdAt])
 }
 
 model MerchantLoyaltyConfig {

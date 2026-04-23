@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { decrypt } from "@/lib/encryption";
 
 /**
  * GET /api/admin/users-unified/[id]
@@ -94,6 +95,30 @@ export async function GET(
                         loyaltyTier: true,
                         loyaltyTierLocked: true,
                         category: true,
+                        // Documentos y datos fiscales — eran invisibles en OPS
+                        // antes de fix/onboarding-comercio-completo porque este
+                        // select los omitía, generando "Sin cargar" falso.
+                        cuit: true,
+                        bankAccount: true,
+                        constanciaAfipUrl: true,
+                        habilitacionMunicipalUrl: true,
+                        registroSanitarioUrl: true,
+                        // Estado de aprobación por documento (granular)
+                        cuitStatus: true,
+                        cuitApprovedAt: true,
+                        cuitRejectionReason: true,
+                        bankAccountStatus: true,
+                        bankAccountApprovedAt: true,
+                        bankAccountRejectionReason: true,
+                        constanciaAfipStatus: true,
+                        constanciaAfipApprovedAt: true,
+                        constanciaAfipRejectionReason: true,
+                        habilitacionMunicipalStatus: true,
+                        habilitacionMunicipalApprovedAt: true,
+                        habilitacionMunicipalRejectionReason: true,
+                        registroSanitarioStatus: true,
+                        registroSanitarioApprovedAt: true,
+                        registroSanitarioRejectionReason: true,
                         createdAt: true,
                         updatedAt: true,
                         _count: {
@@ -268,6 +293,33 @@ export async function GET(
             memberSince: user.createdAt,
         };
 
+        // Decrypt fiscal data for OPS display. `decrypt()` is safe para plaintext
+        // (devuelve el valor original si no está cifrado) — ver src/lib/encryption.ts.
+        const rawMerchant = user.ownedMerchants.length > 0 ? user.ownedMerchants[0] : null;
+        const merchant = rawMerchant
+            ? {
+                  ...rawMerchant,
+                  cuit: rawMerchant.cuit ? decrypt(rawMerchant.cuit) : null,
+                  bankAccount: rawMerchant.bankAccount ? decrypt(rawMerchant.bankAccount) : null,
+              }
+            : null;
+
+        const rawDriver = user.driver;
+        const driver = rawDriver
+            ? {
+                  ...rawDriver,
+                  cuit: rawDriver.cuit ? decrypt(rawDriver.cuit) : null,
+              }
+            : null;
+
+        const rawSeller = user.sellerProfile;
+        const seller = rawSeller
+            ? {
+                  ...rawSeller,
+                  cuit: rawSeller.cuit ? decrypt(rawSeller.cuit) : null,
+              }
+            : null;
+
         // Format response
         return NextResponse.json({
             id: user.id,
@@ -286,9 +338,9 @@ export async function GET(
             suspensionReason: user.suspensionReason,
             archivedAt: user.archivedAt,
             roles: user.roles,
-            merchant: user.ownedMerchants.length > 0 ? user.ownedMerchants[0] : null,
-            driver: user.driver,
-            seller: user.sellerProfile,
+            merchant,
+            driver,
+            seller,
             addresses: user.addresses,
             recentOrders: user.orders,
             pointsTransactions: user.pointsTransactions,
