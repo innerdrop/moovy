@@ -8,6 +8,7 @@ import { encryptMerchantData } from "@/lib/fiscal-crypto";
 import { logAudit } from "@/lib/audit";
 import { recordConsent } from "@/lib/consent";
 import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
+import { validateBankAccount } from "@/lib/bank-account";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +44,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate CBU/Alias (required, min 6 chars)
-        if (!data.cbu || data.cbu.trim().length < 6) {
+        // Validate CBU/Alias con lib canónica (autodetecta tipo, corre checksum BCRA
+        // para CBU y charset + rango para alias). Defense in depth: aunque el form ya
+        // valida, server-side nunca confía en el cliente.
+        const bankCheck = validateBankAccount(data.cbu);
+        if (!bankCheck.valid) {
             return NextResponse.json(
-                { error: "El CBU o Alias bancario es obligatorio" },
+                { error: bankCheck.error || "CBU o Alias inválido" },
                 { status: 400 }
             );
         }
+        // Usamos el valor normalizado (sin espacios/guiones en CBU, trim en alias).
+        data.cbu = bankCheck.normalized;
 
         // Validate legal acceptance
         if (!data.acceptedTerms || !data.acceptedPrivacy) {

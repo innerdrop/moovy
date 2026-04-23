@@ -65,6 +65,8 @@ interface UserData {
     };
 }
 
+type DocStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 interface MerchantData {
     id: string;
     name: string;
@@ -92,14 +94,44 @@ interface MerchantData {
     minOrderAmount: number;
     allowPickup: boolean;
     cuit: string | null;
+    bankAccount: string | null;
     constanciaAfipUrl: string | null;
     habilitacionMunicipalUrl: string | null;
     registroSanitarioUrl: string | null;
+    // Per-doc approval status (granular, fix/onboarding-comercio-completo)
+    cuitStatus: DocStatus;
+    cuitApprovedAt: string | null;
+    cuitRejectionReason: string | null;
+    bankAccountStatus: DocStatus;
+    bankAccountApprovedAt: string | null;
+    bankAccountRejectionReason: string | null;
+    constanciaAfipStatus: DocStatus;
+    constanciaAfipApprovedAt: string | null;
+    constanciaAfipRejectionReason: string | null;
+    habilitacionMunicipalStatus: DocStatus;
+    habilitacionMunicipalApprovedAt: string | null;
+    habilitacionMunicipalRejectionReason: string | null;
+    registroSanitarioStatus: DocStatus;
+    registroSanitarioApprovedAt: string | null;
+    registroSanitarioRejectionReason: string | null;
     approvedAt: string | null;
     rejectionReason: string | null;
     createdAt: string;
     updatedAt: string;
     _count: { orders: number; products: number };
+}
+
+interface ChangeRequest {
+    id: string;
+    documentField: string;
+    reason: string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    resolvedAt: string | null;
+    resolvedBy: string | null;
+    resolvedByName: string | null;
+    resolutionNote: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 interface DriverData {
@@ -195,6 +227,32 @@ const statusLabels: Record<string, { label: string; color: string }> = {
     REJECTED: { label: "Rechazado", color: "bg-red-100 text-red-800" },
 };
 
+// Mirror del FOOD_BUSINESS_TYPES del lib server. Cliente-side para decidir si
+// mostrar el card de Registro Sanitario como requerido.
+const FOOD_CATEGORIES_CLIENT = new Set([
+    "Restaurante",
+    "Pizzería",
+    "Hamburguesería",
+    "Parrilla",
+    "Cafetería",
+    "Heladería",
+    "Panadería/Pastelería",
+    "Sushi",
+    "Comida Saludable",
+    "Rotisería",
+    "Bebidas",
+    "Vinoteca/Licorería",
+]);
+
+// Labels human-readable por documentField (para toasts y headers).
+const DOC_LABELS: Record<string, string> = {
+    cuit: "CUIT",
+    bankAccount: "CBU/Alias",
+    constanciaAfipUrl: "Constancia AFIP",
+    habilitacionMunicipalUrl: "Habilitación Municipal",
+    registroSanitarioUrl: "Registro Sanitario",
+};
+
 const loyaltyTierColors: Record<string, string> = {
     BRONCE: "bg-amber-100 text-amber-800",
     PLATA: "bg-slate-100 text-slate-800",
@@ -244,6 +302,12 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const [expandedDriver, setExpandedDriver] = useState(true);
     const [expandedSeller, setExpandedSeller] = useState(true);
 
+    // Change requests del merchant — se cargan en paralelo con el user detail.
+    // Append-only (pending + histórico), se refresca junto con fetchUser.
+    const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
+    // Doc que está siendo procesado (para deshabilitar solo ese card y no toda la sección).
+    const [docProcessing, setDocProcessing] = useState<string | null>(null);
+
     useEffect(() => {
         fetchUser();
     }, [userId]);
@@ -254,6 +318,10 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             if (res.ok) {
                 const data = await res.json();
                 setUser(data);
+                // Si el usuario tiene merchant, levantamos las change requests en paralelo.
+                if (data.merchant?.id) {
+                    fetchChangeRequests(data.merchant.id);
+                }
             } else if (res.status === 404) {
                 toast.error("Usuario no encontrado");
                 router.push("/ops/usuarios");
@@ -265,6 +333,160 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             toast.error("Error de conexión");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchChangeRequests = async (merchantId: string) => {
+        try {
+            const res = await fetch(`/api/admin/merchants/${merchantId}/change-requests`);
+            if (res.ok) {
+                const data = await res.json();
+                setChangeRequests(data.requests || []);
+            }
+        } catch (error) {
+            console.error("Error fetching change requests:", error);
+        }
+    };
+
+    const handleApproveDocument = async (field: string) => {
+        if (!user?.merchant) return;
+        const ok = await confirm({
+            title: "Aprobar documento",
+            message: `¿Confirmar la aprobación de este documento?\n\nSi es el último pendiente, el comercio se activará automáticamente.`,
+            confirmLabel: "Aprobar",
+            variant: "default",
+        });
+        if (!ok) return;
+
+        setDocProcessing(field);
+        try {
+            const res = await fetch(
+                `/api/admin/merchants/${user.merchant.id}/documents/approve`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ field }),
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                if (data.merchantAutoActivated) {
+                    toast.success(`✓ ${data.label || "Documento"} aprobado. ¡Comercio activado!`);
+                } else {
+                    toast.success(`${data.label || "Documento"} aprobado`);
+                }
+                fetchUser();
+            } else {
+                toast.error(data.error || "Error al aprobar el documento");
+            }
+        } catch (error) {
+            console.error("Error approving document:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setDocProcessing(null);
+        }
+    };
+
+    const handleRejectDocument = async (field: string, label: string) => {
+        if (!user?.merchant) return;
+        const reason = window.prompt(`Motivo de rechazo para ${label} (obligatorio, mín. 3 caracteres):`);
+        if (!reason || reason.trim().length < 3) {
+            toast.error("Debés indicar un motivo de al menos 3 caracteres");
+            return;
+        }
+        const ok = await confirm({
+            title: `Rechazar ${label}`,
+            message: `¿Confirmar el rechazo?\n\nMotivo: ${reason.trim()}\n\nEl comercio recibirá un email con el motivo y podrá re-subir el documento.`,
+            confirmLabel: "Rechazar",
+            variant: "danger",
+        });
+        if (!ok) return;
+
+        setDocProcessing(field);
+        try {
+            const res = await fetch(
+                `/api/admin/merchants/${user.merchant.id}/documents/reject`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ field, reason: reason.trim() }),
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success(`${label} rechazado. Se notificó al comercio.`);
+                fetchUser();
+            } else {
+                toast.error(data.error || "Error al rechazar el documento");
+            }
+        } catch (error) {
+            console.error("Error rejecting document:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setDocProcessing(null);
+        }
+    };
+
+    const handleResolveChangeRequest = async (
+        requestId: string,
+        status: "APPROVED" | "REJECTED",
+        label: string
+    ) => {
+        if (!user?.merchant) return;
+        let note = "";
+        if (status === "REJECTED") {
+            const input = window.prompt(
+                `Motivo para rechazar la solicitud de cambio (${label}) (obligatorio, mín. 3 caracteres):`
+            );
+            if (!input || input.trim().length < 3) {
+                toast.error("Debés indicar un motivo de al menos 3 caracteres");
+                return;
+            }
+            note = input.trim();
+        } else {
+            const input = window.prompt(
+                `Comentario opcional para el comercio sobre por qué se autoriza el cambio (dejá vacío para ninguno):`
+            );
+            note = input ? input.trim() : "";
+        }
+
+        const ok = await confirm({
+            title: status === "APPROVED" ? "Autorizar cambio" : "Rechazar solicitud",
+            message:
+                status === "APPROVED"
+                    ? `¿Autorizar al comercio a reemplazar ${label}?\n\nEl documento volverá a estado PENDIENTE hasta que suba uno nuevo.`
+                    : `¿Confirmar el rechazo de la solicitud?\n\nMotivo: ${note}`,
+            confirmLabel: status === "APPROVED" ? "Autorizar" : "Rechazar",
+            variant: status === "APPROVED" ? "default" : "danger",
+        });
+        if (!ok) return;
+
+        setProcessing(true);
+        try {
+            const res = await fetch(
+                `/api/admin/merchants/${user.merchant.id}/change-requests/${requestId}/resolve`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status, note }),
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success(
+                    status === "APPROVED"
+                        ? `Solicitud autorizada. ${data.documentLabel || label} volvió a PENDIENTE.`
+                        : "Solicitud rechazada."
+                );
+                fetchUser();
+            } else {
+                toast.error(data.error || "Error al resolver la solicitud");
+            }
+        } catch (error) {
+            console.error("Error resolving change request:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -774,77 +996,98 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             </div>
 
-                            {/* Documents — siempre visible, muestra estado de cada doc */}
+                            {/* Documentación granular — aprobación doc por doc.
+                                Reemplaza el "Ver / Sin cargar" simple por un card
+                                por cada documento con status chip + botones
+                                Aprobar/Rechazar. El merchant se auto-activa
+                                cuando todos los docs requeridos están APPROVED. */}
                             <div className="border-t border-slate-200 pt-4">
-                                <p className="text-xs font-bold text-gray-500 uppercase mb-4">
-                                    Documentación
-                                </p>
-                                <div className="space-y-3">
-                                    {/* CUIT */}
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">CUIT</span>
-                                        {user.merchant.cuit ? (
-                                            <span className="text-gray-900 font-mono font-bold">{user.merchant.cuit}</span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
-                                                <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-xs font-bold text-gray-500 uppercase">
+                                        Documentación
+                                    </p>
+                                    {(() => {
+                                        const isFood = FOOD_CATEGORIES_CLIENT.has(
+                                            user.merchant.category || ""
+                                        );
+                                        const required: Array<{
+                                            status: DocStatus;
+                                            label: string;
+                                        }> = [
+                                            { status: user.merchant.cuitStatus, label: "CUIT" },
+                                            {
+                                                status: user.merchant.bankAccountStatus,
+                                                label: "CBU/Alias",
+                                            },
+                                            {
+                                                status: user.merchant.constanciaAfipStatus,
+                                                label: "Constancia AFIP",
+                                            },
+                                            {
+                                                status: user.merchant.habilitacionMunicipalStatus,
+                                                label: "Habilitación Municipal",
+                                            },
+                                        ];
+                                        if (isFood) {
+                                            required.push({
+                                                status: user.merchant.registroSanitarioStatus,
+                                                label: "Registro Sanitario",
+                                            });
+                                        }
+                                        const approved = required.filter(
+                                            (d) => d.status === "APPROVED"
+                                        ).length;
+                                        const allApproved = approved === required.length;
+                                        return (
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                    allApproved
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-amber-100 text-amber-700"
+                                                }`}
+                                            >
+                                                {approved}/{required.length} aprobados
                                             </span>
-                                        )}
-                                    </div>
-                                    {/* Constancia AFIP */}
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Constancia AFIP</span>
-                                        {user.merchant.constanciaAfipUrl ? (
-                                            <a href={user.merchant.constanciaAfipUrl} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
-                                                <Eye className="w-3 h-3" /> Ver documento
-                                            </a>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
-                                                <AlertTriangle className="w-3 h-3" /> Sin cargar
-                                            </span>
-                                        )}
-                                    </div>
-                                    {/* Habilitación Municipal */}
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Habilitación Municipal</span>
-                                        {user.merchant.habilitacionMunicipalUrl ? (
-                                            <a href={user.merchant.habilitacionMunicipalUrl} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
-                                                <Eye className="w-3 h-3" /> Ver documento
-                                            </a>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
-                                                <AlertTriangle className="w-3 h-3" /> Sin cargar
-                                            </span>
-                                        )}
-                                    </div>
-                                    {/* Registro Sanitario */}
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Registro Sanitario</span>
-                                        {user.merchant.registroSanitarioUrl ? (
-                                            <a href={user.merchant.registroSanitarioUrl} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
-                                                <Eye className="w-3 h-3" /> Ver documento
-                                            </a>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 text-gray-400 text-xs font-medium">
-                                                <Clock className="w-3 h-3" /> No requerido
-                                            </span>
-                                        )}
-                                    </div>
+                                        );
+                                    })()}
                                 </div>
-                                {/* Resumen documentación */}
-                                {(() => {
-                                    const required = ["cuit", "constanciaAfipUrl", "habilitacionMunicipalUrl"] as const;
-                                    const submitted = required.filter(k => user.merchant![k]);
-                                    const total = required.length;
-                                    const allDone = submitted.length === total;
-                                    return (
-                                        <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium ${allDone ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
-                                            {allDone
-                                                ? `Documentación completa (${total}/${total})`
-                                                : `Documentación incompleta (${submitted.length}/${total} obligatorios)`}
-                                        </div>
-                                    );
-                                })()}
+
+                                <MerchantDocumentsAdmin
+                                    merchant={user.merchant}
+                                    docProcessing={docProcessing}
+                                    onApprove={handleApproveDocument}
+                                    onReject={handleRejectDocument}
+                                />
+                            </div>
+
+                            {/* Solicitudes de cambio de documentos (post-APPROVED).
+                                El merchant pidió reemplazar algo que ya estaba
+                                aprobado y OPS tiene que autorizarlo. */}
+                            <div className="border-t border-slate-200 pt-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-xs font-bold text-gray-500 uppercase">
+                                        Solicitudes de cambio
+                                    </p>
+                                    {changeRequests.filter((r) => r.status === "PENDING").length >
+                                        0 && (
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                                            {
+                                                changeRequests.filter((r) => r.status === "PENDING")
+                                                    .length
+                                            }{" "}
+                                            pendiente
+                                            {changeRequests.filter((r) => r.status === "PENDING")
+                                                .length === 1
+                                                ? ""
+                                                : "s"}
+                                        </span>
+                                    )}
+                                </div>
+                                <ChangeRequestsAdmin
+                                    requests={changeRequests}
+                                    processing={processing}
+                                    onResolve={handleResolveChangeRequest}
+                                />
                             </div>
 
                             {/* Stats */}
@@ -1480,6 +1723,378 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-6">
                 <UserActivityLog userId={user.id} />
             </div>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// Sub-componentes de la sección Documentación
+// =====================================================================
+
+interface MerchantDocumentsAdminProps {
+    merchant: MerchantData;
+    docProcessing: string | null;
+    onApprove: (field: string) => void;
+    onReject: (field: string, label: string) => void;
+}
+
+/**
+ * Lista de cards, uno por documento, con status chip + rejection reason
+ * (si REJECTED) + botones Aprobar/Rechazar. La lista incluye el Registro
+ * Sanitario sólo para rubros alimenticios.
+ */
+function MerchantDocumentsAdmin({
+    merchant,
+    docProcessing,
+    onApprove,
+    onReject,
+}: MerchantDocumentsAdminProps) {
+    const isFood = FOOD_CATEGORIES_CLIENT.has(merchant.category || "");
+
+    const docs: Array<{
+        field: string;
+        label: string;
+        value: string | null;
+        status: DocStatus;
+        approvedAt: string | null;
+        rejectionReason: string | null;
+        isUrl: boolean; // true si `value` es URL para abrir; false si es texto a mostrar
+        required: boolean;
+    }> = [
+        {
+            field: "cuit",
+            label: "CUIT",
+            value: merchant.cuit,
+            status: merchant.cuitStatus,
+            approvedAt: merchant.cuitApprovedAt,
+            rejectionReason: merchant.cuitRejectionReason,
+            isUrl: false,
+            required: true,
+        },
+        {
+            field: "bankAccount",
+            label: "CBU / Alias bancario",
+            value: merchant.bankAccount,
+            status: merchant.bankAccountStatus,
+            approvedAt: merchant.bankAccountApprovedAt,
+            rejectionReason: merchant.bankAccountRejectionReason,
+            isUrl: false,
+            required: true,
+        },
+        {
+            field: "constanciaAfipUrl",
+            label: "Constancia AFIP",
+            value: merchant.constanciaAfipUrl,
+            status: merchant.constanciaAfipStatus,
+            approvedAt: merchant.constanciaAfipApprovedAt,
+            rejectionReason: merchant.constanciaAfipRejectionReason,
+            isUrl: true,
+            required: true,
+        },
+        {
+            field: "habilitacionMunicipalUrl",
+            label: "Habilitación Municipal",
+            value: merchant.habilitacionMunicipalUrl,
+            status: merchant.habilitacionMunicipalStatus,
+            approvedAt: merchant.habilitacionMunicipalApprovedAt,
+            rejectionReason: merchant.habilitacionMunicipalRejectionReason,
+            isUrl: true,
+            required: true,
+        },
+        {
+            field: "registroSanitarioUrl",
+            label: "Registro Sanitario / Bromatológico",
+            value: merchant.registroSanitarioUrl,
+            status: merchant.registroSanitarioStatus,
+            approvedAt: merchant.registroSanitarioApprovedAt,
+            rejectionReason: merchant.registroSanitarioRejectionReason,
+            isUrl: true,
+            required: isFood,
+        },
+    ];
+
+    return (
+        <div className="space-y-3">
+            {docs.map((doc) => {
+                const isThisProcessing = docProcessing === doc.field;
+                const hasValue = doc.value !== null && doc.value !== "";
+                const statusStyle =
+                    statusLabels[doc.status] || {
+                        label: doc.status,
+                        color: "bg-gray-100 text-gray-800",
+                    };
+
+                // Registro sanitario en rubros no-food: se muestra como "No
+                // requerido" si no tiene valor, pero si el merchant lo cargó
+                // por su cuenta se valida igual (es opcional pero válido).
+                const optionalAndEmpty = !doc.required && !hasValue;
+
+                return (
+                    <div
+                        key={doc.field}
+                        className="border border-slate-200 rounded-xl p-4 bg-white hover:border-slate-300 transition"
+                    >
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-2">
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {doc.label}
+                                    </p>
+                                    {!doc.required && (
+                                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">
+                                            Opcional
+                                        </span>
+                                    )}
+                                    {optionalAndEmpty ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                                            <Clock className="w-3 h-3" /> No requerido
+                                        </span>
+                                    ) : hasValue ? (
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-xs font-bold ${statusStyle.color}`}
+                                        >
+                                            {statusStyle.label}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700">
+                                            <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Valor */}
+                                {hasValue && (
+                                    <div className="text-sm">
+                                        {doc.isUrl ? (
+                                            <a
+                                                href={doc.value!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium"
+                                            >
+                                                <Eye className="w-3 h-3" /> Ver documento
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-900 font-mono text-xs break-all">
+                                                {doc.value}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Motivo de rechazo */}
+                                {doc.status === "REJECTED" && doc.rejectionReason && (
+                                    <div className="mt-2 px-3 py-2 rounded-lg bg-red-50 border border-red-100">
+                                        <p className="text-[10px] font-bold text-red-600 uppercase tracking-wide mb-0.5">
+                                            Motivo de rechazo
+                                        </p>
+                                        <p className="text-xs text-red-700">
+                                            {doc.rejectionReason}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Fecha de aprobación */}
+                                {doc.status === "APPROVED" && doc.approvedAt && (
+                                    <p className="text-[10px] text-green-700 mt-2 font-medium">
+                                        Aprobado el{" "}
+                                        {new Date(doc.approvedAt).toLocaleDateString(
+                                            "es-AR",
+                                            {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                            }
+                                        )}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Botones Aprobar/Rechazar — sólo si hay valor y no
+                                está ya aprobado. Rechazo permitido aunque ya
+                                esté rechazado, para cambiar el motivo. */}
+                            {hasValue && (
+                                <div className="flex gap-2 flex-shrink-0">
+                                    {doc.status !== "APPROVED" && (
+                                        <button
+                                            onClick={() => onApprove(doc.field)}
+                                            disabled={isThisProcessing}
+                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                        >
+                                            {isThisProcessing ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <CheckCircle className="w-3 h-3" />
+                                            )}
+                                            Aprobar
+                                        </button>
+                                    )}
+                                    {doc.status !== "REJECTED" && (
+                                        <button
+                                            onClick={() => onReject(doc.field, doc.label)}
+                                            disabled={isThisProcessing}
+                                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                        >
+                                            {isThisProcessing ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <XCircle className="w-3 h-3" />
+                                            )}
+                                            Rechazar
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+interface ChangeRequestsAdminProps {
+    requests: ChangeRequest[];
+    processing: boolean;
+    onResolve: (requestId: string, status: "APPROVED" | "REJECTED", label: string) => void;
+}
+
+/**
+ * Sección que lista solicitudes de cambio de documento. Primero las PENDING
+ * (accionables con Autorizar/Rechazar), después el histórico resuelto.
+ */
+function ChangeRequestsAdmin({
+    requests,
+    processing,
+    onResolve,
+}: ChangeRequestsAdminProps) {
+    if (requests.length === 0) {
+        return (
+            <div className="text-sm text-gray-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                Sin solicitudes de cambio.
+            </div>
+        );
+    }
+
+    const pending = requests.filter((r) => r.status === "PENDING");
+    const resolved = requests.filter((r) => r.status !== "PENDING");
+
+    return (
+        <div className="space-y-3">
+            {pending.map((req) => {
+                const label = DOC_LABELS[req.documentField] || req.documentField;
+                return (
+                    <div
+                        key={req.id}
+                        className="border border-amber-200 bg-amber-50 rounded-xl p-4"
+                    >
+                        <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-bold text-amber-900">
+                                        {label}
+                                    </p>
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-200 text-amber-900">
+                                        PENDIENTE
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-amber-700 mt-1">
+                                    Solicitado el{" "}
+                                    {new Date(req.createdAt).toLocaleDateString("es-AR", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                    })}
+                                </p>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                                <button
+                                    onClick={() => onResolve(req.id, "APPROVED", label)}
+                                    disabled={processing}
+                                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                >
+                                    <CheckCircle className="w-3 h-3" /> Autorizar
+                                </button>
+                                <button
+                                    onClick={() => onResolve(req.id, "REJECTED", label)}
+                                    disabled={processing}
+                                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                >
+                                    <XCircle className="w-3 h-3" /> Rechazar
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg px-3 py-2 border border-amber-200">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-0.5">
+                                Motivo del comercio
+                            </p>
+                            <p className="text-xs text-gray-800">{req.reason}</p>
+                        </div>
+                    </div>
+                );
+            })}
+
+            {resolved.length > 0 && (
+                <details className="group">
+                    <summary className="cursor-pointer text-xs font-bold text-gray-600 hover:text-gray-900 py-1 select-none inline-flex items-center gap-1">
+                        <ChevronDown className="w-3 h-3 group-open:hidden" />
+                        <ChevronUp className="w-3 h-3 hidden group-open:inline-block" />
+                        Histórico ({resolved.length})
+                    </summary>
+                    <div className="space-y-2 mt-2">
+                        {resolved.map((req) => {
+                            const label = DOC_LABELS[req.documentField] || req.documentField;
+                            const isApproved = req.status === "APPROVED";
+                            return (
+                                <div
+                                    key={req.id}
+                                    className={`border rounded-xl p-3 ${
+                                        isApproved
+                                            ? "bg-green-50 border-green-200"
+                                            : "bg-slate-50 border-slate-200"
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <p className="text-xs font-bold text-gray-900">
+                                            {label}
+                                        </p>
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                                isApproved
+                                                    ? "bg-green-200 text-green-900"
+                                                    : "bg-red-200 text-red-900"
+                                            }`}
+                                        >
+                                            {isApproved ? "AUTORIZADA" : "RECHAZADA"}
+                                        </span>
+                                        {req.resolvedAt && (
+                                            <span className="text-[10px] text-gray-500">
+                                                {new Date(req.resolvedAt).toLocaleDateString(
+                                                    "es-AR"
+                                                )}
+                                            </span>
+                                        )}
+                                        {req.resolvedByName && (
+                                            <span className="text-[10px] text-gray-500">
+                                                por {req.resolvedByName}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-gray-700 mb-1">
+                                        <span className="font-bold">Motivo:</span> {req.reason}
+                                    </p>
+                                    {req.resolutionNote && (
+                                        <p className="text-[11px] text-gray-700">
+                                            <span className="font-bold">Nota OPS:</span>{" "}
+                                            {req.resolutionNote}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </details>
             )}
         </div>
     );

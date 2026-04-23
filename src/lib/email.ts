@@ -443,3 +443,170 @@ export async function sendDriverRejectionEmail(email: string, firstName: string,
 
     return sendEmail({ to: email, subject: 'Solicitud de repartidor \u2014 MOOVY', html, tag: 'driver_rejected' });
 }
+
+// ─── Fix/onboarding-comercio-completo ────────────────────────────────────────
+// Emails asociados a aprobación granular por documento + solicitudes de cambio.
+
+/**
+ * Documento específico APROBADO por OPS. Si además esto gatilló la activación
+ * del comercio, `merchantActivated=true` agrega mensaje especial.
+ */
+export async function sendMerchantDocumentApprovedEmail(
+    email: string,
+    businessName: string,
+    documentLabel: string,
+    merchantActivated: boolean
+) {
+    const headline = merchantActivated
+        ? `<strong>${businessName}</strong> ya est&aacute; activo en MOOVY. Tu <strong>${documentLabel}</strong> fue el &uacute;ltimo documento aprobado.`
+        : `Aprobamos tu <strong>${documentLabel}</strong> en MOOVY. A medida que vayamos revisando el resto de la documentaci&oacute;n te vamos a ir avisando.`;
+    const subject = merchantActivated
+        ? `Tu comercio ${businessName} fue activado \u2014 MOOVY`
+        : `Documento aprobado: ${documentLabel} \u2014 MOOVY`;
+    const ctaUrl = merchantActivated ? `${baseUrl}/comercios` : `${baseUrl}/comercios/mi-comercio`;
+    const ctaLabel = merchantActivated ? 'Entrar al panel' : 'Ver estado de mi comercio';
+    const ctaColor = merchantActivated ? 'green' : 'blue';
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Documento aprobado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            ${headline}
+        </p>
+        ${merchantActivated ? emailAlertBox('Los clientes ya pueden encontrarte en MOOVY. Revis&aacute; que tu horario de atenci&oacute;n y productos est&eacute;n al d&iacute;a.', 'success') : ''}
+        ${emailButton(ctaLabel, ctaUrl, ctaColor)}
+    `);
+
+    return sendEmail({ to: email, subject, html, tag: 'merchant_doc_approved' });
+}
+
+/**
+ * Documento específico RECHAZADO por OPS. Incluye el motivo para que el merchant
+ * pueda subir una corrección.
+ */
+export async function sendMerchantDocumentRejectedEmail(
+    email: string,
+    businessName: string,
+    documentLabel: string,
+    reason: string
+) {
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Documento rechazado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Revisamos <strong>${documentLabel}</strong> de <strong>${businessName}</strong> y no pudimos aprobarlo.
+        </p>
+        ${emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Entr&aacute; al panel, carg&aacute; un documento corregido y lo volvemos a revisar. No hace falta que hagas nada m&aacute;s.
+        </p>
+        ${emailButton('Subir nueva versi\u00f3n', `${baseUrl}/comercios/mi-comercio`, 'red')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `${documentLabel} rechazado \u2014 MOOVY`,
+        html,
+        tag: 'merchant_doc_rejected',
+    });
+}
+
+/**
+ * Notificación a OPS — un merchant pidió permiso para modificar un documento
+ * aprobado. OPS tiene que decidir si autoriza el cambio (bajando el doc a
+ * PENDING para que pueda subir uno nuevo).
+ */
+export async function sendAdminChangeRequestEmail(
+    businessName: string,
+    ownerEmail: string | null,
+    documentLabel: string,
+    reason: string,
+    merchantId: string
+) {
+    const alertEmails = await getAlertEmails();
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud de cambio de documento</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            Un comercio quiere modificar un documento ya aprobado.
+        </p>
+        ${emailInfoBox(`
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Comercio:</strong> ${businessName}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email del due&ntilde;o:</strong> ${ownerEmail || "No especificado"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Documento:</strong> ${documentLabel}</p>
+        `)}
+        ${emailAlertBox(`<strong>Motivo del comercio:</strong> ${reason}`, 'info')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Evalu&aacute; la solicitud desde el panel de operaciones. Si la aprob&aacute;s, el documento vuelve a pendiente y el merchant puede subir uno nuevo.
+        </p>
+        ${emailButton('Revisar solicitud', `${baseUrl}/ops/usuarios?merchant=${merchantId}`, 'blue')}
+    `);
+
+    const results = await Promise.all(
+        alertEmails.map((to) =>
+            sendEmail({
+                to,
+                subject: `Solicitud de cambio: ${documentLabel} \u2014 ${businessName}`,
+                html,
+                tag: 'merchant_change_request_admin',
+            })
+        )
+    );
+    return results.some((r) => r);
+}
+
+/**
+ * Solicitud de cambio APROBADA — email al merchant autorizándolo a subir
+ * un archivo nuevo. El doc en DB ya quedó PENDING, así que el botón lleva
+ * directo al panel.
+ */
+export async function sendMerchantChangeRequestApprovedEmail(
+    email: string,
+    businessName: string,
+    documentLabel: string,
+    note: string | null
+) {
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Autorizamos el cambio de <strong>${documentLabel}</strong> de <strong>${businessName}</strong>. Ya pod&eacute;s subir un documento nuevo desde el panel.
+        </p>
+        ${note ? emailAlertBox(`<strong>Comentario de OPS:</strong> ${note}`, 'info') : ''}
+        ${emailButton('Subir nuevo documento', `${baseUrl}/comercios/mi-comercio`, 'green')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `Solicitud aprobada: ${documentLabel} \u2014 MOOVY`,
+        html,
+        tag: 'merchant_change_request_approved',
+    });
+}
+
+/**
+ * Solicitud de cambio RECHAZADA — OPS no autoriza la modificación. El doc
+ * permanece APPROVED. Incluye el comentario para que el merchant entienda
+ * por qué no se autoriza.
+ */
+export async function sendMerchantChangeRequestRejectedEmail(
+    email: string,
+    businessName: string,
+    documentLabel: string,
+    note: string
+) {
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no autorizada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Revisamos tu solicitud de cambio de <strong>${documentLabel}</strong> en <strong>${businessName}</strong> y no la pudimos autorizar.
+        </p>
+        ${emailAlertBox(`<strong>Motivo:</strong> ${note}`, 'warning')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Si necesit&aacute;s aclararlo, contactanos y lo resolvemos juntos.
+        </p>
+        ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `Solicitud no autorizada: ${documentLabel} \u2014 MOOVY`,
+        html,
+        tag: 'merchant_change_request_rejected',
+    });
+}

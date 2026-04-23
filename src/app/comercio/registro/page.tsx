@@ -30,6 +30,7 @@ import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import ImageUpload from "@/components/ui/ImageUpload";
 import DocumentUpload from "@/components/ui/DocumentUpload";
 import { toast } from "@/store/toast";
+import { detectBankAccountType, validateBankAccount } from "@/lib/bank-account";
 
 // Tipos de negocio que requieren registro sanitario (alimentos)
 const FOOD_BUSINESS_TYPES = [
@@ -156,6 +157,12 @@ function ComercioRegistroContent() {
         setFormData({ ...formData, cuit: formatCuit(e.target.value) });
     };
 
+    // Live detection del tipo de cuenta (CBU/ALIAS/null) para mostrar badge
+    // visual y dar feedback al user mientras tipea. La validación dura
+    // (checksum BCRA para CBU + charset para alias) corre en handleFinalSubmit
+    // y también server-side en /api/auth/register/merchant + activate-merchant.
+    const bankAccountType = detectBankAccountType(formData.cbu);
+
     const focusField = useCallback((name: string) => {
         const el = document.querySelector<HTMLInputElement>(`[name="${name}"]`);
         if (el) {
@@ -174,9 +181,11 @@ function ComercioRegistroContent() {
             return;
         }
 
-        // Validar CBU/Alias obligatorio
-        if (!formData.cbu || formData.cbu.trim().length < 6) {
-            setError("El CBU o Alias bancario es obligatorio");
+        // Validación canónica CBU (22 dígitos + checksum BCRA) o Alias (6-20 alfanum).
+        // La misma lib corre server-side como defense in depth.
+        const bankCheck = validateBankAccount(formData.cbu);
+        if (!bankCheck.valid) {
+            setError(bankCheck.error || "El CBU o Alias bancario es inválido");
             focusField("cbu");
             return;
         }
@@ -189,9 +198,12 @@ function ComercioRegistroContent() {
 
         setIsLoading(true);
 
-        // Add prefix to phone numbers if they don't have it
+        // Add prefix to phone numbers if they don't have it.
+        // Mandamos el cbu normalizado (sin espacios/guiones en CBU, trim en alias)
+        // para que el server guarde la versión limpia, no el input crudo del user.
         const submissionData = {
             ...formData,
+            cbu: bankCheck.normalized,
             phone: formData.phone.startsWith("+549") ? formData.phone : `+549${formData.phone}`,
             businessPhone: formData.businessPhone.startsWith("+549") ? formData.businessPhone : `+549${formData.businessPhone}`
         };
@@ -709,12 +721,27 @@ function ComercioRegistroContent() {
                                         value={formData.cbu}
                                         onChange={handleChange}
                                         placeholder="CBU de 22 dígitos o alias"
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full pl-10 pr-20 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
+                                    {/* Badge de tipo detectado — se actualiza en vivo mientras tipea */}
+                                    {bankAccountType && (
+                                        <span
+                                            className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                bankAccountType === "CBU"
+                                                    ? "bg-blue-100 text-blue-700"
+                                                    : "bg-violet-100 text-violet-700"
+                                            }`}
+                                            aria-live="polite"
+                                        >
+                                            {bankAccountType}
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    Para la recepción de pagos por ventas a través de la plataforma.
+                                    Podés ingresar un CBU (22 dígitos) o un Alias (6-20 caracteres:
+                                    letras, números, puntos o guiones). Para la recepción de pagos por
+                                    ventas a través de la plataforma.
                                 </p>
                             </div>
 
