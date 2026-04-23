@@ -516,6 +516,8 @@ Este script **NO cambió**. Sigue siendo el mismo:
 3. Sube base de datos al servidor
 4. Reinicia la app
 
+> **⚠️ Checklist completo pre/post-deploy**: ver [`DEPLOY_CHECKLIST.md`](../../DEPLOY_CHECKLIST.md) en la raíz del repo. Incluye verificaciones previas, configuración de crons del VPS (ej: limpieza de historial GPS), y validación post-deploy.
+
 ---
 
 ## 💡 Tips Pro
