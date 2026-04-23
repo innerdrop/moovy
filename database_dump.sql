@@ -58,6 +58,7 @@ ALTER TABLE IF EXISTS ONLY public."OrderChat" DROP CONSTRAINT IF EXISTS "OrderCh
 ALTER TABLE IF EXISTS ONLY public."OrderChatMessage" DROP CONSTRAINT IF EXISTS "OrderChatMessage_senderId_fkey";
 ALTER TABLE IF EXISTS ONLY public."OrderChatMessage" DROP CONSTRAINT IF EXISTS "OrderChatMessage_chatId_fkey";
 ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_ownerId_fkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantDocumentChangeRequest" DROP CONSTRAINT IF EXISTS "MerchantDocumentChangeRequest_merchantId_fkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_merchantId_fkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_categoryId_fkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_productId_fkey";
@@ -171,6 +172,8 @@ DROP INDEX IF EXISTS public."Merchant_isActive_idx";
 DROP INDEX IF EXISTS public."Merchant_approvalStatus_idx";
 DROP INDEX IF EXISTS public."MerchantLoyaltyConfig_tier_key";
 DROP INDEX IF EXISTS public."MerchantLoyaltyConfig_tier_idx";
+DROP INDEX IF EXISTS public."MerchantDocumentChangeRequest_status_createdAt_idx";
+DROP INDEX IF EXISTS public."MerchantDocumentChangeRequest_merchantId_status_idx";
 DROP INDEX IF EXISTS public."MerchantCategory_merchantId_categoryId_key";
 DROP INDEX IF EXISTS public."MerchantAcquiredProduct_merchantId_productId_key";
 DROP INDEX IF EXISTS public."Listing_sellerId_idx";
@@ -267,6 +270,7 @@ ALTER TABLE IF EXISTS ONLY public."MpWebhookLog" DROP CONSTRAINT IF EXISTS "MpWe
 ALTER TABLE IF EXISTS ONLY public."MoovyConfig" DROP CONSTRAINT IF EXISTS "MoovyConfig_pkey";
 ALTER TABLE IF EXISTS ONLY public."Merchant" DROP CONSTRAINT IF EXISTS "Merchant_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantLoyaltyConfig" DROP CONSTRAINT IF EXISTS "MerchantLoyaltyConfig_pkey";
+ALTER TABLE IF EXISTS ONLY public."MerchantDocumentChangeRequest" DROP CONSTRAINT IF EXISTS "MerchantDocumentChangeRequest_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantCategory" DROP CONSTRAINT IF EXISTS "MerchantCategory_pkey";
 ALTER TABLE IF EXISTS ONLY public."MerchantAcquiredProduct" DROP CONSTRAINT IF EXISTS "MerchantAcquiredProduct_pkey";
 ALTER TABLE IF EXISTS ONLY public."Listing" DROP CONSTRAINT IF EXISTS "Listing_pkey";
@@ -324,6 +328,7 @@ DROP TABLE IF EXISTS public."Order";
 DROP TABLE IF EXISTS public."MpWebhookLog";
 DROP TABLE IF EXISTS public."MoovyConfig";
 DROP TABLE IF EXISTS public."MerchantLoyaltyConfig";
+DROP TABLE IF EXISTS public."MerchantDocumentChangeRequest";
 DROP TABLE IF EXISTS public."MerchantCategory";
 DROP TABLE IF EXISTS public."MerchantAcquiredProduct";
 DROP TABLE IF EXISTS public."Merchant";
@@ -1050,7 +1055,22 @@ CREATE TABLE public."Merchant" (
     "suspendedAt" timestamp(3) without time zone,
     "suspendedUntil" timestamp(3) without time zone,
     "suspensionReason" text,
-    "firstOrderWelcomeSentAt" timestamp(3) without time zone
+    "firstOrderWelcomeSentAt" timestamp(3) without time zone,
+    "bankAccountApprovedAt" timestamp(3) without time zone,
+    "bankAccountRejectionReason" text,
+    "bankAccountStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "constanciaAfipApprovedAt" timestamp(3) without time zone,
+    "constanciaAfipRejectionReason" text,
+    "constanciaAfipStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "cuitApprovedAt" timestamp(3) without time zone,
+    "cuitRejectionReason" text,
+    "cuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "habilitacionMunicipalApprovedAt" timestamp(3) without time zone,
+    "habilitacionMunicipalRejectionReason" text,
+    "habilitacionMunicipalStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "registroSanitarioApprovedAt" timestamp(3) without time zone,
+    "registroSanitarioRejectionReason" text,
+    "registroSanitarioStatus" text DEFAULT 'PENDING'::text NOT NULL
 );
 
 
@@ -1083,6 +1103,26 @@ CREATE TABLE public."MerchantCategory" (
 
 
 ALTER TABLE public."MerchantCategory" OWNER TO postgres;
+
+--
+-- Name: MerchantDocumentChangeRequest; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."MerchantDocumentChangeRequest" (
+    id text NOT NULL,
+    "merchantId" text NOT NULL,
+    "documentField" text NOT NULL,
+    reason text NOT NULL,
+    status text DEFAULT 'PENDING'::text NOT NULL,
+    "resolvedAt" timestamp(3) without time zone,
+    "resolvedBy" text,
+    "resolutionNote" text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."MerchantDocumentChangeRequest" OWNER TO postgres;
 
 --
 -- Name: MerchantLoyaltyConfig; Type: TABLE; Schema: public; Owner: postgres
@@ -1940,6 +1980,7 @@ COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifi
 --
 
 COPY public."AuditLog" (id, action, "entityType", "entityId", "userId", details, "createdAt") FROM stdin;
+cmobln7qe000fw4k6u58merut	MERCHANT_APPROVED	Merchant	cmobll552000cw4k6blur8j08	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"9410","merchantOwnerId":"cmobkazic0002w4k6sk1luhha","adminEmail":"maurod@me.com"}	2026-04-23 14:51:09.155
 \.
 
 
@@ -2019,6 +2060,9 @@ COPY public."ConfigAuditLog" (id, "adminUserId", "adminEmail", "configType", "fi
 --
 
 COPY public."ConsentLog" (id, "userId", "consentType", version, action, "ipAddress", "userAgent", details, "acceptedAt") FROM stdin;
+cmobkazj80004w4k6subec099	cmobkazic0002w4k6sk1luhha	TERMS	1.1	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-04-23 14:13:39.043
+cmobkazjs0006w4k6ycv1cfg0	cmobkazic0002w4k6sk1luhha	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-04-23 14:13:39.065
+cmobkazjy0008w4k677dx25o5	cmobkazic0002w4k6sk1luhha	MARKETING	1.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-04-23 14:13:39.071
 \.
 
 
@@ -2135,7 +2179,8 @@ COPY public."ListingImage" (id, "listingId", url, "order") FROM stdin;
 -- Data for Name: Merchant; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", "allowPickup", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "loyaltyTier", "loyaltyOrderCount", "loyaltyUpdatedAt", "commissionOverride", "commissionOverrideReason", "isSuspended", "loyaltyTierLocked", "suspendedAt", "suspendedUntil", "suspensionReason", "firstOrderWelcomeSentAt") FROM stdin;
+COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", "allowPickup", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "loyaltyTier", "loyaltyOrderCount", "loyaltyUpdatedAt", "commissionOverride", "commissionOverrideReason", "isSuspended", "loyaltyTierLocked", "suspendedAt", "suspendedUntil", "suspensionReason", "firstOrderWelcomeSentAt", "bankAccountApprovedAt", "bankAccountRejectionReason", "bankAccountStatus", "constanciaAfipApprovedAt", "constanciaAfipRejectionReason", "constanciaAfipStatus", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "habilitacionMunicipalApprovedAt", "habilitacionMunicipalRejectionReason", "habilitacionMunicipalStatus", "registroSanitarioApprovedAt", "registroSanitarioRejectionReason", "registroSanitarioStatus") FROM stdin;
+cmobll552000cw4k6blur8j08	9410	9410	Nuevo comercio Moovy	\N	\N	t	t	f	\N	t	maugrod@gmail.com	+5492901652974	Magallanes 2093	-54.8079215	-68.3315944	5	30	45	0	0	f	206772d008396df2cf2f0aed76278b92:362552f4805c58a151973d643000cd57:c3e8575a29c0b3fa19c3daf627	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1776955754435-Guia_de_Descargas.pdf	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1776955765679-Guia_de_Descargas.pdf	\N	2026-04-23 14:49:32.477	2026-04-23 14:49:32.477	Kiosco	cmobkazic0002w4k6sk1luhha	2026-04-23 14:49:32.485	2026-04-23 14:51:09.147	\N	\N	58950ffa58bebb376038d1ff7bce4866:db204b962af55ff44ae99d9f2c1edee2:62a1aff9fdcafa0dd4e088144d2c57816c83a0d1f2	9410	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-04-23 14:51:09.142	\N	\N	BRONCE	0	2026-04-23 14:49:32.485	\N	\N	f	f	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING
 \.
 
 
@@ -2152,6 +2197,14 @@ COPY public."MerchantAcquiredProduct" (id, "merchantId", "productId", "createdAt
 --
 
 COPY public."MerchantCategory" (id, "merchantId", "categoryId", "createdAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: MerchantDocumentChangeRequest; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."MerchantDocumentChangeRequest" (id, "merchantId", "documentField", reason, status, "resolvedAt", "resolvedBy", "resolutionNote", "createdAt", "updatedAt") FROM stdin;
 \.
 
 
@@ -2427,6 +2480,7 @@ COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnlin
 
 COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "resetToken", "resetTokenExpiry", "deletedAt", "archivedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "onboardingCompletedAt", "age18Confirmed", "cookiesConsent", "cookiesConsentAt", "marketingConsent", "marketingConsentAt", "marketingConsentRevokedAt", "privacyConsentVersion", "termsConsentVersion") FROM stdin;
 cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-04-22 18:27:33.424	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N
+cmobkazic0002w4k6sk1luhha	maugrod@gmail.com	$2b$10$JmJnWqfoL3YLcfI084JdauwXXLsOK9slbvTEG8ROtpEsebHH4H6AG	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-3CYV	\N	2026-04-23 14:13:39.009	2026-04-23 14:52:43.705	2026-04-23 14:13:39.006	2026-04-23 14:13:39.006	\N	\N	\N	\N	f	\N	\N	\N	2026-04-23 14:15:45.524	t	\N	\N	t	2026-04-23 14:13:39.006	\N	2.0	1.1
 \.
 
 
@@ -2435,6 +2489,8 @@ cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj
 --
 
 COPY public."UserActivityLog" (id, "userId", action, "entityType", "entityId", metadata, "ipAddress", "userAgent", "createdAt") FROM stdin;
+cmobkb0cm000aw4k646hrbj1f	cmobkazic0002w4k6sk1luhha	LOGIN	User	cmobkazic0002w4k6sk1luhha	{"method":"credentials"}	\N	\N	2026-04-23 14:13:40.103
+cmoblp8qi000hw4k6r9ggrq20	cmobkazic0002w4k6sk1luhha	LOGIN	User	cmobkazic0002w4k6sk1luhha	{"method":"credentials"}	\N	\N	2026-04-23 14:52:43.771
 \.
 
 
@@ -2653,6 +2709,14 @@ ALTER TABLE ONLY public."MerchantAcquiredProduct"
 
 ALTER TABLE ONLY public."MerchantCategory"
     ADD CONSTRAINT "MerchantCategory_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: MerchantDocumentChangeRequest MerchantDocumentChangeRequest_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."MerchantDocumentChangeRequest"
+    ADD CONSTRAINT "MerchantDocumentChangeRequest_pkey" PRIMARY KEY (id);
 
 
 --
@@ -3358,6 +3422,20 @@ CREATE UNIQUE INDEX "MerchantAcquiredProduct_merchantId_productId_key" ON public
 --
 
 CREATE UNIQUE INDEX "MerchantCategory_merchantId_categoryId_key" ON public."MerchantCategory" USING btree ("merchantId", "categoryId");
+
+
+--
+-- Name: MerchantDocumentChangeRequest_merchantId_status_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "MerchantDocumentChangeRequest_merchantId_status_idx" ON public."MerchantDocumentChangeRequest" USING btree ("merchantId", status);
+
+
+--
+-- Name: MerchantDocumentChangeRequest_status_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "MerchantDocumentChangeRequest_status_createdAt_idx" ON public."MerchantDocumentChangeRequest" USING btree (status, "createdAt");
 
 
 --
@@ -4183,6 +4261,14 @@ ALTER TABLE ONLY public."MerchantCategory"
 
 ALTER TABLE ONLY public."MerchantCategory"
     ADD CONSTRAINT "MerchantCategory_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES public."Merchant"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: MerchantDocumentChangeRequest MerchantDocumentChangeRequest_merchantId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."MerchantDocumentChangeRequest"
+    ADD CONSTRAINT "MerchantDocumentChangeRequest_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES public."Merchant"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
