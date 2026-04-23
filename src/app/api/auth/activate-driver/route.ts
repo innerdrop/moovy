@@ -4,6 +4,51 @@ import { prisma } from "@/lib/prisma";
 import { sendDriverRequestNotification } from "@/lib/email";
 import { encryptDriverData } from "@/lib/fiscal-crypto";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { validateCuit } from "@/lib/cuit";
+import { isMotorizedVehicle } from "@/lib/driver-document-approval";
+
+/**
+ * Cap de antigüedad por tipo de vehículo (ver register/driver/route.ts para
+ * el rationale — clima salino + frío extremo de Ushuaia).
+ */
+const MAX_VEHICLE_AGE_YEARS: Record<string, number> = {
+    MOTO: 15,
+    AUTO: 25,
+    CAMIONETA: 25,
+    PICKUP: 25,
+    SUV: 25,
+    FLETE: 30,
+};
+
+function validateVehicleAge(vehicleType: string, vehicleYear: number): string | null {
+    const now = new Date().getFullYear();
+    const age = now - vehicleYear;
+    if (vehicleYear < 1950 || vehicleYear > now + 1) {
+        return `Año del vehículo inválido (${vehicleYear}).`;
+    }
+    const cap = MAX_VEHICLE_AGE_YEARS[vehicleType.toUpperCase()];
+    if (cap !== undefined && age > cap) {
+        return `Tu vehículo tiene ${age} años. El máximo permitido para ${vehicleType.toLowerCase()} es ${cap} años.`;
+    }
+    return null;
+}
+
+function parseExpiration(raw: unknown, label: string): Date | string | null {
+    if (raw === null || raw === undefined || raw === "") return null;
+    if (typeof raw !== "string") return `Fecha de vencimiento de ${label} inválida.`;
+    const date = new Date(raw);
+    if (isNaN(date.getTime())) return `Fecha de vencimiento de ${label} inválida.`;
+    const now = new Date();
+    const minPast = new Date(now);
+    minPast.setDate(minPast.getDate() - 1);
+    const maxFuture = new Date(now);
+    maxFuture.setFullYear(maxFuture.getFullYear() + 20);
+    if (date < minPast)
+        return `La fecha de vencimiento de ${label} ya pasó. Subí un documento vigente.`;
+    if (date > maxFuture)
+        return `La fecha de vencimiento de ${label} es implausible (más de 20 años).`;
+    return date;
+}
 
 // POST - Request DRIVER role activation from authenticated user (with full vehicle/doc data)
 export async function POST(request: NextRequest) {
@@ -51,16 +96,109 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Motorized vehicles require license plate
-        const motorizedTypes = ["MOTO", "AUTO", "CAMIONETA"];
-        const vehicleTypeUpper = body.vehicleType.toUpperCase();
-        const isMotorized = motorizedTypes.includes(vehicleTypeUpper);
-
-        if (isMotorized && !body.licensePlate) {
+        // CUIT obligatorio + validación checksum AFIP
+        if (!body.cuit) {
             return NextResponse.json(
-                { error: "La patente es obligatoria para vehículos motorizados" },
+                { error: "El CUIT/CUIL es obligatorio" },
                 { status: 400 }
             );
+        }
+        const cuitCheck = validateCuit(body.cuit);
+        if (!cuitCheck.valid) {
+            return NextResponse.json(
+                { error: cuitCheck.error || "CUIT/CUIL inválido" },
+                { status: 400 }
+            );
+        }
+
+        // Constancia AFIP siempre obligatoria
+        if (!body.constanciaCuitUrl) {
+            return NextResponse.json(
+                { error: "Subí la constancia de inscripción AFIP / Monotributo" },
+                { status: 400 }
+            );
+        }
+
+        // DNI obligatorio para todos
+        if (!body.dniFrenteUrl || !body.dniDorsoUrl) {
+            return NextResponse.json(
+                { error: "Subí el DNI (frente y dorso)" },
+                { status: 400 }
+            );
+        }
+
+        const vehicleTypeUpper = body.vehicleType.toUpperCase();
+        const isMotorized = isMotorizedVehicle(vehicleTypeUpper);
+
+        // Validaciones específicas para motorizados
+        if (isMotorized) {
+            if (!body.licensePlate) {
+                return NextResponse.json(
+                    { error: "La patente es obligatoria para vehículos motorizados" },
+                    { status: 400 }
+                );
+            }
+            if (!body.licenciaUrl) {
+                return NextResponse.json(
+                    { error: "Subí la licencia de conducir" },
+                    { status: 400 }
+                );
+            }
+            if (!body.seguroUrl) {
+                return NextResponse.json(
+                    { error: "Subí la póliza de seguro del vehículo" },
+                    { status: 400 }
+                );
+            }
+            if (!body.vtvUrl) {
+                return NextResponse.json(
+                    { error: "Subí la RTO (Revisión Técnica Obligatoria)" },
+                    { status: 400 }
+                );
+            }
+            if (!body.cedulaVerdeUrl) {
+                return NextResponse.json(
+                    { error: "Subí la cédula verde que acredita titularidad del vehículo" },
+                    { status: 400 }
+                );
+            }
+            if (body.vehicleYear) {
+                const ageError = validateVehicleAge(
+                    vehicleTypeUpper,
+                    parseInt(body.vehicleYear.toString(), 10)
+                );
+                if (ageError) {
+                    return NextResponse.json({ error: ageError }, { status: 400 });
+                }
+            }
+        }
+
+        // Parse expirations (solo motorizados)
+        let licenciaExpiresAt: Date | null = null;
+        let seguroExpiresAt: Date | null = null;
+        let vtvExpiresAt: Date | null = null;
+        let cedulaVerdeExpiresAt: Date | null = null;
+
+        if (isMotorized) {
+            const parsedLic = parseExpiration(body.licenciaExpiresAt, "Licencia");
+            if (typeof parsedLic === "string")
+                return NextResponse.json({ error: parsedLic }, { status: 400 });
+            licenciaExpiresAt = parsedLic;
+
+            const parsedSeg = parseExpiration(body.seguroExpiresAt, "Seguro");
+            if (typeof parsedSeg === "string")
+                return NextResponse.json({ error: parsedSeg }, { status: 400 });
+            seguroExpiresAt = parsedSeg;
+
+            const parsedVtv = parseExpiration(body.vtvExpiresAt, "RTO");
+            if (typeof parsedVtv === "string")
+                return NextResponse.json({ error: parsedVtv }, { status: 400 });
+            vtvExpiresAt = parsedVtv;
+
+            const parsedCed = parseExpiration(body.cedulaVerdeExpiresAt, "Cédula verde");
+            if (typeof parsedCed === "string")
+                return NextResponse.json({ error: parsedCed }, { status: 400 });
+            cedulaVerdeExpiresAt = parsedCed;
         }
 
         // Build driver data
@@ -72,12 +210,18 @@ export async function POST(request: NextRequest) {
             vehicleYear: isMotorized && body.vehicleYear ? parseInt(body.vehicleYear.toString()) : null,
             vehicleColor: isMotorized ? (body.vehicleColor || null) : null,
             licensePlate: isMotorized ? (body.licensePlate?.toUpperCase() || null) : null,
-            cuit: body.cuit || null,
-            dniFrenteUrl: body.dniFrenteUrl || null,
-            dniDorsoUrl: body.dniDorsoUrl || null,
-            licenciaUrl: isMotorized ? (body.licenciaUrl || null) : null,
-            seguroUrl: isMotorized ? (body.seguroUrl || null) : null,
-            vtvUrl: isMotorized ? (body.vtvUrl || null) : null,
+            cuit: cuitCheck.normalized,
+            constanciaCuitUrl: body.constanciaCuitUrl,
+            dniFrenteUrl: body.dniFrenteUrl,
+            dniDorsoUrl: body.dniDorsoUrl,
+            licenciaUrl: isMotorized ? body.licenciaUrl : null,
+            seguroUrl: isMotorized ? body.seguroUrl : null,
+            vtvUrl: isMotorized ? body.vtvUrl : null,
+            cedulaVerdeUrl: isMotorized ? body.cedulaVerdeUrl : null,
+            licenciaExpiresAt,
+            seguroExpiresAt,
+            vtvExpiresAt,
+            cedulaVerdeExpiresAt,
             acceptedTermsAt: new Date(),
             isActive: false,
             approvalStatus: "PENDING",
@@ -86,9 +230,7 @@ export async function POST(request: NextRequest) {
         // Encrypt sensitive fiscal data
         driverData = encryptDriverData(driverData);
 
-        // Solo creamos el Driver. El rol DRIVER se deriva de Driver.approvalStatus
-        // en cada request (ver src/lib/roles.ts#computeUserAccess), ya no escribimos UserRole.
-        // El gate real de acceso lo hace requireDriverAccess() en el layout protegido.
+        // Solo creamos el Driver. El rol DRIVER se deriva de Driver.approvalStatus.
         await prisma.driver.create({ data: driverData as any });
 
         // Send admin notification email (non-blocking)

@@ -88,6 +88,13 @@ export const CRON_EXPECTATIONS: Record<string, { maxHours: number; label: string
         maxHours: 30,
         label: "Limpieza de historial GPS",
     },
+    // Rama fix/onboarding-repartidor-complet: cron diario que avisa a repartidores
+    // 7/3/1 días antes del vencimiento de licencia/seguro/RTO/cédula verde, y
+    // auto-suspende al driver si el documento vence sin renovación.
+    "driver-docs-expiry": {
+        maxHours: 30,
+        label: "Avisos de vencimiento de documentos de repartidor",
+    },
 };
 
 export type CronHealthStatus = "healthy" | "stale" | "never-ran" | "failing";

@@ -142,12 +142,49 @@ interface DriverData {
     vehicleYear: number | null;
     vehicleColor: string | null;
     licensePlate: string | null;
+    // Docs (texto + URLs)
     cuit: string | null;
+    constanciaCuitUrl: string | null;
+    dniFrenteUrl: string | null;
+    dniDorsoUrl: string | null;
     licenciaUrl: string | null;
     seguroUrl: string | null;
     vtvUrl: string | null;
-    dniFrenteUrl: string | null;
-    dniDorsoUrl: string | null;
+    cedulaVerdeUrl: string | null;
+    // Status/approvedAt/rejectionReason triples (8 docs)
+    cuitStatus: DocStatus;
+    cuitApprovedAt: string | null;
+    cuitRejectionReason: string | null;
+    constanciaCuitStatus: DocStatus;
+    constanciaCuitApprovedAt: string | null;
+    constanciaCuitRejectionReason: string | null;
+    dniFrenteStatus: DocStatus;
+    dniFrenteApprovedAt: string | null;
+    dniFrenteRejectionReason: string | null;
+    dniDorsoStatus: DocStatus;
+    dniDorsoApprovedAt: string | null;
+    dniDorsoRejectionReason: string | null;
+    licenciaStatus: DocStatus;
+    licenciaApprovedAt: string | null;
+    licenciaRejectionReason: string | null;
+    seguroStatus: DocStatus;
+    seguroApprovedAt: string | null;
+    seguroRejectionReason: string | null;
+    vtvStatus: DocStatus;
+    vtvApprovedAt: string | null;
+    vtvRejectionReason: string | null;
+    cedulaVerdeStatus: DocStatus;
+    cedulaVerdeApprovedAt: string | null;
+    cedulaVerdeRejectionReason: string | null;
+    // Vencimientos + stage de notificación (4 docs)
+    licenciaExpiresAt: string | null;
+    licenciaNotifiedStage: number;
+    seguroExpiresAt: string | null;
+    seguroNotifiedStage: number;
+    vtvExpiresAt: string | null;
+    vtvNotifiedStage: number;
+    cedulaVerdeExpiresAt: string | null;
+    cedulaVerdeNotifiedStage: number;
     isActive: boolean;
     isOnline: boolean;
     totalDeliveries: number;
@@ -253,6 +290,34 @@ const DOC_LABELS: Record<string, string> = {
     registroSanitarioUrl: "Registro Sanitario",
 };
 
+// Mirror del DRIVER_DOCUMENT_COLUMNS del lib (src/lib/driver-document-approval.ts).
+// Labels usados en toasts, headers y modales del admin driver.
+const DRIVER_DOC_LABELS: Record<string, string> = {
+    cuit: "CUIT/CUIL",
+    constanciaCuitUrl: "Constancia de Inscripción AFIP / Monotributo",
+    dniFrenteUrl: "DNI (frente)",
+    dniDorsoUrl: "DNI (dorso)",
+    licenciaUrl: "Licencia de conducir",
+    seguroUrl: "Póliza de seguro",
+    vtvUrl: "RTO (Revisión Técnica)",
+    cedulaVerdeUrl: "Cédula verde",
+};
+
+// Mirror del NON_MOTORIZED_TYPES del lib server. Cliente-side para decidir si
+// mostrar los 4 docs motorizados (licencia/seguro/RTO/cédula verde).
+const NON_MOTORIZED_TYPES_CLIENT = new Set([
+    "BICI",
+    "BICICLETA",
+    "PATIN",
+    "PATINETA",
+    "TRICI",
+]);
+
+function isMotorizedVehicleClient(vehicleType: string | null | undefined): boolean {
+    if (!vehicleType) return false;
+    return !NON_MOTORIZED_TYPES_CLIENT.has(vehicleType.toUpperCase());
+}
+
 const loyaltyTierColors: Record<string, string> = {
     BRONCE: "bg-amber-100 text-amber-800",
     PLATA: "bg-slate-100 text-slate-800",
@@ -305,7 +370,10 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     // Change requests del merchant — se cargan en paralelo con el user detail.
     // Append-only (pending + histórico), se refresca junto con fetchUser.
     const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
+    // Change requests del driver — mismo patrón, endpoint paralelo.
+    const [driverChangeRequests, setDriverChangeRequests] = useState<ChangeRequest[]>([]);
     // Doc que está siendo procesado (para deshabilitar solo ese card y no toda la sección).
+    // Compartido entre merchant y driver (no pueden procesarse simultáneamente en la misma página).
     const [docProcessing, setDocProcessing] = useState<string | null>(null);
 
     useEffect(() => {
@@ -321,6 +389,10 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 // Si el usuario tiene merchant, levantamos las change requests en paralelo.
                 if (data.merchant?.id) {
                     fetchChangeRequests(data.merchant.id);
+                }
+                // Mismo tratamiento para driver.
+                if (data.driver?.id) {
+                    fetchDriverChangeRequests(data.driver.id);
                 }
             } else if (res.status === 404) {
                 toast.error("Usuario no encontrado");
@@ -345,6 +417,18 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             }
         } catch (error) {
             console.error("Error fetching change requests:", error);
+        }
+    };
+
+    const fetchDriverChangeRequests = async (driverId: string) => {
+        try {
+            const res = await fetch(`/api/admin/drivers/${driverId}/change-requests`);
+            if (res.ok) {
+                const data = await res.json();
+                setDriverChangeRequests(data.requests || []);
+            }
+        } catch (error) {
+            console.error("Error fetching driver change requests:", error);
         }
     };
 
@@ -484,6 +568,154 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             }
         } catch (error) {
             console.error("Error resolving change request:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    // =====================================================================
+    // Driver — handlers de aprobación per-doc y change requests.
+    // Misma lógica que merchant pero contra /api/admin/drivers/[id]/...
+    // =====================================================================
+
+    const handleApproveDriverDocument = async (field: string) => {
+        if (!user?.driver) return;
+        const label = DRIVER_DOC_LABELS[field] || field;
+        const ok = await confirm({
+            title: "Aprobar documento",
+            message: `¿Confirmar la aprobación de "${label}"?\n\nSi es el último pendiente, el repartidor se activará automáticamente.`,
+            confirmLabel: "Aprobar",
+            variant: "default",
+        });
+        if (!ok) return;
+
+        setDocProcessing(field);
+        try {
+            const res = await fetch(
+                `/api/admin/drivers/${user.driver.id}/documents/approve`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ field }),
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                if (data.driverAutoActivated) {
+                    toast.success(`✓ ${data.label || label} aprobado. ¡Repartidor activado!`);
+                } else {
+                    toast.success(`${data.label || label} aprobado`);
+                }
+                fetchUser();
+            } else {
+                toast.error(data.error || "Error al aprobar el documento");
+            }
+        } catch (error) {
+            console.error("Error approving driver document:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setDocProcessing(null);
+        }
+    };
+
+    const handleRejectDriverDocument = async (field: string, label: string) => {
+        if (!user?.driver) return;
+        const reason = window.prompt(`Motivo de rechazo para ${label} (obligatorio, mín. 3 caracteres):`);
+        if (!reason || reason.trim().length < 3) {
+            toast.error("Debés indicar un motivo de al menos 3 caracteres");
+            return;
+        }
+        const ok = await confirm({
+            title: `Rechazar ${label}`,
+            message: `¿Confirmar el rechazo?\n\nMotivo: ${reason.trim()}\n\nEl repartidor recibirá un email con el motivo y podrá re-subir el documento.`,
+            confirmLabel: "Rechazar",
+            variant: "danger",
+        });
+        if (!ok) return;
+
+        setDocProcessing(field);
+        try {
+            const res = await fetch(
+                `/api/admin/drivers/${user.driver.id}/documents/reject`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ field, reason: reason.trim() }),
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success(`${label} rechazado. Se notificó al repartidor.`);
+                fetchUser();
+            } else {
+                toast.error(data.error || "Error al rechazar el documento");
+            }
+        } catch (error) {
+            console.error("Error rejecting driver document:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setDocProcessing(null);
+        }
+    };
+
+    const handleResolveDriverChangeRequest = async (
+        requestId: string,
+        status: "APPROVED" | "REJECTED",
+        label: string
+    ) => {
+        if (!user?.driver) return;
+        let note = "";
+        if (status === "REJECTED") {
+            const input = window.prompt(
+                `Motivo para rechazar la solicitud de cambio (${label}) (obligatorio, mín. 3 caracteres):`
+            );
+            if (!input || input.trim().length < 3) {
+                toast.error("Debés indicar un motivo de al menos 3 caracteres");
+                return;
+            }
+            note = input.trim();
+        } else {
+            const input = window.prompt(
+                `Comentario opcional para el repartidor sobre por qué se autoriza el cambio (dejá vacío para ninguno):`
+            );
+            note = input ? input.trim() : "";
+        }
+
+        const ok = await confirm({
+            title: status === "APPROVED" ? "Autorizar cambio" : "Rechazar solicitud",
+            message:
+                status === "APPROVED"
+                    ? `¿Autorizar al repartidor a reemplazar ${label}?\n\nEl documento volverá a estado PENDIENTE hasta que suba uno nuevo.`
+                    : `¿Confirmar el rechazo de la solicitud?\n\nMotivo: ${note}`,
+            confirmLabel: status === "APPROVED" ? "Autorizar" : "Rechazar",
+            variant: status === "APPROVED" ? "default" : "danger",
+        });
+        if (!ok) return;
+
+        setProcessing(true);
+        try {
+            const res = await fetch(
+                `/api/admin/drivers/${user.driver.id}/change-requests/${requestId}/resolve`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status, note }),
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success(
+                    status === "APPROVED"
+                        ? `Solicitud autorizada. ${data.documentLabel || label} volvió a PENDIENTE.`
+                        : "Solicitud rechazada."
+                );
+                fetchUser();
+            } else {
+                toast.error(data.error || "Error al resolver la solicitud");
+            }
+        } catch (error) {
+            console.error("Error resolving driver change request:", error);
             toast.error("Error de conexión");
         } finally {
             setProcessing(false);
@@ -1263,57 +1495,31 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                 </div>
                             </div>
 
-                            {/* Documents — siempre visible, muestra estado de cada doc */}
+                            {/* Documents — aprobación granular per-doc con status chips,
+                                cédula verde + constancia CUIT incluidas, y badges de
+                                vencimiento en licencia/seguro/RTO/cédula verde. */}
                             <div className="border-t border-slate-200 pt-4">
                                 <p className="text-xs font-bold text-gray-500 uppercase mb-4">
                                     Documentación
                                 </p>
-                                <div className="space-y-3">
-                                    {[
-                                        { label: "CUIT", value: user.driver.cuit, isText: true },
-                                        { label: "DNI Frente", url: user.driver.dniFrenteUrl },
-                                        { label: "DNI Dorso", url: user.driver.dniDorsoUrl },
-                                        { label: "Licencia de conducir", url: user.driver.licenciaUrl },
-                                        { label: "Seguro vehicular", url: user.driver.seguroUrl },
-                                        { label: "RTO (Revisión Técnica)", url: user.driver.vtvUrl },
-                                    ].map((doc) => (
-                                        <div key={doc.label} className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">{doc.label}</span>
-                                            {doc.isText && doc.value ? (
-                                                <span className="text-gray-900 font-mono font-bold">{doc.value}</span>
-                                            ) : doc.url ? (
-                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium">
-                                                    <Eye className="w-3 h-3" /> Ver documento
-                                                </a>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
-                                                    <AlertTriangle className="w-3 h-3" /> Sin cargar
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                                {/* Resumen documentación */}
-                                {(() => {
-                                    const docs = [
-                                        user.driver.cuit,
-                                        user.driver.dniFrenteUrl,
-                                        user.driver.dniDorsoUrl,
-                                        user.driver.licenciaUrl,
-                                        user.driver.seguroUrl,
-                                        user.driver.vtvUrl,
-                                    ];
-                                    const submitted = docs.filter(Boolean).length;
-                                    const total = docs.length;
-                                    const allDone = submitted === total;
-                                    return (
-                                        <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium ${allDone ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
-                                            {allDone
-                                                ? `Documentación completa (${total}/${total})`
-                                                : `Documentación incompleta (${submitted}/${total} obligatorios)`}
-                                        </div>
-                                    );
-                                })()}
+                                <DriverDocumentsAdmin
+                                    driver={user.driver}
+                                    docProcessing={docProcessing}
+                                    onApprove={handleApproveDriverDocument}
+                                    onReject={handleRejectDriverDocument}
+                                />
+                            </div>
+
+                            {/* Solicitudes de cambio del repartidor */}
+                            <div className="border-t border-slate-200 pt-4">
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-4">
+                                    Solicitudes de cambio de documento
+                                </p>
+                                <DriverChangeRequestsAdmin
+                                    requests={driverChangeRequests}
+                                    processing={processing}
+                                    onResolve={handleResolveDriverChangeRequest}
+                                />
                             </div>
                         </div>
                     )}
@@ -2045,6 +2251,506 @@ function ChangeRequestsAdmin({
                     <div className="space-y-2 mt-2">
                         {resolved.map((req) => {
                             const label = DOC_LABELS[req.documentField] || req.documentField;
+                            const isApproved = req.status === "APPROVED";
+                            return (
+                                <div
+                                    key={req.id}
+                                    className={`border rounded-xl p-3 ${
+                                        isApproved
+                                            ? "bg-green-50 border-green-200"
+                                            : "bg-slate-50 border-slate-200"
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <p className="text-xs font-bold text-gray-900">
+                                            {label}
+                                        </p>
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                                isApproved
+                                                    ? "bg-green-200 text-green-900"
+                                                    : "bg-red-200 text-red-900"
+                                            }`}
+                                        >
+                                            {isApproved ? "AUTORIZADA" : "RECHAZADA"}
+                                        </span>
+                                        {req.resolvedAt && (
+                                            <span className="text-[10px] text-gray-500">
+                                                {new Date(req.resolvedAt).toLocaleDateString(
+                                                    "es-AR"
+                                                )}
+                                            </span>
+                                        )}
+                                        {req.resolvedByName && (
+                                            <span className="text-[10px] text-gray-500">
+                                                por {req.resolvedByName}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-gray-700 mb-1">
+                                        <span className="font-bold">Motivo:</span> {req.reason}
+                                    </p>
+                                    {req.resolutionNote && (
+                                        <p className="text-[11px] text-gray-700">
+                                            <span className="font-bold">Nota OPS:</span>{" "}
+                                            {req.resolutionNote}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </details>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// Sub-componentes de la sección Documentación del REPARTIDOR
+// =====================================================================
+
+/**
+ * Helpers de expiración: dado un ISO string, devuelve días restantes.
+ * Valores negativos significan ya vencido.
+ */
+function daysUntil(dateIso: string | null): number | null {
+    if (!dateIso) return null;
+    const target = new Date(dateIso).getTime();
+    if (isNaN(target)) return null;
+    const now = Date.now();
+    const ms = target - now;
+    return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Renderiza un badge de vencimiento con color escalonado según
+ * cercanía al vencimiento (alineado con STAGE_THRESHOLDS del cron
+ * driver-docs-expiry: 7d amber, 3d orange, 1d red, vencido dark red).
+ */
+function ExpirationBadge({ dateIso }: { dateIso: string | null }) {
+    const days = daysUntil(dateIso);
+    if (days === null) return null;
+
+    const formatted = dateIso
+        ? new Date(dateIso).toLocaleDateString("es-AR", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+          })
+        : "";
+
+    // Vencido
+    if (days < 0) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-200 text-red-900">
+                <AlertTriangle className="w-3 h-3" />
+                Vencido {formatted}
+            </span>
+        );
+    }
+    // ≤ 1 día
+    if (days <= 1) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-800">
+                <Clock className="w-3 h-3" />
+                Vence {formatted} ({days}d)
+            </span>
+        );
+    }
+    // ≤ 3 días
+    if (days <= 3) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-100 text-orange-800">
+                <Clock className="w-3 h-3" />
+                Vence {formatted} ({days}d)
+            </span>
+        );
+    }
+    // ≤ 7 días
+    if (days <= 7) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">
+                <Clock className="w-3 h-3" />
+                Vence {formatted} ({days}d)
+            </span>
+        );
+    }
+    // > 7 días: muestra fecha neutral
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-700">
+            <Clock className="w-3 h-3" />
+            Vence {formatted}
+        </span>
+    );
+}
+
+interface DriverDocumentsAdminProps {
+    driver: DriverData;
+    docProcessing: string | null;
+    onApprove: (field: string) => void;
+    onReject: (field: string, label: string) => void;
+}
+
+/**
+ * Lista de cards, uno por documento del repartidor, con status chip,
+ * motivo de rechazo, fecha de vencimiento (para los 4 docs motorizados)
+ * y botones Aprobar/Rechazar. Los docs motorizados sólo se muestran si
+ * el vehículo del repartidor lo requiere (isMotorizedVehicleClient).
+ */
+function DriverDocumentsAdmin({
+    driver,
+    docProcessing,
+    onApprove,
+    onReject,
+}: DriverDocumentsAdminProps) {
+    const motorized = isMotorizedVehicleClient(driver.vehicleType);
+
+    const docs: Array<{
+        field: string;
+        label: string;
+        value: string | null;
+        status: DocStatus;
+        approvedAt: string | null;
+        rejectionReason: string | null;
+        isUrl: boolean;
+        required: boolean;
+        expiresAt: string | null;
+        hasExpiration: boolean;
+    }> = [
+        {
+            field: "cuit",
+            label: DRIVER_DOC_LABELS.cuit,
+            value: driver.cuit,
+            status: driver.cuitStatus,
+            approvedAt: driver.cuitApprovedAt,
+            rejectionReason: driver.cuitRejectionReason,
+            isUrl: false,
+            required: true,
+            expiresAt: null,
+            hasExpiration: false,
+        },
+        {
+            field: "constanciaCuitUrl",
+            label: DRIVER_DOC_LABELS.constanciaCuitUrl,
+            value: driver.constanciaCuitUrl,
+            status: driver.constanciaCuitStatus,
+            approvedAt: driver.constanciaCuitApprovedAt,
+            rejectionReason: driver.constanciaCuitRejectionReason,
+            isUrl: true,
+            required: true,
+            expiresAt: null,
+            hasExpiration: false,
+        },
+        {
+            field: "dniFrenteUrl",
+            label: DRIVER_DOC_LABELS.dniFrenteUrl,
+            value: driver.dniFrenteUrl,
+            status: driver.dniFrenteStatus,
+            approvedAt: driver.dniFrenteApprovedAt,
+            rejectionReason: driver.dniFrenteRejectionReason,
+            isUrl: true,
+            required: true,
+            expiresAt: null,
+            hasExpiration: false,
+        },
+        {
+            field: "dniDorsoUrl",
+            label: DRIVER_DOC_LABELS.dniDorsoUrl,
+            value: driver.dniDorsoUrl,
+            status: driver.dniDorsoStatus,
+            approvedAt: driver.dniDorsoApprovedAt,
+            rejectionReason: driver.dniDorsoRejectionReason,
+            isUrl: true,
+            required: true,
+            expiresAt: null,
+            hasExpiration: false,
+        },
+        // ↓ Motorized-only
+        {
+            field: "licenciaUrl",
+            label: DRIVER_DOC_LABELS.licenciaUrl,
+            value: driver.licenciaUrl,
+            status: driver.licenciaStatus,
+            approvedAt: driver.licenciaApprovedAt,
+            rejectionReason: driver.licenciaRejectionReason,
+            isUrl: true,
+            required: motorized,
+            expiresAt: driver.licenciaExpiresAt,
+            hasExpiration: true,
+        },
+        {
+            field: "seguroUrl",
+            label: DRIVER_DOC_LABELS.seguroUrl,
+            value: driver.seguroUrl,
+            status: driver.seguroStatus,
+            approvedAt: driver.seguroApprovedAt,
+            rejectionReason: driver.seguroRejectionReason,
+            isUrl: true,
+            required: motorized,
+            expiresAt: driver.seguroExpiresAt,
+            hasExpiration: true,
+        },
+        {
+            field: "vtvUrl",
+            label: DRIVER_DOC_LABELS.vtvUrl,
+            value: driver.vtvUrl,
+            status: driver.vtvStatus,
+            approvedAt: driver.vtvApprovedAt,
+            rejectionReason: driver.vtvRejectionReason,
+            isUrl: true,
+            required: motorized,
+            expiresAt: driver.vtvExpiresAt,
+            hasExpiration: true,
+        },
+        {
+            field: "cedulaVerdeUrl",
+            label: DRIVER_DOC_LABELS.cedulaVerdeUrl,
+            value: driver.cedulaVerdeUrl,
+            status: driver.cedulaVerdeStatus,
+            approvedAt: driver.cedulaVerdeApprovedAt,
+            rejectionReason: driver.cedulaVerdeRejectionReason,
+            isUrl: true,
+            required: motorized,
+            expiresAt: driver.cedulaVerdeExpiresAt,
+            hasExpiration: true,
+        },
+    ];
+
+    // Para vehículos no motorizados (bici, patín, etc) ocultamos los 4 docs
+    // motorizados — aparecerían como "Opcional + sin cargar" y confunden a OPS.
+    const visibleDocs = motorized
+        ? docs
+        : docs.filter(
+              (d) =>
+                  ![
+                      "licenciaUrl",
+                      "seguroUrl",
+                      "vtvUrl",
+                      "cedulaVerdeUrl",
+                  ].includes(d.field)
+          );
+
+    return (
+        <div className="space-y-3">
+            {visibleDocs.map((doc) => {
+                const isThisProcessing = docProcessing === doc.field;
+                const hasValue = doc.value !== null && doc.value !== "";
+                const statusStyle = statusLabels[doc.status] || {
+                    label: doc.status,
+                    color: "bg-gray-100 text-gray-800",
+                };
+
+                return (
+                    <div
+                        key={doc.field}
+                        className="border border-slate-200 rounded-xl p-4 bg-white hover:border-slate-300 transition"
+                    >
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-2">
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {doc.label}
+                                    </p>
+                                    {hasValue ? (
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-xs font-bold ${statusStyle.color}`}
+                                        >
+                                            {statusStyle.label}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700">
+                                            <AlertTriangle className="w-3 h-3" /> Sin cargar
+                                        </span>
+                                    )}
+                                    {/* Badge de vencimiento sólo cuando tiene valor
+                                        y el doc es de los 4 con fecha de expiración. */}
+                                    {hasValue && doc.hasExpiration && (
+                                        <ExpirationBadge dateIso={doc.expiresAt} />
+                                    )}
+                                </div>
+
+                                {/* Valor */}
+                                {hasValue && (
+                                    <div className="text-sm">
+                                        {doc.isUrl ? (
+                                            <a
+                                                href={doc.value!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[#e60012] hover:underline inline-flex items-center gap-1 text-xs font-medium"
+                                            >
+                                                <Eye className="w-3 h-3" /> Ver documento
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-900 font-mono text-xs break-all">
+                                                {doc.value}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Motivo de rechazo */}
+                                {doc.status === "REJECTED" && doc.rejectionReason && (
+                                    <div className="mt-2 px-3 py-2 rounded-lg bg-red-50 border border-red-100">
+                                        <p className="text-[10px] font-bold text-red-600 uppercase tracking-wide mb-0.5">
+                                            Motivo de rechazo
+                                        </p>
+                                        <p className="text-xs text-red-700">
+                                            {doc.rejectionReason}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Fecha de aprobación */}
+                                {doc.status === "APPROVED" && doc.approvedAt && (
+                                    <p className="text-[10px] text-green-700 mt-2 font-medium">
+                                        Aprobado el{" "}
+                                        {new Date(doc.approvedAt).toLocaleDateString(
+                                            "es-AR",
+                                            {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                            }
+                                        )}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Botones Aprobar/Rechazar — mismo patrón que merchant */}
+                            {hasValue && (
+                                <div className="flex gap-2 flex-shrink-0">
+                                    {doc.status !== "APPROVED" && (
+                                        <button
+                                            onClick={() => onApprove(doc.field)}
+                                            disabled={isThisProcessing}
+                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                        >
+                                            {isThisProcessing ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <CheckCircle className="w-3 h-3" />
+                                            )}
+                                            Aprobar
+                                        </button>
+                                    )}
+                                    {doc.status !== "REJECTED" && (
+                                        <button
+                                            onClick={() => onReject(doc.field, doc.label)}
+                                            disabled={isThisProcessing}
+                                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                        >
+                                            {isThisProcessing ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <XCircle className="w-3 h-3" />
+                                            )}
+                                            Rechazar
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+interface DriverChangeRequestsAdminProps {
+    requests: ChangeRequest[];
+    processing: boolean;
+    onResolve: (requestId: string, status: "APPROVED" | "REJECTED", label: string) => void;
+}
+
+/**
+ * Solicitudes de cambio del repartidor: mismo layout que el merchant pero
+ * mapea los field names con DRIVER_DOC_LABELS para mostrar texto correcto.
+ */
+function DriverChangeRequestsAdmin({
+    requests,
+    processing,
+    onResolve,
+}: DriverChangeRequestsAdminProps) {
+    if (requests.length === 0) {
+        return (
+            <div className="text-sm text-gray-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                Sin solicitudes de cambio.
+            </div>
+        );
+    }
+
+    const pending = requests.filter((r) => r.status === "PENDING");
+    const resolved = requests.filter((r) => r.status !== "PENDING");
+
+    return (
+        <div className="space-y-3">
+            {pending.map((req) => {
+                const label = DRIVER_DOC_LABELS[req.documentField] || req.documentField;
+                return (
+                    <div
+                        key={req.id}
+                        className="border border-amber-200 bg-amber-50 rounded-xl p-4"
+                    >
+                        <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-bold text-amber-900">
+                                        {label}
+                                    </p>
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-200 text-amber-900">
+                                        PENDIENTE
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-amber-700 mt-1">
+                                    Solicitado el{" "}
+                                    {new Date(req.createdAt).toLocaleDateString("es-AR", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                    })}
+                                </p>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                                <button
+                                    onClick={() => onResolve(req.id, "APPROVED", label)}
+                                    disabled={processing}
+                                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                >
+                                    <CheckCircle className="w-3 h-3" /> Autorizar
+                                </button>
+                                <button
+                                    onClick={() => onResolve(req.id, "REJECTED", label)}
+                                    disabled={processing}
+                                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                >
+                                    <XCircle className="w-3 h-3" /> Rechazar
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg px-3 py-2 border border-amber-200">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-0.5">
+                                Motivo del repartidor
+                            </p>
+                            <p className="text-xs text-gray-800">{req.reason}</p>
+                        </div>
+                    </div>
+                );
+            })}
+
+            {resolved.length > 0 && (
+                <details className="group">
+                    <summary className="cursor-pointer text-xs font-bold text-gray-600 hover:text-gray-900 py-1 select-none inline-flex items-center gap-1">
+                        <ChevronDown className="w-3 h-3 group-open:hidden" />
+                        <ChevronUp className="w-3 h-3 hidden group-open:inline-block" />
+                        Histórico ({resolved.length})
+                    </summary>
+                    <div className="space-y-2 mt-2">
+                        {resolved.map((req) => {
+                            const label =
+                                DRIVER_DOC_LABELS[req.documentField] || req.documentField;
                             const isApproved = req.status === "APPROVED";
                             return (
                                 <div

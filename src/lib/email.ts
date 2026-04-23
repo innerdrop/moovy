@@ -610,3 +610,252 @@ export async function sendMerchantChangeRequestRejectedEmail(
         tag: 'merchant_change_request_rejected',
     });
 }
+
+// ─── Driver — aprobación/rechazo granular de documentos ─────────────────────
+
+/**
+ * Documento específico del driver APROBADO por OPS. Si con este doc quedaron
+ * todos los requeridos aprobados, `driverActivated` es true y el email anuncia
+ * además la activación del perfil.
+ */
+export async function sendDriverDocumentApprovedEmail(
+    email: string,
+    driverName: string,
+    documentLabel: string,
+    driverActivated: boolean
+) {
+    const headline = driverActivated
+        ? `<strong>${driverName}</strong>: tu cuenta de repartidor ya est&aacute; activa. Tu <strong>${documentLabel}</strong> fue el &uacute;ltimo documento aprobado.`
+        : `Aprobamos tu <strong>${documentLabel}</strong>. A medida que revisemos el resto de tu documentaci&oacute;n te vamos a ir avisando.`;
+    const subject = driverActivated
+        ? `Tu cuenta de repartidor fue activada \u2014 MOOVY`
+        : `Documento aprobado: ${documentLabel} \u2014 MOOVY`;
+    const ctaUrl = driverActivated ? `${baseUrl}/repartidor` : `${baseUrl}/repartidor/perfil`;
+    const ctaLabel = driverActivated ? 'Entrar al panel' : 'Ver estado de mi cuenta';
+    const ctaColor = driverActivated ? 'green' : 'blue';
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Documento aprobado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            ${headline}
+        </p>
+        ${driverActivated ? emailAlertBox('Ya pod&eacute;s conectarte y empezar a recibir pedidos. Revis&aacute; que tu ubicaci&oacute;n y datos del veh&iacute;culo est&eacute;n al d&iacute;a.', 'success') : ''}
+        ${emailButton(ctaLabel, ctaUrl, ctaColor)}
+    `);
+
+    return sendEmail({ to: email, subject, html, tag: 'driver_doc_approved' });
+}
+
+/**
+ * Documento específico del driver RECHAZADO por OPS. Incluye el motivo para
+ * que pueda subir una corrección desde su perfil.
+ */
+export async function sendDriverDocumentRejectedEmail(
+    email: string,
+    driverName: string,
+    documentLabel: string,
+    reason: string
+) {
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Documento rechazado</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Hola ${driverName}, revisamos tu <strong>${documentLabel}</strong> y no pudimos aprobarlo.
+        </p>
+        ${emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Entr&aacute; a tu perfil, sub&iacute; una versi&oacute;n corregida y lo volvemos a revisar.
+        </p>
+        ${emailButton('Subir nueva versi\u00f3n', `${baseUrl}/repartidor/perfil`, 'red')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `${documentLabel} rechazado \u2014 MOOVY`,
+        html,
+        tag: 'driver_doc_rejected',
+    });
+}
+
+/**
+ * Notificación a OPS — un driver pidió permiso para modificar un documento
+ * aprobado. OPS decide si lo autoriza (reset a PENDING).
+ */
+export async function sendAdminDriverChangeRequestEmail(
+    driverName: string,
+    driverEmail: string | null,
+    documentLabel: string,
+    reason: string,
+    driverId: string
+) {
+    const alertEmails = await getAlertEmails();
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud de cambio de documento</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            Un repartidor quiere modificar un documento ya aprobado.
+        </p>
+        ${emailInfoBox(`
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Repartidor:</strong> ${driverName}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email:</strong> ${driverEmail || "No especificado"}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Documento:</strong> ${documentLabel}</p>
+        `)}
+        ${emailAlertBox(`<strong>Motivo del repartidor:</strong> ${reason}`, 'info')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Evalu&aacute; la solicitud desde el panel de operaciones. Si la aprob&aacute;s, el documento vuelve a pendiente y el repartidor puede subir uno nuevo.
+        </p>
+        ${emailButton('Revisar solicitud', `${baseUrl}/ops/usuarios?driver=${driverId}`, 'blue')}
+    `);
+
+    const results = await Promise.all(
+        alertEmails.map((to) =>
+            sendEmail({
+                to,
+                subject: `Solicitud de cambio: ${documentLabel} \u2014 ${driverName}`,
+                html,
+                tag: 'driver_change_request_admin',
+            })
+        )
+    );
+    return results.some((r) => r);
+}
+
+/**
+ * Solicitud de cambio APROBADA — email al driver autorizándolo a subir
+ * un archivo nuevo. El doc ya quedó PENDING.
+ */
+export async function sendDriverChangeRequestApprovedEmail(
+    email: string,
+    driverName: string,
+    documentLabel: string,
+    note: string | null
+) {
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud aprobada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Hola ${driverName}, autorizamos el cambio de <strong>${documentLabel}</strong>. Ya pod&eacute;s subir un documento nuevo desde tu perfil.
+        </p>
+        ${note ? emailAlertBox(`<strong>Comentario de OPS:</strong> ${note}`, 'info') : ''}
+        ${emailButton('Subir nuevo documento', `${baseUrl}/repartidor/perfil`, 'green')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `Solicitud aprobada: ${documentLabel} \u2014 MOOVY`,
+        html,
+        tag: 'driver_change_request_approved',
+    });
+}
+
+/**
+ * Solicitud de cambio RECHAZADA — OPS no autoriza la modificación. El doc
+ * sigue APPROVED.
+ */
+export async function sendDriverChangeRequestRejectedEmail(
+    email: string,
+    driverName: string,
+    documentLabel: string,
+    note: string
+) {
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no autorizada</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Hola ${driverName}, revisamos tu solicitud de cambio de <strong>${documentLabel}</strong> y no la pudimos autorizar.
+        </p>
+        ${emailAlertBox(`<strong>Motivo:</strong> ${note}`, 'warning')}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Si necesit&aacute;s aclararlo, contactanos y lo resolvemos juntos.
+        </p>
+        ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `Solicitud no autorizada: ${documentLabel} \u2014 MOOVY`,
+        html,
+        tag: 'driver_change_request_rejected',
+    });
+}
+
+// ─── Driver — vencimiento de documentos ──────────────────────────────────────
+
+/**
+ * Aviso preventivo: un documento del driver vence en N días (7/3/1).
+ * Ley 24.449 (Tránsito) + decreto 779/95: manejar con licencia/seguro/RTO
+ * vencido es infracción grave. El driver tiene que subir el renovado antes
+ * del vencimiento para no quedar suspendido.
+ */
+export async function sendDriverDocExpiringEmail(
+    email: string,
+    driverName: string,
+    documentLabel: string,
+    daysRemaining: number,
+    expiresAt: Date
+) {
+    const dateStr = expiresAt.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+    const urgency =
+        daysRemaining <= 1 ? "\u00daltima llamada" : daysRemaining <= 3 ? "Urgente" : "Aviso preventivo";
+    const alertType = daysRemaining <= 1 ? "error" : daysRemaining <= 3 ? "warning" : "info";
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">${urgency}: tu ${documentLabel} est&aacute; por vencer</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Hola ${driverName}, tu <strong>${documentLabel}</strong> vence en <strong>${daysRemaining} d&iacute;a${daysRemaining === 1 ? "" : "s"}</strong> (${dateStr}).
+        </p>
+        ${emailAlertBox(
+            daysRemaining <= 1
+                ? `<strong>Si no sub&iacute;s el documento renovado antes del vencimiento, tu cuenta queda suspendida autom&aacute;ticamente</strong> y no vas a poder recibir pedidos hasta regularizar.`
+                : `Sub&iacute; la versi&oacute;n renovada antes del vencimiento para no quedar suspendido. Te podemos ir aprobando mientras segu&iacute;s trabajando.`,
+            alertType as any
+        )}
+        ${emailButton('Subir documento renovado', `${baseUrl}/repartidor/perfil`, daysRemaining <= 3 ? 'red' : 'blue')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `${urgency}: ${documentLabel} vence en ${daysRemaining} d\u00eda${daysRemaining === 1 ? "" : "s"} \u2014 MOOVY`,
+        html,
+        tag: 'driver_doc_expiring',
+    });
+}
+
+/**
+ * El documento del driver venció. La cuenta queda suspendida hasta que
+ * suba y aprueben la versión renovada.
+ */
+export async function sendDriverDocExpiredEmail(
+    email: string,
+    driverName: string,
+    documentLabel: string,
+    expiresAt: Date
+) {
+    const dateStr = expiresAt.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu ${documentLabel} venci&oacute;</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+            Hola ${driverName}, tu <strong>${documentLabel}</strong> venci&oacute; el ${dateStr}.
+        </p>
+        ${emailAlertBox(
+            `<strong>Suspendimos tu cuenta por seguridad y cumplimiento legal.</strong> No vas a recibir ofertas de pedidos hasta que subas la versi&oacute;n renovada y la aprobemos.`,
+            'error'
+        )}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Sub&iacute; el documento renovado desde tu perfil. En general lo revisamos dentro de las 24 hs.
+        </p>
+        ${emailButton('Subir documento renovado', `${baseUrl}/repartidor/perfil`, 'red')}
+    `);
+
+    return sendEmail({
+        to: email,
+        subject: `${documentLabel} vencido \u2014 cuenta suspendida \u2014 MOOVY`,
+        html,
+        tag: 'driver_doc_expired',
+    });
+}

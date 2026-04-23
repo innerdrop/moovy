@@ -611,11 +611,56 @@ model Driver {
   vehicleColor       String?
   licensePlate       String?
   cuit               String?
+  // URLs de documentos (rama fix/onboarding-repartidor-complet: se suman
+  // constanciaCuitUrl para la Constancia de Inscripci\u00f3n en AFIP/Monotributo
+  // y cedulaVerdeUrl para motorizados — c\u00e9dula verde seg\u00fan decreto 779/95 art. 40).
+  constanciaCuitUrl  String?                   // Constancia Monotributo/AFIP (obligatoria para todos)
   licenciaUrl        String?
   seguroUrl          String?
-  vtvUrl             String?
+  vtvUrl             String?                   // RTO en Tierra del Fuego (campo legacy: vtv)
+  cedulaVerdeUrl     String?                   // C\u00e9dula verde — propietario del veh\u00edculo (motorizados)
   dniFrenteUrl       String?
   dniDorsoUrl        String?
+  // Per-document approval state (rama fix/onboarding-repartidor-complet).
+  // Espejo del patr\u00f3n de Merchant: <campo>Status + <campo>ApprovedAt +
+  // <campo>RejectionReason. Permite aprobaci\u00f3n granular por documento,
+  // hard-lock server-side de docs aprobados, y auto-activaci\u00f3n cuando todos
+  // los requeridos est\u00e1n APPROVED.
+  cuitStatus                String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  cuitApprovedAt            DateTime?
+  cuitRejectionReason       String?
+  constanciaCuitStatus      String    @default("PENDING")
+  constanciaCuitApprovedAt  DateTime?
+  constanciaCuitRejectionReason String?
+  dniFrenteStatus           String    @default("PENDING")
+  dniFrenteApprovedAt       DateTime?
+  dniFrenteRejectionReason  String?
+  dniDorsoStatus            String    @default("PENDING")
+  dniDorsoApprovedAt        DateTime?
+  dniDorsoRejectionReason   String?
+  licenciaStatus            String    @default("PENDING")
+  licenciaApprovedAt        DateTime?
+  licenciaRejectionReason   String?
+  seguroStatus              String    @default("PENDING")
+  seguroApprovedAt          DateTime?
+  seguroRejectionReason     String?
+  vtvStatus                 String    @default("PENDING")
+  vtvApprovedAt             DateTime?
+  vtvRejectionReason        String?
+  cedulaVerdeStatus         String    @default("PENDING")
+  cedulaVerdeApprovedAt     DateTime?
+  cedulaVerdeRejectionReason String?
+  // Vencimientos (P1 — cron diario avisa 7/3/1 d\u00edas antes y suspende al vencer).
+  // NotifiedStage: 0=ninguna notif, 1=7d enviada, 2=3d, 3=1d, 4=expired+suspended.
+  // Se resetea a 0 cuando el driver sube un doc nuevo con nuevo ExpiresAt.
+  licenciaExpiresAt         DateTime?
+  licenciaNotifiedStage     Int       @default(0)
+  seguroExpiresAt           DateTime?
+  seguroNotifiedStage       Int       @default(0)
+  vtvExpiresAt              DateTime?
+  vtvNotifiedStage          Int       @default(0)
+  cedulaVerdeExpiresAt      DateTime?
+  cedulaVerdeNotifiedStage  Int       @default(0)
   acceptedTermsAt    DateTime?
   acceptedPrivacyAt  DateTime?
   isActive           Boolean                   @default(true)
@@ -645,12 +690,42 @@ model Driver {
   assignmentLogs      AssignmentLog[]
   locationHistory     DriverLocationHistory[]
   deliveryAttempts    DeliveryAttempt[]
+  documentChangeRequests DriverDocumentChangeRequest[]
 
   @@index([isOnline])
   @@index([isActive])
   @@index([approvalStatus])
   @@index([isSuspended])
   @@index([fraudScore])
+  @@index([licenciaExpiresAt])
+  @@index([seguroExpiresAt])
+  @@index([vtvExpiresAt])
+  @@index([cedulaVerdeExpiresAt])
+}
+
+// Rama fix/onboarding-repartidor-complet — espejo de MerchantDocumentChangeRequest.
+// Una solicitud del driver para reemplazar un documento que ya fue APPROVED.
+// Driver no puede sobrescribir un doc aprobado directamente; debe justificar el
+// cambio y esperar que OPS apruebe la solicitud. Append-only: cada request deja
+// registro incluso tras resolver (auditor\u00eda legal).
+model DriverDocumentChangeRequest {
+  id              String   @id @default(cuid())
+  driverId        String
+  driver          Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  // Campo que el driver quiere cambiar. Valores permitidos:
+  // cuit | constanciaCuitUrl | dniFrenteUrl | dniDorsoUrl | licenciaUrl |
+  // seguroUrl | vtvUrl | cedulaVerdeUrl
+  documentField   String
+  reason          String   // Por qu\u00e9 necesita cambiarlo (driver-provided)
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  resolvedAt      DateTime?
+  resolvedBy      String?  // userId del admin que resolvi\u00f3
+  resolutionNote  String?  // Comentario del admin al resolver
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([driverId, status])
+  @@index([status, createdAt])
 }
 
 model DriverLocationHistory {
