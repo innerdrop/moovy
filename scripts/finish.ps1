@@ -34,36 +34,39 @@ if ($currentBranch -eq "main" -or $currentBranch -eq "develop") {
     Stop-WithError "Debes estar en una rama feature/fix/hotfix, no en $currentBranch"
 }
 
-# 2. Pedir mensaje de commit si no se proporciono
-# Soporta multilinea: el user escribe lineas y cierra con una linea vacia.
+# 2. Limpiar index.lock residual ANTES de cualquier operacion git.
+# Si una corrida anterior crasheo o un editor dejo el lock, 'git add .' abajo
+# fallaria. Lo limpiamos aca para que el resto del script corra limpio.
+$lockFile = Join-Path (git rev-parse --git-dir 2>$null) "index.lock"
+if ($lockFile -and (Test-Path $lockFile)) {
+    Write-Host "[GIT] Eliminando index.lock residual de corrida anterior..." -ForegroundColor Yellow
+    Remove-Item -Force $lockFile -ErrorAction SilentlyContinue
+}
+
+# 3. Pedir mensaje de commit si no se proporciono (single-line).
+# PowerShell + Read-Host en loop tiene una trampa conocida con paste multilinea
+# desde clipboard: el \r\r\n que Windows mete entre lineas se interpreta como
+# linea vacia y cierra el loop antes de tiempo, dejando el resto del texto como
+# comandos sueltos en el shell. Por eso preferimos single-line y ofrecemos
+# 'git commit --amend' despues para expandir el mensaje si hace falta.
 if ([string]::IsNullOrWhiteSpace($Message)) {
     Write-Host ""
-    Write-Host "Descripcion del cambio (podes pegar varias lineas; termina con ENTER en una linea vacia):" -ForegroundColor Cyan
-    $lines = @()
-    while ($true) {
-        $line = Read-Host
-        if ([string]::IsNullOrWhiteSpace($line)) {
-            if ($lines.Count -gt 0) { break }
-            Write-Host "[AVISO] Escribi al menos una linea de descripcion." -ForegroundColor Yellow
-            continue
-        }
-        $lines += $line
-    }
-    $Message = ($lines -join "`n")
+    Write-Host "Descripcion del cambio (una linea; si queres body extenso, 'git commit --amend' despues):" -ForegroundColor Cyan
+    $Message = Read-Host "Mensaje"
 }
 
 if ([string]::IsNullOrWhiteSpace($Message)) {
     Stop-WithError "El mensaje de commit no puede estar vacio"
 }
 
-# 3. Exportar Base de Datos
+# 4. Exportar Base de Datos
 Write-Host "[DB] Exportando base de datos..." -ForegroundColor Yellow
 docker exec moovy-db pg_dump -U postgres moovy_db > database_dump.sql
 if ($LASTEXITCODE -ne 0) {
     Add-Error "[DB] Error al exportar la base de datos (codigo $LASTEXITCODE). El commit continua de todas formas."
 }
 
-# 4. Stage changes y chequear si hay algo para commitear
+# 5. Stage changes y chequear si hay algo para commitear
 Write-Host "[GIT] Preparando cambios..." -ForegroundColor Yellow
 git add .
 if ($LASTEXITCODE -ne 0) {
@@ -83,7 +86,7 @@ if ([string]::IsNullOrWhiteSpace($staged)) {
     $skipCommit = $false
 }
 
-# 5. Commit usando archivo temporal (soporta multilinea + caracteres especiales)
+# 6. Commit usando archivo temporal (soporta caracteres especiales y UTF-8)
 if (-not $skipCommit) {
     $tempMsgFile = Join-Path $env:TEMP ("moovy-commit-" + [guid]::NewGuid().ToString() + ".txt")
     try {
@@ -100,19 +103,12 @@ if (-not $skipCommit) {
         if (Test-Path $tempMsgFile) { Remove-Item -Force $tempMsgFile }
     }
 
-    # 6. Push a la rama de trabajo (solo si commiteamos algo)
+    # 7. Push a la rama de trabajo (solo si commiteamos algo)
     Write-Host "[GIT] Subiendo $currentBranch a origin..." -ForegroundColor Yellow
     git push origin $currentBranch
     if ($LASTEXITCODE -ne 0) {
         Stop-WithError "'git push origin $currentBranch' fallo. Tus cambios estan commiteados localmente pero no en remoto. Reintenta el push manualmente."
     }
-}
-
-# 7. Limpiar index.lock residual si existe
-$lockFile = Join-Path (git rev-parse --git-dir) "index.lock"
-if (Test-Path $lockFile) {
-    Write-Host "[GIT] Eliminando index.lock residual..." -ForegroundColor Yellow
-    Remove-Item -Force $lockFile
 }
 
 # 8. Cambiar a develop y actualizar
