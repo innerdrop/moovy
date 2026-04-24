@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return recordCronRun("process-broadcasts", async () => {
+    try {
+        const stats = await recordCronRun("process-broadcasts", async () => {
         const now = new Date();
 
         // 1. Auto-promover campañas SCHEDULED con scheduledAt <= now a RUNNING
@@ -205,7 +206,16 @@ export async function POST(request: NextRequest) {
             },
             itemsProcessed: totalSent + totalFailed,
         };
-    });
+        });
+
+        return NextResponse.json(stats);
+    } catch (error) {
+        logger.error({ error }, "[cron/process-broadcasts] fallo global");
+        return NextResponse.json(
+            { error: "Error procesando broadcasts" },
+            { status: 500 }
+        );
+    }
 }
 
 // Helpers
