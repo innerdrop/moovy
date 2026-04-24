@@ -15,6 +15,7 @@ import {
     Clock,
     Shield,
 } from "lucide-react";
+import { playAlertBeep, triggerVibration } from "@/hooks/useRiderPrefs";
 
 interface SettingsViewProps {
     onBack: () => void;
@@ -76,6 +77,16 @@ export default function SettingsView({ onBack }: SettingsViewProps) {
         // Apply theme immediately
         if (key === "theme") {
             applyTheme(value as ThemeMode);
+        }
+
+        // Preview al prender: el driver escucha/siente al instante que el toggle funciona.
+        // En iOS vibration falla silenciosamente (Apple nunca la implementó).
+        // El beep funciona si ya hubo gesto de usuario (este toggle lo es).
+        if (key === "soundAlerts" && value === true) {
+            playAlertBeep();
+        }
+        if (key === "vibration" && value === true) {
+            triggerVibration([100, 50, 100]);
         }
     };
 

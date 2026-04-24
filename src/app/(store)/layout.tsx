@@ -11,6 +11,7 @@ import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ChatWidget } from "@/components/support/ChatWidget";
 import BuyerOnboardingTour from "@/components/onboarding/BuyerOnboardingTour";
+import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
 import CookieBanner from "@/components/legal/CookieBanner";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
@@ -218,6 +219,10 @@ export default function StoreLayout({
 
             {/* ISSUE-021: Tour buyer primera vez — self-gated por onboardingCompletedAt */}
             <BuyerOnboardingTour />
+
+            {/* Tutorial de instalación PWA (Rama fix/driver-settings-pwa 2026-04-24).
+                Self-gated: skip si ya está instalada o cerró el prompt antes. */}
+            <PWAInstallPrompt />
 
             {/* Ley 25.326 + AAIP: banner de consentimiento de cookies — self-gated por localStorage */}
             <CookieBanner />
