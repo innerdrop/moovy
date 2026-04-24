@@ -15,11 +15,11 @@ import {
 export const metadata: Metadata = {
     title: "Sumá tu comercio a MOOVY | Delivery en Ushuaia",
     description:
-        "Vendé más con MOOVY. Comisiones desde el 8%, cobrás al instante y llegás a miles de clientes en Ushuaia. Registrate gratis.",
+        "Sumá tu comercio a MOOVY. Comisiones desde 8%, cobrás al instante y tu primer mes es gratis. Delivery propio en Ushuaia.",
     openGraph: {
         title: "Sumá tu comercio a MOOVY",
         description:
-            "Comisiones desde el 8%, cobro instantáneo y soporte local. Registrate gratis.",
+            "Comisiones desde 8%, cobro instantáneo, primer mes gratis y soporte local en Ushuaia.",
     },
 };
 
@@ -38,9 +38,9 @@ const benefits = [
     },
     {
         icon: Users,
-        title: "Llegás a más clientes",
+        title: "Tu comercio en la app",
         description:
-            "Miles de personas en Ushuaia van a poder encontrar y pedir de tu comercio desde el celular.",
+            "Los vecinos de Ushuaia encuentran y piden desde tu comercio sin salir de la app.",
     },
     {
         icon: Clock,
@@ -89,12 +89,12 @@ export default function ComercioInfoPage() {
                         />
                     </Link>
                     <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight mb-6">
-                        Vendé más con MOOVY
+                        Sumá tu comercio a MOOVY
                     </h1>
                     <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed">
-                        Sumá tu comercio a la plataforma de delivery de Ushuaia.
-                        Cobrás al instante, controlás todo desde tu celular y
-                        llegás a clientes que hoy no te conocen.
+                        La plataforma de delivery de Ushuaia. Cobrás al instante,
+                        controlás todo desde tu celular y tu comercio queda disponible
+                        en la app de los vecinos.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link

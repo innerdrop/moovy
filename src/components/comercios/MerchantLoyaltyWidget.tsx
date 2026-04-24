@@ -244,7 +244,7 @@ export default function MerchantLoyaltyWidget({ merchantId }: { merchantId: stri
             🎯 Tu nivel se recalcula <strong>cada 30 días</strong> según la cantidad de pedidos completados.
           </p>
           <p>
-            💰 Cada nivel te da una <strong>comisión más baja</strong>, así ganas más de cada venta.
+            💰 Cada nivel te da una <strong>comisión más baja</strong>, así dejás más en casa por cada venta.
           </p>
           <p>
             👑 Los niveles altos también te dan <strong>mejor visibilidad</strong> en la app.

@@ -209,7 +209,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             <h2 style="color: #111827; margin-top: 0;">¡Bienvenido al equipo, ${SAMPLE.driverName}! 🚗</h2>
             <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
                 Tu solicitud para ser repartidor MOOVY fue <strong style="color: #059669;">aprobada</strong>.
-                Ya podés empezar a recibir pedidos y generar ingresos.
+                Ya podés conectarte desde tu panel y empezar a recibir pedidos.
             </p>
             ${emailButton('Ir al panel de repartidor', `${baseUrl}/repartidor`, 'green')}
         `),

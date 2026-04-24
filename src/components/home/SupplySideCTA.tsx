@@ -13,7 +13,7 @@ const cards = [
     },
     {
         title: "Sé repartidor MOOVY",
-        desc: "Generá ingresos con libertad, cuando vos quieras",
+        desc: "Manejás tus tiempos, cobrás por cada viaje",
         href: "/repartidor/registro",
         icon: Bike,
         gradient: "from-[#b5000e] to-[#a3000c]",

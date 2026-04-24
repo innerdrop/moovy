@@ -231,8 +231,8 @@ export default async function VendedorDashboardPage() {
                 <div className="space-y-6">
                     <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-6 text-white shadow-lg overflow-hidden relative">
                         <Tag className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10 rotate-12" />
-                        <h3 className="text-lg font-bold mb-2">Vendé más</h3>
-                        <p className="text-emerald-100 text-sm mb-6">Publicá tus productos y llegá a más compradores en Moovy.</p>
+                        <h3 className="text-lg font-bold mb-2">Publicá más productos</h3>
+                        <p className="text-emerald-100 text-sm mb-6">Cuantos más listings tengas, más probabilidad de que te encuentren.</p>
                         <Link
                             href="/vendedor/listings"
                             className="inline-flex items-center gap-2 bg-white text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:scale-105 transition"

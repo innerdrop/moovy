@@ -520,8 +520,8 @@ export default function LandingPage() {
                                             loginHref="/repartidor/login"
                                             icon={Bike}
                                             title="Repartidores"
-                                            description="Generá ingresos con libertad"
-                                            details="Trabajá cuando quieras y donde quieras. Sumate al equipo de delivery de Ushuaia."
+                                            description="Manejás tus tiempos, cobrás por cada viaje"
+                                            details="Pago al instante, sin retenciones. Sumate al equipo de delivery de Ushuaia."
                                             accentColor="#e60012"
                                         />
                                     )}
@@ -533,8 +533,8 @@ export default function LandingPage() {
                                             loginHref="/comercios/login"
                                             icon={Store}
                                             title="Comercios"
-                                            description="Potenciá tus ventas hoy"
-                                            details="Sumate a la plataforma digital líder del fin del mundo. Llegá a nuevos clientes."
+                                            description="Tu comercio en la app"
+                                            details="Sumate al delivery de Ushuaia. Cobrás al instante y controlás todo desde tu celular."
                                             accentColor="#e60012"
                                         />
                                     )}

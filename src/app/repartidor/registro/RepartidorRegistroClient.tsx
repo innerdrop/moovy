@@ -1370,7 +1370,7 @@ function RepartidorRegistroContent() {
                                 <ul className="text-sm text-green-700 space-y-1">
                                     <li className="flex items-center gap-2">
                                         <DollarSign className="w-4 h-4" />
-                                        Ganá hasta $50,000/semana
+                                        Pago al instante, sin retenciones
                                     </li>
                                     <li className="flex items-center gap-2">
                                         <Clock className="w-4 h-4" />

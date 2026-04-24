@@ -33,7 +33,7 @@ const SLIDES: Slide[] = [
         icon: <Gift className="w-14 h-14 lg:w-16 lg:h-16 text-white" />,
         title: "Tenés puntos de bienvenida",
         description:
-            "Activamos tus Puntos MOOVER al completar tu primer pedido. Cada $1.000 suma puntos, y cada punto vale $1 de descuento en futuros pedidos. Invitás amigos, ganás más.",
+            "Activamos tus Puntos MOOVER al completar tu primer pedido. Cada $1.000 suma puntos, y cada punto vale $1 de descuento en futuros pedidos. Invitás amigos, sumás más puntos.",
         accent: "from-amber-400 to-orange-500",
     },
 ];

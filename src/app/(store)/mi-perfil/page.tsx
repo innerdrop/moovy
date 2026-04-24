@@ -501,7 +501,7 @@ export default function ProfilePage() {
                                     </div>
                                     <div>
                                         <span className="text-sm font-medium text-gray-900 block">Quiero ser Repartidor</span>
-                                        <span className="text-[10px] text-gray-400">Generá ingresos con tu vehículo</span>
+                                        <span className="text-[10px] text-gray-400">Manejás tus tiempos, cobrás por cada viaje</span>
                                     </div>
                                 </div>
                                 {activatingRole === "driver" ? (
@@ -642,7 +642,7 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900">Quiero ser Repartidor</h3>
-                                <p className="text-sm text-gray-500">Generá ingresos con tu vehículo</p>
+                                <p className="text-sm text-gray-500">Manejás tus tiempos, cobrás por cada viaje</p>
                             </div>
                         </div>
 
