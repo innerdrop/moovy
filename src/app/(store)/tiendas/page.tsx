@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 async function getAllMerchants() {
     try {
         return await prisma.merchant.findMany({
-            where: { isActive: true },
+            // Defense in depth: además de `isActive`, exigimos `approvalStatus: APPROVED`.
+            // Así un merchant PENDING o REJECTED jamás aparece en el listado público
+            // aunque por drift DB tenga `isActive: true` mal seteado.
+            where: { isActive: true, approvalStatus: "APPROVED" },
             orderBy: [
                 { isOpen: "desc" },
                 { isPremium: "desc" },

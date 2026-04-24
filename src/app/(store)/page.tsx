@@ -110,7 +110,9 @@ async function getHomeCategories(limit: number = 8) {
 async function getAllActiveMerchants() {
   try {
     return await prisma.merchant.findMany({
-      where: { isActive: true },
+      // Defense in depth: exigimos approvalStatus=APPROVED además de isActive
+      // para que un merchant pendiente/rechazado nunca aparezca en la home.
+      where: { isActive: true, approvalStatus: "APPROVED" },
       select: MERCHANT_DISCOVERY_SELECT,
       orderBy: [
         { isOpen: "desc" },

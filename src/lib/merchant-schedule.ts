@@ -46,15 +46,26 @@ export interface ScheduleCheckResult {
 
 // ── Constantes ───────────────────────────────────────────────────────
 
-/** Horario default para merchants sin schedule configurado */
+/**
+ * Horario default para merchants sin schedule configurado.
+ *
+ * DECISIÓN 2026-04-24 (rama fix/merchant-onboarding-polish): todos los días
+ * arrancan CERRADOS. Sin un schedule explícito, el merchant no puede operar.
+ * Evita que comercios "se abran solos" por asumir un horario genérico —
+ * cada comercio TIENE que configurar sus horarios antes de recibir pedidos.
+ *
+ * Impacto: cualquier merchant aprobado que NO tenga scheduleJson va a quedar
+ * cerrado al deploy. El onboarding checklist lo marca como requisito obligatorio
+ * y el dashboard del merchant redirige a mi-comercio si detecta schedule vacío.
+ */
 export const DEFAULT_MERCHANT_SCHEDULE: WeekSchedule = {
-    "1": [{ open: "09:00", close: "21:00" }], // Lunes
-    "2": [{ open: "09:00", close: "21:00" }], // Martes
-    "3": [{ open: "09:00", close: "21:00" }], // Miércoles
-    "4": [{ open: "09:00", close: "21:00" }], // Jueves
-    "5": [{ open: "09:00", close: "21:00" }], // Viernes
-    "6": [{ open: "10:00", close: "14:00" }], // Sábado
-    "7": null, // Domingo — cerrado
+    "1": null, // Lunes — cerrado hasta que el merchant lo configure
+    "2": null, // Martes
+    "3": null, // Miércoles
+    "4": null, // Jueves
+    "5": null, // Viernes
+    "6": null, // Sábado
+    "7": null, // Domingo
 };
 
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
