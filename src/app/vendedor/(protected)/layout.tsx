@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
 import SellerMobileMoreMenu from "@/components/seller/SellerMobileMoreMenu";
+import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
 import { MessageCircle } from "lucide-react";
 
 export default async function VendedorLayout({ children }: { children: React.ReactNode }) {
@@ -145,6 +146,9 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                 {/* Safe area padding for iPhones with notch */}
                 <div className="h-[env(safe-area-inset-bottom)] bg-white" />
             </nav>
+
+            {/* PWA install tutorial — crítico en iOS para recibir push notifications. */}
+            <PWAInstallPrompt />
         </div>
     );
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { sendMerchantApprovalEmail } from "@/lib/email";
+import { sendMerchantApprovedEmail } from "@/lib/email-p0";
 import { approveMerchantTransition } from "@/lib/roles";
 
 // PUT/POST - Approve merchant application (admin only)
@@ -56,9 +56,15 @@ export async function PUT(
             adminEmail: session.user.email ?? "unknown",
         });
 
-        // Send approval email (non-blocking)
+        // Send approval email (non-blocking). Usa la versión oficial del registry
+        // (src/lib/email-p0.ts) para que lo que el admin edita en /ops/emails
+        // sea lo que realmente recibe el merchant.
         if (merchant.owner?.email) {
-            sendMerchantApprovalEmail(merchant.owner.email, merchant.name);
+            sendMerchantApprovedEmail({
+                email: merchant.owner.email,
+                businessName: merchant.name,
+                contactName: merchant.owner.name || "",
+            });
         }
 
         return NextResponse.json({

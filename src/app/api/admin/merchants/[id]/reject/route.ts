@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { sendMerchantRejectionEmail } from "@/lib/email";
+import { sendMerchantRejectedEmail } from "@/lib/email-p0";
 import { rejectMerchantTransition } from "@/lib/roles";
 
 // PUT/POST - Reject merchant application (admin only)
@@ -53,9 +53,14 @@ export async function PUT(
             adminEmail: session.user.email ?? "unknown",
         });
 
-        // Send rejection email (non-blocking)
+        // Send rejection email (non-blocking). Versión oficial del registry.
         if (merchant.owner?.email) {
-            sendMerchantRejectionEmail(merchant.owner.email, merchant.name, reason);
+            sendMerchantRejectedEmail({
+                email: merchant.owner.email,
+                businessName: merchant.name,
+                contactName: merchant.owner.name || "",
+                reason,
+            });
         }
 
         return NextResponse.json({

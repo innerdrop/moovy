@@ -391,58 +391,13 @@ export async function sendMerchantRequestNotification(
     return results.some(r => r);
 }
 
-/**
- * Comercio aprobado — email al merchant
- */
-export async function sendMerchantApprovalEmail(email: string, businessName: string) {
-    const html = emailLayout(`
-        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu comercio fue aprobado</h2>
-        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
-            <strong>${businessName}</strong> ya est&aacute; activo en MOOVY. Pod&eacute;s configurar tus horarios de atenci&oacute;n, subir tus productos con fotos y precios, y empezar a recibir pedidos.
-        </p>
-        ${emailButton('Ir a mi panel', `${baseUrl}/comercios`, 'green')}
-    `);
-
-    return sendEmail({ to: email, subject: `Tu comercio ${businessName} fue aprobado \u2014 MOOVY`, html, tag: 'merchant_approved' });
-}
-
-/**
- * Comercio rechazado — email al merchant
- */
-export async function sendMerchantRejectionEmail(email: string, businessName: string, reason?: string) {
-    const html = emailLayout(`
-        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no aprobada</h2>
-        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
-            La solicitud de <strong>${businessName}</strong> no pudo ser aprobada en esta oportunidad.
-        </p>
-        ${reason ? emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning') : ''}
-        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
-            Pod&eacute;s corregir los datos indicados y volver a registrarte, o contactarnos si ten&eacute;s preguntas.
-        </p>
-        ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
-    `);
-
-    return sendEmail({ to: email, subject: `Solicitud de comercio ${businessName} \u2014 MOOVY`, html, tag: 'merchant_rejected' });
-}
-
-/**
- * Repartidor rechazado — email al driver
- */
-export async function sendDriverRejectionEmail(email: string, firstName: string, reason?: string) {
-    const html = emailLayout(`
-        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud no aprobada</h2>
-        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
-            ${firstName}, tu solicitud para ser repartidor en MOOVY no pudo ser aprobada en esta oportunidad.
-        </p>
-        ${reason ? emailAlertBox(`<strong>Motivo:</strong> ${reason}`, 'warning') : ''}
-        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
-            Pod&eacute;s corregir la documentaci&oacute;n indicada y volver a postularte, o contactarnos si ten&eacute;s preguntas.
-        </p>
-        ${emailButton('Contactar soporte', `https://wa.me/5492901553173`, 'blue')}
-    `);
-
-    return sendEmail({ to: email, subject: 'Solicitud de repartidor \u2014 MOOVY', html, tag: 'driver_rejected' });
-}
+// Funciones legacy eliminadas 2026-04-24 (rama chore/prelaunch-polish-pwa-sound-email):
+// - sendMerchantApprovalEmail  → reemplazada por sendMerchantApprovedEmail (src/lib/email-p0.ts)
+// - sendMerchantRejectionEmail → reemplazada por sendMerchantRejectedEmail  (src/lib/email-p0.ts)
+// - sendDriverRejectionEmail   → reemplazada por sendDriverRejectedEmail    (src/lib/email-p0.ts)
+// Las versiones nuevas son las registradas en email-registry.ts y editables desde
+// /ops/emails. Antes había drift: el admin editaba los templates de registry pero
+// el código disparaba las versiones legacy — el admin nunca veía sus cambios.
 
 // ─── Fix/onboarding-comercio-completo ────────────────────────────────────────
 // Emails asociados a aprobación granular por documento + solicitudes de cambio.

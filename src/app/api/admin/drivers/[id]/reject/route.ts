@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { sendDriverRejectionEmail } from "@/lib/email";
+import { sendDriverRejectedEmail } from "@/lib/email-p0";
 import { rejectDriverTransition } from "@/lib/roles";
 
 // PUT/POST - Reject driver application (admin only).
@@ -55,9 +55,13 @@ export async function PUT(
             adminEmail: session.user.email ?? "unknown",
         });
 
-        // Send rejection email (non-blocking)
+        // Send rejection email (non-blocking). Versión oficial del registry.
         if (driver.user?.email) {
-            sendDriverRejectionEmail(driver.user.email, driver.user.name || "Repartidor", reason);
+            sendDriverRejectedEmail({
+                email: driver.user.email,
+                driverName: driver.user.name || "Repartidor",
+                reason,
+            });
         }
 
         return NextResponse.json({

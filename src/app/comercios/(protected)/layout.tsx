@@ -21,6 +21,7 @@ import {
 import SupportNavBadge from "@/components/comercios/SupportNavBadge";
 import MobileMoreMenu from "@/components/comercios/MobileMoreMenu";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
+import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
@@ -175,6 +176,8 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                 <div className="h-[env(safe-area-inset-bottom)] bg-white" />
             </nav>
 
+            {/* PWA install tutorial — iOS sin instalar no recibe push de pedidos nuevos. */}
+            <PWAInstallPrompt />
         </div>
     );
 }

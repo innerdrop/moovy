@@ -18,7 +18,8 @@ import {
     isValidDocumentField,
     DOCUMENT_COLUMNS,
 } from "@/lib/merchant-document-approval";
-import { sendMerchantApprovalEmail, sendMerchantDocumentApprovedEmail } from "@/lib/email";
+import { sendMerchantDocumentApprovedEmail } from "@/lib/email";
+import { sendMerchantApprovedEmail } from "@/lib/email-p0";
 
 export async function POST(
     request: Request,
@@ -101,7 +102,11 @@ export async function POST(
                 result.merchantAutoActivated
             );
             if (result.merchantAutoActivated) {
-                sendMerchantApprovalEmail(ownerEmail, (merchant as any).name);
+                sendMerchantApprovedEmail({
+                    email: ownerEmail,
+                    businessName: (merchant as any).name,
+                    contactName: (merchant as any).owner?.name || "",
+                });
             }
         }
 
