@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { SegmentFiltersSchema, countSegment } from "@/lib/user-segments";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 // GET /api/admin/segments/[id]
 export async function GET(

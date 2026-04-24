@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getPendingDriverPayouts, getPendingMerchantPayouts } from "@/lib/payouts";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 /**
  * GET /api/admin/payouts/pending?type=DRIVER|MERCHANT

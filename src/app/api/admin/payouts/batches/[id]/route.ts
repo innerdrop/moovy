@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { buildPayoutCsv } from "@/lib/payouts";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 // GET /api/admin/payouts/batches/[id]?format=csv|json
 export async function GET(

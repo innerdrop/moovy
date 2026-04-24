@@ -7,7 +7,7 @@ import {
     getPendingDriverPayouts,
     getPendingMerchantPayouts,
 } from "@/lib/payouts";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 // GET /api/admin/payouts/batches?type=DRIVER|MERCHANT&status=PAID
 export async function GET(request: NextRequest) {

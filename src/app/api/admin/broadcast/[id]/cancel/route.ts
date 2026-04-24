@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 // POST /api/admin/broadcast/[id]/cancel
 // Permite cancelar campañas en SCHEDULED o RUNNING. Si estaba RUNNING, el cron

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { countSegment, parseSegmentFilters } from "@/lib/user-segments";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 /**
  * POST /api/admin/broadcast/[id]/launch

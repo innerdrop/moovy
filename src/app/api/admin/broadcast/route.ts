@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 // GET /api/admin/broadcast — lista de campañas con paginación
 export async function GET(request: NextRequest) {

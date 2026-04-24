@@ -6,7 +6,7 @@ import { parseSegmentFilters, buildSegmentWhere } from "@/lib/user-segments";
 import { sendPushToUser } from "@/lib/push";
 import { renderEmailTemplate } from "@/lib/email-templates";
 import { sendEmail } from "@/lib/email";
-import { logger } from "@/lib/logger";
+import logger from "@/lib/logger";
 
 /**
  * POST /api/cron/process-broadcasts
