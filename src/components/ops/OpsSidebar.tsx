@@ -36,6 +36,12 @@ import {
     Star,
     ClipboardList,
     MapPin,
+    FileText,
+    Send,
+    Filter,
+    GitBranch,
+    Wallet,
+    ClipboardCheck,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -56,12 +62,21 @@ const navSections: NavSection[] = [
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
             { href: "/ops/fraude", icon: Shield, label: "Fraude" },
+            { href: "/ops/auditoria", icon: FileText, label: "Auditoría" },
         ],
     },
     {
         title: "Actores",
         items: [
             { href: "/ops/usuarios", icon: Users, label: "Usuarios" },
+            { href: "/ops/pipeline-comercios", icon: GitBranch, label: "Pipeline Comercios" },
+        ],
+    },
+    {
+        title: "CRM",
+        items: [
+            { href: "/ops/segmentos", icon: Filter, label: "Segmentos" },
+            { href: "/ops/broadcast", icon: Send, label: "Broadcast" },
         ],
     },
     {
@@ -97,6 +112,7 @@ const navSections: NavSection[] = [
             { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
             { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
             { href: "/ops/lealtad-comercios", icon: Gift, label: "Lealtad" },
+            { href: "/ops/pagos-pendientes", icon: Wallet, label: "Pagos Pendientes" },
         ],
     },
     {
@@ -108,6 +124,7 @@ const navSections: NavSection[] = [
             { href: "/ops/zonas-excluidas", icon: MapPin, label: "Zonas Excluidas" },
             { href: "/ops/backups", icon: Archive, label: "Backups" },
             { href: "/ops/emails", icon: Mail, label: "Emails" },
+            { href: "/ops/playbook", icon: ClipboardCheck, label: "Playbook" },
         ],
     },
 ];

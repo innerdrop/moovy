@@ -93,6 +93,8 @@ model User {
   activityLogs       UserActivityLog[]
   driverAvailabilitySubs DriverAvailabilitySubscription[]
   consentLogs        ConsentLog[]
+  adminNotesAbout    AdminNote[]         @relation("AdminNotesAboutUser")    // notas que admins dejaron sobre mi
+  adminNotesWritten  AdminNote[]         @relation("AdminNotesWrittenByAdmin") // notas que yo (admin) dejé sobre otros
 
   @@index([isSuspended])
   @@index([archivedAt])
@@ -1611,4 +1613,175 @@ model UserActivityLog {
   @@index([action])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ── OPS/CRM: plantillas de email editables desde el panel (reemplaza hardcode de lib/email.ts) ──
+// Permite a los admins editar el copy de emails transaccionales sin deploy.
+// Fallback: si el template no existe en DB o isActive=false, cae al hardcode de lib/email.ts.
+// Las placeholders se renderean server-side (ej: {{firstName}}, {{orderNumber}}).
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  key          String   @unique           // ej: "welcome", "driver_approved", "order_confirmed"
+  name         String                     // Nombre legible: "Bienvenida al usuario"
+  subject      String                     // Puede incluir placeholders: "Tu pedido {{orderNumber}}"
+  bodyHtml     String   @db.Text          // HTML con placeholders {{firstName}}, {{orderNumber}}, etc.
+  placeholders String?                    // JSON array de placeholders disponibles: ["firstName","orderNumber"]
+  category     String   @default("transactional") // transactional | marketing | system
+  recipient    String   @default("comprador")      // comprador | comercio | repartidor | vendedor | admin
+  isActive     Boolean  @default(true)             // Si false, cae al hardcode
+  version      Int      @default(1)                // Incrementa en cada edit (auditoría)
+  lastEditedBy String?                             // userId del admin que editó
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([key])
+  @@index([category, recipient])
+  @@index([isActive])
+}
+
+// ── OPS/CRM: notas internas del admin sobre la ficha de un usuario ──
+// NO visibles al user final. Histórico de interacciones (llamadas, reclamos, aclaraciones).
+// Soft-delete por cascade cuando se elimina el user.
+model AdminNote {
+  id        String   @id @default(cuid())
+  userId    String                  // user al que pertenece la nota (la ficha)
+  adminId   String                  // admin que escribió la nota
+  content   String   @db.Text       // texto libre
+  pinned    Boolean  @default(false) // pinear arriba de la ficha
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User @relation("AdminNotesAboutUser", fields: [userId], references: [id], onDelete: Cascade)
+  admin User @relation("AdminNotesWrittenByAdmin", fields: [adminId], references: [id])
+
+  @@index([userId, pinned, createdAt])
+  @@index([adminId])
+}
+
+// ── OPS/Playbook: checklists operativos editables desde OPS ──
+// Ej: "Alta de comercio nuevo" con pasos ordenados que el operador tickea.
+// No tracking de completados por operador (Fase 2); Fase 1 es solo la guía editable.
+model PlaybookChecklist {
+  id          String         @id @default(cuid())
+  name        String                                  // "Alta de comercio nuevo"
+  description String?        @db.Text
+  category    String         @default("onboarding")   // onboarding | approval | escalation | incident | other
+  isActive    Boolean        @default(true)
+  order       Int            @default(0)              // Para ordenar en la UI
+  steps       PlaybookStep[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([category, isActive, order])
+}
+
+model PlaybookStep {
+  id          String   @id @default(cuid())
+  checklistId String
+  content     String   @db.Text                       // "Contactar al comercio en 24h por WhatsApp"
+  order       Int                                     // orden dentro del checklist
+  required    Boolean  @default(true)                 // required visual (no bloquea nada en Fase 1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  checklist PlaybookChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId, order])
+}
+
+// ── OPS/CRM: segmentos guardados de usuarios para usar en broadcast ──
+// Los filters se guardan como JSON y se evalúan en runtime sobre la query Prisma.
+// lastCount se cachea para que la UI muestre el tamaño sin re-ejecutar la query.
+model UserSegment {
+  id          String              @id @default(cuid())
+  name        String                                   // "Buyers inactivos 30d"
+  description String?             @db.Text
+  filters     String              @db.Text             // JSON: {role, status, lastActivityDays, minSpent, ...}
+  lastCount   Int?                                     // último preview del tamaño
+  lastCountAt DateTime?                                // cuándo se calculó
+  createdBy   String                                   // adminId
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  campaigns BroadcastCampaign[]
+
+  @@index([isActive, createdAt])
+}
+
+// ── OPS/CRM: campañas de push/email masivas a un segmento ──
+// Se procesan en batches vía cron porque mandar 10k pushes en un HTTP request rompe.
+// Status: DRAFT → SCHEDULED → RUNNING → COMPLETED | FAILED | CANCELLED.
+model BroadcastCampaign {
+  id              String    @id @default(cuid())
+  name            String
+  channel         String                                // push | email | both
+  segmentId       String
+  templateId      String?                               // opcional, sino usa customTitle/customBody
+  customTitle     String?                               // push title o email subject
+  customBody      String?   @db.Text                    // push body o email body
+  customUrl       String?                               // deep link para push
+  status          String    @default("DRAFT")           // DRAFT | SCHEDULED | RUNNING | COMPLETED | FAILED | CANCELLED
+  scheduledAt     DateTime?                             // null = disparar manual al cambiar a RUNNING
+  startedAt       DateTime?
+  completedAt     DateTime?
+  totalRecipients Int       @default(0)                 // calculado al pasar a SCHEDULED
+  sentCount       Int       @default(0)
+  failedCount     Int       @default(0)
+  lastCursor      String?                               // cursor (userId) del último batch procesado, para retomar si el cron cae
+  createdBy       String                                // adminId
+  lastError       String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  segment UserSegment @relation(fields: [segmentId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@index([segmentId])
+  @@index([createdBy])
+}
+
+// ── OPS/Finanzas: batch de pagos pendientes a drivers/merchants ──
+// El admin consolida saldos pendientes en un batch, exporta CSV para transferencia bulk
+// en MP/banco, y marca como PAID cuando confirma. NO auto-ejecuta nada — MOOVY NUNCA
+// dispara plata solo. Double confirm requerido en UI antes de pasar a PAID.
+model PayoutBatch {
+  id          String       @id @default(cuid())
+  batchType   String                                    // DRIVER | MERCHANT
+  status      String       @default("DRAFT")            // DRAFT | GENERATED | PAID | CANCELLED
+  periodStart DateTime                                  // rango que cubre el batch
+  periodEnd   DateTime
+  totalAmount Float        @default(0)                  // suma de items
+  itemCount   Int          @default(0)
+  csvPath     String?                                   // path al CSV exportado (relativo a /public si aplica)
+  generatedBy String                                    // adminId
+  paidBy      String?                                   // admin que confirmó el pago
+  paidAt      DateTime?
+  notes       String?      @db.Text
+  items       PayoutItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([batchType, status])
+  @@index([generatedBy])
+  @@index([paidAt])
+}
+
+model PayoutItem {
+  id             String   @id @default(cuid())
+  batchId        String
+  recipientType  String                                 // DRIVER | MERCHANT
+  recipientId    String                                 // Driver.id o Merchant.id
+  recipientName  String                                 // denormalizado para el CSV (no se actualiza si cambia)
+  bankAccount    String?                                // CBU/alias denormalizado al generar
+  cuit           String?                                // denormalizado
+  amount         Float
+  ordersIncluded String   @db.Text                      // JSON array con orderIds incluidos en este pago
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  batch PayoutBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([recipientType, recipientId])
 }

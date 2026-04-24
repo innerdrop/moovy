@@ -27,11 +27,13 @@ import {
     Gift,
     Shield,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
 import { formatPrice } from "@/lib/delivery";
 import { UserAdminActions } from "@/components/ops/UserAdminActions";
 import { UserActivityLog } from "@/components/ops/UserActivityLog";
+import { AdminNotesSection } from "@/components/ops/AdminNotesSection";
 
 interface UserData {
     id: string;
@@ -357,6 +359,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const unwrappedParams = use(params);
     const userId = unwrappedParams.id;
     const router = useRouter();
+    const { data: session } = useSession();
+    const currentAdminId = (session?.user as { id?: string } | undefined)?.id || null;
 
     const [user, setUser] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -1004,6 +1008,13 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
                 )}
             </div>
+
+            {/* Notas internas del admin — visibles en toda pestaña.
+                Mostramos solo cuando la sesión ya cargó el id del admin actual,
+                porque la UI depende de ese valor para ownership (editar/pin). */}
+            {currentAdminId && (
+                <AdminNotesSection userId={userId} currentAdminId={currentAdminId} />
+            )}
 
             {/* Tabs Navigation */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100">

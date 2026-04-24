@@ -95,6 +95,12 @@ export const CRON_EXPECTATIONS: Record<string, { maxHours: number; label: string
         maxHours: 30,
         label: "Avisos de vencimiento de documentos de repartidor",
     },
+    // CRM: procesa campañas de broadcast en status RUNNING en batches de 200
+    // recipients por run. Si deja de correr, las campañas se estancan sin enviar.
+    "process-broadcasts": {
+        maxHours: 2,
+        label: "Procesamiento de campañas de broadcast (push/email)",
+    },
 };
 
 export type CronHealthStatus = "healthy" | "stale" | "never-ran" | "failing";
