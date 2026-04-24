@@ -1145,12 +1145,21 @@ export default function RiderDashboard() {
                                     <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
                                         {(() => {
                                             if (!battery.supported || battery.level === null) {
+                                                // iOS Safari / Chrome iOS (usa WebKit) nunca expone la Battery API.
+                                                // Mostramos un label claro en vez de "—" para que el driver entienda
+                                                // que no es un bug de Moovy sino limitación del navegador.
                                                 return (
                                                     <>
-                                                        <BatteryLow className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                                                        <div className="min-w-0 text-right">
+                                                        <BatteryLow
+                                                            className="w-4 h-4 text-gray-300 flex-shrink-0"
+                                                            aria-label="Batería no disponible"
+                                                        />
+                                                        <div
+                                                            className="min-w-0 text-right"
+                                                            title="Safari iOS no expone el nivel de batería al navegador. Chequeá la barra de estado del celular."
+                                                        >
                                                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">Batería</p>
-                                                            <p className="text-[11px] font-bold text-gray-400 leading-tight truncate mt-0.5">—</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 leading-tight truncate mt-0.5">No disp.</p>
                                                         </div>
                                                     </>
                                                 );
