@@ -2,22 +2,16 @@
 // PUT /api/driver/location - Updates driver's real-time location
 // Only updates DB if driver moved significantly (>10 meters)
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance } from "@/lib/geo";
 import { checkAndNotifyNearDestination } from "@/lib/driver-proximity";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export async function PUT(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
-        }
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
         const { latitude, longitude } = await request.json();
 
@@ -35,19 +29,6 @@ export async function PUT(request: Request) {
                 { status: 400 }
             );
         }
-
-        // Get driver record
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: {
-                id: true,
-                latitude: true,
-                longitude: true,
-                lastLocationAt: true,
-                approvalStatus: true,
-                isActive: true,
-            },
-        });
 
         if (!driver) {
             return NextResponse.json(
@@ -176,21 +157,15 @@ export async function PUT(request: Request) {
 // GET - Get current driver location (for debugging/admin)
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        const isDriver = hasAnyRole(session, ["DRIVER"]);
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId, driver, isAdmin } = authResult;
 
         // For drivers, return their own location
-        if (isDriver) {
-            const driver = await prisma.driver.findUnique({
-                where: { userId: session.user.id },
+        // A user that is both driver and admin is treated as driver here (scoped to self)
+        if (driver) {
+            const driverLoc = await prisma.driver.findUnique({
+                where: { userId },
                 select: {
                     latitude: true,
                     longitude: true,
@@ -199,27 +174,31 @@ export async function GET() {
                 },
             });
 
-            return NextResponse.json(driver);
+            return NextResponse.json(driverLoc);
         }
 
-        // For admin, return all drivers with location
-        const drivers = await prisma.driver.findMany({
-            where: {
-                latitude: { not: null },
-                longitude: { not: null },
-            },
-            select: {
-                id: true,
-                latitude: true,
-                longitude: true,
-                lastLocationAt: true,
-                availabilityStatus: true,
-                vehicleType: true,
-                user: { select: { name: true } },
-            },
-        });
+        // For admin without driver profile, return all drivers with location
+        if (isAdmin) {
+            const drivers = await prisma.driver.findMany({
+                where: {
+                    latitude: { not: null },
+                    longitude: { not: null },
+                },
+                select: {
+                    id: true,
+                    latitude: true,
+                    longitude: true,
+                    lastLocationAt: true,
+                    availabilityStatus: true,
+                    vehicleType: true,
+                    user: { select: { name: true } },
+                },
+            });
 
-        return NextResponse.json(drivers);
+            return NextResponse.json(drivers);
+        }
+
+        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     } catch (error) {
         console.error("Error getting driver location:", error);
         return NextResponse.json(

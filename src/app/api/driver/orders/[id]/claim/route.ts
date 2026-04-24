@@ -2,32 +2,20 @@
 // Allows an APPROVED driver to claim an available READY order
 // Uses transaction to prevent race condition (two drivers claiming same order)
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores pueden tomar pedidos" }, { status: 403 });
-        }
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
         const { id: orderId } = await params;
-
-        // Verify driver exists, is approved, and is active
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true, approvalStatus: true, isActive: true, isOnline: true },
-        });
 
         if (!driver) {
             return NextResponse.json({ error: "Perfil de repartidor no encontrado. Registrate primero." }, { status: 404 });

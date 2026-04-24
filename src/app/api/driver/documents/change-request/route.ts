@@ -15,8 +15,6 @@
  * Lista las solicitudes propias del driver autenticado (histórico + pending).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -25,6 +23,7 @@ import {
     DRIVER_DOCUMENT_COLUMNS,
 } from "@/lib/driver-document-approval";
 import { sendAdminDriverChangeRequestEmail } from "@/lib/email";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export async function POST(request: NextRequest) {
     const limited = await applyRateLimit(
@@ -36,16 +35,12 @@ export async function POST(request: NextRequest) {
     if (limited) return limited;
 
     try {
-        const session = await auth();
-        if (
-            !session?.user?.id ||
-            !hasAnyRole(session, ["DRIVER", "ADMIN"])
-        ) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId } = authResult;
 
         const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
+            where: { userId },
             select: {
                 id: true,
                 cuitStatus: true,
@@ -154,7 +149,7 @@ export async function POST(request: NextRequest) {
             action: "DRIVER_CHANGE_REQUEST_CREATED",
             entityType: "Driver",
             entityId: driver.id,
-            userId: session.user.id,
+            userId,
             details: {
                 requestId: created.id,
                 documentField,
@@ -195,18 +190,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(_request: NextRequest) {
     try {
-        const session = await auth();
-        if (
-            !session?.user?.id ||
-            !hasAnyRole(session, ["DRIVER", "ADMIN"])
-        ) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true },
-        });
         if (!driver) {
             return NextResponse.json(
                 { error: "Repartidor no encontrado" },

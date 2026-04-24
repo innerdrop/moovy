@@ -2,22 +2,17 @@
 // PUT /api/driver/status { status: "DISPONIBLE" | "OCUPADO" | "FUERA_DE_SERVICIO" }
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyAvailabilitySubscribers } from "@/lib/driver-availability";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 const VALID_STATUSES = ["DISPONIBLE", "OCUPADO", "FUERA_DE_SERVICIO"];
 
 export async function PUT(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
-        }
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId, driver: existingDriver } = authResult;
 
         const { status } = await request.json();
 
@@ -31,14 +26,10 @@ export async function PUT(request: Request) {
         // ISSUE-054: Detectamos el edge offline → online antes de actualizar para
         // disparar el push a buyers suscriptos solo en esa transición (no en
         // cada actualización de estado mientras el driver ya estaba online).
-        const previous = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: { isOnline: true },
-        });
-        const wasOffline = !previous?.isOnline;
+        const wasOffline = !existingDriver?.isOnline;
 
         const driver = await prisma.driver.update({
-            where: { userId: session.user.id },
+            where: { userId },
             data: {
                 availabilityStatus: status,
                 isOnline: status !== "FUERA_DE_SERVICIO",

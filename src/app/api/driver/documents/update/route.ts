@@ -27,8 +27,6 @@
  *    limpia rejection + vuelve a PENDING + (si aplica) resetea el notifiedStage.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { validateCuit } from "@/lib/cuit";
@@ -38,6 +36,7 @@ import {
     resetDriverDocumentToPending,
     type DriverDocumentField,
 } from "@/lib/driver-document-approval";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 // Whitelist de campos que el driver puede re-subir.
 const ALLOWED_FIELDS: DriverDocumentField[] = [
@@ -80,16 +79,12 @@ export async function PATCH(request: NextRequest) {
     if (limited) return limited;
 
     try {
-        const session = await auth();
-        if (
-            !session?.user?.id ||
-            !hasAnyRole(session, ["DRIVER", "ADMIN"])
-        ) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId } = authResult;
 
         const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
+            where: { userId },
             select: {
                 id: true,
                 vehicleType: true,
@@ -208,7 +203,7 @@ export async function PATCH(request: NextRequest) {
                 await resetDriverDocumentToPending(
                     driver.id,
                     field,
-                    session.user.id,
+                    userId,
                     newExpiration !== undefined
                         ? { expiresAt: newExpiration }
                         : undefined

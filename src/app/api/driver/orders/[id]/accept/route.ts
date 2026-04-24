@@ -1,32 +1,21 @@
 // API Route: Driver accepts pending order
 // POST /api/driver/orders/[id]/accept
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { driverAcceptOrder } from "@/lib/logistics";
 import { socketEmitToRooms } from "@/lib/socket-emit";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export async function POST(
     request: Request,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
-        }
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
         const { id } = await context.params;
-
-        // Get driver ID for current user
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-        });
 
         if (!driver) {
             return NextResponse.json({ error: "Perfil de repartidor no encontrado" }, { status: 404 });

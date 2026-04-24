@@ -2,11 +2,9 @@
 // POST /api/driver/orders/[id]/verify-pickup-pin
 // ISSUE-001: PIN doble de entrega
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
-import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { verifyOrderOrSubOrderPin } from "@/lib/pin-verification";
+import { requireDriverApi } from "@/lib/driver-auth";
 import logger from "@/lib/logger";
 
 const pinLogger = logger.child({ context: "verify-pickup-pin" });
@@ -20,13 +18,12 @@ export async function POST(
     if (limited) return limited;
 
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver, userId } = authResult;
 
-        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
-            return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
+        if (!driver) {
+            return NextResponse.json({ error: "No sos repartidor registrado" }, { status: 403 });
         }
 
         const { id: orderId } = await params;
@@ -40,23 +37,13 @@ export async function POST(
             return NextResponse.json({ error: "Falta el PIN" }, { status: 400 });
         }
 
-        // Get driver record
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!driver) {
-            return NextResponse.json({ error: "No sos repartidor registrado" }, { status: 403 });
-        }
-
         const result = await verifyOrderOrSubOrderPin({
             entityType: "order",
             entityId: orderId,
             pinType: "pickup",
             pinInput: pin,
             driverId: driver.id,
-            userId: session.user.id,
+            userId,
             driverGps: gps || null,
         });
 

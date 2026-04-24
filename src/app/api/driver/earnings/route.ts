@@ -1,26 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-        });
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
         if (!driver) {
+            // Admin sin Driver propio no tiene ganancias que consultar
             return NextResponse.json({ error: "Driver not found" }, { status: 404 });
         }
 

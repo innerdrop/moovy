@@ -1,27 +1,16 @@
 // API Route: Get pending orders for a driver
 // Returns orders where this driver is pendingDriverId (offered but not yet accepted)
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
-        }
-
-        // Get driver record
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-        });
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
         if (!driver) {
             return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });

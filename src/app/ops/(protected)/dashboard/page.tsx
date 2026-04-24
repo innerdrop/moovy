@@ -225,7 +225,10 @@ export default async function AdminDashboard() {
         };
         alerts.push({
             message: messages[cron.status],
-            href: "/ops/configuracion-logistica",
+            // Deep-link al panel de crons con el jobName pre-filtrado. Así el admin
+            // llega directo al historial de ESE cron específico y ve si es un
+            // problema de configuración del runner o de errores del endpoint.
+            href: `/ops/crons?jobName=${encodeURIComponent(cron.jobName)}`,
             type: cron.status === "stale" ? "warning" : "danger",
         });
     }

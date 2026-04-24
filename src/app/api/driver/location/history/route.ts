@@ -2,11 +2,10 @@
 // POST /api/driver/location/history - Save multiple location points for dispute resolution
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security";
 import { createRequestLogger } from "@/lib/logger";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 const logger = createRequestLogger("driver-location-history");
 
@@ -30,18 +29,20 @@ type BatchLocationInput = z.infer<typeof BatchLocationSchema>;
 export async function POST(request: Request) {
     let sessionUserId: string | null = null;
     try {
-        const session = await auth();
-        sessionUserId = session?.user?.id ?? null;
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId, driver } = authResult;
+        sessionUserId = userId;
 
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores" }, { status: 403 });
+        if (!driver) {
+            return NextResponse.json(
+                { error: "Perfil de repartidor no encontrado" },
+                { status: 404 }
+            );
         }
 
         // Rate limit: 10 requests per minute
-        const rateLimitKey = `location-history:${session.user.id}`;
+        const rateLimitKey = `location-history:${userId}`;
         const rateLimitResult = await checkRateLimit(rateLimitKey, 10, 60 * 1000);
         if (!rateLimitResult.allowed) {
             return NextResponse.json(
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
             logger.warn(
                 {
                     errors: validationResult.error.issues,
-                    userId: session.user.id,
+                    userId,
                 },
                 "Location history validation failed"
             );
@@ -81,19 +82,6 @@ export async function POST(request: Request) {
         }
 
         const { points, orderId } = validationResult.data;
-
-        // Verify driver exists and get their ID
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!driver) {
-            return NextResponse.json(
-                { error: "Perfil de repartidor no encontrado" },
-                { status: 404 }
-            );
-        }
 
         // Optional: verify orderId belongs to this driver (if provided)
         if (orderId) {

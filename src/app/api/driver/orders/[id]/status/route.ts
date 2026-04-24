@@ -1,14 +1,13 @@
 // API Route: Update Driver Delivery Status
 // Allows a driver to update the delivery status of their order
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer, notifyBuyerDeliveryPin } from "@/lib/notifications";
 import { socketEmitToRooms } from "@/lib/socket-emit";
 import { awardOrderPointsIfDelivered } from "@/lib/points";
 import { sendOrderOnTheWayEmail, sendPointsEarnedEmail } from "@/lib/email-legal-ux";
 import { getUserLevel } from "@/lib/points";
+import { requireDriverApi } from "@/lib/driver-auth";
 import logger from "@/lib/logger";
 
 const statusLogger = logger.child({ context: "driver-delivery-status" });
@@ -18,24 +17,14 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver, isAdmin } = authResult;
 
         const { id: orderId } = await params;
         const { deliveryStatus } = await request.json();
 
-        // Get driver record
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-        });
-
-        if (!driver) {
+        if (!driver && !isAdmin) {
             return NextResponse.json({ error: "No sos conductor registrado" }, { status: 403 });
         }
 
@@ -48,18 +37,18 @@ export async function PATCH(
             return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
         }
 
-        if (order.driverId !== driver.id && !hasAnyRole(session, ["ADMIN"])) {
+        if (driver && order.driverId !== driver.id && !isAdmin) {
             return NextResponse.json({ error: "Este pedido no está asignado a vos" }, { status: 403 });
         }
 
         // ISSUE-001: PIN doble de entrega — bloquear transiciones sin PIN verificado.
         // Admin puede saltar el chequeo (para casos de emergencia manual).
-        const isAdminOverride = hasAnyRole(session, ["ADMIN"]);
+        const isAdminOverride = isAdmin;
         if (!isAdminOverride && !order.isPickup) {
             // PICKED_UP requiere pickupPin verificado (driver retiró del comercio)
             if (deliveryStatus === "PICKED_UP" && order.pickupPin && !order.pickupPinVerifiedAt) {
                 statusLogger.warn(
-                    { orderId, driverId: driver.id },
+                    { orderId, driverId: driver?.id },
                     "Blocked PICKED_UP transition: pickup PIN not verified"
                 );
                 return NextResponse.json(
@@ -74,7 +63,7 @@ export async function PATCH(
             // DELIVERED requiere deliveryPin verificado (driver entregó al comprador)
             if (deliveryStatus === "DELIVERED" && order.deliveryPin && !order.deliveryPinVerifiedAt) {
                 statusLogger.warn(
-                    { orderId, driverId: driver.id },
+                    { orderId, driverId: driver?.id },
                     "Blocked DELIVERED transition: delivery PIN not verified"
                 );
                 return NextResponse.json(
@@ -139,11 +128,13 @@ export async function PATCH(
             updateData.status = "DELIVERED";
             updateData.deliveredAt = new Date();
 
-            // Increment driver's delivery count
-            await prisma.driver.update({
-                where: { id: driver.id },
-                data: { totalDeliveries: { increment: 1 } },
-            });
+            // Increment driver's delivery count (only if it's a driver, not admin override)
+            if (driver) {
+                await prisma.driver.update({
+                    where: { id: driver.id },
+                    data: { totalDeliveries: { increment: 1 } },
+                });
+            }
         }
 
         await prisma.order.update({
@@ -231,20 +222,22 @@ export async function PATCH(
             }
         }
 
-        // Emit socket events to all interested rooms
+        // Emit socket events to all interested rooms.
+        // Use order.driverId as fallback for admin overrides (driver may be null).
+        const effectiveDriverId = driver?.id ?? order.driverId ?? null;
         const eventData = {
             orderId: order.id,
             orderNumber: order.orderNumber,
             status: deliveryStatus === "DELIVERED" ? "DELIVERED" : order.status,
             deliveryStatus,
-            driverId: driver.id,
+            driverId: effectiveDriverId,
         };
 
         const rooms = [
             `order:${order.id}`,
             ...(order.merchantId ? [`merchant:${order.merchantId}`] : []),
             `customer:${order.userId}`,
-            `driver:${driver.id}`,
+            ...(effectiveDriverId ? [`driver:${effectiveDriverId}`] : []),
             "admin:orders",
         ];
 
@@ -255,7 +248,7 @@ export async function PATCH(
             socketEmitToRooms([`merchant:${order.merchantId}`], "driver_arrived", {
                 orderId: order.id,
                 orderNumber: order.orderNumber,
-                driverId: driver.id,
+                driverId: effectiveDriverId,
             }).catch(console.error);
         }
 

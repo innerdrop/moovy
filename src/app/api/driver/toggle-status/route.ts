@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 const toggleStatusSchema = z.object({
     isOnline: z.boolean(),
@@ -16,14 +15,9 @@ const ACTIVE_DELIVERY_STATUSES = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_U
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER"])) {
-            return NextResponse.json({ error: "Solo repartidores pueden cambiar su estado" }, { status: 403 });
-        }
+        const authResult = await requireDriverApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver: existingDriver } = authResult;
 
         const body = await request.json();
         const parsed = toggleStatusSchema.safeParse(body);
@@ -36,12 +30,7 @@ export async function POST(request: Request) {
 
         const { isOnline } = parsed.data;
 
-        // Verify driver exists and is approved before allowing status toggle
-        const existingDriver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true, approvalStatus: true, isActive: true },
-        });
-
+        // Driver is guaranteed non-null by requireDriverApi()
         if (!existingDriver) {
             return NextResponse.json({ error: "Perfil de repartidor no encontrado" }, { status: 404 });
         }

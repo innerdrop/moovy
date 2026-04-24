@@ -125,6 +125,7 @@ const navSections: NavSection[] = [
             { href: "/ops/backups", icon: Archive, label: "Backups" },
             { href: "/ops/emails", icon: Mail, label: "Emails" },
             { href: "/ops/playbook", icon: ClipboardCheck, label: "Playbook" },
+            { href: "/ops/crons", icon: Activity, label: "Crons" },
         ],
     },
 ];

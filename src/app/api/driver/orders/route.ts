@@ -1,9 +1,8 @@
 // API Route: Driver Orders
 // Returns available orders (CONFIRMED/PREPARING, no driver) and driver's current deliveries
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { requireDriverApi } from "@/lib/driver-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -22,19 +21,9 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["DRIVER", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        // Get driver record for current user
-        const driver = await prisma.driver.findUnique({
-            where: { userId: session.user.id },
-        });
+        const authResult = await requireDriverApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { driver } = authResult;
 
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status") || "activos";
