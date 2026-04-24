@@ -697,29 +697,28 @@ export default function PlaybookPage() {
     }
 
     // ─── Delete checklist ──────────────────────────────────────────────────
-    function handleDeleteChecklist(id: string, name: string) {
-        confirm({
+    async function handleDeleteChecklist(id: string, name: string) {
+        const ok = await confirm({
             title: "Eliminar checklist",
             message: `¿Seguro que querés borrar "${name}"? Se perderán todos sus pasos.`,
             variant: "danger",
             confirmLabel: "Eliminar",
-            onConfirm: async () => {
-                try {
-                    const res = await fetch(`/api/admin/playbook/${id}`, { method: "DELETE" });
-                    if (!res.ok) {
-                        const err = await res.json().catch(() => ({}));
-                        toast.error(err.error || "Error al eliminar");
-                        return;
-                    }
-                    toast.success("Checklist eliminado");
-                    if (selectedId === id) setSelectedId(null);
-                    await loadChecklists();
-                } catch (error) {
-                    console.error("Error deleting checklist:", error);
-                    toast.error("Error de conexión");
-                }
-            },
         });
+        if (!ok) return;
+        try {
+            const res = await fetch(`/api/admin/playbook/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                toast.error(err.error || "Error al eliminar");
+                return;
+            }
+            toast.success("Checklist eliminado");
+            if (selectedId === id) setSelectedId(null);
+            await loadChecklists();
+        } catch (error) {
+            console.error("Error deleting checklist:", error);
+            toast.error("Error de conexión");
+        }
     }
 
     // ─── Add step ─────────────────────────────────────────────────────────
@@ -844,48 +843,47 @@ export default function PlaybookPage() {
     }
 
     // ─── Delete step ──────────────────────────────────────────────────────
-    function handleDeleteStep(step: PlaybookStep) {
+    async function handleDeleteStep(step: PlaybookStep) {
         if (!detail) return;
-        confirm({
+        const ok = await confirm({
             title: "Eliminar paso",
             message: "¿Seguro que querés borrar este paso?",
             variant: "danger",
             confirmLabel: "Eliminar",
-            onConfirm: async () => {
-                try {
-                    const res = await fetch(
-                        `/api/admin/playbook/${detail.id}/steps/${step.id}`,
-                        { method: "DELETE" }
-                    );
-                    if (!res.ok) {
-                        const err = await res.json().catch(() => ({}));
-                        toast.error(err.error || "Error al eliminar");
-                        return;
-                    }
-                    setDetail((prev) =>
-                        prev
-                            ? { ...prev, steps: prev.steps.filter((s) => s.id !== step.id) }
-                            : prev
-                    );
-                    setChecklists((prev) =>
-                        prev.map((c) =>
-                            c.id === detail.id
-                                ? {
-                                      ...c,
-                                      _count: {
-                                          steps: Math.max(0, (c._count?.steps || 1) - 1),
-                                      },
-                                  }
-                                : c
-                        )
-                    );
-                    toast.success("Paso eliminado");
-                } catch (error) {
-                    console.error("Error deleting step:", error);
-                    toast.error("Error de conexión");
-                }
-            },
         });
+        if (!ok) return;
+        try {
+            const res = await fetch(
+                `/api/admin/playbook/${detail.id}/steps/${step.id}`,
+                { method: "DELETE" }
+            );
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                toast.error(err.error || "Error al eliminar");
+                return;
+            }
+            setDetail((prev) =>
+                prev
+                    ? { ...prev, steps: prev.steps.filter((s) => s.id !== step.id) }
+                    : prev
+            );
+            setChecklists((prev) =>
+                prev.map((c) =>
+                    c.id === detail.id
+                        ? {
+                              ...c,
+                              _count: {
+                                  steps: Math.max(0, (c._count?.steps || 1) - 1),
+                              },
+                          }
+                        : c
+                )
+            );
+            toast.success("Paso eliminado");
+        } catch (error) {
+            console.error("Error deleting step:", error);
+            toast.error("Error de conexión");
+        }
     }
 
     // ─── DnD: reorder ─────────────────────────────────────────────────────
