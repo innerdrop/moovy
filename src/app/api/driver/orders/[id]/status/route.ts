@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { notifyBuyer, notifyBuyerDeliveryPin } from "@/lib/notifications";
 import { socketEmitToRooms } from "@/lib/socket-emit";
 import { awardOrderPointsIfDelivered } from "@/lib/points";
+import { sendOrderOnTheWayEmail, sendPointsEarnedEmail } from "@/lib/email-legal-ux";
+import { getUserLevel } from "@/lib/points";
 import logger from "@/lib/logger";
 
 const statusLogger = logger.child({ context: "driver-delivery-status" });
@@ -160,6 +162,30 @@ export async function PATCH(
                     skipped: result.skipped,
                     reason: result.reason,
                 }, "Points award on DELIVERED");
+
+                // Email UX: confirmacion de puntos acreditados (solo si se otorgaron).
+                if (result.awarded > 0) {
+                    (async () => {
+                        try {
+                            const buyer = await prisma.user.findUnique({
+                                where: { id: order.userId },
+                                select: { email: true, firstName: true, pointsBalance: true },
+                            });
+                            if (!buyer?.email) return;
+                            const { level } = await getUserLevel(order.userId);
+                            await sendPointsEarnedEmail({
+                                buyerEmail: buyer.email,
+                                buyerName: buyer.firstName ?? null,
+                                pointsEarned: result.awarded,
+                                orderNumber: order.orderNumber,
+                                newBalance: buyer.pointsBalance ?? result.awarded,
+                                tierName: level,
+                            });
+                        } catch (err) {
+                            statusLogger.error({ err, orderId }, "Error sending points-earned email");
+                        }
+                    })();
+                }
             } catch (pointsError) {
                 statusLogger.error({ orderId, error: pointsError }, "Error awarding points on DELIVERED");
                 // No fallar la transici\u00f3n por error en puntos
@@ -181,6 +207,27 @@ export async function PATCH(
             if (order.deliveryPin) {
                 notifyBuyerDeliveryPin(order.userId, order.orderNumber, order.deliveryPin, order.id)
                     .catch(err => console.error("[Push] Delivery PIN notification error:", err));
+
+                // Email UX: pedido en camino + PIN destacado (solo delivery, no pickup)
+                if (!order.isPickup) {
+                    (async () => {
+                        try {
+                            const buyer = await prisma.user.findUnique({
+                                where: { id: order.userId },
+                                select: { email: true, firstName: true },
+                            });
+                            if (!buyer?.email || !order.deliveryPin) return;
+                            await sendOrderOnTheWayEmail({
+                                buyerEmail: buyer.email,
+                                buyerName: buyer.firstName ?? null,
+                                orderNumber: order.orderNumber,
+                                deliveryPin: order.deliveryPin,
+                            });
+                        } catch (err) {
+                            statusLogger.error({ err, orderId }, "Error sending on-the-way email");
+                        }
+                    })();
+                }
             }
         }
 

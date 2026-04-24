@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { encryptDriverData } from "@/lib/fiscal-crypto";
 import { recordConsent } from "@/lib/consent";
+import { sendAdminNewDriverPendingEmail } from "@/lib/email-admin-ops";
 import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
 import { validateCuit } from "@/lib/cuit";
 import { validatePatente } from "@/lib/patente";
@@ -271,10 +272,11 @@ export async function POST(request: NextRequest) {
         const resultUser = await prisma.$transaction(async (tx) => {
             if (existingUser) {
                 // PATH A: user already exists → solo creamos el Driver.
-                await tx.driver.create({
-                    data: { ...driverData, userId: existingUser.id }
+                const driver = await tx.driver.create({
+                    data: { ...driverData, userId: existingUser.id },
+                    select: { id: true },
                 });
-                return { id: existingUser.id };
+                return { id: existingUser.id, driverId: driver.id };
             } else {
                 // PATH B: user nuevo → creamos User + Driver.
                 const newUser = await tx.user.create({
@@ -293,10 +295,11 @@ export async function POST(request: NextRequest) {
                     }
                 });
 
-                await tx.driver.create({
-                    data: { ...driverData, userId: newUser.id }
+                const driver = await tx.driver.create({
+                    data: { ...driverData, userId: newUser.id },
+                    select: { id: true },
                 });
-                return { id: newUser.id };
+                return { id: newUser.id, driverId: driver.id };
             }
         });
 
@@ -321,6 +324,17 @@ export async function POST(request: NextRequest) {
         } catch (err) {
             console.error("[REGISTER DRIVER] Failed to persist consent log:", err);
         }
+
+        // Aviso al admin/owner — nuevo repartidor pendiente de revisión (fire-and-forget)
+        sendAdminNewDriverPendingEmail({
+            driverName: fullName,
+            driverEmail: data.email,
+            driverPhone: data.phone || "No informado",
+            vehicleType: vehicleTypeUpper,
+            driverId: resultUser.driverId,
+        }).catch((err) =>
+            console.error("[Register Driver] Failed to send admin pending email:", err)
+        );
 
         return NextResponse.json({
             success: true,

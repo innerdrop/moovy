@@ -890,7 +890,12 @@ export async function POST(request: Request) {
 
                     await tx.user.update({
                         where: { id: session.user.id },
-                        data: { pointsBalance: newBalance, updatedAt: new Date() }
+                        data: {
+                            pointsBalance: newBalance,
+                            updatedAt: new Date(),
+                            // Reset el flag del cron de puntos por vencer: el user volvió a usar la app.
+                            pointsExpiryNotifiedAt: null,
+                        }
                     });
 
                     await tx.pointsTransaction.create({

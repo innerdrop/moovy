@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
             prisma.merchant.findMany({
                 where: {
                     approvalStatus: "PENDING",
-                    deletedAt: null,
-                },
+                    },
                 select: {
                     id: true,
+                    name: true,
                     businessName: true,
                     category: true,
                     createdAt: true,
@@ -55,10 +55,10 @@ export async function GET(request: NextRequest) {
                 where: {
                     approvalStatus: "APPROVED",
                     approvedAt: { gte: thirtyDaysAgo },
-                    deletedAt: null,
-                },
+                    },
                 select: {
                     id: true,
+                    name: true,
                     businessName: true,
                     category: true,
                     createdAt: true,
@@ -72,10 +72,10 @@ export async function GET(request: NextRequest) {
                 where: {
                     approvalStatus: "REJECTED",
                     updatedAt: { gte: thirtyDaysAgo },
-                    deletedAt: null,
-                },
+                    },
                 select: {
                     id: true,
+                    name: true,
                     businessName: true,
                     category: true,
                     createdAt: true,

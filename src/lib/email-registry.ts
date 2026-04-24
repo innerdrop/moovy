@@ -155,9 +155,9 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
         priority: 'P0',
         status: 'implemented',
         trigger: 'POST /api/auth/change-password',
-        subject: 'Tu contraseña fue cambiada - MOOVY',
-        functionName: 'inline (change-password/route.ts)',
-        file: 'src/app/api/auth/change-password/route.ts',
+        subject: 'Tu contraseña fue modificada - MOOVY',
+        functionName: 'sendPasswordChangedEmail',
+        file: 'src/lib/email.ts',
         generatePreview: () => emailLayout(`
             <h2 style="color: #111827; margin-top: 0;">Contraseña actualizada</h2>
             <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
@@ -752,6 +752,659 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             ${emailButton('Completar mi pedido', `${baseUrl}/checkout`, 'red')}
         `),
     },
+
+    // ── DOCUMENTOS DE COMERCIO (rama fix/onboarding-comercio-completo) ──
+    {
+        id: 'merchant_doc_approved',
+        number: 200,
+        name: 'Documento de comercio aprobado',
+        category: 'Aprobación de Documentos',
+        recipient: 'comercio',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/merchants/[id]/documents/approve',
+        subject: '✅ Documento aprobado — MOOVY',
+        functionName: 'sendMerchantDocumentApprovedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Documento aprobado ✅</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Hola ${SAMPLE.merchantContact}, tu documento <strong>Constancia AFIP</strong> fue
+                aprobado por el equipo de MOOVY.
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">Cuando todos los documentos requeridos estén aprobados, tu comercio se activa automáticamente.</p>
+            ${emailButton('Ir a mi panel', `${baseUrl}/comercios/configuracion`, 'green')}
+        `),
+    },
+    {
+        id: 'merchant_doc_rejected',
+        number: 201,
+        name: 'Documento de comercio rechazado',
+        category: 'Aprobación de Documentos',
+        recipient: 'comercio',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/merchants/[id]/documents/reject',
+        subject: '⚠️ Documento rechazado — MOOVY',
+        functionName: 'sendMerchantDocumentRejectedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Documento rechazado</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Hola ${SAMPLE.merchantContact}, tu documento <strong>Habilitación Municipal</strong>
+                fue rechazado por el siguiente motivo:
+            </p>
+            ${emailAlertBox('La foto no permite leer claramente la fecha de vencimiento. Subí una foto más nítida.', 'warning')}
+            <p style="color: #6b7280; font-size: 14px;">Podés volver a subirlo desde tu panel de configuración.</p>
+            ${emailButton('Subir documento nuevo', `${baseUrl}/comercios/configuracion`, 'red')}
+        `),
+    },
+    {
+        id: 'admin_merchant_change_request',
+        number: 202,
+        name: 'Solicitud de cambio de documento (comercio → admin)',
+        category: 'Aprobación de Documentos',
+        recipient: 'admin',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/merchant/documents/change-request',
+        subject: '📄 Nueva solicitud de cambio de documento (comercio)',
+        functionName: 'sendAdminChangeRequestEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de cambio</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                <strong>${SAMPLE.merchantName}</strong> solicita cambiar su <strong>CBU</strong>.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 5px 0; color: #4a5568;"><strong>Motivo:</strong></p>
+                <p style="margin: 5px 0; color: #4a5568;">Cambiamos de banco por mejores condiciones.</p>
+            `)}
+            ${emailButton('Revisar en OPS', `${baseUrl}/ops/usuarios`, 'blue')}
+        `),
+    },
+    {
+        id: 'merchant_change_request_approved',
+        number: 203,
+        name: 'Solicitud de cambio aprobada (comercio)',
+        category: 'Aprobación de Documentos',
+        recipient: 'comercio',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/merchants/[id]/change-requests/[requestId]/resolve (approve)',
+        subject: '✅ Tu solicitud de cambio fue aprobada — MOOVY',
+        functionName: 'sendMerchantChangeRequestApprovedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Solicitud aprobada ✅</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Aprobamos tu solicitud de cambio de <strong>CBU</strong>. Ya podés ingresar el nuevo
+                valor desde tu panel de configuración.
+            </p>
+            ${emailButton('Ir a mi panel', `${baseUrl}/comercios/configuracion`, 'green')}
+        `),
+    },
+    {
+        id: 'merchant_change_request_rejected',
+        number: 204,
+        name: 'Solicitud de cambio rechazada (comercio)',
+        category: 'Aprobación de Documentos',
+        recipient: 'comercio',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/merchants/[id]/change-requests/[requestId]/resolve (reject)',
+        subject: '⚠️ Tu solicitud de cambio fue rechazada — MOOVY',
+        functionName: 'sendMerchantChangeRequestRejectedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Solicitud rechazada</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                No aprobamos tu solicitud de cambio de <strong>CBU</strong>.
+            </p>
+            ${emailAlertBox('Necesitamos que adjuntes el comprobante del nuevo banco antes de aprobar el cambio. Contactanos por soporte si tenés dudas.', 'warning')}
+            ${emailButton('Contactar soporte', `${baseUrl}/soporte`, 'red')}
+        `),
+    },
+
+    // ── DOCUMENTOS DE REPARTIDOR (rama fix/onboarding-repartidor-complet) ──
+    {
+        id: 'driver_doc_approved',
+        number: 210,
+        name: 'Documento de repartidor aprobado',
+        category: 'Aprobación de Documentos',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/drivers/[id]/documents/approve',
+        subject: '✅ Documento aprobado — MOOVY',
+        functionName: 'sendDriverDocumentApprovedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Documento aprobado ✅</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Hola ${SAMPLE.driverName}, tu <strong>Licencia de conducir</strong> fue aprobada.
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">Cuando todos los documentos estén aprobados, tu cuenta se activa automáticamente.</p>
+            ${emailButton('Ir al panel', `${baseUrl}/repartidor`, 'green')}
+        `),
+    },
+    {
+        id: 'driver_doc_rejected',
+        number: 211,
+        name: 'Documento de repartidor rechazado',
+        category: 'Aprobación de Documentos',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/drivers/[id]/documents/reject',
+        subject: '⚠️ Documento rechazado — MOOVY',
+        functionName: 'sendDriverDocumentRejectedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Documento rechazado</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Hola ${SAMPLE.driverName}, tu <strong>Seguro del vehículo</strong> fue rechazado.
+            </p>
+            ${emailAlertBox('La póliza está vencida. Subí una póliza al día para poder operar.', 'warning')}
+            ${emailButton('Subir documento nuevo', `${baseUrl}/repartidor`, 'red')}
+        `),
+    },
+    {
+        id: 'admin_driver_change_request',
+        number: 212,
+        name: 'Solicitud de cambio de documento (repartidor → admin)',
+        category: 'Aprobación de Documentos',
+        recipient: 'admin',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/driver/documents/change-request',
+        subject: '📄 Nueva solicitud de cambio de documento (repartidor)',
+        functionName: 'sendAdminDriverChangeRequestEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de cambio</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                <strong>${SAMPLE.driverName}</strong> solicita cambiar su <strong>Licencia de conducir</strong>.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 5px 0; color: #4a5568;"><strong>Motivo:</strong></p>
+                <p style="margin: 5px 0; color: #4a5568;">Renové la licencia, la nueva vence en 2031.</p>
+            `)}
+            ${emailButton('Revisar en OPS', `${baseUrl}/ops/usuarios`, 'blue')}
+        `),
+    },
+    {
+        id: 'driver_change_request_approved',
+        number: 213,
+        name: 'Solicitud de cambio aprobada (repartidor)',
+        category: 'Aprobación de Documentos',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/drivers/[id]/change-requests/[requestId]/resolve (approve)',
+        subject: '✅ Tu solicitud de cambio fue aprobada — MOOVY',
+        functionName: 'sendDriverChangeRequestApprovedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Solicitud aprobada ✅</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Aprobamos tu solicitud de cambio de <strong>Licencia</strong>. Ya podés subir la nueva
+                desde tu perfil.
+            </p>
+            ${emailButton('Ir al panel', `${baseUrl}/repartidor`, 'green')}
+        `),
+    },
+    {
+        id: 'driver_change_request_rejected',
+        number: 214,
+        name: 'Solicitud de cambio rechazada (repartidor)',
+        category: 'Aprobación de Documentos',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/drivers/[id]/change-requests/[requestId]/resolve (reject)',
+        subject: '⚠️ Tu solicitud de cambio fue rechazada — MOOVY',
+        functionName: 'sendDriverChangeRequestRejectedEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Solicitud rechazada</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                No aprobamos tu solicitud de cambio de <strong>Seguro</strong>.
+            </p>
+            ${emailAlertBox('El documento subido no corresponde al vehículo registrado. Contactanos por soporte si tenés dudas.', 'warning')}
+            ${emailButton('Contactar soporte', `${baseUrl}/soporte`, 'red')}
+        `),
+    },
+
+    // ── VENCIMIENTOS DE DOCUMENTOS DRIVER (cron driver-docs-expiry) ──
+    {
+        id: 'driver_doc_expiring',
+        number: 215,
+        name: 'Documento próximo a vencer (repartidor)',
+        category: 'Aprobación de Documentos',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'cron /api/cron/driver-docs-expiry (7d, 3d, 1d antes)',
+        subject: '⏰ Tu documento vence pronto — MOOVY',
+        functionName: 'sendDriverDocExpiringEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Tu documento vence pronto</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Hola ${SAMPLE.driverName}, tu <strong>Licencia de conducir</strong> vence en
+                <strong>3 días</strong> (30/04/2026).
+            </p>
+            ${emailAlertBox('Si no renovás a tiempo, no vas a poder recibir nuevos pedidos hasta que subas el documento renovado.', 'warning')}
+            ${emailButton('Actualizar documento', `${baseUrl}/repartidor`, 'red')}
+        `),
+    },
+    {
+        id: 'driver_doc_expired',
+        number: 216,
+        name: 'Documento vencido + auto-suspensión (repartidor)',
+        category: 'Aprobación de Documentos',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'cron /api/cron/driver-docs-expiry (doc vencido → suspensión)',
+        subject: '⛔ Documento vencido — tu cuenta fue suspendida',
+        functionName: 'sendDriverDocExpiredEmail',
+        file: 'src/lib/email.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0;">Documento vencido</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Hola ${SAMPLE.driverName}, tu <strong>Licencia de conducir</strong> venció el 24/04/2026.
+            </p>
+            ${emailAlertBox('Suspendimos tu cuenta de repartidor hasta que subas el documento renovado. Esto es obligatorio por ley (Decreto 779/95).', 'error')}
+            ${emailButton('Subir licencia renovada', `${baseUrl}/repartidor`, 'red')}
+        `),
+    },
+
+    // ── NUEVOS EMAILS LANZAMIENTO: legal + UX buyer/driver ────────────
+    {
+        id: 'email_change_confirmation',
+        number: 300,
+        name: 'Confirmación de cambio de email (al nuevo)',
+        category: 'Autenticación y Seguridad',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'PATCH /api/profile (cambio de email, endpoint futuro)',
+        subject: 'Tu email en MOOVY fue actualizado',
+        functionName: 'sendEmailChangeConfirmationEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu email fue actualizado</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, a partir de ahora tu cuenta MOOVY está asociada a <strong>${SAMPLE.buyerEmail}</strong>.
+            </p>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                Todos los correos transaccionales (confirmaciones de pedidos, notificaciones, recuperación de contraseña) te van a llegar a este nuevo email.
+            </p>
+            ${emailAlertBox(`<strong>¿No fuiste vos?</strong> Si no hiciste este cambio, contactanos urgente a <a href="mailto:soporte@somosmoovy.com" style="color: #1a1a1a; text-decoration: underline;">soporte@somosmoovy.com</a> para recuperar tu cuenta.`, 'warning')}
+            ${emailButton('Ir a mi perfil', `${baseUrl}/mi-perfil`, 'blue')}
+        `),
+    },
+    {
+        id: 'data_export_ready',
+        number: 301,
+        name: 'Exportación de datos ARCO lista',
+        category: 'Datos Personales (ARCO)',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'GET /api/profile/export-data (cuando sea asíncrono)',
+        subject: 'Tu exportación de datos MOOVY está lista',
+        functionName: 'sendDataExportReadyEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu exportación de datos está lista</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, preparamos el archivo con todos los datos personales que guardamos en tu cuenta MOOVY: perfil, direcciones, pedidos, transacciones de puntos, consentimientos y más.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Formato</p>
+                <p style="margin: 0 0 16px 0; color: #555; font-size: 14px;">JSON descargable</p>
+                <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Disponible hasta</p>
+                <p style="margin: 0; color: #555; font-size: 14px;">viernes, 25 de abril de 2026, 14:30</p>
+            `)}
+            ${emailButton('Descargar mis datos', `${baseUrl}/api/profile/export-data`, 'blue')}
+            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 20px 0 0 0;">Este link es personal y caduca en 48 horas. Derecho de acceso y portabilidad garantizado por la Ley 25.326.</p>
+        `),
+    },
+    {
+        id: 'terms_updated',
+        number: 302,
+        name: 'Actualización de Términos o Privacidad',
+        category: 'Legal',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'Manual / cron futuro al bumpear versión en legal-versions.ts',
+        subject: 'Actualizamos los Términos y Condiciones de MOOVY',
+        functionName: 'sendTermsUpdatedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Actualizamos nuestros Términos y Condiciones</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, publicamos una nueva versión de los <strong>Términos y Condiciones</strong> de MOOVY (versión <strong>1.2</strong>).
+            </p>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                Te pedimos que los leas antes de seguir usando la plataforma. Si seguís usando MOOVY después de recibir este correo, entendemos que aceptaste los cambios.
+            </p>
+            ${emailButton('Leer términos y condiciones', `${baseUrl}/terminos`, 'blue')}
+            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 20px 0 0 0;">Si no estás de acuerdo, podés eliminar tu cuenta desde tu <a href="${baseUrl}/mi-perfil/privacidad" style="color: #1a1a1a;">panel de privacidad</a>.</p>
+        `),
+    },
+    {
+        id: 'marketing_opt_out_confirmed',
+        number: 303,
+        name: 'Confirmación de baja de comunicaciones comerciales',
+        category: 'Datos Personales (ARCO)',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'PATCH /api/profile/privacy (marketingConsent: true → false)',
+        subject: 'Confirmamos tu baja de comunicaciones comerciales',
+        functionName: 'sendMarketingOptOutConfirmedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Confirmamos tu baja de comunicaciones</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, registramos tu decisión. A partir de este momento ya <strong>no vas a recibir</strong> ofertas, promociones ni novedades comerciales de MOOVY por email ni por push.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Qué vas a seguir recibiendo</p>
+                <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
+                    Solo correos transaccionales imprescindibles de tus pedidos: confirmaciones, estado de entrega, recibos, y avisos legales obligatorios.
+                </p>
+            `)}
+            ${emailButton('Ir a mi panel de privacidad', `${baseUrl}/mi-perfil/privacidad`, 'blue')}
+            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 20px 0 0 0;">Baja confirmada conforme a la Ley 26.951 "No Llame" y al marco de protección de datos de la AAIP.</p>
+        `),
+    },
+    {
+        id: 'driver_assigned_buyer',
+        number: 304,
+        name: 'Repartidor asignado al pedido (al buyer)',
+        category: 'Ciclo de Vida del Pedido (Comprador)',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'assignment-engine.ts driverAcceptOrder (post-accept)',
+        subject: `Tu pedido ${SAMPLE.orderNumber} ya tiene repartidor`,
+        functionName: 'sendDriverAssignedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu pedido ya tiene repartidor</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.buyerName}, <strong>${SAMPLE.driverName}</strong> va a buscar tu pedido <strong>${SAMPLE.orderNumber}</strong>. Llega al comercio en aproximadamente <strong>7 minutos</strong>.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 5px 0; color: #999; font-size: 12px; text-transform: uppercase;">Repartidor</p>
+                <p style="margin: 5px 0; color: #1a1a1a; font-size: 15px; font-weight: 600;">${SAMPLE.driverName}</p>
+                <p style="margin: 12px 0 5px 0; color: #999; font-size: 12px; text-transform: uppercase;">Vehículo</p>
+                <p style="margin: 5px 0; color: #555; font-size: 14px;">Moto</p>
+                <p style="margin: 12px 0 5px 0; color: #999; font-size: 12px; text-transform: uppercase;">Contacto</p>
+                <p style="margin: 5px 0; color: #555; font-size: 14px;">•••• 4521 (teléfono enmascarado por privacidad)</p>
+            `)}
+            ${emailButton('Ver mi pedido', `${baseUrl}/mis-pedidos`, 'red')}
+        `),
+    },
+    {
+        id: 'order_on_the_way',
+        number: 305,
+        name: 'Pedido en camino + PIN de entrega',
+        category: 'Ciclo de Vida del Pedido (Comprador)',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'PATCH /api/driver/orders/[id]/status (PICKED_UP, no pickup)',
+        subject: `🛵 Tu pedido ${SAMPLE.orderNumber} va en camino — código 048 291`,
+        functionName: 'sendOrderOnTheWayEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu pedido va en camino</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.buyerName}, tu pedido <strong>${SAMPLE.orderNumber}</strong> ya salió del comercio.
+            </p>
+            <div style="background-color: #fafafa; border: 2px solid #1a1a1a; border-radius: 12px; padding: 28px; margin: 24px 0; text-align: center;">
+                <p style="margin: 0 0 12px 0; color: #999; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Código de entrega</p>
+                <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 42px; font-weight: 700; letter-spacing: 8px; font-family: monospace;">048 291</p>
+                <p style="margin: 0; color: #555; font-size: 13px;">Cuando llegue el repartidor, dale este código.</p>
+            </div>
+            ${emailAlertBox(`<strong>No compartas el código</strong> ni lo anticipes por chat. Solo mostraselo al repartidor cuando te entregue el paquete en la puerta.`, 'warning')}
+            ${emailButton('Seguir mi pedido', `${baseUrl}/mis-pedidos`, 'red')}
+        `),
+    },
+    {
+        id: 'order_ready_pickup',
+        number: 306,
+        name: 'Pedido listo para retirar',
+        category: 'Ciclo de Vida del Pedido (Comprador)',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/merchant/orders/[id]/ready (isPickup: true)',
+        subject: `Tu pedido ${SAMPLE.orderNumber} está listo para retirar`,
+        functionName: 'sendOrderReadyForPickupEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Tu pedido está listo para retirar</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.buyerName}, tu pedido <strong>${SAMPLE.orderNumber}</strong> está listo. Podés pasar a buscarlo cuando te quede cómodo.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 0 0 6px 0; color: #999; font-size: 12px; text-transform: uppercase;">Retirar en</p>
+                <p style="margin: 0 0 4px 0; color: #1a1a1a; font-size: 17px; font-weight: 600;">${SAMPLE.merchantName}</p>
+                <p style="margin: 0; color: #555; font-size: 14px;">San Martín 456, Ushuaia</p>
+            `)}
+            <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 0 0 8px 0;">Llevá tu número de pedido (<strong>${SAMPLE.orderNumber}</strong>) o mostrá este email al mostrador.</p>
+            ${emailButton('Ver mi pedido', `${baseUrl}/mis-pedidos`, 'red')}
+        `),
+    },
+    {
+        id: 'rate_order_reminder',
+        number: 307,
+        name: 'Recordatorio de calificar pedido (24h)',
+        category: 'Ciclo de Vida del Pedido (Comprador)',
+        recipient: 'comprador',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/cron/rate-order-reminder (diario, 24-48h post-DELIVERED)',
+        subject: `¿Cómo estuvo tu pedido de ${SAMPLE.merchantName}?`,
+        functionName: 'sendRateOrderReminderEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">¿Cómo estuvo tu pedido?</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, ayer recibiste tu pedido <strong>${SAMPLE.orderNumber}</strong> de <strong>${SAMPLE.merchantName}</strong>.
+            </p>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                Tarda menos de 10 segundos y ayuda al comercio y al repartidor a mejorar. Otros vecinos de Ushuaia ven tu opinión antes de pedir.
+            </p>
+            ${emailButton('Calificar mi pedido', `${baseUrl}/mis-pedidos`, 'red')}
+            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 20px 0 0 0;">Este es el único recordatorio que vas a recibir sobre este pedido.</p>
+        `),
+    },
+    {
+        id: 'points_earned',
+        number: 308,
+        name: 'Puntos MOOVER acreditados',
+        category: 'Puntos MOOVER',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'PATCH /api/driver/orders/[id]/status (DELIVERED + awarded > 0)',
+        subject: `🎉 Sumaste 45 puntos MOOVER`,
+        functionName: 'sendPointsEarnedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">🎉 Sumaste puntos MOOVER</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.buyerName}, se acreditaron <strong>45 puntos</strong> a tu cuenta por tu pedido <strong>${SAMPLE.orderNumber}</strong>.
+            </p>
+            <div style="background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+                <p style="margin: 0 0 6px 0; color: #92400e; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Tu saldo actual</p>
+                <p style="margin: 0 0 4px 0; color: #1a1a1a; font-size: 36px; font-weight: 700;">1.285 <span style="font-size: 16px; font-weight: 500; color: #b45309;">pts</span></p>
+                <p style="margin: 0; color: #92400e; font-size: 13px;">Nivel <strong>SILVER</strong></p>
+            </div>
+            ${emailInfoBox(`<p style="margin: 0; color: #555; font-size: 14px;"><strong>1 punto = $1 ARS.</strong> Podés canjearlos como descuento en tu próxima compra (hasta 20% del subtotal, desde 500 puntos).</p>`)}
+            ${emailButton('Ver mis puntos', `${baseUrl}/puntos`, 'red')}
+        `),
+    },
+
+    // ── NUEVOS EMAILS LANZAMIENTO: avisos al admin + UX operativos ────
+    {
+        id: 'admin_new_merchant_pending',
+        number: 310,
+        name: 'Nuevo comercio pendiente (→ admin)',
+        category: 'Avisos al Owner',
+        recipient: 'admin',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/auth/register/merchant',
+        subject: '📋 Nuevo comercio registrado — revisar en OPS',
+        functionName: 'sendAdminNewMerchantPendingEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('🏪 Nuevo comercio', '#eff6ff', '#1e40af')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Nuevo comercio pendiente de revisión</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                Un comercio acaba de registrarse y necesita aprobación. Revisá CUIT, constancia AFIP y habilitación municipal desde el panel.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Comercio:</strong> ${SAMPLE.merchantName}</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Dueño:</strong> ${SAMPLE.merchantContact}</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email:</strong> ${SAMPLE.merchantEmail}</p>
+            `)}
+            ${emailButton('Revisar en pipeline', `${baseUrl}/ops/pipeline-comercios`, 'blue')}
+        `),
+    },
+    {
+        id: 'admin_new_driver_pending',
+        number: 311,
+        name: 'Nuevo repartidor pendiente (→ admin)',
+        category: 'Avisos al Owner',
+        recipient: 'admin',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/auth/register/driver',
+        subject: '🏍️ Nuevo repartidor registrado — revisar en OPS',
+        functionName: 'sendAdminNewDriverPendingEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('🏍️ Nuevo repartidor', '#eff6ff', '#1e40af')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Nuevo repartidor pendiente de revisión</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                Un repartidor se registró. Revisá DNI, licencia, seguro y RTO (si es motorizado) antes de activarlo.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Nombre:</strong> ${SAMPLE.driverName}</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Vehículo:</strong> MOTO</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email:</strong> ${SAMPLE.driverEmail}</p>
+            `)}
+            ${emailButton('Revisar solicitud', `${baseUrl}/ops/usuarios`, 'blue')}
+        `),
+    },
+    {
+        id: 'admin_new_change_request',
+        number: 312,
+        name: 'Nueva solicitud de cambio (→ admin, genérica)',
+        category: 'Avisos al Owner',
+        recipient: 'admin',
+        priority: 'P1',
+        status: 'new',
+        trigger: 'Disponible — no conectada (ya hay versiones específicas merchant/driver)',
+        subject: '🏪 Solicitud de cambio de CUIT — Panadería Don Juan',
+        functionName: 'sendAdminNewChangeRequestEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('🏪 Solicitud de cambio', '#fffbeb', '#92400e')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Nueva solicitud de cambio de documento</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">Un comercio quiere modificar un documento ya aprobado.</p>
+            ${emailInfoBox(`
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Comercio:</strong> ${SAMPLE.merchantName}</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Documento:</strong> CUIT</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Motivo:</strong> Cambié de monotributo a responsable inscripto.</p>
+            `)}
+            ${emailButton('Revisar solicitud', `${baseUrl}/ops/usuarios`, 'blue')}
+        `),
+    },
+    {
+        id: 'points_expiring',
+        number: 313,
+        name: 'Puntos MOOVER por vencer (→ buyer)',
+        category: 'Puntos MOOVER',
+        recipient: 'comprador',
+        priority: 'P2',
+        status: 'implemented',
+        trigger: 'Cron diario POST /api/cron/points-expiring-reminder',
+        subject: '⏳ Tenés 1.250 puntos MOOVER por vencer',
+        functionName: 'sendPointsExpiringEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('⏳ Puntos por vencer', '#fffbeb', '#92400e')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Tus puntos MOOVER están por vencer</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.buyerName}, tu último pedido fue hace 5 meses. Si no hacés un nuevo pedido en los próximos <strong>30 días</strong>, tus puntos vencen.
+            </p>
+            <div style="text-align: center; margin: 24px 0;">
+                <p style="color: #999; font-size: 12px; text-transform: uppercase; margin: 0 0 10px 0;">Tu saldo actual</p>
+                <p style="color: #e60012; font-size: 36px; font-weight: 700; margin: 0;">1.250 pts</p>
+                <p style="color: #555; font-size: 14px; margin: 4px 0 0 0;">Equivalen a $1.250 de descuento</p>
+            </div>
+            ${emailButton('Ver comercios y canjear', `${baseUrl}/tienda`, 'red')}
+        `),
+    },
+    {
+        id: 'driver_auto_activated',
+        number: 314,
+        name: 'Repartidor auto-activado (→ driver)',
+        category: 'Onboarding Repartidor',
+        recipient: 'repartidor',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'approveDriverDocument cuando aprueba el último doc requerido',
+        subject: '🎉 Tu cuenta de repartidor MOOVY está activa',
+        functionName: 'sendDriverAutoActivatedEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('✅ Cuenta activada', '#f0fdf4', '#166534')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">🎉 ¡Ya sos repartidor MOOVY!</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+                ${SAMPLE.driverName}, aprobamos el último documento que faltaba. Tu cuenta está <strong>activa</strong>.
+            </p>
+            ${emailAlertBox(`<strong>Antes de conectarte por primera vez:</strong><br>• GPS activo<br>• Datos del vehículo al día<br>• Celular cargado`, 'success')}
+            ${emailButton('Entrar al panel', `${baseUrl}/repartidor`, 'green')}
+        `),
+    },
+    {
+        id: 'referral_activated',
+        number: 315,
+        name: 'Referido completó primer pedido (→ referrer)',
+        category: 'Puntos MOOVER',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'activatePendingBonuses en src/lib/points.ts (primer DELIVERED del referee)',
+        subject: `🎁 Tu amigo hizo su primer pedido — sumaste 1.000 pts`,
+        functionName: 'sendReferralActivatedEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('🎁 Puntos de referido', '#fef2f2', '#991b1b')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">¡Tu amigo hizo su primer pedido!</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                Gracias por invitar a ${SAMPLE.buyerName} a MOOVY. Ya recibiste los puntos por el referido.
+            </p>
+            <div style="text-align: center; margin: 24px 0;">
+                <p style="color: #999; font-size: 12px; text-transform: uppercase; margin: 0 0 10px 0;">Ganaste</p>
+                <p style="color: #059669; font-size: 36px; font-weight: 700; margin: 0;">+1.000 pts</p>
+            </div>
+            ${emailButton('Invitar a más amigos', `${baseUrl}/mi-perfil/invitar`, 'red')}
+        `),
+    },
 ];
 
 // ─── Helpers de búsqueda ────────────────────────────────────────────────────
@@ -779,3 +1432,4 @@ export function getEmailsByStatus(status: EmailRegistryEntry['status']): EmailRe
 export function getAllCategories(): string[] {
     return [...new Set(EMAIL_REGISTRY.map(e => e.category))];
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

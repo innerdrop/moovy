@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyDriver, notifyBuyer } from "@/lib/notifications";
+import { sendOrderReadyForPickupEmail } from "@/lib/email-legal-ux";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -53,7 +54,8 @@ export async function POST(
                 userId: true,
                 orderNumber: true,
                 driverId: true,
-                merchant: { select: { name: true } },
+                isPickup: true,
+                merchant: { select: { name: true, address: true } },
             },
         });
 
@@ -101,6 +103,28 @@ export async function POST(
                 merchantName: order.merchant?.name || undefined,
                 orderId,
             }).catch(console.error);
+
+            // Email UX: listo para retirar (solo cuando es pickup). Fire-and-forget.
+            if (order.isPickup && order.merchant?.name) {
+                (async () => {
+                    try {
+                        const buyer = await prisma.user.findUnique({
+                            where: { id: order.userId },
+                            select: { email: true, firstName: true },
+                        });
+                        if (!buyer?.email) return;
+                        await sendOrderReadyForPickupEmail({
+                            buyerEmail: buyer.email,
+                            buyerName: buyer.firstName ?? null,
+                            orderNumber: order.orderNumber,
+                            merchantName: order.merchant!.name,
+                            merchantAddress: order.merchant?.address || "Pasá por el comercio",
+                        });
+                    } catch (err) {
+                        console.error("[Merchant Ready] Pickup email error:", err);
+                    }
+                })();
+            }
         }
 
         // Socket notifications

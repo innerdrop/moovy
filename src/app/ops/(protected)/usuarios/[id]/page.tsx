@@ -367,9 +367,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const [processing, setProcessing] = useState(false);
     const [activeTab, setActiveTab] = useState<"info" | "actions" | "activity">("info");
 
-    const [expandedMerchant, setExpandedMerchant] = useState(true);
-    const [expandedDriver, setExpandedDriver] = useState(true);
-    const [expandedSeller, setExpandedSeller] = useState(true);
+    // Cerradas por default. El admin expande la que necesita consultar —
+    // evita que al abrir la ficha se dispare un muro de información sin foco.
+    const [expandedMerchant, setExpandedMerchant] = useState(false);
+    const [expandedDriver, setExpandedDriver] = useState(false);
+    const [expandedSeller, setExpandedSeller] = useState(false);
 
     // Change requests del merchant — se cargan en paralelo con el user detail.
     // Append-only (pending + histórico), se refresca junto con fetchUser.

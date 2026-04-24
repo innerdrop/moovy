@@ -15,6 +15,7 @@ import { normalizeVehicleType } from "./vehicle-type-mapping";
 import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, type ShipmentTypeCode } from "./shipment-types";
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
 import { deliveryLogger } from "./logger";
+import { sendDriverAssignedEmail } from "./email-legal-ux";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -1186,6 +1187,59 @@ export async function driverAcceptOrder(
                 deliveryLogger.error({ error: err }, "Push buyer error")
             );
         }
+
+        // Email UX: driver asignado. Lookup minimal del driver + buyer afuera de la transaccion.
+        (async () => {
+            try {
+                const [driver, buyer, merchant] = await Promise.all([
+                    prisma.driver.findUnique({
+                        where: { id: driverId },
+                        select: {
+                            vehicleType: true,
+                            latitude: true,
+                            longitude: true,
+                            user: { select: { name: true, phone: true } },
+                        },
+                    }),
+                    prisma.user.findUnique({
+                        where: { id: result.userId },
+                        select: { email: true, firstName: true },
+                    }),
+                    result.merchantId
+                        ? prisma.merchant.findUnique({
+                              where: { id: result.merchantId },
+                              select: { latitude: true, longitude: true },
+                          })
+                        : Promise.resolve(null),
+                ]);
+
+                if (!driver || !buyer?.email) return;
+
+                // Estimacion de pickup: distancia driver -> merchant a 25 km/h promedio, minimo 3 min.
+                let estimatedMins = 5;
+                if (driver.latitude && driver.longitude && merchant?.latitude && merchant?.longitude) {
+                    const km = calculateDistance(
+                        driver.latitude,
+                        driver.longitude,
+                        merchant.latitude,
+                        merchant.longitude
+                    );
+                    estimatedMins = Math.max(3, Math.round((km / 25) * 60));
+                }
+
+                await sendDriverAssignedEmail({
+                    buyerEmail: buyer.email,
+                    buyerName: buyer.firstName ?? null,
+                    orderNumber: result.orderNumber,
+                    driverName: driver.user?.name ?? "Tu repartidor",
+                    driverPhone: driver.user?.phone ?? null,
+                    vehicleType: driver.vehicleType ?? null,
+                    estimatedPickupMinutes: estimatedMins,
+                });
+            } catch (err) {
+                deliveryLogger.error({ err, orderId: result.id }, "Driver-assigned email error");
+            }
+        })();
 
         deliveryLogger.info({ driverId, orderId: result.id, orderNumber: result.orderNumber }, "Driver accepted order");
         return { success: true };

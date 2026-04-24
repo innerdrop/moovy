@@ -30,6 +30,7 @@
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { approveDriverTransition } from "@/lib/roles";
+import { sendDriverAutoActivatedEmail } from "@/lib/email-admin-ops";
 
 /**
  * Tipos de vehículo no-motorizados. Deben mantenerse sincronizados con el
@@ -265,6 +266,37 @@ export async function approveDriverDocument(
     if (autoActivated) {
         // approveDriverTransition tiene su propia $transaction interna.
         await approveDriverTransition(driverId, ctx);
+
+        // Email de auto-activación (fire-and-forget — no bloquea si SMTP falla).
+        // Fetch separado para no acoplar el update atómico arriba a datos del User.
+        try {
+            const driverWithUser = await prisma.driver.findUnique({
+                where: { id: driverId },
+                select: {
+                    user: { select: { email: true, name: true, firstName: true } },
+                },
+            });
+            if (driverWithUser?.user?.email) {
+                const name =
+                    driverWithUser.user.firstName ||
+                    driverWithUser.user.name ||
+                    "Repartidor";
+                sendDriverAutoActivatedEmail({
+                    driverEmail: driverWithUser.user.email,
+                    driverName: name,
+                }).catch((err) => {
+                    console.error(
+                        "[approveDriverDocument] Failed to send auto-activated email:",
+                        err
+                    );
+                });
+            }
+        } catch (err) {
+            console.error(
+                "[approveDriverDocument] Failed to fetch driver for auto-activated email:",
+                err
+            );
+        }
     }
 
     return { success: true, driverAutoActivated: autoActivated };

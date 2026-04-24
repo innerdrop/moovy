@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { sendMerchantRequestNotification } from "@/lib/email";
+import { sendAdminNewMerchantPendingEmail } from "@/lib/email-admin-ops";
 import { encryptMerchantData } from "@/lib/fiscal-crypto";
 import { logAudit } from "@/lib/audit";
 import { recordConsent } from "@/lib/consent";
@@ -156,10 +157,11 @@ export async function POST(request: NextRequest) {
             if (existingUser) {
                 // PATH A: user already exists → solo creamos el Merchant.
                 // No tocamos UserRole: el rol COMERCIO se deriva del Merchant existiendo.
-                await tx.merchant.create({
-                    data: { ...merchantData, ownerId: existingUser.id }
+                const merchant = await tx.merchant.create({
+                    data: { ...merchantData, ownerId: existingUser.id },
+                    select: { id: true },
                 });
-                return { id: existingUser.id };
+                return { id: existingUser.id, merchantId: merchant.id };
             } else {
                 // PATH B: user nuevo → creamos User + Merchant.
                 const newUser = await tx.user.create({
@@ -178,10 +180,11 @@ export async function POST(request: NextRequest) {
                     }
                 });
 
-                await tx.merchant.create({
-                    data: { ...merchantData, ownerId: newUser.id }
+                const merchant = await tx.merchant.create({
+                    data: { ...merchantData, ownerId: newUser.id },
+                    select: { id: true },
                 });
-                return { id: newUser.id };
+                return { id: newUser.id, merchantId: merchant.id };
             }
         });
 
@@ -213,6 +216,17 @@ export async function POST(request: NextRequest) {
             `${data.firstName} ${data.lastName}`.trim(),
             data.email,
             data.businessType || null
+        );
+
+        // Aviso adicional (feat/emails-lanzamiento-completo): formato CRM con
+        // link directo al pipeline-comercios, complementa al legacy de arriba.
+        sendAdminNewMerchantPendingEmail({
+            merchantName: data.businessName,
+            ownerName: `${data.firstName} ${data.lastName}`.trim(),
+            ownerEmail: data.email,
+            merchantId: resultUser.merchantId,
+        }).catch((err) =>
+            console.error("[Register Merchant] Failed to send admin pending email:", err)
         );
 
         return NextResponse.json({

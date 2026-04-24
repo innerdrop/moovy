@@ -23,7 +23,8 @@ import {
 type OwnerInfo = { id: string; email: string; name: string | null; phone: string | null };
 type CardMerchant = {
     id: string;
-    businessName: string;
+    name: string;                // nombre interno obligatorio (desde schema)
+    businessName: string | null; // nombre comercial (opcional)
     category: string | null;
     createdAt: string;
     updatedAt: string;
@@ -202,7 +203,7 @@ function MerchantCard({ m, columnKey }: { m: CardMerchant; columnKey: keyof Pipe
                         <Store className="w-4 h-4 text-[#e60012]" />
                     </div>
                     <div className="min-w-0">
-                        <p className="font-semibold text-sm text-gray-900 truncate">{m.businessName}</p>
+                        <p className="font-semibold text-sm text-gray-900 truncate">{m.businessName || m.name}</p>
                         {m.category && (
                             <p className="text-[10px] text-gray-500 uppercase tracking-wide">{m.category}</p>
                         )}

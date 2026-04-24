@@ -101,6 +101,21 @@ export const CRON_EXPECTATIONS: Record<string, { maxHours: number; label: string
         maxHours: 2,
         label: "Procesamiento de campañas de broadcast (push/email)",
     },
+    // Rama feat/emails-lanzamiento-completo: cron diario que busca pedidos DELIVERED
+    // hace 24-48h sin calificar y envia recordatorio por email al buyer.
+    // Idempotente via Order.rateReminderSentAt.
+    "rate-order-reminder": {
+        maxHours: 30,
+        label: "Recordatorio de calificación de pedidos",
+    },
+    // Rama feat/emails-lanzamiento-completo: cron diario que avisa a usuarios
+    // con puntos MOOVER a >=150 días de inactividad (30 días antes de que
+    // venzan los puntos por la regla de 6 meses de Biblia v3). Idempotente via
+    // User.pointsExpiryNotifiedAt.
+    "points-expiring-reminder": {
+        maxHours: 30,
+        label: "Aviso de puntos MOOVER próximos a vencer",
+    },
 };
 
 export type CronHealthStatus = "healthy" | "stale" | "never-ran" | "failing";

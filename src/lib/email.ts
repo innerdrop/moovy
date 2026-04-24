@@ -822,6 +822,48 @@ export async function sendDriverDocExpiringEmail(
 }
 
 /**
+ * #21 — Confirmación de cambio de contraseña (rama emails-lanzamiento-completo).
+ * Extraído del inline antes presente en /api/auth/change-password/route.ts para
+ * poder editarlo desde el panel OPS y que tenga una función única exportada.
+ */
+export async function sendPasswordChangedEmail(email: string, firstName: string | null, changeDate?: Date) {
+    const date = (changeDate ?? new Date()).toLocaleString("es-AR", {
+        timeZone: "America/Argentina/Ushuaia",
+        dateStyle: "full",
+        timeStyle: "short",
+    });
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="display: inline-block; background-color: #dcfce7; border-radius: 50%; padding: 15px;">
+                <span style="font-size: 24px;">🔐</span>
+            </div>
+        </div>
+        <h2 style="color: #111827; margin-top: 0; text-align: center;">Contraseña actualizada</h2>
+        <p style="color: #6b7280; font-size: 16px; line-height: 1.6; text-align: center;">
+            Hola ${firstName || ""}, tu contraseña de MOOVY fue modificada exitosamente.
+        </p>
+        <div style="background-color: #fff; border-radius: 8px; padding: 16px; margin: 20px 0; border: 1px solid #e5e7eb;">
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                <strong>Fecha del cambio:</strong><br/>
+                ${date}
+            </p>
+        </div>
+        ${emailAlertBox(`
+            <p style="margin: 0; font-size: 14px;">
+                <strong>¿No fuiste vos?</strong> Si no realizaste este cambio, tu cuenta puede estar comprometida.
+                Contactanos inmediatamente a <a href="mailto:soporte@somosmoovy.com" style="color: #e60012;">soporte@somosmoovy.com</a>
+            </p>
+        `, 'warning')}
+    `);
+    return sendEmail({
+        to: email,
+        subject: 'Tu contraseña fue modificada - MOOVY',
+        html,
+        tag: 'password_changed',
+    });
+}
+
+/**
  * El documento del driver venció. La cuenta queda suspendida hasta que
  * suba y aprueben la versión renovada.
  */

@@ -3,8 +3,8 @@ import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
 import { validatePasswordStrength } from "@/lib/security";
+import { sendPasswordChangedEmail } from "@/lib/email";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 export async function POST(request: NextRequest) {
@@ -75,69 +75,10 @@ export async function POST(request: NextRequest) {
             data: { password: hashedPassword }
         });
 
-        // Send confirmation email
-        try {
-            const transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST || "smtp.gmail.com",
-                port: parseInt(process.env.SMTP_PORT || "587"),
-                secure: false,
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS,
-                },
-            });
-
-            const changeDate = new Date().toLocaleString("es-AR", {
-                timeZone: "America/Argentina/Ushuaia",
-                dateStyle: "full",
-                timeStyle: "short"
-            });
-
-            await transporter.sendMail({
-                from: `"MOOVY" <${process.env.SMTP_USER || "somosmoovy@gmail.com"}>`,
-                to: user.email,
-                subject: "Tu contraseña fue modificada - MOOVY",
-                html: `
-                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <img src="https://somosmoovy.com/logo-moovy.png" alt="MOOVY" style="height: 50px; width: auto;" />
-                        </div>
-                        <div style="background-color: #f9fafb; border-radius: 12px; padding: 30px;">
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <div style="display: inline-block; background-color: #dcfce7; border-radius: 50%; padding: 15px;">
-                                    <span style="font-size: 24px;">🔐</span>
-                                </div>
-                            </div>
-                            <h2 style="color: #111827; margin-top: 0; text-align: center;">Contraseña actualizada</h2>
-                            <p style="color: #6b7280; font-size: 16px; line-height: 1.6; text-align: center;">
-                                Hola ${user.name || ""},<br/>
-                                Tu contraseña de MOOVY fue modificada exitosamente.
-                            </p>
-                            <div style="background-color: #fff; border-radius: 8px; padding: 16px; margin: 20px 0; border: 1px solid #e5e7eb;">
-                                <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                                    <strong>Fecha del cambio:</strong><br/>
-                                    ${changeDate}
-                                </p>
-                            </div>
-                            <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; border-left: 4px solid #f59e0b;">
-                                <p style="margin: 0; color: #92400e; font-size: 14px;">
-                                    <strong>⚠️ ¿No fuiste vos?</strong><br/>
-                                    Si no realizaste este cambio, tu cuenta puede estar comprometida. 
-                                    Contactanos inmediatamente a <a href="mailto:soporte@somosmoovy.com" style="color: #e60012;">soporte@somosmoovy.com</a>
-                                </p>
-                            </div>
-                        </div>
-                        <div style="text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;">
-                            <p>Este es un mensaje automático de seguridad.</p>
-                            <p>© ${new Date().getFullYear()} MOOVY™. Ushuaia, Tierra del Fuego.</p>
-                        </div>
-                    </div>
-                `,
-            });
-        } catch (emailError) {
-            // Log but don't fail the request if email fails
+        // Send confirmation email (fire-and-forget; no bloquea la respuesta)
+        sendPasswordChangedEmail(user.email, user.name).catch((emailError) => {
             console.error("Error sending confirmation email:", emailError);
-        }
+        });
 
         // Log password change activity (fire-and-forget)
         const { ipAddress, userAgent } = extractRequestInfo(request);

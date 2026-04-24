@@ -12,6 +12,7 @@ import {
     COOKIES_POLICY_VERSION,
 } from "@/lib/legal-versions";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { sendMarketingOptOutConfirmedEmail } from "@/lib/email-legal-ux";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -123,6 +124,13 @@ export async function PATCH(request: NextRequest) {
 
         const updates: any = {};
 
+        // Leemos el estado previo para detectar la transicion true -> false
+        // (requerido por Ley 26.951 para enviar la confirmacion de opt-out).
+        const previousUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { marketingConsent: true, email: true, firstName: true },
+        });
+
         if (parsed.data.marketingConsent !== undefined) {
             const now = new Date();
             if (parsed.data.marketingConsent === true) {
@@ -145,6 +153,20 @@ export async function PATCH(request: NextRequest) {
             where: { id: session.user.id },
             data: updates,
         });
+
+        // Email de confirmacion de opt-out (Ley 26.951). Solo en transicion true -> false.
+        const becameOptOut =
+            parsed.data.marketingConsent === false &&
+            previousUser?.marketingConsent === true &&
+            !!previousUser?.email;
+        if (becameOptOut && previousUser?.email) {
+            sendMarketingOptOutConfirmedEmail(
+                previousUser.email,
+                previousUser.firstName ?? null
+            ).catch((err) =>
+                console.error("[Privacy] Failed to send opt-out confirmation email:", err)
+            );
+        }
 
         // Registrar en ConsentLog (inmutable — auditable por AAIP)
         if (parsed.data.marketingConsent !== undefined) {

@@ -3,6 +3,7 @@
 // Niveles por pedidos DELIVERED en 90 días: MOOVER(0), SILVER(5), GOLD(15), BLACK(40)
 // Earn rates: MOOVER ×1, SILVER ×1.25, GOLD ×1.5, BLACK ×2
 import { prisma } from "@/lib/prisma";
+import { sendReferralActivatedEmail } from "@/lib/email-admin-ops";
 
 interface PointsConfig {
     pointsPerDollar: number;
@@ -407,6 +408,50 @@ export async function activatePendingBonuses(
                     refereePoints: config.refereeBonus
                 }
             });
+
+            // Email al referidor: "tu amigo hizo su primer pedido + sumaste X pts"
+            // Fire-and-forget. Fetch post-award para incluir el nuevo balance y
+            // los nombres de ambos users.
+            try {
+                const [referrer, referee] = await Promise.all([
+                    prisma.user.findUnique({
+                        where: { id: user.referredById },
+                        select: {
+                            email: true,
+                            firstName: true,
+                            name: true,
+                            pointsBalance: true,
+                        },
+                    }),
+                    prisma.user.findUnique({
+                        where: { id: userId },
+                        select: { firstName: true, name: true },
+                    }),
+                ]);
+                if (referrer?.email) {
+                    const referrerName =
+                        referrer.firstName || referrer.name || "Amigo";
+                    const refereeName =
+                        referee?.firstName || referee?.name || "Tu referido";
+                    sendReferralActivatedEmail({
+                        referrerEmail: referrer.email,
+                        referrerName,
+                        refereeName,
+                        pointsAwarded: config.referralBonus,
+                        newBalance: referrer.pointsBalance,
+                    }).catch((err) => {
+                        console.error(
+                            "[activatePendingBonuses] Failed to send referral activated email:",
+                            err
+                        );
+                    });
+                }
+            } catch (err) {
+                console.error(
+                    "[activatePendingBonuses] Failed to fetch referrer/referee for email:",
+                    err
+                );
+            }
         }
 
         // Mark bonuses as activated
@@ -471,6 +516,18 @@ export async function awardOrderPointsIfDelivered(
             where: { id: orderId },
             data: { pointsEarned: earned },
         });
+
+        // Reset del flag del cron de puntos por vencer: el user acaba de completar
+        // un pedido, así que si estaba marcado como "aviso enviado" ya no aplica
+        // — su próxima inactividad ≥5 meses arrancará un ciclo nuevo.
+        try {
+            await prisma.user.update({
+                where: { id: order.userId },
+                data: { pointsExpiryNotifiedAt: null },
+            });
+        } catch (err) {
+            console.error("[Points] Error resetting pointsExpiryNotifiedAt:", err);
+        }
 
         // Try to activate signup/referral bonuses now that the user completed a DELIVERED order
         try {
