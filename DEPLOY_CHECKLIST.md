@@ -72,6 +72,20 @@ Confirmá con `SI BORRAR` cuando te lo pida.
 
 Moovy NO se autoinvoca — los crons del directorio `src/app/api/cron/` son endpoints HTTP que esperan un `POST` externo con `Authorization: Bearer <CRON_SECRET>`. El dashboard OPS (`/ops/dashboard`) muestra alertas si detecta que un cron registrado en `CRON_EXPECTATIONS` no corrió dentro de su ventana.
 
+### 4.0. Lista consolidada (copiar y pegar al crontab del VPS)
+
+Antes de cualquier deploy nuevo, **verificá que el `crontab -l` del VPS tenga estas 5 líneas**. Si alguna falta, agregala con `crontab -e`. Reemplazá `<CRON_SECRET>` por el valor real del `.env` del VPS (sin comillas).
+
+```
+0 4 * * * curl -X POST -H "Authorization: Bearer <CRON_SECRET>" https://somosmoovy.com/api/cron/cleanup-location-history >> /var/log/moovy-cron.log 2>&1
+0 6 * * * curl -X POST -H "Authorization: Bearer <CRON_SECRET>" https://somosmoovy.com/api/cron/driver-docs-expiry >> /var/log/moovy-cron.log 2>&1
+*/10 * * * * curl -X POST -H "Authorization: Bearer <CRON_SECRET>" https://somosmoovy.com/api/cron/process-broadcasts >> /var/log/moovy-cron.log 2>&1
+30 3 * * * curl -X POST -H "Authorization: Bearer <CRON_SECRET>" https://somosmoovy.com/api/cron/rate-order-reminder >> /var/log/moovy-cron.log 2>&1
+0 5 * * * curl -X POST -H "Authorization: Bearer <CRON_SECRET>" https://somosmoovy.com/api/cron/points-expiring-reminder >> /var/log/moovy-cron.log 2>&1
+```
+
+Distribución horaria intencional — todos los diarios se reparten entre 3:30 y 6:00 AM (hora de baja actividad en Ushuaia) para no competir por DB / SMTP. `process-broadcasts` corre cada 10 min porque las campañas se procesan en batches de 200 recipients y sin cadencia frecuente una campaña de 10k users tarda horas.
+
 ### 4.1. Cron: Limpieza de historial GPS (obligatorio)
 
 **Endpoint**: `POST /api/cron/cleanup-location-history`
@@ -110,6 +124,14 @@ El checklist para cada cron que se sume en el futuro es el mismo:
 2. Se registra en `CRON_EXPECTATIONS` del mismo `src/lib/cron-health.ts` con `{ maxHours, label }`.
 3. Se agrega la línea al crontab del VPS con la frecuencia acordada.
 4. Se valida en el dashboard OPS que el healthcheck lo marca como `healthy`.
+
+Crons ya implementados y registrados (todos con su línea en sección 4.0):
+
+- `cleanup-location-history` — diario 4 AM, limpia historial GPS viejo.
+- `driver-docs-expiry` — diario 6 AM, avisa 7/3/1 días antes del vencimiento de docs de driver y auto-suspende al vencer.
+- `process-broadcasts` — cada 10 min, procesa campañas de broadcast push/email en batches de 200 recipients.
+- `rate-order-reminder` — diario 3:30 AM, recordatorio de calificar pedidos 24-48h post-DELIVERED.
+- `points-expiring-reminder` — diario 5 AM, aviso a usuarios con puntos próximos a vencer (150 días sin actividad).
 
 Crons planificados pero aún no implementados (agregarlos acá cuando se hagan):
 
