@@ -5,6 +5,7 @@ import { sendDriverRequestNotification } from "@/lib/email";
 import { encryptDriverData } from "@/lib/fiscal-crypto";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { validateCuit } from "@/lib/cuit";
+import { validatePatente } from "@/lib/patente";
 import { isMotorizedVehicle } from "@/lib/driver-document-approval";
 
 /**
@@ -130,6 +131,10 @@ export async function POST(request: NextRequest) {
         const vehicleTypeUpper = body.vehicleType.toUpperCase();
         const isMotorized = isMotorizedVehicle(vehicleTypeUpper);
 
+        // Normalized plate value (canonical: no spaces, UPPERCASE). Se completa
+        // si el vehículo es motorizado y la patente pasa validación.
+        let normalizedLicensePlate: string | null = null;
+
         // Validaciones específicas para motorizados
         if (isMotorized) {
             if (!body.licensePlate) {
@@ -138,6 +143,16 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+            // Patente: formato MERCOSUR (AA123BB) o LEGACY (ABC123). Server-side
+            // defense in depth — regla #2 del proyecto.
+            const plateCheck = validatePatente(body.licensePlate);
+            if (!plateCheck.valid || !plateCheck.normalized) {
+                return NextResponse.json(
+                    { error: plateCheck.error || "Patente inválida" },
+                    { status: 400 }
+                );
+            }
+            normalizedLicensePlate = plateCheck.normalized;
             if (!body.licenciaUrl) {
                 return NextResponse.json(
                     { error: "Subí la licencia de conducir" },
@@ -209,7 +224,7 @@ export async function POST(request: NextRequest) {
             vehicleModel: isMotorized ? (body.vehicleModel || null) : null,
             vehicleYear: isMotorized && body.vehicleYear ? parseInt(body.vehicleYear.toString()) : null,
             vehicleColor: isMotorized ? (body.vehicleColor || null) : null,
-            licensePlate: isMotorized ? (body.licensePlate?.toUpperCase() || null) : null,
+            licensePlate: isMotorized ? normalizedLicensePlate : null,
             cuit: cuitCheck.normalized,
             constanciaCuitUrl: body.constanciaCuitUrl,
             dniFrenteUrl: body.dniFrenteUrl,

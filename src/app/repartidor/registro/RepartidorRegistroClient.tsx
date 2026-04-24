@@ -2,17 +2,25 @@
 
 // Repartidor Registration Page - Formulario de registro para repartidores
 //
-// Post fix/onboarding-repartidor-complet (2026-04-23):
-// - CUIT con validación checksum AFIP en vivo (validateCuit).
-// - DNI autocompleta CUIT al tipear 7-8 dígitos (buildCuitFromDni, heurístico
-//   20/27 por sexo — el usuario siempre puede editar).
-// - Constancia AFIP/Monotributo obligatoria (requisito legal monotributo).
-// - Cédula verde obligatoria para motorizados (Decreto 779/95 acredita titularidad).
-// - Licencia + Seguro + RTO + Cédula Verde: ahora cada uno con su fecha de
-//   vencimiento. Se validan server-side (no puede ser pasada ni > 20 años).
-// - Antigüedad del vehículo por tipo: moto 15 años, auto/camioneta/pickup/suv
-//   25 años, flete 30 años. Espeja MAX_VEHICLE_AGE_YEARS del endpoint.
-// - Bicicleta/patín/tricí: sin documentos vehiculares, pero sí DNI + constancia.
+// Post fix/registro-repartidor-ux (2026-04-23):
+// - Step 1 ahora SIEMPRE se muestra (antes se saltaba cuando fromProfile
+//   && isAuthenticated → causaba DNI/CUIT en blanco en Confirmación y
+//   rechazo del server "El CUIT/CUIL es obligatorio"). Cuando el usuario
+//   ya está logueado se oculta email/password y se muestran solo los
+//   campos específicos de driver (Sexo + DNI + CUIT + DNI photos + constancia AFIP).
+// - Sexo M/F toggle: afecta el cálculo automático del CUIT (prefijo 20 vs 27)
+//   al tipear el DNI. El usuario siempre puede editar.
+// - Vehículo: reemplazado el grid de 7 botones por SearchableSelect
+//   (dropdown con buscador). Marca/Modelo cascading — al elegir "Peugeot"
+//   solo aparecen sus modelos (206, 208, 308, etc). Color y Año también
+//   con SearchableSelect.
+// - Patente: input mask progresivo para MERCOSUR (AA 123 BB) y legacy
+//   (ABC 123). Normalización a canonical (sin espacios) antes del POST.
+//   Validación con regex dedicado server-side.
+// - Fechas: el <input type="date"> sigue usando value ISO (el browser
+//   renderiza según locale). En la pantalla de Confirmación las mostramos
+//   en DD/MM/AAAA (formato argentino) para que el usuario confirme
+//   sin ambigüedad.
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -42,10 +50,20 @@ import {
     Bike,
     CreditCard,
     AlertCircle,
-    Receipt
+    Receipt,
+    Tag,
+    Box
 } from "lucide-react";
 import DocumentUpload from "@/components/ui/DocumentUpload";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 import { validateCuit, buildCuitFromDni, formatCuitForDisplay } from "@/lib/cuit";
+import { applyPatenteMask, validatePatente, sanitizePatenteInput } from "@/lib/patente";
+import {
+    getVehicleCategoryFromFormType,
+    getBrandsForCategory,
+    getModelsForBrand,
+    VEHICLE_COLORS,
+} from "@/lib/argentine-vehicles";
 
 // Tipos de vehículo + antigüedad máxima permitida. Espeja exactamente el map
 // MAX_VEHICLE_AGE_YEARS del endpoint /api/auth/register/driver. Si cambiás uno,
@@ -62,6 +80,52 @@ const VEHICLE_TYPES = [
 
 type VehicleTypeValue = typeof VEHICLE_TYPES[number]["value"];
 
+/** Opciones del SearchableSelect de tipo de vehículo, con emoji incluido */
+const VEHICLE_TYPE_OPTIONS: string[] = VEHICLE_TYPES.map((v) => `${v.icon}  ${v.label}`);
+
+/** Mapea el label del SearchableSelect al value del enum */
+function parseVehicleTypeOption(label: string): VehicleTypeValue | "" {
+    const match = VEHICLE_TYPES.find((v) => label.includes(v.label));
+    return match ? match.value : "";
+}
+
+/** Label para SearchableSelect a partir del value */
+function vehicleTypeToLabel(value: VehicleTypeValue | ""): string {
+    if (!value) return "";
+    const match = VEHICLE_TYPES.find((v) => v.value === value);
+    return match ? `${match.icon}  ${match.label}` : "";
+}
+
+/**
+ * Convierte una fecha ISO "YYYY-MM-DD" (o Date válido) a formato argentino
+ * DD/MM/AAAA para mostrar en la pantalla de Confirmación.
+ * Si viene vacío, devuelve "—".
+ */
+function formatDateAR(iso: string): string {
+    if (!iso) return "—";
+    // Evitamos new Date() porque puede shiftear por timezone.
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
+
+/**
+ * Formatea el DNI con puntos de miles mientras el usuario escribe.
+ * Acepta input crudo y devuelve el display con puntos: 12.345.678
+ */
+function formatDniInput(raw: string): string {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    if (digits.length === 0) return "";
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, digits.length - 3)}.${digits.slice(-3)}`;
+    return `${digits.slice(0, digits.length - 6)}.${digits.slice(-6, -3)}.${digits.slice(-3)}`;
+}
+
 function RepartidorRegistroContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -69,8 +133,13 @@ function RepartidorRegistroContent() {
     const fromProfile = searchParams.get("from") === "profile";
     const isAuthenticated = !!session?.user;
 
-    // If coming from profile (authenticated), skip step 1 (personal data) → start at step 2 (vehicle)
-    const [step, setStep] = useState(fromProfile && isAuthenticated ? 2 : 1);
+    // Pasos: 1 = datos personales + docs identidad, 2 = vehículo + docs vehiculares, 3 = confirmación, 4 = éxito
+    // IMPORTANTE: NO se puede skipear el paso 1 para fromProfile porque
+    // DNI, CUIT, sexo, fotos del DNI y constancia AFIP SIEMPRE son
+    // obligatorios y no están en el objeto User. Para fromProfile se ocultan
+    // solo los campos que ya tenemos (nombre/email/password) pero el paso
+    // sigue siendo necesario.
+    const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -78,6 +147,12 @@ function RepartidorRegistroContent() {
 
     // Validación CUIT en vivo (solo UI — el server re-valida con el mismo helper)
     const [cuitValidation, setCuitValidation] = useState<{
+        state: "empty" | "valid" | "invalid";
+        message: string;
+    }>({ state: "empty", message: "" });
+
+    // Validación patente en vivo
+    const [patenteValidation, setPatenteValidation] = useState<{
         state: "empty" | "valid" | "invalid";
         message: string;
     }>({ state: "empty", message: "" });
@@ -98,33 +173,36 @@ function RepartidorRegistroContent() {
 
     // Form data
     const [formData, setFormData] = useState({
-        // Paso 1: Datos personales
+        // Paso 1: Datos personales (firstName/lastName/email/password/phone se
+        // ignoran cuando fromProfile && isAuthenticated — el server los toma
+        // del User autenticado)
         firstName: "",
         lastName: "",
         email: "",
         phone: "",
         dni: "",
+        sex: "" as "M" | "F" | "",  // NUEVO: para cálculo automático de CUIT (prefijo 20 vs 27)
         cuit: "",
         password: "",
         confirmPassword: "",
         dniFrenteUrl: "",
         dniDorsoUrl: "",
-        constanciaCuitUrl: "", // NUEVO: Constancia AFIP/Monotributo (obligatoria)
+        constanciaCuitUrl: "",
         // Paso 2: Datos del vehículo
         vehicleType: "" as VehicleTypeValue | "",
         vehicleBrand: "",
         vehicleModel: "",
         vehicleYear: "",
         vehicleColor: "",
-        licensePlate: "",
+        licensePlate: "",       // display con espacios (AA 123 BB)
         licenciaUrl: "",
-        licenciaExpiresAt: "",   // NUEVO: vencimiento licencia
+        licenciaExpiresAt: "",
         seguroUrl: "",
-        seguroExpiresAt: "",     // NUEVO: vencimiento seguro
+        seguroExpiresAt: "",
         rtoUrl: "",
-        rtoExpiresAt: "",        // NUEVO: vencimiento RTO
-        cedulaVerdeUrl: "",      // NUEVO: cédula verde (acredita titularidad)
-        cedulaVerdeExpiresAt: "",// NUEVO: vencimiento cédula verde (si aplica)
+        rtoExpiresAt: "",
+        cedulaVerdeUrl: "",
+        cedulaVerdeExpiresAt: "",
         // Paso 3: Confirmación
         hasLicense: false,
         acceptTerms: false,
@@ -136,25 +214,30 @@ function RepartidorRegistroContent() {
     const maxAge = vehicleMeta?.maxAge ?? null;
     const minYear = maxAge !== null ? currentYear - maxAge : currentYear - 25;
 
-    const vehicleBrands = [
-        "Chevrolet",
-        "Fiat",
-        "Ford",
-        "Honda",
-        "Hyundai",
-        "Nissan",
-        "Peugeot",
-        "Renault",
-        "Toyota",
-        "Volkswagen",
-        "Otra"
-    ];
+    // Category para cascading dropdowns de marca/modelo
+    const vehicleCategory = useMemo(
+        () => getVehicleCategoryFromFormType(formData.vehicleType || ""),
+        [formData.vehicleType]
+    );
 
-    // Generate years array (current year back to minYear based on selected vehicle type)
+    const brandOptions = useMemo(
+        () => (vehicleCategory ? getBrandsForCategory(vehicleCategory) : []),
+        [vehicleCategory]
+    );
+
+    const modelOptions = useMemo(
+        () =>
+            vehicleCategory && formData.vehicleBrand
+                ? getModelsForBrand(vehicleCategory, formData.vehicleBrand)
+                : [],
+        [vehicleCategory, formData.vehicleBrand]
+    );
+
+    // Años como array de strings (SearchableSelect usa strings)
     const yearOptions = useMemo(() => {
-        const years: number[] = [];
+        const years: string[] = [];
         for (let y = currentYear; y >= minYear; y--) {
-            years.push(y);
+            years.push(String(y));
         }
         return years;
     }, [currentYear, minYear]);
@@ -166,6 +249,11 @@ function RepartidorRegistroContent() {
         } else {
             setFormData({ ...formData, [name]: value });
         }
+    };
+
+    const handleDniChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatDniInput(e.target.value);
+        setFormData((prev) => ({ ...prev, dni: formatted }));
     };
 
     // Validación formato CUIT (solo visual)
@@ -204,19 +292,44 @@ function RepartidorRegistroContent() {
         }
     };
 
-    // Autocompletar CUIT desde DNI onBlur. Heurística 20/27 — si el usuario
-    // corrigió manualmente el CUIT, NO pisamos su edición.
+    // Al cambiar sexo, si tenemos DNI completo y el CUIT actual no fue editado
+    // manualmente más allá del prefijo default, recalculamos.
+    const handleSexChange = (next: "M" | "F") => {
+        setFormData((prev) => {
+            const nextState = { ...prev, sex: next };
+            const dniDigits = prev.dni.replace(/\D/g, "");
+            if (dniDigits.length !== 7 && dniDigits.length !== 8) return nextState;
+
+            const currentCuitDigits = prev.cuit.replace(/\D/g, "");
+            // Si el usuario ya editó el CUIT completo (11 dígitos), respetamos
+            if (currentCuitDigits.length === 11) return nextState;
+
+            const guessed = buildCuitFromDni(dniDigits, next);
+            if (!guessed) return nextState;
+            nextState.cuit = formatCuitForDisplay(guessed);
+
+            const result = validateCuit(nextState.cuit);
+            if (result.valid) {
+                setCuitValidation({
+                    state: "valid",
+                    message: "CUIT calculado automáticamente — verificá que sea correcto",
+                });
+            }
+            return nextState;
+        });
+    };
+
+    // Autocompletar CUIT desde DNI onBlur. Respeta el sexo elegido.
     const handleDniBlur = () => {
         const dniDigits = formData.dni.replace(/\D/g, "");
         if (dniDigits.length !== 7 && dniDigits.length !== 8) return;
 
         const currentCuitDigits = formData.cuit.replace(/\D/g, "");
-        // Si ya hay un CUIT parcial/completo editado, no pisamos.
         if (currentCuitDigits.length >= 11) return;
 
-        // Intentamos con prefijo masculino (20) por defecto. El usuario puede
-        // cambiar a 27 manualmente si corresponde.
-        const guessed = buildCuitFromDni(dniDigits, "M");
+        // Usamos el sexo elegido; fallback a "M" si aún no eligió
+        const sexForGuess = formData.sex || "M";
+        const guessed = buildCuitFromDni(dniDigits, sexForGuess);
         if (!guessed) return;
 
         const formatted = formatCuitForDisplay(guessed);
@@ -231,17 +344,59 @@ function RepartidorRegistroContent() {
         }
     };
 
+    // Patente: mask progresivo + validación en vivo
+    const handlePatenteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const masked = applyPatenteMask(e.target.value);
+        setFormData((prev) => ({ ...prev, licensePlate: masked }));
+
+        const clean = sanitizePatenteInput(masked);
+        if (clean.length === 0) {
+            setPatenteValidation({ state: "empty", message: "" });
+            return;
+        }
+        const result = validatePatente(masked);
+        if (result.valid) {
+            setPatenteValidation({
+                state: "valid",
+                message:
+                    result.format === "MERCOSUR"
+                        ? "Formato MERCOSUR (2016→)"
+                        : "Formato legacy (1995-2016)",
+            });
+        } else if (clean.length >= 6) {
+            // Solo mostramos error si ya tiene al menos longitud mínima
+            setPatenteValidation({
+                state: "invalid",
+                message: result.error || "Patente inválida",
+            });
+        } else {
+            setPatenteValidation({ state: "empty", message: "" });
+        }
+    };
+
     const handleStep1Submit = (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        if (formData.password !== formData.confirmPassword) {
-            setError("Las contraseñas no coinciden");
+        // Los campos de cuenta (email/password) solo aplican si NO estamos logueados
+        if (!(fromProfile && isAuthenticated)) {
+            if (formData.password !== formData.confirmPassword) {
+                setError("Las contraseñas no coinciden");
+                return;
+            }
+            if (formData.password.length < 8) {
+                setError("La contraseña debe tener al menos 8 caracteres");
+                return;
+            }
+        }
+
+        if (!formData.sex) {
+            setError("Seleccioná tu sexo (necesario para el cálculo del CUIT)");
             return;
         }
 
-        if (formData.password.length < 8) {
-            setError("La contraseña debe tener al menos 8 caracteres");
+        if (!formData.dni || formData.dni.replace(/\D/g, "").length < 7) {
+            setError("Ingresá tu DNI (mínimo 7 dígitos)");
             return;
         }
 
@@ -252,13 +407,11 @@ function RepartidorRegistroContent() {
             return;
         }
 
-        // DNI frente + dorso obligatorios
         if (!formData.dniFrenteUrl || !formData.dniDorsoUrl) {
             setError("Subí el DNI (frente y dorso)");
             return;
         }
 
-        // Constancia AFIP obligatoria
         if (!formData.constanciaCuitUrl) {
             setError("Subí la constancia de inscripción AFIP / Monotributo");
             return;
@@ -277,11 +430,30 @@ function RepartidorRegistroContent() {
         }
 
         if (isMotorized) {
+            if (!formData.vehicleBrand) {
+                setError("Seleccioná la marca del vehículo");
+                return;
+            }
+            if (!formData.vehicleModel) {
+                setError("Seleccioná el modelo del vehículo");
+                return;
+            }
+            if (!formData.vehicleColor) {
+                setError("Seleccioná el color del vehículo");
+                return;
+            }
             const year = parseInt(formData.vehicleYear);
             if (!year || year < minYear) {
                 setError(
                     `El vehículo debe ser del año ${minYear} o más reciente (máximo ${maxAge} años de antigüedad para ${vehicleMeta?.label.toLowerCase()})`
                 );
+                return;
+            }
+
+            // Patente obligatoria con formato válido
+            const plateCheck = validatePatente(formData.licensePlate);
+            if (!plateCheck.valid) {
+                setError(plateCheck.error || "Patente inválida");
                 return;
             }
 
@@ -303,20 +475,16 @@ function RepartidorRegistroContent() {
                 return;
             }
 
-            // Vencimientos obligatorios para motorizados
             const missingExpirations: string[] = [];
             if (!formData.licenciaExpiresAt) missingExpirations.push("licencia");
             if (!formData.seguroExpiresAt) missingExpirations.push("seguro");
             if (!formData.rtoExpiresAt) missingExpirations.push("RTO");
             if (!formData.cedulaVerdeExpiresAt) missingExpirations.push("cédula verde");
             if (missingExpirations.length > 0) {
-                setError(
-                    `Cargá la fecha de vencimiento de: ${missingExpirations.join(", ")}.`
-                );
+                setError(`Cargá la fecha de vencimiento de: ${missingExpirations.join(", ")}.`);
                 return;
             }
 
-            // Validación suave de vencimientos (no pasados, no >20 años)
             const now = new Date();
             const maxFuture = new Date();
             maxFuture.setFullYear(maxFuture.getFullYear() + 20);
@@ -335,15 +503,11 @@ function RepartidorRegistroContent() {
                     return;
                 }
                 if (d < now) {
-                    setError(
-                        `La ${label.toLowerCase()} ya está vencida. Subí un documento vigente.`
-                    );
+                    setError(`La ${label.toLowerCase()} ya está vencida. Subí un documento vigente.`);
                     return;
                 }
                 if (d > maxFuture) {
-                    setError(
-                        `La fecha de vencimiento de ${label} es demasiado lejana (más de 20 años).`
-                    );
+                    setError(`La fecha de vencimiento de ${label} es demasiado lejana (más de 20 años).`);
                     return;
                 }
             }
@@ -368,16 +532,21 @@ function RepartidorRegistroContent() {
         setIsLoading(true);
 
         try {
-            // Authenticated user from profile → use activate-driver (adds role to existing account)
-            // New user → use register/driver (creates new account + driver)
             const endpoint = fromProfile && isAuthenticated
                 ? "/api/auth/activate-driver"
                 : "/api/auth/register/driver";
 
             // El backend usa `vtvUrl` + `vtvExpiresAt` (columna histórica de la DB).
             // La UI muestra "RTO" porque en Tierra del Fuego así se llama.
+            // Normalizamos la patente a canonical (sin espacios, UPPERCASE).
+            const plateCheck = validatePatente(formData.licensePlate);
+            const normalizedPlate = plateCheck.valid
+                ? plateCheck.normalized
+                : sanitizePatenteInput(formData.licensePlate);
+
             const payload: Record<string, any> = {
                 ...formData,
+                licensePlate: normalizedPlate,
                 vtvUrl: formData.rtoUrl,
                 vtvExpiresAt: formData.rtoExpiresAt || null,
                 licenciaExpiresAt: formData.licenciaExpiresAt || null,
@@ -386,6 +555,7 @@ function RepartidorRegistroContent() {
             };
             delete payload.rtoUrl;
             delete payload.rtoExpiresAt;
+            delete payload.confirmPassword;
 
             const res = await fetch(endpoint, {
                 method: "POST",
@@ -399,12 +569,11 @@ function RepartidorRegistroContent() {
                 throw new Error(data.error || "Error al registrar");
             }
 
-            // Refresh session so roles update in JWT
             if (fromProfile && isAuthenticated) {
                 await updateSession();
             }
 
-            setStep(4); // Success step
+            setStep(4);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -429,22 +598,19 @@ function RepartidorRegistroContent() {
                     </Link>
                 </div>
 
-                {/* Progress Steps */}
-                {step < 4 && (() => {
-                    const steps = fromProfile && isAuthenticated ? [2, 3] : [1, 2, 3];
-                    return (
-                        <div className="flex items-center justify-center gap-2 mb-6">
-                            {steps.map((s, i) => (
-                                <div key={s} className="flex items-center gap-2">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-500"}`}>
-                                        {step > s ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
-                                    </div>
-                                    {i < steps.length - 1 && <div className={`w-12 h-1 rounded ${step > s ? "bg-green-600" : "bg-gray-200"}`} />}
+                {/* Progress Steps — siempre mostramos 3 pasos */}
+                {step < 4 && (
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                        {[1, 2, 3].map((s, i) => (
+                            <div key={s} className="flex items-center gap-2">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-500"}`}>
+                                    {step > s ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
                                 </div>
-                            ))}
-                        </div>
-                    );
-                })()}
+                                {i < 2 && <div className={`w-12 h-1 rounded ${step > s ? "bg-green-600" : "bg-gray-200"}`} />}
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Success Step */}
                 {step === 4 && (
@@ -477,9 +643,19 @@ function RepartidorRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 1: Personal Data + CUIT + DNI photos + Constancia AFIP */}
-                {step === 1 && !(fromProfile && isAuthenticated) && (
+                {/* Step 1: Personal Data + Sexo + DNI + CUIT + DNI photos + Constancia AFIP */}
+                {step === 1 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+                        {fromProfile && isAuthenticated ? (
+                            <button
+                                onClick={() => router.push("/mi-perfil")}
+                                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Volver al perfil
+                            </button>
+                        ) : null}
+
                         <div className="flex items-center justify-center mb-4">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
                                 <Car className="w-6 h-6 text-white" />
@@ -488,6 +664,12 @@ function RepartidorRegistroContent() {
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Quiero ser Repartidor</h2>
                         <p className="text-sm text-gray-500 text-center mb-6">Paso 1: Tus datos personales</p>
 
+                        {fromProfile && isAuthenticated && (
+                            <div className="mb-4 p-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-800">
+                                <span className="font-medium">{session?.user?.name}</span>, completá los datos fiscales y de identidad para registrarte como repartidor.
+                            </div>
+                        )}
+
                         {error && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                                 {error}
@@ -495,34 +677,154 @@ function RepartidorRegistroContent() {
                         )}
 
                         <form onSubmit={handleStep1Submit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            name="firstName"
-                                            value={formData.firstName}
-                                            onChange={handleChange}
-                                            placeholder="Juan"
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            required
-                                        />
+                            {/* Sección de cuenta — solo si NO estamos logueados */}
+                            {!(fromProfile && isAuthenticated) && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    name="firstName"
+                                                    value={formData.firstName}
+                                                    onChange={handleChange}
+                                                    placeholder="Juan"
+                                                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Apellido <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                name="lastName"
+                                                value={formData.lastName}
+                                                onChange={handleChange}
+                                                placeholder="Pérez"
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
                                     </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                placeholder="juan@email.com"
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-500">*</span></label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={formData.phone}
+                                                onChange={handleChange}
+                                                placeholder="+54 2901 ..."
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                <input
+                                                    type={showPassword ? "text" : "password"}
+                                                    name="password"
+                                                    value={formData.password}
+                                                    onChange={handleChange}
+                                                    placeholder="Mínimo 8"
+                                                    className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                    minLength={8}
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                >
+                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                <input
+                                                    type={showConfirmPassword ? "text" : "password"}
+                                                    name="confirmPassword"
+                                                    value={formData.confirmPassword}
+                                                    onChange={handleChange}
+                                                    placeholder="Repetí"
+                                                    className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                    minLength={8}
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                >
+                                                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Sexo — obligatorio, define prefijo del CUIT */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Sexo <span className="text-red-500">*</span>
+                                </label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSexChange("M")}
+                                        className={`py-2.5 rounded-xl border-2 text-sm font-medium transition ${
+                                            formData.sex === "M"
+                                                ? "border-green-500 bg-green-50 text-green-800"
+                                                : "border-gray-200 text-gray-600 hover:border-green-300"
+                                        }`}
+                                    >
+                                        Masculino
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSexChange("F")}
+                                        className={`py-2.5 rounded-xl border-2 text-sm font-medium transition ${
+                                            formData.sex === "F"
+                                                ? "border-green-500 bg-green-50 text-green-800"
+                                                : "border-gray-200 text-gray-600 hover:border-green-300"
+                                        }`}
+                                    >
+                                        Femenino
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Apellido <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        placeholder="Pérez"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        required
-                                    />
-                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                    Necesario para calcular el prefijo del CUIT (20 / 27).
+                                </p>
                             </div>
 
                             <div>
@@ -533,9 +835,10 @@ function RepartidorRegistroContent() {
                                         type="text"
                                         name="dni"
                                         value={formData.dni}
-                                        onChange={handleChange}
+                                        onChange={handleDniChange}
                                         onBlur={handleDniBlur}
                                         placeholder="12.345.678"
+                                        inputMode="numeric"
                                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                                         required
                                     />
@@ -590,87 +893,6 @@ function RepartidorRegistroContent() {
                                 )}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        placeholder="juan@email.com"
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="+54 2901 ..."
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            placeholder="Mínimo 8"
-                                            className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            minLength={8}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirmPassword"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            placeholder="Repetí"
-                                            className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            minLength={8}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                        >
-                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* DNI Photos */}
                             <div className="border-t pt-4">
                                 <p className="text-sm font-medium text-gray-700 mb-3">
@@ -698,7 +920,7 @@ function RepartidorRegistroContent() {
                                 </div>
                             </div>
 
-                            {/* Constancia AFIP/Monotributo (NUEVO — obligatoria para todos) */}
+                            {/* Constancia AFIP/Monotributo — obligatoria */}
                             <div className="border-t pt-4">
                                 <div className="flex items-start gap-2 mb-3">
                                     <Receipt className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -728,38 +950,24 @@ function RepartidorRegistroContent() {
                             </button>
                         </form>
 
-                        <p className="mt-4 text-center text-sm text-gray-500">
-                            ¿Ya tenés cuenta? <Link href="/repartidor/login" className="text-green-600 font-medium hover:underline">Iniciá sesión</Link>
-                        </p>
+                        {!(fromProfile && isAuthenticated) && (
+                            <p className="mt-4 text-center text-sm text-gray-500">
+                                ¿Ya tenés cuenta? <Link href="/repartidor/login" className="text-green-600 font-medium hover:underline">Iniciá sesión</Link>
+                            </p>
+                        )}
                     </div>
                 )}
 
                 {/* Step 2: Vehicle Type + Data + Documents + Expirations */}
                 {step === 2 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
-                        {fromProfile && isAuthenticated ? (
-                            <button
-                                onClick={() => router.push("/mi-perfil")}
-                                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Volver al perfil
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => { setError(""); setStep(1); }}
-                                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Volver
-                            </button>
-                        )}
-
-                        {fromProfile && isAuthenticated && (
-                            <div className="mb-4 p-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-800">
-                                <span className="font-medium">{session?.user?.name}</span>, completá los datos de tu vehículo para empezar a repartir.
-                            </div>
-                        )}
+                        <button
+                            onClick={() => { setError(""); setStep(1); }}
+                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Volver
+                        </button>
 
                         <div className="flex items-center justify-center mb-4">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
@@ -768,7 +976,7 @@ function RepartidorRegistroContent() {
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Tu Vehículo</h2>
                         <p className="text-sm text-gray-500 text-center mb-6">
-                            {fromProfile && isAuthenticated ? "Paso 1: Tipo de vehículo y documentación" : "Paso 2: Tipo de vehículo y documentación"}
+                            Paso 2: Tipo de vehículo y documentación
                         </p>
 
                         {error && (
@@ -779,33 +987,28 @@ function RepartidorRegistroContent() {
 
                         <form onSubmit={handleStep2Submit} className="space-y-4">
                             {/* Vehicle Type Selector */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Tipo de vehículo <span className="text-red-500">*</span>
-                                </label>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                    {VEHICLE_TYPES.map((vt) => (
-                                        <button
-                                            key={vt.value}
-                                            type="button"
-                                            onClick={() => setFormData(prev => ({
-                                                ...prev,
-                                                vehicleType: vt.value,
-                                                // Reset year when vehicle type changes (max age changes)
-                                                vehicleYear: "",
-                                            }))}
-                                            className={`p-3 rounded-xl border-2 text-center transition ${
-                                                formData.vehicleType === vt.value
-                                                    ? "border-green-500 bg-green-50"
-                                                    : "border-gray-200 hover:border-green-300"
-                                            }`}
-                                        >
-                                            <span className="text-2xl block mb-1">{vt.icon}</span>
-                                            <span className="text-xs font-medium text-gray-700">{vt.label}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            <SearchableSelect
+                                label="Tipo de vehículo"
+                                required
+                                icon={Car}
+                                placeholder="Elegí tu vehículo"
+                                options={VEHICLE_TYPE_OPTIONS}
+                                value={vehicleTypeToLabel(formData.vehicleType)}
+                                onChange={(label) => {
+                                    const v = parseVehicleTypeOption(label);
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        vehicleType: v,
+                                        vehicleBrand: "",
+                                        vehicleModel: "",
+                                        vehicleYear: "",
+                                        vehicleColor: "",
+                                        licensePlate: "",
+                                    }));
+                                    setPatenteValidation({ state: "empty", message: "" });
+                                }}
+                                searchPlaceholder="Buscar tipo..."
+                            />
 
                             {/* Motorized vehicle fields */}
                             {isMotorized && (
@@ -823,70 +1026,64 @@ function RepartidorRegistroContent() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Marca <span className="text-red-500">*</span></label>
-                                            <select
-                                                name="vehicleBrand"
-                                                value={formData.vehicleBrand}
-                                                onChange={handleChange}
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-                                                required
-                                            >
-                                                <option value="">Seleccionar</option>
-                                                {vehicleBrands.map((brand) => (
-                                                    <option key={brand} value={brand}>{brand}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Modelo <span className="text-red-500">*</span></label>
-                                            <input
-                                                type="text"
-                                                name="vehicleModel"
-                                                value={formData.vehicleModel}
-                                                onChange={handleChange}
-                                                placeholder="Ej: Gol Trend"
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                required
-                                            />
-                                        </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <SearchableSelect
+                                            label="Marca"
+                                            required
+                                            icon={Tag}
+                                            placeholder="Elegí la marca"
+                                            options={brandOptions}
+                                            value={formData.vehicleBrand}
+                                            onChange={(v) =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    vehicleBrand: v,
+                                                    vehicleModel: "",  // reset modelo al cambiar marca
+                                                }))
+                                            }
+                                            allowCustom
+                                            customPlaceholder="Escribí la marca..."
+                                            searchPlaceholder="Buscar marca..."
+                                        />
+                                        <SearchableSelect
+                                            label="Modelo"
+                                            required
+                                            icon={Box}
+                                            placeholder={formData.vehicleBrand ? "Elegí el modelo" : "Primero elegí la marca"}
+                                            options={modelOptions}
+                                            value={formData.vehicleModel}
+                                            onChange={(v) => setFormData((prev) => ({ ...prev, vehicleModel: v }))}
+                                            disabled={!formData.vehicleBrand}
+                                            disabledReason="Primero elegí la marca"
+                                            allowCustom
+                                            customPlaceholder="Escribí el modelo..."
+                                            searchPlaceholder="Buscar modelo..."
+                                        />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                <Calendar className="w-4 h-4 inline mr-1" />
-                                                Año <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                name="vehicleYear"
-                                                value={formData.vehicleYear}
-                                                onChange={handleChange}
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-                                                required
-                                            >
-                                                <option value="">Seleccionar</option>
-                                                {yearOptions.map((year) => (
-                                                    <option key={year} value={year}>{year}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                <Palette className="w-4 h-4 inline mr-1" />
-                                                Color <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="vehicleColor"
-                                                value={formData.vehicleColor}
-                                                onChange={handleChange}
-                                                placeholder="Ej: Blanco"
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                required
-                                            />
-                                        </div>
+                                        <SearchableSelect
+                                            label="Año"
+                                            required
+                                            icon={Calendar}
+                                            placeholder="Año"
+                                            options={yearOptions}
+                                            value={formData.vehicleYear}
+                                            onChange={(v) => setFormData((prev) => ({ ...prev, vehicleYear: v }))}
+                                            searchPlaceholder="Buscar año..."
+                                        />
+                                        <SearchableSelect
+                                            label="Color"
+                                            required
+                                            icon={Palette}
+                                            placeholder="Color"
+                                            options={VEHICLE_COLORS}
+                                            value={formData.vehicleColor}
+                                            onChange={(v) => setFormData((prev) => ({ ...prev, vehicleColor: v }))}
+                                            allowCustom
+                                            customPlaceholder="Escribí el color..."
+                                            searchPlaceholder="Buscar color..."
+                                        />
                                     </div>
 
                                     <div>
@@ -898,11 +1095,33 @@ function RepartidorRegistroContent() {
                                             type="text"
                                             name="licensePlate"
                                             value={formData.licensePlate}
-                                            onChange={handleChange}
-                                            placeholder="AB 123 CD"
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 uppercase"
+                                            onChange={handlePatenteChange}
+                                            placeholder="AA 123 BB"
+                                            maxLength={10}
+                                            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 uppercase tracking-wider ${
+                                                patenteValidation.state === "valid"
+                                                    ? "border-green-400"
+                                                    : patenteValidation.state === "invalid"
+                                                    ? "border-red-400"
+                                                    : "border-gray-200"
+                                            }`}
                                             required
                                         />
+                                        {patenteValidation.message ? (
+                                            <p
+                                                className={`text-[11px] mt-1 ml-1 ${
+                                                    patenteValidation.state === "valid"
+                                                        ? "text-green-600"
+                                                        : "text-red-500"
+                                                }`}
+                                            >
+                                                {patenteValidation.message}
+                                            </p>
+                                        ) : (
+                                            <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                                MERCOSUR (AA 123 BB) o vieja (ABC 123). Normalizamos el formato automáticamente.
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Document uploads + expirations for motorized */}
@@ -993,7 +1212,7 @@ function RepartidorRegistroContent() {
                                             </div>
                                         </div>
 
-                                        {/* Cédula Verde (NUEVO) */}
+                                        {/* Cédula Verde */}
                                         <div className="space-y-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                                             <label className="block text-xs font-medium text-gray-700">
                                                 Cédula Verde <span className="text-red-500">*</span>
@@ -1051,7 +1270,7 @@ function RepartidorRegistroContent() {
                     </div>
                 )}
 
-                {/* Step 3: Confirmation - Checkboxes + Benefits + Submit */}
+                {/* Step 3: Confirmation */}
                 {step === 3 && (
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                         <button
@@ -1069,7 +1288,7 @@ function RepartidorRegistroContent() {
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Confirmación</h2>
                         <p className="text-sm text-gray-500 text-center mb-6">
-                            {fromProfile && isAuthenticated ? "Paso 2: Revisá y aceptá los términos" : "Paso 3: Revisá y aceptá los términos"}
+                            Paso 3: Revisá y aceptá los términos
                         </p>
 
                         {error && (
@@ -1082,7 +1301,7 @@ function RepartidorRegistroContent() {
                             {/* Summary */}
                             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                                 <p className="text-sm font-medium text-gray-800">Resumen de tu solicitud:</p>
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                                     <span className="text-gray-500">Nombre:</span>
                                     <span className="text-gray-800 font-medium">
                                         {fromProfile && isAuthenticated
@@ -1095,13 +1314,17 @@ function RepartidorRegistroContent() {
                                     <span className="text-gray-800 font-medium">{formData.cuit || "—"}</span>
                                     <span className="text-gray-500">Vehículo:</span>
                                     <span className="text-gray-800 font-medium capitalize">
-                                        {formData.vehicleType}
-                                        {isMotorized && ` ${formData.vehicleBrand} ${formData.vehicleModel}`}
+                                        {vehicleMeta?.label || formData.vehicleType || "—"}
+                                        {isMotorized && formData.vehicleBrand && ` ${formData.vehicleBrand}`}
+                                        {isMotorized && formData.vehicleModel && ` ${formData.vehicleModel}`}
+                                        {isMotorized && formData.vehicleYear && ` (${formData.vehicleYear})`}
                                     </span>
                                     {isMotorized && (
                                         <>
+                                            <span className="text-gray-500">Color:</span>
+                                            <span className="text-gray-800 font-medium">{formData.vehicleColor || "—"}</span>
                                             <span className="text-gray-500">Patente:</span>
-                                            <span className="text-gray-800 font-medium uppercase">{formData.licensePlate}</span>
+                                            <span className="text-gray-800 font-medium uppercase tracking-wider">{formData.licensePlate || "—"}</span>
                                         </>
                                     )}
                                 </div>
@@ -1109,15 +1332,15 @@ function RepartidorRegistroContent() {
                                 {isMotorized && (
                                     <div className="mt-2 pt-2 border-t border-gray-200">
                                         <p className="text-[11px] text-gray-500 mb-1">Vencimientos cargados:</p>
-                                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
+                                        <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[11px]">
                                             <span className="text-gray-500">Licencia:</span>
-                                            <span className="text-gray-700">{formData.licenciaExpiresAt || "—"}</span>
+                                            <span className="text-gray-700">{formatDateAR(formData.licenciaExpiresAt)}</span>
                                             <span className="text-gray-500">Seguro:</span>
-                                            <span className="text-gray-700">{formData.seguroExpiresAt || "—"}</span>
+                                            <span className="text-gray-700">{formatDateAR(formData.seguroExpiresAt)}</span>
                                             <span className="text-gray-500">RTO:</span>
-                                            <span className="text-gray-700">{formData.rtoExpiresAt || "—"}</span>
+                                            <span className="text-gray-700">{formatDateAR(formData.rtoExpiresAt)}</span>
                                             <span className="text-gray-500">Cédula verde:</span>
-                                            <span className="text-gray-700">{formData.cedulaVerdeExpiresAt || "—"}</span>
+                                            <span className="text-gray-700">{formatDateAR(formData.cedulaVerdeExpiresAt)}</span>
                                         </div>
                                     </div>
                                 )}

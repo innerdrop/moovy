@@ -17,6 +17,7 @@ import { encryptDriverData } from "@/lib/fiscal-crypto";
 import { recordConsent } from "@/lib/consent";
 import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
 import { validateCuit } from "@/lib/cuit";
+import { validatePatente } from "@/lib/patente";
 import { isMotorizedVehicle } from "@/lib/driver-document-approval";
 
 export const dynamic = "force-dynamic";
@@ -123,6 +124,10 @@ export async function POST(request: NextRequest) {
         const vehicleTypeUpper = data.vehicleType.toUpperCase();
         const isMotorized = isMotorizedVehicle(vehicleTypeUpper);
 
+        // Normalized plate value (canonical: no spaces, UPPERCASE). Se
+        // completa si el vehículo es motorizado y la patente pasa validación.
+        let normalizedLicensePlate: string | null = null;
+
         // Validaciones específicas para motorizados
         if (isMotorized) {
             if (!data.licensePlate) {
@@ -131,6 +136,16 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+            // Patente: formato MERCOSUR (AA123BB) o LEGACY (ABC123). Server-side
+            // defense in depth — regla #2 del proyecto: nunca confiar en el UI.
+            const plateCheck = validatePatente(data.licensePlate);
+            if (!plateCheck.valid || !plateCheck.normalized) {
+                return NextResponse.json(
+                    { error: plateCheck.error || "Patente inválida" },
+                    { status: 400 }
+                );
+            }
+            normalizedLicensePlate = plateCheck.normalized;
             if (!data.licenciaUrl) {
                 return NextResponse.json(
                     { error: "Subí la licencia de conducir" },
@@ -231,7 +246,7 @@ export async function POST(request: NextRequest) {
             vehicleModel: isMotorized ? data.vehicleModel : null,
             vehicleYear: isMotorized && data.vehicleYear ? parseInt(data.vehicleYear.toString()) : null,
             vehicleColor: isMotorized ? data.vehicleColor : null,
-            licensePlate: isMotorized ? data.licensePlate.toUpperCase() : null,
+            licensePlate: isMotorized ? normalizedLicensePlate : null,
             cuit: cuitCheck.normalized,
             constanciaCuitUrl: data.constanciaCuitUrl,
             dniFrenteUrl: data.dniFrenteUrl,
