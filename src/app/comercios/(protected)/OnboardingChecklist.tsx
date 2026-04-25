@@ -76,7 +76,12 @@ export default function OnboardingChecklist() {
 
     if (loading) return null;
     if (error || !status) return null;
-    if (status.approvalStatus !== "APPROVED" || status.isComplete || dismissed) return null;
+    // Auto-hide cuando todos los OBLIGATORIOS están listos (canOpenStore=true).
+    // No esperamos isComplete porque ese también incluye recomendados (MP) que
+    // son opcionales: el merchant ya está operativo y no necesitamos seguir
+    // ocupando pantalla en su dashboard. Si quiere ver el detalle, sigue
+    // disponible expandiendo desde otro lugar (futuro: link en config).
+    if (status.approvalStatus !== "APPROVED" || status.canOpenStore || dismissed) return null;
 
     const steps: Step[] = [
         { id: "cuit", label: "CUIT cargado", completed: status.hasCuit, href: "/comercios/configuracion", required: true, section: "docs" },
@@ -86,7 +91,10 @@ export default function OnboardingChecklist() {
         ...(status.isFoodBusiness
             ? [{ id: "sanitario", label: "Registro Sanitario", completed: status.hasRegistroSanitario, href: "/comercios/configuracion", required: true, section: "docs" as const }]
             : []),
-        { id: "logo", label: "Subí tu logo", completed: status.hasLogo, href: "/comercios/mi-comercio", required: false, section: "ops" },
+        // Logo: ahora OBLIGATORIO (rama fix/comercio-onboarding-completo) — el
+        // backend bloquea approveMerchantTransition si Merchant.image es null.
+        // Sin logo el comercio se ve roto en home/listado y reduce confianza.
+        { id: "logo", label: "Subí tu logo", completed: status.hasLogo, href: "/comercios/mi-comercio", required: true, section: "ops" },
         { id: "schedule", label: "Configurá horarios", completed: status.hasSchedule, href: "/comercios/mi-comercio", required: true, section: "ops" },
         { id: "products", label: `Publicá productos (${status.productCount}/1 mín.)`, completed: status.hasProducts, href: "/comercios/productos/nuevo", required: true, section: "ops" },
         { id: "address", label: "Dirección del comercio", completed: status.hasAddress, href: "/comercios/mi-comercio", required: true, section: "ops" },

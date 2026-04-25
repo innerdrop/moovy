@@ -64,6 +64,8 @@ interface DocumentColumnSet {
     statusColumn: string;
     approvedAtColumn: string;
     rejectionColumn: string;
+    sourceColumn: string;  // DIGITAL | PHYSICAL — origen de la aprobación
+    noteColumn: string;    // Nota libre del admin describiendo el doc físico
     valueColumn: string;
     label: string;
     alwaysRequired: boolean; // true = todos los drivers (incluida bici)
@@ -78,6 +80,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "cuitStatus",
         approvedAtColumn: "cuitApprovedAt",
         rejectionColumn: "cuitRejectionReason",
+        sourceColumn: "cuitApprovalSource",
+        noteColumn: "cuitApprovalNote",
         valueColumn: "cuit",
         label: "CUIT/CUIL",
         alwaysRequired: true,
@@ -88,6 +92,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "constanciaCuitStatus",
         approvedAtColumn: "constanciaCuitApprovedAt",
         rejectionColumn: "constanciaCuitRejectionReason",
+        sourceColumn: "constanciaCuitApprovalSource",
+        noteColumn: "constanciaCuitApprovalNote",
         valueColumn: "constanciaCuitUrl",
         label: "Constancia de Inscripción AFIP / Monotributo",
         alwaysRequired: true,
@@ -98,6 +104,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "dniFrenteStatus",
         approvedAtColumn: "dniFrenteApprovedAt",
         rejectionColumn: "dniFrenteRejectionReason",
+        sourceColumn: "dniFrenteApprovalSource",
+        noteColumn: "dniFrenteApprovalNote",
         valueColumn: "dniFrenteUrl",
         label: "DNI (frente)",
         alwaysRequired: true,
@@ -108,6 +116,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "dniDorsoStatus",
         approvedAtColumn: "dniDorsoApprovedAt",
         rejectionColumn: "dniDorsoRejectionReason",
+        sourceColumn: "dniDorsoApprovalSource",
+        noteColumn: "dniDorsoApprovalNote",
         valueColumn: "dniDorsoUrl",
         label: "DNI (dorso)",
         alwaysRequired: true,
@@ -118,6 +128,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "licenciaStatus",
         approvedAtColumn: "licenciaApprovedAt",
         rejectionColumn: "licenciaRejectionReason",
+        sourceColumn: "licenciaApprovalSource",
+        noteColumn: "licenciaApprovalNote",
         valueColumn: "licenciaUrl",
         label: "Licencia de conducir",
         alwaysRequired: false,
@@ -130,6 +142,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "seguroStatus",
         approvedAtColumn: "seguroApprovedAt",
         rejectionColumn: "seguroRejectionReason",
+        sourceColumn: "seguroApprovalSource",
+        noteColumn: "seguroApprovalNote",
         valueColumn: "seguroUrl",
         label: "Póliza de seguro",
         alwaysRequired: false,
@@ -142,6 +156,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "vtvStatus",
         approvedAtColumn: "vtvApprovedAt",
         rejectionColumn: "vtvRejectionReason",
+        sourceColumn: "vtvApprovalSource",
+        noteColumn: "vtvApprovalNote",
         valueColumn: "vtvUrl",
         label: "RTO (Revisión Técnica)",
         alwaysRequired: false,
@@ -154,6 +170,8 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         statusColumn: "cedulaVerdeStatus",
         approvedAtColumn: "cedulaVerdeApprovedAt",
         rejectionColumn: "cedulaVerdeRejectionReason",
+        sourceColumn: "cedulaVerdeApprovalSource",
+        noteColumn: "cedulaVerdeApprovalNote",
         valueColumn: "cedulaVerdeUrl",
         label: "Cédula verde",
         alwaysRequired: false,
@@ -193,6 +211,10 @@ export function getRequiredDriverDocumentFields(
 interface AdminContext {
     adminId: string;
     adminEmail: string;
+    /** Origen de la aprobación. Default DIGITAL. PHYSICAL = admin recibió el doc fuera del sistema. */
+    source?: "DIGITAL" | "PHYSICAL";
+    /** Nota libre describiendo la aprobación física. Obligatoria si source === PHYSICAL. */
+    note?: string | null;
 }
 
 interface DocumentApprovalResult {
@@ -215,6 +237,8 @@ export async function approveDriverDocument(
 ): Promise<DocumentApprovalResult> {
     const cols = DRIVER_DOCUMENT_COLUMNS[field];
     const now = new Date();
+    const source = ctx.source ?? "DIGITAL";
+    const note = ctx.note ?? null;
 
     const autoActivated = await prisma.$transaction(async (tx) => {
         const updated = await tx.driver.update({
@@ -222,6 +246,8 @@ export async function approveDriverDocument(
             data: {
                 [cols.statusColumn]: "APPROVED",
                 [cols.approvedAtColumn]: now,
+                [cols.sourceColumn]: source,
+                [cols.noteColumn]: note,
                 [cols.rejectionColumn]: null,
             },
             select: {
@@ -264,9 +290,28 @@ export async function approveDriverDocument(
         },
     });
 
+    let activatedNow = false;
     if (autoActivated) {
         // approveDriverTransition tiene su propia $transaction interna.
-        await approveDriverTransition(driverId, ctx);
+        // Si falta foto del driver, NO bloqueamos la aprobación del doc — solo
+        // skipeamos la transición global (driver queda PENDING hasta que cargue foto).
+        try {
+            await approveDriverTransition(driverId, ctx);
+            activatedNow = true;
+        } catch (e: any) {
+            if (e?.code === "PHOTO_MISSING") {
+                console.warn(
+                    `[approveDriverDocument] Doc aprobado pero driver ${driverId} no se auto-activó: falta foto.`
+                );
+            } else {
+                throw e;
+            }
+        }
+
+        if (!activatedNow) {
+            // Saltamos email + push de auto-activación porque el driver no se activó.
+            return { success: true, driverAutoActivated: false };
+        }
 
         // Email de auto-activación (fire-and-forget — no bloquea si SMTP falla).
         // Fetch separado para no acoplar el update atómico arriba a datos del User.

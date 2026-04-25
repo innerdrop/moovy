@@ -36,7 +36,7 @@ export async function POST(
 
         const { id } = await context.params;
 
-        let body: { field?: string } = {};
+        let body: { field?: string; source?: string; note?: string } = {};
         try {
             body = await request.json();
         } catch {
@@ -51,9 +51,22 @@ export async function POST(
             );
         }
 
-        // Verificamos que el merchant exista y tenga valor cargado en ese campo
-        // (no tiene sentido aprobar un doc vacío). También extraemos email del
-        // owner para la notif posterior.
+        // Origen de la aprobación. DIGITAL = el merchant subió el doc al sistema.
+        // PHYSICAL = admin lo recibió en papel/email/whatsapp y aprueba manualmente
+        // sin URL. La nota describe cómo lo recibió (clave para auditoría AAIP).
+        const sourceRaw = typeof body.source === "string" ? body.source.toUpperCase() : "DIGITAL";
+        const source: "DIGITAL" | "PHYSICAL" = sourceRaw === "PHYSICAL" ? "PHYSICAL" : "DIGITAL";
+        const note = typeof body.note === "string" ? body.note.trim().slice(0, 500) : null;
+
+        if (source === "PHYSICAL" && (!note || note.length < 5)) {
+            return NextResponse.json(
+                { error: "Para aprobación física se requiere una nota de al menos 5 caracteres describiendo cómo se recibió el documento." },
+                { status: 400 }
+            );
+        }
+
+        // Verificamos que el merchant exista. El valor del campo es opcional cuando
+        // source === PHYSICAL: el admin recibió el doc fuera del sistema.
         const cols = DOCUMENT_COLUMNS[field];
         const merchant = await prisma.merchant.findUnique({
             where: { id },
@@ -71,9 +84,9 @@ export async function POST(
         }
 
         const currentValue = (merchant as any)[cols.valueColumn];
-        if (!currentValue) {
+        if (!currentValue && source === "DIGITAL") {
             return NextResponse.json(
-                { error: `No hay ${cols.label} cargado para aprobar` },
+                { error: `No hay ${cols.label} cargado en el sistema. Si lo recibiste en papel, marcá como aprobación física.` },
                 { status: 400 }
             );
         }
@@ -88,6 +101,8 @@ export async function POST(
         const result = await approveDocument(id, field, {
             adminId: session.user.id,
             adminEmail: session.user.email ?? "unknown",
+            source,
+            note,
         });
 
         // Notificaciones (non-blocking): siempre avisamos al merchant que un doc

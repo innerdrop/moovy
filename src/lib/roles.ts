@@ -748,6 +748,24 @@ export async function approveMerchantTransition(
 ): Promise<void> {
     const now = new Date();
 
+    // Pre-condición: el merchant debe tener logo cargado. El logo es la cara
+    // pública del comercio en el listado/home — sin él la tienda se ve rota.
+    // Bloqueamos antes de la transición para que admin sepa qué falta.
+    const pre = await prisma.merchant.findUnique({
+        where: { id: merchantId },
+        select: { image: true },
+    });
+    if (!pre) {
+        throw new Error("Merchant not found");
+    }
+    if (!pre.image || pre.image.trim().length === 0) {
+        const err: Error & { code?: string } = new Error(
+            "El comercio todavía no cargó el logo. Pedile que suba uno antes de aprobar."
+        );
+        err.code = "LOGO_MISSING";
+        throw err;
+    }
+
     await prisma.$transaction(async (tx) => {
         const merchant = await tx.merchant.update({
             where: { id: merchantId },
@@ -831,6 +849,24 @@ export async function approveDriverTransition(
     ctx: TransitionContext
 ): Promise<void> {
     const now = new Date();
+
+    // Pre-condición: el driver debe tener foto de perfil (User.image). Es la
+    // cara que ven los buyers en la pantalla de tracking. Sin foto el sistema
+    // muestra un avatar vacío que reduce confianza.
+    const pre = await prisma.driver.findUnique({
+        where: { id: driverId },
+        select: { user: { select: { image: true } } },
+    });
+    if (!pre) {
+        throw new Error("Driver not found");
+    }
+    if (!pre.user?.image || pre.user.image.trim().length === 0) {
+        const err: Error & { code?: string } = new Error(
+            "El repartidor todavía no cargó su foto de perfil. Pedile que suba una antes de aprobar."
+        );
+        err.code = "PHOTO_MISSING";
+        throw err;
+    }
 
     await prisma.$transaction(async (tx) => {
         const driver = await tx.driver.update({

@@ -627,9 +627,34 @@ function ComercioRegistroContent() {
                             </div>
                         </div>
                         <h2 className="text-xl font-bold text-center text-gray-900 mb-1">Datos Fiscales y Legales</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">
+                        <p className="text-sm text-gray-500 text-center mb-4">
                             {fromProfile && isAuthenticated ? "Paso 2: Documentación para operar" : "Paso 3: Documentación para operar"}
                         </p>
+
+                        {/* Banner: docs pueden completarse luego — pero la tienda NO se publica hasta cumplir TODO.
+                            Lo más estresante para un nuevo merchant es sentir que no puede registrarse si no tiene
+                            todos los papeles a mano. Acá explicamos en una caja amigable que puede empezar y
+                            terminar después, dejando claro qué necesita para publicarse. */}
+                        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p className="text-sm font-semibold text-blue-900 mb-2">
+                                Podés completar la documentación más tarde
+                            </p>
+                            <p className="text-xs text-blue-800 leading-relaxed mb-3">
+                                Te registramos ahora con lo que tengas a mano. Tu tienda <strong>no será visible</strong> al
+                                público hasta que cumplas con todos los requisitos obligatorios. Podés terminarlo
+                                cuando quieras desde el panel de tu comercio.
+                            </p>
+                            <p className="text-xs font-semibold text-blue-900 mb-1">Para publicarte necesitás:</p>
+                            <ul className="text-xs text-blue-800 list-disc list-inside space-y-0.5">
+                                <li>CUIT</li>
+                                <li>CBU o Alias bancario</li>
+                                <li>Constancia de Inscripción AFIP</li>
+                                <li>Habilitación Municipal</li>
+                                <li>Registro Sanitario (solo si vendés comida)</li>
+                                <li>Logo del comercio</li>
+                                <li>Horarios de atención</li>
+                            </ul>
+                        </div>
 
                         {error && (
                             <div ref={errorRef} className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">

@@ -52,10 +52,18 @@ export async function PUT(
         // Transición centralizada: escribe approvalStatus, flags legacy y audit log.
         // Ya no tocamos UserRole acá porque el rol COMERCIO se deriva de Merchant.approvalStatus
         // en cada request. Ver src/lib/roles.ts.
-        await approveMerchantTransition(id, {
-            adminId: session.user.id,
-            adminEmail: session.user.email ?? "unknown",
-        });
+        try {
+            await approveMerchantTransition(id, {
+                adminId: session.user.id,
+                adminEmail: session.user.email ?? "unknown",
+            });
+        } catch (e: any) {
+            // Errores de pre-condición (ej: LOGO_MISSING) → 400 con mensaje claro al admin.
+            if (e?.code === "LOGO_MISSING") {
+                return NextResponse.json({ error: e.message, code: e.code }, { status: 400 });
+            }
+            throw e;
+        }
 
         // Send approval email (non-blocking). Usa la versión oficial del registry
         // (src/lib/email-p0.ts) para que lo que el admin edita en /ops/emails

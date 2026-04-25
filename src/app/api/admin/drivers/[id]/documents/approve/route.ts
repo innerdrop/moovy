@@ -37,7 +37,7 @@ export async function POST(
 
         const { id } = await context.params;
 
-        let body: { field?: string } = {};
+        let body: { field?: string; source?: string; note?: string } = {};
         try {
             body = await request.json();
         } catch {
@@ -48,6 +48,20 @@ export async function POST(
         if (!isValidDriverDocumentField(field)) {
             return NextResponse.json(
                 { error: "Campo de documento inválido" },
+                { status: 400 }
+            );
+        }
+
+        // Origen de la aprobación: DIGITAL (subido al sistema) o PHYSICAL (admin
+        // recibió el doc fuera del sistema). En PHYSICAL la URL puede quedar null
+        // y la nota describe cómo se recibió (auditoría AAIP/Trans. Ushuaia).
+        const sourceRaw = typeof body.source === "string" ? body.source.toUpperCase() : "DIGITAL";
+        const source: "DIGITAL" | "PHYSICAL" = sourceRaw === "PHYSICAL" ? "PHYSICAL" : "DIGITAL";
+        const note = typeof body.note === "string" ? body.note.trim().slice(0, 500) : null;
+
+        if (source === "PHYSICAL" && (!note || note.length < 5)) {
+            return NextResponse.json(
+                { error: "Para aprobación física se requiere una nota de al menos 5 caracteres describiendo cómo se recibió el documento." },
                 { status: 400 }
             );
         }
@@ -68,9 +82,9 @@ export async function POST(
         }
 
         const currentValue = (driver as any)[cols.valueColumn];
-        if (!currentValue) {
+        if (!currentValue && source === "DIGITAL") {
             return NextResponse.json(
-                { error: `No hay ${cols.label} cargado para aprobar` },
+                { error: `No hay ${cols.label} cargado en el sistema. Si lo recibiste en papel, marcá como aprobación física.` },
                 { status: 400 }
             );
         }
@@ -85,6 +99,8 @@ export async function POST(
         const result = await approveDriverDocument(id, field, {
             adminId: session.user.id,
             adminEmail: session.user.email ?? "unknown",
+            source,
+            note,
         });
 
         // Notificaciones (non-blocking)

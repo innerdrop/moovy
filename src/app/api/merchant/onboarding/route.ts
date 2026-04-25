@@ -67,9 +67,12 @@ export async function GET() {
 
         // All docs complete = can open store
         const docsComplete = hasCuit && hasBankAccount && hasConstanciaAfip && hasHabilitacion && hasRegistroSanitario;
-        // All operational = fully ready
-        const canOpenStore = docsComplete && hasSchedule && hasProducts && hasAddress;
-        const isComplete = canOpenStore && hasLogo && hasMercadoPago;
+        // All operational = fully ready. Logo es obligatorio (rama
+        // fix/comercio-onboarding-completo) — el backend bloquea la aprobación
+        // del merchant si Merchant.image es null.
+        const canOpenStore = docsComplete && hasSchedule && hasProducts && hasAddress && hasLogo;
+        // isComplete suma MercadoPago como recomendado para "100% perfil completo".
+        const isComplete = canOpenStore && hasMercadoPago;
 
         return NextResponse.json({
             merchantId: merchant.id,

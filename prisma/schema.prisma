@@ -487,20 +487,34 @@ model Merchant {
   cuitStatus                      String    @default("PENDING")
   cuitApprovedAt                  DateTime?
   cuitRejectionReason             String?
+  // ApprovalSource: DIGITAL | PHYSICAL — elegido por admin al aprobar.
+  // DIGITAL = el merchant subió el doc al sistema. PHYSICAL = admin lo recibió
+  // en papel/email/whatsapp y aprobó manualmente; en este caso el campo URL
+  // puede quedar null y la nota describe cómo lo recibió (auditoría AAIP).
+  cuitApprovalSource              String?
+  cuitApprovalNote                String?
   bankAccountStatus               String    @default("PENDING")
   bankAccountApprovedAt           DateTime?
   bankAccountRejectionReason      String?
+  bankAccountApprovalSource       String?
+  bankAccountApprovalNote         String?
   constanciaAfipStatus            String    @default("PENDING")
   constanciaAfipApprovedAt        DateTime?
   constanciaAfipRejectionReason   String?
+  constanciaAfipApprovalSource    String?
+  constanciaAfipApprovalNote      String?
   habilitacionMunicipalStatus     String    @default("PENDING")
   habilitacionMunicipalApprovedAt DateTime?
   habilitacionMunicipalRejectionReason String?
+  habilitacionMunicipalApprovalSource String?
+  habilitacionMunicipalApprovalNote   String?
   // Registro sanitario sólo es requerido para rubros alimenticios. NOT_REQUIRED
   // es un estado válido: la auto-activación lo cuenta como OK.
   registroSanitarioStatus         String    @default("PENDING")
   registroSanitarioApprovedAt     DateTime?
   registroSanitarioRejectionReason String?
+  registroSanitarioApprovalSource String?
+  registroSanitarioApprovalNote   String?
   acceptedTermsAt           DateTime?
   acceptedPrivacyAt         DateTime?
   category                  String?                   @default("Otro")
@@ -633,27 +647,44 @@ model Driver {
   cuitStatus                String    @default("PENDING") // PENDING | APPROVED | REJECTED
   cuitApprovedAt            DateTime?
   cuitRejectionReason       String?
+  // ApprovalSource: DIGITAL | PHYSICAL — admin elige al aprobar. Ver Merchant docs.
+  cuitApprovalSource        String?
+  cuitApprovalNote          String?
   constanciaCuitStatus      String    @default("PENDING")
   constanciaCuitApprovedAt  DateTime?
   constanciaCuitRejectionReason String?
+  constanciaCuitApprovalSource String?
+  constanciaCuitApprovalNote   String?
   dniFrenteStatus           String    @default("PENDING")
   dniFrenteApprovedAt       DateTime?
   dniFrenteRejectionReason  String?
+  dniFrenteApprovalSource   String?
+  dniFrenteApprovalNote     String?
   dniDorsoStatus            String    @default("PENDING")
   dniDorsoApprovedAt        DateTime?
   dniDorsoRejectionReason   String?
+  dniDorsoApprovalSource    String?
+  dniDorsoApprovalNote      String?
   licenciaStatus            String    @default("PENDING")
   licenciaApprovedAt        DateTime?
   licenciaRejectionReason   String?
+  licenciaApprovalSource    String?
+  licenciaApprovalNote      String?
   seguroStatus              String    @default("PENDING")
   seguroApprovedAt          DateTime?
   seguroRejectionReason     String?
+  seguroApprovalSource      String?
+  seguroApprovalNote        String?
   vtvStatus                 String    @default("PENDING")
   vtvApprovedAt             DateTime?
   vtvRejectionReason        String?
+  vtvApprovalSource         String?
+  vtvApprovalNote           String?
   cedulaVerdeStatus         String    @default("PENDING")
   cedulaVerdeApprovedAt     DateTime?
   cedulaVerdeRejectionReason String?
+  cedulaVerdeApprovalSource String?
+  cedulaVerdeApprovalNote   String?
   // Vencimientos (P1 — cron diario avisa 7/3/1 d\u00edas antes y suspende al vencer).
   // NotifiedStage: 0=ninguna notif, 1=7d enviada, 2=3d, 3=1d, 4=expired+suspended.
   // Se resetea a 0 cuando el driver sube un doc nuevo con nuevo ExpiresAt.

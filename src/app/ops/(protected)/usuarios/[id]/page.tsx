@@ -440,9 +440,34 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
     const handleApproveDocument = async (field: string) => {
         if (!user?.merchant) return;
+
+        // Origen de la aprobación. Default DIGITAL (lo más común — el merchant
+        // subió el doc al sistema). PHYSICAL es para casos donde el admin recibió
+        // el doc fuera del sistema (papel, email, whatsapp). En ese caso pedimos
+        // una nota describiendo qué vio para tener auditoría AAIP.
+        const isPhysical = window.confirm(
+            "¿Aprobás este documento por revisión FÍSICA (papel/email/whatsapp)?\n\n" +
+            "• Aceptar = Aprobación FÍSICA — vas a tener que escribir una nota describiendo cómo recibiste el doc.\n" +
+            "• Cancelar = Aprobación DIGITAL — el merchant ya subió el doc al sistema y vos lo revisaste."
+        );
+
+        let note: string | null = null;
+        if (isPhysical) {
+            const raw = window.prompt(
+                "Nota describiendo cómo recibiste el documento (mín. 5 caracteres).\n\nEjemplo: 'Recibido en oficina el 25/04/2026, copia escaneada en email a admin@somosmoovy.com'"
+            );
+            if (!raw || raw.trim().length < 5) {
+                toast.error("Necesitás escribir una nota de al menos 5 caracteres para aprobación física.");
+                return;
+            }
+            note = raw.trim();
+        }
+
         const ok = await confirm({
-            title: "Aprobar documento",
-            message: `¿Confirmar la aprobación de este documento?\n\nSi es el último pendiente, el comercio se activará automáticamente.`,
+            title: isPhysical ? "Aprobar (FÍSICO)" : "Aprobar documento",
+            message: isPhysical
+                ? `Vas a aprobar este documento como recibido en papel/email.\n\nNota: ${note}\n\nSi es el último pendiente, el comercio se activará automáticamente.`
+                : `¿Confirmar la aprobación de este documento?\n\nSi es el último pendiente, el comercio se activará automáticamente.`,
             confirmLabel: "Aprobar",
             variant: "default",
         });
@@ -455,7 +480,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ field }),
+                    body: JSON.stringify({
+                        field,
+                        source: isPhysical ? "PHYSICAL" : "DIGITAL",
+                        note,
+                    }),
                 }
             );
             const data = await res.json().catch(() => ({}));
@@ -463,10 +492,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 if (data.merchantAutoActivated) {
                     toast.success(`✓ ${data.label || "Documento"} aprobado. ¡Comercio activado!`);
                 } else {
-                    toast.success(`${data.label || "Documento"} aprobado`);
+                    toast.success(`${data.label || "Documento"} aprobado${isPhysical ? " (físico)" : ""}`);
                 }
                 fetchUser();
             } else {
+                // Errores típicos: LOGO_MISSING (auto-activación bloqueada) o validación de nota.
                 toast.error(data.error || "Error al aprobar el documento");
             }
         } catch (error) {
@@ -588,9 +618,31 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const handleApproveDriverDocument = async (field: string) => {
         if (!user?.driver) return;
         const label = DRIVER_DOC_LABELS[field] || field;
+
+        // Mismo flujo que merchant — distinguir DIGITAL/PHYSICAL para auditoría AAIP.
+        const isPhysical = window.confirm(
+            `¿Aprobás "${label}" por revisión FÍSICA (papel/email/whatsapp)?\n\n` +
+            "• Aceptar = Aprobación FÍSICA — vas a tener que escribir una nota.\n" +
+            "• Cancelar = Aprobación DIGITAL — el driver ya subió el doc al sistema."
+        );
+
+        let note: string | null = null;
+        if (isPhysical) {
+            const raw = window.prompt(
+                "Nota describiendo cómo recibiste el documento (mín. 5 caracteres).\n\nEjemplo: 'Foto enviada por whatsapp el 25/04/2026, validada contra DNI físico'"
+            );
+            if (!raw || raw.trim().length < 5) {
+                toast.error("Necesitás escribir una nota de al menos 5 caracteres para aprobación física.");
+                return;
+            }
+            note = raw.trim();
+        }
+
         const ok = await confirm({
-            title: "Aprobar documento",
-            message: `¿Confirmar la aprobación de "${label}"?\n\nSi es el último pendiente, el repartidor se activará automáticamente.`,
+            title: isPhysical ? `Aprobar "${label}" (FÍSICO)` : "Aprobar documento",
+            message: isPhysical
+                ? `Vas a aprobar "${label}" como recibido en papel/email.\n\nNota: ${note}\n\nSi es el último pendiente, el repartidor se activará automáticamente.`
+                : `¿Confirmar la aprobación de "${label}"?\n\nSi es el último pendiente, el repartidor se activará automáticamente.`,
             confirmLabel: "Aprobar",
             variant: "default",
         });
@@ -603,7 +655,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ field }),
+                    body: JSON.stringify({
+                        field,
+                        source: isPhysical ? "PHYSICAL" : "DIGITAL",
+                        note,
+                    }),
                 }
             );
             const data = await res.json().catch(() => ({}));
@@ -611,10 +667,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 if (data.driverAutoActivated) {
                     toast.success(`✓ ${data.label || label} aprobado. ¡Repartidor activado!`);
                 } else {
-                    toast.success(`${data.label || label} aprobado`);
+                    toast.success(`${data.label || label} aprobado${isPhysical ? " (físico)" : ""}`);
                 }
                 fetchUser();
             } else {
+                // Errores típicos: PHOTO_MISSING (auto-activación bloqueada) o validación de nota.
                 toast.error(data.error || "Error al aprobar el documento");
             }
         } catch (error) {

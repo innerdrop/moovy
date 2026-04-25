@@ -56,6 +56,8 @@ interface DocumentColumnSet {
     statusColumn: string;
     approvedAtColumn: string;
     rejectionColumn: string;
+    sourceColumn: string; // DIGITAL | PHYSICAL — origen de la aprobación
+    noteColumn: string;   // Nota libre del admin describiendo el doc físico
     valueColumn: string; // columna donde vive el valor (URL o texto)
     label: string; // texto human-readable (para emails/audit)
     alwaysRequired: boolean; // true = obligatorio en todos los rubros
@@ -67,6 +69,8 @@ export const DOCUMENT_COLUMNS: Record<MerchantDocumentField, DocumentColumnSet> 
         statusColumn: "cuitStatus",
         approvedAtColumn: "cuitApprovedAt",
         rejectionColumn: "cuitRejectionReason",
+        sourceColumn: "cuitApprovalSource",
+        noteColumn: "cuitApprovalNote",
         valueColumn: "cuit",
         label: "CUIT",
         alwaysRequired: true,
@@ -76,6 +80,8 @@ export const DOCUMENT_COLUMNS: Record<MerchantDocumentField, DocumentColumnSet> 
         statusColumn: "bankAccountStatus",
         approvedAtColumn: "bankAccountApprovedAt",
         rejectionColumn: "bankAccountRejectionReason",
+        sourceColumn: "bankAccountApprovalSource",
+        noteColumn: "bankAccountApprovalNote",
         valueColumn: "bankAccount",
         label: "CBU/Alias bancario",
         alwaysRequired: true,
@@ -85,6 +91,8 @@ export const DOCUMENT_COLUMNS: Record<MerchantDocumentField, DocumentColumnSet> 
         statusColumn: "constanciaAfipStatus",
         approvedAtColumn: "constanciaAfipApprovedAt",
         rejectionColumn: "constanciaAfipRejectionReason",
+        sourceColumn: "constanciaAfipApprovalSource",
+        noteColumn: "constanciaAfipApprovalNote",
         valueColumn: "constanciaAfipUrl",
         label: "Constancia de Inscripción AFIP",
         alwaysRequired: true,
@@ -94,6 +102,8 @@ export const DOCUMENT_COLUMNS: Record<MerchantDocumentField, DocumentColumnSet> 
         statusColumn: "habilitacionMunicipalStatus",
         approvedAtColumn: "habilitacionMunicipalApprovedAt",
         rejectionColumn: "habilitacionMunicipalRejectionReason",
+        sourceColumn: "habilitacionMunicipalApprovalSource",
+        noteColumn: "habilitacionMunicipalApprovalNote",
         valueColumn: "habilitacionMunicipalUrl",
         label: "Habilitación Municipal",
         alwaysRequired: true,
@@ -103,6 +113,8 @@ export const DOCUMENT_COLUMNS: Record<MerchantDocumentField, DocumentColumnSet> 
         statusColumn: "registroSanitarioStatus",
         approvedAtColumn: "registroSanitarioApprovedAt",
         rejectionColumn: "registroSanitarioRejectionReason",
+        sourceColumn: "registroSanitarioApprovalSource",
+        noteColumn: "registroSanitarioApprovalNote",
         valueColumn: "registroSanitarioUrl",
         label: "Registro Sanitario / Habilitación Bromatológica",
         alwaysRequired: false,
@@ -143,6 +155,10 @@ export function getRequiredDocumentFields(
 interface AdminContext {
     adminId: string;
     adminEmail: string;
+    /** Origen de la aprobación. Default DIGITAL si el merchant ya tenía URL/valor cargado. */
+    source?: "DIGITAL" | "PHYSICAL";
+    /** Nota libre describiendo la aprobación física (obligatoria si source === PHYSICAL). */
+    note?: string | null;
 }
 
 interface DocumentApprovalResult {
@@ -165,6 +181,8 @@ export async function approveDocument(
 ): Promise<DocumentApprovalResult> {
     const cols = DOCUMENT_COLUMNS[field];
     const now = new Date();
+    const source = ctx.source ?? "DIGITAL";
+    const note = ctx.note ?? null;
 
     // El chequeo de auto-activación necesita leer TODOS los status columns
     // después del update; hacemos eso dentro de una tx serializable.
@@ -175,6 +193,8 @@ export async function approveDocument(
                 [cols.statusColumn]: "APPROVED",
                 [cols.approvedAtColumn]: now,
                 [cols.rejectionColumn]: null,
+                [cols.sourceColumn]: source,
+                [cols.noteColumn]: note,
             },
             select: {
                 id: true,
@@ -219,27 +239,46 @@ export async function approveDocument(
         },
     });
 
+    // Si autoActivated y falta logo (LOGO_MISSING), NO bloqueamos la aprobación
+    // del documento individual — solo skipeamos la transición global. El admin
+    // ve el doc aprobado pero el merchant queda PENDING hasta que suba el logo.
+    let activatedNow = false;
     if (autoActivated) {
-        await approveMerchantTransition(merchantId, ctx);
+        try {
+            await approveMerchantTransition(merchantId, ctx);
+            activatedNow = true;
+        } catch (e: any) {
+            if (e?.code === "LOGO_MISSING") {
+                // No es error fatal: el doc sí se aprobó, solo no podemos disparar
+                // la activación global. El admin va a ver el merchant todavía PENDING
+                // con un mensaje claro en la UI cuando el siguiente paso falle.
+                console.warn(
+                    `[approveDocument] Doc aprobado pero merchant ${merchantId} no se auto-activó: falta logo.`
+                );
+            } else {
+                throw e;
+            }
+        }
 
-        // Refresh JWT del merchant para que pueda entrar al panel sin logout/login.
-        // Consultamos ownerId+name fuera de la tx — la transición ya commitó.
-        const merchant = await prisma.merchant.findUnique({
-            where: { id: merchantId },
-            select: { ownerId: true, name: true },
-        });
-        if (merchant) {
-            emitRoleUpdate({
-                userId: merchant.ownerId,
-                role: "MERCHANT",
-                action: "AUTO_ACTIVATED",
-                message: `¡Tu comercio "${merchant.name}" fue aprobado automáticamente! Todos los documentos están al día.`,
-                portalUrl: "/comercios",
+        if (activatedNow) {
+            // Refresh JWT del merchant para que pueda entrar al panel sin logout/login.
+            const merchant = await prisma.merchant.findUnique({
+                where: { id: merchantId },
+                select: { ownerId: true, name: true },
             });
+            if (merchant) {
+                emitRoleUpdate({
+                    userId: merchant.ownerId,
+                    role: "MERCHANT",
+                    action: "AUTO_ACTIVATED",
+                    message: `¡Tu comercio "${merchant.name}" fue aprobado automáticamente! Todos los documentos están al día.`,
+                    portalUrl: "/comercios",
+                });
+            }
         }
     }
 
-    return { success: true, merchantAutoActivated: autoActivated };
+    return { success: true, merchantAutoActivated: activatedNow };
 }
 
 /**
