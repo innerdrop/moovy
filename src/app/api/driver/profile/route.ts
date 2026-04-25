@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { decryptDriverData } from "@/lib/fiscal-crypto";
 
 // PATCH - Update driver profile (email/phone only)
 export async function PATCH(request: Request) {
@@ -89,8 +90,14 @@ export async function GET() {
             return NextResponse.json({ error: "No eres repartidor" }, { status: 404 });
         }
 
+        // Decifrar campos fiscales (CUIT) antes de devolverlos al frontend.
+        // El driver ve su propio dato, así que va plaintext. Sin esto el panel
+        // mostraba el ciphertext hex (bug visual reportado 2026-04-25).
+        // El cifrado en DB se mantiene — defense in depth.
+        const decryptedDriver = decryptDriverData(driver);
+
         return NextResponse.json({
-            ...driver,
+            ...decryptedDriver,
             totalDeliveries: driver._count.orders
         });
     } catch (error) {

@@ -30,6 +30,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { validateCuit } from "@/lib/cuit";
+import { encryptDriverData } from "@/lib/fiscal-crypto";
 import {
     DRIVER_DOCUMENT_COLUMNS,
     isValidDriverDocumentField,
@@ -190,10 +191,15 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
+        // Encriptar campos fiscales (CUIT) antes de persistir. Convención AAIP:
+        // todo CUIT en DB debe estar cifrado. encryptDriverData es idempotente
+        // (no re-encripta lo que ya viene cifrado, ver encryptIfNeeded).
+        const encryptedUpdateData = encryptDriverData(updateData);
+
         // Aplicamos el update con los valores nuevos.
         await prisma.driver.update({
             where: { id: driver.id },
-            data: updateData,
+            data: encryptedUpdateData,
         });
 
         // Cada doc actualizado vuelve a PENDING explícitamente via helper —
