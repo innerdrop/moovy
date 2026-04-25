@@ -35,6 +35,7 @@ import { UserAdminActions } from "@/components/ops/UserAdminActions";
 import { UserActivityLog } from "@/components/ops/UserActivityLog";
 import { AdminNotesSection } from "@/components/ops/AdminNotesSection";
 import ImageUpload from "@/components/ui/ImageUpload";
+import DocApprovalModal from "@/components/ops/DocApprovalModal";
 
 interface UserData {
     id: string;
@@ -383,6 +384,17 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     // Compartido entre merchant y driver (no pueden procesarse simultáneamente en la misma página).
     const [docProcessing, setDocProcessing] = useState<string | null>(null);
 
+    // Estado del modal de aprobación de documento (merchant + driver).
+    // Reemplaza el flujo viejo basado en window.confirm/window.prompt nativos.
+    // null = modal cerrado. Cuando hay objeto, el modal se muestra para ese doc.
+    // Se diferencia merchant/driver con el campo `entity` para que el callback
+    // sepa a qué endpoint pegar.
+    const [approvalModal, setApprovalModal] = useState<
+        | { entity: "merchant" | "driver"; field: string; label: string }
+        | null
+    >(null);
+    const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+
     useEffect(() => {
         fetchUser();
     }, [userId]);
@@ -439,71 +451,66 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         }
     };
 
-    const handleApproveDocument = async (field: string) => {
+    /**
+     * Abre el modal Moovy para aprobar un doc del merchant. La lógica de validación
+     * (DIGITAL vs PHYSICAL + nota mín 5 chars) vive dentro del DocApprovalModal —
+     * acá sólo abrimos el modal con el contexto del doc. El submit final pasa por
+     * `submitApprovalDecision` (callback compartido entre merchant y driver).
+     */
+    const handleApproveDocument = (field: string) => {
         if (!user?.merchant) return;
+        const docLabel = DOC_LABELS[field] || field;
+        setApprovalModal({ entity: "merchant", field, label: docLabel });
+    };
 
-        // Origen de la aprobación. Default DIGITAL (lo más común — el merchant
-        // subió el doc al sistema). PHYSICAL es para casos donde el admin recibió
-        // el doc fuera del sistema (papel, email, whatsapp). En ese caso pedimos
-        // una nota describiendo qué vio para tener auditoría AAIP.
-        const isPhysical = window.confirm(
-            "¿Aprobás este documento por revisión FÍSICA (papel/email/whatsapp)?\n\n" +
-            "• Aceptar = Aprobación FÍSICA — vas a tener que escribir una nota describiendo cómo recibiste el doc.\n" +
-            "• Cancelar = Aprobación DIGITAL — el merchant ya subió el doc al sistema y vos lo revisaste."
-        );
+    /**
+     * Callback del DocApprovalModal cuando el admin confirma.
+     * Recibe { source, note } ya validados y dispara el fetch al endpoint
+     * correspondiente según la entidad (merchant o driver).
+     */
+    const submitApprovalDecision = async (decision: { source: "DIGITAL" | "PHYSICAL"; note: string | null }) => {
+        if (!approvalModal) return;
+        const { entity, field, label } = approvalModal;
+        const isPhysical = decision.source === "PHYSICAL";
 
-        let note: string | null = null;
-        if (isPhysical) {
-            const raw = window.prompt(
-                "Nota describiendo cómo recibiste el documento (mín. 5 caracteres).\n\nEjemplo: 'Recibido en oficina el 25/04/2026, copia escaneada en email a admin@somosmoovy.com'"
-            );
-            if (!raw || raw.trim().length < 5) {
-                toast.error("Necesitás escribir una nota de al menos 5 caracteres para aprobación física.");
-                return;
-            }
-            note = raw.trim();
-        }
-
-        const ok = await confirm({
-            title: isPhysical ? "Aprobar (FÍSICO)" : "Aprobar documento",
-            message: isPhysical
-                ? `Vas a aprobar este documento como recibido en papel/email.\n\nNota: ${note}\n\nSi es el último pendiente, el comercio se activará automáticamente.`
-                : `¿Confirmar la aprobación de este documento?\n\nSi es el último pendiente, el comercio se activará automáticamente.`,
-            confirmLabel: "Aprobar",
-            variant: "default",
-        });
-        if (!ok) return;
-
+        setApprovalSubmitting(true);
         setDocProcessing(field);
         try {
-            const res = await fetch(
-                `/api/admin/merchants/${user.merchant.id}/documents/approve`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        field,
-                        source: isPhysical ? "PHYSICAL" : "DIGITAL",
-                        note,
-                    }),
-                }
-            );
+            const url = entity === "merchant"
+                ? `/api/admin/merchants/${user?.merchant?.id}/documents/approve`
+                : `/api/admin/drivers/${user?.driver?.id}/documents/approve`;
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    field,
+                    source: decision.source,
+                    note: decision.note,
+                }),
+            });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
-                if (data.merchantAutoActivated) {
-                    toast.success(`✓ ${data.label || "Documento"} aprobado. ¡Comercio activado!`);
+                const autoActivated = entity === "merchant"
+                    ? data.merchantAutoActivated
+                    : data.driverAutoActivated;
+                const entityLabel = entity === "merchant" ? "Comercio" : "Repartidor";
+                if (autoActivated) {
+                    toast.success(`✓ ${data.label || label} aprobado. ¡${entityLabel} activado!`);
                 } else {
-                    toast.success(`${data.label || "Documento"} aprobado${isPhysical ? " (físico)" : ""}`);
+                    toast.success(`${data.label || label} aprobado${isPhysical ? " (físico)" : ""}`);
                 }
                 fetchUser();
+                setApprovalModal(null);
             } else {
-                // Errores típicos: LOGO_MISSING (auto-activación bloqueada) o validación de nota.
+                // Errores típicos: LOGO_MISSING / PHOTO_MISSING (auto-activación bloqueada),
+                // o validación del backend (nota muy corta, doc ya aprobado, etc.).
                 toast.error(data.error || "Error al aprobar el documento");
             }
         } catch (error) {
             console.error("Error approving document:", error);
             toast.error("Error de conexión");
         } finally {
+            setApprovalSubmitting(false);
             setDocProcessing(null);
         }
     };
@@ -616,71 +623,15 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     // Misma lógica que merchant pero contra /api/admin/drivers/[id]/...
     // =====================================================================
 
-    const handleApproveDriverDocument = async (field: string) => {
+    /**
+     * Abre el modal Moovy para aprobar un doc del driver.
+     * Comparte el mismo modal y callback que el handler del merchant — la
+     * diferencia se resuelve por el campo `entity` del estado approvalModal.
+     */
+    const handleApproveDriverDocument = (field: string) => {
         if (!user?.driver) return;
         const label = DRIVER_DOC_LABELS[field] || field;
-
-        // Mismo flujo que merchant — distinguir DIGITAL/PHYSICAL para auditoría AAIP.
-        const isPhysical = window.confirm(
-            `¿Aprobás "${label}" por revisión FÍSICA (papel/email/whatsapp)?\n\n` +
-            "• Aceptar = Aprobación FÍSICA — vas a tener que escribir una nota.\n" +
-            "• Cancelar = Aprobación DIGITAL — el driver ya subió el doc al sistema."
-        );
-
-        let note: string | null = null;
-        if (isPhysical) {
-            const raw = window.prompt(
-                "Nota describiendo cómo recibiste el documento (mín. 5 caracteres).\n\nEjemplo: 'Foto enviada por whatsapp el 25/04/2026, validada contra DNI físico'"
-            );
-            if (!raw || raw.trim().length < 5) {
-                toast.error("Necesitás escribir una nota de al menos 5 caracteres para aprobación física.");
-                return;
-            }
-            note = raw.trim();
-        }
-
-        const ok = await confirm({
-            title: isPhysical ? `Aprobar "${label}" (FÍSICO)` : "Aprobar documento",
-            message: isPhysical
-                ? `Vas a aprobar "${label}" como recibido en papel/email.\n\nNota: ${note}\n\nSi es el último pendiente, el repartidor se activará automáticamente.`
-                : `¿Confirmar la aprobación de "${label}"?\n\nSi es el último pendiente, el repartidor se activará automáticamente.`,
-            confirmLabel: "Aprobar",
-            variant: "default",
-        });
-        if (!ok) return;
-
-        setDocProcessing(field);
-        try {
-            const res = await fetch(
-                `/api/admin/drivers/${user.driver.id}/documents/approve`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        field,
-                        source: isPhysical ? "PHYSICAL" : "DIGITAL",
-                        note,
-                    }),
-                }
-            );
-            const data = await res.json().catch(() => ({}));
-            if (res.ok) {
-                if (data.driverAutoActivated) {
-                    toast.success(`✓ ${data.label || label} aprobado. ¡Repartidor activado!`);
-                } else {
-                    toast.success(`${data.label || label} aprobado${isPhysical ? " (físico)" : ""}`);
-                }
-                fetchUser();
-            } else {
-                // Errores típicos: PHOTO_MISSING (auto-activación bloqueada) o validación de nota.
-                toast.error(data.error || "Error al aprobar el documento");
-            }
-        } catch (error) {
-            console.error("Error approving driver document:", error);
-            toast.error("Error de conexión");
-        } finally {
-            setDocProcessing(null);
-        }
+        setApprovalModal({ entity: "driver", field, label });
     };
 
     const handleRejectDriverDocument = async (field: string, label: string) => {
@@ -2010,6 +1961,18 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 <UserActivityLog userId={user.id} />
             </div>
             )}
+
+            {/* Modal Moovy de aprobación de documento (merchant + driver).
+                Reemplaza el flujo viejo basado en window.confirm + window.prompt.
+                Se monta una sola vez — el state approvalModal decide qué entity
+                + field aplicar cuando el admin confirma. */}
+            <DocApprovalModal
+                isOpen={approvalModal !== null}
+                docLabel={approvalModal?.label ?? ""}
+                submitting={approvalSubmitting}
+                onClose={() => !approvalSubmitting && setApprovalModal(null)}
+                onConfirm={submitApprovalDecision}
+            />
         </div>
     );
 }
