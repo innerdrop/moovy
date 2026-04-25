@@ -43,14 +43,19 @@ interface SettingsFormProps {
         registroSanitarioUrl?: string | null;
         cuitStatus?: DocStatus;
         cuitRejectionReason?: string | null;
+        cuitApprovalSource?: string | null;
         bankAccountStatus?: DocStatus;
         bankAccountRejectionReason?: string | null;
+        bankAccountApprovalSource?: string | null;
         constanciaAfipStatus?: DocStatus;
         constanciaAfipRejectionReason?: string | null;
+        constanciaAfipApprovalSource?: string | null;
         habilitacionMunicipalStatus?: DocStatus;
         habilitacionMunicipalRejectionReason?: string | null;
+        habilitacionMunicipalApprovalSource?: string | null;
         registroSanitarioStatus?: DocStatus;
         registroSanitarioRejectionReason?: string | null;
+        registroSanitarioApprovalSource?: string | null;
         approvalStatus: string;
         category?: string | null;
     };
@@ -334,6 +339,10 @@ interface DocItem {
     value: string | null;
     status: DocStatus;
     rejectionReason: string | null;
+    /** Origen de la aprobación. Si es "PHYSICAL", el merchant ve "Aprobado por
+     *  administrador (recibido en papel/email)" en lugar del upload — porque
+     *  el admin ya validó el doc fuera del sistema. */
+    approvalSource: string | null;
     required: boolean;
     placeholder: string;
 }
@@ -519,6 +528,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
             value: docState.cuit.value,
             status: docState.cuit.status,
             rejectionReason: docState.cuit.rejectionReason,
+            approvalSource: merchant.cuitApprovalSource ?? null,
             required: true,
             placeholder: "20-12345678-9",
         },
@@ -529,6 +539,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
             value: docState.bankAccount.value,
             status: docState.bankAccount.status,
             rejectionReason: docState.bankAccount.rejectionReason,
+            approvalSource: merchant.bankAccountApprovalSource ?? null,
             required: true,
             placeholder: "CBU de 22 dígitos o alias (6-20 caracteres)",
         },
@@ -539,6 +550,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
             value: docState.constanciaAfipUrl.value,
             status: docState.constanciaAfipUrl.status,
             rejectionReason: docState.constanciaAfipUrl.rejectionReason,
+            approvalSource: merchant.constanciaAfipApprovalSource ?? null,
             required: true,
             placeholder: "",
         },
@@ -549,6 +561,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
             value: docState.habilitacionMunicipalUrl.value,
             status: docState.habilitacionMunicipalUrl.status,
             rejectionReason: docState.habilitacionMunicipalUrl.rejectionReason,
+            approvalSource: merchant.habilitacionMunicipalApprovalSource ?? null,
             required: true,
             placeholder: "",
         },
@@ -559,6 +572,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
             value: docState.registroSanitarioUrl.value,
             status: docState.registroSanitarioUrl.status,
             rejectionReason: docState.registroSanitarioUrl.rejectionReason,
+            approvalSource: merchant.registroSanitarioApprovalSource ?? null,
             required: true,
             placeholder: "",
         }] : []),
@@ -723,20 +737,17 @@ function DocumentRow({
     const isApproved = doc.status === "APPROVED";
     const isRejected = doc.status === "REJECTED";
     const hasValue = Boolean(doc.value);
+    // Caso PHYSICAL: el admin recibió el doc en papel/email/whatsapp y lo aprobó
+    // sin que el merchant lo cargue al sistema. El merchant ve "Aprobado por
+    // administrador" en lugar del upload — no necesita hacer nada.
+    const isPhysicalApproved = isApproved && doc.approvalSource === "PHYSICAL";
 
     const statusChip = (() => {
-        if (!hasValue) {
-            return (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
-                    Sin cargar
-                </span>
-            );
-        }
         if (isApproved) {
             return (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Aprobado
+                    Aprobado{isPhysicalApproved && " (administrador)"}
                 </span>
             );
         }
@@ -745,6 +756,13 @@ function DocumentRow({
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 flex items-center gap-1">
                     <XCircle className="w-3 h-3" />
                     Rechazado
+                </span>
+            );
+        }
+        if (!hasValue) {
+            return (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                    Sin cargar
                 </span>
             );
         }
@@ -793,8 +811,25 @@ function DocumentRow({
                 </div>
             )}
 
-            {/* Editor / uploader — bloqueado si APPROVED */}
-            {isApproved ? (
+            {/* Aprobación FÍSICA — el merchant ve que el admin recibió el doc fuera del
+                sistema y lo aprobó manualmente. No tiene que hacer nada. La nota interna
+                del admin NO se muestra acá (es info confidencial de auditoría). */}
+            {isPhysicalApproved && (
+                <div className="text-xs text-green-800 bg-green-50 border border-green-200 rounded-md px-3 py-2 flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-semibold mb-0.5">Aprobado por administrador</p>
+                        <p className="text-green-700">
+                            Recibimos este documento fuera del sistema (en papel, email o WhatsApp) y ya lo dimos por bueno. No necesitás hacer nada.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Editor / uploader — bloqueado si APPROVED. Si fue PHYSICAL, el banner
+                de arriba ya explica el estado, así que no mostramos botón de "solicitar
+                cambio" (no hay nada que reemplazar — el original vive en oficina). */}
+            {isApproved && !isPhysicalApproved ? (
                 <button
                     type="button"
                     onClick={onRequestChange}
@@ -804,6 +839,9 @@ function DocumentRow({
                     <MessageSquare className="w-4 h-4" />
                     {hasPendingChangeRequest ? "Solicitud pendiente" : "Solicitar cambio"}
                 </button>
+            ) : isApproved && isPhysicalApproved ? (
+                // Sin uploader y sin botón. El banner verde arriba explica todo.
+                null
             ) : doc.kind === "text" ? (
                 <div className="flex flex-col sm:flex-row gap-2">
                     <input

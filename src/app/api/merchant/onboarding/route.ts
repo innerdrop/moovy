@@ -29,6 +29,17 @@ export async function GET() {
                 constanciaAfipUrl: true,
                 habilitacionMunicipalUrl: true,
                 registroSanitarioUrl: true,
+                // Status de cada doc — el chequeo "está cumplido" usa esto, no si
+                // el campo URL/valor tiene contenido. Razón: cuando admin aprueba
+                // PHYSICAL desde OPS, el doc queda APPROVED sin URL en el sistema
+                // (porque lo recibió en papel/whatsapp/email). Sin este cambio el
+                // checklist seguía diciendo "Te falta X" aunque el admin ya lo había
+                // dado por bueno — bug detectado 2026-04-25.
+                cuitStatus: true,
+                bankAccountStatus: true,
+                constanciaAfipStatus: true,
+                habilitacionMunicipalStatus: true,
+                registroSanitarioStatus: true,
                 category: true,
                 address: true,
                 latitude: true,
@@ -51,12 +62,16 @@ export async function GET() {
             where: { merchantId: merchant.id, isActive: true },
         });
 
-        // Required documentation checks
-        const hasCuit = Boolean(merchant.cuit);
-        const hasBankAccount = Boolean(merchant.bankAccount);
-        const hasConstanciaAfip = Boolean(merchant.constanciaAfipUrl);
-        const hasHabilitacion = Boolean(merchant.habilitacionMunicipalUrl);
-        const hasRegistroSanitario = !isFoodBusiness || Boolean(merchant.registroSanitarioUrl);
+        // Required documentation checks — un doc se considera "cumplido" cuando
+        // está APPROVED, sin importar si la aprobación fue DIGITAL (con URL en
+        // el sistema) o PHYSICAL (admin recibió el papel y aprobó manualmente).
+        // Antes chequeábamos `Boolean(merchant.cuit)` etc., lo que excluía las
+        // aprobaciones físicas y dejaba el checklist marcando "falta" indefinidamente.
+        const hasCuit = merchant.cuitStatus === "APPROVED";
+        const hasBankAccount = merchant.bankAccountStatus === "APPROVED";
+        const hasConstanciaAfip = merchant.constanciaAfipStatus === "APPROVED";
+        const hasHabilitacion = merchant.habilitacionMunicipalStatus === "APPROVED";
+        const hasRegistroSanitario = !isFoodBusiness || merchant.registroSanitarioStatus === "APPROVED";
 
         // Operational checks
         const hasLogo = Boolean(merchant.image);

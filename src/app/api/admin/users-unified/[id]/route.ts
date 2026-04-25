@@ -107,18 +107,32 @@ export async function GET(
                         cuitStatus: true,
                         cuitApprovedAt: true,
                         cuitRejectionReason: true,
+                        // Origen + nota de la aprobación (rama ops-upload-logo-merchant).
+                        // Cuando admin aprueba PHYSICAL desde OPS, escribe acá la nota.
+                        // Sin esto la UI no puede mostrar la caja amarilla con la nota
+                        // y el merchant no ve "Aprobado por administrador".
+                        cuitApprovalSource: true,
+                        cuitApprovalNote: true,
                         bankAccountStatus: true,
                         bankAccountApprovedAt: true,
                         bankAccountRejectionReason: true,
+                        bankAccountApprovalSource: true,
+                        bankAccountApprovalNote: true,
                         constanciaAfipStatus: true,
                         constanciaAfipApprovedAt: true,
                         constanciaAfipRejectionReason: true,
+                        constanciaAfipApprovalSource: true,
+                        constanciaAfipApprovalNote: true,
                         habilitacionMunicipalStatus: true,
                         habilitacionMunicipalApprovedAt: true,
                         habilitacionMunicipalRejectionReason: true,
+                        habilitacionMunicipalApprovalSource: true,
+                        habilitacionMunicipalApprovalNote: true,
                         registroSanitarioStatus: true,
                         registroSanitarioApprovedAt: true,
                         registroSanitarioRejectionReason: true,
+                        registroSanitarioApprovalSource: true,
+                        registroSanitarioApprovalNote: true,
                         createdAt: true,
                         updatedAt: true,
                         _count: {

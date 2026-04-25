@@ -34,6 +34,7 @@ import { formatPrice } from "@/lib/delivery";
 import { UserAdminActions } from "@/components/ops/UserAdminActions";
 import { UserActivityLog } from "@/components/ops/UserActivityLog";
 import { AdminNotesSection } from "@/components/ops/AdminNotesSection";
+import ImageUpload from "@/components/ui/ImageUpload";
 
 interface UserData {
     id: string;
@@ -1354,6 +1355,15 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                     })()}
                                 </div>
 
+                                {/* Logo del comercio — gestionable desde OPS para casos donde el merchant
+                                    entrega el logo fuera del sistema (USB, WhatsApp, email). El admin lo sube
+                                    en su nombre para destrabar la aprobación (que requiere logo presente). */}
+                                <MerchantLogoAdmin
+                                    merchantId={user.merchant.id}
+                                    currentImage={user.merchant.image ?? null}
+                                    onUpdated={fetchUser}
+                                />
+
                                 <MerchantDocumentsAdmin
                                     merchant={user.merchant}
                                     docProcessing={docProcessing}
@@ -2035,6 +2045,12 @@ function MerchantDocumentsAdmin({
         status: DocStatus;
         approvedAt: string | null;
         rejectionReason: string | null;
+        // Campos nuevos (rama ops-upload-logo-merchant): origen + nota de la
+        // aprobación. Cuando admin aprueba PHYSICAL desde OPS, escribe acá la
+        // nota describiendo cómo recibió el doc — la mostramos en la card para
+        // que el admin recuerde su propia decisión post-mortem.
+        approvalSource: string | null;
+        approvalNote: string | null;
         isUrl: boolean; // true si `value` es URL para abrir; false si es texto a mostrar
         required: boolean;
     }> = [
@@ -2045,6 +2061,8 @@ function MerchantDocumentsAdmin({
             status: merchant.cuitStatus,
             approvedAt: merchant.cuitApprovedAt,
             rejectionReason: merchant.cuitRejectionReason,
+            approvalSource: (merchant as any).cuitApprovalSource ?? null,
+            approvalNote: (merchant as any).cuitApprovalNote ?? null,
             isUrl: false,
             required: true,
         },
@@ -2055,6 +2073,8 @@ function MerchantDocumentsAdmin({
             status: merchant.bankAccountStatus,
             approvedAt: merchant.bankAccountApprovedAt,
             rejectionReason: merchant.bankAccountRejectionReason,
+            approvalSource: (merchant as any).bankAccountApprovalSource ?? null,
+            approvalNote: (merchant as any).bankAccountApprovalNote ?? null,
             isUrl: false,
             required: true,
         },
@@ -2065,6 +2085,8 @@ function MerchantDocumentsAdmin({
             status: merchant.constanciaAfipStatus,
             approvedAt: merchant.constanciaAfipApprovedAt,
             rejectionReason: merchant.constanciaAfipRejectionReason,
+            approvalSource: (merchant as any).constanciaAfipApprovalSource ?? null,
+            approvalNote: (merchant as any).constanciaAfipApprovalNote ?? null,
             isUrl: true,
             required: true,
         },
@@ -2075,6 +2097,8 @@ function MerchantDocumentsAdmin({
             status: merchant.habilitacionMunicipalStatus,
             approvedAt: merchant.habilitacionMunicipalApprovedAt,
             rejectionReason: merchant.habilitacionMunicipalRejectionReason,
+            approvalSource: (merchant as any).habilitacionMunicipalApprovalSource ?? null,
+            approvalNote: (merchant as any).habilitacionMunicipalApprovalNote ?? null,
             isUrl: true,
             required: true,
         },
@@ -2085,6 +2109,8 @@ function MerchantDocumentsAdmin({
             status: merchant.registroSanitarioStatus,
             approvedAt: merchant.registroSanitarioApprovedAt,
             rejectionReason: merchant.registroSanitarioRejectionReason,
+            approvalSource: (merchant as any).registroSanitarioApprovalSource ?? null,
+            approvalNote: (merchant as any).registroSanitarioApprovalNote ?? null,
             isUrl: true,
             required: isFood,
         },
@@ -2126,11 +2152,15 @@ function MerchantDocumentsAdmin({
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
                                             <Clock className="w-3 h-3" /> No requerido
                                         </span>
-                                    ) : hasValue ? (
+                                    ) : (doc.status === "APPROVED" || doc.status === "REJECTED" || hasValue) ? (
+                                        // APPROVED / REJECTED tienen prioridad sobre "Sin cargar":
+                                        // si admin aprobó FÍSICO sin que el merchant cargue el valor,
+                                        // el chip verde gana — el doc está dado por bueno.
                                         <span
                                             className={`px-2 py-0.5 rounded-md text-xs font-bold ${statusStyle.color}`}
                                         >
                                             {statusStyle.label}
+                                            {doc.status === "APPROVED" && doc.approvalSource === "PHYSICAL" && " · físico"}
                                         </span>
                                     ) : (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700">
@@ -2183,45 +2213,60 @@ function MerchantDocumentsAdmin({
                                                 year: "numeric",
                                             }
                                         )}
+                                        {doc.approvalSource === "PHYSICAL" && " — recibido en papel"}
                                     </p>
+                                )}
+
+                                {/* Nota de aprobación FÍSICA — visible para que el admin
+                                    recuerde su propia decisión cuando vuelve a revisar el
+                                    comercio meses después. Auditoría AAIP la usa también. */}
+                                {doc.status === "APPROVED" && doc.approvalSource === "PHYSICAL" && doc.approvalNote && (
+                                    <div className="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+                                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">
+                                            Aprobación física — nota del admin
+                                        </p>
+                                        <p className="text-xs text-amber-900 whitespace-pre-wrap">
+                                            {doc.approvalNote}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Botones Aprobar/Rechazar — sólo si hay valor y no
-                                está ya aprobado. Rechazo permitido aunque ya
-                                esté rechazado, para cambiar el motivo. */}
-                            {hasValue && (
-                                <div className="flex gap-2 flex-shrink-0">
-                                    {doc.status !== "APPROVED" && (
-                                        <button
-                                            onClick={() => onApprove(doc.field)}
-                                            disabled={isThisProcessing}
-                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
-                                        >
-                                            {isThisProcessing ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : (
-                                                <CheckCircle className="w-3 h-3" />
-                                            )}
-                                            Aprobar
-                                        </button>
-                                    )}
-                                    {doc.status !== "REJECTED" && (
-                                        <button
-                                            onClick={() => onReject(doc.field, doc.label)}
-                                            disabled={isThisProcessing}
-                                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
-                                        >
-                                            {isThisProcessing ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : (
-                                                <XCircle className="w-3 h-3" />
-                                            )}
-                                            Rechazar
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                            {/* Botones Aprobar/Rechazar.
+                                APPROVE: visible aunque no haya valor cargado, porque el
+                                admin puede aprobar como PHYSICAL (recibió el doc fuera del
+                                sistema). El handler pregunta DIGITAL/PHYSICAL.
+                                REJECT: visible sólo si hay valor para rechazar. */}
+                            <div className="flex gap-2 flex-shrink-0">
+                                {doc.status !== "APPROVED" && (
+                                    <button
+                                        onClick={() => onApprove(doc.field)}
+                                        disabled={isThisProcessing}
+                                        className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                    >
+                                        {isThisProcessing ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <CheckCircle className="w-3 h-3" />
+                                        )}
+                                        Aprobar
+                                    </button>
+                                )}
+                                {hasValue && doc.status !== "REJECTED" && (
+                                    <button
+                                        onClick={() => onReject(doc.field, doc.label)}
+                                        disabled={isThisProcessing}
+                                        className="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition inline-flex items-center gap-1.5"
+                                    >
+                                        {isThisProcessing ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <XCircle className="w-3 h-3" />
+                                        )}
+                                        Rechazar
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
@@ -2872,6 +2917,89 @@ function DriverChangeRequestsAdmin({
                     </div>
                 </details>
             )}
+        </div>
+    );
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * MerchantLogoAdmin — sub-componente que el admin usa desde la ficha del
+ * comercio para subir/reemplazar/quitar el logo del merchant en su nombre.
+ *
+ * Caso de uso: el comercio nuevo te trae el logo en USB/WhatsApp/email y vos
+ * (admin) lo subís sin pedirle al merchant que se loguee y lo cargue. Sin esto,
+ * la aprobación queda bloqueada por LOGO_MISSING desde la rama anterior.
+ *
+ * Internamente reusa <ImageUpload> que ya hace todo: comprime, sube a /api/upload,
+ * devuelve URL final. Acá sólo persistimos la URL en Merchant.image vía PATCH
+ * /api/admin/merchants/[id]/logo.
+ * ───────────────────────────────────────────────────────────────────────────
+ */
+interface MerchantLogoAdminProps {
+    merchantId: string;
+    currentImage: string | null;
+    onUpdated: () => void | Promise<void>;
+}
+
+function MerchantLogoAdmin({ merchantId, currentImage, onUpdated }: MerchantLogoAdminProps) {
+    const [saving, setSaving] = useState(false);
+
+    // ImageUpload llama onChange con la URL final (post-upload). Persistimos en DB.
+    const handleImageChange = async (newUrl: string) => {
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/admin/merchants/${merchantId}/logo`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl: newUrl || null }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                if (newUrl) {
+                    toast.success(currentImage ? "Logo reemplazado" : "Logo cargado — ya podés aprobar el comercio");
+                } else {
+                    toast.success("Logo eliminado");
+                }
+                await onUpdated();
+            } else {
+                toast.error(data.error || "Error al guardar el logo");
+            }
+        } catch (err) {
+            console.error("[MerchantLogoAdmin] Error:", err);
+            toast.error("Error de conexión");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold text-gray-500 uppercase">
+                    Logo del comercio
+                </p>
+                {!currentImage && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 uppercase">
+                        Falta — bloquea aprobación
+                    </span>
+                )}
+            </div>
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-3">
+                    Si el comercio te entregó el logo fuera del sistema (USB, WhatsApp,
+                    email), subilo acá en su nombre. Se guarda en Merchant.image y queda
+                    auditado en el historial admin.
+                </p>
+                <ImageUpload
+                    value={currentImage ?? ""}
+                    onChange={handleImageChange}
+                    disabled={saving}
+                    cropAspect={1}
+                />
+                {saving && (
+                    <p className="text-xs text-gray-400 mt-2">Guardando...</p>
+                )}
+            </div>
         </div>
     );
 }
