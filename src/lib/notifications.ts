@@ -79,6 +79,20 @@ const STATUS_MESSAGES: Record<string, MessageBuilder> = {
         title: '❌ Pedido cancelado',
         body: (n) => `Tu pedido ${n} fue cancelado ❌`,
     },
+    // Cuando el assignment-engine no encuentra ningún driver disponible para
+    // tu pedido. Antes este caso pasaba silencioso (status pasaba a UNASSIGNABLE
+    // en DB pero el buyer no recibía nada). Ahora le avisamos con un copy claro
+    // que reconoce el problema y le dice qué hacer.
+    UNASSIGNABLE: {
+        title: '😔 No encontramos repartidor',
+        body: (n) =>
+            `No pudimos asignar un repartidor para tu pedido ${n}. Nuestro equipo lo está revisando — vas a recibir noticias en breve.`,
+    },
+    REJECTED: {
+        title: '❌ Pedido rechazado',
+        body: (n) =>
+            `El comercio no pudo aceptar tu pedido ${n}. Si pagaste con MercadoPago, te devolvemos el dinero automáticamente.`,
+    },
     SCHEDULED_CONFIRMED: {
         title: '📅 Pedido programado confirmado',
         body: (n, ctx) =>
@@ -123,6 +137,34 @@ export async function notifyMerchant(
         body: `Pedido ${orderNumber} — ${formatMoney(total)}${buyerName ? ` de ${buyerName}` : ''}`,
         url: '/comercios/pedidos',
         tag: 'new-order',
+    });
+}
+
+/**
+ * Notifica al merchant cuando un pedido suyo pasa a UNASSIGNABLE (no se
+ * encontró driver). Sin esto, el merchant ve el pedido "desaparecer" del tab
+ * de activos sin entender qué pasó. El push lo lleva al panel de pedidos
+ * donde ahora ve el estado FALLIDO con la razón.
+ *
+ * Se llama desde `handleNoDriverFound` del assignment-engine.
+ */
+export async function notifyMerchantOrderUnassignable(
+    merchantId: string,
+    orderNumber: string,
+    orderId: string
+): Promise<number> {
+    const merchant = await prisma.merchant.findUnique({
+        where: { id: merchantId },
+        select: { ownerId: true },
+    });
+
+    if (!merchant) return 0;
+
+    return sendPushToUser(merchant.ownerId, {
+        title: '⚠️ Pedido sin repartidor',
+        body: `No encontramos repartidor disponible para tu pedido ${orderNumber}. Aparece en la pestaña "Fallidos" del panel — el equipo de soporte ya está al tanto.`,
+        url: `/comercios/pedidos`,
+        tag: `order-unassignable-${orderId}`,
     });
 }
 

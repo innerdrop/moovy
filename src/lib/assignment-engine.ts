@@ -10,7 +10,7 @@
 import { prisma } from "./prisma";
 import { calculateDistance, estimateTravelTime } from "./geo";
 import { sendNewOfferNotification, sendPushToUser } from "./push";
-import { notifyBuyer } from "./notifications";
+import { notifyBuyer, notifyMerchantOrderUnassignable } from "./notifications";
 import { normalizeVehicleType } from "./vehicle-type-mapping";
 import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, type ShipmentTypeCode } from "./shipment-types";
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
@@ -1411,20 +1411,24 @@ export async function driverRejectOrder(
 
 // ─── Internal Helpers ───────────────────────────────────────────────────────────
 
-/** Mark order as UNASSIGNABLE and notify ops + customer */
+/** Mark order as UNASSIGNABLE and notify ops + buyer + merchant */
 async function handleNoDriverFound(orderId: string, userId: string, orderNumber: string): Promise<void> {
     await prisma.pendingAssignment.update({
         where: { orderId },
         data: { status: "FAILED" },
     }).catch(() => {}); // Ignore if no pending assignment
 
-    await prisma.order.update({
+    // Update + leemos merchantId en un solo round-trip para notificarle también.
+    // Antes solo se notificaba a buyer + ops y al merchant le aparecía el pedido
+    // como "Completado" sin razón (bug detectado en producción 2026-04-25).
+    const updated = await prisma.order.update({
         where: { id: orderId },
         data: {
             status: "UNASSIGNABLE",
             pendingDriverId: null,
             assignmentExpiresAt: null,
         },
+        select: { merchantId: true },
     });
 
     // Notify ops
@@ -1438,10 +1442,29 @@ async function handleNoDriverFound(orderId: string, userId: string, orderNumber:
         deliveryLogger.error({ error: err }, "Socket emit unassignable error")
     );
 
+    // Socket al merchant para que su panel se refresque y mueva el pedido al
+    // tab "Fallidos" sin necesidad de F5.
+    if (updated.merchantId) {
+        emitSocket("order_status_changed", `merchant:${updated.merchantId}`, {
+            orderId,
+            orderNumber,
+            status: "UNASSIGNABLE",
+        }).catch((err) =>
+            deliveryLogger.error({ error: err }, "Socket emit merchant unassignable error")
+        );
+    }
+
     // Notify buyer
     notifyBuyer(userId, "UNASSIGNABLE", orderNumber, { orderId }).catch((err) =>
         deliveryLogger.error({ error: err }, "Buyer notification error (unassignable)")
     );
+
+    // Notify merchant — fire-and-forget, no bloquea el flujo si falla.
+    if (updated.merchantId) {
+        notifyMerchantOrderUnassignable(updated.merchantId, orderNumber, orderId).catch((err) =>
+            deliveryLogger.error({ error: err }, "Merchant notification error (unassignable)")
+        );
+    }
 
     deliveryLogger.warn({ orderId, orderNumber }, "Order marked as UNASSIGNABLE — no drivers available");
 }

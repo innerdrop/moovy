@@ -50,6 +50,9 @@ interface Order {
     pickupPin: string | null;
     deliveryStatus: string | null;
     subOrders?: SubOrder[];
+    // Razón visible cuando status ∈ [UNASSIGNABLE, CANCELLED, REJECTED].
+    // El backend lo popula desde Order.cancelReason.
+    cancelReason?: string | null;
 }
 
 /**
@@ -91,6 +94,10 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     IN_DELIVERY: { label: "En camino", color: "text-orange-600", bgColor: "bg-orange-100", icon: <Truck className="w-5 h-5" /> },
     DELIVERED: { label: "Entregado", color: "text-green-600", bgColor: "bg-green-100", icon: <CheckCircle className="w-5 h-5" /> },
     CANCELLED: { label: "Cancelado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
+    // Status de fallo que antes caían en el default "Nuevo" amarillo — ahora tienen
+    // etiqueta y color propios para que el comercio los identifique en el tab "Fallidos".
+    UNASSIGNABLE: { label: "Sin repartidor", color: "text-red-700", bgColor: "bg-red-100", icon: <AlertTriangle className="w-5 h-5" /> },
+    REJECTED: { label: "Rechazado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
 };
 
 const CANCELLATION_REASONS = [
@@ -200,7 +207,10 @@ export default function ComercioPedidosPage() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [expiredOrders, setExpiredOrders] = useState<Set<string>>(new Set());
-    const [filter, setFilter] = useState<"active" | "completed" | "all">("active");
+    // "failed" agrupa UNASSIGNABLE / CANCELLED / REJECTED (pedidos que NO llegaron
+    // al buyer). Antes todos caían en "completed" junto con los DELIVERED, y el
+    // merchant no tenía visibilidad de que un pedido había fracasado post-aceptación.
+    const [filter, setFilter] = useState<"active" | "completed" | "failed" | "all">("active");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
     const [minAmount, setMinAmount] = useState("");
@@ -398,10 +408,20 @@ export default function ComercioPedidosPage() {
         closeCancelModal();
     };
 
+    // Tres grupos MUTUAMENTE EXCLUYENTES de status — cada pedido cae en uno solo:
+    //   - ACTIVE: en curso desde la perspectiva del merchant (todavía hay que hacer algo).
+    //   - COMPLETED: entregado con éxito (DELIVERED).
+    //   - FAILED: no llegó al buyer (sin repartidor, cancelado por merchant/buyer/admin, rechazado).
+    // Si agregamos un status nuevo a Order.status, hay que sumarlo a uno de estos 3
+    // arrays, o el tab "Todos" va a mostrar un pedido fantasma.
     const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
+    const completedStatuses = ["DELIVERED"];
+    const failedStatuses = ["UNASSIGNABLE", "CANCELLED", "REJECTED"];
+
     const filteredOrders = orders.filter(order => {
         if (filter === "active" && !activeStatuses.includes(order.status)) return false;
-        if (filter === "completed" && activeStatuses.includes(order.status)) return false;
+        if (filter === "completed" && !completedStatuses.includes(order.status)) return false;
+        if (filter === "failed" && !failedStatuses.includes(order.status)) return false;
         if (dateFrom) {
             const from = new Date(dateFrom);
             from.setHours(0, 0, 0, 0);
@@ -496,24 +516,34 @@ export default function ComercioPedidosPage() {
             )}
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+            {(() => {
+                const failedCount = orders.filter(o => failedStatuses.includes(o.status)).length;
+                return (
+            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl overflow-x-auto">
                 {[
-                    { key: "active", label: "Activos", count: orders.filter(o => activeStatuses.includes(o.status)).length },
-                    { key: "completed", label: "Completados", count: orders.filter(o => !activeStatuses.includes(o.status)).length },
-                    { key: "all", label: "Todos", count: orders.length },
+                    { key: "active", label: "Activos", count: orders.filter(o => activeStatuses.includes(o.status)).length, tone: "default" as const },
+                    { key: "completed", label: "Completados", count: orders.filter(o => completedStatuses.includes(o.status)).length, tone: "default" as const },
+                    { key: "failed", label: "Fallidos", count: failedCount, tone: "danger" as const },
+                    { key: "all", label: "Todos", count: orders.length, tone: "default" as const },
                 ].map((tab) => (
                     <button
                         key={tab.key}
                         onClick={() => setFilter(tab.key as typeof filter)}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${filter === tab.key
-                            ? "bg-white shadow-sm text-blue-600"
-                            : "text-gray-500 hover:text-gray-700"
+                        className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-sm font-medium transition ${filter === tab.key
+                            ? tab.tone === "danger"
+                                ? "bg-white shadow-sm text-red-600"
+                                : "bg-white shadow-sm text-blue-600"
+                            : tab.tone === "danger" && tab.count > 0
+                                ? "text-red-600 hover:text-red-700"
+                                : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         {tab.label} ({tab.count})
                     </button>
                 ))}
             </div>
+                );
+            })()}
 
             {/* Advanced Filters */}
             <div className="flex items-center gap-2">
@@ -589,6 +619,30 @@ export default function ComercioPedidosPage() {
 
                                 {/* Order Body */}
                                 <div className="p-4">
+                                    {/* Banner de fallo: cuando un pedido fue cancelado / rechazado / o no tuvo
+                                        repartidor, mostramos un bloque rojo con el motivo para que el comercio
+                                        entienda QUÉ pasó sin salir de esta tarjeta. */}
+                                    {failedStatuses.includes(order.status) && (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3 flex items-start gap-2">
+                                            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-semibold text-red-800">
+                                                    {order.status === "UNASSIGNABLE" && "No conseguimos repartidor para este pedido"}
+                                                    {order.status === "CANCELLED" && "Pedido cancelado"}
+                                                    {order.status === "REJECTED" && "Pedido rechazado"}
+                                                </p>
+                                                {order.cancelReason && (
+                                                    <p className="text-red-700 mt-0.5">{order.cancelReason}</p>
+                                                )}
+                                                {order.status === "UNASSIGNABLE" && (
+                                                    <p className="text-red-700 mt-0.5">
+                                                        El equipo de soporte ya está al tanto. Si pagaste con MP, el reembolso se procesa automáticamente.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* ISSUE-001: PIN de retiro — visible SOLO cuando el driver llegó.
                                         Single-vendor usa order.pickupPin; multi-vendor usa subOrders[].pickupPin
                                         (el backend ya sanitiza: nunca llega el PIN antes de DRIVER_ARRIVED). */}
