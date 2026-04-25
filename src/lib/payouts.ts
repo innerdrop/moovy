@@ -131,6 +131,7 @@ export async function getPendingMerchantPayouts(): Promise<PendingPayoutSummary[
             merchant: {
                 select: {
                     id: true,
+                    name: true,
                     businessName: true,
                     bankAccount: true,
                     cuit: true,
@@ -154,7 +155,9 @@ export async function getPendingMerchantPayouts(): Promise<PendingPayoutSummary[
             map.set(key, {
                 recipientType: "MERCHANT",
                 recipientId: o.merchantId,
-                recipientName: o.merchant.businessName,
+                // businessName es nullable en schema; caemos a Merchant.name (NOT NULL)
+                // y a un placeholder defensivo. PayoutItem.recipientName es NOT NULL.
+                recipientName: o.merchant.businessName ?? o.merchant.name ?? "(comercio sin nombre)",
                 bankAccount: o.merchant.bankAccount ?? null,
                 cuit: o.merchant.cuit ?? null,
                 orderCount: 1,
