@@ -4,6 +4,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendDriverRejectedEmail } from "@/lib/email-p0";
 import { rejectDriverTransition } from "@/lib/roles";
+import { emitRoleUpdate } from "@/lib/role-change-notify";
 
 // PUT/POST - Reject driver application (admin only).
 // POST es wrapper sobre PUT para matchear la convención que usa el frontend
@@ -63,6 +64,14 @@ export async function PUT(
                 reason,
             });
         }
+
+        // Refresh JWT para revocar el rol DRIVER sin requerir logout/login.
+        emitRoleUpdate({
+            userId: driver.userId,
+            role: "DRIVER",
+            action: "REJECTED",
+            message: `Tu solicitud de repartidor fue rechazada: ${reason}`,
+        });
 
         return NextResponse.json({
             success: true,

@@ -4,6 +4,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendDriverApprovalEmail } from "@/lib/email";
 import { approveDriverTransition } from "@/lib/roles";
+import { emitRoleUpdate } from "@/lib/role-change-notify";
 
 // PUT/POST - Approve driver application (admin only).
 // POST es wrapper sobre PUT para matchear la convención que usa el frontend
@@ -64,6 +65,15 @@ export async function PUT(
         if (driver.user?.email) {
             sendDriverApprovalEmail(driver.user.email, driver.user.name || "Repartidor");
         }
+
+        // Refresh JWT del driver para que pueda entrar al panel sin logout/login.
+        emitRoleUpdate({
+            userId: driver.userId,
+            role: "DRIVER",
+            action: "APPROVED",
+            message: "¡Tu cuenta de repartidor fue aprobada! Ya podés conectarte y recibir pedidos.",
+            portalUrl: "/repartidor/dashboard",
+        });
 
         return NextResponse.json({
             success: true,

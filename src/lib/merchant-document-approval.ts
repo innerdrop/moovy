@@ -18,6 +18,7 @@
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { approveMerchantTransition } from "@/lib/roles";
+import { emitRoleUpdate } from "@/lib/role-change-notify";
 
 // Rubros que requieren habilitación bromatológica / registro sanitario.
 // Debe coincidir con FOOD_BUSINESS_TYPES en src/app/comercio/registro/page.tsx.
@@ -220,6 +221,22 @@ export async function approveDocument(
 
     if (autoActivated) {
         await approveMerchantTransition(merchantId, ctx);
+
+        // Refresh JWT del merchant para que pueda entrar al panel sin logout/login.
+        // Consultamos ownerId+name fuera de la tx — la transición ya commitó.
+        const merchant = await prisma.merchant.findUnique({
+            where: { id: merchantId },
+            select: { ownerId: true, name: true },
+        });
+        if (merchant) {
+            emitRoleUpdate({
+                userId: merchant.ownerId,
+                role: "MERCHANT",
+                action: "AUTO_ACTIVATED",
+                message: `¡Tu comercio "${merchant.name}" fue aprobado automáticamente! Todos los documentos están al día.`,
+                portalUrl: "/comercios",
+            });
+        }
     }
 
     return { success: true, merchantAutoActivated: autoActivated };

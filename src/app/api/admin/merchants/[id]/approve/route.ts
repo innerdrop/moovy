@@ -4,6 +4,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendMerchantApprovedEmail } from "@/lib/email-p0";
 import { approveMerchantTransition } from "@/lib/roles";
+import { emitRoleUpdate } from "@/lib/role-change-notify";
 
 // PUT/POST - Approve merchant application (admin only)
 export async function POST(
@@ -66,6 +67,17 @@ export async function PUT(
                 contactName: merchant.owner.name || "",
             });
         }
+
+        // Avisar al cliente del merchant para que refresque su JWT sin tener
+        // que hacer logout/login. El frontend escucha `roles_updated` y dispara
+        // session.update({ refreshRoles: true }) — ver useRoleUpdateListener.
+        emitRoleUpdate({
+            userId: merchant.ownerId,
+            role: "MERCHANT",
+            action: "APPROVED",
+            message: `¡Tu comercio "${merchant.name}" fue aprobado! Ya podés operar.`,
+            portalUrl: "/comercios",
+        });
 
         return NextResponse.json({
             success: true,

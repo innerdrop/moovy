@@ -30,6 +30,7 @@
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { approveDriverTransition } from "@/lib/roles";
+import { emitRoleUpdate } from "@/lib/role-change-notify";
 import { sendDriverAutoActivatedEmail } from "@/lib/email-admin-ops";
 
 /**
@@ -273,6 +274,7 @@ export async function approveDriverDocument(
             const driverWithUser = await prisma.driver.findUnique({
                 where: { id: driverId },
                 select: {
+                    userId: true,
                     user: { select: { email: true, name: true, firstName: true } },
                 },
             });
@@ -289,6 +291,16 @@ export async function approveDriverDocument(
                         "[approveDriverDocument] Failed to send auto-activated email:",
                         err
                     );
+                });
+            }
+            // Refresh JWT del driver para que pueda entrar al panel sin logout/login.
+            if (driverWithUser?.userId) {
+                emitRoleUpdate({
+                    userId: driverWithUser.userId,
+                    role: "DRIVER",
+                    action: "AUTO_ACTIVATED",
+                    message: "¡Tu cuenta de repartidor fue aprobada automáticamente! Todos los documentos están al día. Ya podés conectarte.",
+                    portalUrl: "/repartidor/dashboard",
                 });
             }
         } catch (err) {

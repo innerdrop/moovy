@@ -4,6 +4,7 @@ import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { sendMerchantRejectedEmail } from "@/lib/email-p0";
 import { rejectMerchantTransition } from "@/lib/roles";
+import { emitRoleUpdate } from "@/lib/role-change-notify";
 
 // PUT/POST - Reject merchant application (admin only)
 export async function POST(
@@ -62,6 +63,15 @@ export async function PUT(
                 reason,
             });
         }
+
+        // Refresh JWT del merchant para revocar el rol COMERCIO sin requerir
+        // logout/login. El listener cliente además muestra un toast con el motivo.
+        emitRoleUpdate({
+            userId: merchant.ownerId,
+            role: "MERCHANT",
+            action: "REJECTED",
+            message: `Tu solicitud de comercio fue rechazada: ${reason}`,
+        });
 
         return NextResponse.json({
             success: true,
