@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     error:
-                        "Ya tenés una solicitud pendiente para este documento. Esperá que OPS la resuelva.",
+                        "Ya tenés una solicitud pendiente para este documento. Esperá que el equipo de Moovy la resuelva.",
                 },
                 { status: 409 }
             );

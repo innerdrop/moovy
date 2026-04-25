@@ -523,7 +523,7 @@ export async function sendMerchantChangeRequestApprovedEmail(
         <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
             Autorizamos el cambio de <strong>${documentLabel}</strong> de <strong>${businessName}</strong>. Ya pod&eacute;s subir un documento nuevo desde el panel.
         </p>
-        ${note ? emailAlertBox(`<strong>Comentario de OPS:</strong> ${note}`, 'info') : ''}
+        ${note ? emailAlertBox(`<strong>Comentario del equipo:</strong> ${note}`, 'info') : ''}
         ${emailButton('Subir nuevo documento', `${baseUrl}/comercios/mi-comercio`, 'green')}
     `);
 
@@ -688,7 +688,7 @@ export async function sendDriverChangeRequestApprovedEmail(
         <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
             Hola ${driverName}, autorizamos el cambio de <strong>${documentLabel}</strong>. Ya pod&eacute;s subir un documento nuevo desde tu perfil.
         </p>
-        ${note ? emailAlertBox(`<strong>Comentario de OPS:</strong> ${note}`, 'info') : ''}
+        ${note ? emailAlertBox(`<strong>Comentario del equipo:</strong> ${note}`, 'info') : ''}
         ${emailButton('Subir nuevo documento', `${baseUrl}/repartidor/perfil`, 'green')}
     `);
 

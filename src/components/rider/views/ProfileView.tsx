@@ -318,7 +318,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 ...prev,
                 cuit: { ...prev.cuit, value, status: "PENDING", rejectionReason: null, approvedAt: null },
             }));
-            flashSuccess("CUIT guardado. Queda pendiente de revisión por OPS.");
+            flashSuccess("CUIT guardado. Queda pendiente de revisión por el equipo de Moovy.");
         } catch (err: any) {
             flashError(err?.message || "Error inesperado");
         } finally {
@@ -374,7 +374,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                     expiresAt: expiresAt ?? prev[descriptor.key].expiresAt,
                 },
             }));
-            flashSuccess("Documento guardado. Queda pendiente de revisión por OPS.");
+            flashSuccess("Documento guardado. Queda pendiente de revisión por el equipo de Moovy.");
         } catch (err: any) {
             flashError(err?.message || "Error inesperado");
         } finally {
@@ -394,7 +394,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 flashError(data.error || "No se pudo enviar la solicitud");
                 return false;
             }
-            flashSuccess("Solicitud enviada. OPS la va a revisar en breve.");
+            flashSuccess("Solicitud enviada. El equipo de Moovy la va a revisar en breve.");
             await fetchChangeRequests();
             setChangeModalFor(null);
             return true;
@@ -765,7 +765,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                                         </p>
                                                         {r.resolutionNote && (
                                                             <p className="text-gray-800 dark:text-gray-200 mt-1">
-                                                                <span className="font-medium">Respuesta OPS:</span>{" "}
+                                                                <span className="font-medium">Respuesta del equipo:</span>{" "}
                                                                 {r.resolutionNote}
                                                             </p>
                                                         )}
@@ -1298,7 +1298,7 @@ function DriverChangeRequestModal({
                     <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex gap-2">
                         <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                         <p>
-                            Este documento ya fue aprobado. Para modificarlo necesitamos que OPS autorice el cambio.
+                            Este documento ya fue aprobado. Para modificarlo necesitamos que el equipo de Moovy autorice el cambio.
                             Explicá brevemente por qué tenés que actualizarlo (renovación, error en la carga anterior,
                             cambio de vehículo, etc.).
                         </p>

@@ -443,7 +443,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
                 ...prev,
                 [field]: { value: url, status: "PENDING", rejectionReason: null },
             }));
-            flashSuccess("Documento guardado. Queda pendiente de revisión por OPS.");
+            flashSuccess("Documento guardado. Queda pendiente de revisión por el equipo de Moovy.");
         } catch (err: any) {
             setDocError(err.message || "Error inesperado");
             toast.error(err.message || "Error inesperado");
@@ -475,8 +475,8 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
                 [field]: { value, status: "PENDING", rejectionReason: null },
             }));
             flashSuccess(field === "cuit"
-                ? "CUIT guardado. Queda pendiente de revisión por OPS."
-                : "Datos bancarios guardados. Quedan pendientes de revisión por OPS.");
+                ? "CUIT guardado. Queda pendiente de revisión por el equipo de Moovy."
+                : "Datos bancarios guardados. Quedan pendientes de revisión por el equipo de Moovy.");
         } catch (err: any) {
             setDocError(err.message || "Error inesperado");
             toast.error(err.message || "Error inesperado");
@@ -489,7 +489,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
     const requestChange = (doc: DocItem) => {
         const hasPending = changeRequests.some(r => r.documentField === doc.key && r.status === "PENDING");
         if (hasPending) {
-            toast.error("Ya tenés una solicitud pendiente para este documento. Esperá que OPS la resuelva.");
+            toast.error("Ya tenés una solicitud pendiente para este documento. Esperá que el equipo de Moovy la resuelva.");
             return;
         }
         setChangeModalFor(doc);
@@ -508,7 +508,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
                 toast.error(data.error || "No se pudo enviar la solicitud");
                 return false;
             }
-            toast.success("Solicitud enviada. OPS la va a revisar en breve.");
+            toast.success("Solicitud enviada. El equipo de Moovy la va a revisar en breve.");
             await refreshChangeRequests();
             setChangeModalFor(null);
             return true;
@@ -588,7 +588,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
                 Documentación
             </h2>
             <p className="text-sm text-gray-500">
-                Documentos obligatorios para operar tu comercio. Cada uno se aprueba de forma independiente desde OPS.
+                Documentos obligatorios para operar tu comercio. Cada uno se aprueba de forma independiente por el equipo de Moovy.
                 Una vez aprobado, no podés sobrescribirlo directamente — tenés que solicitar permiso.
             </p>
 
@@ -672,7 +672,7 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
                                             <p className="text-gray-700 italic">"{r.reason}"</p>
                                             {r.resolutionNote && (
                                                 <p className="text-gray-800 mt-1">
-                                                    <span className="font-medium">Respuesta OPS:</span> {r.resolutionNote}
+                                                    <span className="font-medium">Respuesta del equipo:</span> {r.resolutionNote}
                                                 </p>
                                             )}
                                             <p className="text-[10px] text-gray-500 mt-1">
@@ -942,7 +942,7 @@ function ChangeRequestModal({
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex gap-2">
                         <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                         <p>
-                            Este documento ya fue aprobado. Para modificarlo necesitamos que OPS autorice el cambio.
+                            Este documento ya fue aprobado. Para modificarlo necesitamos que el equipo de Moovy autorice el cambio.
                             Explicá brevemente por qué tenés que actualizarlo (cambio de titularidad, error en la carga anterior, renovación, etc.).
                         </p>
                     </div>
