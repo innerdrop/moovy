@@ -164,6 +164,15 @@ const logistica = io.of("/logistica");
 const driverSockets = new Map<string, string>(); // driverId -> socketId
 const orderDrivers = new Map<string, string>(); // orderId -> driverId
 
+// fix/driver-presence-detection (Capa 1): debounce de marca offline.
+// Cuando el socket del driver se desconecta, agendamos un timeout para marcar
+// isOnline=false en DB. Si reconecta antes (driver_online), cancelamos.
+// 30s de debounce porque en Ushuaia hay zonas con señal débil y los drivers
+// se desconectan/reconectan frecuentemente. Sin este debounce, cualquier
+// hiccup de red marcaría al driver offline incorrectamente.
+const driverDisconnectTimers = new Map<string, NodeJS.Timeout>();
+const DRIVER_OFFLINE_DEBOUNCE_MS = 30_000;
+
 // ─── Authentication Middleware ───────────────────────────────────────────────
 
 logistica.use((socket, next) => {
@@ -211,6 +220,14 @@ logistica.on("connection", (socket) => {
         console.log(`[Socket] Driver online: ${driverId}`);
         driverSockets.set(driverId, socket.id);
         socket.join(`driver:${driverId}`);
+        // fix/driver-presence-detection: si reconectó antes del debounce, cancelar
+        // el timeout pendiente de marcar offline (false positive evitado).
+        const pendingOffline = driverDisconnectTimers.get(driverId);
+        if (pendingOffline) {
+            clearTimeout(pendingOffline);
+            driverDisconnectTimers.delete(driverId);
+            console.log(`[Socket] Driver ${driverId} reconectó antes del debounce — cancelado offline pendiente`);
+        }
     });
 
     socket.on("start_delivery", ({ orderId, driverId }: { orderId: string; driverId: string }) => {
@@ -395,10 +412,35 @@ logistica.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         console.log(`[Socket] Client disconnected: ${socket.id}`);
-        // Clean up driver mapping
+        // Clean up driver mapping + agendar marca offline con debounce 30s.
+        // Si reconecta antes (driver_online), se cancela el timeout. Si no reconecta,
+        // se marca isOnline=false + availabilityStatus=FUERA_DE_SERVICIO en DB.
         for (const [driverId, socketId] of driverSockets.entries()) {
             if (socketId === socket.id) {
                 driverSockets.delete(driverId);
+                // Cancelar timeout previo si existía (drivers que se reconectan rápido pueden acumular)
+                const previousTimer = driverDisconnectTimers.get(driverId);
+                if (previousTimer) clearTimeout(previousTimer);
+
+                const timer = setTimeout(async () => {
+                    try {
+                        const result = await prisma.driver.updateMany({
+                            where: { id: driverId, isOnline: true },
+                            data: {
+                                isOnline: false,
+                                availabilityStatus: "FUERA_DE_SERVICIO",
+                            },
+                        });
+                        if (result.count > 0) {
+                            console.log(`[Socket] Driver ${driverId} marcado offline tras 30s sin reconectar`);
+                        }
+                    } catch (err) {
+                        console.error(`[Socket] Error marking driver ${driverId} offline:`, err);
+                    } finally {
+                        driverDisconnectTimers.delete(driverId);
+                    }
+                }, DRIVER_OFFLINE_DEBOUNCE_MS);
+                driverDisconnectTimers.set(driverId, timer);
                 break;
             }
         }

@@ -88,6 +88,10 @@ export const CRON_EXPECTATIONS: Record<string, { maxHours: number; label: string
         maxHours: 30,
         label: "Limpieza de historial GPS",
     },
+    "driver-presence-check": {
+        maxHours: 1,
+        label: "Detección de drivers fantasmas (sin GPS hace >90s)",
+    },
     // Rama fix/onboarding-repartidor-complet: cron diario que avisa a repartidores
     // 7/3/1 días antes del vencimiento de licencia/seguro/RTO/cédula verde, y
     // auto-suspende al driver si el documento vence sin renovación.

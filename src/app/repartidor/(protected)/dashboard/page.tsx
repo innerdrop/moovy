@@ -415,6 +415,33 @@ export default function RiderDashboard() {
         }
     }, [isOnline, pushSupported, pushPermission, isSubscribed, hookPushError]);
 
+    // fix/driver-presence-detection (Capa 3): cuando el driver cierra la pestaña,
+    // app, browser, o el OS mata el proceso, navigator.sendBeacon() es el único
+    // método garantizado de avisar al server "me voy". Marca isOnline=false sin
+    // depender de que el flujo de "Desconectar" se complete. Solo activo si
+    // actualmente isOnline=true para no spamear el endpoint inútilmente.
+    useEffect(() => {
+        if (!isOnline) return;
+        const sendDisconnectBeacon = () => {
+            try {
+                // sendBeacon envía cookies por default, así que el endpoint puede
+                // autenticar via sesión NextAuth normal. POST con body vacío.
+                const blob = new Blob([JSON.stringify({})], { type: "application/json" });
+                navigator.sendBeacon("/api/driver/heartbeat-disconnect", blob);
+            } catch {
+                // Si sendBeacon falla, la Capa 1 (socket disconnect) y la Capa 2
+                // (cron presence-check) van a marcar offline igual.
+            }
+        };
+        window.addEventListener("pagehide", sendDisconnectBeacon);
+        // beforeunload: backup en desktop browsers (no se dispara en mobile).
+        window.addEventListener("beforeunload", sendDisconnectBeacon);
+        return () => {
+            window.removeEventListener("pagehide", sendDisconnectBeacon);
+            window.removeEventListener("beforeunload", sendDisconnectBeacon);
+        };
+    }, [isOnline]);
+
     const handleEnableNotifications = async () => {
         const success = await requestPermission();
         if (success) {
