@@ -74,6 +74,20 @@ export async function POST(req: NextRequest) {
             });
 
             // Notify buyer
+            // fix/refund-automatico: refund + reversión de puntos cuando el cron auto-cancela.
+            import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
+                refundOrderIfPaid(order.id, {
+                    triggeredBy: "cron",
+                    actorId: null,
+                    reason: "El comercio no confirmó tu pedido a tiempo",
+                }).catch((err) => console.error("[merchant-timeout] refund failed:", err));
+            }).catch(() => { /* import safety */ });
+            import("@/lib/points").then(({ reverseOrderPoints }) => {
+                reverseOrderPoints(order.id, "merchant_timeout_auto_cancel").catch((err) =>
+                    console.error("[merchant-timeout] reverse points failed:", err)
+                );
+            }).catch(() => { /* import safety */ });
+
             notifyBuyer(order.userId, "CANCELLED", order.orderNumber, { orderId: order.id }).catch(console.error);
 
             // Socket notifications

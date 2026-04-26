@@ -1446,6 +1446,31 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
         `),
     },
     {
+        id: 'order_refunded',
+        number: 319,
+        name: 'Pedido cancelado — devolución procesada',
+        category: 'Pedidos',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'refundOrderIfPaid() en src/lib/order-refund.ts cuando se cancela pedido pagado MP',
+        subject: 'Te devolvimos $X,XXX — pedido MOV-XXXX',
+        functionName: 'sendOrderRefundedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Te devolvimos el dinero de tu pedido</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, tu pedido <strong>${SAMPLE.orderNumber}</strong> fue cancelado y procesamos la devolución de tu pago.
+            </p>
+            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+                <p style="margin: 0 0 6px 0; color: #166534; font-size: 12px; text-transform: uppercase; font-weight: 600;">Reintegro</p>
+                <p style="margin: 0; color: #1a1a1a; font-size: 36px; font-weight: 700;">$ 2.500</p>
+            </div>
+            ${emailInfoBox(`<p style="margin: 0; color: #555; font-size: 14px;">MercadoPago procesa el reintegro en <strong>1 a 3 días hábiles</strong>.</p>`)}
+            ${emailButton('Ver detalle del pedido', `${baseUrl}/mis-pedidos/abc123`, 'red')}
+        `),
+    },
+    {
         id: 'account_created_by_admin',
         number: 318,
         name: 'Cuenta creada por admin (magic link)',

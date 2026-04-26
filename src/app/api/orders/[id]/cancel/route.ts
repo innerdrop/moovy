@@ -119,6 +119,15 @@ export async function POST(
     }
 
     // Notify buyer via push (non-blocking)
+    // fix/refund-automatico: refund automático si pagó con MP.
+    import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
+        refundOrderIfPaid(orderId, {
+            triggeredBy: "buyer",
+            actorId: order.userId,
+            reason: "Cancelado por el comprador",
+        }).catch((err) => console.error("[buyer-cancel] refund failed:", err));
+    }).catch(() => { /* import safety */ });
+
     notifyBuyer(order.userId, "CANCELLED", order.orderNumber, {
         orderId: order.id,
         merchantName: order.merchant?.name,

@@ -603,3 +603,71 @@ export async function sendAccountLockedEmail(data: {
         tag: "account_auto_locked",
     });
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEGURIDAD/UX — Refund automático cuando se cancela un pedido pagado
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Se dispara desde refundOrderIfPaid() en src/lib/order-refund.ts cuando:
+//   - Admin cancela un pedido pagado.
+//   - Buyer cancela su propio pedido pagado.
+//   - Cron auto-cancela por timeout de merchant o slot scheduled.
+//   - Merchant rechaza un pedido ya pagado (path con refund inline).
+//
+// El email confirma legalmente que el dinero se devolvió. El usuario tiene
+// derecho legal a la confirmación escrita (Ley 24.240 defensa del consumidor).
+// MP procesa el refund en 1-3 días hábiles (visible en su panel + tarjeta).
+
+export async function sendOrderRefundedEmail(data: {
+    buyerEmail: string;
+    buyerName: string | null;
+    orderNumber: string;
+    orderId: string;
+    refundAmount: number;
+    reason: string;
+}) {
+    const saludo = data.buyerName ? `${data.buyerName}, ` : "";
+    const amountFmt = new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        minimumFractionDigits: 0,
+    }).format(data.refundAmount);
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Te devolvimos el dinero de tu pedido</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${saludo}tu pedido <strong>${data.orderNumber}</strong> fue cancelado y procesamos la devolución de tu pago.
+        </p>
+
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+            <p style="margin: 0 0 6px 0; color: #166534; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Reintegro</p>
+            <p style="margin: 0; color: #1a1a1a; font-size: 36px; font-weight: 700; letter-spacing: -0.02em;">${amountFmt}</p>
+        </div>
+
+        ${emailInfoBox(`
+            <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">¿Cuándo lo voy a ver?</p>
+            <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
+                MercadoPago procesa el reintegro en <strong>1 a 3 días hábiles</strong>. Va a aparecer en el saldo de tu cuenta MP o como crédito en la tarjeta que usaste para pagar.
+            </p>
+        `)}
+
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 20px 0 0 0;">
+            <strong>Motivo de la cancelación:</strong> ${data.reason}
+        </p>
+
+        ${emailButton("Ver detalle del pedido", `${baseUrl}/mis-pedidos/${data.orderId}`, "red")}
+
+        ${emailDivider()}
+
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0;">
+            Si no ves el reintegro después de 3 días hábiles, escribinos a soporte con el número de pedido <strong>${data.orderNumber}</strong> y lo resolvemos.
+        </p>
+    `);
+
+    return sendEmail({
+        to: data.buyerEmail,
+        subject: `Te devolvimos ${amountFmt} — pedido ${data.orderNumber}`,
+        html,
+        tag: "order_refunded",
+    });
+}

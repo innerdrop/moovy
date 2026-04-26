@@ -175,6 +175,15 @@ export async function POST(
         }, "Order cancelled by admin");
 
         // Notify buyer
+        // fix/refund-automatico: refund automático si el pedido estaba pagado.
+        import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
+            refundOrderIfPaid(orderId, {
+                triggeredBy: "admin",
+                actorId: session.user?.id ?? null,
+                reason: data.reason || "Cancelado por administrador",
+            }).catch((err) => console.error("[admin-cancel] refund failed:", err));
+        }).catch(() => { /* import safety */ });
+
         notifyBuyer(order.userId, "CANCELLED", order.orderNumber, { orderId })
             .catch(err => cancelLogger.error({ err: err instanceof Error ? err.message : String(err) }, "Push notification error"));
 

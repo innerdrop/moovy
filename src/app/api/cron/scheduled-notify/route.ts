@@ -147,7 +147,19 @@ export async function POST(request: Request) {
                 reason: "Vendedor no confirmó pedido programado",
             }).catch((err) => cronLogger.error({ error: err }, "Admin socket error"));
 
-            // TODO: If paymentMethod === "mercadopago" and payment was captured, trigger refund via MP API
+            // fix/refund-automatico: refund automático + reversión de puntos al auto-cancelar.
+            import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
+                refundOrderIfPaid(order.id, {
+                    triggeredBy: "cron",
+                    actorId: null,
+                    reason: "El vendedor no confirmó el pedido programado",
+                }).catch((err) => console.error("[scheduled-notify] refund failed:", err));
+            }).catch(() => { /* import safety */ });
+            import("@/lib/points").then(({ reverseOrderPoints }) => {
+                reverseOrderPoints(order.id, "scheduled_no_confirm_auto_cancel").catch((err) =>
+                    console.error("[scheduled-notify] reverse points failed:", err)
+                );
+            }).catch(() => { /* import safety */ });
 
             cancelled++;
         }
