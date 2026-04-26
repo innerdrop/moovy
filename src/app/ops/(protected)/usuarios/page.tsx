@@ -14,9 +14,11 @@ import {
     ChevronRight,
     AlertCircle,
     Trash2,
+    UserPlus,
 } from "lucide-react";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
+import CreateUserModal from "@/components/ops/CreateUserModal";
 
 interface UserRole {
     role: string;
@@ -229,6 +231,8 @@ export default function UsuariosPage() {
     }, [activeTab]);
 
     // Fetch users
+    const [showCreateModal, setShowCreateModal] = useState(false);
+
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
@@ -381,10 +385,22 @@ export default function UsuariosPage() {
         <div className="min-h-screen bg-white">
             {/* Header */}
             <div className="border-b border-gray-200 px-4 sm:px-6 py-6 sm:py-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Usuarios</h1>
-                <p className="text-gray-600 text-sm mt-1">
-                    Total: <span className="font-semibold">{total}</span> usuarios registrados
-                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Usuarios</h1>
+                        <p className="text-gray-600 text-sm mt-1">
+                            Total: <span className="font-semibold">{total}</span> usuarios registrados
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowCreateModal(true)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition shadow-sm w-full sm:w-auto"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        Crear cuenta
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -703,6 +719,16 @@ export default function UsuariosPage() {
                     <EmptyState />
                 )}
             </div>
+
+            {/* feat/ops-crear-cuentas: modal global "Crear cuenta" */}
+            <CreateUserModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={() => {
+                    setShowCreateModal(false);
+                    fetchUsers();
+                }}
+            />
         </div>
     );
 }

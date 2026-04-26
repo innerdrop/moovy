@@ -390,6 +390,86 @@ export async function sendAdminAccountLockedEmail(data: {
     return results.some(Boolean);
 }
 
+// ─── #8 — Cuenta creada por admin (al user, magic link de set-password) ──────
+//
+// Se dispara desde POST /api/admin/users/create cuando el admin OPS crea una
+// cuenta de buyer/driver/seller desde el panel. El user RECIBE este email (no
+// el admin — diferente a las funciones #1-#3 de arriba que van a alert_emails).
+// El link contiene el token plaintext y vence en 24h. Reusa el flujo de
+// /restablecer-contrasena. Si pasa de 24h sin setear contraseña, el admin
+// re-dispara el invite (futuro).
+
+export async function sendAccountCreatedByAdminEmail(data: {
+    email: string;
+    name: string | null;
+    accountType: "BUYER" | "DRIVER" | "SELLER";
+    setupLink: string;
+    expiresAt: Date;
+}): Promise<boolean> {
+    const saludo = data.name ? `${data.name}, ` : "";
+    const expiresFmt = new Intl.DateTimeFormat("es-AR", {
+        dateStyle: "long",
+        timeStyle: "short",
+        timeZone: "America/Argentina/Ushuaia",
+    }).format(data.expiresAt);
+
+    // Tono adaptado por tipo de cuenta — el buyer es informal, driver/seller
+    // son operativos y el mensaje refleja lo que pueden hacer en su portal.
+    const portalCopy: Record<typeof data.accountType, { headline: string; pitch: string }> = {
+        BUYER: {
+            headline: "Te creamos tu cuenta MOOVY",
+            pitch: "Pedí lo que necesites a comercios de Ushuaia con delivery rápido. Te esperamos.",
+        },
+        DRIVER: {
+            headline: "Te invitamos a ser repartidor MOOVY",
+            pitch: "Tu cuenta de repartidor está lista. Una vez que configures tu contraseña, podés completar tu perfil (vehículo, documentos) y empezar a recibir entregas.",
+        },
+        SELLER: {
+            headline: "Te invitamos a vender en el Marketplace MOOVY",
+            pitch: "Tu cuenta de vendedor está lista. Configurá tu contraseña y empezá a publicar tus productos para vender en Ushuaia.",
+        },
+    };
+    const { headline, pitch } = portalCopy[data.accountType];
+
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 20px;">
+            ${emailBadge('Bienvenido a MOOVY', '#fef2f2', '#991b1b')}
+        </div>
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">
+            ${headline}
+        </h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${saludo}el equipo de Moovy creó una cuenta para vos. ${pitch}
+        </p>
+
+        ${emailInfoBox(`
+            <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Para empezar:</p>
+            <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
+                Hacé click en el botón de abajo y configurá tu contraseña. Vas a poder iniciar sesión inmediatamente con el email <strong>${data.email}</strong>.
+            </p>
+        `)}
+
+        ${emailButton("Configurar mi contraseña", data.setupLink, "red")}
+
+        ${emailAlertBox(`
+            <p style="margin: 0; font-size: 14px; line-height: 1.7;">
+                <strong>Tenés tiempo hasta el ${expiresFmt}</strong> para configurar tu contraseña con este link. Si vence, escribinos a soporte y te enviamos uno nuevo.
+            </p>
+        `, 'warning')}
+
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 24px 0 0 0;">
+            Si no esperabas recibir este email, ignorálo y la cuenta no se va a activar nunca. Si tenés dudas, escribinos a soporte.
+        </p>
+    `);
+
+    return sendEmail({
+        to: data.email,
+        subject: `Bienvenido a MOOVY — configurá tu contraseña`,
+        html,
+        tag: "account_created_by_admin",
+    });
+}
+
 // ─── Helper privado (emailDivider no está exportado del todo, duplicamos) ────
 // Nota: emailLayout ya tiene su propio separador en el footer. Este divider es
 // para separar bloques dentro del contenido.

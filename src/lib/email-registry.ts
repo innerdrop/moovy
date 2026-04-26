@@ -1445,6 +1445,31 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             ${emailButton('Ver perfil del usuario', `${baseUrl}/ops/usuarios/abc123`, 'red')}
         `),
     },
+    {
+        id: 'account_created_by_admin',
+        number: 318,
+        name: 'Cuenta creada por admin (magic link)',
+        category: 'Registro y Onboarding',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'POST /api/admin/users/create — admin OPS crea cuenta buyer/driver/seller',
+        subject: 'Bienvenido a MOOVY — configurá tu contraseña',
+        functionName: 'sendAccountCreatedByAdminEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('Bienvenido a MOOVY', '#fef2f2', '#991b1b')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Te creamos tu cuenta MOOVY</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, el equipo de Moovy creó una cuenta para vos. Pedí lo que necesites a comercios de Ushuaia con delivery rápido.
+            </p>
+            ${emailInfoBox(`
+                <p style="margin: 0; color: #555; font-size: 14px;">Hacé click en el botón y configurá tu contraseña. Vas a poder iniciar sesión inmediatamente con tu email.</p>
+            `)}
+            ${emailButton('Configurar mi contraseña', `${baseUrl}/restablecer-contrasena?token=xxx`, 'red')}
+            ${emailAlertBox(`<p style="margin: 0; font-size: 14px;"><strong>Tenés 24 horas</strong> para configurar tu contraseña con este link.</p>`, 'warning')}
+        `),
+    },
 ];
 
 // ─── Helpers de búsqueda ────────────────────────────────────────────────────
