@@ -75,6 +75,28 @@ export default function ProductDetailClient() {
     const [quantity, setQuantity] = useState(1);
     const [addedToCart, setAddedToCart] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    // fix/producto-multifoto-carousel: swipe táctil para navegar imágenes en mobile.
+    // Sin esto el user no descubría que había más fotos (solo veía la 1ra y los
+    // dots casi invisibles sobre fondos claros). Patrón copiado de ListingDetailClient
+    // (marketplace) que ya tenía esto resuelto.
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+    const handleImageTouchStart = (e: React.TouchEvent) => {
+        setTouchStartX(e.touches[0].clientX);
+    };
+    const handleImageTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartX === null || !product) return;
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0 && selectedImageIndex < product.images.length - 1) {
+                setSelectedImageIndex(selectedImageIndex + 1);
+            }
+            if (diff < 0 && selectedImageIndex > 0) {
+                setSelectedImageIndex(selectedImageIndex - 1);
+            }
+        }
+        setTouchStartX(null);
+    };
 
     const addItem = useCartStore((state) => state.addItem);
     const openCart = useCartStore((state) => state.openCart);
@@ -173,13 +195,21 @@ export default function ProductDetailClient() {
                     </div>
                 </div>
 
-                {/* Image carousel */}
-                <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                {/* Image carousel — fix/producto-multifoto-carousel
+                    Antes solo mostraba la imagen activa con dots casi invisibles
+                    sobre fondos claros. Ahora: swipe táctil + flechas L/R +
+                    contador "1/3" + dots dentro de pill oscura con backdrop-blur
+                    para que se vean sobre cualquier fondo (blanco, claro, oscuro). */}
+                <div
+                    className="relative aspect-square bg-gray-100 overflow-hidden"
+                    onTouchStart={handleImageTouchStart}
+                    onTouchEnd={handleImageTouchEnd}
+                >
                     {product.images.length > 0 ? (
                         <img
                             src={product.images[selectedImageIndex]?.url}
                             alt={product.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-opacity duration-300"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -191,19 +221,48 @@ export default function ProductDetailClient() {
                             Destacado
                         </span>
                     )}
+                    {/* Contador "1/3" — feedback inmediato de que hay más imágenes */}
+                    {product.images.length > 1 && (
+                        <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold pointer-events-none">
+                            {selectedImageIndex + 1} / {product.images.length}
+                        </span>
+                    )}
+                    {/* Flechas izq/der — solo aparecen si hay para navegar en esa dirección */}
+                    {product.images.length > 1 && selectedImageIndex > 0 && (
+                        <button
+                            onClick={() => setSelectedImageIndex(selectedImageIndex - 1)}
+                            aria-label="Imagen anterior"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md transition hover:bg-white active:scale-90"
+                        >
+                            <ChevronLeft className="h-4 w-4 text-gray-700" />
+                        </button>
+                    )}
+                    {product.images.length > 1 && selectedImageIndex < product.images.length - 1 && (
+                        <button
+                            onClick={() => setSelectedImageIndex(selectedImageIndex + 1)}
+                            aria-label="Imagen siguiente"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md transition hover:bg-white active:scale-90"
+                        >
+                            <ChevronRight className="h-4 w-4 text-gray-700" />
+                        </button>
+                    )}
                     {!inStock && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <span className="bg-red-500 text-white px-4 py-2 rounded-full font-semibold">Sin Stock</span>
                         </div>
                     )}
-                    {/* Image dots */}
+                    {/* Dots dentro de píldora oscura para garantizar visibilidad sobre
+                        fondos claros (blancos, beige, etc) — antes eran bg-white/50 invisibles. */}
                     {product.images.length > 1 && (
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm">
                             {product.images.map((_, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setSelectedImageIndex(i)}
-                                    className={`w-2 h-2 rounded-full transition-all ${i === selectedImageIndex ? "bg-white w-5" : "bg-white/50"}`}
+                                    aria-label={`Ir a imagen ${i + 1}`}
+                                    className={`h-1.5 rounded-full transition-all duration-200 ${
+                                        i === selectedImageIndex ? "w-5 bg-white" : "w-1.5 bg-white/60"
+                                    }`}
                                 />
                             ))}
                         </div>

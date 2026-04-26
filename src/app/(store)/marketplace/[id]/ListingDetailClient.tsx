@@ -197,13 +197,20 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl, 
                             </span>
                             <HeartButton type="listing" itemId={listing.id} className="absolute top-3 right-3" />
 
-                            {/* Navigation arrows */}
+                            {/* fix/producto-multifoto-carousel: contador "1/3" y dots
+                                con pill oscura para visibilidad sobre fondos claros.
+                                El HeartButton arriba-derecha + el contador conviven con
+                                top-12 para no chocar. */}
                             {listing.images.length > 1 && (
                                 <>
+                                    <span className="absolute top-12 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold pointer-events-none">
+                                        {currentImg + 1} / {listing.images.length}
+                                    </span>
                                     {currentImg > 0 && (
                                         <button
                                             onClick={() => setCurrentImg(currentImg - 1)}
-                                            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition hover:bg-white active:scale-90"
+                                            aria-label="Imagen anterior"
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md transition hover:bg-white active:scale-90"
                                         >
                                             <ChevronLeft className="h-4 w-4 text-gray-700" />
                                         </button>
@@ -211,19 +218,21 @@ export default function ListingDetailClient({ listing, relatedListings, appUrl, 
                                     {currentImg < listing.images.length - 1 && (
                                         <button
                                             onClick={() => setCurrentImg(currentImg + 1)}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition hover:bg-white active:scale-90"
+                                            aria-label="Imagen siguiente"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md transition hover:bg-white active:scale-90"
                                         >
                                             <ChevronRight className="h-4 w-4 text-gray-700" />
                                         </button>
                                     )}
-                                    {/* Dot indicators */}
-                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                    {/* Dot indicators dentro de pill oscura — visible sobre cualquier fondo */}
+                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm">
                                         {listing.images.map((_, i) => (
                                             <button
                                                 key={i}
                                                 onClick={() => setCurrentImg(i)}
+                                                aria-label={`Ir a imagen ${i + 1}`}
                                                 className={`h-1.5 rounded-full transition-all duration-200 ${
-                                                    i === currentImg ? "w-5 bg-[#7C3AED]" : "w-1.5 bg-white/60"
+                                                    i === currentImg ? "w-5 bg-[#7C3AED]" : "w-1.5 bg-white/70"
                                                 }`}
                                             />
                                         ))}
