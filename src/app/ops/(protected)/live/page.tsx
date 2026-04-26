@@ -95,9 +95,37 @@ export default function OpsLiveDashboardPage() {
 
     useEffect(() => {
         loadOrders();
-        // Fallback polling every 15 seconds (reduced from 5s since we have real-time)
-        const intervalId = setInterval(() => loadOrders(true), 15000);
-        return () => clearInterval(intervalId);
+        // feat/ops-pedidos-realtime: polling con tab visibility — pausa cuando la
+        // pestaña está oculta para no consumir requests/batería sin que nadie mire.
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+        let isVisible = document.visibilityState === "visible";
+
+        const startPolling = () => {
+            if (intervalId) return;
+            intervalId = setInterval(() => {
+                if (isVisible) loadOrders(true);
+            }, 15000);
+        };
+        const stopPolling = () => {
+            if (intervalId) { clearInterval(intervalId); intervalId = null; }
+        };
+
+        const onVisibilityChange = () => {
+            isVisible = document.visibilityState === "visible";
+            if (isVisible) {
+                loadOrders(true);
+                startPolling();
+            } else {
+                stopPolling();
+            }
+        };
+
+        if (isVisible) startPolling();
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        return () => {
+            stopPolling();
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
     }, [loadOrders]);
 
     if (loading) {

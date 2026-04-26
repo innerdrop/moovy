@@ -1,7 +1,7 @@
 "use client";
 
 // Admin Orders Page - Gestión de Pedidos con eliminación y backup
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
     Package,
@@ -19,9 +19,13 @@ import {
     Download,
     Check,
     Home,
-    Search
+    Search,
+    RefreshCw,
+    Wifi,
+    WifiOff
 } from "lucide-react";
 import { formatPrice } from "@/lib/delivery";
+import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 
 // Status configuration
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -62,6 +66,17 @@ export default function AdminPedidosPage() {
     const [search, setSearch] = useState("");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    // feat/ops-pedidos-realtime: indicador "Última actualización" + auto-refresh
+    const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+    const isVisibleRef = useRef(true);
+
+    // Helper inline: muestra "hace Xs" / "hace Xmin" / "hace Xh".
+    function timeAgoShort(date: Date): string {
+        const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (secs < 60) return `hace ${secs}s`;
+        if (secs < 3600) return `hace ${Math.floor(secs / 60)} min`;
+        return `hace ${Math.floor(secs / 3600)} h`;
+    }
 
     useEffect(() => {
         fetchOrders();
@@ -75,8 +90,8 @@ export default function AdminPedidosPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    async function fetchOrders() {
-        setLoading(true);
+    const fetchOrders = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const params = new URLSearchParams();
             params.set("page", String(page));
@@ -92,13 +107,68 @@ export default function AdminPedidosPage() {
                 setOrders(data.orders || []);
                 setTotalPages(data.totalPages || 1);
                 setTotalOrders(data.total || 0);
+                setLastUpdate(new Date());
             }
         } catch (error) {
             console.error("Error:", error);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
-    }
+    }, [page, filter, search, dateFrom, dateTo]);
+
+    // feat/ops-pedidos-realtime: Socket.IO real-time updates (admin role).
+    // Cuando llega un evento (nuevo pedido, status change, cancelación), refrescamos
+    // la lista en silent mode (sin spinner). Patrón copiado de /ops/live.
+    const { isConnected } = useRealtimeOrders({
+        role: "admin",
+        enabled: true,
+        onNewOrder: () => fetchOrders(true),
+        onStatusChange: () => fetchOrders(true),
+        onOrderCancelled: () => fetchOrders(true),
+    });
+
+    // Polling fallback cada 30s + tab visibility API.
+    // Si la pestaña está oculta (cambió de tab/minimizó), pausamos para no consumir
+    // requests/batería sin que nadie esté mirando. Al volver a visible, refresh
+    // inmediato + reanuda polling.
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        const startPolling = () => {
+            if (intervalId) return;
+            intervalId = setInterval(() => {
+                if (isVisibleRef.current) fetchOrders(true);
+            }, 30000);
+        };
+
+        const stopPolling = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+
+        const onVisibilityChange = () => {
+            const visible = document.visibilityState === "visible";
+            isVisibleRef.current = visible;
+            if (visible) {
+                fetchOrders(true);
+                startPolling();
+            } else {
+                stopPolling();
+            }
+        };
+
+        // Initial state
+        isVisibleRef.current = document.visibilityState === "visible";
+        if (isVisibleRef.current) startPolling();
+
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        return () => {
+            stopPolling();
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
+    }, [fetchOrders]);
 
     function toggleSelectOrder(orderId: string) {
         setSelectedOrders(prev =>
@@ -163,9 +233,36 @@ export default function AdminPedidosPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
-                    <p className="text-gray-600 text-sm">{totalOrders} pedidos en total</p>
+                    <div className="flex items-center gap-3 text-gray-600 text-sm flex-wrap">
+                        <span>{totalOrders} pedidos en total</span>
+                        {/* Indicador conexión Socket.IO */}
+                        <span className="inline-flex items-center gap-1" title={isConnected ? "Conectado en tiempo real" : "Sin conexión en tiempo real (usando polling)"}>
+                            {isConnected ? (
+                                <Wifi className="w-3.5 h-3.5 text-green-600" />
+                            ) : (
+                                <WifiOff className="w-3.5 h-3.5 text-gray-400" />
+                            )}
+                            <span className="text-xs">{isConnected ? "En vivo" : "Polling"}</span>
+                        </span>
+                        {/* Indicador última actualización */}
+                        {lastUpdate && (
+                            <span className="text-xs text-gray-500">
+                                Actualizado {timeAgoShort(lastUpdate)}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    {/* Botón Actualizar manual — refresh inmediato sin esperar el ciclo de polling */}
+                    <button
+                        onClick={() => fetchOrders()}
+                        disabled={loading}
+                        className="btn-secondary flex items-center gap-2 text-sm"
+                        title="Actualizar lista de pedidos"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                        Actualizar
+                    </button>
                     <a
                         href="/api/ops/export?type=orders"
                         className="btn-secondary flex items-center gap-2 text-sm"
