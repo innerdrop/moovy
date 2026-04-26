@@ -183,7 +183,7 @@ export default auth(async (request) => {
 
     // Protect client paths
     const clientProtectedPaths = ['/mi-perfil', '/checkout', '/mis-pedidos'];
-    if (clientProtectedPaths.some(path => pathname.startsWith(path)) && !session) {
+    if (clientProtectedPaths.some(path => pathname.startsWith(path)) && !pathname.startsWith('/checkout/mp-return') && !session) {
         return NextResponse.redirect(publicUrl('/login', request));
     }
 

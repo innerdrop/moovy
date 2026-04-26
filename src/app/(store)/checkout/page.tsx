@@ -570,9 +570,10 @@ export default function CheckoutPage() {
                     pointsUsed,
                     discountAmount,
                     // Scheduled delivery
-                    deliveryType,
-                    scheduledSlotStart: deliveryType === "SCHEDULED" ? scheduledSlotStart : undefined,
-                    scheduledSlotEnd: deliveryType === "SCHEDULED" ? scheduledSlotEnd : undefined,
+                    // fix/bugs-checkout-pre-launch: pickup nunca es scheduled. Si state quedó stale, forzar.
+                    deliveryType: isPickup ? "IMMEDIATE" : deliveryType,
+                    scheduledSlotStart: !isPickup && deliveryType === "SCHEDULED" ? scheduledSlotStart : undefined,
+                    scheduledSlotEnd: !isPickup && deliveryType === "SCHEDULED" ? scheduledSlotEnd : undefined,
                 }),
             });
 
@@ -582,6 +583,12 @@ export default function CheckoutPage() {
                 if (response.status === 409 && errorData.stockErrors) {
                     const stockMsg = (errorData.stockErrors as string[]).join("\n• ");
                     throw new Error(`Stock insuficiente:\n• ${stockMsg}`);
+                }
+                // fix/bugs-checkout-pre-launch (Bug C): backend rechaza si no hay drivers online.
+                if (response.status === 409 && errorData.errorCode === "NO_DRIVERS_AVAILABLE") {
+                    setHasDrivers(false);
+                    if (!isPickup) setDeliveryType("SCHEDULED");
+                    throw new Error(errorData.message || "No hay repartidores disponibles. Programá tu pedido o elegí retiro en local.");
                 }
                 throw new Error(errorData.error || "Error al crear el pedido");
             }
@@ -739,7 +746,7 @@ export default function CheckoutPage() {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setDeliveryMethod("pickup")}
+                                                    onClick={() => { setDeliveryMethod("pickup"); setDeliveryType("IMMEDIATE"); }}
                                                     className="flex-1 text-sm font-semibold text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 transition"
                                                 >
                                                     Retirar en local
@@ -772,7 +779,7 @@ export default function CheckoutPage() {
                                         </button>
 
                                         <button
-                                            onClick={() => setDeliveryMethod("pickup")}
+                                            onClick={() => { setDeliveryMethod("pickup"); setDeliveryType("IMMEDIATE"); }}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "pickup"
                                                 ? "border-moovy bg-moovy-light"
                                                 : "border-gray-100 hover:border-gray-200"
@@ -930,7 +937,7 @@ export default function CheckoutPage() {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setDeliveryMethod("pickup")}
+                                                            onClick={() => { setDeliveryMethod("pickup"); setDeliveryType("IMMEDIATE"); }}
                                                             className="flex-1 text-sm font-semibold text-red-700 hover:text-red-900 bg-white hover:bg-red-50 border border-red-200 rounded-lg px-3 py-2 transition"
                                                         >
                                                             Retirar en local
@@ -1293,7 +1300,7 @@ export default function CheckoutPage() {
                                         </button>
                                         <button
                                             onClick={handleSubmitOrder}
-                                            disabled={isSubmitting || (deliveryType === "SCHEDULED" && !scheduledSlotStart) || (!isPickup && !allVendorsInRange)}
+                                            disabled={isSubmitting || (!isPickup && deliveryType === "SCHEDULED" && !scheduledSlotStart) || (!isPickup && !allVendorsInRange)}
                                             className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold flex items-center justify-center gap-2"
                                         >
                                             {isSubmitting ? (

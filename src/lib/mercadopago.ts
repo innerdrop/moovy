@@ -62,7 +62,10 @@ export function buildPreferenceBody(
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl;
-    const returnUrl = `${appUrl}/checkout/mp-return`;
+    // fix/bugs-checkout-pre-launch (Bug D): pasar orderId para que la página de
+    // retorno tenga referencia directa al pedido, sin tener que resolver desde
+    // preference_id (que puede fallar en sandbox o si MP no lo envía).
+    const returnUrl = `${appUrl}/checkout/mp-return?orderId=${order.id}`;
 
     // MP rejects notification_url that isn't publicly reachable (localhost)
     const isLocalDev = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");

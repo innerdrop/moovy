@@ -66,6 +66,8 @@ const statusConfig: Record<string, {
     step: number;
 }> = {
     PENDING: { label: "Pendiente", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 1 },
+    AWAITING_PAYMENT: { label: "Esperando pago", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 1 },
+    PENDING_PAYMENT: { label: "Esperando pago", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 1 },
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-500", icon: <CheckCircle className="w-4 h-4" />, step: 2 },
     PREPARING: { label: "En preparacion", color: "text-red-600", bg: "bg-red-50", dot: "bg-red-500", icon: <Package className="w-4 h-4" />, step: 3 },
     READY: { label: "Listo para retirar", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500", icon: <Package className="w-4 h-4" />, step: 4 },
@@ -181,7 +183,9 @@ export default function MisPedidosPage() {
         return () => clearInterval(id);
     }, [isAuth, authStatus, loadOrders]);
 
-    const activeStatuses = useMemo(() => ["PENDING", "SCHEDULED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"], []);
+    // fix/bugs-checkout-pre-launch (Bug A): AWAITING_PAYMENT también es "en curso" — el pedido
+    // ya fue creado y está esperando que MP confirme el pago. Antes caía en "Historial".
+    const activeStatuses = useMemo(() => ["PENDING", "AWAITING_PAYMENT", "PENDING_PAYMENT", "SCHEDULED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"], []);
     const activeOrders = useMemo(() => orders.filter(o => activeStatuses.includes(o.status)), [orders, activeStatuses]);
     const historyOrders = useMemo(() => orders.filter(o => !activeStatuses.includes(o.status)), [orders, activeStatuses]);
     const filtered = tab === "active" ? activeOrders : historyOrders;

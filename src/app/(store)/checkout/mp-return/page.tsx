@@ -170,6 +170,8 @@ export default function MpReturnPage() {
 
     // Timed out waiting
     if (timedOut) {
+        // fix/bugs-checkout-pre-launch (Bug D): si tenemos orderId, linkear al detalle.
+        const continueHref = resolvedOrderId ? `/mis-pedidos/${resolvedOrderId}` : "/mis-pedidos";
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
@@ -182,8 +184,8 @@ export default function MpReturnPage() {
                         Te notificaremos por email cuando se confirme. Esto puede tomar unos minutos.
                     </p>
                     <div className="flex flex-col gap-3">
-                        <Link href="/mis-pedidos" className="btn-primary inline-block">
-                            Ir a mis pedidos
+                        <Link href={continueHref} className="btn-primary inline-block">
+                            Ver mi pedido
                         </Link>
                         <a
                             href="https://wa.me/5492901553173?text=Hola%2C%20mi%20pago%20está%20pendiente%20de%20confirmación"

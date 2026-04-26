@@ -124,6 +124,8 @@ interface OrderDetail {
 // ─── Timeline steps ───────────────────────────────────────
 // Status label map for non-timeline statuses (shown in hero fallback)
 const statusLabelMap: Record<string, string> = {
+    AWAITING_PAYMENT: "Esperando confirmación de pago",
+    PENDING_PAYMENT: "Esperando confirmación de pago",
     SCHEDULED: "Entrega programada",
     CANCELLED: "Pedido cancelado",
     REJECTED: "Pedido rechazado",
@@ -528,6 +530,8 @@ export default function OrderDetailPage() {
                             const soDriver = so.driver;
                             const soStatusLabel = (() => {
                                 const map: Record<string, string> = {
+                                    AWAITING_PAYMENT: "Esperando pago",
+                                    PENDING_PAYMENT: "Esperando pago",
                                     PENDING: "Pendiente",
                                     CONFIRMED: "Confirmado",
                                     PREPARING: "Preparando",

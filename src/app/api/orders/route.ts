@@ -455,6 +455,35 @@ export async function POST(request: Request) {
             }
         }
 
+        // === DRIVERS DISPONIBLES: defense in depth vs /api/delivery/availability ===
+        // fix/bugs-checkout-pre-launch (Bug C): el frontend chequea drivers online al
+        // MONTAR el checkout, pero si todos se desconectan después y el user completa
+        // el pedido, antes se creaba igual y quedaba en estado zombie. Solo aplica a
+        // delivery INMEDIATE a domicilio — pickup y SCHEDULED no requieren drivers
+        // en el momento de creación.
+        if (!isPickup && deliveryType !== "SCHEDULED") {
+            const onlineDriversCount = await prisma.driver.count({
+                where: {
+                    isOnline: true,
+                    availabilityStatus: "DISPONIBLE",
+                },
+            });
+            if (onlineDriversCount === 0) {
+                orderLogger.warn(
+                    { userId: session.user.id, deliveryType, isPickup },
+                    "Order rejected: no drivers online for IMMEDIATE delivery"
+                );
+                return NextResponse.json(
+                    {
+                        error: "no_drivers_available",
+                        errorCode: "NO_DRIVERS_AVAILABLE",
+                        message: "En este momento no hay repartidores disponibles. Podés programar el pedido para más tarde, retirar en el local, o pedir que te avisemos cuando haya repartidor.",
+                    },
+                    { status: 409 }
+                );
+            }
+        }
+
         // Calculate commission using loyalty program (dynamic rates)
         // Reads from StoreSettings (Biblia Financiera) instead of MoovyConfig key-value
         let moovyCommission = 0;
