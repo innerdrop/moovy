@@ -119,30 +119,56 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
             });
 
             if (result?.error) {
-                // Check if this is a rate limit error
-                if (result.error === "CredentialsSignin" || result.error.includes("Demasiados intentos")) {
-                    // Check backend to confirm rate limit status
-                    try {
-                        const checkResponse = await fetch("/api/auth/check-rate-limit", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email: email.toLowerCase() }),
-                        });
-                        const data = await checkResponse.json();
+                // ISSUE-062: NextAuth v5 NO propaga el mensaje del Error que tira authorize()
+                // — siempre lo trunca a "CredentialsSignin" por seguridad. Por eso después de
+                // CADA fallo consultamos /api/auth/check-rate-limit (peek-only, no incrementa)
+                // que lee el estado real de DB y devuelve isLocked + remainingAttempts.
+                // Anti-enumeration: para emails NO registrados devuelve siempre 5 intentos
+                // restantes — un atacante no puede usar este endpoint para detectar usuarios.
+                try {
+                    const checkResponse = await fetch("/api/auth/check-rate-limit", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: email.toLowerCase() }),
+                    });
+                    const data = await checkResponse.json();
 
-                        if (checkResponse.status === 429 || data.rateLimited) {
-                            setIsRateLimited(true);
-                            setRemainingTime(data.remainingSeconds || 900); // Default 15 minutes
-                            setError("");
-                            return;
-                        }
-                    } catch (e) {
-                        // Fallback: if we can't check, assume generic error
+                    // Caso 1: cuenta bloqueada → countdown UI
+                    if (checkResponse.status === 429 || data.rateLimited || data.isLocked) {
+                        setIsRateLimited(true);
+                        setRemainingTime(data.remainingSeconds || 900);
+                        setError("");
+                        return;
                     }
-                    setError("Email o contraseña incorrectos");
-                } else {
-                    setError("Email o contraseña incorrectos");
+
+                    // Caso 2: warning progresivo. Si quedan ≤2 intentos antes del bloqueo,
+                    // avisamos al user. En los primeros intentos (3, 4, 5 restantes) solo
+                    // mostramos genérico — anti-enumeration: si el atacante prueba un email
+                    // no registrado, va a ver 5 → 5 → 5 (sin baja) y nunca el warning,
+                    // mientras que el dueño legítimo sí lo verá cuando le falten pocos.
+                    const remaining = typeof data.remainingAttempts === "number"
+                        ? data.remainingAttempts
+                        : null;
+                    if (remaining !== null && remaining > 0 && remaining <= 2) {
+                        setError(
+                            remaining === 1
+                                ? "Contraseña incorrecta. Te queda 1 intento antes de bloqueo."
+                                : `Contraseña incorrecta. Te quedan ${remaining} intentos antes de bloqueo.`
+                        );
+                        return;
+                    }
+                } catch (e) {
+                    // Fallback silencioso: mostramos el genérico. El bloqueo backend sigue
+                    // funcionando aunque este peek falle — defense in depth.
                 }
+
+                // Mensaje específico para cuenta soft-deleted (NextAuth puede dejar pasar
+                // este mensaje en algunos casos, lo respetamos).
+                if (result.error.startsWith && result.error.startsWith("Esta cuenta ha sido eliminada")) {
+                    setError(result.error);
+                    return;
+                }
+                setError("Email o contraseña incorrectos");
             } else {
                 // Determine redirect path based on user role (client-side check for robust redirection)
                 try {

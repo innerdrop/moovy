@@ -545,3 +545,61 @@ export async function sendPointsEarnedEmail(data: {
         tag: "points_earned",
     });
 }
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// SEGURIDAD \u2014 Cuenta bloqueada por intentos fallidos (ISSUE-062)
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//
+// Se dispara cuando el sistema bloquea una cuenta por alcanzar el threshold de
+// intentos fallidos (5 consecutivos). Cr\u00edtico: si fue un atacante, el due\u00f1o
+// real tiene que enterarse para revisar/resetear su contrase\u00f1a. Si fue el
+// due\u00f1o que se confundi\u00f3, el email le explica cu\u00e1ndo se desbloquea solo.
+//
+// El bloqueo es de 15min auto-expira; la auditor\u00eda queda en AuditLog
+// (USER_LOGIN_AUTO_LOCKED). El admin puede desbloquear manualmente desde
+// /ops/usuarios/[id].
+
+export async function sendAccountLockedEmail(data: {
+    email: string;
+    name: string | null;
+    unlockAt: Date;
+}) {
+    const saludo = data.name ? `${data.name}, ` : "";
+    const unlockFmt = formatDateTimeAR(data.unlockAt);
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">\ud83d\udd12 Bloqueamos tu cuenta por seguridad</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            ${saludo}detectamos m\u00faltiples intentos fallidos de inicio de sesi\u00f3n en tu cuenta. Por seguridad la bloqueamos temporalmente.
+        </p>
+
+        ${emailAlertBox(`
+            <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">\u00bfFuiste vos?</p>
+            <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
+                Si te confundiste con la contrase\u00f1a, tranquilo \u2014 la cuenta se desbloquea sola el <strong>${unlockFmt}</strong>. O pod\u00e9s reseteala ahora si no la record\u00e1s.
+            </p>
+        `, "warning")}
+
+        ${emailAlertBox(`
+            <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">\u00bfNo fuiste vos?</p>
+            <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
+                Alguien intent\u00f3 entrar a tu cuenta. Reset\u00e1 tu contrase\u00f1a ahora mismo \u2014 con eso invalidamos cualquier intento futuro.
+            </p>
+        `, "danger")}
+
+        ${emailButton("Resetear mi contrase\u00f1a", `${baseUrl}/recuperar`, "red")}
+
+        ${emailDivider()}
+
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0;">
+            Si no resete\u00e1s nada, tu cuenta se desbloquea autom\u00e1ticamente el ${unlockFmt}. Si necesit\u00e1s ayuda, escribinos a soporte.
+        </p>
+    `);
+
+    return sendEmail({
+        to: data.email,
+        subject: "\ud83d\udd12 Tu cuenta MOOVY fue bloqueada por seguridad",
+        html,
+        tag: "account_auto_locked",
+    });
+}

@@ -1405,6 +1405,46 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             ${emailButton('Invitar a más amigos', `${baseUrl}/mi-perfil/invitar`, 'red')}
         `),
     },
+    {
+        id: 'account_auto_locked',
+        number: 316,
+        name: 'Cuenta bloqueada por intentos fallidos',
+        category: 'Autenticación y Seguridad',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'authorize() en src/lib/auth.ts cuando alcanza 5 intentos fallidos consecutivos',
+        subject: '🔒 Tu cuenta MOOVY fue bloqueada por seguridad',
+        functionName: 'sendAccountLockedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">🔒 Bloqueamos tu cuenta por seguridad</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                ${SAMPLE.buyerName}, detectamos múltiples intentos fallidos de inicio de sesión. Por seguridad bloqueamos la cuenta temporalmente (15 min auto-expira).
+            </p>
+            ${emailButton('Resetear mi contraseña', `${baseUrl}/recuperar`, 'red')}
+        `),
+    },
+    {
+        id: 'admin_account_auto_locked',
+        number: 317,
+        name: 'Cuenta bloqueada (→ admin)',
+        category: 'Autenticación y Seguridad',
+        recipient: 'admin',
+        priority: 'P0',
+        status: 'implemented',
+        trigger: 'authorize() en src/lib/auth.ts cuando alcanza 5 intentos fallidos consecutivos (paralelo al email del user)',
+        subject: '🔒 Cuenta bloqueada por intentos fallidos — revisar en OPS',
+        functionName: 'sendAdminAccountLockedEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Una cuenta fue bloqueada por intentos fallidos</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                El sistema bloqueó automáticamente la cuenta de <strong>${SAMPLE.buyerEmail}</strong> después de 5 intentos fallidos. Auto-desbloqueo en 15min, o podés desbloquearla antes desde el panel.
+            </p>
+            ${emailButton('Ver perfil del usuario', `${baseUrl}/ops/usuarios/abc123`, 'red')}
+        `),
+    },
 ];
 
 // ─── Helpers de búsqueda ────────────────────────────────────────────────────

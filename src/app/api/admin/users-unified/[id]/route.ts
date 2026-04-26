@@ -51,6 +51,9 @@ export async function GET(
                 suspendedUntil: true,
                 suspensionReason: true,
                 archivedAt: true,
+                // ISSUE-062: estado de bloqueo por intentos fallidos
+                failedLoginAttempts: true,
+                loginLockedUntil: true,
 
                 // User roles
                 roles: {
@@ -388,6 +391,8 @@ export async function GET(
             suspendedUntil: user.suspendedUntil,
             suspensionReason: user.suspensionReason,
             archivedAt: user.archivedAt,
+            failedLoginAttempts: user.failedLoginAttempts,
+            loginLockedUntil: user.loginLockedUntil,
             roles: user.roles,
             merchant,
             driver,

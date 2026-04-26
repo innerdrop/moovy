@@ -53,6 +53,9 @@ interface UserData {
     suspendedUntil: string | null;
     suspensionReason: string | null;
     archivedAt: string | null;
+    // ISSUE-062: estado de bloqueo por intentos fallidos
+    failedLoginAttempts?: number;
+    loginLockedUntil?: string | null;
     roles: Array<{ id: string; role: string; isActive: boolean; activatedAt: string }>;
     merchant: MerchantData | null;
     driver: DriverData | null;
@@ -1926,19 +1929,62 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 {/* Legacy Actions Section */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
                     <h2 className="text-lg font-bold text-gray-900 mb-6">Acciones Adicionales</h2>
+
+                    {/* ISSUE-062: badge de bloqueo + contador de intentos */}
+                    {(() => {
+                        const lockedUntil = user.loginLockedUntil ? new Date(user.loginLockedUntil) : null;
+                        const isLocked = lockedUntil !== null && lockedUntil > new Date();
+                        const failedAttempts = user.failedLoginAttempts ?? 0;
+                        if (!isLocked && failedAttempts === 0) return null;
+                        return (
+                            <div className={`mb-6 rounded-lg border p-4 ${isLocked ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
+                                <div className="flex items-start gap-3">
+                                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isLocked ? "bg-red-100" : "bg-amber-100"}`}>
+                                        {isLocked ? (
+                                            <Lock className="w-5 h-5 text-red-600" />
+                                        ) : (
+                                            <AlertTriangle className="w-5 h-5 text-amber-600" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`font-semibold text-sm ${isLocked ? "text-red-900" : "text-amber-900"}`}>
+                                            {isLocked
+                                                ? `Cuenta bloqueada hasta ${lockedUntil!.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}`
+                                                : `${failedAttempts}/5 intentos fallidos consecutivos`}
+                                        </p>
+                                        <p className={`text-xs mt-1 ${isLocked ? "text-red-700" : "text-amber-700"}`}>
+                                            {isLocked
+                                                ? "El bloqueo se levanta solo a esa hora. El usuario también puede resetear su contraseña para entrar antes."
+                                                : `El próximo fallo ${5 - failedAttempts === 1 ? "bloquea" : "acerca al bloqueo de"} la cuenta por 15 minutos.`}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button
-                            onClick={handleUnlockAccount}
-                            disabled={processing}
-                            className="flex items-center justify-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
-                        >
-                            {processing ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <Unlock className="w-5 h-5" />
-                            )}
-                            Desbloquear cuenta
-                        </button>
+                        {(() => {
+                            const lockedUntil = user.loginLockedUntil ? new Date(user.loginLockedUntil) : null;
+                            const isLocked = lockedUntil !== null && lockedUntil > new Date();
+                            const failedAttempts = user.failedLoginAttempts ?? 0;
+                            const showUnlock = isLocked || failedAttempts > 0;
+                            if (!showUnlock) return null;
+                            return (
+                                <button
+                                    onClick={handleUnlockAccount}
+                                    disabled={processing}
+                                    className="flex items-center justify-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-lg transition"
+                                >
+                                    {processing ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <Unlock className="w-5 h-5" />
+                                    )}
+                                    Desbloquear cuenta
+                                </button>
+                            );
+                        })()}
                         <button
                             onClick={handleResetPassword}
                             disabled={processing}

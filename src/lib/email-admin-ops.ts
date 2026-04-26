@@ -324,6 +324,72 @@ export async function sendReferralActivatedEmail(data: {
     });
 }
 
+// ─── #7 — Cuenta auto-bloqueada por intentos fallidos (admin/owner) ───────────
+//
+// Se dispara desde authorize() cuando una cuenta llega a 5 intentos fallidos
+// consecutivos. Permite que el admin contacte al user proactivamente — Ushuaia
+// es ciudad chica y un user que no puede entrar abandona rápido si no se le da
+// soporte. Acompañado del socket event "account_auto_locked" para los admins
+// que tengan /ops/fraude abierto en vivo.
+
+export async function sendAdminAccountLockedEmail(data: {
+    userId: string;
+    userEmail: string;
+    userName: string | null;
+    attempts: number;
+    lockUntil: Date;
+}): Promise<boolean> {
+    const userLabel = data.userName || data.userEmail;
+    const unlockFmt = new Intl.DateTimeFormat("es-AR", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "America/Argentina/Ushuaia",
+    }).format(data.lockUntil);
+
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 20px;">
+            ${emailBadge('🔒 Cuenta bloqueada', '#fef2f2', '#991b1b')}
+        </div>
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">
+            Una cuenta fue bloqueada por intentos fallidos
+        </h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            El sistema bloqueó automáticamente la cuenta de <strong>${userLabel}</strong> después de
+            <strong>${data.attempts} intentos fallidos</strong> de inicio de sesión consecutivos.
+            La cuenta se desbloquea sola a las <strong>${unlockFmt}</strong>, o podés desbloquearla
+            antes desde el panel.
+        </p>
+        ${emailInfoBox(`
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Email:</strong> ${data.userEmail}</p>
+            ${data.userName ? `<p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Nombre:</strong> ${data.userName}</p>` : ''}
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Intentos:</strong> ${data.attempts}/5</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Auto-desbloqueo:</strong> ${unlockFmt}</p>
+        `)}
+        ${emailAlertBox(`
+            <p style="margin: 0; font-size: 14px; line-height: 1.7;">
+                <strong>¿Y si no fue el dueño?</strong> El user ya recibió un email avisando del bloqueo
+                con instrucciones para resetear su contraseña — pero contactalo proactivamente si
+                tenés su teléfono. En ciudad chica, una cuenta que "no funciona" 15 minutos puede
+                hacer perder el cliente.
+            </p>
+        `, 'warning')}
+        ${emailButton('Ver perfil del usuario', `${baseUrl}/ops/usuarios/${data.userId}`, 'red')}
+    `);
+
+    const recipients = await getAlertEmails();
+    const results = await Promise.all(
+        recipients.map((to) =>
+            sendEmail({
+                to,
+                subject: `🔒 Cuenta bloqueada por intentos fallidos — ${userLabel}`,
+                html,
+                tag: 'admin_account_auto_locked',
+            })
+        )
+    );
+    return results.some(Boolean);
+}
+
 // ─── Helper privado (emailDivider no está exportado del todo, duplicamos) ────
 // Nota: emailLayout ya tiene su propio separador en el footer. Este divider es
 // para separar bloques dentro del contenido.

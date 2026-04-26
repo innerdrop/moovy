@@ -1,24 +1,50 @@
 # Moovy — Issues pre-lanzamiento
 
-**Última actualización:** 2026-04-21 (bug crítico de resurrección de cuentas resuelto — rama `user-deletion-no-resurrection`. Nuevo ISSUE-060 documentado y cerrado en el mismo día.)
-**Versión anterior:** 2026-04-20 (bundle UX pulido pre-launch: ISSUE-036, 037, 038, 039, 041, 042, 043, 044, 047, 059 resueltos — rama `fix/ux-pulido-pre-launch`)
+**Última actualización:** 2026-04-25 (sprint pre-launch — 6 ramas chicas cerradas en una jornada: auto-refresh JWT post-aprobación, comercio onboarding completo, admin sube logo + checklist usa status APPROVED, wording público sin "OPS", decrypt CUIT del driver + encrypt en update, modal Moovy reemplaza window.confirm/prompt en aprobación de docs)
+**Versión anterior:** 2026-04-21 (bug crítico de resurrección de cuentas resuelto — rama `user-deletion-no-resurrection`. Nuevo ISSUE-060 documentado y cerrado en el mismo día.)
 
 Este archivo es la fuente única de verdad del estado real pre-lanzamiento. Antes del audit del 2026-04-20 la lista estaba seriamente desactualizada: muchos issues marcados como 🔴 CRÍTICOS abiertos ya estaban resueltos desde hacía semanas (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, redirects, etc.). La nueva versión refleja lo que realmente queda.
 
 ---
 
-## Resumen ejecutivo — dónde estamos
+## Resumen ejecutivo — dónde estamos (2026-04-25)
 
-**Críticos reales restantes: 1** (data cleanup manual — ISSUE-004 via script PL-001 pre-lanzamiento).
-**Críticos parciales: 0** (ISSUE-054 resuelto completo el 2026-04-21).
-**Importantes reales restantes: 5** (principalmente backend/logística; 10 de UX pulido + 3 de seguridad urgentes + el diferido se cerraron el 2026-04-20).
-**Menores: 16** (post-lanzamiento).
+**Críticos reales restantes: 1** (data cleanup manual — ISSUE-004; ya tenemos `scripts/clean-db-pre-launch.ts` listo y validado en local + ejecutado en producción el 2026-04-24).
+**Importantes reales restantes:** Rama #3 del plan (`fix/auth-bloqueo-y-reset`: warning intentos + fix unlock + audit reset password) + 2 más en cola (`fix/producto-multifoto-carousel`, `feat/ops-crear-cuentas`).
+**Post-launch:** `feat/driver-bank-mp`, `feat/propinas-driver`, fix encoding UTF-8 en deploys.
 
-La buena noticia: **todos los críticos que tenían riesgo de dinero, fraude o datos ya están resueltos** (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, puntos post-DELIVERED, subastas ocultas, redirects rotos, post-checkout redirect). El código está en un estado sólido para lanzar.
+**Sprint del 2026-04-25 cerrado** — 6 ramas mergeadas a develop con scripts de validación + build local pasando antes de cada deploy. Detalles completos en PROJECT_STATUS.md sección "Cambio 2026-04-25".
 
-Lo único bloqueante que queda es la decisión operativa de ISSUE-004 (limpiar data de prueba antes de abrir). Se ejecuta via script PL-001 el día del lanzamiento.
+La buena noticia sigue: **todos los críticos que tenían riesgo de dinero, fraude o datos ya están resueltos** (PIN doble, autocompra, reconciliación MP, state machine driver, delivery fee fallback, puntos post-DELIVERED, subastas ocultas, resurrección de cuentas, encrypt CUIT driver). El código está en un estado sólido para lanzar.
 
-**Estimación para estar listos:** 1-2 días de trabajo real + el día de ejecución de PL-001 (reset total antes de abrir).
+**Estimación para estar listos:** 1-2 días de trabajo (rama #3 + #4 + #5) + el día de ejecución del cleanup pre-launch.
+
+---
+
+## Issues NUEVOS detectados en el sprint del 2026-04-25
+
+### ISSUE-061 — UTF-8 encoding rompe tildes después de cada deploy a producción
+**Estado:** 🟡 ABIERTO — POST-LAUNCH (cosmético, no bloqueante). Ver `.auto-memory/project_utf8_encoding_bug.md`.
+**Reportado por:** Mauro 2026-04-25.
+**Síntoma:** Cada deploy hace que palabras con tildes en datos de DB (categorías, nombres, descripciones) salgan con símbolos rotos: "Electrónica" → "Electr├│nica", "Pizzería" → "Pizzer├¡a", "Hogar y Jardín" → "Hogar y Jard├¡n".
+**Patrón:** UTF-8 multibyte interpretado como CP-437/Latin-1. El carácter `ó` (UTF-8: `0xC3 0xB3`) se rendere como `├│` cuando se lee con codepage de DOS.
+**Hipótesis principales:**
+1. `psql/pg_dump` del VPS no usa UTF-8 — chequear `SHOW client_encoding;` en el container Postgres.
+2. Pipe PowerShell → SSH → bash → psql reinterpreta el charset (PowerShell por default usa CP-1252 en Windows español).
+3. Variable `LANG` del proceso PM2 del VPS arranca sin `LANG=es_AR.UTF-8` o `LANG=C.UTF-8`.
+**Quickfixes a probar:** forzar `PGCLIENTENCODING=UTF8` en cada psql de devmain.ps1, agregar `SET client_encoding TO 'UTF8';` al inicio de cada SQL del seed, verificar `chcp 65001` en PowerShell antes del deploy.
+**Por qué no bloqueante:** la data en DB está bien (es UTF-8 correcto, solo se muestra mal cuando un cliente con encoding distinto la lee). El sistema operativo funciona — bug de visualización.
+
+### ISSUE-062 — Auth: warning antes de bloqueo + botón "Desbloquear cuenta" no funciona + auditoría reset password
+**Estado:** 🟡 ABIERTO — siguiente rama (`fix/auth-bloqueo-y-reset`).
+**Reportado por:** Mauro 2026-04-25.
+**3 problemas relacionados:**
+1. Cuando un user ingresa mal la contraseña varias veces, el sistema lo bloquea sin warning previo. Estándar de la industria (Google/Apple/Facebook): avisar al 2do o 3er intento fallido con "te quedan X intentos antes de bloqueo".
+2. Botón "Desbloquear cuenta" en `/ops/usuarios/[id]` no funciona — Mauro lo probó después de bloquearse a sí mismo y no lo desbloqueó. Bug en `/api/admin/users/unlock/route.ts` (no actualiza algún campo correctamente).
+3. Auditoría completa del flujo `/api/auth/forgot-password` + `/api/auth/reset-password`: verificar token de un solo uso, rate limit endpoint, mensaje genérico "si el email existe te llegó un link" (anti email-enumeration), validación strength del nuevo password. Algunos checks ya existen (timing-safe + token hasheado desde rama 2026-04-21), faltaba el resto.
+**Esfuerzo:** medio (~2h).
+
+---
 
 ---
 

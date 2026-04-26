@@ -15,6 +15,9 @@ import {
     UserX,
     RefreshCw,
     Clock,
+    Lock,
+    Unlock,
+    ExternalLink,
 } from "lucide-react";
 import { toast } from "@/store/toast";
 
@@ -49,6 +52,26 @@ interface FraudPayload {
     };
 }
 
+// ISSUE-062: visibilidad OPS de cuentas bloqueadas por intentos fallidos.
+interface LockedAccount {
+    id: string;
+    name: string | null;
+    email: string;
+    phone?: string | null;
+    failedLoginAttempts: number;
+    loginLockedUntil: string | null;
+    updatedAt?: string;
+}
+
+interface LockedAccountsPayload {
+    currentlyLocked: LockedAccount[];
+    recentlyLocked: LockedAccount[];
+    stats: {
+        lockedNow: number;
+        lockedLast24h: number;
+    };
+}
+
 const actionConfig: Record<string, { label: string; color: string; icon: any }> = {
     PIN_VERIFIED: { label: "PIN verificado", color: "text-green-600 bg-green-50", icon: CheckCircle2 },
     PIN_VERIFICATION_FAIL: { label: "PIN incorrecto", color: "text-orange-600 bg-orange-50", icon: XCircle },
@@ -60,18 +83,28 @@ const actionConfig: Record<string, { label: string; color: string; icon: any }> 
 
 export default function FraudePage() {
     const [data, setData] = useState<FraudPayload | null>(null);
+    const [lockedData, setLockedData] = useState<LockedAccountsPayload | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [resetting, setResetting] = useState<string | null>(null);
+    const [unlockingEmail, setUnlockingEmail] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
         try {
-            const res = await fetch("/api/admin/fraud/pin-events?limit=150", { cache: "no-store" });
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.error || "Error");
+            // Cargamos en paralelo el feed PIN y el feed de cuentas bloqueadas (ISSUE-062).
+            const [pinRes, lockedRes] = await Promise.all([
+                fetch("/api/admin/fraud/pin-events?limit=150", { cache: "no-store" }),
+                fetch("/api/admin/auto-locked-accounts", { cache: "no-store" }),
+            ]);
+            if (!pinRes.ok) {
+                const body = await pinRes.json().catch(() => ({}));
+                throw new Error(body.error || "Error al cargar fraude");
             }
-            setData(await res.json());
+            setData(await pinRes.json());
+            // Locked accounts es secundario — si falla no rompemos toda la página.
+            if (lockedRes.ok) {
+                setLockedData(await lockedRes.json());
+            }
             setError(null);
         } catch (e: any) {
             setError(e?.message || "Error al cargar");
@@ -79,6 +112,28 @@ export default function FraudePage() {
             setLoading(false);
         }
     }, []);
+
+    const handleUnlockAccount = async (email: string) => {
+        if (!confirm(`¿Desbloquear la cuenta de ${email}?`)) return;
+        setUnlockingEmail(email);
+        try {
+            const res = await fetch("/api/admin/users/unlock", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || "Error");
+            }
+            toast.success("Cuenta desbloqueada");
+            await loadData();
+        } catch (e: any) {
+            toast.error(e?.message || "Error al desbloquear");
+        } finally {
+            setUnlockingEmail(null);
+        }
+    };
 
     useEffect(() => {
         loadData();
@@ -138,9 +193,9 @@ export default function FraudePage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Eventos recientes</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Eventos PIN</p>
                     <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
                         {data?.stats.totalEvents ?? "—"}
                     </p>
@@ -155,6 +210,15 @@ export default function FraudePage() {
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Suspendidos</p>
                     <p className="text-2xl sm:text-3xl font-bold text-red-600 mt-1">
                         {data?.stats.suspendedDrivers ?? "—"}
+                    </p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 p-4">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Cuentas bloqueadas</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-red-600 mt-1">
+                        {lockedData?.stats.lockedNow ?? "—"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                        {lockedData?.stats.lockedLast24h ?? 0} en 24h
                     </p>
                 </div>
             </div>
@@ -301,6 +365,120 @@ export default function FraudePage() {
                             </div>
                         ))}
                     </div>
+                </section>
+            )}
+
+            {/* ISSUE-062: Cuentas bloqueadas por intentos fallidos */}
+            {lockedData && (lockedData.currentlyLocked.length > 0 || lockedData.recentlyLocked.length > 0) && (
+                <section className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                    <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
+                        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-red-600" />
+                            Cuentas bloqueadas por intentos fallidos
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            {lockedData.currentlyLocked.length} bloqueadas ahora · {lockedData.recentlyLocked.length} con intentos en últimas 24h.
+                            Contactá proactivamente — un user 15min sin entrar puede irse a la competencia.
+                        </p>
+                    </div>
+
+                    {/* Bloqueadas AHORA — prioridad alta, botón Desbloquear inline */}
+                    {lockedData.currentlyLocked.length > 0 && (
+                        <div className="border-b border-gray-100">
+                            <div className="px-4 sm:px-6 py-2 bg-red-50">
+                                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                                    Bloqueadas ahora ({lockedData.currentlyLocked.length})
+                                </p>
+                            </div>
+                            <div className="divide-y divide-gray-100">
+                                {lockedData.currentlyLocked.map((u) => {
+                                    const unlockAt = u.loginLockedUntil ? new Date(u.loginLockedUntil) : null;
+                                    return (
+                                        <div key={u.id} className="p-4 flex items-start gap-3 flex-wrap">
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-100 text-red-600">
+                                                <Lock className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                                    {u.name || "Sin nombre"}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                                                    <span>{u.failedLoginAttempts}/5 intentos</span>
+                                                    {unlockAt && (
+                                                        <span>
+                                                            Auto-unlock: {unlockAt.toLocaleString("es-AR", {
+                                                                hour: "2-digit", minute: "2-digit"
+                                                            })}
+                                                        </span>
+                                                    )}
+                                                    {u.phone && (
+                                                        <a href={`tel:${u.phone}`} className="text-blue-600 hover:underline">
+                                                            {u.phone}
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 flex-shrink-0">
+                                                <a
+                                                    href={`/ops/usuarios/${u.id}`}
+                                                    className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
+                                                >
+                                                    Ver perfil
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                                <button
+                                                    disabled={unlockingEmail === u.email}
+                                                    onClick={() => handleUnlockAccount(u.email)}
+                                                    className="px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-1"
+                                                >
+                                                    <Unlock className="w-3 h-3" />
+                                                    Desbloquear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Histórico 24h — solo los que NO están actualmente bloqueados */}
+                    {lockedData.recentlyLocked.filter(u => !lockedData.currentlyLocked.some(c => c.id === u.id)).length > 0 && (
+                        <div>
+                            <div className="px-4 sm:px-6 py-2 bg-gray-50">
+                                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                    Con intentos fallidos en 24h (ya pueden entrar)
+                                </p>
+                            </div>
+                            <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
+                                {lockedData.recentlyLocked
+                                    .filter(u => !lockedData.currentlyLocked.some(c => c.id === u.id))
+                                    .map((u) => (
+                                        <div key={u.id} className="p-3 flex items-center gap-3 flex-wrap">
+                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50 text-amber-600">
+                                                <AlertTriangle className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-gray-900 truncate">
+                                                    {u.name || u.email}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {u.failedLoginAttempts} intentos · último: {u.updatedAt ? new Date(u.updatedAt).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                                                </p>
+                                            </div>
+                                            <a
+                                                href={`/ops/usuarios/${u.id}`}
+                                                className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 flex-shrink-0"
+                                            >
+                                                Ver perfil
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    )}
                 </section>
             )}
 

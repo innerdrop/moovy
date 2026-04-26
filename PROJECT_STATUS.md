@@ -1,6 +1,102 @@
 # Moovy — Tareas pendientes
-Score: 99/100 | P0: 2 tareas (bloqueadas) | P1: 0 | P2: 2
-Última actualización: 2026-04-17 (ISSUE-001 PIN doble de entrega RESUELTO — Fases 1-9)
+Score: 99/100 | P0: 1 (ISSUE-004 cleanup pre-launch) | P1: 1 (auth bloqueo+reset) | P2: 5
+Última actualización: 2026-04-25 (sprint pre-launch — 6 ramas chicas cerradas en una jornada post-deploy)
+
+## Cambio 2026-04-25 — Sprint pre-launch ronda final (6 ramas en una jornada)
+
+### Contexto
+
+Después del deploy del 2026-04-24 con DB limpia (vía `scripts/clean-db-pre-launch.ts`), Mauro empezó a testear E2E en producción y reportó múltiples cosas para pulir antes del lanzamiento. Se trabajó con el patrón **"una rama chica por feature, script de validación obligatorio, build local antes del deploy"**. Después de varios deploys fallidos por TS errors no detectables sin `next build` local, se estandarizó el flujo: `npx prisma generate ; npx next build` antes de cualquier `devmain.ps1`.
+
+### 6 ramas mergeadas (orden cronológico)
+
+#### 1. `auto-refresh-rol-aprobado` — JWT refresh post-aprobación
+
+Cuando admin aprobaba un comercio/driver/seller, el JWT del user en su browser seguía con los roles viejos. El usuario tenía que hacer logout+login para entrar a su panel — fricción inaceptable post-aprobación. Solución: socket event `roles_updated` emitido desde 6 puntos (4 endpoints approve/reject + 2 helpers de auto-activación por docs) + nuevo componente `RoleUpdateListener` montado en `Providers.tsx` que dispara `useSession.update({refreshRoles:true})` (el JWT callback ya soportaba esto desde el rediseño de roles del 2026-04-10). Toast diferenciado por tono + redirect automático al portal después de 1.5s.
+
+**Archivos:** nuevos `src/lib/role-change-notify.ts` + `src/components/auth/RoleUpdateListener.tsx` + `scripts/validate-role-refresh.ts`. Modificados: `Providers.tsx`, 4 endpoints admin approve/reject, 2 helpers de auto-activación.
+
+#### 2. `fix/comercio-onboarding-completo` — banner registro + checklist hide + aprobación digital/física + logo obligatorio
+
+4 cambios relacionados al onboarding:
+
+- **Banner registro merchant**: caja azul "Podés completar la documentación más tarde" en `/comercio/registro` paso 3, con lista de los 7 requisitos (CUIT, CBU/Alias, Constancia AFIP, Habilitación Municipal, Registro Sanitario si food, Logo, Horarios).
+- **Checklist auto-hide**: `OnboardingChecklist` se oculta cuando `canOpenStore=true` (antes esperaba `isComplete` que requería MP recomendado, prácticamente nunca se ocultaba).
+- **Aprobación OPS digital/física**: schema agrega `<doc>ApprovalSource` + `<doc>ApprovalNote` para los 5 docs Merchant + 8 docs Driver. Cuando admin aprueba PHYSICAL exige nota mín 5 chars (auditoría AAIP). El doc queda APPROVED sin URL — admin recibió el papel/email/whatsapp.
+- **Logo obligatorio**: `approveMerchantTransition` y `approveDriverTransition` validan `Merchant.image` / `User.image` antes de marcar APPROVED. Throw `code: LOGO_MISSING` / `PHOTO_MISSING` que los endpoints catchean → 400. Auto-activación por docs respeta el bloqueo.
+
+**Schema:** 26 campos nuevos (`<doc>ApprovalSource` + `<doc>ApprovalNote` × 5 docs Merchant + 8 docs Driver). Requiere `npx prisma db push && npx prisma generate` post-merge — `devmain.ps1 -SchemaOnly` lo hace solo en producción.
+
+#### 3. `ops-upload-logo-merchant` — admin sube logo + checklist usa status APPROVED + nota física visible
+
+Hotfix de la rama anterior + dos extras del mismo dominio:
+
+- **Admin sube logo**: nuevo endpoint `PATCH /api/admin/merchants/[id]/logo` + sub-componente `MerchantLogoAdmin` en `/ops/usuarios/[id]`. Caso real: comercio entrega logo en USB/WhatsApp y admin lo carga sin loguearse como él. Reusa `<ImageUpload>` existente, audita `MERCHANT_LOGO_UPDATED_BY_ADMIN`.
+- **Bug crítico de UX**: `/api/merchant/onboarding` chequeaba `Boolean(merchant.cuit)` para `hasCuit` etc., excluyendo aprobaciones físicas. Cambiado a `merchant.cuitStatus === "APPROVED"` para los 5 docs. Sin esto, los merchants veían "Te falta CUIT" indefinidamente aunque el admin ya hubiera aprobado físicamente.
+- **UI nota física visible**: OPS ve caja amarilla "Aprobación física — nota del admin" cuando `approvalSource === PHYSICAL` (recordatorio para auditoría) + chip dice "APPROVED · físico". UI Merchant en `/comercios/configuracion` muestra banner verde "Aprobado por administrador — recibimos este documento fuera del sistema" en lugar del upload + sin botón "Solicitar cambio" (no hay nada que reemplazar).
+
+**Endpoint admin `users-unified/[id]` extendido** para devolver los nuevos campos source/note del merchant.
+
+#### 4. `wording-publico-no-ops` — reemplazar "OPS" por "el equipo de Moovy"
+
+OPS es jerga interna y exponerla erosiona la marca + confunde al user. Reemplazo único: "el equipo de Moovy" con variantes naturales según contexto ("revisado por", "la va a resolver", "Respuesta del equipo:" en historiales, "Comentario del equipo:" en emails).
+
+**5 archivos modificados (12 reemplazos):** `SettingsForm.tsx` (7 toasts/textos del merchant), `ProfileView.tsx` (5 toasts/textos del driver), 2 endpoints `change-request/route.ts` (mensajes de error 409), `email.ts` (2 emails de change request resolved).
+
+**NO se tocó:** comentarios de código (internos), `src/app/ops/**`, `src/components/ops/**`, `src/lib/email-admin-ops.ts`, paths URL `/ops/...`.
+
+Script `scripts/validate-no-ops-public.ts` con regex que filtra comentarios y reporta cualquier mención a "OPS" en strings de texto user-facing.
+
+#### 5. `fix/driver-profile-decrypt-cuit` — decrypt CUIT del driver + encrypt en update
+
+Bug visible: el campo CUIT/CUIL del panel del driver mostraba el ciphertext hex `9dadd36061412e5816f0a4ed` en lugar del valor legible. Causa: `GET /api/driver/profile` devolvía `driver.cuit` directo desde Prisma sin pasar por `decryptDriverData()`. Fix: 1 import + wrap del response.
+
+**Bug latente adicional encontrado en la auditoría:** `POST /api/driver/documents/update` guardaba el CUIT en DB sin cifrar — cualquier driver que actualizaba su CUIT desde el panel quedaba con plaintext en `Driver.cuit`, violando convención AAIP. Resuelto en la misma rama agregando `encryptDriverData(updateData)` antes del `prisma.driver.update`.
+
+**No requiere migración de datos:** `decrypt()` es defensivo (devuelve plaintext as-is si no tiene formato cifrado) y `encryptIfNeeded` es idempotente.
+
+#### 6. `fix/modales-aprobacion-docs` — modal Moovy reemplaza window.confirm/prompt
+
+Bug visual: el flujo de aprobación de doc usaba 3 pop-ups nativos del browser ("localhost:3000 says") — feos, sin marca, default engañoso (cancelar = digital), nota en `prompt()` separado.
+
+**Fix:** nuevo componente `src/components/ops/DocApprovalModal.tsx` con diseño Moovy (~210 líneas):
+- 2 cards radio explícitos: Digital (ya subido) / Físico (papel/email/whatsapp).
+- Si elige Físico: textarea con contador live (5-500 chars).
+- Botón Aprobar deshabilitado hasta validación OK.
+- Diseño coherente con `ConfirmModal`: backdrop blur, card blanca, rojo MOOVY en CTA, animación, focus management, cierre con Escape.
+
+**Refactor de handlers:** antes ~70 líneas duplicadas entre `handleApproveDocument` (merchant) y `handleApproveDriverDocument` (driver) — ahora ~30 líneas, cada handler solo abre el modal con state local; un único callback `submitApprovalDecision` compartido entre ambos dispara el fetch al endpoint correspondiente según el `entity` del approvalModal.
+
+### Sprint stats
+
+- **Ramas mergeadas:** 6
+- **Archivos tocados:** ~30 (15 nuevos + 15 modificados)
+- **Scripts de validación nuevos:** 6 en `scripts/validate-*.ts`
+- **Campos nuevos en schema:** 26 (`<doc>ApprovalSource` + `<doc>ApprovalNote` × 13 docs)
+- **TS clean en cada rama, build local pasó antes de cada deploy.**
+
+### Pendiente para próxima sesión
+
+- **Rama #3 del plan:** `fix/auth-bloqueo-y-reset` — warning "te quedan X intentos" antes de bloqueo + fix botón "Desbloquear cuenta" en OPS (no funciona) + auditoría reset password (token único, rate limit forgot-password, mensaje genérico anti email-enumeration, validación strength).
+- **Rama #4:** `fix/producto-multifoto-carousel` — bug visible: producto con 3+ fotos solo muestra la primera en página de detalle. Carousel táctil + swipe.
+- **Rama #5:** `feat/ops-crear-cuentas` — admin crea cuentas de buyer/driver/seller desde OPS (merchant ya existe). Magic link de set-password.
+
+### Post-launch (no bloqueante)
+
+- `feat/driver-bank-mp` — Driver no tiene campos bancarios en schema. Hoy admin paga manual fuera del sistema.
+- `feat/propinas-driver` — buyer le da propina al driver post-DELIVERED.
+- Bug encoding UTF-8 — cada deploy a producción rompe tildes en datos de DB ("Electrónica" → "Electr├│nica"). Cosmético, ver `.auto-memory/project_utf8_encoding_bug.md`.
+
+### Reglas nuevas del sprint (#19-#24)
+
+- **#19** Cualquier endpoint admin que cambie el set de roles derivados de un usuario DEBE llamar `emitRoleUpdate` al final del happy path.
+- **#20** Cuando un campo del modelo tiene un "status" derivado por workflow de aprobación, los chequeos downstream (checklist, listados, badges) DEBEN basarse en el status, NUNCA en si el campo de origen tiene valor.
+- **#21** Cualquier doc con auditoría legal (AAIP/AFIP/municipal) DEBE permitir aprobación PHYSICAL con nota libre.
+- **#22** Cualquier string user-facing NUNCA debe usar "OPS" — siempre "el equipo de Moovy" o variante natural.
+- **#23** Cualquier endpoint que lea/escriba campos cifrados DEBE aplicar `decrypt<Modelo>Data` / `encrypt<Modelo>Data`.
+- **#24** Cualquier nuevo flujo de OPS con input + validación NO debe usar `window.confirm/prompt` nativos — usar componente modal con diseño Moovy.
+
+---
 
 ## Cambio 2026-04-17 — ISSUE-001 PIN doble de entrega (Fases 1-9 completas)
 

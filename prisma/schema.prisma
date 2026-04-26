@@ -65,6 +65,12 @@ model User {
   suspendedUntil     DateTime?           // null = permanent until manual reactivation
   suspensionReason   String?
   archivedAt         DateTime?           // separate from deletedAt — admin can view archived users
+  // ISSUE-062: bloqueo persistente por intentos fallidos de login.
+  // failedLoginAttempts cuenta intentos consecutivos. Se resetea a 0 en login OK.
+  // loginLockedUntil se setea a now+15min al llegar a 5 intentos. Auto-unlock al pasar.
+  // Defense in depth sobre el rate limit de Redis (que es ephemeral).
+  failedLoginAttempts Int                @default(0)
+  loginLockedUntil   DateTime?
   onboardingCompletedAt DateTime?        // ISSUE-021: tour buyer primera vez completado/saltado
   pointsExpiryNotifiedAt DateTime?       // Cron points-expiring-reminder: fecha del último aviso enviado. Se resetea a null cuando el user crea un pedido nuevo (nuevo ciclo de actividad).
   addresses          Address[]

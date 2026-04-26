@@ -2,8 +2,14 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { checkRateLimit, resetRateLimit } from "@/lib/security";
+import { checkRateLimit, resetRateLimit, auditLog } from "@/lib/security";
 import { logUserActivity, ACTIVITY_ACTIONS } from "@/lib/user-activity";
+
+// ISSUE-062: bloqueo persistente por intentos fallidos. 5 intentos consecutivos
+// fallidos -> loginLockedUntil = now + 15min. Warning desde el 3 (te quedan 2).
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
+const WARNING_THRESHOLD = 2;
 
 
 
@@ -28,10 +34,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                     // Rate limit login attempts per email
                     const rateLimitKey = `login:${email.toLowerCase()}`;
-                    const rateCheck = await checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
+                    const rateCheck = await checkRateLimit(rateLimitKey, MAX_LOGIN_ATTEMPTS, LOCK_DURATION_MS);
                     if (!rateCheck.allowed) {
                         console.warn(`[Auth] Rate limited: ${email} (reset in ${Math.round(rateCheck.resetIn / 1000)}s)`);
-                        throw new Error("Demasiados intentos. Intentá de nuevo en unos minutos.");
+                        const minutos = Math.max(1, Math.ceil(rateCheck.resetIn / 60_000));
+                        throw new Error(`Demasiados intentos. Intentá de nuevo en ${minutos} minuto${minutos !== 1 ? "s" : ""}.`);
                     }
 
                     const { prisma } = await import("@/lib/prisma");
@@ -50,6 +57,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             image: true,
                             referralCode: true,
                             deletedAt: true,
+                            failedLoginAttempts: true,
+                            loginLockedUntil: true,
                         },
                     });
 
@@ -63,18 +72,122 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         throw new Error("Esta cuenta ha sido eliminada. Contactá a soporte.");
                     }
 
+                    // ISSUE-062: bloqueo persistente. Si está bloqueado, no validamos password.
+                    const now = new Date();
+                    if (user.loginLockedUntil && user.loginLockedUntil > now) {
+                        const minutos = Math.max(1, Math.ceil((user.loginLockedUntil.getTime() - now.getTime()) / 60_000));
+                        console.warn(`[Auth] User locked: ${email} (${minutos}min remaining)`);
+                        throw new Error(`Cuenta bloqueada por seguridad. Intentá en ${minutos} minuto${minutos !== 1 ? "s" : ""} o pedí desbloqueo a soporte.`);
+                    }
+                    // Auto-unlock: si el lock expiró, resetear contador antes de validar.
+                    if (user.loginLockedUntil && user.loginLockedUntil <= now) {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { failedLoginAttempts: 0, loginLockedUntil: null },
+                        }).catch(err => console.error("[Auth] Failed auto-unlock:", err));
+                        user.failedLoginAttempts = 0;
+                        user.loginLockedUntil = null;
+                    }
+
                     // Verify password
                     const isValid = await bcrypt.compare(password, user.password);
 
                     if (!isValid) {
-                        console.log("[Auth] Invalid password for:", email);
+                        // ISSUE-062: incrementar contador persistente y posiblemente bloquear.
+                        const currentAttempts = user.failedLoginAttempts ?? 0;
+                        const newAttempts = currentAttempts + 1;
+                        const willLock = newAttempts >= MAX_LOGIN_ATTEMPTS;
+                        const lockUntil = willLock ? new Date(Date.now() + LOCK_DURATION_MS) : null;
+
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: {
+                                failedLoginAttempts: newAttempts,
+                                loginLockedUntil: lockUntil,
+                            },
+                        }).catch(err => console.error("[Auth] Failed to update attempts:", err));
+
+                        if (willLock) {
+                            try {
+                                auditLog({
+                                    timestamp: new Date().toISOString(),
+                                    userId: user.id,
+                                    action: "USER_LOGIN_AUTO_LOCKED",
+                                    resource: "User",
+                                    resourceId: user.id,
+                                    details: { email: user.email, attempts: newAttempts, lockUntil: lockUntil?.toISOString() },
+                                });
+                            } catch (err) {
+                                console.error("[Auth] Audit log failed:", err);
+                            }
+                            try {
+                                const { sendAccountLockedEmail } = await import("@/lib/email-legal-ux");
+                                sendAccountLockedEmail({
+                                    email: user.email,
+                                    name: user.name,
+                                    unlockAt: lockUntil!,
+                                }).catch(err => console.error("[Auth] sendAccountLockedEmail failed:", err));
+                            } catch (err) {
+                                console.error("[Auth] Failed to import locked email:", err);
+                            }
+
+                            // ISSUE-062 visibilidad OPS: socket event en vivo + email al admin.
+                            // Si el admin tiene /ops/fraude abierto, ve el alerta al instante.
+                            // Si no, le llega un email con link directo al panel del user.
+                            try {
+                                const { socketEmitToRooms } = await import("@/lib/socket-emit");
+                                socketEmitToRooms(
+                                    ["admin:users", "admin:fraud"],
+                                    "account_auto_locked",
+                                    {
+                                        userId: user.id,
+                                        email: user.email,
+                                        name: user.name,
+                                        attempts: newAttempts,
+                                        lockUntil: lockUntil?.toISOString(),
+                                        lockedAt: new Date().toISOString(),
+                                    }
+                                ).catch(err => console.error("[Auth] socket emit failed:", err));
+                            } catch (err) {
+                                console.error("[Auth] Failed to import socket-emit:", err);
+                            }
+
+                            try {
+                                const { sendAdminAccountLockedEmail } = await import("@/lib/email-admin-ops");
+                                sendAdminAccountLockedEmail({
+                                    userId: user.id,
+                                    userEmail: user.email,
+                                    userName: user.name,
+                                    attempts: newAttempts,
+                                    lockUntil: lockUntil!,
+                                }).catch(err => console.error("[Auth] sendAdminAccountLockedEmail failed:", err));
+                            } catch (err) {
+                                console.error("[Auth] Failed to import admin locked email:", err);
+                            }
+
+                            console.warn(`[Auth] Auto-locked: ${email} after ${newAttempts} failed attempts`);
+                            throw new Error("Tu cuenta fue bloqueada por seguridad por múltiples intentos fallidos. Te enviamos un email con instrucciones. Intentá en 15 minutos o reseteá tu contraseña.");
+                        }
+
+                        const remaining = MAX_LOGIN_ATTEMPTS - newAttempts;
+                        console.log(`[Auth] Invalid password for: ${email} (attempt ${newAttempts}/${MAX_LOGIN_ATTEMPTS})`);
+                        if (remaining <= WARNING_THRESHOLD) {
+                            throw new Error(remaining === 1
+                                ? "Contraseña incorrecta. Te queda 1 intento antes de bloqueo."
+                                : `Contraseña incorrecta. Te quedan ${remaining} intentos antes de bloqueo.`
+                            );
+                        }
                         return null;
                     }
 
-                    // Update last login (fire and forget)
-                    prisma.user.update({
+                    // Login OK — resetear contador, lock y rate limit.
+                    await prisma.user.update({
                         where: { id: user.id },
-                        data: { updatedAt: new Date() } // Simulate last login tracking via updatedAt
+                        data: {
+                            failedLoginAttempts: 0,
+                            loginLockedUntil: null,
+                            updatedAt: new Date(),
+                        },
                     }).catch(err => console.error("Failed to update login time", err));
 
                     console.log("[Auth] Login successful for:", user.email, "Role:", user.role);
@@ -114,7 +227,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         merchantId: access?.merchant.merchantId ?? null,
                     };
                 } catch (error) {
-                    console.error("[Auth] Authorize error:", error);
+                    // Errores user-facing (lock, rate limit, soft delete, warnings) se re-lanzan
+                    // para que NextAuth los propague al cliente como result.error.
+                    if (error instanceof Error && error.message) {
+                        const msg = error.message;
+                        const isUserFacing =
+                            msg.startsWith("Demasiados intentos") ||
+                            msg.startsWith("Cuenta bloqueada") ||
+                            msg.startsWith("Tu cuenta fue bloqueada") ||
+                            msg.startsWith("Contraseña incorrecta") ||
+                            msg.startsWith("Esta cuenta ha sido eliminada");
+                        if (isUserFacing) {
+                            console.warn("[Auth] User-facing error:", msg);
+                            throw error;
+                        }
+                    }
+                    console.error("[Auth] Authorize error (unexpected):", error);
                     return null;
                 }
             },
