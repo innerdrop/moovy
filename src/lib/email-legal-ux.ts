@@ -585,7 +585,7 @@ export async function sendAccountLockedEmail(data: {
             <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
                 Alguien intent\u00f3 entrar a tu cuenta. Reset\u00e1 tu contrase\u00f1a ahora mismo \u2014 con eso invalidamos cualquier intento futuro.
             </p>
-        `, "danger")}
+        `, "error")}
 
         ${emailButton("Resetear mi contrase\u00f1a", `${baseUrl}/recuperar`, "red")}
 
