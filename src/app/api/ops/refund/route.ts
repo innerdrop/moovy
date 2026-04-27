@@ -10,11 +10,6 @@
 //   - Para otros estados (AWAITING_PAYMENT, FAILED, etc), permite
 //     registro manual del refund con nota descriptiva — útil para
 //     testing en localhost donde MP webhook no llega.
-//
-// Reembolso parcial: hoy el helper devuelve siempre el total. Si admin
-// pide partial refund, lo registramos como ADMIN_NOTE pero el MP refund
-// es siempre full. Para partials reales hay que extender createRefund
-// con amount, queda para post-launch (caso edge poco común).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -94,14 +89,11 @@ export async function POST(request: NextRequest) {
             }
 
             if (!result.refunded && !result.alreadyRefunded) {
-                // Edge: notApplicable después del isPaidMP check (race condition raro)
                 return NextResponse.json({
                     error: `No se pudo procesar el reembolso: ${result.reason}`,
                 }, { status: 400 });
             }
 
-            // El helper ya marcó paymentStatus=REFUNDED + audit log + email + socket.
-            // Solo agregamos la nota del admin con el monto/motivo formateado.
             await prisma.order.update({
                 where: { id: orderId },
                 data: { adminNotes: `${existingNotes}${refundNote}` },
@@ -115,9 +107,7 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Path 2: Refund manual (efectivo, testing, casos no-MP).
-        // El admin ya devolvió la plata afuera del sistema (transferencia,
-        // efectivo, etc.) y solo registramos el evento en la DB.
+        // Path 2: Refund manual (efectivo, testing, casos no-MP)
         await prisma.order.update({
             where: { id: orderId },
             data: {
@@ -141,7 +131,6 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Reversión de puntos (idempotente — si la orden no llegó a DELIVERED, no había earn que revertir)
         try {
             const { reverseOrderPoints } = await import("@/lib/points");
             const result = await reverseOrderPoints(orderId, `reembolso manual: ${trimmedReason}`);

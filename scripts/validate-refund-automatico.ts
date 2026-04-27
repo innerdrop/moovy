@@ -1,30 +1,5 @@
 /**
  * Validación de la rama `fix/refund-automatico`.
- *
- * Antes de esta rama: 5 endpoints cancelaban pedidos pagados pero NO disparaban
- * refund automático. El admin tenía que ir manual al panel de MP a devolver
- * la plata cada vez. Riesgo legal: buyer paga + admin/cron cancela → buyer
- * reclama refund → admin se olvida → escalación / disputa.
- *
- * Implementación:
- *   1. Helper canónico `refundOrderIfPaid()` en src/lib/order-refund.ts.
- *      Idempotente. Maneja todos los casos: not_mp / not_paid / already_refunded
- *      / mp_api_failure / success. Audit log + socket alert si falla.
- *   2. Email nuevo `sendOrderRefundedEmail` en email-legal-ux.ts (registro #319).
- *   3. Helper integrado en 4 endpoints que NO lo tenían:
- *      - POST /api/admin/orders/[id]/cancel  (admin cancel)
- *      - POST /api/orders/[id]/cancel        (buyer self-cancel)
- *      - POST /api/cron/merchant-timeout      (cron auto-cancel por timeout merchant)
- *      - POST /api/cron/scheduled-notify      (cron auto-cancel scheduled order)
- *   4. NO se tocan los 2 que ya lo tenían (battle-tested):
- *      - POST /api/merchant/orders/[id]/reject (merchant reject — refund inline)
- *      - POST /api/cron/retry-assignments      (auto-cancel sin drivers — refund inline)
- *   5. NO se modifica /api/admin/orders/cleanup (batch silencioso de drift,
- *      no flow normal — queda fuera de esta rama).
- *
- * Patrón: dynamic import + fire-and-forget en el caller. La cancelación NUNCA
- * falla por un refund roto. Si el refund a MP falla, audit log + socket emit
- * `refund_failed` a `admin:orders` para resolución manual.
  */
 
 import * as fs from "fs";
@@ -51,10 +26,7 @@ function add(section: string, name: string, r: { ok: boolean; missing: string[] 
     checks.push({ section, name, pass: r.ok, detail: r.missing.join(" | ") });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// (A) Helper canónico refundOrderIfPaid
-// ═══════════════════════════════════════════════════════════════════════════
-
+// (A) Helper canónico
 add("A", "src/lib/order-refund.ts existe + exports refundOrderIfPaid",
     fileContains("src/lib/order-refund.ts", [
         "export async function refundOrderIfPaid",
@@ -108,10 +80,7 @@ add("A", "Helper: dispara sendOrderRefundedEmail al buyer (gated por sendEmail f
     ])
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
 // (B) Email + EMAIL_REGISTRY
-// ═══════════════════════════════════════════════════════════════════════════
-
 add("B", "email-legal-ux: exporta sendOrderRefundedEmail",
     fileContains("src/lib/email-legal-ux.ts", [
         "export async function sendOrderRefundedEmail",
@@ -127,10 +96,7 @@ add("B", "email-registry: entry order_refunded #319",
     ])
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
 // (C) Integración en endpoints
-// ═══════════════════════════════════════════════════════════════════════════
-
 add("C", "/api/admin/orders/[id]/cancel: integra refundOrderIfPaid",
     fileContains("src/app/api/admin/orders/[id]/cancel/route.ts", [
         "refundOrderIfPaid",
@@ -165,10 +131,7 @@ add("C", "/api/cron/scheduled-notify: integra refundOrderIfPaid + reverseOrderPo
     ])
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
-// (D) Endpoint manual /api/ops/refund consolidado en el helper
-// ═══════════════════════════════════════════════════════════════════════════
-
+// (D) Endpoint manual /api/ops/refund consolidado
 add("D", "/api/ops/refund: usa refundOrderIfPaid para PAID con MP",
     fileContains("src/app/api/ops/refund/route.ts", [
         "refundOrderIfPaid",
@@ -187,10 +150,7 @@ add("D", "/api/ops/refund: distingue MP (refund real) vs manual (cash/test)",
     ])
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
 // REPORTE
-// ═══════════════════════════════════════════════════════════════════════════
-
 console.log("\n═══════════════════════════════════════════════════════════════════");
 console.log("  Validación: rama fix/refund-automatico");
 console.log("═══════════════════════════════════════════════════════════════════\n");
@@ -218,18 +178,6 @@ for (const c of checks) {
 console.log("\n───────────────────────────────────────────────────────────────────");
 if (failed === 0) {
     console.log(`${GREEN}TODO OK${RESET} — ${checks.length}/${checks.length} checks pasaron.\n`);
-    console.log("Probar manual:");
-    console.log("  1. Hacé un pedido con MP TEST y pagá con tarjeta APRO.");
-    console.log("  2. Como admin OPS, andá al pedido y cancelalo.");
-    console.log("  3. Verificá:");
-    console.log("     - En el panel MP TEST: el pago aparece como 'refunded'.");
-    console.log("     - En tu DB (Prisma Studio): Order.paymentStatus = REFUNDED.");
-    console.log("     - En tu inbox del buyer: email 'Te devolvimos $X — pedido MOV-XXXX'.");
-    console.log("     - En audit log: ORDER_REFUND_TRIGGERED.");
-    console.log("  4. Cancelá un pedido con paymentMethod=cash → no debería disparar refund");
-    console.log("     (notApplicable). Tampoco mandar email. Solo cancela normal.");
-    console.log("  5. Cancelá un pedido pagado dos veces (idempotencia) → segunda llamada");
-    console.log("     devuelve alreadyRefunded=true sin tocar MP.\n");
     process.exit(0);
 } else {
     console.log(`${RED}${failed} check(s) fallaron${RESET} de ${checks.length}.\n`);

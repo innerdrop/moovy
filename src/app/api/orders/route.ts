@@ -1084,12 +1084,17 @@ export async function POST(request: Request) {
 
                 // Update order with preference ID and AWAITING_PAYMENT status
                 // Scheduled orders keep their SCHEDULED status — payment is still captured
+                // fix/mp-return-confirmacion (2026-04-26): también seteamos
+                // paymentStatus="AWAITING_PAYMENT" para que el polling client
+                // (que filtra por paymentStatus) auto-confirme via /api/payments/[id]/status.
+                // Antes quedaba en "PENDING" y ningún reconciler lo atrapaba hasta el cron.
                 const mpStatus = order.deliveryType === "SCHEDULED" ? "SCHEDULED" : "AWAITING_PAYMENT";
                 await prisma.order.update({
                     where: { id: order.id },
                     data: {
                         mpPreferenceId: preference.id || null,
                         status: mpStatus,
+                        paymentStatus: "AWAITING_PAYMENT",
                     },
                 });
 

@@ -183,6 +183,58 @@ export default function MisPedidosPage() {
         return () => clearInterval(id);
     }, [isAuth, authStatus, loadOrders]);
 
+    // fix/mp-return-confirmacion (2026-04-26): auto-confirmación de pagos pendientes.
+    // Cuando el buyer vuelve de MP y aterriza acá, las órdenes en AWAITING_PAYMENT con
+    // paymentMethod=mercadopago dispararán fetch a /api/payments/[orderId]/status que
+    // consulta MP API directo (defense-in-depth contra webhook tardío o caído).
+    // Idempotente: cap de 3 reintentos por orden, intervalo 4s.
+    //
+    // Filtro robusto: status === "AWAITING_PAYMENT" cubre el campo que SIEMPRE se
+    // setea bien en orders/route.ts post-preference. paymentStatus === "PENDING"
+    // cubre orders legacy creadas antes del fix donde paymentStatus quedaba mal.
+    const pendingProbeRef = useRef<Map<string, number>>(new Map());
+    useEffect(() => {
+        if (!isAuth || orders.length === 0) return;
+        const pending = orders.filter(
+            (o) =>
+                (o.status === "AWAITING_PAYMENT" || o.paymentStatus === "AWAITING_PAYMENT" || o.paymentStatus === "PENDING") &&
+                (o.paymentMethod === "mercadopago" || o.paymentMethod === "MercadoPago") &&
+                o.status !== "DELIVERED" && o.status !== "CANCELLED"
+        );
+        if (pending.length === 0) return;
+
+        const MAX_PROBES = 3;
+        let cancelled = false;
+
+        const probe = async () => {
+            if (cancelled) return;
+            let anyConfirmed = false;
+            for (const order of pending) {
+                const attempts = pendingProbeRef.current.get(order.id) ?? 0;
+                if (attempts >= MAX_PROBES) continue;
+                pendingProbeRef.current.set(order.id, attempts + 1);
+                try {
+                    const res = await fetch(`/api/payments/${order.id}/status`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.confirmedJustNow || data.paymentStatus === "PAID" || data.paymentStatus === "COMPLETED") {
+                            anyConfirmed = true;
+                            pendingProbeRef.current.set(order.id, MAX_PROBES);
+                        }
+                    }
+                } catch { /* silent */ }
+            }
+            if (anyConfirmed && !cancelled) loadOrders(true);
+        };
+
+        probe();
+        const id = setInterval(probe, 4000);
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+    }, [isAuth, orders, loadOrders]);
+
     // fix/bugs-checkout-pre-launch (Bug A): AWAITING_PAYMENT también es "en curso" — el pedido
     // ya fue creado y está esperando que MP confirme el pago. Antes caía en "Historial".
     const activeStatuses = useMemo(() => ["PENDING", "AWAITING_PAYMENT", "PENDING_PAYMENT", "SCHEDULED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"], []);

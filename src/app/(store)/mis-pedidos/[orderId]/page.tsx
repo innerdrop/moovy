@@ -278,6 +278,50 @@ export default function OrderDetailPage() {
         return () => clearInterval(id);
     }, [order?.driver, isActive, orderId]);
 
+    // fix/mp-return-confirmacion (2026-04-26): auto-confirmación del pago.
+    // Defense in depth contra webhook MP tardío/caído. Si la orden está pendiente
+    // de pago Y es MP, dispara /api/payments/[orderId]/status que consulta MP API
+    // directo (fetch REST a /v1/payments/search) y confirma el pago.
+    //
+    // Filtro robusto: status === "AWAITING_PAYMENT" cubre el campo que SIEMPRE se
+    // setea bien post-preference. paymentStatus puede quedar en "PENDING" en orders
+    // legacy creadas antes del fix. Cubrimos ambos casos.
+    const paymentProbedRef = useRef(0);
+    useEffect(() => {
+        if (!order || !orderId) return;
+        const isMp = order.paymentMethod === "mercadopago" || order.paymentMethod === "MercadoPago";
+        const isPending = order.status === "AWAITING_PAYMENT"
+            || order.paymentStatus === "AWAITING_PAYMENT"
+            || order.paymentStatus === "PENDING";
+        const isTerminal = order.status === "DELIVERED" || order.status === "CANCELLED";
+        if (!isPending || isTerminal || !isMp) return;
+
+        const MAX_PROBES = 5;
+        let cancelled = false;
+
+        const probe = async () => {
+            if (cancelled || paymentProbedRef.current >= MAX_PROBES) return;
+            paymentProbedRef.current += 1;
+            try {
+                const res = await fetch(`/api/payments/${orderId}/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.confirmedJustNow || data.paymentStatus === "PAID" || data.paymentStatus === "COMPLETED") {
+                        paymentProbedRef.current = MAX_PROBES;
+                        if (!cancelled) fetchOrder();
+                    }
+                }
+            } catch { /* silent — polling general atrapa */ }
+        };
+
+        probe();
+        const id = setInterval(probe, 3000);
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+    }, [order, orderId, fetchOrder]);
+
     const canCancel = order && ["PENDING", "CONFIRMED"].includes(order.status);
     const isDelivered = order?.status === "DELIVERED";
     const isCancelled = order?.status === "CANCELLED";
