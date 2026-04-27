@@ -96,6 +96,30 @@ export async function notifyAvailabilitySubscribers(params: {
                         url: "/checkout",
                         tag: `driver-available-${sub.id}`,
                     });
+
+                    // fix/merchant-flow-pedidos (2026-04-26): además del push del SO,
+                    // emitimos socket event al room del customer. Si el buyer tiene la
+                    // app abierta, el listener in-app muestra un toast/banner con CTA.
+                    try {
+                        const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
+                        await fetch(`${socketUrl}/emit`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${process.env.CRON_SECRET}`,
+                            },
+                            body: JSON.stringify({
+                                event: "driver_available",
+                                room: `customer:${sub.userId}`,
+                                data: {
+                                    subscriptionId: sub.id,
+                                    merchantId: sub.merchantId,
+                                    timestamp: now.toISOString(),
+                                },
+                            }),
+                        }).catch(() => { /* fire-and-forget */ });
+                    } catch { /* swallow — push ya se mandó */ }
+
                     return { skipped: false } as const;
                 })
             );

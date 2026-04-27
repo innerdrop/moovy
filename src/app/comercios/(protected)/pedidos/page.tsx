@@ -23,7 +23,8 @@ import {
     WifiOff,
     SlidersHorizontal,
     KeyRound,
-    X
+    X,
+    Calendar
 } from "lucide-react";
 import OrderChatPanel from "@/components/orders/OrderChatPanel";
 
@@ -39,20 +40,22 @@ interface Order {
     orderNumber: string;
     status: string;
     paymentStatus: string;
+    paymentMethod?: string;
     total: number;
     createdAt: string;
     items: Array<{ id: string; name: string; quantity: number; price: number }>;
     address: { street: string; number: string; city: string } | null;
     user: { name: string | null; phone: string | null } | null;
     driver?: { user: { name: string | null; phone: string | null } | null } | null;
-    // ISSUE-001: PIN doble — pickupPin visible sólo cuando deliveryStatus === DRIVER_ARRIVED.
-    // El backend (src/app/api/merchant/orders/route.ts) ya sanitiza: si no llegó el driver, viene null.
     pickupPin: string | null;
     deliveryStatus: string | null;
     subOrders?: SubOrder[];
-    // Razón visible cuando status ∈ [UNASSIGNABLE, CANCELLED, REJECTED].
-    // El backend lo popula desde Order.cancelReason.
     cancelReason?: string | null;
+    // fix/merchant-flow-pedidos: campos que el backend ya tiene pero la UI no consumía.
+    isPickup?: boolean;
+    deliveryType?: string;
+    scheduledSlotStart?: string | null;
+    scheduledSlotEnd?: string | null;
 }
 
 /**
@@ -86,6 +89,9 @@ function PickupPinBadge({ pin, driverName }: { pin: string; driverName?: string 
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
     PENDING: { label: "Nuevo", color: "text-yellow-600", bgColor: "bg-yellow-100", icon: <Bell className="w-5 h-5" /> },
+    AWAITING_PAYMENT: { label: "Esperando pago", color: "text-amber-600", bgColor: "bg-amber-100", icon: <Clock className="w-5 h-5" /> },
+    SCHEDULED: { label: "Programado", color: "text-violet-600", bgColor: "bg-violet-100", icon: <Calendar className="w-5 h-5" /> },
+    SCHEDULED_CONFIRMED: { label: "Programado · confirmado", color: "text-violet-700", bgColor: "bg-violet-100", icon: <Calendar className="w-5 h-5" /> },
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
     PREPARING: { label: "Preparando", color: "text-red-600", bgColor: "bg-red-100", icon: <Package className="w-5 h-5" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
@@ -381,6 +387,49 @@ export default function ComercioPedidosPage() {
         }
     };
 
+    // fix/merchant-flow-pedidos (2026-04-26): pickup self-contained.
+    // Cuando isPickup=true y status=READY, el comercio cierra la operación marcando
+    // el pedido como entregado al cliente (READY → DELIVERED, sin driver).
+    const markPickedUpByCustomer = async (orderId: string) => {
+        if (!confirm("¿Confirmás que el cliente vino y retiró este pedido?")) return;
+        setUpdating(orderId);
+        try {
+            const res = await fetch(`/api/merchant/orders/${orderId}/mark-picked-up`, { method: "POST" });
+            if (res.ok) {
+                toast.success("Pedido entregado al cliente");
+                loadOrders(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || "Error al cerrar el pedido");
+            }
+        } catch {
+            toast.error("Error de conexión");
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    // fix/merchant-flow-pedidos: confirmación de pedidos programados.
+    // SCHEDULED → SCHEDULED_CONFIRMED. El cron scheduled-notify pasa después a PENDING
+    // 45min antes del slot para arrancar el flow normal.
+    const confirmScheduled = async (orderId: string) => {
+        setUpdating(orderId);
+        try {
+            const res = await fetch(`/api/merchant/orders/${orderId}/confirm-scheduled`, { method: "POST" });
+            if (res.ok) {
+                toast.success("Reserva confirmada — te avisaremos antes del horario");
+                loadOrders(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || "Error al confirmar la reserva");
+            }
+        } catch {
+            toast.error("Error de conexión");
+        } finally {
+            setUpdating(null);
+        }
+    };
+
     const openCancelModal = (orderId: string, orderNumber: string) => {
         setCancelModal({ open: true, orderId, orderNumber });
         setSelectedReason("");
@@ -414,7 +463,7 @@ export default function ComercioPedidosPage() {
     //   - FAILED: no llegó al buyer (sin repartidor, cancelado por merchant/buyer/admin, rechazado).
     // Si agregamos un status nuevo a Order.status, hay que sumarlo a uno de estos 3
     // arrays, o el tab "Todos" va a mostrar un pedido fantasma.
-    const activeStatuses = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
+    const activeStatuses = ["PENDING", "AWAITING_PAYMENT", "SCHEDULED", "SCHEDULED_CONFIRMED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
     const completedStatuses = ["DELIVERED"];
     const failedStatuses = ["UNASSIGNABLE", "CANCELLED", "REJECTED"];
 
@@ -710,15 +759,29 @@ export default function ComercioPedidosPage() {
                                     )}
 
                                     {/* Action Buttons */}
-                                    <div className="flex gap-2">
-                                        {order.status === "PENDING" && !expiredOrders.has(order.id) && (
+                                    <div className="flex gap-2 flex-wrap">
+                                        {/* Aceptar — disponible para PENDING (cash) y CONFIRMED (MP-paid).
+                                            Para PENDING se valida timeout; para CONFIRMED el pago ya está hecho. */}
+                                        {(order.status === "PENDING" || order.status === "CONFIRMED") && !expiredOrders.has(order.id) && (
                                             <button
                                                 onClick={() => confirmOrder(order.id)}
                                                 disabled={isUpdating}
                                                 className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
                                             >
                                                 {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                                Aceptar
+                                                {order.status === "CONFIRMED" ? "Aceptar y empezar a preparar" : "Aceptar"}
+                                            </button>
+                                        )}
+
+                                        {/* Confirmar reserva — para pedidos programados aún no confirmados */}
+                                        {order.status === "SCHEDULED" && (
+                                            <button
+                                                onClick={() => confirmScheduled(order.id)}
+                                                disabled={isUpdating}
+                                                className="flex-1 py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 transition flex items-center justify-center gap-2"
+                                            >
+                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
+                                                Confirmar reserva
                                             </button>
                                         )}
 
@@ -729,12 +792,24 @@ export default function ComercioPedidosPage() {
                                                 className="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                                             >
                                                 {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                                Listo para Retirar
+                                                {order.isPickup ? "Listo para que el cliente retire" : "Listo para Retirar"}
                                             </button>
                                         )}
 
-                                        {/* Reject button for active orders */}
-                                        {["PENDING", "PREPARING"].includes(order.status) && (
+                                        {/* Pickup self-contained: cuando el cliente vino y retiró, cerrar la operación */}
+                                        {order.status === "READY" && order.isPickup && (
+                                            <button
+                                                onClick={() => markPickedUpByCustomer(order.id)}
+                                                disabled={isUpdating}
+                                                className="flex-1 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition flex items-center justify-center gap-2"
+                                            >
+                                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                                Marcar entregado al cliente
+                                            </button>
+                                        )}
+
+                                        {/* Reject — extendido a CONFIRMED (MP-paid) y SCHEDULED/SCHEDULED_CONFIRMED. */}
+                                        {["PENDING", "CONFIRMED", "PREPARING", "SCHEDULED", "SCHEDULED_CONFIRMED"].includes(order.status) && (
                                             <button
                                                 onClick={() => openCancelModal(order.id, order.orderNumber)}
                                                 disabled={isUpdating}

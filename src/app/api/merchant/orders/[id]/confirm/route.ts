@@ -57,6 +57,9 @@ export async function POST(
                 total: true,
                 createdAt: true,
                 isMultiVendor: true,
+                isPickup: true,
+                paymentMethod: true,
+                paymentStatus: true,
                 merchant: { select: { name: true } },
                 subOrders: {
                     where: { merchantId: merchant?.id ?? undefined },
@@ -74,32 +77,39 @@ export async function POST(
             return NextResponse.json({ error: "Pedido no pertenece a tu comercio" }, { status: 403 });
         }
 
-        if (order.status !== "PENDING") {
+        // fix/merchant-flow-pedidos (2026-04-26): aceptar tanto PENDING (cash flow)
+        // como CONFIRMED (MP-paid flow donde el webhook ya marcó CONFIRMED).
+        // El timeout solo aplica a PENDING — para CONFIRMED el pago ya está hecho,
+        // no tiene sentido cancelar por timeout (perderíamos plata del buyer).
+        const ALLOWED_PRE_STATES = ["PENDING", "CONFIRMED"];
+        if (!ALLOWED_PRE_STATES.includes(order.status)) {
             return NextResponse.json(
                 { error: `No se puede confirmar un pedido en estado ${order.status}` },
                 { status: 400 }
             );
         }
 
-        // Validar que no haya expirado el tiempo de confirmación
-        const timeoutConfig = await prisma.moovyConfig.findUnique({
-            where: { key: "merchant_confirm_timeout_seconds" },
-        });
-        const timeoutSeconds = parseInt(timeoutConfig?.value ?? "300", 10);
-        const deadline = new Date(order.createdAt).getTime() + timeoutSeconds * 1000;
+        if (order.status === "PENDING") {
+            // Validar que no haya expirado el tiempo de confirmación (solo cash)
+            const timeoutConfig = await prisma.moovyConfig.findUnique({
+                where: { key: "merchant_confirm_timeout_seconds" },
+            });
+            const timeoutSeconds = parseInt(timeoutConfig?.value ?? "300", 10);
+            const deadline = new Date(order.createdAt).getTime() + timeoutSeconds * 1000;
 
-        if (Date.now() > deadline) {
-            return NextResponse.json(
-                { error: "El tiempo para confirmar este pedido ha expirado" },
-                { status: 400 }
-            );
+            if (Date.now() > deadline) {
+                return NextResponse.json(
+                    { error: "El tiempo para confirmar este pedido ha expirado" },
+                    { status: 400 }
+                );
+            }
         }
 
-        // BUG FIX #6: Use conditional update to prevent race condition
+        // Update atómico — guard contra race conditions (doble confirm, cancel concurrente, etc).
         const updateResult = await prisma.order.updateMany({
             where: {
                 id: orderId,
-                status: "PENDING"  // Only update if currently PENDING
+                status: { in: ALLOWED_PRE_STATES },
             },
             data: { status: "PREPARING" },
         });
@@ -118,9 +128,13 @@ export async function POST(
             orderId: order.id,
         }).catch(console.error);
 
-        // BUG FIX #2: Don't silently swallow assignment errors
+        // fix/merchant-flow-pedidos (2026-04-26): skip driver assignment para pickup orders.
+        // El cliente retira en local — no hay driver que asignar. Sin este skip, el
+        // assignment-engine corre, falla con UNASSIGNABLE y genera ruido en admin:orders.
         let assignmentError: Error | null = null;
-        try {
+        if (order.isPickup) {
+            console.log(`[Confirm] Skipping driver assignment for pickup order ${order.orderNumber}`);
+        } else try {
             if (order.isMultiVendor && order.subOrders.length > 0) {
                 // Multi-vendor: assign per SubOrder for this merchant
                 const subOrder = order.subOrders.find(so => so.merchantId === merchant?.id);

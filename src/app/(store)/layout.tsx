@@ -13,6 +13,7 @@ import { ChatWidget } from "@/components/support/ChatWidget";
 import BuyerOnboardingTour from "@/components/onboarding/BuyerOnboardingTour";
 import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
 import CookieBanner from "@/components/legal/CookieBanner";
+import DriverAvailableToast from "@/components/notifications/DriverAvailableToast";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
@@ -226,6 +227,10 @@ export default function StoreLayout({
 
             {/* Ley 25.326 + AAIP: banner de consentimiento de cookies — self-gated por localStorage */}
             <CookieBanner />
+
+            {/* fix/merchant-flow-pedidos: toast in-app cuando hay drivers disponibles
+                (complementa el push del SO — cubre cuando la app está abierta) */}
+            <DriverAvailableToast />
         </div>
     );
 }
