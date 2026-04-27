@@ -197,6 +197,8 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
                 select: {
                     id: true,
                     cuit: true,
+                    bankCbu: true,
+                    bankAlias: true,
                     user: { select: { id: true, name: true, email: true } },
                 },
             },
@@ -208,13 +210,11 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
         if (!o.driverId || !o.driver) continue;
         const key = o.driverId;
         const amount = (o.deliveryFee ?? 0) * DRIVER_SHARE;
-        // El schema Driver NO tiene campos bancarios (bankCbu/bankAlias/bankAccount).
-        // El admin debe coordinar el pago manualmente con el driver (transferencia
-        // a la cuenta del User vía teléfono/email, o efectivo). Para que se pueda
-        // generar un batch, hay que agregar Driver.bankAccount al schema en una
-        // futura iteración. Por ahora dejamos null — el endpoint POST de batches
-        // rechaza recipients sin bankAccount, así el admin sabe que debe pagar manual.
-        const driverBank: string | null = null;
+        // feat/driver-bank-mp (2026-04-26): Driver ya tiene bankCbu/bankAlias en schema.
+        // Preferimos CBU (más preciso); fallback a Alias. Si ambos null, queda null y el
+        // endpoint POST de batches rechaza el recipient — el admin sabe que falta el dato
+        // y debe pedirle al driver que lo cargue desde su panel (/repartidor/configuracion).
+        const driverBank: string | null = o.driver.bankCbu || o.driver.bankAlias || null;
         const current = map.get(key);
         if (current) {
             current.totalAmount += amount;

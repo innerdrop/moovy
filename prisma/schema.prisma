@@ -725,6 +725,13 @@ model Driver {
   // Anti-fraude PIN doble (ISSUE-001)
   fraudScore         Int                       @default(0) // Acumulador de incidentes. 3+ = suspensi\u00f3n autom\u00e1tica.
   lastFraudCheckAt   DateTime?                 // \u00daltima vez que el cron revis\u00f3 drivers sin movimiento.
+  // feat/driver-bank-mp (2026-04-26): datos bancarios del driver para payouts.
+  // CBU (22 dígitos con checksum BCRA) o Alias (6-20 alfanuméricos). Al menos uno
+  // requerido para entrar en el batch de PayoutBatch (ver src/lib/payouts.ts).
+  // OAuth split de MP queda para post-launch — por ahora MOOVY paga via Bulk Transfer.
+  bankCbu                String?
+  bankAlias              String?
+  bankAccountUpdatedAt   DateTime?
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders              Order[]
   subOrders           SubOrder[]

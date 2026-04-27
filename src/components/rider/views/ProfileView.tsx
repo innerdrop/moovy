@@ -25,6 +25,7 @@ import {
     Save,
 } from "lucide-react";
 import ImageUpload from "@/components/ui/ImageUpload";
+import DriverBankAccountForm from "@/components/rider/DriverBankAccountForm";
 import ReviewsList from "@/components/ui/ReviewsList";
 import { PortalSwitcherDark } from "@/components/ui/PortalSwitcher";
 
@@ -643,6 +644,10 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         </div>
                     </div>
                 </div>
+
+                {/* feat/driver-bank-mp (2026-04-26): datos bancarios del driver — sin esto
+                    MOOVY no puede pagar el payout semanal. Self-contained: fetch + PATCH. */}
+                <DriverBankAccountForm />
 
                 {/* Mis Documentos — P1 del plan onboarding repartidor.
                     Cada doc es una card con: status chip, expiración badge
