@@ -13,17 +13,17 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 flex overflow-x-hidden">
+        <div className="min-h-screen bg-gray-100 flex overflow-x-hidden w-full max-w-[100vw]">
             {/* Sidebar - handles both desktop and mobile */}
             <OpsSidebar userName={session.user?.name || undefined} />
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col lg:ml-0">
+            <div className="flex-1 flex flex-col lg:ml-0 min-w-0 max-w-full">
                 {/* Spacer for mobile menu button */}
                 <div className="lg:hidden h-16" />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-x-hidden overflow-y-auto">
+                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-x-hidden overflow-y-auto min-w-0 max-w-full">
                     {children}
                 </main>
             </div>

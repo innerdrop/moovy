@@ -748,22 +748,19 @@ export async function approveMerchantTransition(
 ): Promise<void> {
     const now = new Date();
 
-    // Pre-condición: el merchant debe tener logo cargado. El logo es la cara
-    // pública del comercio en el listado/home — sin él la tienda se ve rota.
-    // Bloqueamos antes de la transición para que admin sepa qué falta.
+    // fix/aprobacion-sin-logo (2026-04-27): la aprobación NO se bloquea por logo.
+    // El logo es requisito de visibilidad pública (filtrado en /tiendas, home,
+    // search por image: { not: null }) pero NO de capacidad operativa. Un merchant
+    // aprobado sin logo puede recibir pedidos directos via link/QR — solo no
+    // aparece en listados. Antes de este fix bloqueábamos con throw LOGO_MISSING,
+    // forzando al admin a esperar que el merchant suba logo o subirlo en su nombre.
+    // Eso confundía el flow: aprobación = capacidad operativa, visibilidad = otra cosa.
     const pre = await prisma.merchant.findUnique({
         where: { id: merchantId },
-        select: { image: true },
+        select: { id: true },
     });
     if (!pre) {
         throw new Error("Merchant not found");
-    }
-    if (!pre.image || pre.image.trim().length === 0) {
-        const err: Error & { code?: string } = new Error(
-            "El comercio todavía no cargó el logo. Pedile que suba uno antes de aprobar."
-        );
-        err.code = "LOGO_MISSING";
-        throw err;
     }
 
     await prisma.$transaction(async (tx) => {

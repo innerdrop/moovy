@@ -19,7 +19,10 @@ async function getAllMerchants() {
             // Defense in depth: además de `isActive`, exigimos `approvalStatus: APPROVED`.
             // Así un merchant PENDING o REJECTED jamás aparece en el listado público
             // aunque por drift DB tenga `isActive: true` mal seteado.
-            where: { isActive: true, approvalStatus: "APPROVED" },
+            // fix/aprobacion-sin-logo (2026-04-27): además exigimos image (logo) no null.
+            // La aprobación ya no requiere logo — pero la visibilidad pública sí, para
+            // que la tienda no se vea rota en el listado.
+            where: { isActive: true, approvalStatus: "APPROVED", image: { not: null } },
             orderBy: [
                 { isOpen: "desc" },
                 { isPremium: "desc" },

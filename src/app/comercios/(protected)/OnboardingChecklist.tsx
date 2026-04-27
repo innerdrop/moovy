@@ -91,10 +91,11 @@ export default function OnboardingChecklist() {
         ...(status.isFoodBusiness
             ? [{ id: "sanitario", label: "Registro Sanitario", completed: status.hasRegistroSanitario, href: "/comercios/configuracion", required: true, section: "docs" as const }]
             : []),
-        // Logo: ahora OBLIGATORIO (rama fix/comercio-onboarding-completo) — el
-        // backend bloquea approveMerchantTransition si Merchant.image es null.
-        // Sin logo el comercio se ve roto en home/listado y reduce confianza.
-        { id: "logo", label: "Subí tu logo", completed: status.hasLogo, href: "/comercios/mi-comercio", required: true, section: "ops" },
+        // Logo: requerido para visibilidad pública (rama fix/aprobacion-sin-logo).
+        // La aprobación NO se bloquea por logo, pero los listados públicos
+        // (/tiendas, home) filtran por image: { not: null }. Sin logo el comercio
+        // puede operar via link/QR pero no aparece en los listados.
+        { id: "logo", label: "Subí tu logo (para aparecer en listados)", completed: status.hasLogo, href: "/comercios/mi-comercio", required: true, section: "ops" },
         { id: "schedule", label: "Configurá horarios", completed: status.hasSchedule, href: "/comercios/mi-comercio", required: true, section: "ops" },
         { id: "products", label: `Publicá productos (${status.productCount}/1 mín.)`, completed: status.hasProducts, href: "/comercios/productos/nuevo", required: true, section: "ops" },
         { id: "address", label: "Dirección del comercio", completed: status.hasAddress, href: "/comercios/mi-comercio", required: true, section: "ops" },

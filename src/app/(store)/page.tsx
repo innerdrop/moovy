@@ -112,7 +112,9 @@ async function getAllActiveMerchants() {
     return await prisma.merchant.findMany({
       // Defense in depth: exigimos approvalStatus=APPROVED además de isActive
       // para que un merchant pendiente/rechazado nunca aparezca en la home.
-      where: { isActive: true, approvalStatus: "APPROVED" },
+      // fix/aprobacion-sin-logo (2026-04-27): además image (logo) no null para
+      // que un merchant aprobado pero sin logo no se vea roto en la home.
+      where: { isActive: true, approvalStatus: "APPROVED", image: { not: null } },
       select: MERCHANT_DISCOVERY_SELECT,
       orderBy: [
         { isOpen: "desc" },

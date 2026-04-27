@@ -382,30 +382,30 @@ export default function UsuariosPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
             {/* Header */}
-            <div className="border-b border-gray-200 px-4 sm:px-6 py-6 sm:py-8">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Usuarios</h1>
-                        <p className="text-gray-600 text-sm mt-1">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">Usuarios</h1>
+                        <p className="text-gray-600 text-xs sm:text-sm mt-1">
                             Total: <span className="font-semibold">{total}</span> usuarios registrados
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={() => setShowCreateModal(true)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition shadow-sm w-full sm:w-auto"
+                        className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition shadow-sm w-full sm:w-auto flex-shrink-0 min-w-0"
                     >
-                        <UserPlus className="w-4 h-4" />
-                        Crear cuenta
+                        <UserPlus className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">Crear cuenta</span>
                     </button>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-gray-200 px-4 sm:px-6 overflow-x-auto">
-                <div className="flex gap-2 min-w-min py-4">
+            <div className="border-b border-gray-200 px-4 sm:px-6 overflow-x-auto scrollbar-thin">
+                <div className="flex gap-1 sm:gap-2 min-w-min py-3 sm:py-4">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -424,19 +424,19 @@ export default function UsuariosPage() {
             </div>
 
             {/* Content */}
-            <div className="px-4 sm:px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
                 {/* Search Bar and Filters */}
-                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end">
+                <div className="mb-4 sm:mb-6 flex flex-col gap-3 lg:flex-row lg:items-end">
                     {/* Search Input */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder="Buscar por nombre, email o teléfono..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
                             />
                         </div>
                     </div>
@@ -445,7 +445,7 @@ export default function UsuariosPage() {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "suspended" | "archived")}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white"
+                        className="w-full lg:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white"
                     >
                         <option value="">Todos los estados</option>
                         <option value="active">Activos</option>
@@ -456,7 +456,7 @@ export default function UsuariosPage() {
 
                 {/* Bulk Action Bar */}
                 {selectedUsers.size > 0 && (
-                    <div className="mb-6 sticky bottom-0 z-10 flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="mb-6 sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
                         <div>
                             <p className="text-sm font-semibold text-red-900">
                                 {selectedUsers.size} usuario{selectedUsers.size !== 1 ? "s" : ""} seleccionado{selectedUsers.size !== 1 ? "s" : ""}
@@ -465,7 +465,7 @@ export default function UsuariosPage() {
                         <button
                             onClick={handleBulkDelete}
                             disabled={deleteLoading}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition"
+                            className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white text-sm font-bold rounded-lg transition w-full sm:w-auto"
                         >
                             {deleteLoading ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
