@@ -180,7 +180,7 @@ export async function POST(
             refundOrderIfPaid(orderId, {
                 triggeredBy: "admin",
                 actorId: session.user?.id ?? null,
-                reason: data.reason || "Cancelado por administrador",
+                reason: reason || "Cancelado por administrador",
             }).catch((err) => console.error("[admin-cancel] refund failed:", err));
         }).catch(() => { /* import safety */ });
 
