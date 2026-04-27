@@ -121,7 +121,7 @@ export default function PromotionalPopup() {
 
                     {/* CTA Button */}
                     <Link
-                        href="/registro"
+                        href="/empezar"
                         className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-2 group"
                         onClick={handleClose}
                     >

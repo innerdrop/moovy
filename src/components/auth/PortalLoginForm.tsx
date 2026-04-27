@@ -40,7 +40,7 @@ const portalConfig = {
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
         redirectAfterLogin: '/repartidor/dashboard',
-        registerLink: '/repartidor/registro',
+        registerLink: '/empezar',
         backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
     },
     repartidor: {
@@ -51,7 +51,7 @@ const portalConfig = {
         bgGradient: 'from-green-500 to-green-600',
         icon: Truck,
         redirectAfterLogin: '/repartidor/dashboard',
-        registerLink: '/repartidor/registro',
+        registerLink: '/empezar',
         backLink: { href: 'https://somosmoovy.com', label: 'Ir a Moovy' },
     },
     ops: {

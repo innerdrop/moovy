@@ -66,7 +66,7 @@ export default function CartSidebar() {
                                 </p>
                                 <div className="space-y-3">
                                     <Link
-                                        href="/registro"
+                                        href="/empezar"
                                         onClick={closeCart}
                                         className="block w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition text-center"
                                     >

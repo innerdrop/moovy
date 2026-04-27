@@ -98,7 +98,7 @@ function MobileMenu({ isOpen, onClose, accentColor }: { isOpen: boolean; onClose
                         Iniciar Sesión
                     </Link>
                     <Link
-                        href="/registro"
+                        href="/empezar"
                         onClick={onClose}
                         className="block w-full py-3 text-center rounded-xl font-bold text-white"
                         style={{ backgroundColor: accentColor }}

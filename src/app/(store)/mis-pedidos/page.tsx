@@ -276,7 +276,7 @@ export default function MisPedidosPage() {
                     Crea tu cuenta MOOVER y empeza a pedir con beneficios exclusivos.
                 </p>
                 <Link
-                    href="/registro"
+                    href="/empezar"
                     className="w-full max-w-xs py-3.5 bg-[#e60012] hover:bg-[#cc000f] text-white rounded-xl font-bold text-sm text-center shadow-lg shadow-red-500/20 transition-colors"
                 >
                     Crear mi cuenta

@@ -449,7 +449,7 @@ export default function PuntosPage() {
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link
-                            href="/registro"
+                            href="/empezar"
                             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-red-700 transition active:scale-95"
                         >
                             <UserPlus className="w-5 h-5" />
@@ -778,7 +778,7 @@ export default function PuntosPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
-                                href="/registro"
+                                href="/empezar"
                                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#e60012] font-bold rounded-xl hover:bg-gray-100 transition active:scale-95"
                             >
                                 <UserPlus className="w-5 h-5" />

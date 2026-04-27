@@ -137,7 +137,7 @@ export default function MooverPage() {
                     </p>
 
                     <Link
-                        href="/registro"
+                        href="/empezar"
                         className="group inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
                     >
                         <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
@@ -342,7 +342,7 @@ export default function MooverPage() {
                         Registrate gratis y comenzá a acumular puntos desde tu primera compra.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link href="/registro" className="inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:-translate-y-1 transition-all">
+                        <Link href="/empezar" className="inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:-translate-y-1 transition-all">
                             <Star className="w-5 h-5 text-amber-500 fill-amber-500" /> Crear Cuenta
                         </Link>
                         <Link href="/tienda" className="inline-flex items-center justify-center gap-2 border-2 border-white/20 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all">

@@ -150,7 +150,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                 Iniciar Sesión
                             </Link>
                             <Link
-                                href="/registro"
+                                href="/empezar"
                                 className="block w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition"
                                 onClick={() => setShowAuthModal(false)}
                             >
