@@ -132,10 +132,15 @@ export default function ProfilePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [!!session?.user]);
 
-    // On tab focus: re-check driver status (e.g. after OPS approval)
+    // On tab focus: re-check driver, merchant y seller status (e.g. after OPS approval).
+    // fix/ux-post-aprobacion-y-splash (2026-04-27): antes solo chequeaba driver.
+    // Ahora también merchant + seller para que cuando el user vuelva al perfil
+    // después de una aprobación recibida en otra pestaña/dispositivo, el botón
+    // "Panel de Comercio/Repartidor/Vendedor" aparezca sin necesidad de logout.
     useEffect(() => {
         const handleVisibility = () => {
             if (document.visibilityState !== "visible") return;
+
             fetch("/api/driver/profile")
                 .then(res => res.ok ? res.json() : null)
                 .then(data => {
@@ -145,6 +150,25 @@ export default function ProfilePage() {
                     } else {
                         setDriverStatus("PENDING_VERIFICATION");
                     }
+                })
+                .catch(() => { /* ignore */ });
+
+            fetch("/api/auth/merchant-status")
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (!data?.exists) return;
+                    if (data.approvalStatus === "APPROVED") {
+                        setMerchantStatus("ACTIVE");
+                    } else {
+                        setMerchantStatus("PENDING_VERIFICATION");
+                    }
+                })
+                .catch(() => { /* ignore */ });
+
+            fetch("/api/seller/profile")
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data?.isActive) setSellerStatus("ACTIVE");
                 })
                 .catch(() => { /* ignore */ });
         };
@@ -375,12 +399,13 @@ export default function ProfilePage() {
                             {(hasMerchant || merchantStatus === "ACTIVE") && (
                                 <button
                                     onClick={async () => {
-                                        if (!hasMerchant) {
-                                            await updateSession({ refreshRoles: true });
-                                            window.location.href = "/comercios";
-                                        } else {
-                                            router.push("/comercios");
-                                        }
+                                        // fix/ux-post-aprobacion-y-splash (2026-04-27): siempre refrescar
+                                        // el JWT antes de navegar al panel — el rol COMERCIO se deriva de
+                                        // DB en cada login/refresh pero el JWT del cliente puede estar stale
+                                        // si la aprobación ocurrió en esta sesión. Sin update + hard nav, el
+                                        // layout protegido bouncenarea con el JWT viejo a pendiente-aprobacion.
+                                        await updateSession({ refreshRoles: true });
+                                        window.location.href = "/comercios";
                                     }}
                                     className="flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-50 group w-full text-left"
                                 >

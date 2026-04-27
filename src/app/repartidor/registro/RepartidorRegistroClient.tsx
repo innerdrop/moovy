@@ -390,10 +390,10 @@ function RepartidorRegistroContent() {
             }
         }
 
-        if (!formData.sex) {
-            setError("Seleccioná tu sexo (necesario para el cálculo del CUIT)");
-            return;
-        }
+        // fix/ux-post-aprobacion-y-splash (2026-04-27): validación de sexo eliminada.
+        // El input de sexo se quitó del form en feat/registro-simplificado pero quedó
+        // este check huérfano que bloqueaba "Continuar" sin error visible.
+        // El sexo lo carga el driver junto con el DNI desde su perfil después del registro.
 
         // feat/registro-simplificado (2026-04-27): DNI, CUIT, fotos y constancia AFIP
         // son OPCIONALES en el registro. El driver los completa después en su panel.

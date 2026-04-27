@@ -89,6 +89,14 @@ export default function RoleUpdateListener() {
                 // el token con los roles derivados de DB. Ver src/lib/auth.ts.
                 await update({ refreshRoles: true });
 
+                // fix/ux-post-aprobacion-y-splash (2026-04-27): además del update del
+                // session client, hacer router.refresh() para invalidar el server cache
+                // de Next.js. Sin esto, layouts y RSC siguen renderizando con el JWT
+                // viejo aunque el client tenga el nuevo. router.refresh() es lo que
+                // fuerza a Next.js a re-correr requireMerchantAccess/getMerchantAccess
+                // con el JWT actualizado.
+                router.refresh();
+
                 // Para approvals/auto-activación con portalUrl, navegamos al panel
                 // después de un delay corto para que el toast quede visible y el
                 // JWT alcance a propagarse. router.push usa el JWT actualizado.

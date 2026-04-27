@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
         // según vehicleType — sin esos, el admin no aprueba y el driver no opera.
         // Si el driver mandó algún campo, lo validamos. Si no, queda null/skip.
 
+        let normalizedCuit: string | null = null;
         if (data.cuit && data.cuit.toString().trim().length > 0) {
             const cuitCheck = validateCuit(data.cuit);
             if (!cuitCheck.valid) {
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+            normalizedCuit = cuitCheck.normalized;
         }
 
         const vehicleTypeUpper = data.vehicleType.toUpperCase();
@@ -207,14 +209,14 @@ export async function POST(request: NextRequest) {
             vehicleYear: isMotorized && data.vehicleYear ? parseInt(data.vehicleYear.toString()) : null,
             vehicleColor: isMotorized ? data.vehicleColor : null,
             licensePlate: isMotorized ? normalizedLicensePlate : null,
-            cuit: cuitCheck.normalized,
-            constanciaCuitUrl: data.constanciaCuitUrl,
-            dniFrenteUrl: data.dniFrenteUrl,
-            dniDorsoUrl: data.dniDorsoUrl,
-            licenciaUrl: isMotorized ? data.licenciaUrl : null,
-            seguroUrl: isMotorized ? data.seguroUrl : null,
-            vtvUrl: isMotorized ? data.vtvUrl : null,
-            cedulaVerdeUrl: isMotorized ? data.cedulaVerdeUrl : null,
+            cuit: normalizedCuit,
+            constanciaCuitUrl: data.constanciaCuitUrl || null,
+            dniFrenteUrl: data.dniFrenteUrl || null,
+            dniDorsoUrl: data.dniDorsoUrl || null,
+            licenciaUrl: isMotorized ? (data.licenciaUrl || null) : null,
+            seguroUrl: isMotorized ? (data.seguroUrl || null) : null,
+            vtvUrl: isMotorized ? (data.vtvUrl || null) : null,
+            cedulaVerdeUrl: isMotorized ? (data.cedulaVerdeUrl || null) : null,
             licenciaExpiresAt,
             seguroExpiresAt,
             vtvExpiresAt,

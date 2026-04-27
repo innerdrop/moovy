@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
         // en la activación. El driver puede entrar al panel y completarlos después.
         // approveDriverTransition sigue requiriéndolos según vehicleType para aprobar.
 
+        let normalizedCuit: string | null = null;
         if (body.cuit && body.cuit.toString().trim().length > 0) {
             const cuitCheck = validateCuit(body.cuit);
             if (!cuitCheck.valid) {
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+            normalizedCuit = cuitCheck.normalized;
         }
 
         const vehicleTypeUpper = body.vehicleType.toUpperCase();
@@ -178,14 +180,14 @@ export async function POST(request: NextRequest) {
             vehicleYear: isMotorized && body.vehicleYear ? parseInt(body.vehicleYear.toString()) : null,
             vehicleColor: isMotorized ? (body.vehicleColor || null) : null,
             licensePlate: isMotorized ? normalizedLicensePlate : null,
-            cuit: cuitCheck.normalized,
-            constanciaCuitUrl: body.constanciaCuitUrl,
-            dniFrenteUrl: body.dniFrenteUrl,
-            dniDorsoUrl: body.dniDorsoUrl,
-            licenciaUrl: isMotorized ? body.licenciaUrl : null,
-            seguroUrl: isMotorized ? body.seguroUrl : null,
-            vtvUrl: isMotorized ? body.vtvUrl : null,
-            cedulaVerdeUrl: isMotorized ? body.cedulaVerdeUrl : null,
+            cuit: normalizedCuit,
+            constanciaCuitUrl: body.constanciaCuitUrl || null,
+            dniFrenteUrl: body.dniFrenteUrl || null,
+            dniDorsoUrl: body.dniDorsoUrl || null,
+            licenciaUrl: isMotorized ? (body.licenciaUrl || null) : null,
+            seguroUrl: isMotorized ? (body.seguroUrl || null) : null,
+            vtvUrl: isMotorized ? (body.vtvUrl || null) : null,
+            cedulaVerdeUrl: isMotorized ? (body.cedulaVerdeUrl || null) : null,
             licenciaExpiresAt,
             seguroExpiresAt,
             vtvExpiresAt,

@@ -19,8 +19,6 @@ import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
 // MobileOnlyGuard removed — desktop now has full responsive layout
 
-const SPLASH_SHOWN_KEY = "moovy_splash_v5";
-
 export default function StoreLayout({
     children,
 }: {
@@ -30,30 +28,16 @@ export default function StoreLayout({
     const cartCount = useCartStore((state) => state.getTotalItems());
 
     const [mounted, setMounted] = useState(false);
-    const [showSplash, setShowSplash] = useState(false);
-    const [contentReady, setContentReady] = useState(false);
+    // fix/ux-post-aprobacion-y-splash (2026-04-27): showSplash eliminado.
+    // Antes mostraba 1s un fondo rojo + PNG que muchas veces no cargaba (img sin
+    // logo). Genera fricción visual. Reemplazado por el skeleton del isLoading.
+    const [contentReady, setContentReady] = useState(true);
     const [promoSettings, setPromoSettings] = useState<any>(null);
     const [supportChatEnabled, setSupportChatEnabled] = useState(true); // default optimista — si falla fetch, igual se muestra
 
-    // Mount + splash — runs exactly once
+    // Mount — runs exactly once
     useEffect(() => {
         setMounted(true);
-
-        // Quick splash — only first visit ever, 1 second
-        try {
-            if (!localStorage.getItem(SPLASH_SHOWN_KEY)) {
-                setShowSplash(true);
-                localStorage.setItem(SPLASH_SHOWN_KEY, "true");
-                setTimeout(() => {
-                    setShowSplash(false);
-                    requestAnimationFrame(() => setContentReady(true));
-                }, 1000);
-            } else {
-                setContentReady(true);
-            }
-        } catch {
-            setContentReady(true);
-        }
 
         // Preview mode: ?preview=CLAVE_SECRETA setea cookie para bypass de mantenimiento
         const PREVIEW_SECRET = process.env.NEXT_PUBLIC_PREVIEW_SECRET || "moovy2026preview";
@@ -111,21 +95,6 @@ export default function StoreLayout({
     // Pre-mount: blank white (no red flash)
     if (!mounted) {
         return <div className="min-h-screen bg-white" />;
-    }
-
-    // Quick splash — minimal, fast, branded
-    if (showSplash) {
-        return (
-            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#e60012]">
-                <img
-                    src="/moovy-m.png"
-                    alt="M"
-                    width={64}
-                    height={64}
-                    className="animate-pulse"
-                />
-            </div>
-        );
     }
 
     // Loading: show skeleton layout (header + content + bottom nav placeholder)
