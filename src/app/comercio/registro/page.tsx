@@ -174,20 +174,26 @@ function ComercioRegistroContent() {
     const handleFinalSubmit = async () => {
         setError("");
 
-        // Validar CUIT obligatorio
-        if (!formData.cuit || formData.cuit.replace(/\D/g, "").length < 11) {
-            setError("El CUIT es obligatorio y debe tener 11 dígitos");
-            focusField("cuit");
-            return;
+        // feat/registro-simplificado (2026-04-27): CUIT y CBU son OPCIONALES en el
+        // registro. Si vienen, validamos. Si no, el merchant los completa después
+        // desde su panel. La aprobación admin sigue requiriéndolos.
+        if (formData.cuit && formData.cuit.replace(/\D/g, "").length > 0) {
+            if (formData.cuit.replace(/\D/g, "").length < 11) {
+                setError("El CUIT debe tener 11 dígitos");
+                focusField("cuit");
+                return;
+            }
         }
 
-        // Validación canónica CBU (22 dígitos + checksum BCRA) o Alias (6-20 alfanum).
-        // La misma lib corre server-side como defense in depth.
-        const bankCheck = validateBankAccount(formData.cbu);
-        if (!bankCheck.valid) {
-            setError(bankCheck.error || "El CBU o Alias bancario es inválido");
-            focusField("cbu");
-            return;
+        let normalizedCbu: string | null = null;
+        if (formData.cbu && formData.cbu.trim().length > 0) {
+            const bankCheck = validateBankAccount(formData.cbu);
+            if (!bankCheck.valid) {
+                setError(bankCheck.error || "El CBU o Alias bancario es inválido");
+                focusField("cbu");
+                return;
+            }
+            normalizedCbu = bankCheck.normalized;
         }
 
         // Validar checkboxes obligatorios
@@ -198,12 +204,11 @@ function ComercioRegistroContent() {
 
         setIsLoading(true);
 
-        // Add prefix to phone numbers if they don't have it.
-        // Mandamos el cbu normalizado (sin espacios/guiones en CBU, trim en alias)
-        // para que el server guarde la versión limpia, no el input crudo del user.
+        // feat/registro-simplificado (2026-04-27): CBU es opcional. Si vino y validó,
+        // mandamos el normalizado. Si no vino, va string vacío y el server lo trata como null.
         const submissionData = {
             ...formData,
-            cbu: bankCheck.normalized,
+            cbu: normalizedCbu ?? "",
             phone: formData.phone.startsWith("+549") ? formData.phone : `+549${formData.phone}`,
             businessPhone: formData.businessPhone.startsWith("+549") ? formData.businessPhone : `+549${formData.businessPhone}`
         };
@@ -631,29 +636,18 @@ function ComercioRegistroContent() {
                             {fromProfile && isAuthenticated ? "Paso 2: Documentación para operar" : "Paso 3: Documentación para operar"}
                         </p>
 
-                        {/* Banner: docs pueden completarse luego — pero la tienda NO se publica hasta cumplir TODO.
-                            Lo más estresante para un nuevo merchant es sentir que no puede registrarse si no tiene
-                            todos los papeles a mano. Acá explicamos en una caja amigable que puede empezar y
-                            terminar después, dejando claro qué necesita para publicarse. */}
+                        {/* feat/registro-simplificado (2026-04-27): banner explicando que el form
+                            es chico y los datos los completan después en el panel. NO listamos qué docs
+                            piden — el merchant se entera al entrar. */}
                         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <p className="text-sm font-semibold text-blue-900 mb-2">
-                                Podés completar la documentación más tarde
+                            <p className="text-sm font-semibold text-blue-900 mb-1">
+                                Te creamos tu cuenta en menos de 1 minuto
                             </p>
-                            <p className="text-xs text-blue-800 leading-relaxed mb-3">
-                                Te registramos ahora con lo que tengas a mano. Tu tienda <strong>no será visible</strong> al
-                                público hasta que cumplas con todos los requisitos obligatorios. Podés terminarlo
-                                cuando quieras desde el panel de tu comercio.
+                            <p className="text-xs text-blue-800 leading-relaxed">
+                                Completá los pocos datos de abajo y listo. Cuando entres al panel, te
+                                vamos a indicar qué te falta para que el equipo de Moovy active tu tienda.
+                                Mientras tanto tu tienda <strong>no aparece</strong> en el listado público.
                             </p>
-                            <p className="text-xs font-semibold text-blue-900 mb-1">Para publicarte necesitás:</p>
-                            <ul className="text-xs text-blue-800 list-disc list-inside space-y-0.5">
-                                <li>CUIT</li>
-                                <li>CBU o Alias bancario</li>
-                                <li>Constancia de Inscripción AFIP</li>
-                                <li>Habilitación Municipal</li>
-                                <li>Registro Sanitario (solo si vendés comida)</li>
-                                <li>Logo del comercio</li>
-                                <li>Horarios de atención</li>
-                            </ul>
                         </div>
 
                         {error && (
@@ -708,120 +702,6 @@ function ComercioRegistroContent() {
                                         />
                                     </div>
                                 </>
-                            )}
-
-                            {/* CUIT */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    CUIT <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="cuit"
-                                        value={formData.cuit}
-                                        onChange={handleCuitChange}
-                                        placeholder="XX-XXXXXXXX-X"
-                                        maxLength={13}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    CUIT de la persona física o jurídica titular del comercio.
-                                </p>
-                            </div>
-
-                            {/* CBU / Alias */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    CBU o Alias bancario <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="cbu"
-                                        value={formData.cbu}
-                                        onChange={handleChange}
-                                        placeholder="CBU de 22 dígitos o alias"
-                                        className="w-full pl-10 pr-20 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                    {/* Badge de tipo detectado — se actualiza en vivo mientras tipea */}
-                                    {bankAccountType && (
-                                        <span
-                                            className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                bankAccountType === "CBU"
-                                                    ? "bg-blue-100 text-blue-700"
-                                                    : "bg-violet-100 text-violet-700"
-                                            }`}
-                                            aria-live="polite"
-                                        >
-                                            {bankAccountType}
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    Podés ingresar un CBU (22 dígitos) o un Alias (6-20 caracteres:
-                                    letras, números, puntos o guiones). Para la recepción de pagos por
-                                    ventas a través de la plataforma.
-                                </p>
-                            </div>
-
-                            {/* Constancia AFIP */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Constancia de Inscripción AFIP *
-                                </label>
-                                <p className="text-xs text-gray-500 mb-2">
-                                    Es el comprobante que certifica tu inscripción fiscal. Lo descargás desde{" "}
-                                    <a href="https://www.afip.gob.ar" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">afip.gob.ar</a>{" "}
-                                    → Constancia de inscripción. Puede ser Monotributo o Responsable Inscripto.
-                                </p>
-                                <DocumentUpload
-                                    value={formData.constanciaAfipUrl}
-                                    onChange={(url) => setFormData(prev => ({ ...prev, constanciaAfipUrl: url }))}
-                                    placeholder="Subí tu constancia AFIP"
-                                    formatHint="PDF, JPG o PNG (Max 10MB)"
-                                />
-                            </div>
-
-                            {/* Habilitación Municipal */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Habilitación Municipal *
-                                </label>
-                                <p className="text-xs text-gray-500 mb-2">
-                                    Es el permiso que otorga la Municipalidad de Ushuaia para operar tu comercio.
-                                    Si todavía estás en trámite, podés subir el comprobante de inicio de trámite.
-                                </p>
-                                <DocumentUpload
-                                    value={formData.habilitacionMunicipalUrl}
-                                    onChange={(url) => setFormData(prev => ({ ...prev, habilitacionMunicipalUrl: url }))}
-                                    placeholder="Subí tu habilitación municipal"
-                                    formatHint="PDF, JPG o PNG (Max 10MB)"
-                                />
-                            </div>
-
-                            {/* Registro Sanitario - solo para alimentos */}
-                            {isFoodBusiness && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Registro Sanitario / Habilitación Bromatológica *
-                                    </label>
-                                    <p className="text-xs text-gray-500 mb-2">
-                                        Obligatorio para comercios que elaboran o manipulan alimentos.
-                                        Lo expide la autoridad sanitaria de Tierra del Fuego.
-                                    </p>
-                                    <DocumentUpload
-                                        value={formData.registroSanitarioUrl}
-                                        onChange={(url) => setFormData(prev => ({ ...prev, registroSanitarioUrl: url }))}
-                                        placeholder="Subí tu registro sanitario"
-                                        formatHint="PDF, JPG o PNG (Max 10MB)"
-                                    />
-                                </div>
                             )}
 
                             {/* Info comisiones */}

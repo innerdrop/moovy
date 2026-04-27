@@ -61,19 +61,27 @@ export async function POST(request: NextRequest) {
         if (!body.businessName) {
             return NextResponse.json({ error: "El nombre del comercio es obligatorio" }, { status: 400 });
         }
-        if (!body.cuit || body.cuit.replace(/\D/g, "").length < 11) {
-            return NextResponse.json({ error: "El CUIT es obligatorio y debe tener 11 dígitos" }, { status: 400 });
+        // feat/registro-simplificado (2026-04-27): CUIT y CBU opcionales en activación.
+        // Si vienen, se validan; si no, quedan null y el merchant los completa
+        // en su panel post-activación. La aprobación sigue requiriendo ambos válidos.
+        if (body.cuit && body.cuit.toString().trim().length > 0) {
+            if (body.cuit.replace(/\D/g, "").length < 11) {
+                return NextResponse.json({ error: "El CUIT debe tener 11 dígitos" }, { status: 400 });
+            }
         }
-        // Validación canónica CBU (22 dígitos + checksum BCRA) o Alias (6-20 alfanum + chars).
-        // Autodetecta el tipo y devuelve mensaje humano si no valida.
-        const bankCheck = validateBankAccount(body.cbu);
-        if (!bankCheck.valid) {
-            return NextResponse.json(
-                { error: bankCheck.error || "CBU o Alias inválido" },
-                { status: 400 }
-            );
+
+        if (body.cbu && body.cbu.toString().trim().length > 0) {
+            const bankCheck = validateBankAccount(body.cbu);
+            if (!bankCheck.valid) {
+                return NextResponse.json(
+                    { error: bankCheck.error || "CBU o Alias inválido" },
+                    { status: 400 }
+                );
+            }
+            body.cbu = bankCheck.normalized;
+        } else {
+            body.cbu = null;
         }
-        body.cbu = bankCheck.normalized;
         if (!body.acceptedTerms) {
             return NextResponse.json(
                 { error: "Debés aceptar los Términos para Comercios" },

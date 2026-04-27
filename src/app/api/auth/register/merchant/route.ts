@@ -37,26 +37,32 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate CUIT (11 digits)
-        if (!data.cuit || data.cuit.replace(/\D/g, "").length < 11) {
-            return NextResponse.json(
-                { error: "El CUIT es obligatorio y debe tener 11 dígitos" },
-                { status: 400 }
-            );
+        // feat/registro-simplificado (2026-04-27): CUIT y CBU son OPCIONALES en el registro.
+        // Si vienen, se validan; si no vienen, quedan null y el merchant los completa
+        // en su panel después. La aprobación del comercio (approveMerchantTransition)
+        // sigue requiriendo CUIT y CBU validados — sin esos, el admin no puede aprobar
+        // y el merchant no opera. Pero la cuenta puede crearse sin ellos.
+        if (data.cuit && data.cuit.replace(/\D/g, "").length > 0) {
+            if (data.cuit.replace(/\D/g, "").length < 11) {
+                return NextResponse.json(
+                    { error: "El CUIT debe tener 11 dígitos" },
+                    { status: 400 }
+                );
+            }
         }
 
-        // Validate CBU/Alias con lib canónica (autodetecta tipo, corre checksum BCRA
-        // para CBU y charset + rango para alias). Defense in depth: aunque el form ya
-        // valida, server-side nunca confía en el cliente.
-        const bankCheck = validateBankAccount(data.cbu);
-        if (!bankCheck.valid) {
-            return NextResponse.json(
-                { error: bankCheck.error || "CBU o Alias inválido" },
-                { status: 400 }
-            );
+        if (data.cbu && data.cbu.trim().length > 0) {
+            const bankCheck = validateBankAccount(data.cbu);
+            if (!bankCheck.valid) {
+                return NextResponse.json(
+                    { error: bankCheck.error || "CBU o Alias inválido" },
+                    { status: 400 }
+                );
+            }
+            data.cbu = bankCheck.normalized;
+        } else {
+            data.cbu = null;
         }
-        // Usamos el valor normalizado (sin espacios/guiones en CBU, trim en alias).
-        data.cbu = bankCheck.normalized;
 
         // Validate legal acceptance
         if (!data.acceptedTerms || !data.acceptedPrivacy) {

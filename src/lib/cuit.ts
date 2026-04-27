@@ -198,6 +198,49 @@ export function buildCuitFromDni(
 }
 
 /**
+ * feat/registro-simplificado (2026-04-27): para el registro de comercio NO pedimos
+ * sexo (a diferencia del driver). El comercio puede ser persona física (prefix 20 o
+ * 27) o persona jurídica (prefix 30). Esta función devuelve las 3 opciones de CUIT
+ * que validan checksum AFIP a partir de un DNI/número.
+ *
+ * @returns array con label legible + cuit normalizado de cada opción válida.
+ *          Vacío si el input no es DNI (7-8 dígitos) o ninguna opción valida.
+ */
+export interface CuitOption {
+    label: string; // "Persona física (M)" | "Persona física (F)" | "Empresa / SRL / SA"
+    prefix: string; // "20" | "27" | "30"
+    cuit: string;  // CUIT con dígito verificador, sin guiones
+}
+
+export function getCuitOptionsFromDni(dni: string): CuitOption[] {
+    const normalized = dni.replace(/[^\d]/g, "");
+    if (normalized.length !== 7 && normalized.length !== 8) return [];
+    const dni8 = normalized.padStart(8, "0");
+
+    const options: Array<{ prefix: string; label: string }> = [
+        { prefix: "20", label: "Persona física (M)" },
+        { prefix: "27", label: "Persona física (F)" },
+        { prefix: "30", label: "Empresa / SRL / SA" },
+    ];
+
+    const results: CuitOption[] = [];
+    for (const { prefix, label } of options) {
+        const body = prefix + dni8;
+        let sum = 0;
+        for (let i = 0; i < 10; i++) {
+            sum += parseInt(body[i], 10) * WEIGHTS[i];
+        }
+        const remainder = sum % 11;
+        let checkDigit: number;
+        if (remainder === 0) checkDigit = 0;
+        else if (remainder === 1) continue; // este prefijo no aplica para este DNI
+        else checkDigit = 11 - remainder;
+        results.push({ label, prefix, cuit: body + checkDigit.toString() });
+    }
+    return results;
+}
+
+/**
  * Formato display: XX-XXXXXXXX-X.
  */
 export function formatCuitForDisplay(value: string | null | undefined): string {

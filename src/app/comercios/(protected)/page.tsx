@@ -173,6 +173,36 @@ export default async function ComerciosDashboardPage() {
                 </div>
             </div>
 
+            {/* feat/registro-simplificado (2026-04-27): banner persistente para merchants
+                pendientes de aprobación. Sin esto el merchant que se registró con datos
+                mínimos no entiende qué le falta hacer. Auto-hides cuando approvalStatus=APPROVED. */}
+            {merchant.approvalStatus !== "APPROVED" && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Clock className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-amber-900 text-base mb-1">
+                                Tu cuenta está pendiente de activación
+                            </h3>
+                            <p className="text-sm text-amber-800 mb-2 leading-relaxed">
+                                Para que el equipo de Moovy te active y empieces a recibir pedidos, completá los datos
+                                que te faltan en la lista de abajo. Te tarda menos de 5 minutos. Mientras tanto, tu
+                                tienda <strong>no aparece</strong> en el listado público.
+                            </p>
+                            <Link
+                                href="/comercios/configuracion"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition"
+                            >
+                                Completar mis datos
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Onboarding Checklist - Only shown if merchant is approved and onboarding incomplete */}
             <OnboardingChecklist />
 

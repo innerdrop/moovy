@@ -395,26 +395,21 @@ function RepartidorRegistroContent() {
             return;
         }
 
-        if (!formData.dni || formData.dni.replace(/\D/g, "").length < 7) {
-            setError("Ingresá tu DNI (mínimo 7 dígitos)");
-            return;
+        // feat/registro-simplificado (2026-04-27): DNI, CUIT, fotos y constancia AFIP
+        // son OPCIONALES en el registro. El driver los completa después en su panel.
+        if (formData.dni && formData.dni.replace(/\D/g, "").length > 0) {
+            if (formData.dni.replace(/\D/g, "").length < 7) {
+                setError("Si cargás el DNI, ingresá mínimo 7 dígitos");
+                return;
+            }
         }
 
-        // Validación CUIT obligatoria (checksum AFIP)
-        const cuitCheck = validateCuit(formData.cuit);
-        if (!cuitCheck.valid) {
-            setError(cuitCheck.error || "CUIT/CUIL inválido");
-            return;
-        }
-
-        if (!formData.dniFrenteUrl || !formData.dniDorsoUrl) {
-            setError("Subí el DNI (frente y dorso)");
-            return;
-        }
-
-        if (!formData.constanciaCuitUrl) {
-            setError("Subí la constancia de inscripción AFIP / Monotributo");
-            return;
+        if (formData.cuit && formData.cuit.toString().trim().length > 0) {
+            const cuitCheck = validateCuit(formData.cuit);
+            if (!cuitCheck.valid) {
+                setError(cuitCheck.error || "CUIT/CUIL inválido");
+                return;
+            }
         }
 
         setStep(2);
@@ -429,89 +424,9 @@ function RepartidorRegistroContent() {
             return;
         }
 
-        if (isMotorized) {
-            if (!formData.vehicleBrand) {
-                setError("Seleccioná la marca del vehículo");
-                return;
-            }
-            if (!formData.vehicleModel) {
-                setError("Seleccioná el modelo del vehículo");
-                return;
-            }
-            if (!formData.vehicleColor) {
-                setError("Seleccioná el color del vehículo");
-                return;
-            }
-            const year = parseInt(formData.vehicleYear);
-            if (!year || year < minYear) {
-                setError(
-                    `El vehículo debe ser del año ${minYear} o más reciente (máximo ${maxAge} años de antigüedad para ${vehicleMeta?.label.toLowerCase()})`
-                );
-                return;
-            }
-
-            // Patente obligatoria con formato válido
-            const plateCheck = validatePatente(formData.licensePlate);
-            if (!plateCheck.valid) {
-                setError(plateCheck.error || "Patente inválida");
-                return;
-            }
-
-            // Documentos motorizados obligatorios
-            if (!formData.licenciaUrl) {
-                setError("Subí tu licencia de conducir");
-                return;
-            }
-            if (!formData.seguroUrl) {
-                setError("Subí la póliza de seguro del vehículo");
-                return;
-            }
-            if (!formData.rtoUrl) {
-                setError("Subí tu RTO (Revisión Técnica Obligatoria)");
-                return;
-            }
-            if (!formData.cedulaVerdeUrl) {
-                setError("Subí la cédula verde del vehículo (acredita titularidad)");
-                return;
-            }
-
-            const missingExpirations: string[] = [];
-            if (!formData.licenciaExpiresAt) missingExpirations.push("licencia");
-            if (!formData.seguroExpiresAt) missingExpirations.push("seguro");
-            if (!formData.rtoExpiresAt) missingExpirations.push("RTO");
-            if (!formData.cedulaVerdeExpiresAt) missingExpirations.push("cédula verde");
-            if (missingExpirations.length > 0) {
-                setError(`Cargá la fecha de vencimiento de: ${missingExpirations.join(", ")}.`);
-                return;
-            }
-
-            const now = new Date();
-            const maxFuture = new Date();
-            maxFuture.setFullYear(maxFuture.getFullYear() + 20);
-
-            const checks: Array<[string, string]> = [
-                ["Licencia", formData.licenciaExpiresAt],
-                ["Seguro", formData.seguroExpiresAt],
-                ["RTO", formData.rtoExpiresAt],
-                ["Cédula verde", formData.cedulaVerdeExpiresAt],
-            ];
-            for (const [label, raw] of checks) {
-                if (!raw) continue;
-                const d = new Date(raw);
-                if (isNaN(d.getTime())) {
-                    setError(`Fecha de vencimiento de ${label} inválida.`);
-                    return;
-                }
-                if (d < now) {
-                    setError(`La ${label.toLowerCase()} ya está vencida. Subí un documento vigente.`);
-                    return;
-                }
-                if (d > maxFuture) {
-                    setError(`La fecha de vencimiento de ${label} es demasiado lejana (más de 20 años).`);
-                    return;
-                }
-            }
-        }
+        // feat/registro-simplificado (2026-04-27): datos del vehículo y docs son OPCIONALES.
+        // El driver completa marca/modelo/color/año/patente/licencia/seguro/RTO/cédula
+        // verde en su panel después. approveDriverTransition los exige para activar.
 
         setStep(3);
     };
@@ -519,10 +434,8 @@ function RepartidorRegistroContent() {
     const handleFinalSubmit = async () => {
         setError("");
 
-        if (isMotorized && !formData.hasLicense) {
-            setError("Debés confirmar que tenés licencia de conducir vigente");
-            return;
-        }
+        // feat/registro-simplificado: no chequeamos hasLicense acá. Docs y declaración
+        // de licencia los completa el driver en su panel después de crear la cuenta.
 
         if (!formData.acceptTerms || !formData.acceptPrivacy) {
             setError("Debés aceptar los Términos para Repartidores y la Política de Privacidad");
@@ -793,153 +706,13 @@ function RepartidorRegistroContent() {
                                 </>
                             )}
 
-                            {/* Sexo — obligatorio, define prefijo del CUIT */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Sexo <span className="text-red-500">*</span>
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSexChange("M")}
-                                        className={`py-2.5 rounded-xl border-2 text-sm font-medium transition ${
-                                            formData.sex === "M"
-                                                ? "border-green-500 bg-green-50 text-green-800"
-                                                : "border-gray-200 text-gray-600 hover:border-green-300"
-                                        }`}
-                                    >
-                                        Masculino
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSexChange("F")}
-                                        className={`py-2.5 rounded-xl border-2 text-sm font-medium transition ${
-                                            formData.sex === "F"
-                                                ? "border-green-500 bg-green-50 text-green-800"
-                                                : "border-gray-200 text-gray-600 hover:border-green-300"
-                                        }`}
-                                    >
-                                        Femenino
-                                    </button>
-                                </div>
-                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    Necesario para calcular el prefijo del CUIT (20 / 27).
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">DNI <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="dni"
-                                        value={formData.dni}
-                                        onChange={handleDniChange}
-                                        onBlur={handleDniBlur}
-                                        placeholder="12.345.678"
-                                        inputMode="numeric"
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        required
-                                    />
-                                </div>
-                                <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                    Al completar el DNI te calculamos el CUIT automáticamente — vas a poder editarlo.
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">CUIT <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="cuit"
-                                        value={formData.cuit}
-                                        onChange={handleCuitChange}
-                                        placeholder="XX-XXXXXXXX-X"
-                                        maxLength={13}
-                                        className={`w-full pl-10 pr-10 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                                            cuitValidation.state === "valid"
-                                                ? "border-green-400"
-                                                : cuitValidation.state === "invalid"
-                                                ? "border-red-400"
-                                                : "border-gray-200"
-                                        }`}
-                                        required
-                                    />
-                                    {cuitValidation.state === "valid" && (
-                                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                    )}
-                                    {cuitValidation.state === "invalid" && (
-                                        <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-                                    )}
-                                </div>
-                                {cuitValidation.message && (
-                                    <p
-                                        className={`text-[11px] mt-1 ml-1 ${
-                                            cuitValidation.state === "valid"
-                                                ? "text-green-600"
-                                                : "text-red-500"
-                                        }`}
-                                    >
-                                        {cuitValidation.message}
-                                    </p>
-                                )}
-                                {!cuitValidation.message && (
-                                    <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                        Necesario para facturar y cobrar como monotributista.
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* DNI Photos */}
-                            <div className="border-t pt-4">
-                                <p className="text-sm font-medium text-gray-700 mb-3">
-                                    Foto de DNI <span className="text-red-500">*</span>
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Frente</label>
-                                        <DocumentUpload
-                                            value={formData.dniFrenteUrl}
-                                            onChange={(url) => setFormData(prev => ({ ...prev, dniFrenteUrl: url }))}
-                                            placeholder="Subí foto del frente"
-                                            formatHint="JPG, PNG o PDF (Max 10MB)"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Dorso</label>
-                                        <DocumentUpload
-                                            value={formData.dniDorsoUrl}
-                                            onChange={(url) => setFormData(prev => ({ ...prev, dniDorsoUrl: url }))}
-                                            placeholder="Subí foto del dorso"
-                                            formatHint="JPG, PNG o PDF (Max 10MB)"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Constancia AFIP/Monotributo — obligatoria */}
-                            <div className="border-t pt-4">
-                                <div className="flex items-start gap-2 mb-3">
-                                    <Receipt className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-700">
-                                            Constancia AFIP / Monotributo <span className="text-red-500">*</span>
-                                        </p>
-                                        <p className="text-[11px] text-gray-500">
-                                            Descargala desde AFIP &gt; Constancia de Inscripción.
-                                            Es obligatoria para facturar tus entregas.
-                                        </p>
-                                    </div>
-                                </div>
-                                <DocumentUpload
-                                    value={formData.constanciaCuitUrl}
-                                    onChange={(url) => setFormData(prev => ({ ...prev, constanciaCuitUrl: url }))}
-                                    placeholder="Subí tu constancia"
-                                    formatHint="JPG, PNG o PDF (Max 10MB)"
-                                />
+                            {/* feat/registro-simplificado (2026-04-27): documentos eliminados del registro.
+                                El driver completa DNI, CUIT, fotos DNI, constancia AFIP, etc en su perfil
+                                después de crear la cuenta. El equipo de Moovy le indica qué falta. */}
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800">
+                                <p className="font-semibold mb-1">Te creamos tu cuenta en menos de 1 minuto</p>
+                                <p>Cuando entres al panel te indicamos qué documentación cargar para que el
+                                equipo de Moovy active tu cuenta de repartidor.</p>
                             </div>
 
                             <button
@@ -1010,239 +783,16 @@ function RepartidorRegistroContent() {
                                 searchPlaceholder="Buscar tipo..."
                             />
 
-                            {/* Motorized vehicle fields */}
+                            {/* feat/registro-simplificado (2026-04-27): datos del vehículo y docs
+                                eliminados del registro. El driver completa marca, modelo, patente,
+                                licencia, seguro, RTO, cédula verde, etc en su perfil después. */}
                             {isMotorized && (
-                                <>
-                                    {/* Vehicle Age Warning */}
-                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-medium text-amber-800">
-                                                Antigüedad máxima {vehicleMeta?.label.toLowerCase()}: {maxAge} años
-                                            </p>
-                                            <p className="text-xs text-amber-700">
-                                                Aceptamos vehículos del {minYear} en adelante. Ushuaia somete a los vehículos a clima salino y frío extremo.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <SearchableSelect
-                                            label="Marca"
-                                            required
-                                            icon={Tag}
-                                            placeholder="Elegí la marca"
-                                            options={brandOptions}
-                                            value={formData.vehicleBrand}
-                                            onChange={(v) =>
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    vehicleBrand: v,
-                                                    vehicleModel: "",  // reset modelo al cambiar marca
-                                                }))
-                                            }
-                                            allowCustom
-                                            customPlaceholder="Escribí la marca..."
-                                            searchPlaceholder="Buscar marca..."
-                                        />
-                                        <SearchableSelect
-                                            label="Modelo"
-                                            required
-                                            icon={Box}
-                                            placeholder={formData.vehicleBrand ? "Elegí el modelo" : "Primero elegí la marca"}
-                                            options={modelOptions}
-                                            value={formData.vehicleModel}
-                                            onChange={(v) => setFormData((prev) => ({ ...prev, vehicleModel: v }))}
-                                            disabled={!formData.vehicleBrand}
-                                            disabledReason="Primero elegí la marca"
-                                            allowCustom
-                                            customPlaceholder="Escribí el modelo..."
-                                            searchPlaceholder="Buscar modelo..."
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <SearchableSelect
-                                            label="Año"
-                                            required
-                                            icon={Calendar}
-                                            placeholder="Año"
-                                            options={yearOptions}
-                                            value={formData.vehicleYear}
-                                            onChange={(v) => setFormData((prev) => ({ ...prev, vehicleYear: v }))}
-                                            searchPlaceholder="Buscar año..."
-                                        />
-                                        <SearchableSelect
-                                            label="Color"
-                                            required
-                                            icon={Palette}
-                                            placeholder="Color"
-                                            options={VEHICLE_COLORS}
-                                            value={formData.vehicleColor}
-                                            onChange={(v) => setFormData((prev) => ({ ...prev, vehicleColor: v }))}
-                                            allowCustom
-                                            customPlaceholder="Escribí el color..."
-                                            searchPlaceholder="Buscar color..."
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            <Hash className="w-4 h-4 inline mr-1" />
-                                            Patente <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="licensePlate"
-                                            value={formData.licensePlate}
-                                            onChange={handlePatenteChange}
-                                            placeholder="AA 123 BB"
-                                            maxLength={10}
-                                            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 uppercase tracking-wider ${
-                                                patenteValidation.state === "valid"
-                                                    ? "border-green-400"
-                                                    : patenteValidation.state === "invalid"
-                                                    ? "border-red-400"
-                                                    : "border-gray-200"
-                                            }`}
-                                            required
-                                        />
-                                        {patenteValidation.message ? (
-                                            <p
-                                                className={`text-[11px] mt-1 ml-1 ${
-                                                    patenteValidation.state === "valid"
-                                                        ? "text-green-600"
-                                                        : "text-red-500"
-                                                }`}
-                                            >
-                                                {patenteValidation.message}
-                                            </p>
-                                        ) : (
-                                            <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                                MERCOSUR (AA 123 BB) o vieja (ABC 123). Normalizamos el formato automáticamente.
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Document uploads + expirations for motorized */}
-                                    <div className="border-t pt-4 space-y-4">
-                                        <p className="text-sm font-medium text-gray-700">Documentación del vehículo</p>
-
-                                        {/* Licencia */}
-                                        <div className="space-y-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <label className="block text-xs font-medium text-gray-700">
-                                                Licencia de Conducir <span className="text-red-500">*</span>
-                                            </label>
-                                            <DocumentUpload
-                                                value={formData.licenciaUrl}
-                                                onChange={(url) => setFormData(prev => ({ ...prev, licenciaUrl: url }))}
-                                                placeholder="Subí tu licencia de conducir"
-                                                formatHint="JPG, PNG o PDF (Max 10MB)"
-                                            />
-                                            <div>
-                                                <label className="block text-[11px] text-gray-500 mb-1">
-                                                    Vencimiento <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    name="licenciaExpiresAt"
-                                                    value={formData.licenciaExpiresAt}
-                                                    onChange={handleChange}
-                                                    min={new Date().toISOString().slice(0, 10)}
-                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Seguro */}
-                                        <div className="space-y-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <label className="block text-xs font-medium text-gray-700">
-                                                Seguro del Vehículo <span className="text-red-500">*</span>
-                                            </label>
-                                            <DocumentUpload
-                                                value={formData.seguroUrl}
-                                                onChange={(url) => setFormData(prev => ({ ...prev, seguroUrl: url }))}
-                                                placeholder="Subí el seguro del vehículo"
-                                                formatHint="JPG, PNG o PDF (Max 10MB)"
-                                            />
-                                            <p className="text-[10px] text-gray-500">
-                                                Obligatorio por Ley 24.449. Cobertura de responsabilidad civil hacia terceros.
-                                            </p>
-                                            <div>
-                                                <label className="block text-[11px] text-gray-500 mb-1">
-                                                    Vencimiento de la póliza <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    name="seguroExpiresAt"
-                                                    value={formData.seguroExpiresAt}
-                                                    onChange={handleChange}
-                                                    min={new Date().toISOString().slice(0, 10)}
-                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* RTO */}
-                                        <div className="space-y-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <label className="block text-xs font-medium text-gray-700">
-                                                RTO (Revisión Técnica Obligatoria) <span className="text-red-500">*</span>
-                                            </label>
-                                            <DocumentUpload
-                                                value={formData.rtoUrl}
-                                                onChange={(url) => setFormData(prev => ({ ...prev, rtoUrl: url }))}
-                                                placeholder="Subí tu RTO vigente"
-                                                formatHint="JPG, PNG o PDF (Max 10MB)"
-                                            />
-                                            <div>
-                                                <label className="block text-[11px] text-gray-500 mb-1">
-                                                    Vencimiento RTO <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    name="rtoExpiresAt"
-                                                    value={formData.rtoExpiresAt}
-                                                    onChange={handleChange}
-                                                    min={new Date().toISOString().slice(0, 10)}
-                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Cédula Verde */}
-                                        <div className="space-y-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <label className="block text-xs font-medium text-gray-700">
-                                                Cédula Verde <span className="text-red-500">*</span>
-                                            </label>
-                                            <DocumentUpload
-                                                value={formData.cedulaVerdeUrl}
-                                                onChange={(url) => setFormData(prev => ({ ...prev, cedulaVerdeUrl: url }))}
-                                                placeholder="Subí la cédula verde"
-                                                formatHint="JPG, PNG o PDF (Max 10MB)"
-                                            />
-                                            <p className="text-[10px] text-gray-500">
-                                                Acredita la titularidad del vehículo (Decreto 779/95).
-                                            </p>
-                                            <div>
-                                                <label className="block text-[11px] text-gray-500 mb-1">
-                                                    Vencimiento cédula verde <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    name="cedulaVerdeExpiresAt"
-                                                    value={formData.cedulaVerdeExpiresAt}
-                                                    onChange={handleChange}
-                                                    min={new Date().toISOString().slice(0, 10)}
-                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
+                                <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
+                                    <p className="font-semibold mb-1">Después te pediremos los datos del vehículo</p>
+                                    <p>Cuando entres al panel vas a ver la documentación que necesitamos:
+                                    licencia, seguro, RTO, cédula verde y datos del vehículo. El equipo de
+                                    Moovy te avisa por email cuando tu cuenta queda aprobada.</p>
+                                </div>
                             )}
 
                             {/* Bicycle / non-motorized info */}
@@ -1385,21 +935,6 @@ function RepartidorRegistroContent() {
 
                             {/* Checkboxes */}
                             <div className="space-y-3 border-t pt-4">
-                                {isMotorized && (
-                                    <label className="flex items-start gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            name="hasLicense"
-                                            checked={formData.hasLicense}
-                                            onChange={handleChange}
-                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                        />
-                                        <span className="text-sm text-gray-600">
-                                            Tengo licencia de conducir vigente y documentación del vehículo al día. <span className="text-red-500">*</span>
-                                        </span>
-                                    </label>
-                                )}
-
                                 <label className="flex items-start gap-3 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -1443,7 +978,7 @@ function RepartidorRegistroContent() {
                             <button
                                 type="button"
                                 onClick={handleFinalSubmit}
-                                disabled={isLoading || !formData.acceptTerms || !formData.acceptPrivacy || (isMotorized && !formData.hasLicense)}
+                                disabled={isLoading || !formData.acceptTerms || !formData.acceptPrivacy}
                                 className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (

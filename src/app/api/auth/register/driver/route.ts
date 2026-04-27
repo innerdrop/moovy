@@ -91,54 +91,28 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // CUIT obligatorio + validación checksum AFIP
-        if (!data.cuit) {
-            return NextResponse.json(
-                { error: "El CUIT/CUIL es obligatorio" },
-                { status: 400 }
-            );
-        }
-        const cuitCheck = validateCuit(data.cuit);
-        if (!cuitCheck.valid) {
-            return NextResponse.json(
-                { error: cuitCheck.error || "CUIT/CUIL inválido" },
-                { status: 400 }
-            );
-        }
+        // feat/registro-simplificado (2026-04-27): documentos y CUIT son OPCIONALES
+        // en el registro. El driver puede entrar al panel y completarlos después.
+        // La aprobación (approveDriverTransition) sigue requiriendo todos los docs
+        // según vehicleType — sin esos, el admin no aprueba y el driver no opera.
+        // Si el driver mandó algún campo, lo validamos. Si no, queda null/skip.
 
-        // Constancia AFIP siempre obligatoria (fondo legal monotributo)
-        if (!data.constanciaCuitUrl) {
-            return NextResponse.json(
-                { error: "Subí la constancia de inscripción AFIP / Monotributo" },
-                { status: 400 }
-            );
-        }
-
-        // DNI frente + dorso obligatorios para todos
-        if (!data.dniFrenteUrl || !data.dniDorsoUrl) {
-            return NextResponse.json(
-                { error: "Subí el DNI (frente y dorso)" },
-                { status: 400 }
-            );
+        if (data.cuit && data.cuit.toString().trim().length > 0) {
+            const cuitCheck = validateCuit(data.cuit);
+            if (!cuitCheck.valid) {
+                return NextResponse.json(
+                    { error: cuitCheck.error || "CUIT/CUIL inválido" },
+                    { status: 400 }
+                );
+            }
         }
 
         const vehicleTypeUpper = data.vehicleType.toUpperCase();
         const isMotorized = isMotorizedVehicle(vehicleTypeUpper);
 
-        // Normalized plate value (canonical: no spaces, UPPERCASE). Se
-        // completa si el vehículo es motorizado y la patente pasa validación.
+        // Patente opcional, pero si vino se valida formato.
         let normalizedLicensePlate: string | null = null;
-
-        // Validaciones específicas para motorizados
-        if (isMotorized) {
-            if (!data.licensePlate) {
-                return NextResponse.json(
-                    { error: "La patente es obligatoria para vehículos motorizados" },
-                    { status: 400 }
-                );
-            }
-            // Patente: formato MERCOSUR (AA123BB) o LEGACY (ABC123). Server-side
-            // defense in depth — regla #2 del proyecto: nunca confiar en el UI.
+        if (isMotorized && data.licensePlate && data.licensePlate.toString().trim().length > 0) {
             const plateCheck = validatePatente(data.licensePlate);
             if (!plateCheck.valid || !plateCheck.normalized) {
                 return NextResponse.json(
@@ -147,68 +121,53 @@ export async function POST(request: NextRequest) {
                 );
             }
             normalizedLicensePlate = plateCheck.normalized;
-            if (!data.licenciaUrl) {
-                return NextResponse.json(
-                    { error: "Subí la licencia de conducir" },
-                    { status: 400 }
-                );
-            }
-            if (!data.seguroUrl) {
-                return NextResponse.json(
-                    { error: "Subí la póliza de seguro del vehículo" },
-                    { status: 400 }
-                );
-            }
-            if (!data.vtvUrl) {
-                return NextResponse.json(
-                    { error: "Subí la RTO (Revisión Técnica Obligatoria)" },
-                    { status: 400 }
-                );
-            }
-            if (!data.cedulaVerdeUrl) {
-                return NextResponse.json(
-                    { error: "Subí la cédula verde que acredita titularidad del vehículo" },
-                    { status: 400 }
-                );
-            }
-            // Vehicle age check (cuando viene el año)
-            if (data.vehicleYear) {
-                const ageError = validateVehicleAge(
-                    vehicleTypeUpper,
-                    parseInt(data.vehicleYear.toString(), 10)
-                );
-                if (ageError) {
-                    return NextResponse.json({ error: ageError }, { status: 400 });
-                }
+        }
+
+        // Vehicle age check si vino el año
+        if (isMotorized && data.vehicleYear) {
+            const ageError = validateVehicleAge(
+                vehicleTypeUpper,
+                parseInt(data.vehicleYear.toString(), 10)
+            );
+            if (ageError) {
+                return NextResponse.json({ error: ageError }, { status: 400 });
             }
         }
 
-        // Parse expirations (solo motorizados)
+        // Parse expirations: opcionales pero si vienen se validan
         let licenciaExpiresAt: Date | null = null;
         let seguroExpiresAt: Date | null = null;
         let vtvExpiresAt: Date | null = null;
         let cedulaVerdeExpiresAt: Date | null = null;
 
         if (isMotorized) {
-            const parsedLic = parseExpiration(data.licenciaExpiresAt, "Licencia");
-            if (typeof parsedLic === "string")
-                return NextResponse.json({ error: parsedLic }, { status: 400 });
-            licenciaExpiresAt = parsedLic;
+            if (data.licenciaExpiresAt) {
+                const parsedLic = parseExpiration(data.licenciaExpiresAt, "Licencia");
+                if (typeof parsedLic === "string")
+                    return NextResponse.json({ error: parsedLic }, { status: 400 });
+                licenciaExpiresAt = parsedLic;
+            }
 
-            const parsedSeg = parseExpiration(data.seguroExpiresAt, "Seguro");
-            if (typeof parsedSeg === "string")
-                return NextResponse.json({ error: parsedSeg }, { status: 400 });
-            seguroExpiresAt = parsedSeg;
+            if (data.seguroExpiresAt) {
+                const parsedSeg = parseExpiration(data.seguroExpiresAt, "Seguro");
+                if (typeof parsedSeg === "string")
+                    return NextResponse.json({ error: parsedSeg }, { status: 400 });
+                seguroExpiresAt = parsedSeg;
+            }
 
-            const parsedVtv = parseExpiration(data.vtvExpiresAt, "RTO");
-            if (typeof parsedVtv === "string")
-                return NextResponse.json({ error: parsedVtv }, { status: 400 });
-            vtvExpiresAt = parsedVtv;
+            if (data.vtvExpiresAt) {
+                const parsedVtv = parseExpiration(data.vtvExpiresAt, "RTO");
+                if (typeof parsedVtv === "string")
+                    return NextResponse.json({ error: parsedVtv }, { status: 400 });
+                vtvExpiresAt = parsedVtv;
+            }
 
-            const parsedCed = parseExpiration(data.cedulaVerdeExpiresAt, "Cédula verde");
-            if (typeof parsedCed === "string")
-                return NextResponse.json({ error: parsedCed }, { status: 400 });
-            cedulaVerdeExpiresAt = parsedCed;
+            if (data.cedulaVerdeExpiresAt) {
+                const parsedCed = parseExpiration(data.cedulaVerdeExpiresAt, "Cédula verde");
+                if (typeof parsedCed === "string")
+                    return NextResponse.json({ error: parsedCed }, { status: 400 });
+                cedulaVerdeExpiresAt = parsedCed;
+            }
         }
 
         // Check if email already exists (ignore soft-deleted users).
