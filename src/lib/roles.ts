@@ -507,7 +507,13 @@ export async function requireMerchantAccess(userId: string | null | undefined): 
         case "none":
             redirect("/comercios/registro");
         case "pending":
-            redirect("/comercios/pendiente-aprobacion");
+            // feat/registro-rediseno-core (2026-04-27): merchants pendientes (DRAFT o
+            // DATA_COMPLETED) pueden entrar al panel para completar onboarding.
+            // El layout detecta access.merchant.status === "pending" y muestra banner.
+            // Endpoints sensibles (recibir orden, listar publicación pública) chequean
+            // applicationStatus === "APPROVED" aparte. Antes se redirigía a
+            // /comercios/pendiente-aprobacion bloqueando todo el flow de onboarding.
+            return access;
         case "rejected":
             redirect("/comercios/pendiente-aprobacion?rejected=1");
         case "suspended":
@@ -552,7 +558,11 @@ export async function requireDriverAccess(userId: string | null | undefined): Pr
         case "none":
             redirect("/repartidor/registro");
         case "pending":
-            redirect("/repartidor/pendiente-aprobacion");
+            // feat/registro-rediseno-core (2026-04-27): drivers pendientes pueden
+            // entrar al panel para completar onboarding. Layout detecta status y
+            // muestra banner. Driver pendiente NO recibe pedidos (assignment-engine
+            // filtra por isOnline + approvalStatus=APPROVED).
+            return access;
         case "rejected":
             redirect("/repartidor/pendiente-aprobacion?rejected=1");
         case "suspended":
@@ -597,9 +607,9 @@ export async function requireSellerAccess(userId: string | null | undefined): Pr
         case "none":
             redirect("/vendedor/registro");
         case "pending":
-            // Fase 1 no tiene pending para sellers, pero cubrimos el caso por si
-            // Fase 2 agrega approvalStatus. Por ahora es unreachable.
-            redirect("/vendedor/pendiente-aprobacion");
+            // feat/registro-rediseno-core (2026-04-27): sellers pendientes entran al
+            // panel para completar onboarding. Listings privados hasta APPROVED.
+            return access;
         case "rejected":
             redirect("/mi-perfil?error=seller_inactive");
         case "suspended":
@@ -767,7 +777,8 @@ export async function approveMerchantTransition(
         const merchant = await tx.merchant.update({
             where: { id: merchantId },
             data: {
-                approvalStatus: "APPROVED",
+                approvalStatus: "APPROVED", // legacy
+                applicationStatus: "APPROVED", // feat/registro-rediseno-core
                 approvedAt: now,
                 rejectionReason: null,
                 // Legacy flags: mantenemos sincronizados por compat con código
@@ -812,7 +823,8 @@ export async function rejectMerchantTransition(
         const merchant = await tx.merchant.update({
             where: { id: merchantId },
             data: {
-                approvalStatus: "REJECTED",
+                approvalStatus: "REJECTED", // legacy
+                applicationStatus: "REJECTED", // feat/registro-rediseno-core
                 rejectionReason: reason.trim(),
                 // Legacy flags por compat
                 isActive: false,
@@ -869,7 +881,8 @@ export async function approveDriverTransition(
         const driver = await tx.driver.update({
             where: { id: driverId },
             data: {
-                approvalStatus: "APPROVED",
+                approvalStatus: "APPROVED", // legacy
+                applicationStatus: "APPROVED", // feat/registro-rediseno-core
                 approvedAt: now,
                 rejectionReason: null,
                 // Legacy flag por compat
@@ -909,7 +922,8 @@ export async function rejectDriverTransition(
         const driver = await tx.driver.update({
             where: { id: driverId },
             data: {
-                approvalStatus: "REJECTED",
+                approvalStatus: "REJECTED", // legacy
+                applicationStatus: "REJECTED", // feat/registro-rediseno-core
                 rejectionReason: reason.trim(),
                 // Legacy flag por compat
                 isActive: false,

@@ -224,7 +224,8 @@ export async function POST(request: NextRequest) {
             acceptedTermsAt: new Date(),
             acceptedPrivacyAt: new Date(),
             isActive: false,
-            approvalStatus: "PENDING",
+            approvalStatus: "PENDING", // legacy
+            applicationStatus: "DRAFT", // feat/registro-rediseno-core (2026-04-27)
         };
 
         // Encrypt sensitive fiscal data before saving

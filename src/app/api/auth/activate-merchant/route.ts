@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
             isActive: false,
             isVerified: false,
             approvalStatus: "PENDING",
+            applicationStatus: "DRAFT",
         };
 
         // Encrypt sensitive fiscal data

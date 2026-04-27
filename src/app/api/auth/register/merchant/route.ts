@@ -154,6 +154,7 @@ export async function POST(request: NextRequest) {
             description: data.description || "Nuevo comercio Moovy",
             isActive: false,
             isVerified: false,
+            applicationStatus: "DRAFT", // feat/registro-rediseno-core (2026-04-27)
         };
 
         // Encrypt sensitive fiscal data before saving

@@ -195,6 +195,7 @@ export async function POST(request: NextRequest) {
             acceptedTermsAt: new Date(),
             isActive: false,
             approvalStatus: "PENDING",
+            applicationStatus: "DRAFT",
         };
 
         // Encrypt sensitive fiscal data

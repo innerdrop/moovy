@@ -548,9 +548,22 @@ model Merchant {
   mpUserId         String?                   @unique
   mpEmail          String?
   mpLinkedAt       DateTime?
-  approvalStatus   String                    @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
+  approvalStatus   String                    @default("PENDING") // legacy: PENDING | APPROVED | REJECTED | SUSPENDED — mantener por compat
   approvedAt       DateTime?
   rejectionReason  String?
+  // feat/registro-rediseno-core (2026-04-27): applicationStatus es el nuevo workflow.
+  // DRAFT = cuenta creada con datos mínimos, puede entrar al panel pero no opera.
+  // DATA_COMPLETED = todos los docs cargados, espera revisión admin.
+  // APPROVED = admin aprobó, puede operar.
+  // REJECTED = admin pidió cambios, vuelve a DATA_COMPLETED tras ajustes.
+  // Mapeo legacy: approvalStatus PENDING → DRAFT/DATA_COMPLETED según docs cargados.
+  applicationStatus      String      @default("DRAFT") // DRAFT | DATA_COMPLETED | APPROVED | REJECTED
+  // Self-service del usuario: pausar (reactivable) y cancelar (soft delete del rol).
+  // Cancelar mantiene historial fiscal (AFIP exige 10 años) pero el rol no opera.
+  pausedByUserAt    DateTime?
+  pausedByUserReason String?
+  cancelledByUserAt    DateTime?
+  cancelledByUserReason String?
   isSuspended      Boolean                   @default(false)
   suspendedAt      DateTime?
   suspendedUntil   DateTime?                 // null = permanent until manual reactivation
@@ -582,6 +595,7 @@ model Merchant {
   @@index([isActive])
   @@index([ownerId])
   @@index([approvalStatus])
+  @@index([applicationStatus])
   @@index([loyaltyTier])
   @@index([isSuspended])
 }
@@ -714,9 +728,15 @@ model Driver {
   lastLocationAt     DateTime?
   latitude           Float?
   longitude          Float?
-  approvalStatus     String                    @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
+  approvalStatus     String                    @default("PENDING") // legacy — mantener por compat
   approvedAt         DateTime?
   rejectionReason    String?
+  // feat/registro-rediseno-core (2026-04-27): applicationStatus + self-service pause/cancel
+  applicationStatus      String      @default("DRAFT") // DRAFT | DATA_COMPLETED | APPROVED | REJECTED
+  pausedByUserAt    DateTime?
+  pausedByUserReason String?
+  cancelledByUserAt    DateTime?
+  cancelledByUserReason String?
   isSuspended        Boolean                   @default(false)
   suspendedAt        DateTime?
   suspendedUntil     DateTime?                 // null = permanent until manual reactivation
@@ -743,6 +763,7 @@ model Driver {
   @@index([isOnline])
   @@index([isActive])
   @@index([approvalStatus])
+  @@index([applicationStatus])
   @@index([isSuspended])
   @@index([fraudScore])
   @@index([licenciaExpiresAt])
@@ -840,6 +861,15 @@ model SellerProfile {
   bankCbu        String?
   isActive       Boolean   @default(true)
   isVerified     Boolean   @default(false)
+  // feat/registro-rediseno-core (2026-04-27): seller pasa al mismo workflow uniforme.
+  // Antes solo tenía isActive — ahora applicationStatus describe el estado del onboarding.
+  applicationStatus  String    @default("DRAFT") // DRAFT | DATA_COMPLETED | APPROVED | REJECTED
+  approvedAt         DateTime?
+  rejectionReason    String?
+  pausedByUserAt    DateTime?
+  pausedByUserReason String?
+  cancelledByUserAt    DateTime?
+  cancelledByUserReason String?
   totalSales     Int       @default(0)
   rating         Float?
   commissionRate Float     @default(12)
@@ -865,6 +895,7 @@ model SellerProfile {
   subOrders      SubOrder[]
 
   @@index([isSuspended])
+  @@index([applicationStatus])
 }
 
 model Listing {
