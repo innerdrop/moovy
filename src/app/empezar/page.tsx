@@ -10,11 +10,11 @@
 // Si el usuario llega con ?type=X y X es válido, se redirige automáticamente
 // al form correspondiente (útil para deep links).
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Store, Truck, Package, ArrowRight } from "lucide-react";
+import { ShoppingCart, Store, Truck, Package, ArrowRight, Loader2 } from "lucide-react";
 
 const ACCOUNT_TYPES = [
     {
@@ -59,7 +59,7 @@ const ACCOUNT_TYPES = [
     },
 ] as const;
 
-export default function RegistroHubPage() {
+function EmpezarHubInner() {
     const router = useRouter();
     const params = useSearchParams();
     const typeParam = params.get("type");
@@ -129,5 +129,22 @@ export default function RegistroHubPage() {
                 </Link>
             </p>
         </div>
+    );
+}
+
+// Wrapper requerido por Next.js: useSearchParams() necesita Suspense para que el
+// build estático no falle con "missing-suspense-with-csr-bailout".
+// fix/fix-empezar-suspense (2026-04-27)
+export default function EmpezarHubPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                </div>
+            }
+        >
+            <EmpezarHubInner />
+        </Suspense>
     );
 }
