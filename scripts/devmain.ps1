@@ -206,32 +206,57 @@ if ($sshTest -ne "ok") {
 Write-Host "  OK VPS accesible" -ForegroundColor Green
 
 # === PASO 6: Lock file anti-concurrent (mejora 5) ===
+# fix/devmain-bash-escapes (2026-04-28): el lock check anterior tenia backticks
+# y comillas escapadas que se rompian al pasar PowerShell -> SSH -> bash. Ahora
+# escribimos el script bash a un archivo temporal y lo ejecutamos con `bash`,
+# evitando problemas de escape multinivel.
 Write-Host ""
 Write-Host "[6/15] Verificando lock de deploys..." -ForegroundColor Yellow
-$lockCheck = ssh "$VPS_USER@$VPS_HOST" "if [ -f $LOCK_FILE ]; then AGE=`$(( `$(date +%s) - `$(stat -c %Y $LOCK_FILE) )); if [ `$AGE -lt 1800 ]; then echo \"LOCKED:`$AGE\"; else echo \"STALE:`$AGE\"; fi; else echo NONE; fi"
+$lockCheckScript = 'F=' + $LOCK_FILE + '; if [ -f "$F" ]; then NOW=$(date +%s); MOD=$(stat -c %Y "$F"); AGE=$((NOW-MOD)); if [ "$AGE" -lt 1800 ]; then echo "LOCKED:$AGE"; else echo "STALE:$AGE"; fi; else echo "NONE"; fi'
+$lockCheck = ssh "$VPS_USER@$VPS_HOST" "bash -c '$lockCheckScript'" 2>&1
 if ($lockCheck -match "^LOCKED:(\d+)") {
     $lockAge = $matches[1]
     Stop-WithError "Otro deploy esta en curso (lock con $lockAge segundos). Si te equivocaste, hace 'ssh root@$VPS_HOST rm $LOCK_FILE' y reintentar."
 }
 if ($lockCheck -match "^STALE") {
     Write-Host "  Lock zombie detectado. Limpiando..." -ForegroundColor Yellow
-    ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE"
+    ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
 }
 if (-not $DryRun) {
-    ssh "$VPS_USER@$VPS_HOST" "echo `$`$ > $LOCK_FILE"
+    ssh "$VPS_USER@$VPS_HOST" "touch $LOCK_FILE" | Out-Null
 }
 Write-Host "  OK lock adquirido" -ForegroundColor Green
 
 # === PASO 7: Verificar env vars criticos en VPS (mejora 4) ===
+# fix/devmain-bash-escapes (2026-04-28): separamos hard required (todos
+# obligatorios) de alternativos (al menos uno). NextAuth v5 acepta AUTH_SECRET
+# o NEXTAUTH_SECRET indistintamente — VPSs viejos pueden tener solo uno.
 Write-Host ""
 Write-Host "[7/15] Verificando env vars criticos en VPS..." -ForegroundColor Yellow
-$envCheck = ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && grep -E '^(DATABASE_URL|AUTH_SECRET|NEXTAUTH_SECRET|CRON_SECRET|MP_ACCESS_TOKEN|MP_WEBHOOK_SECRET)=' .env 2>/dev/null | wc -l"
-$envCount = [int]($envCheck.Trim())
-if ($envCount -lt 6) {
-    ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
-    Stop-WithError "Solo $envCount/6 env vars criticos presentes en VPS .env. Verificar manualmente."
+$hardRequired = @('DATABASE_URL', 'CRON_SECRET', 'MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET')
+$alternatives = @('AUTH_SECRET', 'NEXTAUTH_SECRET')
+
+$envContent = ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && grep -E '^[A-Z_]+=' .env 2>/dev/null | cut -d= -f1"
+$envVars = $envContent -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+
+$missingHard = @()
+foreach ($v in $hardRequired) {
+    if ($envVars -notcontains $v) { $missingHard += $v }
 }
-Write-Host "  OK $envCount/6 env vars criticos presentes" -ForegroundColor Green
+$hasAlternative = $false
+foreach ($v in $alternatives) {
+    if ($envVars -contains $v) { $hasAlternative = $true; break }
+}
+
+if ($missingHard.Count -gt 0) {
+    ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
+    Stop-WithError "Faltan env vars criticos en VPS .env: $($missingHard -join ', ')"
+}
+if (-not $hasAlternative) {
+    ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
+    Stop-WithError "Falta al menos uno de: $($alternatives -join ' o ') en VPS .env (NextAuth requiere uno)"
+}
+Write-Host "  OK env vars criticos: $($hardRequired.Count)/$($hardRequired.Count) hard + auth secret" -ForegroundColor Green
 
 # === PASO 8: Resumen pre-deploy + confirmacion (mejora 15) ===
 Write-Host ""
