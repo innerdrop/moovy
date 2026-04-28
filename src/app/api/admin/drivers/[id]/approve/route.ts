@@ -56,17 +56,13 @@ export async function PUT(
         // Transición centralizada: escribe approvalStatus, flags legacy y audit log.
         // No tocamos UserRole: el rol DRIVER se deriva de Driver.approvalStatus
         // en cada request. Ver src/lib/roles.ts.
-        try {
-            await approveDriverTransition(id, {
-                adminId: session.user.id,
-                adminEmail: session.user.email ?? "unknown",
-            });
-        } catch (e: any) {
-            if (e?.code === "PHOTO_MISSING") {
-                return NextResponse.json({ error: e.message, code: e.code }, { status: 400 });
-            }
-            throw e;
-        }
+        // fix/aprobacion-sin-foto-driver (2026-04-28): ya no chequeamos PHOTO_MISSING.
+        // La foto del driver es requisito de visibilidad/UX (defense in depth en
+        // tracking con fallback a avatar default), NO de capacidad operativa.
+        await approveDriverTransition(id, {
+            adminId: session.user.id,
+            adminEmail: session.user.email ?? "unknown",
+        });
 
         // Send approval email (non-blocking)
         if (driver.user?.email) {

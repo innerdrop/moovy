@@ -762,12 +762,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 : `/api/admin/drivers/${roleData.id}/approve`;
 
             const res = await fetch(endpoint, { method: "POST" });
+            const data = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 toast.success(`${roleType === "merchant" ? "Comercio" : "Repartidor"} aprobado correctamente`);
                 fetchUser();
             } else {
-                toast.error("Error al aprobar");
+                // Mostrar el mensaje real del backend en vez de "Error al aprobar"
+                // genérico. Sin esto, el admin no entiende por qué falla y nosotros
+                // perdemos visibilidad sobre qué precondiciones están bloqueando.
+                toast.error(data?.error || `Error al aprobar (${res.status})`);
             }
         } catch (error) {
             console.error("Error approving:", error);
@@ -812,12 +816,14 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ reason: reason.trim() }),
             });
+            const data = await res.json().catch(() => ({}));
 
             if (res.ok) {
                 toast.success(`${roleName} rechazado correctamente`);
                 fetchUser();
             } else {
-                toast.error("Error al rechazar");
+                // Mismo criterio que en aprobar: mostrar el error real del backend.
+                toast.error(data?.error || `Error al rechazar (${res.status})`);
             }
         } catch (error) {
             console.error("Error rejecting:", error);

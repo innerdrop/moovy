@@ -18,10 +18,14 @@ export async function GET() {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
-        // Get active orders (not delivered/cancelled)
+        // Get active orders (not delivered/cancelled, not soft-deleted).
+        // fix/aprobacion-sin-foto-driver (2026-04-28): respetar el soft delete del
+        // endpoint DELETE /api/admin/orders. Antes esta query no filtraba deletedAt
+        // y los pedidos eliminados desde /ops/pedidos quedaban "colgados" en /ops/live.
         const orders = await prisma.order.findMany({
             where: {
                 status: { in: ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY"] },
+                deletedAt: null,
             },
             include: {
                 items: { select: { id: true, name: true, quantity: true } },

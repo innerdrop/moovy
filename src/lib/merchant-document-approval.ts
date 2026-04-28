@@ -239,42 +239,27 @@ export async function approveDocument(
         },
     });
 
-    // Si autoActivated y falta logo (LOGO_MISSING), NO bloqueamos la aprobación
-    // del documento individual — solo skipeamos la transición global. El admin
-    // ve el doc aprobado pero el merchant queda PENDING hasta que suba el logo.
+    // fix/aprobacion-sin-logo (2026-04-27): aprobación de merchant ya no bloquea
+    // por logo, así que la auto-activación corre limpia siempre que todos los
+    // documentos requeridos estén APPROVED.
     let activatedNow = false;
     if (autoActivated) {
-        try {
-            await approveMerchantTransition(merchantId, ctx);
-            activatedNow = true;
-        } catch (e: any) {
-            if (e?.code === "LOGO_MISSING") {
-                // No es error fatal: el doc sí se aprobó, solo no podemos disparar
-                // la activación global. El admin va a ver el merchant todavía PENDING
-                // con un mensaje claro en la UI cuando el siguiente paso falle.
-                console.warn(
-                    `[approveDocument] Doc aprobado pero merchant ${merchantId} no se auto-activó: falta logo.`
-                );
-            } else {
-                throw e;
-            }
-        }
+        await approveMerchantTransition(merchantId, ctx);
+        activatedNow = true;
 
-        if (activatedNow) {
-            // Refresh JWT del merchant para que pueda entrar al panel sin logout/login.
-            const merchant = await prisma.merchant.findUnique({
-                where: { id: merchantId },
-                select: { ownerId: true, name: true },
+        // Refresh JWT del merchant para que pueda entrar al panel sin logout/login.
+        const merchant = await prisma.merchant.findUnique({
+            where: { id: merchantId },
+            select: { ownerId: true, name: true },
+        });
+        if (merchant) {
+            emitRoleUpdate({
+                userId: merchant.ownerId,
+                role: "MERCHANT",
+                action: "AUTO_ACTIVATED",
+                message: `¡Tu comercio "${merchant.name}" fue aprobado automáticamente! Todos los documentos están al día.`,
+                portalUrl: "/comercios",
             });
-            if (merchant) {
-                emitRoleUpdate({
-                    userId: merchant.ownerId,
-                    role: "MERCHANT",
-                    action: "AUTO_ACTIVATED",
-                    message: `¡Tu comercio "${merchant.name}" fue aprobado automáticamente! Todos los documentos están al día.`,
-                    portalUrl: "/comercios",
-                });
-            }
         }
     }
 

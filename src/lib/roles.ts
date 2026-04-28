@@ -852,6 +852,15 @@ export async function rejectMerchantTransition(
 
 /**
  * Transición: PENDING → APPROVED para un Driver.
+ *
+ * fix/aprobacion-sin-foto-driver (2026-04-28): la aprobación NO se bloquea por
+ * foto de perfil. Mismo criterio que aplicamos al merchant logo: aprobación =
+ * capacidad operativa, foto = visibilidad/UX al buyer en tracking. Antes
+ * bloqueábamos con throw PHOTO_MISSING, lo que dejaba al admin sin poder aprobar
+ * drivers que cargaron toda la documentación pero no subieron foto. La foto se
+ * sigue pidiendo en el form de registro y se puede subir post-aprobación; la
+ * pantalla de tracking del buyer cae a un avatar default con iniciales si el
+ * driver todavía no la cargó.
  */
 export async function approveDriverTransition(
     driverId: string,
@@ -859,22 +868,12 @@ export async function approveDriverTransition(
 ): Promise<void> {
     const now = new Date();
 
-    // Pre-condición: el driver debe tener foto de perfil (User.image). Es la
-    // cara que ven los buyers en la pantalla de tracking. Sin foto el sistema
-    // muestra un avatar vacío que reduce confianza.
     const pre = await prisma.driver.findUnique({
         where: { id: driverId },
-        select: { user: { select: { image: true } } },
+        select: { id: true },
     });
     if (!pre) {
         throw new Error("Driver not found");
-    }
-    if (!pre.user?.image || pre.user.image.trim().length === 0) {
-        const err: Error & { code?: string } = new Error(
-            "El repartidor todavía no cargó su foto de perfil. Pedile que suba una antes de aprobar."
-        );
-        err.code = "PHOTO_MISSING";
-        throw err;
     }
 
     await prisma.$transaction(async (tx) => {

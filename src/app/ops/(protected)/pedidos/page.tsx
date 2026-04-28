@@ -60,6 +60,14 @@ export default function AdminPedidosPage() {
     const [createBackup, setCreateBackup] = useState(true);
     const [backupName, setBackupName] = useState("");
     const [deleting, setDeleting] = useState(false);
+    // Hard delete (irreversible). Pide confirmación textual literal "ELIMINAR
+    // DEFINITIVAMENTE" para evitar accidentes. fix/aprobacion-sin-foto-driver
+    // (2026-04-28): caso de uso real son pedidos colgados de testing/drift que
+    // el soft delete no resuelve porque seguían apareciendo en /ops/live.
+    const [showHardDeleteModal, setShowHardDeleteModal] = useState(false);
+    const [hardDeleteConfirm, setHardDeleteConfirm] = useState("");
+    const [hardDeleting, setHardDeleting] = useState(false);
+    const HARD_DELETE_PHRASE = "ELIMINAR DEFINITIVAMENTE";
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalOrders, setTotalOrders] = useState(0);
@@ -209,6 +217,35 @@ export default function AdminPedidosPage() {
             console.error("Error:", error);
         } finally {
             setDeleting(false);
+        }
+    }
+
+    async function handleHardDelete() {
+        if (hardDeleteConfirm.trim() !== HARD_DELETE_PHRASE) return;
+        setHardDeleting(true);
+        try {
+            const res = await fetch("/api/admin/orders/hard-delete", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderIds: selectedOrders,
+                    confirmText: HARD_DELETE_PHRASE,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                setShowHardDeleteModal(false);
+                setHardDeleteConfirm("");
+                setSelectedOrders([]);
+                fetchOrders();
+            } else {
+                alert(data?.error || "Error al eliminar definitivamente");
+            }
+        } catch (error) {
+            console.error("Error en hard delete:", error);
+            alert("Error de conexión");
+        } finally {
+            setHardDeleting(false);
         }
     }
 
@@ -393,13 +430,23 @@ export default function AdminPedidosPage() {
                         </label>
 
                         {selectedOrders.length > 0 && (
-                            <button
-                                onClick={() => setShowDeleteModal(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Eliminar Selección
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Eliminar (con backup)
+                                </button>
+                                <button
+                                    onClick={() => setShowHardDeleteModal(true)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors"
+                                    title="Eliminar permanentemente de la base de datos (irreversible)"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Eliminar definitivamente
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -643,6 +690,79 @@ export default function AdminPedidosPage() {
                                     <Trash2 className="w-5 h-5" />
                                 )}
                                 Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hard Delete Modal — borrado permanente de la base con confirmación textual */}
+            {showHardDeleteModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl border-2 border-red-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-lg text-red-700 flex items-center gap-2">
+                                <Trash2 className="w-5 h-5" />
+                                Eliminar definitivamente
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setShowHardDeleteModal(false);
+                                    setHardDeleteConfirm("");
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <p className="text-sm text-red-900 font-bold mb-2">
+                                Acción irreversible
+                            </p>
+                            <p className="text-sm text-red-800">
+                                Vas a eliminar <span className="font-bold">{selectedOrders.length} pedido(s)</span> de
+                                forma permanente, junto con sus pagos asociados, sub-pedidos, items, chats e historial
+                                de asignaciones. Esta acción no se puede deshacer y no genera backup.
+                            </p>
+                            <p className="text-xs text-red-700 mt-2">
+                                Si solo querés ocultarlos del panel, usá &quot;Eliminar (con backup)&quot;.
+                            </p>
+                        </div>
+
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Para confirmar, escribí <span className="font-bold text-red-700">{HARD_DELETE_PHRASE}</span> abajo:
+                        </label>
+                        <input
+                            type="text"
+                            value={hardDeleteConfirm}
+                            onChange={(e) => setHardDeleteConfirm(e.target.value)}
+                            placeholder={HARD_DELETE_PHRASE}
+                            autoComplete="off"
+                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-4 font-mono"
+                        />
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowHardDeleteModal(false);
+                                    setHardDeleteConfirm("");
+                                }}
+                                className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleHardDelete}
+                                disabled={hardDeleting || hardDeleteConfirm.trim() !== HARD_DELETE_PHRASE}
+                                className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold"
+                            >
+                                {hardDeleting ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-5 h-5" />
+                                )}
+                                Eliminar definitivamente
                             </button>
                         </div>
                     </div>
