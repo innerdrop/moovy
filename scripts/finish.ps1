@@ -1,9 +1,18 @@
 # Script para Finalizar Cambios y Mergear a Develop - Moovy
-# Ejecutar: .\scripts\finish.ps1
+# Ejecutar: .\scripts\finish.ps1 [-Message "..."] [-NoChangelog]
+#
+# Mejoras 2026-04-28 (chore/finish-auto-changelog):
+# - Eliminado prompt interactivo de docs (fricción innecesaria, riesgo de apretar mal)
+# - CHANGELOG.md se auto-actualiza con entry generada del nombre de rama + fecha
+#   + mensaje de commit + archivos tocados. Sin preguntar.
+# - Pasá -NoChangelog para skipear (ramas de prueba, basura)
+# - Recordatorios NO BLOQUEANTES al final si el commit menciona ISSUE-### o
+#   tocó archivos de decisiones canónicas (schema, roles, auth, proxy, email-registry)
 
 param(
     [Parameter(Mandatory = $false)]
-    [string]$Message
+    [string]$Message,
+    [switch]$NoChangelog
 )
 
 Write-Host ""
@@ -34,60 +43,14 @@ if ($currentBranch -eq "main" -or $currentBranch -eq "develop") {
     Stop-WithError "Debes estar en una rama feature/fix/hotfix, no en $currentBranch"
 }
 
-# 2. Pre-flight check de docs (chore/optimize-claude-context, 2026-04-28).
-# Si la rama tocó schema.prisma o algún archivo en src/, recordá actualizar:
-#   - ISSUES.md (si cerró un issue)
-#   - .claude/CHANGELOG.md (entry de la rama, breve)
-#   - .claude/CLAUDE.md (si tocó decisión canónica o agregó regla nueva)
-# Patrón conocido: estos archivos drift cuando se actualizan manualmente.
-# Este prompt fuerza la introspección antes del commit.
-$touchedCode = git diff --cached --name-only 2>$null
-if ([string]::IsNullOrWhiteSpace($touchedCode)) {
-    $touchedCode = git diff --name-only HEAD 2>$null
-}
-$touchedDocs = $touchedCode | Where-Object {
-    $_ -match '^ISSUES\.md$' -or
-    $_ -match '^\.claude/CHANGELOG\.md$' -or
-    $_ -match '^\.claude/CLAUDE\.md$' -or
-    $_ -match '^PROJECT_STATUS\.md$'
-}
-$touchedRealCode = $touchedCode | Where-Object {
-    ($_ -match '^src/' -or $_ -match '^prisma/') -and -not ($_ -match '\.test\.|\.spec\.')
-}
-
-if ($touchedRealCode -and -not $touchedDocs) {
-    Write-Host ""
-    Write-Host "[DOCS] Esta rama tocó código (src/ o prisma/) pero NO modificó docs." -ForegroundColor Yellow
-    Write-Host "       Recordá actualizar:" -ForegroundColor Yellow
-    Write-Host "         - ISSUES.md            (si cerró un issue)" -ForegroundColor Gray
-    Write-Host "         - .claude/CHANGELOG.md (entry de la rama)" -ForegroundColor Gray
-    Write-Host "         - .claude/CLAUDE.md    (si tocó decisión canónica o regla nueva)" -ForegroundColor Gray
-    Write-Host ""
-    $docsAnswer = Read-Host "¿Querés actualizarlos antes de cerrar la rama? (s/n) [s]"
-    if ([string]::IsNullOrWhiteSpace($docsAnswer)) { $docsAnswer = "s" }
-    if ($docsAnswer -ieq "s") {
-        Write-Host ""
-        Write-Host "[ABORTADO] Editá los docs y volvé a correr finish.ps1 cuando estén listos." -ForegroundColor Yellow
-        exit 0
-    }
-    Write-Host "[INFO] Continuando sin actualizar docs (a tu cuenta)." -ForegroundColor Gray
-}
-
-# 3. Limpiar index.lock residual ANTES de cualquier operacion git.
-# Si una corrida anterior crasheo o un editor dejo el lock, 'git add .' abajo
-# fallaria. Lo limpiamos aca para que el resto del script corra limpio.
+# 2. Limpiar index.lock residual
 $lockFile = Join-Path (git rev-parse --git-dir 2>$null) "index.lock"
 if ($lockFile -and (Test-Path $lockFile)) {
-    Write-Host "[GIT] Eliminando index.lock residual de corrida anterior..." -ForegroundColor Yellow
+    Write-Host "[GIT] Eliminando index.lock residual..." -ForegroundColor Yellow
     Remove-Item -Force $lockFile -ErrorAction SilentlyContinue
 }
 
-# 3. Pedir mensaje de commit si no se proporciono (single-line).
-# PowerShell + Read-Host en loop tiene una trampa conocida con paste multilinea
-# desde clipboard: el \r\r\n que Windows mete entre lineas se interpreta como
-# linea vacia y cierra el loop antes de tiempo, dejando el resto del texto como
-# comandos sueltos en el shell. Por eso preferimos single-line y ofrecemos
-# 'git commit --amend' despues para expandir el mensaje si hace falta.
+# 3. Pedir mensaje de commit
 if ([string]::IsNullOrWhiteSpace($Message)) {
     Write-Host ""
     Write-Host "Descripcion del cambio (una linea; si queres body extenso, 'git commit --amend' despues):" -ForegroundColor Cyan
@@ -105,11 +68,11 @@ if ($LASTEXITCODE -ne 0) {
     Add-Error "[DB] Error al exportar la base de datos (codigo $LASTEXITCODE). El commit continua de todas formas."
 }
 
-# 5. Stage changes y chequear si hay algo para commitear
+# 5. Stage changes
 Write-Host "[GIT] Preparando cambios..." -ForegroundColor Yellow
 git add .
 if ($LASTEXITCODE -ne 0) {
-    Stop-WithError "'git add .' fallo con codigo $LASTEXITCODE. Revisa el estado del repo."
+    Stop-WithError "'git add .' fallo con codigo $LASTEXITCODE."
 }
 
 # Detectar caso "nothing to commit"
@@ -118,39 +81,86 @@ if ([string]::IsNullOrWhiteSpace($staged)) {
     Write-Host "[AVISO] No hay cambios staged para commitear." -ForegroundColor Yellow
     $answer = Read-Host "La rama $currentBranch ya esta en su estado final. Continuar al merge igual? (s/n)"
     if ($answer -ne "s") {
-        Stop-WithError "Proceso cancelado por el usuario. No se hizo commit ni merge."
+        Stop-WithError "Proceso cancelado por el usuario."
     }
     $skipCommit = $true
 } else {
     $skipCommit = $false
 }
 
-# 6. Commit usando archivo temporal (soporta caracteres especiales y UTF-8)
+# 6. AUTO-CHANGELOG: agregar entry a .claude/CHANGELOG.md ANTES del commit
+# (chore/finish-auto-changelog 2026-04-28). Solo si no hay -NoChangelog y no
+# es un commit vacio. La entry queda incluida en el mismo commit que el resto.
+if (-not $skipCommit -and -not $NoChangelog) {
+    $changelogPath = ".claude/CHANGELOG.md"
+    if (Test-Path $changelogPath) {
+        # Listar archivos staged excluyendo CHANGELOG mismo y database_dump
+        $touchedFiles = $staged | Where-Object {
+            $_ -ne ".claude/CHANGELOG.md" -and
+            $_ -ne "database_dump.sql"
+        }
+
+        if ($touchedFiles) {
+            $today = Get-Date -Format 'yyyy-MM-dd'
+            $filesArr = @($touchedFiles)
+            $filesShown = ($filesArr | Select-Object -First 8) -join ', '
+            $moreCount = $filesArr.Count - 8
+            if ($moreCount -gt 0) { $filesShown += " (+$moreCount mas)" }
+
+            # Construir entry markdown
+            $entry = "## $today (rama ``$currentBranch``)`r`n`r`n$Message`r`n`r`n**Archivos:** $filesShown`r`n`r`n"
+
+            # Leer CHANGELOG actual y buscar el separador "---" del header
+            $existing = Get-Content $changelogPath -Raw -Encoding UTF8
+            $marker = "`n---`n"
+            $insertIdx = $existing.IndexOf($marker)
+
+            if ($insertIdx -gt 0) {
+                $insertPos = $insertIdx + $marker.Length
+                # Saltear la newline siguiente al separador si existe
+                while ($insertPos -lt $existing.Length -and ($existing[$insertPos] -eq "`n" -or $existing[$insertPos] -eq "`r")) {
+                    $insertPos++
+                }
+                $newContent = $existing.Substring(0, $insertPos) + $entry + $existing.Substring($insertPos)
+
+                # Escribir UTF8 sin BOM
+                $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+                [System.IO.File]::WriteAllText((Resolve-Path $changelogPath), $newContent, $utf8NoBom)
+
+                git add $changelogPath
+                Write-Host "[CHANGELOG] Entry auto-agregada al CHANGELOG.md" -ForegroundColor Green
+            } else {
+                Write-Host "[CHANGELOG] No encontre el separador '---' del header. Skipeando auto-entry." -ForegroundColor Yellow
+            }
+        }
+    }
+}
+
+# 7. Commit usando archivo temporal (UTF-8 sin BOM)
 if (-not $skipCommit) {
     $tempMsgFile = Join-Path $env:TEMP ("moovy-commit-" + [guid]::NewGuid().ToString() + ".txt")
     try {
-        # UTF8 sin BOM para que git interprete los caracteres bien
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($tempMsgFile, $Message, $utf8NoBom)
 
         Write-Host "[GIT] Creando commit en $currentBranch..." -ForegroundColor Yellow
         git commit -F $tempMsgFile
         if ($LASTEXITCODE -ne 0) {
-            Stop-WithError "'git commit' fallo con codigo $LASTEXITCODE. Tus cambios siguen staged. Revisa el error arriba y reintenta."
+            Stop-WithError "'git commit' fallo con codigo $LASTEXITCODE. Tus cambios siguen staged."
         }
     } finally {
         if (Test-Path $tempMsgFile) { Remove-Item -Force $tempMsgFile }
     }
 
-    # 7. Push a la rama de trabajo (solo si commiteamos algo)
+    # 8. Push a rama de trabajo
     Write-Host "[GIT] Subiendo $currentBranch a origin..." -ForegroundColor Yellow
     git push origin $currentBranch
     if ($LASTEXITCODE -ne 0) {
-        Stop-WithError "'git push origin $currentBranch' fallo. Tus cambios estan commiteados localmente pero no en remoto. Reintenta el push manualmente."
+        Stop-WithError "'git push origin $currentBranch' fallo. Tus cambios estan commiteados localmente. Reintenta manualmente."
     }
 }
 
-# 8. Cambiar a develop y actualizar
+# 9. Cambiar a develop y actualizar
 Write-Host "[GIT] Actualizando develop..." -ForegroundColor Yellow
 git checkout develop
 if ($LASTEXITCODE -ne 0) {
@@ -163,74 +173,84 @@ if ($LASTEXITCODE -ne 0) {
     Stop-WithError "'git pull origin develop' fallo. Resolve manualmente antes de mergear."
 }
 
-# 9. Mergear la rama de trabajo y CAPTURAR el output
+# 10. Mergear
 Write-Host "[GIT] Mergeando $currentBranch a develop..." -ForegroundColor Yellow
 $mergeOutput = git merge $currentBranch --no-edit 2>&1 | Out-String
 $mergeExit = $LASTEXITCODE
 Write-Host $mergeOutput
 
 if ($mergeExit -ne 0) {
-    Add-Error "[GIT] Conflictos al mergear $currentBranch en develop (codigo $mergeExit). Resolvelos manualmente."
+    Add-Error "[GIT] Conflictos al mergear $currentBranch en develop (codigo $mergeExit)."
 }
 elseif ($mergeOutput -match "Already up to date" -or $mergeOutput -match "Already up-to-date") {
-    # Red flag: el merge no trajo nada nuevo. Probablemente el commit fallo silenciosamente antes.
     Write-Host "--------------------------------------" -ForegroundColor Red
     Write-Host "[ALERTA] El merge reporto 'Already up to date'." -ForegroundColor Red
-    Write-Host "Esto significa que develop no recibio ningun commit nuevo de $currentBranch." -ForegroundColor Red
-    Write-Host "Posibles causas:" -ForegroundColor Yellow
-    Write-Host "  - La rama $currentBranch no tenia commits propios respecto a develop" -ForegroundColor Yellow
-    Write-Host "  - Un commit anterior fallo silenciosamente" -ForegroundColor Yellow
-    Write-Host "Revisa 'git log develop..$currentBranch' antes de cerrar la rama." -ForegroundColor Yellow
+    Write-Host "develop no recibio ningun commit nuevo de $currentBranch." -ForegroundColor Yellow
+    Write-Host "Revisa 'git log develop..$currentBranch' antes de cerrar." -ForegroundColor Yellow
     Write-Host "--------------------------------------" -ForegroundColor Red
-    Add-Error "[GIT] Merge sin cambios nuevos desde $currentBranch ('Already up to date')"
+    Add-Error "[GIT] Merge sin cambios nuevos desde $currentBranch"
 }
 
-# 10. Subir develop (solo si el merge no fallo)
+# 11. Subir develop
 if ($mergeExit -eq 0) {
     Write-Host "[GIT] Subiendo develop..." -ForegroundColor Yellow
     git push origin develop
     if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al subir develop" }
 }
 
-# 11. Verificar estado limpio de develop post-merge
+# 12. Verificar develop limpio
 Write-Host "[GIT] Verificando que develop quede limpio..." -ForegroundColor Yellow
 $dirty = git status --porcelain
 if (-not [string]::IsNullOrWhiteSpace($dirty)) {
-    Write-Host "--------------------------------------" -ForegroundColor Red
-    Write-Host "[ALERTA] Develop tiene archivos modificados o staged despues del merge:" -ForegroundColor Red
+    Write-Host "[ALERTA] Develop tiene cambios pendientes despues del merge:" -ForegroundColor Red
     Write-Host $dirty -ForegroundColor Yellow
-    Write-Host "Esto NO deberia pasar. Revisa antes de seguir trabajando." -ForegroundColor Red
-    Write-Host "--------------------------------------" -ForegroundColor Red
-    Add-Error "[GIT] Develop quedo con cambios pendientes despues del merge"
+    Add-Error "[GIT] Develop quedo con cambios pendientes"
 }
 
 if ($errorSummary.Count -gt 0) {
     Write-Host "`n--------------------------------------" -ForegroundColor Red
     Write-Host "[REPORTE DE ERRORES]" -ForegroundColor Red
-    foreach ($err in $errorSummary) {
-        Write-Host " - $err" -ForegroundColor Red
-    }
+    foreach ($err in $errorSummary) { Write-Host " - $err" -ForegroundColor Red }
     Write-Host "--------------------------------------" -ForegroundColor Red
-    Write-Host "`nPor favor, resolvelos antes de continuar." -ForegroundColor Yellow
     exit 1
-} else {
-    Write-Host ""
-    Write-Host "[OK] CAMBIOS FINALIZADOS Y PUBLICADOS" -ForegroundColor Green
-    Write-Host "[INFO] La rama $currentBranch fue mergeada a develop" -ForegroundColor Cyan
-    Write-Host "[INFO] Tu companero puede ejecutar: .\scripts\sync.ps1" -ForegroundColor Cyan
+}
+
+Write-Host ""
+Write-Host "[OK] CAMBIOS FINALIZADOS Y PUBLICADOS" -ForegroundColor Green
+Write-Host "[INFO] La rama $currentBranch fue mergeada a develop" -ForegroundColor Cyan
+Write-Host ""
+
+# 13. Recordatorios NO BLOQUEANTES
+$reminders = @()
+
+# Si el commit message menciona ISSUE-###, recordar mover en ISSUES.md
+$issueMatches = [regex]::Matches($Message, 'ISSUE-\d+')
+if ($issueMatches.Count -gt 0) {
+    $issueIds = ($issueMatches | ForEach-Object { $_.Value } | Sort-Object -Unique) -join ', '
+    $reminders += "Mover $issueIds de 'abiertos' a 'resueltos en este sprint' en ISSUES.md"
+}
+
+# Si toco archivos de decisiones canonicas, sugerir verificar CLAUDE.md
+$canonicalPattern = 'prisma/schema\.prisma|src/lib/roles\.ts|src/lib/auth\.ts|src/lib/email-registry\.ts|src/proxy\.ts'
+$lastCommitFiles = git log -1 --name-only --pretty=format: HEAD 2>$null
+if ($lastCommitFiles -match $canonicalPattern) {
+    $reminders += "Esta rama toco archivos de decisiones canonicas. Verificar si CLAUDE.md necesita una decision nueva o regla acumulada (#29+)."
+}
+
+if ($reminders.Count -gt 0) {
+    Write-Host "[RECORDATORIOS NO BLOQUEANTES]" -ForegroundColor Yellow
+    foreach ($r in $reminders) { Write-Host "  - $r" -ForegroundColor Gray }
     Write-Host ""
 }
 
-# 12. Preguntar si eliminar la rama (solo si no hubo errores)
-if ($errorSummary.Count -eq 0) {
-    $delete = Read-Host "Eliminar la rama $currentBranch? (s/n)"
-    if ($delete -eq "s") {
-        git branch -d $currentBranch 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "[ERROR] No se pudo eliminar la rama local (puede que aun estes en ella o que tenga commits no mergeados)" -ForegroundColor Red
-        } else {
-            git push origin --delete $currentBranch 2>$null
-            Write-Host "[OK] Rama eliminada local y remota" -ForegroundColor Green
-        }
+# 14. Eliminar la rama
+$delete = Read-Host "Eliminar la rama $currentBranch? (s/n)"
+if ($delete -eq "s") {
+    git branch -d $currentBranch 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] No se pudo eliminar la rama local" -ForegroundColor Red
+    } else {
+        git push origin --delete $currentBranch 2>$null
+        Write-Host "[OK] Rama eliminada local y remota" -ForegroundColor Green
     }
 }
