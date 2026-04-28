@@ -5,7 +5,9 @@
 
 ---
 
-Leé CLAUDE.md, PROJECT_STATUS.md e ISSUES.md.
+Leé `.claude/CLAUDE.md`, `PROJECT_STATUS.md` e `ISSUES.md`.
+
+> **Importante**: NO leas `.claude/CHANGELOG.md` salvo que te lo pida explícitamente. Es el histórico cronológico de ramas (~33K tokens). Cargarlo de gratis quema context window. Solo abrirlo bajo demanda con `grep` cuando necesite contexto de una rama, decisión o bug específico.
 
 Sos el CEO y CTO de Moovy en la recta final. Las reglas son:
 
@@ -14,7 +16,6 @@ Sos el CEO y CTO de Moovy en la recta final. Las reglas son:
 **Regla 2 — Fix before add**: No tocás nada nuevo si hay un issue crítico 🔴 abierto en ISSUES.md.
 
 **Regla 3 — Verificar antes de cerrar**: Una tarea no está completa hasta que:
-
 - El código está implementado
 - Probaste el caso feliz
 - Probaste al menos un caso de error o borde
@@ -36,52 +37,6 @@ Sos el CEO y CTO de Moovy en la recta final. Las reglas son:
 
 ---
 
-## Lo que queda pendiente hoy
-
-### Sprint en curso (post-deploy 2026-04-25 — plan de ramas chicas)
-
-**Ya cerradas hoy (orden cronológico):**
-
-1. ✅ `auto-refresh-rol-aprobado` — JWT del user se refresca solo cuando el admin aprueba su comercio/driver/seller. Antes había que hacer logout+login. Socket event `roles_updated` + listener client + `useSession.update({refreshRoles:true})`.
-2. ✅ `fix/comercio-onboarding-completo` — banner "podés completar después" en registro merchant + checklist auto-hide al 100% obligatorios + aprobación OPS distingue digital/físico (con nota AAIP) + logo obligatorio.
-3. ✅ `ops-upload-logo-merchant` — admin sube logo en nombre del merchant desde OPS + checklist usa `<doc>Status === APPROVED` (no chequea si tiene URL/valor) + nota física visible al admin + banner "Aprobado por administrador" al merchant cuando es PHYSICAL.
-4. ✅ `wording-publico-no-ops` — reemplazado "OPS" por "el equipo de Moovy" en TODOS los textos visibles al usuario (5 archivos: SettingsForm, ProfileView, 2 endpoints change-request, email.ts). OPS queda solo en comentarios internos y comunicaciones admin↔admin.
-5. ✅ `fix/driver-profile-decrypt-cuit` — driver ya ve su CUIT plaintext en el panel (antes mostraba el ciphertext hex). Bonus: endpoint `/api/driver/documents/update` ahora encripta antes de guardar (cerraba bug latente — drivers que actualizaban su CUIT lo dejaban en plaintext en DB, violando AAIP).
-6. ✅ `fix/modales-aprobacion-docs` — nuevo `DocApprovalModal` con diseño Moovy reemplaza window.confirm/prompt nativos del browser en aprobación de docs. Radios DIGITAL/FÍSICO + textarea condicional con contador + botón Aprobar deshabilitado hasta validación.
-
-**Próxima rama (continúa en otra ventana):**
-
-7. ⏳ `fix/auth-bloqueo-y-reset` — warning "te quedan X intentos" antes de bloqueo + fix botón "Desbloquear cuenta" en OPS (no funciona) + auditoría reset password (verificar que token de un solo uso, rate limit `/api/auth/forgot-password`, mensaje genérico anti email-enumeration, validación strength).
-
-**Después del paso 7:**
-
-8. ⏳ `fix/producto-multifoto-carousel` — bug visible: producto con 3+ fotos solo muestra la primera en la página de detalle. Necesita carousel táctil (swipe).
-9. ⏳ `feat/ops-crear-cuentas` — admin crea cuentas de buyer/driver/seller desde OPS (merchant ya existe). Cada uno crea User + entidad asociada con magic link de set-password (no password en plaintext del admin).
-
-**Post-launch (ramas grandes, NO bloquean):**
-
-- `feat/driver-bank-mp` — Driver no tiene campos bancarios en schema (`bankAccount`, `bankAlias`, `bankCbu`, `mpUserId`, etc). Hoy admin paga manual fuera del sistema. Requiere schema + UI registro driver + OAuth flow MP (que hoy solo merchant tiene).
-- `feat/propinas-driver` — buyer le da propina al driver post-DELIVERED. 3 montos pre + custom. Schema (`Order.driverTip`), UI buyer en `/mis-pedidos/[orderId]`, endpoint, lógica de cobro MP, agregar al payout del driver.
-- `[POST-LAUNCH] Bug encoding UTF-8` — task #115 en auto-memory: cada deploy a producción rompe tildes en datos de DB ("Electrónica" → "Electr├│nica"). Probable: psql encoding o pipe PowerShell→SSH→bash. Cosmético, no bloqueante. Ver `.auto-memory/project_utf8_encoding_bug.md`.
-
-### Pre-launch original (sigue válido)
-
-**Crítico restante (solo 1):**
-
-- **ISSUE-004** — Limpiar data de prueba antes de abrir al público. Hoy se ejecuta con `scripts/clean-db-pre-launch.ts` (ya escrito y validado el 2026-04-24). Modo dry-run por default; con `--execute` pide confirmación interactiva "SI BORRAR". Preserva admin OPS + StoreSettings + PointsConfig + MoovyConfig + categorías. Borra el resto.
-
-**Mejoras incrementales del PIN (post-launch, no bloquean):**
-
-- Fase 11 — Offline mode con IndexedDB + service worker cache
-- Fase 12 — Flow "no pude entregar" (foto + GPS + espera validada)
-- Fase 13 — Cron 5min que detecta drivers no-moviendo >10min con orden activa
-
-**Otras tareas abiertas:**
-
-- Habilitar Routes API en Google Cloud Console (proyecto 1036892490928) y setear `NEXT_PUBLIC_USE_ROUTES_API=true` — hoy cae al legacy DirectionsService
-
----
-
 ## Cierre de rama (obligatorio)
 
 Al terminar cualquier cambio de código, cerrar con:
@@ -90,7 +45,17 @@ Al terminar cualquier cambio de código, cerrar con:
 .\scripts\finish.ps1
 ```
 
-El script me pide descripción → hace commit + push + merge a develop + delete branch. No uses comandos git manuales para cerrar. Pasame solo el texto de descripción cuando esté listo.
+El script ahora:
+- Detecta si tocaste código (src/ o prisma/) pero no actualizaste docs
+- Te pide actualizar `ISSUES.md` / `.claude/CHANGELOG.md` / `.claude/CLAUDE.md` antes de seguir
+- Hace commit + push + merge a develop + delete branch
+
+Pasame solo el texto de descripción cuando esté listo. NO uses comandos git manuales para cerrar.
+
+**Antes del commit**, asegurate de actualizar:
+- `ISSUES.md` si la rama cerró un issue (mover a "Resueltos en este sprint")
+- `.claude/CHANGELOG.md` con una entry breve de la rama (título + 2-3 líneas + archivos)
+- `.claude/CLAUDE.md` SOLO si la rama agregó una decisión canónica nueva o una regla acumulada nueva (#29 en adelante)
 
 ---
 
@@ -105,7 +70,7 @@ El script me pide descripción → hace commit + push + merge a develop + delete
 - [ ] Puntos MOOVER se otorgan solo cuando el pedido llega a DELIVERED, no antes
 - [ ] Cancelación/refund: puntos ganados se revierten, puntos canjeados vuelven al balance
 
-### Sistema PIN doble (ya implementado, falta probar end-to-end)
+### Sistema PIN doble
 
 - [ ] PIN de retiro: comercio lo ve claramente en DRIVER_ARRIVED, repartidor lo ingresa, sistema avanza
 - [ ] PIN de entrega: comprador lo ve en la app cuando el driver sale del comercio (PICKED_UP)
@@ -146,7 +111,7 @@ El script me pide descripción → hace commit + push + merge a develop + delete
 ## Al cierre de cada sesión
 
 1. Marcá [x] los issues resueltos en ISSUES.md con la fecha de hoy
-2. Moverlos a sección "Resueltos" con fecha
+2. Moverlos a sección "Resueltos en este sprint" con fecha
 3. Decime:
    - Qué resolví hoy (con verificación confirmada)
    - Qué queda abierto y por qué

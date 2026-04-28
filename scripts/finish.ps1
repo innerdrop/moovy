@@ -34,7 +34,46 @@ if ($currentBranch -eq "main" -or $currentBranch -eq "develop") {
     Stop-WithError "Debes estar en una rama feature/fix/hotfix, no en $currentBranch"
 }
 
-# 2. Limpiar index.lock residual ANTES de cualquier operacion git.
+# 2. Pre-flight check de docs (chore/optimize-claude-context, 2026-04-28).
+# Si la rama tocó schema.prisma o algún archivo en src/, recordá actualizar:
+#   - ISSUES.md (si cerró un issue)
+#   - .claude/CHANGELOG.md (entry de la rama, breve)
+#   - .claude/CLAUDE.md (si tocó decisión canónica o agregó regla nueva)
+# Patrón conocido: estos archivos drift cuando se actualizan manualmente.
+# Este prompt fuerza la introspección antes del commit.
+$touchedCode = git diff --cached --name-only 2>$null
+if ([string]::IsNullOrWhiteSpace($touchedCode)) {
+    $touchedCode = git diff --name-only HEAD 2>$null
+}
+$touchedDocs = $touchedCode | Where-Object {
+    $_ -match '^ISSUES\.md$' -or
+    $_ -match '^\.claude/CHANGELOG\.md$' -or
+    $_ -match '^\.claude/CLAUDE\.md$' -or
+    $_ -match '^PROJECT_STATUS\.md$'
+}
+$touchedRealCode = $touchedCode | Where-Object {
+    ($_ -match '^src/' -or $_ -match '^prisma/') -and -not ($_ -match '\.test\.|\.spec\.')
+}
+
+if ($touchedRealCode -and -not $touchedDocs) {
+    Write-Host ""
+    Write-Host "[DOCS] Esta rama tocó código (src/ o prisma/) pero NO modificó docs." -ForegroundColor Yellow
+    Write-Host "       Recordá actualizar:" -ForegroundColor Yellow
+    Write-Host "         - ISSUES.md            (si cerró un issue)" -ForegroundColor Gray
+    Write-Host "         - .claude/CHANGELOG.md (entry de la rama)" -ForegroundColor Gray
+    Write-Host "         - .claude/CLAUDE.md    (si tocó decisión canónica o regla nueva)" -ForegroundColor Gray
+    Write-Host ""
+    $docsAnswer = Read-Host "¿Querés actualizarlos antes de cerrar la rama? (s/n) [s]"
+    if ([string]::IsNullOrWhiteSpace($docsAnswer)) { $docsAnswer = "s" }
+    if ($docsAnswer -ieq "s") {
+        Write-Host ""
+        Write-Host "[ABORTADO] Editá los docs y volvé a correr finish.ps1 cuando estén listos." -ForegroundColor Yellow
+        exit 0
+    }
+    Write-Host "[INFO] Continuando sin actualizar docs (a tu cuenta)." -ForegroundColor Gray
+}
+
+# 3. Limpiar index.lock residual ANTES de cualquier operacion git.
 # Si una corrida anterior crasheo o un editor dejo el lock, 'git add .' abajo
 # fallaria. Lo limpiamos aca para que el resto del script corra limpio.
 $lockFile = Join-Path (git rev-parse --git-dir 2>$null) "index.lock"
