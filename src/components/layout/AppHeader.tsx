@@ -8,6 +8,7 @@ import { ShoppingBag, MapPin, Package, X, ChevronRight, Bell, Search, Loader2, S
 import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
 import UploadImage from "@/components/ui/UploadImage";
+import UserAvatarMenu from "@/components/layout/UserAvatarMenu";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -34,7 +35,7 @@ export default function AppHeader({
 
     const router = useRouter();
     const pathname = usePathname();
-    const isMarketplace = pathname?.startsWith("/marketplace");
+    const isMarketplace = !!pathname?.startsWith("/marketplace");
     const isHomepage = pathname === "/";
     const isBuscar = pathname === "/buscar";
 
@@ -230,12 +231,7 @@ export default function AppHeader({
                     {/* Left: Location or Greeting */}
                     <div className="flex items-center gap-2">
                         {isLoggedIn && firstName ? (
-                            <Link href="/mi-perfil" className="flex items-center gap-1.5">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
-                                    {firstName.charAt(0).toUpperCase()}
-                                </div>
-                                <span className="text-sm font-semibold hidden xs:inline text-gray-900">{firstName}</span>
-                            </Link>
+                            <UserAvatarMenu firstName={firstName} isMarketplace={isMarketplace} size="sm" />
                         ) : (
                             <div className="flex items-center gap-1 text-gray-600">
                                 <MapPin className={`w-4 h-4 ${isMarketplace ? "text-[#7C3AED]" : "text-[#e60012]"}`} />
@@ -324,12 +320,7 @@ export default function AppHeader({
                             />
                         </Link>
                         {isLoggedIn && firstName ? (
-                            <Link href="/mi-perfil" className="flex items-center gap-2 hover:opacity-80 transition">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${isMarketplace ? "bg-[#7C3AED]" : "bg-[#e60012]"}`}>
-                                    {firstName.charAt(0).toUpperCase()}
-                                </div>
-                                <span className="text-sm font-semibold text-gray-900">{firstName}</span>
-                            </Link>
+                            <UserAvatarMenu firstName={firstName} isMarketplace={isMarketplace} size="md" />
                         ) : (
                             <div className="flex items-center gap-1.5 text-sm text-gray-500 font-medium">
                                 <MapPin className={`w-3.5 h-3.5 ${isMarketplace ? "text-[#7C3AED]" : "text-[#e60012]"}`} />

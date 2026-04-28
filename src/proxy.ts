@@ -147,13 +147,21 @@ export default auth(async (request) => {
         }
     }
 
-    // Protect /comercios/* routes (except login)
-    if (pathname.startsWith('/comercios') && !pathname.startsWith('/comercios/login')) {
+    // Protect /comercios/* routes (except login y registro).
+    // feat/avatar-dropdown-portales (2026-04-28): el chequeo de rol fue removido —
+    // mismo criterio que el FIX 2026-04-15 aplico a /repartidor/*. El JWT roles[]
+    // es cache, no source of truth: puede estar desincronizado con el estado real
+    // del Merchant si la aprobacion ocurrio en esta sesion y el RoleUpdateListener
+    // todavia no propago el refresh. Confiar en el JWT aca causa que el avatar
+    // dropdown bouncee a "/" antes de que el layout protegido evalue el acceso.
+    // El layout `/comercios/(protected)` ya usa `requireMerchantAccess()` que
+    // consulta DB via `computeUserAccess()` y redirige al lugar correcto
+    // (/comercios/login, /comercios/registro, /comercios/pendiente-aprobacion,
+    // /cuenta-archivada o /cuenta-suspendida) segun el estado real. Mantener
+    // solo la validacion de sesion.
+    if (pathname.startsWith('/comercios') && !pathname.startsWith('/comercios/login') && !pathname.startsWith('/comercios/registro')) {
         if (!session) {
             return NextResponse.redirect(publicUrl('/comercios/login', request));
-        }
-        if (!hasAnyRole(session, ['MERCHANT', 'COMERCIO', 'ADMIN'])) {
-            return NextResponse.redirect(publicUrl('/', request));
         }
     }
 
