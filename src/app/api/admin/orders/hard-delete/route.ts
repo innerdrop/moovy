@@ -29,10 +29,12 @@ const REQUIRED_CONFIRM = "ELIMINAR DEFINITIVAMENTE";
 
 const BodySchema = z.object({
     orderIds: z.array(z.string().min(1)).min(1).max(100),
-    confirmText: z.literal(REQUIRED_CONFIRM, {
-        errorMap: () => ({
-            message: `Debés escribir exactamente "${REQUIRED_CONFIRM}" para confirmar`,
-        }),
+    // Zod 3: z.literal() no acepta { errorMap } como segundo argumento. Usamos
+    // z.string().refine() para tener control del mensaje custom.
+    // fix/hard-delete-zod-literal (2026-04-28) — atrapado por el pre-flight TS
+    // check del nuevo devmain.ps1 antes de deployar a producción.
+    confirmText: z.string().refine((val) => val === REQUIRED_CONFIRM, {
+        message: `Debés escribir exactamente "${REQUIRED_CONFIRM}" para confirmar`,
     }),
 });
 
