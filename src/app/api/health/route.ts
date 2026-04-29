@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-    const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
+    // url incluido para debug del fix/devmain-smoke-socket-pm2: confirma cuál
+    // URL se usó para chequear el socket-server cuando hay múltiples opciones
+    // (SOCKET_INTERNAL_URL / SOCKET_PORT / NEXT_PUBLIC_SOCKET_URL).
+    const checks: Record<string, { status: string; latencyMs?: number; error?: string; url?: string; [k: string]: unknown }> = {};
 
     // 1. Database connectivity
     const dbStart = Date.now();
