@@ -391,7 +391,16 @@ if ($dbStep) {
 # Detectado el 2026-04-29: socket-server llevaba 15D sin reload mientras la
 # app Next.js se actualizaba con cada deploy. /api/health daba 503 por el
 # endpoint /health del socket que no existía en versiones viejas.
-$remoteCommand += " && echo '[VPS] npm run build...' && npm run build && pm2 reload all --update-env"
+# fix/devmain-clean-build (2026-04-29): siempre rm -rf .next antes del build.
+# Bug detectado en producción: Next.js 16 con Turbopack hace builds incrementales
+# y el manifest interno (que mapea URLs a route handlers) puede quedar stale
+# después de un git reset --hard. Resultado: rutas existentes en disco y en
+# .next/server/app/ pero NO registradas en el manifest, devolviendo 404 aunque
+# el handler exista. Caso real: /api/onboarding daba 404 después de pm2 reload
+# y pm2 restart porque el .next/ tenía manifest viejo. Solución profesional:
+# build limpio en cada deploy. Trade-off: +30-60s por build (sin cache
+# incremental) a cambio de determinismo. Vale la pena para deploys de prod.
+$remoteCommand += " && echo '[VPS] rm -rf .next (clean build)...' && rm -rf .next && echo '[VPS] npm run build...' && npm run build && pm2 reload all --update-env"
 
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand" 2>&1 | Out-Host
 $deploySuccess = ($LASTEXITCODE -eq 0)

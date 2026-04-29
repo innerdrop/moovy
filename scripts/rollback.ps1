@@ -109,11 +109,14 @@ $tagCommit = (git rev-parse "$Tag^{commit}").Trim()
 # Maintenance ON
 'UPDATE "StoreSettings" SET "isMaintenanceMode" = true WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
 
+# fix/devmain-clean-build (2026-04-29): rm -rf .next antes del build para evitar
+# manifest stale de Next.js 16 incremental. Mismo motivo que devmain.ps1.
 $rollbackCmd = "cd $VPS_PATH && " +
     "git fetch origin --tags && " +
     "git reset --hard $tagCommit && " +
     "npm ci && " +
     "npx prisma generate && " +
+    "rm -rf .next && " +
     "npm run build && " +
     "pm2 reload all --update-env"
 
