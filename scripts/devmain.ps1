@@ -386,7 +386,12 @@ if ($dbStep) {
 }
 
 # pm2 reload (zero-downtime, mejora 11)
-$remoteCommand += " && echo '[VPS] npm run build...' && npm run build && pm2 reload moovy"
+# pm2 reload all en vez de solo moovy: el socket-server (moovy-socket) es un
+# proceso pm2 separado y si solo recargamos moovy, queda con código viejo.
+# Detectado el 2026-04-29: socket-server llevaba 15D sin reload mientras la
+# app Next.js se actualizaba con cada deploy. /api/health daba 503 por el
+# endpoint /health del socket que no existía en versiones viejas.
+$remoteCommand += " && echo '[VPS] npm run build...' && npm run build && pm2 reload all --update-env"
 
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand" 2>&1 | Out-Host
 $deploySuccess = ($LASTEXITCODE -eq 0)

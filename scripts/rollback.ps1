@@ -115,7 +115,7 @@ $rollbackCmd = "cd $VPS_PATH && " +
     "npm ci && " +
     "npx prisma generate && " +
     "npm run build && " +
-    "pm2 reload moovy"
+    "pm2 reload all --update-env"
 
 ssh "$VPS_USER@$VPS_HOST" "$rollbackCmd" 2>&1 | Out-Host
 $codeOk = ($LASTEXITCODE -eq 0)
@@ -149,7 +149,7 @@ if (-not $NoDB) {
         } else {
             Write-Host "  OK restore DB" -ForegroundColor Green
             # Reiniciar app despues del restore
-            ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && pm2 reload moovy" | Out-Null
+            ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && pm2 reload all --update-env" | Out-Null
         }
     } else {
         Write-Host "  Skipped restore DB" -ForegroundColor Gray
