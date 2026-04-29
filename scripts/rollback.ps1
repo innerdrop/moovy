@@ -107,7 +107,7 @@ Write-Host "[VPS] Reverting code to $Tag..." -ForegroundColor Yellow
 $tagCommit = (git rev-parse "$Tag^{commit}").Trim()
 
 # Maintenance ON
-ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = true WHERE id = 'settings';\"" | Out-Null
+'UPDATE "StoreSettings" SET "isMaintenanceMode" = true WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
 
 $rollbackCmd = "cd $VPS_PATH && " +
     "git fetch origin --tags && " +
@@ -157,7 +157,7 @@ if (-not $NoDB) {
 }
 
 # === PASO 6: Maintenance OFF + Smoke test ===
-ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
+'UPDATE "StoreSettings" SET "isMaintenanceMode" = false WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
 Write-Host "  OK maintenance OFF" -ForegroundColor Green
 
 Write-Host ""

@@ -326,7 +326,7 @@ if (-not $NoDB) {
 # === PASO 10: Maintenance mode ON (mejora 10) ===
 Write-Host ""
 Write-Host "[10/15] Activando maintenance mode..." -ForegroundColor Yellow
-ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = true WHERE id = 'settings';\"" | Out-Null
+'UPDATE "StoreSettings" SET "isMaintenanceMode" = true WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
 Write-Host "  OK maintenance ON" -ForegroundColor Green
 
 # === PASO 11: Git merge develop -> main + push ===
@@ -336,7 +336,7 @@ git checkout main 2>&1 | Out-Null
 git pull origin main --no-edit 2>&1 | Out-Null
 git merge develop --no-edit -m "deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm') ($commitsCount commits)"
 if ($LASTEXITCODE -ne 0) {
-    ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
+    'UPDATE "StoreSettings" SET "isMaintenanceMode" = false WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
     ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
     Stop-WithError "Conflictos al mergear develop -> main. Resolve manualmente."
 }
@@ -397,28 +397,48 @@ if (-not $deploySuccess) {
 Write-Host "  $(if ($deploySuccess) { 'OK' } else { 'ERROR' }) deploy remoto" -ForegroundColor $(if ($deploySuccess) { 'Green' } else { 'Red' })
 
 # === PASO 13: Smoke test post-deploy (mejora 12) ===
+# fix/devmain-smoke-and-escapes (2026-04-28): retry con backoff. Antes era un
+# solo intento con 5s de espera, lo que causaba falsos positivos cuando
+# Next.js+Turbopack tardaba en estar listo para servir tráfico real (deploy
+# real del 2026-04-28 fallo en este paso aunque la app estaba OK). Ahora
+# 5 intentos con esperas crecientes (5/10/15/20/30 = ~80s total). Si cualquier
+# intento responde 200, OK.
 Write-Host ""
 Write-Host "[13/15] Smoke test post-deploy..." -ForegroundColor Yellow
 
 if ($deploySuccess) {
-    Start-Sleep -Seconds 5
+    # 13.a /api/health con retry y backoff
+    $healthOk = $false
+    $waitTimes = @(5, 10, 15, 20, 30)  # acumulado: 5, 15, 30, 50, 80 segundos
+    $lastError = ""
 
-    # 13.a /api/health
-    try {
-        $health = Invoke-WebRequest -Uri "https://somosmoovy.com/api/health" -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
-        if ($health.StatusCode -eq 200) {
-            Write-Host "  OK /api/health 200" -ForegroundColor Green
-        } else {
-            Add-Error "[HEALTH] Status $($health.StatusCode)"
-            $deploySuccess = $false
+    for ($i = 0; $i -lt $waitTimes.Length; $i++) {
+        $wait = $waitTimes[$i]
+        Write-Host "  -> Intento $($i + 1)/$($waitTimes.Length) (espera $wait s)..." -ForegroundColor Gray
+        Start-Sleep -Seconds $wait
+
+        try {
+            $health = Invoke-WebRequest -Uri "https://somosmoovy.com/api/health" -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+            if ($health.StatusCode -eq 200) {
+                Write-Host "  OK /api/health 200 (intento $($i + 1))" -ForegroundColor Green
+                $healthOk = $true
+                break
+            } else {
+                $lastError = "Status $($health.StatusCode)"
+            }
+        } catch {
+            $lastError = "$_"
         }
-    } catch {
-        Add-Error "[HEALTH] No responde: $_"
+        Write-Host "    Intento $($i + 1) fallo: $lastError" -ForegroundColor Yellow
+    }
+
+    if (-not $healthOk) {
+        Add-Error "[HEALTH] No responde en 5 intentos (~80s total). Ultimo error: $lastError"
         $deploySuccess = $false
     }
 
-    # 13.b pm2 status
-    if ($deploySuccess) {
+    # 13.b pm2 status (solo si /api/health pasó)
+    if ($healthOk) {
         $pm2Status = (ssh "$VPS_USER@$VPS_HOST" "pm2 jlist 2>/dev/null | python3 -c \`"import sys,json; data=json.load(sys.stdin); m=[p for p in data if p['name']=='moovy']; print(m[0]['pm2_env']['status'] if m else 'NOT_FOUND')\`" 2>&1").Trim()
         if ($pm2Status -eq "online") {
             Write-Host "  OK pm2 status: online" -ForegroundColor Green
@@ -434,7 +454,7 @@ Write-Host ""
 Write-Host "[14/15] Cleanup post-deploy..." -ForegroundColor Yellow
 
 # 14.a Maintenance OFF
-ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
+'UPDATE "StoreSettings" SET "isMaintenanceMode" = false WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
 Write-Host "  OK maintenance OFF" -ForegroundColor Green
 
 # 14.b Tag git (solo si deploy fue exitoso)
