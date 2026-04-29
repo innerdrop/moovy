@@ -303,7 +303,7 @@ if (-not $NoDB) {
     Write-Host ""
     Write-Host "[9/15] Backup DB pre-deploy..." -ForegroundColor Yellow
     $backupName = "backup_pre_deploy_$(Get-Date -Format 'yyyyMMdd_HHmmss').sql"
-    ssh "$VPS_USER@$VPS_HOST" "mkdir -p $VPS_BACKUP_DIR && PGPASSWORD=postgres pg_dump -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER $VPS_DB_NAME > $VPS_BACKUP_DIR/$backupName"
+    ssh "$VPS_USER@$VPS_HOST" "mkdir -p $VPS_BACKUP_DIR && docker exec moovy-db pg_dump -U $VPS_DB_USER $VPS_DB_NAME > $VPS_BACKUP_DIR/$backupName"
     if ($LASTEXITCODE -ne 0) {
         Add-Error "[BACKUP] Error al hacer backup de DB. Continuando bajo tu propio riesgo."
         $continueBackup = Read-Host "Backup fallo. Continuar igual? (s/n) [n]"
@@ -326,7 +326,7 @@ if (-not $NoDB) {
 # === PASO 10: Maintenance mode ON (mejora 10) ===
 Write-Host ""
 Write-Host "[10/15] Activando maintenance mode..." -ForegroundColor Yellow
-ssh "$VPS_USER@$VPS_HOST" "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = true WHERE id = 'settings';\"" | Out-Null
+ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = true WHERE id = 'settings';\"" | Out-Null
 Write-Host "  OK maintenance ON" -ForegroundColor Green
 
 # === PASO 11: Git merge develop -> main + push ===
@@ -336,7 +336,7 @@ git checkout main 2>&1 | Out-Null
 git pull origin main --no-edit 2>&1 | Out-Null
 git merge develop --no-edit -m "deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm') ($commitsCount commits)"
 if ($LASTEXITCODE -ne 0) {
-    ssh "$VPS_USER@$VPS_HOST" "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
+    ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
     ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
     Stop-WithError "Conflictos al mergear develop -> main. Resolve manualmente."
 }
@@ -368,7 +368,7 @@ if ($CleanProd) {
         ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
         Stop-WithError "Necesitas OPS_LOGIN_PASSWORD para -CleanProd"
     }
-    $dbStep = "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && npx prisma db push --accept-data-loss && ADMIN_PASSWORD='$adminPass' npx tsx prisma/seed-production.ts"
+    $dbStep = "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && npx prisma db push --accept-data-loss && ADMIN_PASSWORD='$adminPass' npx tsx prisma/seed-production.ts"
 } elseif ($SchemaOnly) {
     $dbStep = "npx prisma db push --accept-data-loss"
 }
@@ -434,7 +434,7 @@ Write-Host ""
 Write-Host "[14/15] Cleanup post-deploy..." -ForegroundColor Yellow
 
 # 14.a Maintenance OFF
-ssh "$VPS_USER@$VPS_HOST" "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
+ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
 Write-Host "  OK maintenance OFF" -ForegroundColor Green
 
 # 14.b Tag git (solo si deploy fue exitoso)

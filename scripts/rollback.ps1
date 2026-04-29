@@ -86,7 +86,7 @@ Write-Host ""
 if (-not $NoDB) {
     $preRollbackBackup = "backup_pre_rollback_$(Get-Date -Format 'yyyyMMdd_HHmmss').sql"
     Write-Host "[VPS] Backup del estado actual antes del rollback ($preRollbackBackup)..." -ForegroundColor Yellow
-    ssh "$VPS_USER@$VPS_HOST" "PGPASSWORD=postgres pg_dump -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER $VPS_DB_NAME > $VPS_BACKUP_DIR/$preRollbackBackup"
+    ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db pg_dump -U $VPS_DB_USER $VPS_DB_NAME > $VPS_BACKUP_DIR/$preRollbackBackup"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  [WARN] Backup pre-rollback fallo. Continuando bajo tu cuenta." -ForegroundColor Yellow
     } else {
@@ -107,7 +107,7 @@ Write-Host "[VPS] Reverting code to $Tag..." -ForegroundColor Yellow
 $tagCommit = (git rev-parse "$Tag^{commit}").Trim()
 
 # Maintenance ON
-ssh "$VPS_USER@$VPS_HOST" "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = true WHERE id = 'settings';\"" | Out-Null
+ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = true WHERE id = 'settings';\"" | Out-Null
 
 $rollbackCmd = "cd $VPS_PATH && " +
     "git fetch origin --tags && " +
@@ -142,7 +142,7 @@ if (-not $NoDB) {
 
     if (-not [string]::IsNullOrWhiteSpace($backupFile)) {
         Write-Host "[VPS] Restaurando DB desde $backupFile..." -ForegroundColor Yellow
-        $restoreCmd = "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME < $backupFile"
+        $restoreCmd = "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS postgis;' && docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME < $backupFile"
         ssh "$VPS_USER@$VPS_HOST" "$restoreCmd" 2>&1 | Out-Host
         if ($LASTEXITCODE -ne 0) {
             Write-Host "[ERROR] Restore DB fallo. La DB puede estar en estado intermedio." -ForegroundColor Red
@@ -157,7 +157,7 @@ if (-not $NoDB) {
 }
 
 # === PASO 6: Maintenance OFF + Smoke test ===
-ssh "$VPS_USER@$VPS_HOST" "PGPASSWORD=postgres psql -h 127.0.0.1 -p $VPS_DB_PORT -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
+ssh "$VPS_USER@$VPS_HOST" "docker exec moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME -c \"UPDATE \`\"StoreSettings\`\" SET \`\"isMaintenanceMode\`\" = false WHERE id = 'settings';\"" | Out-Null
 Write-Host "  OK maintenance OFF" -ForegroundColor Green
 
 Write-Host ""
