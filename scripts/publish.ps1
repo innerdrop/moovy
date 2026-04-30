@@ -24,13 +24,21 @@ if ($currentBranch -eq "main") {
     exit 1
 }
 
-# 2. Exportar Base de Datos
-Write-Host "[DB] Exportando base de datos a database_dump.sql (UTF-8)..." -ForegroundColor Yellow
+# 2. Exportar Base de Datos (UTF-8 raw)
+# fix/utf8-encoding-pipeline (2026-04-30): generamos el dump dentro del container
+# y lo copiamos con docker cp (bytes raw). Antes capturabamos el stdout de pg_dump
+# en una variable de PowerShell, lo cual reinterpretaba los bytes UTF-8 con el
+# codepage de Windows y rompia los acentos. Con docker cp el archivo nunca pasa
+# por la consola, queda en UTF-8 puro.
+Write-Host "[DB] Exportando base de datos a database_dump.sql (UTF-8 raw via docker cp)..." -ForegroundColor Yellow
 try {
-    $dump = docker exec moovy-db pg_dump -U postgres moovy_db
-    [System.IO.File]::WriteAllLines("$(Get-Location)\database_dump.sql", $dump)
+    docker exec moovy-db pg_dump -U postgres -f /tmp/moovy_dump.sql moovy_db
+    if ($LASTEXITCODE -ne 0) { throw "pg_dump fallo dentro del container (codigo $LASTEXITCODE)" }
+    docker cp moovy-db:/tmp/moovy_dump.sql "$(Get-Location)\database_dump.sql"
+    if ($LASTEXITCODE -ne 0) { throw "docker cp del dump fallo (codigo $LASTEXITCODE)" }
+    docker exec moovy-db rm -f /tmp/moovy_dump.sql | Out-Null
 } catch {
-    Add-Error "[DB] Error al exportar la base de datos local"
+    Add-Error "[DB] Error al exportar la base de datos local: $_"
 }
 
 # 3. Mostrar archivos modificados

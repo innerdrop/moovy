@@ -14,9 +14,11 @@ $VPS_HOST = "31.97.14.156"
 $VPS_USER = "root"
 $VPS_PATH = "/var/www/moovy"
 
-# 1. Generar dump en el servidor
-Write-Host "[VPS] Generando dump en el servidor remoto..." -ForegroundColor Yellow
-$remoteCommand = "cd $VPS_PATH && docker exec moovy-db pg_dump -U postgres moovy_db > prod_dump.sql"
+# 1. Generar dump en el servidor (UTF-8 raw)
+# fix/utf8-encoding-pipeline (2026-04-30): pg_dump escribe directo a archivo con -f
+# (sin redirect >). Despues docker cp y scp transfieren bytes raw UTF-8.
+Write-Host "[VPS] Generando dump en el servidor remoto (UTF-8 raw)..." -ForegroundColor Yellow
+$remoteCommand = "cd $VPS_PATH && docker exec moovy-db pg_dump -U postgres -f /tmp/prod_dump.sql moovy_db && docker cp moovy-db:/tmp/prod_dump.sql ./prod_dump.sql && docker exec moovy-db rm -f /tmp/prod_dump.sql"
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand"
 
 if ($LASTEXITCODE -ne 0) {
@@ -29,11 +31,9 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE -ne 0) {
         Add-Error "[SCP] Error al descargar el archivo desde el VPS"
     } else {
-        # 3. Reparar caracteres (opcional, por seguridad)
-        if (Test-Path ".\scripts\repair-charset.ps1") {
-            Write-Host "[REPAIR] Verificando codificación del archivo descargado..." -ForegroundColor Yellow
-            .\scripts\repair-charset.ps1
-        }
+        # fix/utf8-encoding-pipeline (2026-04-30): ya no hace falta repair-charset
+        # porque docker cp transfiere bytes raw UTF-8 sin re-encoding. El parche viejo
+        # se mantiene en el repo para historicos pero no se invoca aqui.
         
         Write-Host ""
         Write-Host "[OK] BASE DE DATOS DESCARGADA EXITOSAMENTE" -ForegroundColor Green

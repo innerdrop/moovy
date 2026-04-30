@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-04-28
+Última actualización: 2026-04-30
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -19,17 +19,8 @@
 
 ## 🟡 IMPORTANTES (no bloquean lanzamiento)
 
-### ISSUE-061 — UTF-8 encoding rompe tildes después de cada deploy a producción
-**Estado**: 🟡 ABIERTO — POST-LAUNCH (cosmético, no bloqueante).
-**Síntoma**: Cada deploy hace que palabras con tildes en datos de DB salgan con símbolos rotos: "Electrónica" → "Electr├│nica".
-**Patrón**: UTF-8 multibyte interpretado como CP-437/Latin-1.
-**Hipótesis**:
-1. `psql/pg_dump` del VPS no usa UTF-8 — chequear `SHOW client_encoding;`
-2. Pipe PowerShell → SSH → bash → psql reinterpreta charset (PowerShell por default usa CP-1252)
-3. Variable `LANG` del proceso PM2 sin `LANG=es_AR.UTF-8`
-**Quickfixes**: forzar `PGCLIENTENCODING=UTF8` en cada psql de devmain.ps1, agregar `SET client_encoding TO 'UTF8';` al inicio de cada SQL del seed, verificar `chcp 65001` en PowerShell antes del deploy.
-**Por qué no bloqueante**: data en DB está bien (UTF-8 correcto), bug de visualización al leer con encoding distinto.
-**Referencia**: ver `.auto-memory/project_utf8_encoding_bug.md`.
+_(ningún importante abierto al cierre del sprint del 2026-04-30)_
+
 
 ---
 
@@ -48,10 +39,11 @@
 
 ---
 
-## ✅ Resueltos en este sprint (2026-04-25 → 2026-04-28)
+## ✅ Resueltos en este sprint (2026-04-25 → 2026-04-30)
 
 | Issue | Rama | Resumen |
 |---|---|---|
+| ISSUE-061 | `fix/utf8-encoding-pipeline` | UTF-8 pipeline export: pg_dump + docker cp (bytes raw) en vez de PowerShell `>`. Tildes preservadas. |
 | ISSUE-062 | `fix/auth-bloqueo-y-reset` | Warning intentos restantes + unlock dual-layer + auditoría reset password |
 | (multifoto) | `fix/producto-multifoto-carousel` | Carousel táctil + dots + flechas en detalle producto/listing |
 | (ops-cuentas) | `feat/ops-crear-cuentas` | Admin crea buyer/driver/seller desde OPS con magic link |

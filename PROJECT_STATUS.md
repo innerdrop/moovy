@@ -1,5 +1,5 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-04-28
+Última actualización: 2026-04-30
 
 > **Dashboard de una pantalla.** Para detalle de tareas → `ISSUES.md`. Para histórico de ramas → `.claude/CHANGELOG.md`.
 
@@ -51,7 +51,7 @@
 ## Métricas
 
 - **Issues 🔴 abiertos**: 1 (ISSUE-004 — ejecución, no código)
-- **Issues 🟡 abiertos**: 1 (ISSUE-061 — post-launch)
+- **Issues 🟡 abiertos**: 0 (ISSUE-061 cerrado en `fix/utf8-encoding-pipeline`)
 - **TS errors en HEAD**: 0 nuevos (solo pre-existentes documentados en CLAUDE.md)
 - **Schemas pendientes de migrate**: ninguno
 - **Crons registrados con healthcheck**: ver `CRON_EXPECTATIONS` en `src/lib/cron-health.ts`

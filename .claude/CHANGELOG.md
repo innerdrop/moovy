@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-04-30 (rama `fix/utf8-encoding-pipeline`)
+
+fix(deploy): pipeline de export usa docker cp (bytes raw UTF-8) en vez de PowerShell `>` que rompia tildes. ISSUE-061. Cambios: finish.ps1 y publish.ps1 ahora hacen `pg_dump -f /tmp/dump.sql` adentro del container y `docker cp` al disco; pull-db.ps1 mismo metodo en remoto via SSH; nuevo scripts/validate-db-encoding.ts (Prisma + regex CP-437/Latin-1) detecta mojibake en Category/Product/Merchant si el dump quedo roto. Antes el redirect > de PowerShell decodificaba bytes UTF-8 de pg_dump con codepage de Windows y escribia UTF-16 LE BOM, corrompiendo Pizzeria/Electronica. Verificado: prod tiene tildes correctas, el bug solo contaminaba database_dump.sql del repo.
+
+**Archivos:** ISSUES.md, PROJECT_STATUS.md, scripts/finish.ps1, scripts/publish.ps1, scripts/pull-db.ps1, scripts/validate-db-encoding.ts
+
 ## 2026-04-30 (rama `chore/update-prompts-readme`)
 
 chore: actualizar README de prompts-cowork con prompts vigentes (PROMPT_5/6) y archivar legacy (1-4)

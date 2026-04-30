@@ -61,11 +61,24 @@ if ([string]::IsNullOrWhiteSpace($Message)) {
     Stop-WithError "El mensaje de commit no puede estar vacio"
 }
 
-# 4. Exportar Base de Datos
-Write-Host "[DB] Exportando base de datos..." -ForegroundColor Yellow
-docker exec moovy-db pg_dump -U postgres moovy_db > database_dump.sql
+# 4. Exportar Base de Datos (UTF-8 raw)
+# fix/utf8-encoding-pipeline (2026-04-30): generamos el dump dentro del container
+# y lo copiamos con docker cp (bytes raw). Antes haciamos `pg_dump > file.sql` en
+# PowerShell, lo cual reinterpretaba los bytes UTF-8 con el codepage de Windows
+# y escribia el archivo en UTF-16 LE BOM. Resultado: tildes rotas en el dump
+# (Pizzer-i-a, Electr-o-nica). Con docker cp el archivo nunca pasa por la consola
+# de PowerShell, por lo tanto no hay re-encoding y queda en UTF-8 puro.
+Write-Host "[DB] Exportando base de datos (UTF-8 raw via docker cp)..." -ForegroundColor Yellow
+docker exec moovy-db pg_dump -U postgres -f /tmp/moovy_dump.sql moovy_db
 if ($LASTEXITCODE -ne 0) {
-    Add-Error "[DB] Error al exportar la base de datos (codigo $LASTEXITCODE). El commit continua de todas formas."
+    Add-Error "[DB] Error al ejecutar pg_dump dentro del container (codigo $LASTEXITCODE). El commit continua de todas formas."
+} else {
+    docker cp moovy-db:/tmp/moovy_dump.sql "$(Get-Location)\database_dump.sql"
+    if ($LASTEXITCODE -ne 0) {
+        Add-Error "[DB] Error al copiar el dump del container (codigo $LASTEXITCODE)."
+    } else {
+        docker exec moovy-db rm -f /tmp/moovy_dump.sql | Out-Null
+    }
 }
 
 # 5. Stage changes
