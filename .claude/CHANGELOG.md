@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-04-30 (rama `chore/verificar-nueva-ubicacion`)
+
+chore: validar workflow start.ps1 + finish.ps1 + auto-changelog + push + merge desde C:\dev\moovy tras mudanza del 2026-04-30. Repo movido desde C:\Users\Mauro\Desktop\moovy por bug de OneDrive truncando archivos silenciosamente. Sin cambios funcionales, solo timestamp y registro de la mudanza en PROJECT_STATUS.md.
+
+**Archivos:** PROJECT_STATUS.md
+
 ## 2026-04-30 (rama `fix/utf8-encoding-pipeline`)
 
 fix(deploy): pipeline de export usa docker cp (bytes raw UTF-8) en vez de PowerShell `>` que rompia tildes. ISSUE-061. Cambios: finish.ps1 y publish.ps1 ahora hacen `pg_dump -f /tmp/dump.sql` adentro del container y `docker cp` al disco; pull-db.ps1 mismo metodo en remoto via SSH; nuevo scripts/validate-db-encoding.ts (Prisma + regex CP-437/Latin-1) detecta mojibake en Category/Product/Merchant si el dump quedo roto. Antes el redirect > de PowerShell decodificaba bytes UTF-8 de pg_dump con codepage de Windows y escribia UTF-16 LE BOM, corrompiendo Pizzeria/Electronica. Verificado: prod tiene tildes correctas, el bug solo contaminaba database_dump.sql del repo.

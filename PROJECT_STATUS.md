@@ -23,14 +23,16 @@
 
 ---
 
-## Sprint actual (2026-04-28)
+## Sprint actual (2026-04-30)
 
-**Foco**: optimización de contexto + checklist pre-lanzamiento.
+**Foco**: optimización de contexto + checklist pre-lanzamiento + saneamiento de entorno local.
 
 **Ramas en curso / recién cerradas**:
 - ✅ `feat/avatar-dropdown-portales` — dropdown del header con accesos a portales
 - ✅ `fix/aprobacion-sin-foto-driver` — driver sin foto + hard delete pedidos colgados
-- 🔄 `chore/optimize-claude-context` — sintetizar CLAUDE.md + CHANGELOG.md + ISSUES.md depurado + finish.ps1 con prompt
+- ✅ `chore/optimize-claude-context` — sintetizar CLAUDE.md + CHANGELOG.md + ISSUES.md depurado + finish.ps1 con prompt
+- ✅ `fix/utf8-encoding-pipeline` — pipeline export usa docker cp (bytes raw UTF-8) en vez de PowerShell `>`. ISSUE-061 cerrado.
+- 🔄 `chore/verificar-nueva-ubicacion` — validar que el flow start.ps1 + finish.ps1 + auto-changelog + push + merge funciona desde `C:\dev\moovy` tras la mudanza del 2026-04-30. Repo movido desde `C:\Users\Mauro\Desktop\moovy` por bug de OneDrive truncando archivos silenciosamente.
 
 **Próxima decisión**: correr checklist pre-launch (Mauro en browser + Claude en scripts) o seguir con `feat/propinas-driver` post-launch.
 
