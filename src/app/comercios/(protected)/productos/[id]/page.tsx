@@ -61,6 +61,10 @@ export default async function EditProductPage({ params }: PageProps) {
                     imageUrls: product.images.map(img => img.url),
                     categoryId: product.categories[0]?.categoryId || "",
                     isActive: product.isActive,
+                    // Rama feat/peso-volumen-productos
+                    weightGrams: product.weightGrams,
+                    volumeMl: product.volumeMl,
+                    packageCategoryId: product.packageCategoryId,
                 }}
                 categories={categories}
             />

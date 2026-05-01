@@ -21,6 +21,17 @@ const productSchema = z.object({
         }
     }).refine((arr) => arr.length > 0, "Debes subir al menos una imagen"),
     categoryId: z.string().optional(),
+    // Rama feat/peso-volumen-productos: campos opcionales con fallback en
+    // resolveItemWeight(). Permitimos 0 como "no cargado" → null en DB.
+    // El form principal manda los gramos derivados del SizeSelector (Glovo-style);
+    // el modo avanzado permite tipearlos exactos. productSize es informativo
+    // para audit/analítica futura (ver qué tan bien acierta la sugerencia).
+    weightGrams: z.coerce.number().int().min(0).max(500000).optional()
+        .transform((v) => (v && v > 0 ? v : null)),
+    volumeMl: z.coerce.number().int().min(0).max(1000000).optional()
+        .transform((v) => (v && v > 0 ? v : null)),
+    packageCategoryId: z.string().optional().transform((v) => (v && v.length > 0 ? v : null)),
+    productSize: z.enum(["MICRO", "SMALL", "MEDIUM", "LARGE", "XL", ""]).optional(),
 });
 
 // Helper to verify merchant ownership
@@ -162,6 +173,10 @@ export async function createProduct(formData: FormData) {
         stock: formData.get("stock"),
         imageUrls: formData.get("imageUrls"),
         categoryId: formData.get("categoryId"),
+        weightGrams: formData.get("weightGrams"),
+        volumeMl: formData.get("volumeMl"),
+        packageCategoryId: formData.get("packageCategoryId"),
+        productSize: formData.get("productSize") || undefined,
     };
 
     const validation = productSchema.safeParse(rawData);
@@ -192,6 +207,10 @@ export async function createProduct(formData: FormData) {
                 costPrice: data.price * 0.7,
                 stock: data.stock,
                 merchantId: merchant.id,
+                // Rama feat/peso-volumen-productos
+                weightGrams: data.weightGrams,
+                volumeMl: data.volumeMl,
+                packageCategoryId: data.packageCategoryId,
                 images: data.imageUrls && data.imageUrls.length > 0 ? {
                     create: data.imageUrls.map((url: string, index: number) => ({
                         url,
@@ -229,6 +248,10 @@ export async function updateProduct(productId: string, formData: FormData) {
         stock: formData.get("stock"),
         imageUrls: formData.get("imageUrls"),
         categoryId: formData.get("categoryId"),
+        weightGrams: formData.get("weightGrams"),
+        volumeMl: formData.get("volumeMl"),
+        packageCategoryId: formData.get("packageCategoryId"),
+        productSize: formData.get("productSize") || undefined,
     };
 
     const validation = productSchema.safeParse(rawData);
@@ -254,6 +277,10 @@ export async function updateProduct(productId: string, formData: FormData) {
                 description: data.description,
                 price: data.price,
                 stock: data.stock,
+                // Rama feat/peso-volumen-productos
+                weightGrams: data.weightGrams,
+                volumeMl: data.volumeMl,
+                packageCategoryId: data.packageCategoryId,
             },
         });
 

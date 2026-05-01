@@ -3,7 +3,9 @@
 import { useState, useMemo } from "react";
 import { createProduct, importCatalogProducts } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Plus, ArrowLeft, Search, Package, Check, Layers, Ban, Sparkles, Edit, Info, Image as ImageIcon } from "lucide-react";
+import SizeSelector from "@/components/comercios/SizeSelector";
+import { ProductSize, SIZE_METADATA, getSizeFromWeight } from "@/lib/product-weight";
+import { Loader2, Plus, ArrowLeft, Search, Package, Check, Layers, Ban, Sparkles, Edit, Info, Image as ImageIcon, Settings } from "lucide-react";
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
@@ -44,8 +46,35 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         description: "",
         price: "" as string | number,
         stock: "10" as string | number,
-        categoryId: ""
+        categoryId: "",
+        // Rama feat/peso-volumen-productos: peso/volumen unitarios
+        weightGrams: "" as string | number,
+        volumeMl: "" as string | number,
+        packageCategoryId: "",
     });
+
+    // Tamaño elegido por el comerciante (Glovo-style). null = ninguno seleccionado.
+    const [productSize, setProductSize] = useState<ProductSize | null>(null);
+    // Modo avanzado: el comerciante puede tipear gramos exactos en vez de elegir categoría
+    const [advancedMode, setAdvancedMode] = useState(false);
+    // Estado del botón "Sugerir tamaño"
+    const [isSuggesting, setIsSuggesting] = useState(false);
+    const [suggestionInfo, setSuggestionInfo] = useState<string>("");
+
+    /**
+     * Cuando el comerciante elige una categoría visual, autocompletamos los
+     * weightGrams/volumeMl internos con el default de la categoría. Esos
+     * valores son los que persiste el server action.
+     */
+    const handleSelectSize = (size: ProductSize) => {
+        const meta = SIZE_METADATA[size];
+        setProductSize(size);
+        setFormValues((prev) => ({
+            ...prev,
+            weightGrams: meta.weightGrams,
+            volumeMl: meta.volumeMl,
+        }));
+    };
 
     const hasCatalog = catalogProducts.length > 0;
 
@@ -104,13 +133,74 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             description: item.description,
             price: item.price,
             stock: 10,
-            categoryId: item.categoryId
+            categoryId: item.categoryId,
+            weightGrams: "",
+            volumeMl: "",
+            packageCategoryId: "",
         });
         if (item.imageUrl) setImageUrls([item.imageUrl]);
         setSearchTerm("");
         setFieldErrors({});
         setSuccessMsg("Datos cargados — editá lo que quieras y publicá");
         setTimeout(() => setSuccessMsg(""), 3000);
+    };
+
+    /**
+     * Pide al backend una sugerencia de peso/volumen para el producto actual.
+     * Endpoint: POST /api/comercios/products/suggest-weight
+     * Resultado: autocompleta los campos. El comercio puede ajustar.
+     */
+    const handleSuggestWeight = async () => {
+        if (!formValues.name || formValues.name.trim().length < 2) {
+            setSuggestionInfo("Ingresá un nombre antes de pedir sugerencia");
+            setTimeout(() => setSuggestionInfo(""), 3000);
+            return;
+        }
+        setIsSuggesting(true);
+        setSuggestionInfo("");
+        try {
+            const res = await fetch("/api/comercios/products/suggest-weight", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: formValues.name,
+                    description: formValues.description || null,
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                setSuggestionInfo(err.error || "No se pudo obtener sugerencia");
+                return;
+            }
+            const data = await res.json();
+            if (data.weightGrams && data.volumeMl) {
+                // Mapear el peso sugerido a una categoría visual (a menos que el
+                // backend ya haya devuelto suggestedSize)
+                const suggestedSize: ProductSize = data.suggestedSize || getSizeFromWeight(data.weightGrams);
+                setProductSize(suggestedSize);
+                setFormValues((prev) => ({
+                    ...prev,
+                    weightGrams: data.weightGrams,
+                    volumeMl: data.volumeMl,
+                    packageCategoryId: data.packageCategoryId || prev.packageCategoryId,
+                }));
+                const sourceLabel =
+                    data.source === "CACHE" ? "encontrado en catálogo común" :
+                    data.source === "AI" ? "sugerido por IA" :
+                    data.source === "HEURISTIC" ? "estimado por nombre" :
+                    "sugerencia";
+                const sizeName = SIZE_METADATA[suggestedSize].displayName;
+                setSuggestionInfo(`Tamaño ${sourceLabel}: ${sizeName}. Podés cambiarlo si no coincide.`);
+            } else {
+                setSuggestionInfo("No encontramos tamaño para este producto. Elegí uno manualmente.");
+            }
+            setTimeout(() => setSuggestionInfo(""), 6000);
+        } catch (err) {
+            setSuggestionInfo("Error al obtener sugerencia. Cargá los valores manualmente.");
+            setTimeout(() => setSuggestionInfo(""), 4000);
+        } finally {
+            setIsSuggesting(false);
+        }
     };
 
     const validateForm = (): boolean => {
@@ -468,6 +558,94 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                             value={formValues.description}
                             onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
                         />
+                    </div>
+
+                    {/* Tamaño del producto — rama feat/peso-volumen-productos */}
+                    <div className="border-t border-gray-100 pt-6">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Tamaño del producto</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                    Elegí el tamaño del producto. Eso define qué vehículo usamos para entregarlo.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleSuggestWeight}
+                                disabled={isLoading || isSuggesting}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-100 transition disabled:opacity-50 whitespace-nowrap"
+                            >
+                                {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                Sugerir
+                            </button>
+                        </div>
+
+                        <SizeSelector
+                            value={productSize}
+                            onChange={handleSelectSize}
+                            disabled={isLoading}
+                        />
+
+                        {suggestionInfo && (
+                            <p className="text-xs text-blue-600 font-semibold mt-3 ml-1 flex items-center gap-1.5">
+                                <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                                {suggestionInfo}
+                            </p>
+                        )}
+
+                        {/* Modo avanzado: tipear gramos exactos (farmacia/seller con productos heterogéneos) */}
+                        <div className="mt-5 pt-4 border-t border-gray-50">
+                            <button
+                                type="button"
+                                onClick={() => setAdvancedMode((v) => !v)}
+                                className="flex items-center gap-2 text-xs text-gray-500 hover:text-blue-600 font-semibold transition"
+                            >
+                                <Settings className="w-3.5 h-3.5" />
+                                {advancedMode ? "Ocultar modo avanzado" : "Modo avanzado: tipear gramos exactos"}
+                            </button>
+                            {advancedMode && (
+                                <div className="grid grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Peso por unidad (gramos)</label>
+                                        <input
+                                            name="weightGrams"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            placeholder="Ej. 1500"
+                                            className={fieldClass("weightGrams")}
+                                            disabled={isLoading}
+                                            value={formValues.weightGrams}
+                                            onChange={(e) => setFormValues({ ...formValues, weightGrams: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Volumen por unidad (ml)</label>
+                                        <input
+                                            name="volumeMl"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            placeholder="Ej. 1500"
+                                            className={fieldClass("volumeMl")}
+                                            disabled={isLoading}
+                                            value={formValues.volumeMl}
+                                            onChange={(e) => setFormValues({ ...formValues, volumeMl: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {/* Hidden inputs: si NO está en modo avanzado, los campos numéricos no son visibles
+                            pero los gramos/volumen ya están en formValues vía handleSelectSize. */}
+                        {!advancedMode && (
+                            <>
+                                <input type="hidden" name="weightGrams" value={formValues.weightGrams} />
+                                <input type="hidden" name="volumeMl" value={formValues.volumeMl} />
+                            </>
+                        )}
+                        <input type="hidden" name="packageCategoryId" value={formValues.packageCategoryId} />
+                        <input type="hidden" name="productSize" value={productSize ?? ""} />
                     </div>
 
                     {/* Submit */}

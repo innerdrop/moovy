@@ -247,6 +247,13 @@ model Product {
   favorites         Favorite[]
   packageCategoryId String?
   packageCategory   PackageCategory? @relation(fields: [packageCategoryId], references: [id])
+  // --- Peso y volumen reales por unidad (rama feat/peso-volumen-productos) ---
+  // Nullable: productos legacy y altas sin sugerencia caen al fallback del helper
+  // resolveItemWeight() en src/lib/product-weight.ts (cascada: campo > category > default).
+  // El motor logístico suma Σ (weightGrams × quantity) y Σ (volumeMl × quantity)
+  // para elegir vehículo y costo del viaje.
+  weightGrams Int?
+  volumeMl    Int?
 
   @@index([merchantId])
   @@index([deletedAt])
@@ -1443,6 +1450,52 @@ model DeliveryRate {
   updatedAt      DateTime        @updatedAt
 
   category PackageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+// ─── ProductWeightCache ──────────────────────────────────────────────────────
+// Cache global de sugerencias de peso/volumen por nombre de producto normalizado.
+// Reduce llamadas a IA y a heurísticas costosas.
+//
+// FLUJO (rama feat/peso-volumen-productos):
+//   1. Comercio carga "Coca Cola 1.5L" en form de producto.
+//   2. Endpoint /api/comercios/products/suggest-weight normaliza el nombre
+//      (lowercase, trim, colapso de espacios) y hashea (sha256).
+//   3. Si existe row con ese hash → return cached weight/volume (instant + free).
+//   4. Si miss y ENABLE_AI_WEIGHT_SUGGEST=true → llama Haiku, persiste resultado.
+//   5. Si miss y flag off → heurística por keywords como fallback (no persiste).
+//
+// SOURCE marca el origen para auditoría y para evaluar accuracy a futuro:
+//   - SEED: dataset semilla generado pre-launch (productos comunes argentinos).
+//   - AI: respuesta de Haiku.
+//   - HEURISTIC: fallback local por keywords (cargas con alta confianza).
+//   - MANUAL: comercio editó manualmente la sugerencia y "promovió" su valor.
+//
+// El cache es GLOBAL (no por merchant) porque "Coca Cola 1.5L" pesa lo mismo
+// independientemente de quién la venda. Esto crea network effect: cuanto más
+// crece el catálogo total, más cache hits para comercios nuevos.
+model ProductWeightCache {
+  id              String   @id @default(cuid())
+  // Hash sha256 del nombre normalizado (lowercase + trim + collapse spaces)
+  nameHash        String   @unique
+  // Nombre original que generó la entrada (debug + audit)
+  nameSample      String
+  weightGrams     Int
+  volumeMl        Int
+  // Categoría sugerida (FK opcional al PackageCategory si match exacto)
+  packageCategoryId String?
+  // Vehículo recomendado mínimo (BIKE | MOTO | CAR | TRUCK)
+  suggestedVehicle  String?
+  // Origen del valor — ver comentario arriba
+  source          String   // SEED | AI | HEURISTIC | MANUAL
+  // Confianza del modelo/heurística 0-100. SEED y MANUAL son 100.
+  confidence      Int      @default(100)
+  // Cuántas veces se consultó este cache (popularidad)
+  hitCount        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([source])
+  @@index([packageCategoryId])
 }
 
 model MoovyConfig {

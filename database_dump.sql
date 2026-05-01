@@ -1398,7 +1398,9 @@ CREATE TABLE public."Product" (
     "packageCategoryId" text,
     "deletedAt" timestamp(3) without time zone,
     "deletedBy" text,
-    "deletedReason" text
+    "deletedReason" text,
+    "volumeMl" integer,
+    "weightGrams" integer
 );
 
 
@@ -1447,6 +1449,28 @@ CREATE TABLE public."ProductVariant" (
 
 
 ALTER TABLE public."ProductVariant" OWNER TO postgres;
+
+--
+-- Name: ProductWeightCache; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."ProductWeightCache" (
+    id text NOT NULL,
+    "nameHash" text NOT NULL,
+    "nameSample" text NOT NULL,
+    "weightGrams" integer NOT NULL,
+    "volumeMl" integer NOT NULL,
+    "packageCategoryId" text,
+    "suggestedVehicle" text,
+    source text NOT NULL,
+    confidence integer DEFAULT 100 NOT NULL,
+    "hitCount" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."ProductWeightCache" OWNER TO postgres;
 
 --
 -- Name: PushSubscription; Type: TABLE; Schema: public; Owner: postgres
@@ -1896,6 +1920,8 @@ COPY public."Address" (id, "userId", label, street, number, apartment, neighborh
 cmodgzqlk000l12ll65at8uo7	cmobkazic0002w4k6sk1luhha	Casa 1	De la Estancia	2057	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.829691	-68.350002	t	2026-04-24 22:16:27.752	2026-04-24 22:16:27.752	\N
 cmoeenq9m00012klvxu1tnird	cmodw2bcv0004ornia10d6of8	Entrega	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-04-25 13:58:54.392	2026-04-25 13:58:54.392	\N
 cmogjcorb000aqk064ybw380k	cmodw2bcv0004ornia10d6of8	Entrega	Retiro en local	S/N	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-04-27 01:45:49.654	2026-04-27 01:45:49.654	\N
+cmomchf3c0007svo36ldvyxwi	cmoem7nkg0001k8grd394va3v	Entrega	Aonikenk	1516	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8176153	-68.3464798	f	2026-05-01 03:20:10.153	2026-05-01 03:20:10.153	\N
+cmomdjkz90009svo3ynf85bpk	cmoem7nkg0001k8grd394va3v	Entrega	Aonikenk	1516	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8176153	-68.3464798	f	2026-05-01 03:49:50.709	2026-05-01 03:49:50.709	\N
 \.
 
 
@@ -2151,8 +2177,8 @@ cmnw2pz99001k3ooear8pbd54	cmnw2pz83001a3ooeozrxhvfw	1500	250	t	2026-04-12 18:04:
 
 COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "licenciaUrl", "seguroUrl", "vtvUrl", "dniFrenteUrl", "dniDorsoUrl", "acceptedTermsAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "fraudScore", "lastFraudCheckAt", "acceptedPrivacyAt", "cedulaVerdeApprovedAt", "cedulaVerdeExpiresAt", "cedulaVerdeNotifiedStage", "cedulaVerdeRejectionReason", "cedulaVerdeStatus", "cedulaVerdeUrl", "constanciaCuitApprovedAt", "constanciaCuitRejectionReason", "constanciaCuitStatus", "constanciaCuitUrl", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "dniDorsoApprovedAt", "dniDorsoRejectionReason", "dniDorsoStatus", "dniFrenteApprovedAt", "dniFrenteRejectionReason", "dniFrenteStatus", "licenciaApprovedAt", "licenciaExpiresAt", "licenciaNotifiedStage", "licenciaRejectionReason", "licenciaStatus", "seguroApprovedAt", "seguroExpiresAt", "seguroNotifiedStage", "seguroRejectionReason", "seguroStatus", "vtvApprovedAt", "vtvExpiresAt", "vtvNotifiedStage", "vtvRejectionReason", "vtvStatus", "cedulaVerdeApprovalNote", "cedulaVerdeApprovalSource", "constanciaCuitApprovalNote", "constanciaCuitApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "dniDorsoApprovalNote", "dniDorsoApprovalSource", "dniFrenteApprovalNote", "dniFrenteApprovalSource", "licenciaApprovalNote", "licenciaApprovalSource", "seguroApprovalNote", "seguroApprovalSource", "vtvApprovalNote", "vtvApprovalSource", "bankAccountUpdatedAt", "bankAlias", "bankCbu", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason") FROM stdin;
 cmobtv7ww000stqiamj6sh7w5	cmobtv7wq000ptqia8qc32mkw	AUTO	Fiat	Cronos	2025	Negro	AA123AB	11465303571ad0ab892b7021ef498bb4:19b7fd1ef2212e4e9b3281494fdebd4b:338944da06a188b008d40f4645	\N	\N	\N	\N	\N	2026-04-23 18:41:19.558	f	f	0	\N	2026-04-23 18:41:19.568	2026-04-25 05:32:31.916	FUERA_DE_SERVICIO	\N	\N	\N	REJECTED	2026-04-23 18:43:05.258	Aun falta documentación	\N	f	\N	\N	\N	0	\N	2026-04-23 18:41:19.558	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	2026-04-24 19:54:45.067	\N	APPROVED	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N
-cmocz8aty0001ju1tiijq1c94	cmobkazic0002w4k6sk1luhha	CAMIONETA	Jeep	Renegade	2024	Gris	AA123BB	61728dc61b349d576ac83410337d2f79:4001b3ab937893ce7ab46910f67f7fc9:069687e10f894f0b92e288	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038752559-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038763186-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038766670-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038361921-IMG_4107.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038366210-IMG_4108.webp	2026-04-24 13:59:14.119	t	f	0	\N	2026-04-24 13:59:14.133	2026-04-27 02:25:34.563	FUERA_DE_SERVICIO	2026-04-27 03:53:42.952	-54.83170996698401	-68.35023852389945	APPROVED	2026-04-24 15:11:49.405	\N	0101000020E6100000A37CD74E6A1651C00EFAE178756A4BC0	f	\N	\N	\N	0	\N	\N	\N	2026-04-30 00:00:00	0	\N	PENDING	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038770570-IMG_4108.webp	\N	\N	PENDING	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038375264-ARCA_-_Agencia_de_Recaudación_y_Control_Aduanero.pdf	2026-04-25 21:21:34.232	\N	APPROVED	\N	\N	PENDING	\N	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	\N	\N	\N	\N	DIGITAL	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N
 cmohdinef0002tf8b8fsd3yov	cmodw2bcv0004ornia10d6of8	CAMIONETA	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-04-27 15:50:16.301	t	f	0	\N	2026-04-27 15:50:16.309	2026-04-28 14:19:19.384	FUERA_DE_SERVICIO	2026-04-28 14:19:29.957	-54.83189142542994	-68.35034410002064	APPROVED	2026-04-28 13:41:49.084	\N	0101000020E6100000DAFBA8096C1651C0AF05116B7B6A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N
+cmocz8aty0001ju1tiijq1c94	cmobkazic0002w4k6sk1luhha	CAMIONETA	Jeep	Renegade	2024	Gris	AA123BB	61728dc61b349d576ac83410337d2f79:4001b3ab937893ce7ab46910f67f7fc9:069687e10f894f0b92e288	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038752559-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038763186-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038766670-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038361921-IMG_4107.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038366210-IMG_4108.webp	2026-04-24 13:59:14.119	t	t	0	\N	2026-04-24 13:59:14.133	2026-05-01 03:19:00.102	DISPONIBLE	2026-05-01 03:52:11.404	-54.81740474121257	-68.34677473478898	APPROVED	2026-04-24 15:11:49.405	\N	0101000020E6100000DB3FA88E311651C03A8DF3B7A0684BC0	f	\N	\N	\N	0	\N	\N	\N	2026-04-30 00:00:00	0	\N	PENDING	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038770570-IMG_4108.webp	\N	\N	PENDING	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038375264-ARCA_-_Agencia_de_Recaudación_y_Control_Aduanero.pdf	2026-04-25 21:21:34.232	\N	APPROVED	\N	\N	PENDING	\N	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	\N	\N	\N	\N	DIGITAL	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N
 \.
 
 
@@ -2407,27 +2433,27 @@ cmogjhkn3000wqk06qj6prclx	cmogjhkn3000uqk06mpybu129	cmoem7nkg0001k8grd394va3v	Ch
 --
 
 COPY public."OrderItem" (id, "orderId", "productId", "listingId", name, price, quantity, "variantName", subtotal, "subOrderId", "packageCategoryName") FROM stdin;
-cmogax2200005t73xx0c17q0e	cmogax21b0003t73xq0bfpb2y	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogax22t0007t73x1tds8g6f	\N
-cmogbzd8w00058hykxymqnv5z	cmogbzd8800038hyktksp3v8o	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogbzd9t00078hyki29rpo0m	\N
-cmogc96lz000g8hykeznh3eu3	cmogc96lc000e8hykop0xc383	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogc96mx000i8hykyzltev2g	\N
-cmogcd4o8000q8hyk8c6jh5xw	cmogcd4nx000o8hykki6ino6b	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogcd4os000s8hykxl3v0czk	\N
-cmogezpm5000y8hyk99z8xynr	cmogezplt000w8hyk25av7b18	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogezpmw00108hykbr010eih	\N
-cmoghlhis0005tvnba97yvkj6	cmoghlhif0003tvnbovmw0zsq	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmoghlhjg0007tvnbu6ljtsb7	\N
-cmoghrkce00051jmgpycy0kis	cmoghrkby00031jmg87cdanzl	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmoghrkd000071jmgei2k8bfd	\N
 cmoeenqd100062klvqi0ampu1	cmoeenqcc00042klvzt0l8lad	cmobttv3e000etqia530fetso	\N	Fernet 1882	12000	1	\N	12000	cmoeenqe600082klvp1dasqps	\N
 cmoegfxfo001c2klvixrguywh	cmoegfxfd001a2klvtpbvu8s5	cmoeetc0y000o2klv7irp0img	\N	MONSTER	8000	1	\N	8000	cmoegfxg9001e2klvgcomb5pl	\N
-cmofz91fv0007v3npvyddaj0s	cmofz91fb0005v3npjczz9k7r	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmofz91gh0009v3npdcnia161	\N
-cmofzxo8i000fv3nphwnbsu6t	cmofzxo82000dv3npnbrontos	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmofzxo9b000hv3npxupf5frf	\N
-cmog0275b000nv3npyxkoa3al	cmog02752000lv3npphl10wvf	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmog0275x000pv3np6ax2cdda	\N
-cmog49xjc000eg8166ih8cn0o	cmog49xh9000cg8167h9w1m14	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmog49xkq000gg816yoo8fcr4	\N
-cmog6s4yi0005veu274jl4yko	cmog6s4y30003veu2s0fcfas7	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmog6s4za0007veu231axamcr	\N
-cmogiaa830005koavhgaadnam	cmogiaa710003koavdp17d2ch	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogiaa9z0007koav792zc0hy	\N
-cmogijdyh000dkoavzb1gssmf	cmogijdxh000bkoav0u9x1qqb	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogijdzq000fkoav4oadbitc	\N
-cmogj77jb0005qk06c17unwwt	cmogj77fl0003qk06e7as7iqq	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogj77mj0007qk06pt0hzatr	\N
-cmogjcprj000fqk06u92sy2yf	cmogjcpos000dqk06kunnwmzw	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	2	\N	4000	cmogjcpx5000hqk063tns9ajw	\N
-cmogje1yl000nqk06jhf48m6c	cmogje1ya000lqk067tunq40t	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	2	\N	4000	cmogje1z4000pqk06do22h7vl	\N
-cmogjp5x80014qk06atj72zyw	cmogjp5wz0012qk06ufvxk7a9	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	4	\N	8000	cmogjp5xv0016qk06k6ijyy2n	\N
-cmogkuicu0005ljak08ig5a69	cmogkuicd0003ljak3fxcwmv5	cmof7hs5w0006wtg5cg2kki8o	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogkuidl0007ljakr2id55hf	\N
+cmogax2200005t73xx0c17q0e	cmogax21b0003t73xq0bfpb2y	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogax22t0007t73x1tds8g6f	\N
+cmogbzd8w00058hykxymqnv5z	cmogbzd8800038hyktksp3v8o	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogbzd9t00078hyki29rpo0m	\N
+cmogc96lz000g8hykeznh3eu3	cmogc96lc000e8hykop0xc383	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogc96mx000i8hykyzltev2g	\N
+cmogcd4o8000q8hyk8c6jh5xw	cmogcd4nx000o8hykki6ino6b	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogcd4os000s8hykxl3v0czk	\N
+cmogezpm5000y8hyk99z8xynr	cmogezplt000w8hyk25av7b18	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogezpmw00108hykbr010eih	\N
+cmoghlhis0005tvnba97yvkj6	cmoghlhif0003tvnbovmw0zsq	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmoghlhjg0007tvnbu6ljtsb7	\N
+cmoghrkce00051jmgpycy0kis	cmoghrkby00031jmg87cdanzl	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmoghrkd000071jmgei2k8bfd	\N
+cmofz91fv0007v3npvyddaj0s	cmofz91fb0005v3npjczz9k7r	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmofz91gh0009v3npdcnia161	\N
+cmofzxo8i000fv3nphwnbsu6t	cmofzxo82000dv3npnbrontos	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmofzxo9b000hv3npxupf5frf	\N
+cmog0275b000nv3npyxkoa3al	cmog02752000lv3npphl10wvf	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmog0275x000pv3np6ax2cdda	\N
+cmog49xjc000eg8166ih8cn0o	cmog49xh9000cg8167h9w1m14	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmog49xkq000gg816yoo8fcr4	\N
+cmog6s4yi0005veu274jl4yko	cmog6s4y30003veu2s0fcfas7	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmog6s4za0007veu231axamcr	\N
+cmogiaa830005koavhgaadnam	cmogiaa710003koavdp17d2ch	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogiaa9z0007koav792zc0hy	\N
+cmogijdyh000dkoavzb1gssmf	cmogijdxh000bkoav0u9x1qqb	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogijdzq000fkoav4oadbitc	\N
+cmogj77jb0005qk06c17unwwt	cmogj77fl0003qk06e7as7iqq	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogj77mj0007qk06pt0hzatr	\N
+cmogjcprj000fqk06u92sy2yf	cmogjcpos000dqk06kunnwmzw	\N	\N	CHOCOLATE BLOCK	2000	2	\N	4000	cmogjcpx5000hqk063tns9ajw	\N
+cmogje1yl000nqk06jhf48m6c	cmogje1ya000lqk067tunq40t	\N	\N	CHOCOLATE BLOCK	2000	2	\N	4000	cmogje1z4000pqk06do22h7vl	\N
+cmogjp5x80014qk06atj72zyw	cmogjp5wz0012qk06ufvxk7a9	\N	\N	CHOCOLATE BLOCK	2000	4	\N	8000	cmogjp5xv0016qk06k6ijyy2n	\N
+cmogkuicu0005ljak08ig5a69	cmogkuicd0003ljak3fxcwmv5	\N	\N	CHOCOLATE BLOCK	2000	1	\N	2000	cmogkuidl0007ljakr2id55hf	\N
 \.
 
 
@@ -2562,10 +2588,10 @@ cmogkxbrz000eljak1k5hoy6r	cmodw2bcv0004ornia10d6of8	cmogkuicd0003ljak3fxcwmv5	EA
 -- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "createdAt", "updatedAt", "packageCategoryId", "deletedAt", "deletedBy", "deletedReason") FROM stdin;
-cmobttv3e000etqia530fetso	Fernet 1882	fernet-1882-1776969616296		cmobll552000cw4k6blur8j08	12000	8400	99	5	t	f	2026-04-23 18:40:16.298	2026-04-25 13:58:54.532	\N	\N	\N	\N
-cmoeetc0y000o2klv7irp0img	MONSTER	monster-1777125795872	Bebida energizante	cmodwjkyu000hornifywezk15	8000	5600	99	5	t	f	2026-04-25 14:03:15.875	2026-04-25 14:48:49.674	\N	\N	\N	\N
-cmof7hs5w0006wtg5cg2kki8o	CHOCOLATE BLOCK	chocolate-block-1777173965774	Chocolate con maní	cmoem7nl10004k8grsztmzdot	2000	1400	77	5	t	f	2026-04-26 03:26:05.78	2026-04-27 02:27:40.791	\N	\N	\N	\N
+COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "createdAt", "updatedAt", "packageCategoryId", "deletedAt", "deletedBy", "deletedReason", "volumeMl", "weightGrams") FROM stdin;
+cmobttv3e000etqia530fetso	Fernet 1882	fernet-1882-1776969616296		cmobll552000cw4k6blur8j08	12000	8400	99	5	t	f	2026-04-23 18:40:16.298	2026-04-25 13:58:54.532	\N	\N	\N	\N	\N	\N
+cmoeetc0y000o2klv7irp0img	MONSTER	monster-1777125795872	Bebida energizante	cmodwjkyu000hornifywezk15	8000	5600	99	5	t	f	2026-04-25 14:03:15.875	2026-04-25 14:48:49.674	\N	\N	\N	\N	\N	\N
+cmomaxm4l000114j41e37poed	PRINGLES Sabor Original	pringles-sabor-original-1777603006526	El clásico irresistible en su icónico tubo. Papas crujientes, perfectamente saladas y con la forma exacta para el snackeo perfecto. ¡Una vez que hacés pop, no hay stop!	cmoem7nl10004k8grsztmzdot	6000	4200	10	5	t	f	2026-05-01 02:36:46.532	2026-05-01 03:14:52.941	\N	\N	\N	\N	2500	1500
 \.
 
 
@@ -2576,7 +2602,7 @@ cmof7hs5w0006wtg5cg2kki8o	CHOCOLATE BLOCK	chocolate-block-1777173965774	Chocolat
 COPY public."ProductCategory" (id, "productId", "categoryId") FROM stdin;
 cmobttv3e000htqiayk19vxsr	cmobttv3e000etqia530fetso	cmnw2pz4u000p3ooerlyvtabj
 cmoefpcdr00162klv1q6kmjff	cmoeetc0y000o2klv7irp0img	cmnw2pz4u000p3ooerlyvtabj
-cmoftdoa00004lclu8zpux4xb	cmof7hs5w0006wtg5cg2kki8o	cmnw2pz4u000p3ooerlyvtabj
+cmomcamcv0002svo3gbjpts5e	cmomaxm4l000114j41e37poed	cmnw2pz4u000p3ooerlyvtabj
 \.
 
 
@@ -2589,9 +2615,7 @@ cmobttv3e000ftqiaoggzasij	cmobttv3e000etqia530fetso	https://pub-8e9cd8ba192646df
 cmoefpcdd00122klvnh4vm6ui	cmoeetc0y000o2klv7irp0img	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777125769833-Monster-Energy-Zero-Ultra_ea5024f5-062c-4b42-bb45-a23676aa36be.d50a702be9fe5a9fe4d837a60a6b9a52.webp	MONSTER	0
 cmoefpcdd00132klvn47uhmhq	cmoeetc0y000o2klv7irp0img	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777127158626-216794-800-auto.webp	MONSTER	1
 cmoefpcdd00142klvtlxrn1y0	cmoeetc0y000o2klv7irp0img	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777127165556-13230-dr-lemon-pomelo-1000-cc-73fc9439e93a74786317458555373454-640-0.webp	MONSTER	2
-cmoftdo9i0000lcluqrt4pdij	cmof7hs5w0006wtg5cg2kki8o	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777173924819-Chocolate-Cofler-Block-Con-Mani-170-Gr-1-46142.webp	CHOCOLATE BLOCK	0
-cmoftdo9i0001lcluzy1vx6n7	cmof7hs5w0006wtg5cg2kki8o	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777173930881-342452-800-auto.webp	CHOCOLATE BLOCK	1
-cmoftdo9i0002lclu3o7g2qo9	cmof7hs5w0006wtg5cg2kki8o	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777173933910-40263217-luxury-and-hygiene-concept-rolled-bath-towels-at-hotel-spa.webp	CHOCOLATE BLOCK	2
+cmomcamcf0000svo3kdmihple	cmomaxm4l000114j41e37poed	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777602670899-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp	PRINGLES Sabor Original	0
 \.
 
 
@@ -2600,6 +2624,151 @@ cmoftdo9i0002lclu3o7g2qo9	cmof7hs5w0006wtg5cg2kki8o	https://pub-8e9cd8ba192646df
 --
 
 COPY public."ProductVariant" (id, "productId", name, price, stock, "isActive") FROM stdin;
+\.
+
+
+--
+-- Data for Name: ProductWeightCache; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."ProductWeightCache" (id, "nameHash", "nameSample", "weightGrams", "volumeMl", "packageCategoryId", "suggestedVehicle", source, confidence, "hitCount", "createdAt", "updatedAt") FROM stdin;
+cmomajv2p0000f17oy3cauxd5	ad3b80b8ba1aa839b6555b0dfcf5bec22f62419266341d03fd64995c8da056e0	Coca Cola 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.946	2026-05-01 02:26:04.946
+cmomajv340001f17of7d9yn78	f3716ffc2b843eaef3f12d9dfe9e967ea6113d1f3de58a1c578650af49b31124	Coca Cola 2L	2000	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.96	2026-05-01 02:26:04.96
+cmomajv380002f17o4ajxfmxr	d7044978e3d024a672c1381d97f556bad777e0228549e6e58d69b201ec489ae4	Coca Cola 500ml	500	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:04.964	2026-05-01 02:26:04.964
+cmomajv3d0003f17onevbqrsd	1a20e3e3aa2a5b6a5dabfe61896f5329597560ba53298d1347a6ba34dbe5eaba	Coca Cola 1L	1000	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.969	2026-05-01 02:26:04.969
+cmomajv3i0004f17oje76ev3j	8cc17e033c429719d299294d4fa3455570190fffc9d9c2c13503850bed72d991	Coca Cola Zero 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.975	2026-05-01 02:26:04.975
+cmomajv3n0005f17ol1kauaqa	1fe5b78a639073cf230dea67cf2c0196c70202ff9218253e7dec0c84c53f0093	Sprite 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.979	2026-05-01 02:26:04.979
+cmomajv3r0006f17ouxlvv7yz	4245c164599eafd0d2309a4fd4ee231ed21557d5afe71343e00d9894f1843bef	Fanta 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.984	2026-05-01 02:26:04.984
+cmomajv3v0007f17ojx9o3n6d	b2e82834c8cf449bdbe19c40bcf48e396f6dcbd8b54955208e3d76e97597ac05	Manaos 2.25L	2250	2250	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.988	2026-05-01 02:26:04.988
+cmomajv400008f17oocdpykut	c76e295ecca2d02514d6cb5a4e94a6021eb73859b443627de0fc21422eb4cc6a	Pepsi 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.992	2026-05-01 02:26:04.992
+cmomajv440009f17oue64ukmw	af2aa77fab2fad29a0e653123a0a79f7e33f5327835245ed9875b250521f2a53	Agua mineral 500ml	500	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:04.996	2026-05-01 02:26:04.996
+cmomajv48000af17o2kqdbz0j	edbee3b4e41289b976f962870db9b2e67c79d3cfffc685f9d827437232500496	Agua mineral 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.001	2026-05-01 02:26:05.001
+cmomajv4c000bf17oe2axdzdg	3a629da5caed88bd4bb33a795748c6c0684cc6853fe5177d7034f5dde9a4b7e6	Agua sin gas 6L	6000	6000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.005	2026-05-01 02:26:05.005
+cmomajv4g000cf17ozofmvbj6	6e0ac6e8c60750fc5c341682c4edc15577601df8eb803503dae590a2571b54a4	Agua con gas 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.009	2026-05-01 02:26:05.009
+cmomajv4l000df17ojzehb9vr	c70d1abdf0ffce01c6598c3cacd1a6c2d5a1d221d057f2f22dcae1e3dcbe3e93	Cerveza Quilmes 1L	1000	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.013	2026-05-01 02:26:05.013
+cmomajv4p000ef17og92zojvh	40f15a879f8151df54e7500f38f73629a6edcd2871de3bb8248ebcd43d48a6c8	Cerveza Quilmes 473ml lata	480	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.017	2026-05-01 02:26:05.017
+cmomajv4t000ff17o1vsqqbca	10f635f4286efd7717230a756168c69cc49bcde8f31743a6abdfd282838dfed1	Cerveza Stella Artois 330ml	350	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.021	2026-05-01 02:26:05.021
+cmomajv4x000gf17ofui0i62u	0b53aef8e9ec8d9f6b26ced169300cd33d920fb6565c0313b7053f083eb73850	Cerveza Heineken 330ml	350	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.025	2026-05-01 02:26:05.025
+cmomajv51000hf17oubnpnpht	1847ac8fce4977fa708ed87f768c39a84208969796aa04037e575c1edf45a14e	Cerveza Brahma 1L	1000	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.03	2026-05-01 02:26:05.03
+cmomajv55000if17o4p8amub7	a28b294e5fe25e1a8670d31282252076c39341240d83d009e882741b8967bcb1	Vino Toro 750ml	1200	750	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.034	2026-05-01 02:26:05.034
+cmomajv59000jf17owpuec34p	1dcbc9917949a6c5e3879a1d61f45708f1bd3846923df226a3bee83f2e7b5a83	Vino Norton Malbec 750ml	1200	750	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.038	2026-05-01 02:26:05.038
+cmomajv5d000kf17o38fzgob0	2a35e9162b22fc8b043f2db8fb4291f3d8f8e10fe74ba5c7348b4d0dfcc55fa7	Fernet Branca 750ml	1100	750	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.042	2026-05-01 02:26:05.042
+cmomajv5i000lf17oh3lhav8y	fa61ffb8074caba82cc1f66d0968ea649e85ff7c5c891f83d0652786167278f6	Fernet Branca 1L	1450	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.046	2026-05-01 02:26:05.046
+cmomajv5m000mf17oepymu0z7	3db5c266a06d5eb9ec9e2fb52a286710f1acebba462f09fe3dabe07962e8bc87	Speed XL 500ml	520	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.05	2026-05-01 02:26:05.05
+cmomajv5q000nf17oyc84mwer	4ddb2bd0c4cbf11e0a79b6d8839fbe9509440a1eb170d366243375227958be4b	Red Bull 250ml	270	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.054	2026-05-01 02:26:05.054
+cmomajv5u000of17ozvlriqgk	6e3c48f8c0787624b14e0c58cd5139a0bf90ca666edd72aacfad84166389a754	Yerba Playadito 1kg	1000	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.058	2026-05-01 02:26:05.058
+cmomajv5y000pf17oeekwyj6h	e0abd09d77d60fbe4693cf7be6e02f5a99f4eb6a784fc3a3560be21784575163	Yerba Rosamonte 1kg	1000	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.062	2026-05-01 02:26:05.062
+cmomajv62000qf17oei1bemf7	dd4f8ea1e0cd1d59482e73f00836a3f85d25e7fbe09b3a4ed8d1533581894689	Yerba Taragui 500g	500	1000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.067	2026-05-01 02:26:05.067
+cmomajv66000rf17onwmz5r9b	7cf15cdc3eb4902a175dd4c2c1680f49dcbf6f5a5fbc021e34ffde1172173efe	Yerba CBSe 500g	500	1000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.071	2026-05-01 02:26:05.071
+cmomajv6a000sf17oeiu2pa0r	e01071b2e777661a82d0b3570e1b5ab2150fc6a01a4a9270cc623e0f7383c87f	Mate cocido en saquitos x25	100	300	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.074	2026-05-01 02:26:05.074
+cmomajv6e000tf17orpngkgj3	8ecd326ea152ade5abedd40be2a980c340de1154a8adc0a82eca476d816be14b	Cafe La Virginia 250g	250	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.079	2026-05-01 02:26:05.079
+cmomajv6i000uf17osyn6a6gs	b882c19478ef14827b5371a7fa860a5b78dfdb2f865cd5aeb73095605c2a2a4d	Cafe Bonafide 500g	500	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.083	2026-05-01 02:26:05.083
+cmomajv6m000vf17obsd0fys5	f111f15e362cd6db14538ab62dbde954946bbf029a022b7e7245afa2de80100d	Te Green Hills x25	50	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.087	2026-05-01 02:26:05.087
+cmomajv6q000wf17og5kaoyo2	72f402662b0f94bfc31cdc47d89c7a70ee17a6d348a56f6443ceff637fc542ad	Azucar Ledesma 1kg	1000	1200	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.091	2026-05-01 02:26:05.091
+cmomajv6u000xf17of3lf72wp	9be52b7132d3c7a66129f1b3b4ad87c7808beb98bb91412f425458d4209fd442	Harina 0000 Pureza 1kg	1000	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.095	2026-05-01 02:26:05.095
+cmomajv6y000yf17ol5zx1rh0	b437b6225c3a5e4590204b01b69884f50b7eca8b053b5b1caef18587b58ed13f	Aceite girasol Natura 1.5L	1400	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.099	2026-05-01 02:26:05.099
+cmomajv72000zf17o4yispllc	7265cfc2cab1a9b4c184406878783aa03ff0e52c2f960976e5fbca07bb44e8a4	Aceite Cocinero 900ml	850	900	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.103	2026-05-01 02:26:05.103
+cmomajv760010f17oy0wmsor5	373281b437e18f0bdc7333254d61baeeb1d6405159e7927e4fb426264acddc7e	Sal fina Celusal 500g	500	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.107	2026-05-01 02:26:05.107
+cmomajv7a0011f17ohz6u8wc0	c7b898f561532fc7dfd43946b56eab69fe35fa41c771e27a15ea3b4e007a6294	Fideos Lucchetti 500g	500	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.111	2026-05-01 02:26:05.111
+cmomajv7e0012f17oj5zt7s90	d6a87b04831a7b94d86adf29768246d68c4b5d11e0e02ac816b33acd446f4891	Fideos Matarazzo 500g	500	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.115	2026-05-01 02:26:05.115
+cmomajv7i0013f17ot6cmr7yo	ef93d58c0a52671dfe65d974eedfa4a213e1d362c9aaa1fbb8d32e710756e326	Arroz Gallo 1kg	1000	1300	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.119	2026-05-01 02:26:05.119
+cmomajv7m0014f17o0ssb2osj	82632183046838664a9e0a6b8ec109b31f2a0935c6fbbfeead5c3caceacb1b40	Lentejas 500g	500	700	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.122	2026-05-01 02:26:05.122
+cmomajv7q0015f17oqebsh0pn	33501c462deceb988999b7b2a47fce1490ee19703cfb14d168724cd6842877ca	Salsa de tomate Arcor 520g	540	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.126	2026-05-01 02:26:05.126
+cmomajv7u0016f17oihtc4y2z	32d237d79e69157adf650a2b132c98b79687f81b1dbb895858b8f86fdac79358	Pure de tomate La Campagnola 520g	540	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.13	2026-05-01 02:26:05.13
+cmomajv7y0017f17ody2v7rm3	726911aecb57289fd9fa23c82edb319965fe71f10472fb92f81e24d06f764203	Mayonesa Hellmanns 500g	520	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.134	2026-05-01 02:26:05.134
+cmomajv820018f17opsxri6ye	9230de594142890a039071deb79ffe987e58dd1c2b7519914359a53e4e522e3a	Ketchup Hellmanns 500g	520	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.138	2026-05-01 02:26:05.138
+cmomajv860019f17ojx3mxmy7	5205d19d327232aeb019fe7a60f514b3c998a0fa5e1a0a89febeae81ab287d62	Mostaza Savora 200g	220	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.143	2026-05-01 02:26:05.143
+cmomajv8a001af17ohs423g8f	abc46fd6d915d5ea30a6887baf84555cf6721db40872fe1e3b7b08a62bad5640	Dulce de leche La Serenisima 400g	420	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.147	2026-05-01 02:26:05.147
+cmomajv8i001bf17oaca2dndo	4b6284c8998acbd8749a5e09b38080ec9e0755cb9b9450c5781693771b8681a3	Mermelada Arcor 454g	470	450	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.155	2026-05-01 02:26:05.155
+cmomajv8n001cf17ojaaudutd	74d2af830f17835330e7a930308e61c38b2fdd95c37e31ffea561cec863c5a72	Leche La Serenisima 1L	1030	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.159	2026-05-01 02:26:05.159
+cmomajv8r001df17o2j5ipdnq	aa74eb560b61a4e0ad217d43196e588cb10f2fd6a20084d3f4b4ec04e4cd54a4	Leche descremada 1L	1030	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.163	2026-05-01 02:26:05.163
+cmomajv8v001ef17ofbkrbb0a	cac750eb8d89c315d5247e5754905846b7b33c4a266ea59cc7b37d053ea02cdd	Yogur Yogurisimo 900g	950	900	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.167	2026-05-01 02:26:05.167
+cmomajv8z001ff17onywom5uz	9f2b62dd99e715312e06fc01288b779cd42666bb02e013c34588b36991c13f9f	Queso cremoso 500g	520	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.172	2026-05-01 02:26:05.172
+cmomajv93001gf17ok3wt40m3	f1936a5790c259bdf838cb3e6838c4d2980ebeeaf54f6f70f3b2daf948d9e054	Queso reggianito 250g	270	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.175	2026-05-01 02:26:05.175
+cmomajv97001hf17orh9z05am	cba00e44be2f0353a2d4e2bfda01f34ee7a0f8ca021e34835bb3c88b0e22cfa1	Manteca La Serenisima 200g	220	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.179	2026-05-01 02:26:05.179
+cmomajv9b001if17oat7eaehn	d2b1e25373d9db63c23b3eda6986c5ae3811c76efcdb183ab03b58036f3d4ac2	Pan lactal Bimbo	600	4000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.183	2026-05-01 02:26:05.183
+cmomajv9e001jf17o5wq8crvd	c4a6511ca243610583c4e040f64cedb2687b9a9314d473563a438c6ac2e56377	Pan frances	800	5000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.187	2026-05-01 02:26:05.187
+cmomajv9i001kf17oiwgx6mvh	33c1175691f39a330d19c6b5b57b9b3c379c23c848f5d17947e4295970fa4278	Galletitas Oreo 118g	130	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.191	2026-05-01 02:26:05.191
+cmomajv9m001lf17ok7vaejoq	c57ac581c0e68f9196a78acabb11833e1b4f16776c4a7e713586234597078a2d	Galletitas Pepitos 118g	130	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.195	2026-05-01 02:26:05.195
+cmomajv9q001mf17o4v1tfzqc	ef35ad4cb2efbdfeeed8612e8ca2e604d760426ab8e18d5424c0c229595e4531	Alfajor Havanna	60	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.199	2026-05-01 02:26:05.199
+cmomajva1001nf17ooxmj4dcm	38f00c3d45512b7c98febcedaf1c173d780b951ce9de692dddfae370df72eea9	Alfajor Jorgito	50	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.21	2026-05-01 02:26:05.21
+cmomajva6001of17ofxks4db3	298c2639bd4fa0d7215f146cd0682a6aca1ac70526784d1938a548c6975929ad	Alfajor Aguila	50	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.214	2026-05-01 02:26:05.214
+cmomajvab001pf17oqvm7e6bl	94498c3dbfb191e25666a6173b65b7e500c7c3105bb5f02b945d40f90a676a88	Chocolate Milka 100g	100	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.219	2026-05-01 02:26:05.219
+cmomajvag001qf17o0ihetj7v	e07c195231ae384472f977cbe20762f348dbef10c69115a6c028738515fbd866	Chocolate Cofler 100g	100	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.224	2026-05-01 02:26:05.224
+cmomajval001rf17ozatwgznj	bb164d89cc83da31526af8489dc3a8f29eb04ce0c650250c64f2c626ad9d0bbe	Caramelos Sugus	30	60	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.229	2026-05-01 02:26:05.229
+cmomajvaq001sf17oqpzj3dsi	c21357f92d71f716f8602a17b053348f07628b17cc5daf05594d94d32ae6952e	Papas fritas Lays 130g	140	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.235	2026-05-01 02:26:05.235
+cmomajvaw001tf17ol8pxhuz0	8b14b3b7592e83334b10a1e547f544f9e415232b33966338ad28d72ea5c6d0e1	Doritos 100g	110	1200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.24	2026-05-01 02:26:05.24
+cmomajvb1001uf17o5atvhsal	0573d4d71b62e381ebdf96f2a0029a08f8c64214b96e51b3ac129d2f7b023f47	Hamburguesa simple	280	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.245	2026-05-01 02:26:05.245
+cmomajvb6001vf17o315utrw3	be5b0bd6be38da670c4f1bf0cdaec03ea5c0ecf27d136a9f2cd53a0d67e13e7a	Hamburguesa doble con queso	400	700	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.25	2026-05-01 02:26:05.25
+cmomajvbb001wf17opolkve9a	f9d38e5eccab8413b7643dda0bf18471e1e093eb0f309f3f5d58fb69ab005f74	Hamburguesa completa	450	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.255	2026-05-01 02:26:05.255
+cmomajvbg001xf17oa5neo2po	ea421a5f57ba2ef27d6161296eb324727ab8dff31f769ab4467f90ea178d0aaf	Hamburguesa con papas	600	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.26	2026-05-01 02:26:05.26
+cmomajvbl001yf17o5q1dp4ie	ad28575e32e229d48415401aff2a431b86cdd86c9a1f61d300bff6c89014c3fd	Pizza muzzarella grande	900	5000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.266	2026-05-01 02:26:05.266
+cmomajvbq001zf17oysuxn8d9	ed39fa82d2257a6edbf45077114dd55a77effa0e143c315fa1bf1ff630d9380f	Pizza napolitana grande	1000	5000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.271	2026-05-01 02:26:05.271
+cmomajvbx0020f17or9ul0bnt	28fa57f714a56f469438c65cbc1476594faccdde891966973e59e83f60a18883	Pizza especial chica	500	2500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.277	2026-05-01 02:26:05.277
+cmomajvc20021f17o5f0511vh	4987904d867521fbeb8fa014970b094ee000f78d5632fa37eed8861a4447bab5	Empanada	80	150	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.282	2026-05-01 02:26:05.282
+cmomajvc70022f17oz14xl7cq	4c5deb569c0862d878cd8292d1c4604532c3998b0c3302db4e43d09762abfbb4	Docena de empanadas	1000	3000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.288	2026-05-01 02:26:05.288
+cmomajvcd0023f17odmk0cpye	18aea766cdac99b334cf68987200c389f6c600fa7ebe7341bcdaa6035d6ff4e4	Sandwich de miga jamon y queso	200	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.294	2026-05-01 02:26:05.294
+cmomajvci0024f17ow7l7ck24	7d1cc6ab7f70cabba7d05a41be0c621a0db052f9f45c4def0593c8a04f4afdd6	Sandwich tostado	250	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.298	2026-05-01 02:26:05.298
+cmomajvcn0025f17ohhu0j574	f0982c0cff4872b2331267d21abeec9d81adc6b260a07a0d20046de61d91b71f	Lomito completo	450	700	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.304	2026-05-01 02:26:05.304
+cmomajvcu0026f17oyo6v8ap0	f6f278962b1af85d48348d0a655dcc55d92b8ec503d1b19437f63c18bebc5601	Milanesa con pure	500	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.311	2026-05-01 02:26:05.311
+cmomajvd20027f17o5mgloshi	6d518f07806f0c4bf7eab37b3409e4bf93b24984b4f9c381c1353d6054d902b7	Pollo al spiedo entero	1500	4000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.318	2026-05-01 02:26:05.318
+cmomajvd80028f17otqand55u	ee189a6c243d2ae1c89c192dfee7247d50c31eb0b79b3ca009ac96db0e008880	Medio pollo al spiedo	800	2500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.324	2026-05-01 02:26:05.324
+cmomajvdl0029f17osslqw4yn	b9d4e2c4d1e5df6d673a06bcdd181e64015a6611f947dfcb7d1f5bedf7f9c305	Sushi 12 piezas	350	1200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.338	2026-05-01 02:26:05.338
+cmomajvdr002af17oeolfabr5	a7d2f2bc620b94b2f72a4dfc98a464c31aa9b9f1e41801bfaee393c8ba7e0ad0	Helado 1kg	1100	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.344	2026-05-01 02:26:05.344
+cmomajvdy002bf17o04k1nq8y	15b9b1e9915b8e5735d727bb437707875b1855ed88c1ed7ea907184000995578	Helado 1/4 kg	280	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.35	2026-05-01 02:26:05.35
+cmomajve4002cf17ody5gu213	f9d6151898e86a89b2410fa4d46f713e1378d03bfcdc79d01cf63990959bd0d6	Cucurucho de helado	150	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.356	2026-05-01 02:26:05.356
+cmomajvea002df17oyopg2eov	85341eed0158b081066c9eb7c2a05a28058ba73fbcee9a46b33fb38b49c60bb9	Detergente Magistral 750ml	800	750	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.362	2026-05-01 02:26:05.362
+cmomajveg002ef17o4qpdbtj4	fa86585091bd67baa136c0d7ddeb18bcdc710c64aaabe1660e38268181aff864	Lavandina Ayudin 1L	1100	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.369	2026-05-01 02:26:05.369
+cmomajvem002ff17olvmxh33t	98750a964a8f3ab163076d5dc36f54374a1ee72372286097edef89b8d5a1b95d	Suavizante Vivere 900ml	950	900	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.375	2026-05-01 02:26:05.375
+cmomajver002gf17ohfgo4s7n	e4845ea291671141eeaf82e1c904f4c5600ac8b5053ff6712f3e05d59745f6cd	Jabon en polvo Skip 800g	850	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.38	2026-05-01 02:26:05.38
+cmomajvex002hf17okdyh079p	35a10a5487fd265085dbd88f70cab73eee09826d2df16cc1d6a3a3df057a90f0	Papel higienico Higienol x4	600	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.385	2026-05-01 02:26:05.385
+cmomajvf2002if17ort01nnly	cf52a5d20d4a76c6f6d9a8f6c48fbe0c25fb2a750fd422b27e71690aac0feba9	Servilletas x100	200	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.391	2026-05-01 02:26:05.391
+cmomajvf7002jf17o86od33ck	099cbfac71fe56f2e2a2982184c9f8c309c4868af8a337093b5753dd02bc5ef4	Shampoo Sedal 350ml	380	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.396	2026-05-01 02:26:05.396
+cmomajvfd002kf17optebrm1f	3c022a5e958a35b76ed50a36dd0cbfdbf2263f21755681dddad5008604cbdfab	Acondicionador 350ml	380	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.401	2026-05-01 02:26:05.401
+cmomajvfi002lf17oweqndy1o	55c629004885d17a2b8e20751c4d9d2cec46210c127060afb2e4916313ba1040	Jabon de tocador Lux	130	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.406	2026-05-01 02:26:05.406
+cmomajvfo002mf17oob2sx2zg	8c7c73052984bc59e7fe38654dc12e10bbea082f6e97da0d6e2b3a05e2c6a5e8	Pasta dental Colgate 90g	100	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.412	2026-05-01 02:26:05.412
+cmomajvfu002nf17ox8r73rty	75e11bb184b9fb33b0d811d396243a624a4e5b6aee73dbb081d438cc4e80e79e	Cepillo de dientes	30	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.418	2026-05-01 02:26:05.418
+cmomajvg0002of17oqs41ybxr	5c153a55f8449d1593ac9e81c2dc674ffbe3e354cd8aa777b0c4c443f253ca87	Desodorante Axe 150ml	200	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.424	2026-05-01 02:26:05.424
+cmomajvg4002pf17oktks5uk8	e9451579728018f0b1ea4ab0b041a9f95503d12c5fe3a7b591879ff9022c95c9	Paracetamol x16	30	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.429	2026-05-01 02:26:05.429
+cmomajvga002qf17otgm3iy42	d4cae3ac0bea1e152aefffca29c9ccec67c65e9c2c7a9231731d2a1ffd1e7f70	Ibuprofeno 400 x10	30	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.434	2026-05-01 02:26:05.434
+cmomajvge002rf17ol682bsfl	e8edda4aa500e8f05b2058190478302a8e0f1e32e0c9b348df4bdd82d90dc89a	Aspirina x20	30	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.439	2026-05-01 02:26:05.439
+cmomajvgj002sf17o2ssy3fg2	153ef0daa034309be5a50b96ab7ef777ed87de80b7c00e23b647ac7e5d7f0207	Alcohol en gel 250ml	280	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.444	2026-05-01 02:26:05.444
+cmomajvgo002tf17opjv14yh2	8018173032d7637d5f15d377092ad253a62b2ff35f334483a0cfae99c6118880	Alcohol etilico 500ml	500	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.449	2026-05-01 02:26:05.449
+cmomajvgu002uf17ogcsmtyfz	f9136d44865d2d5471a2256918a13164097d776635858759ff3b912dede342c9	Algodon 100g	110	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.454	2026-05-01 02:26:05.454
+cmomajvgz002vf17olhjbswjr	131a1223d4eda02b92a354382ac1f038f86e6f95438a4ee13fc08740609feda0	Curitas x20	30	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.46	2026-05-01 02:26:05.46
+cmomajvh5002wf17oopvi1sqx	062fb43a950d911a78a02196ab7797bfe76108d14af76080d22406382c558930	Termometro digital	60	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.466	2026-05-01 02:26:05.466
+cmomajvhb002xf17om3erenyo	e731f9649005665736157c62cad3c4f1c77a7314b1d6e97a7ae1ab266c4e665a	Tornillos hex 1/4 x100	500	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.471	2026-05-01 02:26:05.471
+cmomajvhg002yf17opvx54rpv	99bf5ffb7860dca4690cd7e834143007b05da560f59c7dd45cf619fd7edca10c	Tornillos para madera x50	200	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.477	2026-05-01 02:26:05.477
+cmomajvhm002zf17okgee3qg2	dce9d57b6e9125ef20c946109d4bd1886c2be3fe56483db8bbaaff096c5c3cbf	Clavos surtidos 250g	250	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.482	2026-05-01 02:26:05.482
+cmomajvhs0030f17ocmgjn03n	e9d4425b1bebac581d00371624893b4fcf1a34e4fdd44f194b3865234975d67d	Martillo de carpintero	600	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.488	2026-05-01 02:26:05.488
+cmomajvhx0031f17orh5220ts	99f51bc4539c0cb8dfef75572bfa19b677416e1ba0de52265f7cf2421bd9d5cd	Destornillador Phillips	200	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.493	2026-05-01 02:26:05.493
+cmomajvi20032f17oocjyy0j2	2b98b4ea5123aaee83ed47791f3ee19d55faa5165b8d69719599df42a067678e	Set de destornilladores 6 piezas	800	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.499	2026-05-01 02:26:05.499
+cmomajvi70033f17o2eza527y	2849dd95405cae2b9c3e4d991673ee7c7ab2a0cb75a0c44858923c73cffe3f18	Llave francesa	400	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.503	2026-05-01 02:26:05.503
+cmomajvic0034f17oeu2q6asu	dd6f2346742223609fdc6eb4e5a01b61db094aea37c21686f04108d08e508374	Cinta aisladora	80	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.508	2026-05-01 02:26:05.508
+cmomajvig0035f17o89szqz9c	80c951d3f9a8f916fc4910ff4b2cf89413f3856b4df23983e8f8c82f3f678e44	Pintura latex 4L	5000	4000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.513	2026-05-01 02:26:05.513
+cmomajvil0036f17o3nczwfv6	431115daa6a833ebfcb442498db7ac030eb0ca51615b96eac1207afcf4bcbdc2	Pintura latex 1L	1300	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.517	2026-05-01 02:26:05.517
+cmomajviq0037f17o4ubr1hj2	03a3ce78125d05910501c9f042940eb95ab79da535fe0792fec0f9da803515c0	Bolsa de cemento 25kg	25000	30000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.522	2026-05-01 02:26:05.522
+cmomajviv0038f17osh7r704v	ae151960f2a7646a303a8ebd533017f64366e07310f46f134d11cd805a85cb69	Bolsa de cal 25kg	25000	30000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.527	2026-05-01 02:26:05.527
+cmomajvj00039f17oab09ieat	f4a7817de116912d0f13618373492e8f1fb5590bfcb7850b359497d21d890216	Remera basica de algodon	200	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.533	2026-05-01 02:26:05.533
+cmomajvj6003af17o75zu1foz	ef2fa686dd1f0c327d167933dc26b36d8f242b9f21d24a8cb862901f753ed04a	Buzo con capucha	500	5000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.538	2026-05-01 02:26:05.538
+cmomajvja003bf17o8on4ngo0	7e3b180920808eafdd1270edc0674833a4f8e4f840f86e3aff91cc971619ba93	Campera de invierno	900	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.543	2026-05-01 02:26:05.543
+cmomajvjg003cf17ohc0zk0yr	a3fd7be1e5f2e685fa9ebfd1b9a9a59935dac2fb03784fe5459343b3545ebdcb	Pantalon de jean	600	4000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.548	2026-05-01 02:26:05.548
+cmomajvjl003df17o15bpvnil	4ec64e34f22aee25addbc0e84a0fe76c3e58c29c9c682a3975f587ec4a8f6a79	Zapatillas deportivas	800	5000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.553	2026-05-01 02:26:05.553
+cmomajvjq003ef17o4gj3ea42	56ebf53887fd7e4d8334409e231d204beefb3b411fbea5b7ac36b44b24155537	Medias x3 pares	200	1000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.558	2026-05-01 02:26:05.558
+cmomajvjv003ff17oegiwrtsd	4aa08403157ba0196e06518426fb2cc66154a1f224e97dd1413f4856f10e69cc	Silla plastica de jardin	3000	50000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.564	2026-05-01 02:26:05.564
+cmomajvk1003gf17olj91umni	78b2aa45035b1559c092189db41d9993d0b28a75be51466a65fedc28ee19bbc4	Silla de madera de comedor	6000	80000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.569	2026-05-01 02:26:05.569
+cmomajvk6003hf17o9h8a7ur2	33d3e47b1b2d1d64342989d9ebaa1436cb34758e686b9179e35e176a076644fa	Mesa de comedor 4 personas	25000	200000	\N	TRUCK	SEED	100	0	2026-05-01 02:26:05.574	2026-05-01 02:26:05.574
+cmomajvkb003if17o0w8jbdyn	4e693170056b6c9b330973b46f30fc33af78d2020098d7208c67e2dd6ba51049	Sillon 3 cuerpos	35000	400000	\N	TRUCK	SEED	100	0	2026-05-01 02:26:05.58	2026-05-01 02:26:05.58
+cmomajvkh003jf17o89a6522x	51902b2148ccaf414612e105c38dacf51b7614f1db269c6d2284cae4bbcf2831	Colchon 2 plazas	25000	350000	\N	TRUCK	SEED	100	0	2026-05-01 02:26:05.585	2026-05-01 02:26:05.585
+cmomajvkm003kf17oqyj0zhk1	f1d18aea3ba42e257d729059c4abeb2a57dd5ba7a8b68e0ebd9da9f2b4644198	Almohada	800	30000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.591	2026-05-01 02:26:05.591
+cmomajvks003lf17oq098ukkb	fec12934e6bc873edb4537d4548746fed03da366f4657a2aac6664a99e4486d1	Sabanas matrimoniales	1500	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.597	2026-05-01 02:26:05.597
+cmomajvky003mf17ops464haz	eebeed3b7c14e15c6acb9bb5b66b48dfb7e80f03655f5076451f0130db478db7	Toalla de bano	600	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.602	2026-05-01 02:26:05.602
+cmomajvl4003nf17on6hhjw3a	19d6684555f562c65d7583a0beed6ef2bc4d376d3dee976c8cfbe4c2a2022297	Auriculares bluetooth	250	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.608	2026-05-01 02:26:05.608
+cmomajvl9003of17oawslz2fs	1b0df58fffbc4dd15eaade4fcce9a27e08f4d44326cbe4a6877999c01061621f	Cargador USB-C 1m	80	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.614	2026-05-01 02:26:05.614
+cmomajvlf003pf17obwolesto	038194d942f993fde7a79bc55acff62dc79da69cb002a20d861d7aec036e1905	Pen drive 32GB	20	60	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.619	2026-05-01 02:26:05.619
+cmomajvlk003qf17ow88ds6h1	204c1f28e6ba30dca3b43f7114b4527eb0b5864625befa64cf487e2e433b5313	Mouse inalambrico	120	300	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.625	2026-05-01 02:26:05.625
+cmomajvlq003rf17o01cz0z57	4ec890eec7af1512c26c30ce217c1ef65f25835de1b26ceb5fa094cf41a451fc	Teclado USB	600	2000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.63	2026-05-01 02:26:05.63
+cmomajvlv003sf17ougcw0am8	27b478f280d13af7c24257a2be5aba5f8a128534953035c5791b96b0e31f06c0	Power bank 10000mah	250	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.636	2026-05-01 02:26:05.636
 \.
 
 
@@ -2625,6 +2794,7 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "updatedAt", "cartValue", "lastRemindedAt", "recoveredAt", "reminderCount") FROM stdin;
 cmodwjlus000iorniu8elogho	cmobth34p0002tqiaji23ve3q	[{"id": "cmobttv3e000etqia530fetso-default-1777068938059", "name": "Fernet 1882", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1776969587703-Fernet-1882-jpg.webp", "price": 12000, "quantity": 1, "productId": "cmobttv3e000etqia530fetso", "merchantId": "cmobll552000cw4k6blur8j08"}]	\N	2026-04-25 05:31:48.964	2026-04-27 15:34:30.348	12000	\N	\N	0
+cmomcchdn0003svo31lfazjua	cmoem7nkg0001k8grd394va3v	[{"id": "cmomaxm4l000114j41e37poed-default-1777605378380", "name": "PRINGLES Sabor Original", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777602670899-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp", "price": 6000, "quantity": 1, "productId": "cmomaxm4l000114j41e37poed", "merchantId": "cmoem7nl10004k8grsztmzdot"}]	\N	2026-05-01 03:16:19.832	2026-05-01 03:16:19.832	6000	\N	\N	0
 cmodgyp6t000i12ll5jq9c3k9	cmobkazic0002w4k6sk1luhha	[{"id": "cmobttv3e000etqia530fetso-default-1777068938059", "name": "Fernet 1882", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1776969587703-Fernet-1882-jpg.webp", "price": 12000, "quantity": 1, "productId": "cmobttv3e000etqia530fetso", "merchantId": "cmobll552000cw4k6blur8j08"}]	\N	2026-04-24 22:15:39.268	2026-04-26 22:26:12.515	12000	\N	\N	0
 \.
 
@@ -2713,7 +2883,7 @@ COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnlin
 
 COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "resetToken", "resetTokenExpiry", "deletedAt", "archivedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "onboardingCompletedAt", "age18Confirmed", "cookiesConsent", "cookiesConsentAt", "marketingConsent", "marketingConsentAt", "marketingConsentRevokedAt", "privacyConsentVersion", "termsConsentVersion", "pointsExpiryNotifiedAt", "failedLoginAttempts", "loginLockedUntil") FROM stdin;
 cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-04-30 16:19:23.686	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	2026-04-26 01:51:04.538	f	{"essential":true,"analytics":true,"functional":true,"marketing":true}	2026-04-27 12:30:45.317	f	\N	\N	\N	\N	\N	0	\N
-cmobkazic0002w4k6sk1luhha	maugrod@gmail.com	$2b$10$JmJnWqfoL3YLcfI084JdauwXXLsOK9slbvTEG8ROtpEsebHH4H6AG	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-3CYV	\N	2026-04-23 14:13:39.009	2026-04-24 20:52:29.043	2026-04-23 14:13:39.006	2026-04-23 14:13:39.006	\N	\N	\N	\N	f	\N	\N	\N	2026-04-23 14:15:45.524	t	\N	\N	t	2026-04-23 14:13:39.006	\N	2.0	1.1	\N	0	\N
+cmobkazic0002w4k6sk1luhha	maugrod@gmail.com	$2b$10$JmJnWqfoL3YLcfI084JdauwXXLsOK9slbvTEG8ROtpEsebHH4H6AG	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-3CYV	\N	2026-04-23 14:13:39.009	2026-05-01 03:18:32.97	2026-04-23 14:13:39.006	2026-04-23 14:13:39.006	\N	\N	\N	\N	f	\N	\N	\N	2026-04-23 14:15:45.524	t	\N	\N	t	2026-04-23 14:13:39.006	\N	2.0	1.1	\N	0	\N
 cmobtv7wq000ptqia8qc32mkw	facundotdf@gmail.com	$2b$10$7dbEhzk414ORxuSWITwXzuKdjPyTvCT0aYj3/bynmRa.JSaU2xiv.	Facundo Bellotto	Facundo	Bellotto	+542901405385	USER	\N	\N	0	0	f	cmobtv7wq000qtqia2nx4xfbr	\N	2026-04-23 18:41:19.562	2026-04-25 05:32:31.9	2026-04-23 18:41:19.561	2026-04-23 18:41:19.561	\N	\N	2026-04-25 05:32:31.899	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	2.0	1.1	\N	0	\N
 cmobth34p0002tqiaji23ve3q	ing.iyad@gmail.com	$2b$10$t1KKn.nw6Dzd2gWVPlJfSOtLXKvFoSblO/bGkCQxehzxPk.grv/.6	Iyad Marmoud Naser	Iyad	Marmoud Naser	+54 2901611605	USER	\N	\N	0	1000	f	MOV-48QG	\N	2026-04-23 18:30:20.184	2026-04-27 12:31:25.85	2026-04-23 18:30:20.183	2026-04-23 18:30:20.182	\N	\N	\N	\N	f	\N	\N	\N	2026-04-23 18:30:22.69	t	{"essential":true,"analytics":true,"functional":true,"marketing":true}	2026-04-23 18:43:58.533	t	2026-04-23 18:30:20.183	\N	2.0	1.1	\N	0	\N
 cmodw2bcv0004ornia10d6of8	getinnerdrop@gmail.com	$2b$10$.v2oxFMx4eLsCdy7wfqV4uQHzmu6sIkURq5Pb9a/5juD2zRiTOPVG	Juan Pedro	Juan	Pedro	+54 29011122336	USER	\N	\N	20	1000	f	MOV-JA97	\N	2026-04-25 05:18:22.206	2026-04-27 21:57:27.822	2026-04-25 05:18:22.203	2026-04-25 05:18:22.203	\N	\N	\N	\N	f	\N	\N	\N	2026-04-25 05:18:24.898	t	\N	\N	t	2026-04-25 05:18:22.203	\N	2.0	1.1	\N	0	\N
@@ -2743,6 +2913,7 @@ cmohmpg4o00014lnnbsms6rry	cmodw2bcv0004ornia10d6of8	LOGIN	User	cmodw2bcv0004orni
 cmohqmv4a00018a3gyr7wzkme	cmodw2bcv0004ornia10d6of8	LOGIN	User	cmodw2bcv0004ornia10d6of8	{"method":"credentials"}	\N	\N	2026-04-27 21:57:27.897
 cmoir8y7c000arxa6ffvecyei	cmoir8pja0006rxa6e52geiv5	ADMIN_USER_DELETED	User	cmoir8pja0006rxa6e52geiv5	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"test1@somosmoovy.com","name":"Marcos Perez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	2026-04-28 15:02:24.553
 cmolovntf0001zrki68p7zjgz	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-04-30 16:19:23.857
+cmomcfc5t0005svo3w20qn26g	cmobkazic0002w4k6sk1luhha	LOGIN	User	cmobkazic0002w4k6sk1luhha	{"method":"credentials"}	\N	\N	2026-05-01 03:18:33.041
 cmobtx23c0010tqiapbqxwr20	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-04-23 18:42:45.336
 cmodw2box000corniydmodk2k	cmodw2bcv0004ornia10d6of8	LOGIN	User	cmodw2bcv0004ornia10d6of8	{"method":"credentials"}	\N	\N	2026-04-25 05:18:22.641
 cmodwkj0v000lornirlzr23gt	cmobtv7wq000ptqia8qc32mkw	ADMIN_USER_DELETED	User	cmobtv7wq000ptqia8qc32mkw	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"facundotdf@gmail.com","name":"Facundo Bellotto","roles":["USER","DRIVER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	2026-04-25 05:32:31.951
@@ -3208,6 +3379,14 @@ ALTER TABLE ONLY public."ProductImage"
 
 ALTER TABLE ONLY public."ProductVariant"
     ADD CONSTRAINT "ProductVariant_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: ProductWeightCache ProductWeightCache_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."ProductWeightCache"
+    ADD CONSTRAINT "ProductWeightCache_pkey" PRIMARY KEY (id);
 
 
 --
@@ -4252,6 +4431,27 @@ CREATE INDEX "PlaybookStep_checklistId_order_idx" ON public."PlaybookStep" USING
 --
 
 CREATE UNIQUE INDEX "ProductCategory_productId_categoryId_key" ON public."ProductCategory" USING btree ("productId", "categoryId");
+
+
+--
+-- Name: ProductWeightCache_nameHash_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "ProductWeightCache_nameHash_key" ON public."ProductWeightCache" USING btree ("nameHash");
+
+
+--
+-- Name: ProductWeightCache_packageCategoryId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ProductWeightCache_packageCategoryId_idx" ON public."ProductWeightCache" USING btree ("packageCategoryId");
+
+
+--
+-- Name: ProductWeightCache_source_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "ProductWeightCache_source_idx" ON public."ProductWeightCache" USING btree (source);
 
 
 --
