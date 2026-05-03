@@ -272,6 +272,44 @@ export function checkMerchantSchedule(merchant: {
 }
 
 /**
+ * View-model para componentes de UI (ProductCard, HomeProductCard, MerchantCard).
+ * Toma un merchant y devuelve los dos campos que la card necesita para decidir si
+ * habilita el botón "Agregar al carrito" y qué texto mostrar cuando está cerrado.
+ *
+ * USO: en cualquier página server-side que vaya a renderizar cards de productos,
+ * pasar el resultado de este helper en `product.merchant.isCurrentlyOpen` y
+ * `product.merchant.nextOpenLabel`. Las cards respetan el flag.
+ *
+ * Rama: feat/bloqueo-comercio-cerrado
+ */
+export interface MerchantOpenViewModel {
+    /** True si el comercio puede recibir pedidos AHORA (pausa + horario) */
+    isCurrentlyOpen: boolean;
+    /** Texto corto para mostrar en la card si está cerrado: "Abre 18:00" o "Abre Mañana 09:00" */
+    nextOpenLabel: string | null;
+}
+
+export function getMerchantOpenViewModel(merchant: {
+    isOpen: boolean;
+    scheduleJson?: string | null;
+} | null | undefined): MerchantOpenViewModel {
+    if (!merchant) {
+        return { isCurrentlyOpen: false, nextOpenLabel: null };
+    }
+    const result = checkMerchantSchedule(merchant);
+    let label: string | null = null;
+    if (!result.isCurrentlyOpen && result.nextOpenTime) {
+        label = result.nextOpenDay === "Hoy"
+            ? `Abre ${result.nextOpenTime}`
+            : `Abre ${result.nextOpenDay} ${result.nextOpenTime}`;
+    }
+    return {
+        isCurrentlyOpen: result.isCurrentlyOpen,
+        nextOpenLabel: label,
+    };
+}
+
+/**
  * Versión simplificada para uso en validación de pedidos.
  * Retorna { allowed: true } o { allowed: false, reason: string }.
  */

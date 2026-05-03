@@ -19,6 +19,13 @@ interface ProductCardProps {
         merchantId?: string;
         merchant?: {
             isOpen: boolean;
+            // Rama feat/bloqueo-comercio-cerrado
+            // isCurrentlyOpen contempla pausa manual + horario (scheduleJson + timezone Ushuaia).
+            // Cuando está presente, se usa este. Si no, fallback a isOpen (legacy).
+            // El estado correcto se calcula con checkMerchantSchedule() en el server.
+            isCurrentlyOpen?: boolean;
+            // Texto opcional que la card muestra como "Abre Mañana 09:00".
+            nextOpenLabel?: string | null;
         };
     };
     showAddButton?: boolean;
@@ -28,7 +35,13 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
     const addItem = useCartStore((s) => s.addItem);
     const [added, setAdded] = useState(false);
 
-    const isClosed = product.merchant?.isOpen === false;
+    // isClosed = TRUE si la tienda no está actualmente operativa (pausa O fuera de horario).
+    // Si el caller calculó isCurrentlyOpen explícitamente lo respetamos; sino fallback al
+    // chequeo crudo de isOpen (legacy, solo detecta pausa manual).
+    const isClosed = product.merchant?.isCurrentlyOpen !== undefined
+        ? !product.merchant.isCurrentlyOpen
+        : product.merchant?.isOpen === false;
+    const closedLabel = product.merchant?.nextOpenLabel || "CERRADO";
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -100,8 +113,11 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                                     {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                                 </button>
                             ) : (
-                                <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded">
-                                    CERRADO
+                                <span
+                                    className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded leading-tight max-w-[100px] text-right"
+                                    title={closedLabel}
+                                >
+                                    {closedLabel}
                                 </span>
                             )
                         )}

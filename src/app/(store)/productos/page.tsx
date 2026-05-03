@@ -6,6 +6,7 @@ import { Package, Filter, ShoppingBag } from "lucide-react";
 import ProductCard from "@/components/products/ProductCard";
 import ProductSearchBar from "@/components/products/ProductSearchBar";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
+import { getMerchantOpenViewModel } from "@/lib/merchant-schedule";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -56,12 +57,20 @@ async function getProducts(categoria?: string, buscar?: string): Promise<Product
         orderBy: { name: "asc" },
     });
 
-    return products.map(p => ({
-        ...p,
-        merchant: p.merchant || p.acquiredBy?.[0]?.merchant || null,
-        merchantId: p.merchantId || p.acquiredBy?.[0]?.merchantId || undefined,
-        image: p.images[0]?.url || null
-    }));
+    return products.map(p => {
+        const merchant = p.merchant || p.acquiredBy?.[0]?.merchant || null;
+        // Rama feat/bloqueo-comercio-cerrado: enriquecer con estado real
+        // (pausa + horario) para que el ProductCard sepa si bloquear el botón.
+        const vm = getMerchantOpenViewModel(merchant);
+        return {
+            ...p,
+            merchant: merchant
+                ? { ...merchant, isCurrentlyOpen: vm.isCurrentlyOpen, nextOpenLabel: vm.nextOpenLabel }
+                : null,
+            merchantId: p.merchantId || p.acquiredBy?.[0]?.merchantId || undefined,
+            image: p.images[0]?.url || null,
+        };
+    });
 }
 
 async function getCategories(): Promise<Category[]> {

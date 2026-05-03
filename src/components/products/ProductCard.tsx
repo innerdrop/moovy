@@ -21,6 +21,10 @@ interface ProductCardProps {
         merchantId?: string;
         merchant?: {
             isOpen: boolean;
+            // Rama feat/bloqueo-comercio-cerrado: si el caller pasa
+            // isCurrentlyOpen, ese gana. Si solo viene isOpen, fallback legacy.
+            isCurrentlyOpen?: boolean;
+            nextOpenLabel?: string | null;
         };
     };
 }
@@ -29,8 +33,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     const addItem = useCartStore((s) => s.addItem);
     const [added, setAdded] = useState(false);
 
-    const isClosed = product.merchant && product.merchant.isOpen === false;
+    // Cerrado = pausa O fuera de horario. isCurrentlyOpen contempla ambos.
+    const isClosed = product.merchant
+        ? (product.merchant.isCurrentlyOpen !== undefined
+            ? !product.merchant.isCurrentlyOpen
+            : product.merchant.isOpen === false)
+        : false;
     const isDisabled = product.stock <= 0 || isClosed;
+    const closedLabel = product.merchant?.nextOpenLabel || "CERRADO";
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -126,7 +136,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                         {isClosed ? (
                             <>
                                 <Store className="w-4 h-4" />
-                                Cerrado
+                                {closedLabel}
                             </>
                         ) : (
                             <>

@@ -14,6 +14,9 @@ const includeOpts = {
             name: true,
             slug: true,
             isOpen: true,
+            // Rama feat/bloqueo-comercio-cerrado: necesitamos scheduleJson para
+            // calcular el estado real (pausa + horario) en el detail client.
+            scheduleJson: true,
             deliveryRadiusKm: true,
             minOrderAmount: true,
             allowPickup: true,

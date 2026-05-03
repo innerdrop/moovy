@@ -38,6 +38,9 @@ interface Merchant {
     slug: string;
     image: string | null;
     isOpen: boolean;
+    // Rama feat/bloqueo-comercio-cerrado: estado real (pausa + horario)
+    isCurrentlyOpen?: boolean;
+    nextOpenLabel?: string | null;
     isVerified: boolean;
     isPremium: boolean;
     rating: number | null;
@@ -118,8 +121,27 @@ export default function ProductDetailClient() {
         if (slug) fetchProduct();
     }, [slug]);
 
+    // Rama feat/bloqueo-comercio-cerrado: estado real del comercio.
+    // isCurrentlyOpen viene del endpoint enriquecido (pausa + horario + timezone Ushuaia).
+    // Fallback a isOpen para retrocompat si el endpoint legacy no lo devuelve.
+    const merchantIsOpen = product?.merchant
+        ? (product.merchant.isCurrentlyOpen !== undefined
+            ? product.merchant.isCurrentlyOpen
+            : product.merchant.isOpen)
+        : true;
+    const merchantNextOpenLabel = product?.merchant?.nextOpenLabel || null;
+
     const handleAddToCart = () => {
         if (!product || product.stock <= 0) return;
+        // Bloquear agregar al carrito si la tienda está cerrada
+        if (!merchantIsOpen) {
+            toast.error(
+                merchantNextOpenLabel
+                    ? `Esta tienda está cerrada — ${merchantNextOpenLabel}`
+                    : "Esta tienda está cerrada en este momento"
+            );
+            return;
+        }
         addItem({
             productId: product.id,
             name: product.name,
@@ -194,6 +216,27 @@ export default function ProductDetailClient() {
                         </button>
                     </div>
                 </div>
+
+                {/* Banner: tienda cerrada (rama feat/bloqueo-comercio-cerrado).
+                    Si la tienda no puede recibir pedidos ahora, avisamos antes de
+                    que el cliente intente agregar al carrito. */}
+                {!merchantIsOpen && product.merchant && (
+                    <div className="mx-4 mt-4 lg:mx-0 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                            <Clock className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-amber-900">
+                                {product.merchant.name} está cerrado en este momento
+                            </p>
+                            <p className="text-xs text-amber-700 mt-0.5">
+                                {merchantNextOpenLabel
+                                    ? `${merchantNextOpenLabel}. Podés ver el producto pero no comprarlo hasta que la tienda abra.`
+                                    : "No podés comprar este producto hasta que la tienda abra."}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Image carousel — fix/producto-multifoto-carousel
                     Antes solo mostraba la imagen activa con dots casi invisibles
@@ -361,10 +404,10 @@ export default function ProductDetailClient() {
                                         <Clock className="w-3 h-3" />
                                         {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min
                                     </span>
-                                    {merchant.isOpen ? (
+                                    {merchantIsOpen ? (
                                         <span className="text-green-600 font-medium">Abierto</span>
                                     ) : (
-                                        <span className="text-gray-400">Cerrado</span>
+                                        <span className="text-gray-400">{merchantNextOpenLabel || "Cerrado"}</span>
                                     )}
                                 </div>
                             </div>
@@ -475,17 +518,22 @@ export default function ProductDetailClient() {
                                 </button>
                             </div>
 
-                            {/* Add to cart */}
+                            {/* Add to cart — bloqueado si la tienda está cerrada (rama feat/bloqueo-comercio-cerrado) */}
                             <button
                                 onClick={handleAddToCart}
-                                disabled={addedToCart}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition shadow-md ${
-                                    addedToCart
-                                        ? "bg-green-500"
-                                        : "bg-[#e60012] hover:bg-[#cc000f] active:scale-[0.98]"
+                                disabled={addedToCart || !merchantIsOpen}
+                                title={!merchantIsOpen ? `Tienda cerrada${merchantNextOpenLabel ? ` — ${merchantNextOpenLabel}` : ""}` : undefined}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition shadow-md ${
+                                    !merchantIsOpen
+                                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                        : addedToCart
+                                            ? "bg-green-500 text-white"
+                                            : "bg-[#e60012] hover:bg-[#cc000f] active:scale-[0.98] text-white"
                                 }`}
                             >
-                                {addedToCart ? (
+                                {!merchantIsOpen ? (
+                                    <><ShoppingCart className="w-5 h-5" /> Tienda cerrada</>
+                                ) : addedToCart ? (
                                     <><Check className="w-5 h-5" /> Agregado</>
                                 ) : (
                                     <><ShoppingCart className="w-5 h-5" /> Agregar {formatPrice(product.price * quantity)}</>
@@ -630,10 +678,21 @@ export default function ProductDetailClient() {
                                 <div className="flex gap-3 lg:gap-4">
                                     <button
                                         onClick={handleAddToCart}
-                                        disabled={addedToCart}
-                                        className={`flex-1 py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition shadow-md lg:py-4 lg:text-lg ${addedToCart ? "bg-green-500" : "bg-[#e60012] hover:bg-[#cc000f]"}`}
+                                        disabled={addedToCart || !merchantIsOpen}
+                                        title={!merchantIsOpen ? `Tienda cerrada${merchantNextOpenLabel ? ` — ${merchantNextOpenLabel}` : ""}` : undefined}
+                                        className={`flex-1 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition shadow-md lg:py-4 lg:text-lg ${
+                                            !merchantIsOpen
+                                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                : addedToCart
+                                                    ? "bg-green-500 text-white"
+                                                    : "bg-[#e60012] hover:bg-[#cc000f] text-white"
+                                        }`}
                                     >
-                                        {addedToCart ? <><Check className="w-5 h-5 lg:w-6 lg:h-6" /> ¡Agregado!</> : <><ShoppingCart className="w-5 h-5 lg:w-6 lg:h-6" /> Agregar al carrito</>}
+                                        {!merchantIsOpen
+                                            ? <><ShoppingCart className="w-5 h-5 lg:w-6 lg:h-6" /> Tienda cerrada</>
+                                            : addedToCart
+                                                ? <><Check className="w-5 h-5 lg:w-6 lg:h-6" /> ¡Agregado!</>
+                                                : <><ShoppingCart className="w-5 h-5 lg:w-6 lg:h-6" /> Agregar al carrito</>}
                                     </button>
                                     <button onClick={handleAddAndGoToCart} className="flex-1 py-3.5 rounded-xl font-semibold border-2 border-[#e60012] text-[#e60012] hover:bg-red-50 transition lg:py-4 lg:text-lg">
                                         Comprar ahora
@@ -656,10 +715,15 @@ export default function ProductDetailClient() {
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                         <p className="font-semibold text-gray-900 group-hover:text-[#e60012] transition lg:text-lg">{merchant.name}</p>
                                         {merchant.isVerified && <Shield className="w-4 h-4 text-blue-500 lg:w-5 lg:h-5" />}
-                                        {merchant.isOpen ? (
+                                        {merchantIsOpen ? (
                                             <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full lg:text-xs lg:px-3">ABIERTO</span>
                                         ) : (
-                                            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full lg:text-xs lg:px-3">CERRADO</span>
+                                            <span
+                                                className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full lg:text-xs lg:px-3"
+                                                title={merchantNextOpenLabel || "Cerrado"}
+                                            >
+                                                {merchantNextOpenLabel || "CERRADO"}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 lg:text-sm">

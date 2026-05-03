@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeSlug } from "@/lib/slugify";
+import { getMerchantOpenViewModel } from "@/lib/merchant-schedule";
 
 const includeOpts = {
     images: { orderBy: { order: "asc" as const } },
@@ -14,6 +15,9 @@ const includeOpts = {
             slug: true,
             image: true,
             isOpen: true,
+            // Rama feat/bloqueo-comercio-cerrado: scheduleJson para derivar
+            // isCurrentlyOpen + nextOpenLabel y devolverlos en la respuesta.
+            scheduleJson: true,
             isVerified: true,
             isPremium: true,
             rating: true,
@@ -87,7 +91,22 @@ export async function GET(
             );
         }
 
-        return NextResponse.json(product);
+        // Rama feat/bloqueo-comercio-cerrado: enriquecer merchant con el
+        // estado real (pausa + horario + timezone Ushuaia). El cliente usa
+        // isCurrentlyOpen para decidir si habilita "Agregar al carrito".
+        const vm = getMerchantOpenViewModel(product.merchant);
+        const enriched = {
+            ...product,
+            merchant: product.merchant
+                ? {
+                    ...product.merchant,
+                    isCurrentlyOpen: vm.isCurrentlyOpen,
+                    nextOpenLabel: vm.nextOpenLabel,
+                }
+                : null,
+        };
+
+        return NextResponse.json(enriched);
     } catch (error) {
         console.error("Error fetching product:", error);
         return NextResponse.json(

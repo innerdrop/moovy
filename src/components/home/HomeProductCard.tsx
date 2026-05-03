@@ -13,7 +13,15 @@ interface HomeProductCardProps {
         price: number;
         isFeatured?: boolean;
         images?: { url: string }[];
-        merchant?: { id: string; name: string; slug: string; isOpen: boolean } | null;
+        merchant?: {
+            id: string;
+            name: string;
+            slug: string;
+            isOpen: boolean;
+            // Rama feat/bloqueo-comercio-cerrado
+            isCurrentlyOpen?: boolean;
+            nextOpenLabel?: string | null;
+        } | null;
     };
 }
 
@@ -24,9 +32,17 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
     const openCart = useCartStore((s) => s.openCart);
     const [added, setAdded] = useState(false);
 
+    // Cerrado = pausa manual O fuera de horario. Respeta isCurrentlyOpen si vino calculado.
+    const isClosed = product.merchant?.isCurrentlyOpen !== undefined
+        ? !product.merchant.isCurrentlyOpen
+        : product.merchant?.isOpen === false;
+    const closedLabel = product.merchant?.nextOpenLabel || "Cerrado";
+
     const handleAdd = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+
+        if (isClosed) return;
 
         addItem({
             productId: product.id,
@@ -67,17 +83,27 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
             </Link>
 
             <div className="p-3 relative">
-                {/* Add to cart button — functional */}
+                {/* Add to cart button — funcional. Si la tienda está cerrada, el botón
+                    queda en gris y no agrega al carrito (rama feat/bloqueo-comercio-cerrado). */}
                 <button
                     onClick={handleAdd}
-                    className={`absolute -top-4 right-3 w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shadow-md border-[3px] border-white transition-all hover:scale-110 z-10 ${
-                        added
-                            ? "bg-green-500 text-white"
-                            : "bg-[#e60012] hover:bg-[#cc000f] text-white"
+                    disabled={isClosed}
+                    title={isClosed ? `Tienda cerrada${product.merchant?.nextOpenLabel ? ` — ${product.merchant.nextOpenLabel}` : ""}` : undefined}
+                    className={`absolute -top-4 right-3 w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shadow-md border-[3px] border-white transition-all z-10 ${
+                        isClosed
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : added
+                                ? "bg-green-500 text-white hover:scale-110"
+                                : "bg-[#e60012] hover:bg-[#cc000f] text-white hover:scale-110"
                     }`}
                 >
                     {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 </button>
+                {isClosed && (
+                    <span className="absolute top-2 left-2 bg-red-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                        {closedLabel}
+                    </span>
+                )}
 
                 {merchantName && (
                     <p className="text-xs text-gray-400 font-medium mb-0.5 truncate">{merchantName}</p>

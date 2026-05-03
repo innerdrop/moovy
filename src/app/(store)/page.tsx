@@ -27,7 +27,7 @@ import CategoryGrid from "@/components/home/CategoryGrid";
 import QuickAccessRow from "@/components/home/QuickAccessRow";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
-import { checkMerchantSchedule } from "@/lib/merchant-schedule";
+import { checkMerchantSchedule, getMerchantOpenViewModel } from "@/lib/merchant-schedule";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
@@ -130,18 +130,24 @@ async function getAllActiveMerchants() {
 
 async function getFeaturedProducts() {
   try {
+    // Rama feat/bloqueo-comercio-cerrado: NO filtramos por isOpen aquí porque
+    // ese flag solo cubre pausa manual. El estado real (pausa + horario) se
+    // calcula con getMerchantOpenViewModel después y se inyecta en merchant.
+    // El producto se sigue mostrando aunque la tienda esté cerrada — el
+    // botón "Agregar al carrito" queda deshabilitado y se ve badge "Cerrado".
     return await prisma.product.findMany({
       where: {
         isActive: true,
         isFeatured: true,
         stock: { gt: 0 },
-        merchant: { isOpen: true },
+        deletedAt: null,
+        merchant: { isNot: null }, // featured sin merchantId (legacy/import) los excluimos
       },
       include: {
         categories: { include: { category: true } },
         images: true,
         merchant: {
-          select: { id: true, name: true, isOpen: true, slug: true },
+          select: { id: true, name: true, isOpen: true, scheduleJson: true, slug: true },
         },
       },
       take: 8,
@@ -364,6 +370,19 @@ export default async function LiveStoreView() {
     };
   });
 
+  // Rama feat/bloqueo-comercio-cerrado: enriquecer cada featured product con
+  // el viewModel del merchant (isCurrentlyOpen + nextOpenLabel) para que la
+  // card sepa si habilitar el botón de agregar al carrito.
+  const enrichedFeaturedProducts = featuredProducts.map((p) => {
+    const vm = getMerchantOpenViewModel(p.merchant);
+    return {
+      ...p,
+      merchant: p.merchant
+        ? { ...p.merchant, isCurrentlyOpen: vm.isCurrentlyOpen, nextOpenLabel: vm.nextOpenLabel }
+        : null,
+    };
+  });
+
   // ISSUE-036: regla de diversidad — merchants disjuntos entre filas curadas,
   // ocultar filas con <2 merchants, ocultar todo si hay <3 activos en total.
   const { mostOrdered, bestRated, newMerchants } = applyDiversityRule(
@@ -461,9 +480,9 @@ export default async function LiveStoreView() {
               </Link>
             </div>
 
-            {featuredProducts.length > 0 ? (
+            {enrichedFeaturedProducts.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 lg:gap-4">
-                {featuredProducts.map((product) => (
+                {enrichedFeaturedProducts.map((product) => (
                   <HomeProductCard key={product.id} product={product} />
                 ))}
               </div>
