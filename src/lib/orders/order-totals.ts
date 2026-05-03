@@ -68,6 +68,21 @@ export interface SubOrderFinancialSnapshotInput {
      * (regla canónica #10 — todo parámetro editable post-launch).
      */
     riderSharePercent?: number;
+    /**
+     * Snapshot de zona de delivery aplicado al pedido (rama
+     * feat/zonas-delivery-multiplicador). Se calcula aguas arriba con
+     * getZoneSnapshotForLocation(destLat, destLng) y se persiste en SubOrder.
+     *
+     * El driverBonus se SUMA al driverPayoutAmount (Biblia v3: zona B +$150,
+     * zona C +$350). Si la dirección no cae en ninguna zona, default
+     * { zoneCode: null, zoneMultiplier: 1.0, zoneDriverBonus: 0 } y el helper
+     * actúa como si no hubiera zona configurada.
+     */
+    zoneSnapshot?: {
+        zoneCode: string | null;
+        zoneMultiplier: number;
+        zoneDriverBonus: number;
+    };
 }
 
 export interface SubOrderFinancialSnapshot {
@@ -76,6 +91,9 @@ export interface SubOrderFinancialSnapshot {
     driverPayoutAmount: number;
     merchantCommissionRate: number | null;
     merchantCommissionSource: CommissionSource | null;
+    zoneCode: string | null;
+    zoneMultiplier: number;
+    zoneDriverBonus: number;
 }
 
 // ─── Cálculo principal ──────────────────────────────────────────────────────
@@ -103,6 +121,7 @@ export async function buildSubOrderFinancialSnapshot(
         riderSharePercent = 80,
         precomputedMerchantRate,
         precomputedMerchantSource,
+        zoneSnapshot,
     } = input;
 
     // ── Motor Logístico ─────────────────────────────────────────────────────
@@ -112,9 +131,13 @@ export async function buildSubOrderFinancialSnapshot(
     const tripCost = Math.max(0, deliveryFee - operationalCost);
 
     // ── Reparto Financiero — Driver ─────────────────────────────────────────
-    // Repartidor cobra riderSharePercent% del costo del viaje SIN operativo.
+    // Repartidor cobra riderSharePercent% del costo del viaje SIN operativo +
+    // bonus de zona si aplica (Biblia v3: zona B +$150, zona C +$350).
     // Math.round para evitar centavos fraccionarios (regla PAGOS).
-    const driverPayoutAmount = Math.round(tripCost * (riderSharePercent / 100));
+    const zoneCode = zoneSnapshot?.zoneCode ?? null;
+    const zoneMultiplier = zoneSnapshot?.zoneMultiplier ?? 1.0;
+    const zoneDriverBonus = zoneSnapshot?.zoneDriverBonus ?? 0;
+    const driverPayoutAmount = Math.round(tripCost * (riderSharePercent / 100)) + zoneDriverBonus;
 
     // ── Reparto Financiero — Merchant / Seller ──────────────────────────────
     // Solo merchant pasa por la cascada de getEffectiveCommissionWithSource
@@ -147,5 +170,8 @@ export async function buildSubOrderFinancialSnapshot(
         driverPayoutAmount,
         merchantCommissionRate,
         merchantCommissionSource,
+        zoneCode,
+        zoneMultiplier,
+        zoneDriverBonus,
     };
 }

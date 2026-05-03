@@ -39,6 +39,14 @@ interface DeliveryResult {
     // ISSUE-032: Zona excluida (sin cobertura). Si viene, el backend devolvió 422
     // con `error: "zone_excluded"`. La UI muestra un card rojo con el motivo.
     zoneExcluded?: { name: string; reason: string };
+    // Rama feat/zonas-delivery-multiplicador: snapshot de zona aplicada al fee
+    // (transparencia al cliente + Defensa del Consumidor). Si zoneMultiplier !== 1.0,
+    // se muestra línea explicativa "Zona Norte +15%" debajo del envío.
+    zoneSnapshot?: {
+        zoneCode: string | null;
+        zoneMultiplier: number;
+        zoneDriverBonus: number;
+    };
 }
 
 export default function CheckoutPage() {
@@ -1385,14 +1393,30 @@ export default function CheckoutPage() {
                                         })}
                                     </>
                                 ) : deliveryResult?.isWithinRange ? (
-                                    <div className="flex justify-between text-sm lg:text-base">
-                                        <span>Envío a domicilio</span>
-                                        <span className={deliveryResult.isFreeDelivery ? "text-green-600" : ""}>
-                                            {deliveryResult.isFreeDelivery
-                                                ? "GRATIS"
-                                                : formatPrice(deliveryResult.totalCost)}
-                                        </span>
-                                    </div>
+                                    <>
+                                        <div className="flex justify-between text-sm lg:text-base">
+                                            <span>Envío a domicilio</span>
+                                            <span className={deliveryResult.isFreeDelivery ? "text-green-600" : ""}>
+                                                {deliveryResult.isFreeDelivery
+                                                    ? "GRATIS"
+                                                    : formatPrice(deliveryResult.totalCost)}
+                                            </span>
+                                        </div>
+                                        {/* Rama feat/zonas-delivery-multiplicador: si el destino cae en una
+                                            zona con multiplicador !== 1.0, mostrar línea explicativa
+                                            (transparencia + Defensa del Consumidor 24.240). */}
+                                        {deliveryResult.zoneSnapshot?.zoneCode &&
+                                            deliveryResult.zoneSnapshot.zoneMultiplier !== 1.0 && (
+                                            <div className="flex justify-between text-xs text-gray-500 -mt-1 ml-3">
+                                                <span>↳ {deliveryResult.zoneSnapshot.zoneCode}</span>
+                                                <span>
+                                                    {deliveryResult.zoneSnapshot.zoneMultiplier > 1
+                                                        ? `+${Math.round((deliveryResult.zoneSnapshot.zoneMultiplier - 1) * 100)}%`
+                                                        : `${Math.round((deliveryResult.zoneSnapshot.zoneMultiplier - 1) * 100)}%`}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="flex justify-between text-sm lg:text-base text-gray-400 italic">
                                         <span>Envío a domicilio</span>

@@ -448,6 +448,19 @@ model SubOrder {
   driverPayoutAmount      Float?
   merchantCommissionRate  Float?
   merchantCommissionSource String?
+  // ─── Zonas de delivery (rama feat/zonas-delivery-multiplicador) ──────────
+  // Snapshot inmutable de la zona aplicada al pedido. Si en el futuro el admin
+  // mueve los polígonos en /ops/zonas-delivery, los pedidos viejos preservan
+  // qué zona se les cobró (audit AAIP/AFIP + reportes fiscales).
+  //
+  //   - zoneCode: nombre de la DeliveryZone aplicada (ej: "Centro", "Zona Alta")
+  //     o null si la dirección no cayó en ningún polígono (default 1.0).
+  //   - zoneMultiplier: multiplicador snapshot (1.0 / 1.15 / 1.35 / custom).
+  //   - zoneDriverBonus: ARS extra al driver por la zona (Biblia v3: B +$150,
+  //     C +$350). Se suma a driverPayoutAmount.
+  zoneCode         String?
+  zoneMultiplier   Float?
+  zoneDriverBonus  Int?
   paymentStatus       String         @default("PENDING")
   deliveryStatus      DeliveryStatus?
   deliveredAt         DateTime?
@@ -1472,6 +1485,51 @@ model DeliveryRate {
   updatedAt      DateTime        @updatedAt
 
   category PackageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+// ─── DeliveryZone ─────────────────────────────────────────────────────────────
+// Rama: feat/zonas-delivery-multiplicador
+//
+// Polígonos de pricing dinámico. Cada zona define un área geográfica de Ushuaia
+// con su multiplicador (qué tanto se sube/baja el delivery fee dentro de ella)
+// y bonus al driver (extra que cobra el repartidor por aceptar pedidos en esa
+// zona). Las dibuja el admin desde /ops/zonas-delivery con el drawing manager
+// de Google Maps; el sistema hace point-in-polygon al crear cada pedido.
+//
+// STORAGE: PostGIS Polygon nativo en SRID 4326 (lat/lng) con índice GiST para
+// que el point-in-polygon sea O(log N) sin importar cuántas zonas existan.
+// El campo `polygon` es Unsupported() porque Prisma no tiene mapping nativo a
+// PostGIS — los CRUD se hacen con $queryRaw + ST_GeomFromGeoJSON / ST_Contains.
+// La tabla y el índice GiST se crean manualmente con SQL después de db push
+// (ver scripts/setup-postgis-zones.sql).
+//
+// OVERLAPS: si una location cae dentro de varios polígonos a la vez, gana la
+// zona con `displayOrder` más alto (regla determinística + editable desde OPS).
+//
+// SNAPSHOT: cuando se crea un SubOrder, el zoneCode + multiplier + driverBonus
+// se persisten en SubOrder.zoneCode/zoneMultiplier/zoneDriverBonus. NUNCA se
+// recalculan retroactivamente, aunque después se muevan los polígonos. Esto
+// preserva la auditoría fiscal (regla canónica FINANZAS).
+//
+// CACHE: las zonas cambian poco (mensual a lo sumo). El helper canónico
+// `getZoneForLocation(lat, lng)` mantiene un cache in-memory que se invalida
+// al editar/borrar/crear zonas vía endpoint admin.
+model DeliveryZone {
+  id           String   @id @default(cuid())
+  name         String   @unique // "Centro", "Zona Alta Norte", "Costa Oeste"
+  color        String   @default("#22c55e") // hex para visualización en mapa
+  multiplier   Float    @default(1.0) // 0.5–3.0, tipicamente 1.0/1.15/1.35
+  driverBonus  Int      @default(0)   // ARS extra al driver (Biblia v3)
+  // PostGIS Polygon en SRID 4326 (WGS84 lat/lng).
+  // El índice GiST se crea manualmente con SQL en scripts/setup-postgis-zones.sql.
+  polygon      Unsupported("geometry(Polygon, 4326)")?
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([displayOrder])
 }
 
 // ─── ProductWeightCache ──────────────────────────────────────────────────────

@@ -489,6 +489,26 @@ CREATE TABLE public."DeliveryRate" (
 ALTER TABLE public."DeliveryRate" OWNER TO postgres;
 
 --
+-- Name: DeliveryZone; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."DeliveryZone" (
+    id text NOT NULL,
+    name text NOT NULL,
+    color text DEFAULT '#22c55e'::text NOT NULL,
+    multiplier double precision DEFAULT 1.0 NOT NULL,
+    "driverBonus" integer DEFAULT 0 NOT NULL,
+    polygon public.geometry(Polygon,4326),
+    "isActive" boolean DEFAULT true NOT NULL,
+    "displayOrder" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."DeliveryZone" OWNER TO postgres;
+
+--
 -- Name: Driver; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1735,7 +1755,10 @@ CREATE TABLE public."SubOrder" (
     "merchantCommissionRate" double precision,
     "merchantCommissionSource" text,
     "operationalCost" double precision,
-    "tripCost" double precision
+    "tripCost" double precision,
+    "zoneCode" text,
+    "zoneDriverBonus" integer,
+    "zoneMultiplier" double precision
 );
 
 
@@ -2180,6 +2203,18 @@ cmnw2pz8o001e3ooe9elkxxcs	cmnw2pz7m00173ooelfp0vilx	400	100	t	2026-04-12 18:04:5
 cmnw2pz8w001g3ooep1fxaxag	cmnw2pz7r00183ooe6a3uhqx2	600	130	t	2026-04-12 18:04:52.785	2026-04-12 18:04:52.785
 cmnw2pz93001i3ooev0k4453m	cmnw2pz7y00193ooe51d5kek8	900	180	t	2026-04-12 18:04:52.791	2026-04-12 18:04:52.791
 cmnw2pz99001k3ooear8pbd54	cmnw2pz83001a3ooeozrxhvfw	1500	250	t	2026-04-12 18:04:52.798	2026-04-12 18:04:52.798
+\.
+
+
+--
+-- Data for Name: DeliveryZone; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."DeliveryZone" (id, name, color, multiplier, "driverBonus", polygon, "isActive", "displayOrder", "createdAt", "updatedAt") FROM stdin;
+zone_1777788896680_2y869o	Zona C — Alta / Difícil	#ef4444	1.35	350	0103000020E61000000100000007000000AE47E17A141651C01283C0CAA1654BC0B81E85EB511051C01283C0CAA1654BC01F85EB51B80E51C0DD24068195634BC0E17A14AE471151C0E17A14AE47614BC0AE47E17A141651C0C3F5285C8F624BC0B81E85EB511851C014AE47E17A644BC0AE47E17A141651C01283C0CAA1654BC0	f	3	2026-05-03 06:14:56.685	2026-05-03 16:56:27.629
+zone_1777788896671_2nymxy	Zona B — Intermedia	#eab308	1.15	150	0103000020E610000001000000050000003D0AD7A3701551C0F4FDD478E9664BC0B81E85EB511051C0F4FDD478E9664BC0B81E85EB511051C01283C0CAA1654BC03D0AD7A3701551C01283C0CAA1654BC03D0AD7A3701551C0F4FDD478E9664BC0	f	2	2026-05-03 06:14:56.677	2026-05-03 16:56:28.234
+zone_1777788896645_xz96zk	Zona A — Centro	#22c55e	1	0	0103000020E6100000010000000500000085EB51B81E1551C0B81E85EB51684BC0B81E85EB511051C0B81E85EB51684BC0B81E85EB511051C0F4FDD478E9664BC085EB51B81E1551C0F4FDD478E9664BC085EB51B81E1551C0B81E85EB51684BC0	f	1	2026-05-03 06:14:56.667	2026-05-03 18:06:16.203
+zone_1777832004567_wcxi1z	ZONA En COnst.	#a855f7	1	0	0103000020E6100000010000003500000003313AED520E51C0FE00D202D5644BC003313AA0630E51C031EB2267D4644BC003313AC07F0E51C07F5BF42FE2644BC003313A789A0E51C0DDEE2DD6F4644BC003313AF0A90E51C042C9AE600E654BC00331BA9DB80E51C0A1466DE21D654BC003313AC6D30E51C0C69657FC2C654BC003313AADFB0E51C02C0D534843654BC003313A26280F51C0716DDF4442654BC003313A31590F51C0689B0C643C654BC003313AEF6D0F51C0AB86CC2539654BC003313A9B940F51C0F048A3E033654BC003313ABCCD0F51C082C7E77824654BC003313A49221051C0A765438309654BC003313A755F1051C0E70ADC71F5644BC003313A0BAB1051C04EE2C2E3DA644BC003313AEDC81051C0FBEE9393B4644BC003313A5DFE1051C0FBEE9393B4644BC003313A9D361151C0026B924EBE644BC003313A7D471151C038388C09C8644BC003313A5D851151C02FC6717FDB644BC003313ADDF51151C088760FFCE1644BC003313ADD221251C0EA4EBB2CFF644BC003313AFD3E1251C0A5E2C5D922654BC003313A4D581251C0931F867F53654BC003313ACD6E1251C0296256716D654BC003313AFD981251C0D6DF38A18A654BC003313AADAC1251C04E60C292A4654BC003313A2DC31251C0F4A37A8BB1654BC003313A6DCE1251C098942A84BE654BC003313AFDF21251C0AACCFABACE654BC003313A1D0F1351C01CD150EAEB654BC003313A8D441351C065699B570C664BC003313AFD791351C0E56D7E4826664BC003313A89191551C01DC7FFD2E8664BC00331F523E11551C0BFEBBF6288674BC003B152092D1651C06FC46FA4DE674BC00331B09A721651C048955B2B2B684BC003F1DEFE881651C0F0B5A8D177684BC003B10D2B6E1651C0D1EB051BA8684BC003316B8B6C1651C04B2A13ECDC684BC003B1C8079A1651C0AA8467482D694BC003312624CD1651C0EFF5582877694BC003311257441751C0AB866D60C9694BC00331EA1C001851C01C72A70CA0694BC003319AB0081751C0FAF3A22D096C4BC00331FAB71F1151C0C772903B336C4BC00331BAAA230F51C05786DF3D11684BC003313A88D50E51C058ED57E359674BC003315A683E0F51C02A35C0B314664BC003317A9C9F0E51C0FCF05D19E3654BC00331BA3C740E51C057D6D6A504654BC003313AED520E51C0FE00D202D5644BC0	t	3	2026-05-03 18:13:24.564	2026-05-03 18:13:24.564
 \.
 
 
@@ -2842,28 +2877,28 @@ settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pront
 -- Data for Name: SubOrder; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "driverPayoutAmount", "merchantCommissionRate", "merchantCommissionSource", "operationalCost", "tripCost") FROM stdin;
-cmoeenqe600082klvp1dasqps	cmoeenqcc00042klvzt0l8lad	cmobll552000cw4k6blur8j08	\N	PENDING	12000	0	0	12000	\N	0	12000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-25 13:58:54.558	2026-04-25 13:58:54.558	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmoegfxg9001e2klvgcomb5pl	cmoegfxfd001a2klvtpbvu8s5	cmodwjkyu000hornifywezk15	\N	PENDING	8000	0	0	8000	\N	0	8000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-25 14:48:49.689	2026-04-25 14:48:49.689	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmofz91gh0009v3npdcnia161	cmofz91fb0005v3npjczz9k7r	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 16:23:07.17	2026-04-26 16:23:07.17	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmofzxo9b000hv3npxupf5frf	cmofzxo82000dv3npnbrontos	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 16:42:16.463	2026-04-26 16:42:16.463	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmog0275x000pv3np6ax2cdda	cmog02752000lv3npphl10wvf	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 16:45:47.589	2026-04-26 16:45:47.589	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmog49xkq000gg816yoo8fcr4	cmog49xh9000cg8167h9w1m14	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 18:43:46.874	2026-04-26 18:43:46.874	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmog6s4za0007veu231axamcr	cmog6s4y30003veu2s0fcfas7	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 19:53:55.51	2026-04-26 19:53:55.51	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogax22t0007t73x1tds8g6f	cmogax21b0003t73xq0bfpb2y	cmoem7nl10004k8grsztmzdot	\N	CANCELLED	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 21:49:43.493	2026-04-26 21:54:25.873	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogbzd9t00078hyki29rpo0m	cmogbzd8800038hyktksp3v8o	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 22:19:30.929	2026-04-26 22:19:30.929	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogc96mx000i8hykyzltev2g	cmogc96lc000e8hykop0xc383	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 22:27:08.889	2026-04-26 22:27:08.889	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogcd4os000s8hykxl3v0czk	cmogcd4nx000o8hykki6ino6b	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 22:30:12.988	2026-04-26 22:30:12.988	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogezpmw00108hykbr010eih	cmogezplt000w8hyk25av7b18	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 23:43:45.801	2026-04-26 23:43:45.801	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmoghlhjg0007tvnbu6ljtsb7	cmoghlhif0003tvnbovmw0zsq	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 00:56:40.972	2026-04-27 00:56:40.972	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmoghrkd000071jmgei2k8bfd	cmoghrkby00031jmg87cdanzl	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:01:24.562	2026-04-27 01:01:24.562	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogiaa9z0007koav792zc0hy	cmogiaa710003koavdp17d2ch	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:15:57.959	2026-04-27 01:15:57.959	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogijdzq000fkoav4oadbitc	cmogijdxh000bkoav0u9x1qqb	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:23:02.678	2026-04-27 01:23:02.678	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogj77mj0007qk06pt0hzatr	cmogj77fl0003qk06e7as7iqq	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:41:34.171	2026-04-27 01:41:34.171	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogjcpx5000hqk063tns9ajw	cmogjcpos000dqk06kunnwmzw	cmoem7nl10004k8grsztmzdot	\N	PENDING	4000	0	0	4000	\N	0	4000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:45:51.161	2026-04-27 01:45:51.161	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogje1z4000pqk06do22h7vl	cmogje1ya000lqk067tunq40t	cmoem7nl10004k8grsztmzdot	\N	PENDING	4000	0	0	4000	\N	0	4000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:46:53.44	2026-04-27 01:46:53.44	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogjp5xv0016qk06k6ijyy2n	cmogjp5wz0012qk06ufvxk7a9	cmoem7nl10004k8grsztmzdot	\N	PENDING	8000	0	0	8000	\N	0	8000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:55:31.796	2026-04-27 01:55:31.796	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
-cmogkuidl0007ljakr2id55hf	cmogkuicd0003ljak3fxcwmv5	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 02:27:40.809	2026-04-27 02:27:40.809	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N
+COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "driverPayoutAmount", "merchantCommissionRate", "merchantCommissionSource", "operationalCost", "tripCost", "zoneCode", "zoneDriverBonus", "zoneMultiplier") FROM stdin;
+cmoeenqe600082klvp1dasqps	cmoeenqcc00042klvzt0l8lad	cmobll552000cw4k6blur8j08	\N	PENDING	12000	0	0	12000	\N	0	12000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-25 13:58:54.558	2026-04-25 13:58:54.558	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmoegfxg9001e2klvgcomb5pl	cmoegfxfd001a2klvtpbvu8s5	cmodwjkyu000hornifywezk15	\N	PENDING	8000	0	0	8000	\N	0	8000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-25 14:48:49.689	2026-04-25 14:48:49.689	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmofz91gh0009v3npdcnia161	cmofz91fb0005v3npjczz9k7r	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 16:23:07.17	2026-04-26 16:23:07.17	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmofzxo9b000hv3npxupf5frf	cmofzxo82000dv3npnbrontos	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 16:42:16.463	2026-04-26 16:42:16.463	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmog0275x000pv3np6ax2cdda	cmog02752000lv3npphl10wvf	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 16:45:47.589	2026-04-26 16:45:47.589	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmog49xkq000gg816yoo8fcr4	cmog49xh9000cg8167h9w1m14	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 18:43:46.874	2026-04-26 18:43:46.874	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmog6s4za0007veu231axamcr	cmog6s4y30003veu2s0fcfas7	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 19:53:55.51	2026-04-26 19:53:55.51	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogax22t0007t73x1tds8g6f	cmogax21b0003t73xq0bfpb2y	cmoem7nl10004k8grsztmzdot	\N	CANCELLED	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 21:49:43.493	2026-04-26 21:54:25.873	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogbzd9t00078hyki29rpo0m	cmogbzd8800038hyktksp3v8o	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 22:19:30.929	2026-04-26 22:19:30.929	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogc96mx000i8hykyzltev2g	cmogc96lc000e8hykop0xc383	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 22:27:08.889	2026-04-26 22:27:08.889	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogcd4os000s8hykxl3v0czk	cmogcd4nx000o8hykki6ino6b	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 22:30:12.988	2026-04-26 22:30:12.988	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogezpmw00108hykbr010eih	cmogezplt000w8hyk25av7b18	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-26 23:43:45.801	2026-04-26 23:43:45.801	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmoghlhjg0007tvnbu6ljtsb7	cmoghlhif0003tvnbovmw0zsq	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 00:56:40.972	2026-04-27 00:56:40.972	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmoghrkd000071jmgei2k8bfd	cmoghrkby00031jmg87cdanzl	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:01:24.562	2026-04-27 01:01:24.562	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogiaa9z0007koav792zc0hy	cmogiaa710003koavdp17d2ch	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:15:57.959	2026-04-27 01:15:57.959	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogijdzq000fkoav4oadbitc	cmogijdxh000bkoav0u9x1qqb	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:23:02.678	2026-04-27 01:23:02.678	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogj77mj0007qk06pt0hzatr	cmogj77fl0003qk06e7as7iqq	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:41:34.171	2026-04-27 01:41:34.171	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogjcpx5000hqk063tns9ajw	cmogjcpos000dqk06kunnwmzw	cmoem7nl10004k8grsztmzdot	\N	PENDING	4000	0	0	4000	\N	0	4000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:45:51.161	2026-04-27 01:45:51.161	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogje1z4000pqk06do22h7vl	cmogje1ya000lqk067tunq40t	cmoem7nl10004k8grsztmzdot	\N	PENDING	4000	0	0	4000	\N	0	4000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:46:53.44	2026-04-27 01:46:53.44	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogjp5xv0016qk06k6ijyy2n	cmogjp5wz0012qk06ufvxk7a9	cmoem7nl10004k8grsztmzdot	\N	PENDING	8000	0	0	8000	\N	0	8000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 01:55:31.796	2026-04-27 01:55:31.796	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
+cmogkuidl0007ljakr2id55hf	cmogkuicd0003ljak3fxcwmv5	cmoem7nl10004k8grsztmzdot	\N	PENDING	2000	0	0	2000	\N	0	2000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-04-27 02:27:40.809	2026-04-27 02:27:40.809	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	\N	\N	\N	\N	\N	\N	\N
 \.
 
 
@@ -3110,6 +3145,14 @@ ALTER TABLE ONLY public."DeliveryAttempt"
 
 ALTER TABLE ONLY public."DeliveryRate"
     ADD CONSTRAINT "DeliveryRate_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: DeliveryZone DeliveryZone_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."DeliveryZone"
+    ADD CONSTRAINT "DeliveryZone_pkey" PRIMARY KEY (id);
 
 
 --
@@ -3813,6 +3856,34 @@ CREATE INDEX "DeliveryAttempt_subOrderId_idx" ON public."DeliveryAttempt" USING 
 --
 
 CREATE UNIQUE INDEX "DeliveryRate_categoryId_key" ON public."DeliveryRate" USING btree ("categoryId");
+
+
+--
+-- Name: DeliveryZone_displayOrder_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "DeliveryZone_displayOrder_idx" ON public."DeliveryZone" USING btree ("displayOrder");
+
+
+--
+-- Name: DeliveryZone_isActive_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "DeliveryZone_isActive_idx" ON public."DeliveryZone" USING btree ("isActive");
+
+
+--
+-- Name: DeliveryZone_name_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "DeliveryZone_name_key" ON public."DeliveryZone" USING btree (name);
+
+
+--
+-- Name: DeliveryZone_polygon_gist_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "DeliveryZone_polygon_gist_idx" ON public."DeliveryZone" USING gist (polygon);
 
 
 --

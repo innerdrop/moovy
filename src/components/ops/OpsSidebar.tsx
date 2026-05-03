@@ -122,6 +122,7 @@ const navSections: NavSection[] = [
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
             { href: "/ops/zonas-excluidas", icon: MapPin, label: "Zonas Excluidas" },
+            { href: "/ops/zonas-delivery", icon: MapPin, label: "Zonas Delivery" },
             { href: "/ops/backups", icon: Archive, label: "Backups" },
             { href: "/ops/emails", icon: Mail, label: "Emails" },
             { href: "/ops/playbook", icon: ClipboardCheck, label: "Playbook" },

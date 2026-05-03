@@ -383,27 +383,36 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
             info="Monto mínimo del pedido para envío gratis. 0 = desactivado." />
         </div>
 
-        {/* Zone Multipliers */}
-        <div>
-          <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
-            Multiplicadores por zona
-            <InfoTip text="Cada zona de Ushuaia tiene un multiplicador. Zona A (centro) = 1.0, Zona B (intermedia) = 1.15, Zona C (faldeo/alta) = 1.35." />
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {Object.entries(config.delivery.zoneMultipliers).map(([zone, mult]) => (
-              <div key={zone} className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 block mb-1">{zone.replace("ZONA_", "Zona ")}</label>
-                <input
-                  type="number"
-                  value={mult}
-                  onChange={(e) => updateMultiplier("delivery", "zoneMultipliers", zone, parseFloat(e.target.value) || 1)}
-                  step={0.05}
-                  min={0.5}
-                  max={3}
-                  className="w-full px-3 py-1.5 text-sm font-bold border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500/30"
-                />
-              </div>
-            ))}
+        {/* Zone Multipliers — DEPRECADO en favor de /ops/zonas-delivery
+            Rama feat/zonas-delivery-multiplicador: la fuente de verdad ahora son
+            los polígonos en la tabla DeliveryZone (con multiplicador y bonus driver
+            por zona). Estos valores legacy se conservan solo como fallback del
+            SIMULADOR de la Biblia y NO afectan el cobro real al cliente.
+        */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-amber-700 font-bold text-sm">!</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-amber-900 mb-1">
+                Multiplicadores por zona — gestionados desde otro panel
+              </h3>
+              <p className="text-xs text-amber-800 mb-3">
+                Las zonas A/B/C ahora se dibujan como polígonos en el mapa con su
+                multiplicador y bonus driver editables. El sistema detecta automáticamente
+                la zona aplicable al destino de cada pedido.
+              </p>
+              <a
+                href="/ops/zonas-delivery"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-amber-300 text-amber-900 text-xs font-bold rounded-lg hover:bg-amber-100 transition"
+              >
+                Ir a Zonas de Delivery →
+              </a>
+              <p className="text-[10px] text-amber-700 mt-3 font-mono">
+                Valores legacy (solo simulador): {Object.entries(config.delivery.zoneMultipliers).map(([z, m]) => `${z.replace("ZONA_", "")}=${m}`).join(" · ")}
+              </p>
+            </div>
           </div>
         </div>
 

@@ -14,8 +14,10 @@
 
 import { useJsApiLoader } from "@react-google-maps/api";
 
-// Ref estable fuera del componente para evitar re-renders
-const LIBRARIES: ("places" | "geometry" | "marker")[] = ["places", "geometry", "marker"];
+// Ref estable fuera del componente para evitar re-renders.
+// "drawing" agregado en rama feat/zonas-delivery-multiplicador para que el panel
+// /ops/zonas-delivery pueda dibujar polígonos con DrawingManager.
+const LIBRARIES: ("places" | "geometry" | "marker" | "drawing")[] = ["places", "geometry", "marker", "drawing"];
 
 export function useGoogleMaps() {
     return useJsApiLoader({

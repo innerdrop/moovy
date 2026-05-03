@@ -17,6 +17,7 @@ import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/use
 import { generatePinPair } from "@/lib/pin";
 import { getEffectiveCommission, getEffectiveCommissionWithSource } from "@/lib/merchant-loyalty";
 import { buildSubOrderFinancialSnapshot } from "@/lib/orders/order-totals";
+import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 
 // Read a MoovyConfig value with fallback
@@ -326,6 +327,8 @@ export async function POST(request: Request) {
 
             // Apply operational cost surcharge (% of subtotal added to delivery fee)
             // Will be recalculated after subtotal is known — deferred below
+            // Nota: el multiplicador de zona se aplica más abajo (línea ~440), una vez
+            // que tenemos destLat/destLng (rama feat/zonas-delivery-multiplicador).
         } else {
             // For pickup orders, fee must be 0
             validatedDeliveryFee = 0;
@@ -431,8 +434,18 @@ export async function POST(request: Request) {
             );
         }
 
-        // === ZONA EXCLUIDA: guard server-side (defense in depth vs /api/delivery/calculate) ===
-        // Si el pedido es para entrega y la dirección cae en zona excluida activa, bloquear.
+        // === ZONA EXCLUIDA + ZONA DELIVERY MULTIPLIER ===
+        // Defense in depth vs /api/delivery/calculate.
+        // Si el pedido es para entrega:
+        //   1. Si la dirección cae en zona excluida → 422 zone_excluded.
+        //   2. Sino, consultar DeliveryZone aplicable y aplicar multiplicador
+        //      al delivery fee (rama feat/zonas-delivery-multiplicador).
+        // El zoneSnapshot final se persiste por SubOrder más abajo.
+        let zoneSnapshot: { zoneCode: string | null; zoneMultiplier: number; zoneDriverBonus: number } = {
+            zoneCode: null,
+            zoneMultiplier: 1.0,
+            zoneDriverBonus: 0,
+        };
         if (!isPickup) {
             let destLat: number | null = addressData?.latitude ?? null;
             let destLng: number | null = addressData?.longitude ?? null;
@@ -445,6 +458,7 @@ export async function POST(request: Request) {
                 destLng = existingAddr?.longitude ?? null;
             }
             if (destLat !== null && destLng !== null) {
+                // 1. Zona excluida (sigue como estaba)
                 const zones = parseExcludedZones(opsSettings.excludedZonesJson);
                 const matchedZone = getExcludedZone(destLat, destLng, zones);
                 if (matchedZone) {
@@ -459,6 +473,30 @@ export async function POST(request: Request) {
                             message: `No realizamos envíos a ${matchedZone.name}: ${matchedZone.reason}. Probá con otra dirección o elegí retiro en local.`,
                         },
                         { status: 422 }
+                    );
+                }
+
+                // 2. Zona de pricing — aplicar multiplicador al delivery fee.
+                // Si la dirección no cae en ninguna zona, snapshot queda con multiplier 1.0
+                // y el fee no se altera. driverBonus se persiste y se SUMA en buildSubOrderFinancialSnapshot.
+                zoneSnapshot = await getZoneSnapshotForLocation(destLat, destLng);
+                if (zoneSnapshot.zoneMultiplier !== 1.0 && validatedDeliveryFee > 0) {
+                    const originalFee = validatedDeliveryFee;
+                    validatedDeliveryFee = Math.round(validatedDeliveryFee * zoneSnapshot.zoneMultiplier);
+                    if (isMultiVendor) {
+                        for (const [, val] of validatedGroupFees) {
+                            val.deliveryFee = Math.round(val.deliveryFee * zoneSnapshot.zoneMultiplier);
+                        }
+                    }
+                    orderLogger.info(
+                        {
+                            zoneCode: zoneSnapshot.zoneCode,
+                            multiplier: zoneSnapshot.zoneMultiplier,
+                            driverBonus: zoneSnapshot.zoneDriverBonus,
+                            originalFee,
+                            adjustedFee: validatedDeliveryFee,
+                        },
+                        "Delivery zone multiplier applied"
                     );
                 }
             }
@@ -897,6 +935,9 @@ export async function POST(request: Request) {
                         sellerCommissionRate: opsSettings.defaultSellerCommission,
                         precomputedMerchantRate: snapshotRate,
                         precomputedMerchantSource: snapshotSource,
+                        // Rama feat/zonas-delivery-multiplicador: snapshot de zona del destino.
+                        // El bonus se SUMA al driverPayoutAmount internamente.
+                        zoneSnapshot: !isPickup ? zoneSnapshot : undefined,
                     });
 
                     // PIN doble por SubOrder: solo para multi-vendor con delivery.
@@ -923,6 +964,11 @@ export async function POST(request: Request) {
                             driverPayoutAmount: financialSnapshot.driverPayoutAmount,
                             merchantCommissionRate: financialSnapshot.merchantCommissionRate,
                             merchantCommissionSource: financialSnapshot.merchantCommissionSource,
+                            // Rama feat/zonas-delivery-multiplicador: snapshot inmutable de zona
+                            // (audit AAIP/AFIP, NUNCA recalcular retroactivo si se mueven polígonos).
+                            zoneCode: financialSnapshot.zoneCode,
+                            zoneMultiplier: financialSnapshot.zoneMultiplier,
+                            zoneDriverBonus: financialSnapshot.zoneDriverBonus,
                             // PIN doble: solo para multi-vendor con delivery
                             pickupPin: subOrderPinPair?.pickupPin || null,
                             deliveryPin: subOrderPinPair?.deliveryPin || null,

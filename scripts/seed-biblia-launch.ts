@@ -57,11 +57,17 @@ async function seedStoreSettings() {
     riderCommissionPercent: 80,                     // Repartidor: 80% del costo viaje
     operationalCostPercent: 5,                      // 5% subtotal (MP 3.81% + margen 1.19%)
 
-    // Zonas (Biblia v3)
+    // Zonas (Biblia v3) — DEPRECADO desde rama feat/zonas-delivery-multiplicador.
+    // La fuente de verdad ahora es la tabla DeliveryZone con polígonos editables
+    // desde /ops/zonas-delivery. Estos valores quedan como fallback del simulador
+    // en /ops/config-biblia y NO afectan el cobro real al cliente.
+    // Para sembrar las 3 zonas A/B/C reales con polígonos:
+    //   npx tsx scripts/seed-delivery-zones.ts
+    //   npx tsx scripts/apply-default-zone-polygons.ts
     zoneMultipliersJson: JSON.stringify({
-      ZONA_A: 1.0,     // Centro/Costa: sin recargo
-      ZONA_B: 1.15,    // Intermedia: +15%
-      ZONA_C: 1.35,    // Alta/Dificil: +35%
+      ZONA_A: 1.0,     // legacy
+      ZONA_B: 1.15,    // legacy
+      ZONA_C: 1.35,    // legacy
     }),
 
     // Clima (Biblia v3) — se cambia manualmente segun el dia

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance, calculateDeliveryCost, DeliverySettings } from "@/lib/delivery";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
+import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
 import { deliveryLogger } from "@/lib/logger";
 
 const DeliveryCalcSchema = z.object({
@@ -233,13 +234,9 @@ export async function POST(request: Request) {
             distanceKm = calculateDistance(originLat, originLng, lat, lng);
         }
 
-        // Parse zone/climate multipliers from StoreSettings (Biblia v3)
-        let zoneMultipliers: Record<string, number> = { ZONA_A: 1.0, ZONA_B: 1.15, ZONA_C: 1.35 };
+        // Parse climate multipliers from StoreSettings (Biblia v3)
         let climateMultipliers: Record<string, number> = { normal: 1.0, lluvia_leve: 1.15, temporal_fuerte: 1.30 };
         try {
-            if ((settings as any).zoneMultipliersJson) {
-                zoneMultipliers = JSON.parse((settings as any).zoneMultipliersJson);
-            }
             if ((settings as any).climateMultipliersJson) {
                 climateMultipliers = JSON.parse((settings as any).climateMultipliersJson);
             }
@@ -248,10 +245,15 @@ export async function POST(request: Request) {
         const activeClimate: string = (settings as any).activeClimateCondition ?? "normal";
         const operationalCostPercent: number = (settings as any).operationalCostPercent ?? 5;
 
-        // TODO: Zone detection could use PostGIS in the future.
-        // For now, default to ZONA_A. OPS can override per-order if needed.
-        const zone = "ZONA_A";
-        const zoneMultiplier = zoneMultipliers[zone] ?? 1.0;
+        // Rama feat/zonas-delivery-multiplicador: detectar zona REAL con PostGIS
+        // (point-in-polygon contra DeliveryZone polygons). Si el destino no cae
+        // en ninguna zona configurada, default { zoneCode: null, multiplier: 1.0 }.
+        // Esto reemplaza el hardcoded "ZONA_A" anterior, que causaba mismatch
+        // entre el preview del fee (que asumía A) y el cobro real al crear el
+        // pedido (que sí detectaba la zona).
+        const zoneSnapshot = await getZoneSnapshotForLocation(lat, lng);
+        const zone = zoneSnapshot.zoneCode || "ZONA_DEFAULT";
+        const zoneMultiplier = zoneSnapshot.zoneMultiplier;
         const climateMultiplier = climateMultipliers[activeClimate] ?? 1.0;
 
         const deliverySettings: DeliverySettings = {
@@ -276,6 +278,13 @@ export async function POST(request: Request) {
             storeAddress: originAddress,
             isRealRoadDistance,
             zone,
+            // Rama feat/zonas-delivery-multiplicador: snapshot completo de zona
+            // para que el frontend muestre "Zona Norte +15%" en el desglose del fee.
+            zoneSnapshot: {
+                zoneCode: zoneSnapshot.zoneCode,
+                zoneMultiplier: zoneSnapshot.zoneMultiplier,
+                zoneDriverBonus: zoneSnapshot.zoneDriverBonus,
+            },
             activeClimate,
             message: result.isWithinRange
                 ? result.isFreeDelivery
