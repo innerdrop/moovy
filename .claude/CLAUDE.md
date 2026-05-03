@@ -1,7 +1,9 @@
 # MOOVY — CLAUDE.md
+
 Última actualización: 2026-04-28
 
 > **Este archivo contiene SOLO información canónica y perdurable.**
+>
 > - Para histórico cronológico de ramas y cambios → `.claude/CHANGELOG.md` (NO se carga auto, consultá con grep solo si te lo piden explícitamente).
 > - Para issues abiertos hoy → `ISSUES.md`.
 > - Para tareas del sprint actual → `PROJECT_STATUS.md`.
@@ -53,20 +55,66 @@ prisma/schema.prisma    ~30 modelos con PostGIS
 - **ConsentLog** → auditoría AAIP (Ley 25.326)
 - **CronRunLog** → healthcheck genérico de crons
 
-## Reglas de negocio canónicas (Biblia Financiera v3 — FUENTE DE VERDAD)
+## Reglas de negocio canónicas (FUENTE DE VERDAD)
 
-### Comisiones
+> **Refactor 2026-04-30 (rama refactor/separar-motor-y-finanzas)**: las reglas se
+> dividen en dos dominios independientes con interfaz limpia entre ambos:
+>
+> - **Motor Logístico** → produce el costo del viaje (un número en pesos) +
+>   asignación operativa. Inputs: distancia, vehículo, peso, zona, clima.
+>   Outputs: `tripCost`, `operationalCost`, `driverPayoutAmount`.
+> - **Reparto Financiero** → reparte la plata entre actores. Inputs: el output
+>   del motor + rates configurables. Outputs: `merchantPayout`, `sellerPayout`,
+>   `moovyRevenue`, puntos otorgados/quemados.
+>
+> Schema: `SubOrder` persiste el snapshot inmutable (`tripCost`, `operationalCost`,
+> `driverPayoutAmount`, `merchantCommissionRate`, `merchantCommissionSource`).
+> NUNCA recalcular sobre orders cerradas (rompe cierres fiscales AFIP).
+> Orquestación: `src/lib/orders/order-totals.ts` (`buildSubOrderFinancialSnapshot`).
+
+### Motor Logístico (pricing del viaje + asignación)
+
+Fórmula maestra (delivery clásico):
+\`\`\`
+fee_visible = max(MIN_VEHICULO, costo_km × distancia × 2.2) × zona × clima + (subtotal × 0.05)
+costo_viaje = fee_visible − (subtotal × 0.05) // sin operativo
+\`\`\`
+
+- Factor distancia ×2.2 (ida + vuelta + maniobras)
+- Vehículos: Bici ($15/km, min $800) | Moto ($73/km, min $1.500) | Auto chico ($193/km, min $2.200) | Auto mediano ($222/km, min $2.500) | Pickup/SUV ($269/km, min $3.000) | Flete ($329/km, min $3.800)
+- Zonas: A (×1.0) | B (×1.15, +$150 driver) | C (×1.35, +$350 driver)
+- Zonas excluidas: configurables desde `/ops/zonas-excluidas` (NO hardcoded)
+- Clima: normal ×1.0 | lluvia ×1.15 | temporal ×1.30
+- Demanda: normal ×1.0 | alta ×1.20 | pico ×1.40
+- Marketplace categorías peso: SOBRE 0-2kg $800 | PEQUEÑO 2-5kg $1.200 | MEDIANO 5-15kg $2.500 | GRANDE 15-30kg $3.500 | XL 30-70kg $5.000 | FLETE 70+kg $8.000
+- Peso cobrable: max(real, largo×ancho×alto/5000)
+- Nafta super Ushuaia: $1.591/litro
+- Asignación: PendingAssignment + AssignmentLog, smart batching <3km, geofence PIN 100m
+
+Tamaños de producto canónicos (selector Glovo-style en `/comercios`):
+MICRO (≤200g) | SMALL (≤2kg) | MEDIUM (≤15kg) | LARGE (≤30kg) | XL (>30kg).
+Mapping a vehículo en `src/lib/product-weight.ts` (`SIZE_METADATA`).
+
+### Reparto Financiero (comisiones, splits, puntos)
+
+#### Comisiones
+
 - Comercio MES 1: **0%** (30 días desde `Merchant.createdAt`)
 - Comercio MES 2+: **8%** base, dinámico por tier (BRONCE 8% → DIAMANTE 5%)
-- Seller marketplace: **12%** desde día 1
+- Seller marketplace: **12%** desde día 1 (sin first-month-free)
 - Service fee al comprador: 0% (precio limpio)
-- Costo operativo embebido: **5%** del subtotal en delivery fee
-- Repartidor: **80%** del costo REAL del viaje (no incluye 5% operativo)
+- Costo operativo embebido: **5%** del subtotal en delivery fee (cubre MP 3.81% + margen)
+- Repartidor: **80%** del costo del viaje (NO incluye 5% operativo)
 - Moovy delivery: 20% del viaje + 5% operativo
 - MP real: 3.81%
 - Gastos fijos: ~$440K ARS/mes
 
-### Puntos MOOVER
+Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
+`OVERRIDE > FIRST_MONTH > TIER > FALLBACK`. El source se persiste en
+`SubOrder.merchantCommissionSource` para audit AAIP/AFIP.
+
+#### Puntos MOOVER
+
 - Earn: 10pts/$1.000 (MOOVER), 12.5/$1K (SILVER), 15/$1K (GOLD), 20/$1K (BLACK)
 - Solo se otorgan al pasar a **DELIVERED** (idempotente via `Order.pointsEarned`)
 - 1pt = $1 ARS. Min 500 pts. Max 20% del subtotal
@@ -77,27 +125,12 @@ prisma/schema.prisma    ~30 modelos con PostGIS
 - Expiración: 6 meses sin pedidos
 - Cancelación: revertir EARN, devolver REDEEM (`reverseOrderPoints` idempotente)
 
-### Delivery (fórmula)
-```
-fee_visible = max(MIN_VEHICULO, costo_km × distancia × 2.2) × zona × clima + (subtotal × 0.05)
-pago_repartidor = costo_viaje × 0.80
-moovy_delivery = costo_viaje × 0.20 + (subtotal × 0.05)
-```
-- Factor distancia ×2.2 (ida + vuelta + maniobras)
-- Vehículos: Bici ($15/km, min $800) | Moto ($73/km, min $1.500) | Auto chico ($193/km, min $2.200) | Auto mediano ($222/km, min $2.500) | Pickup/SUV ($269/km, min $3.000) | Flete ($329/km, min $3.800)
-- Zonas: A (×1.0) | B (×1.15, +$150 driver) | C (×1.35, +$350 driver)
-- Zonas excluidas: configurables desde `/ops/zonas-excluidas` (NO hardcoded)
-- Clima: normal ×1.0 | lluvia ×1.15 | temporal ×1.30
-- Demanda: normal ×1.0 | alta ×1.20 | pico ×1.40
-- Bonus nocturno (23-07h): +30% al fee del repartidor (lo paga Moovy)
-- Marketplace categorías peso: SOBRE 0-2kg $800 | PEQUEÑO 2-5kg $1.200 | MEDIANO 5-15kg $2.500 | GRANDE 15-30kg $3.500 | XL 30-70kg $5.000 | FLETE 70+kg $8.000
-- Peso cobrable: max(real, largo×ancho×alto/5000)
-- Nafta super Ushuaia: $1.591/litro
+#### Publicidad (Fase 2 con 5+ comercios activos)
 
-### Publicidad (Fase 2 con 5+ comercios activos)
 - VISIBLE $25K/mes | DESTACADO $50K/mes | PREMIUM $100K/mes | LANZAMIENTO $150K/mes
 
-### Protocolo efectivo repartidores
+#### Protocolo efectivo repartidores
+
 - Primeras 10: solo MP | 10-30: $15K | 30-60: $25K | 60+: $40K | 200+: $60K o ilimitado
 - Compensación cruzada automática
 
@@ -175,20 +208,20 @@ Redis:     REDIS_URL (opcional, fallback in-memory automático)
 
 ## Scripts
 
-| Script | Uso |
-|---|---|
-| `start.ps1 <nombre>` | Crear rama desde develop |
-| `finish.ps1` | Cerrar rama: commit + push + merge develop + delete branch |
-| `publish.ps1` | Push + dump DB |
-| `devmain.ps1` | Deploy a producción |
-| `sync.ps1` | Pull develop |
-| `validate-ops-config.ts` | Integridad panel OPS (9 tests) |
-| `fix-ops-config.ts` | Corrige configs faltantes |
-| `reset-admin.ts` / `create-admin.ts` | Admin OPS |
-| `clean-db-pre-launch.ts` | Cleanup data prueba (dry-run, `--execute` interactivo) |
-| `validate-role-flows.ts` | 12 tests de roles derivados |
-| `test-pin-verification.ts` | 11 tests del PIN |
-| `cleanup-resurrected-users.ts` | Detecta cuentas resucitadas (read-only) |
+| Script                               | Uso                                                        |
+| ------------------------------------ | ---------------------------------------------------------- |
+| `start.ps1 <nombre>`                 | Crear rama desde develop                                   |
+| `finish.ps1`                         | Cerrar rama: commit + push + merge develop + delete branch |
+| `publish.ps1`                        | Push + dump DB                                             |
+| `devmain.ps1`                        | Deploy a producción                                        |
+| `sync.ps1`                           | Pull develop                                               |
+| `validate-ops-config.ts`             | Integridad panel OPS (9 tests)                             |
+| `fix-ops-config.ts`                  | Corrige configs faltantes                                  |
+| `reset-admin.ts` / `create-admin.ts` | Admin OPS                                                  |
+| `clean-db-pre-launch.ts`             | Cleanup data prueba (dry-run, `--execute` interactivo)     |
+| `validate-role-flows.ts`             | 12 tests de roles derivados                                |
+| `test-pin-verification.ts`           | 11 tests del PIN                                           |
+| `cleanup-resurrected-users.ts`       | Detecta cuentas resucitadas (read-only)                    |
 
 ## Reglas de ejecución (las 10 inviolables)
 
@@ -206,6 +239,7 @@ Redis:     REDIS_URL (opcional, fallback in-memory automático)
 ## Regla de testing obligatorio
 
 Cada feature que toque parámetros financieros, asignación o configurables DEBE incluir:
+
 1. Script de verificación contra DB real (NO mocks)
 2. Simulación financiera si toca dinero
 3. Detección de conflictos: dos sistemas no escriben mismo parámetro con valores distintos
@@ -240,12 +274,14 @@ PedidosYa/Rappi: retención de dinero, comisiones 25-30%, soporte lento, presenc
 ### Regla de marca: NUNCA mencionar competidores (público)
 
 MOOVY es un movimiento, no comparación. Filosofía Apple: no nombramos a Samsung.
+
 - ❌ "A diferencia de PedidosYa..." | ✅ "Comisiones desde el 8% — las más bajas del mercado"
 - ❌ "Mientras otros retienen tu dinero..." | ✅ "Cobrás al instante. Cada venta, cada vez"
 
 ### Pre-mortem antes de cada decisión grande
 
 "Es 6 meses post-launch y Moovy fracasó. ¿Por qué?"
+
 1. Comercios se van porque pago no llega bien | 2. Compradores se van por app lenta/confusa | 3. Repartidores se van por ganar poco | 4. Error de seguridad expone datos | 5. Competencia baja comisiones | 6. App se cae en pico | 7. Problema legal AFIP/defensa consumidor
 
 Cada decisión debe reducir la probabilidad de al menos una.
@@ -253,6 +289,7 @@ Cada decisión debe reducir la probabilidad de al menos una.
 ## Roles permanentes (filtros antes de cerrar tarea)
 
 **Activación selectiva**:
+
 - PRODUCTO, ARQUITECTURA, QA, SEGURIDAD → SIEMPRE
 - UX → si hay UI/interacción
 - PAGOS, FINANZAS → si toca dinero (Order, Payment, comisiones, puntos, cupones)
@@ -301,38 +338,43 @@ Cada decisión debe reducir la probabilidad de al menos una.
 ## Dependencias externas
 
 ### Google Cloud Platform (Proyecto 1036892490928)
-| Servicio | Estado | Uso |
-|---|---|---|
-| Maps JavaScript | ✅ | Mapas tracking/checkout/driver |
-| Geocoding | ✅ | AddressAutocomplete fallback |
-| Places API (New) | ✅ | AddressAutocomplete primary |
-| Directions | ✅ | Ruta tracking |
-| Routes API | 🟡 | Wrapper listo, flag `NEXT_PUBLIC_USE_ROUTES_API` no seteado |
+
+| Servicio         | Estado | Uso                                                         |
+| ---------------- | ------ | ----------------------------------------------------------- |
+| Maps JavaScript  | ✅     | Mapas tracking/checkout/driver                              |
+| Geocoding        | ✅     | AddressAutocomplete fallback                                |
+| Places API (New) | ✅     | AddressAutocomplete primary                                 |
+| Directions       | ✅     | Ruta tracking                                               |
+| Routes API       | 🟡     | Wrapper listo, flag `NEXT_PUBLIC_USE_ROUTES_API` no seteado |
 
 ### MercadoPago
-| Componente | Estado | Uso |
-|---|---|---|
-| Checkout Pro | ✅ Sandbox | Pagos pedidos |
-| Webhooks IPN | ✅ Test | Confirmación auto |
-| OAuth merchant | 🟡 | Split payments |
+
+| Componente     | Estado     | Uso               |
+| -------------- | ---------- | ----------------- |
+| Checkout Pro   | ✅ Sandbox | Pagos pedidos     |
+| Webhooks IPN   | ✅ Test    | Confirmación auto |
+| OAuth merchant | 🟡         | Split payments    |
 
 **Pendiente prod**: credenciales prod + webhook URL en panel MP.
 
 ### Otros
-| Servicio | Estado | Uso |
-|---|---|---|
-| SMTP Nodemailer | 🟡 | ~60 templates, sin config prod |
-| Web Push VAPID | ✅ | Push buyers/merchants/drivers |
-| Socket.IO v4 | ✅ | Real-time |
-| PostGIS v3.4 | ✅ Docker | Geolocalización |
-| Pino v9 | ✅ | Logging |
-| Sharp v0.33 | ✅ | Compresión imágenes |
-| Redis ioredis | 🟡 Opcional | Rate limit (fallback in-memory) |
+
+| Servicio        | Estado      | Uso                             |
+| --------------- | ----------- | ------------------------------- |
+| SMTP Nodemailer | 🟡          | ~60 templates, sin config prod  |
+| Web Push VAPID  | ✅          | Push buyers/merchants/drivers   |
+| Socket.IO v4    | ✅          | Real-time                       |
+| PostGIS v3.4    | ✅ Docker   | Geolocalización                 |
+| Pino v9         | ✅          | Logging                         |
+| Sharp v0.33     | ✅          | Compresión imágenes             |
+| Redis ioredis   | 🟡 Opcional | Rate limit (fallback in-memory) |
 
 ### NPM clave
+
 next 16 | react 19 | prisma 5.22 | next-auth 5 (beta) | @react-google-maps 2 | socket.io 4 | mercadopago 2 | bcryptjs 2 | zod 3 | zustand 4 | ioredis 5
 
 ### Protocolo
+
 1. Inicio sesión larga: verificar deprecaciones en Google/MP/Next
 2. Servicio nuevo: agregar fila a tabla
 3. Warning de deprecación: documentar con plan

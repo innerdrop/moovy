@@ -426,6 +426,28 @@ model SubOrder {
   driverId            String?
   moovyCommission     Float?         @default(0)
   sellerPayout        Float?         @default(0)
+  // ─── Refactor motor logístico vs reparto financiero ──────────────────────
+  // Rama: refactor/separar-motor-y-finanzas
+  //
+  // Estos 5 campos se persisten al crear el SubOrder con el resultado del
+  // orquestador `computeOrderTotals` (src/lib/orders/order-totals.ts):
+  //
+  //   - tripCost: costo del viaje SIN operativo. Producto del Motor Logístico.
+  //   - operationalCost: 5% del subtotal del pedido. Cubre MP fee + margen.
+  //   - driverPayoutAmount: 80% × tripCost. Fuente exacta para payouts.ts
+  //     (reemplaza la aproximación 0.70 del DRIVER_SHARE legacy cuando NO es null).
+  //   - merchantCommissionRate: % aplicado al cerrar la orden, snapshot.
+  //   - merchantCommissionSource: origen del rate ("OVERRIDE" | "FIRST_MONTH" |
+  //     "TIER" | "FALLBACK") — para auditoría AAIP/AFIP y debugging.
+  //
+  // Todos NULLABLE: SubOrders pre-rama no rompen, payouts.ts les hace fallback
+  // a la lógica vieja. Cuando son != null, son la fuente de verdad y NUNCA se
+  // recalculan retroactivamente (regla canónica FINANZAS).
+  tripCost                Float?
+  operationalCost         Float?
+  driverPayoutAmount      Float?
+  merchantCommissionRate  Float?
+  merchantCommissionSource String?
   paymentStatus       String         @default("PENDING")
   deliveryStatus      DeliveryStatus?
   deliveredAt         DateTime?

@@ -193,6 +193,16 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
             id: true,
             driverId: true,
             deliveryFee: true,
+            // Rama refactor/separar-motor-y-finanzas:
+            // SubOrders del mismo driver. Si TODOS tienen driverPayoutAmount != null,
+            // sumamos esos valores exactos (Motor Logístico). Si alguno es null
+            // (orders pre-rama), caemos al fallback DRIVER_SHARE 0.70 sobre el order.
+            subOrders: {
+                select: {
+                    driverId: true,
+                    driverPayoutAmount: true,
+                },
+            },
             driver: {
                 select: {
                     id: true,
@@ -209,7 +219,19 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
     for (const o of orders) {
         if (!o.driverId || !o.driver) continue;
         const key = o.driverId;
-        const amount = (o.deliveryFee ?? 0) * DRIVER_SHARE;
+
+        // Rama refactor/separar-motor-y-finanzas: preferir snapshots persistidos
+        // por SubOrder. Solo aplicable si el order tiene subOrders del mismo driver
+        // y TODOS tienen driverPayoutAmount populated. Si falta alguno (orders
+        // pre-rama o multi-vendor con drivers mixtos), fallback a la aproximación.
+        const driverSubOrders = o.subOrders.filter((s) => s.driverId === o.driverId);
+        const allHaveSnapshot =
+            driverSubOrders.length > 0 &&
+            driverSubOrders.every((s) => s.driverPayoutAmount !== null && s.driverPayoutAmount !== undefined);
+
+        const amount = allHaveSnapshot
+            ? driverSubOrders.reduce((sum, s) => sum + (s.driverPayoutAmount ?? 0), 0)
+            : (o.deliveryFee ?? 0) * DRIVER_SHARE;
         // feat/driver-bank-mp (2026-04-26): Driver ya tiene bankCbu/bankAlias en schema.
         // Preferimos CBU (más preciso); fallback a Alias. Si ambos null, queda null y el
         // endpoint POST de batches rechaza el recipient — el admin sabe que falta el dato

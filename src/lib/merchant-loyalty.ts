@@ -165,6 +165,34 @@ export async function calculateMerchantTier(merchantId: string): Promise<Merchan
  * quiere respetar aunque implique cobrar más que 0.
  */
 export async function getEffectiveCommission(merchantId: string): Promise<number> {
+  const result = await getEffectiveCommissionWithSource(merchantId);
+  return result.rate;
+}
+
+/**
+ * Origen del rate de comisión efectivo, persistido en SubOrder.merchantCommissionSource
+ * para auditoría AAIP/AFIP y debugging. Misma precedencia que getEffectiveCommission.
+ *
+ * Rama: refactor/separar-motor-y-finanzas
+ */
+export type CommissionSource = "OVERRIDE" | "FIRST_MONTH" | "TIER" | "FALLBACK";
+
+export interface EffectiveCommissionResult {
+  rate: number;
+  source: CommissionSource;
+  /** Tier consultado (cuando source === "TIER"), null en otros casos */
+  tier?: MerchantTierType | null;
+}
+
+/**
+ * Versión enriquecida de getEffectiveCommission que devuelve también el origen
+ * del rate (override / first-month-free / tier / fallback). El source se persiste
+ * en SubOrder.merchantCommissionSource al crear la orden.
+ *
+ * NUNCA recalcular este valor sobre orders cerradas — los reportes fiscales
+ * dependen de que el rate aplicado al cerrar quede inmutable.
+ */
+export async function getEffectiveCommissionWithSource(merchantId: string): Promise<EffectiveCommissionResult> {
   try {
     const merchant = await prisma.merchant.findUnique({
       where: { id: merchantId },
@@ -172,35 +200,35 @@ export async function getEffectiveCommission(merchantId: string): Promise<number
     });
 
     if (!merchant) {
-      // Merchant not found, return default
-      return 8;
+      return { rate: 8, source: "FALLBACK", tier: null };
     }
 
-    // Special agreement override takes priority over loyalty tier AND first-month-free
+    // 1. Override admin (gana sobre todo)
     if (merchant.commissionOverride !== null && merchant.commissionOverride !== undefined) {
-      return merchant.commissionOverride;
+      return { rate: merchant.commissionOverride, source: "OVERRIDE", tier: null };
     }
 
-    // Mes 1 gratis: 0% durante los primeros 30 días corridos desde createdAt.
+    // 2. First-month-free
     if (isInFirstMonthFree(merchant.createdAt)) {
       loyaltyLogger.info(
         { merchantId, createdAt: merchant.createdAt },
         "Merchant in first-month-free window, commission = 0%"
       );
-      return 0;
+      return { rate: 0, source: "FIRST_MONTH", tier: null };
     }
 
-    const tierConfig = await getTierConfig(merchant.loyaltyTier as MerchantTierType);
+    // 3. Tier del programa de fidelización
+    const tier = merchant.loyaltyTier as MerchantTierType;
+    const tierConfig = await getTierConfig(tier);
 
     if (!tierConfig) {
-      // Config not found, return default
-      return 8;
+      return { rate: 8, source: "FALLBACK", tier: null };
     }
 
-    return tierConfig.commissionRate;
+    return { rate: tierConfig.commissionRate, source: "TIER", tier };
   } catch (error) {
     loyaltyLogger.error({ error, merchantId }, "Error getting effective commission");
-    return 8; // Fallback to default
+    return { rate: 8, source: "FALLBACK", tier: null };
   }
 }
 

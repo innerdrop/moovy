@@ -15,7 +15,8 @@ import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-
 import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 import { generatePinPair } from "@/lib/pin";
-import { getEffectiveCommission } from "@/lib/merchant-loyalty";
+import { getEffectiveCommission, getEffectiveCommissionWithSource } from "@/lib/merchant-loyalty";
+import { buildSubOrderFinancialSnapshot } from "@/lib/orders/order-totals";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 
 // Read a MoovyConfig value with fallback
@@ -171,8 +172,11 @@ export async function POST(request: Request) {
 
         // DELIVERY FEE: SIEMPRE recalcular server-side. NUNCA confiar en el frontend.
         let validatedDeliveryFee = 0;
-        // Per-group validated delivery fees (multi-vendor)
-        const validatedGroupFees: Map<string, { deliveryFee: number; distanceKm: number }> = new Map();
+        // Per-group validated delivery fees (multi-vendor).
+        // Rama refactor/separar-motor-y-finanzas: agregamos operationalCost por grupo
+        // para que buildSubOrderFinancialSnapshot() pueda derivar tripCost exacto
+        // (deliveryFee - operationalCost) y persistir el snapshot en SubOrder.
+        const validatedGroupFees: Map<string, { deliveryFee: number; distanceKm: number; operationalCost: number }> = new Map();
 
         if (!isPickup) {
             // Reject negative fees
@@ -210,7 +214,8 @@ export async function POST(request: Request) {
                                     );
                                 }
 
-                                validatedGroupFees.set(groupKey, { deliveryFee: groupValidatedFee, distanceKm: groupDistKm });
+                                // operationalCost se completa después en el bloque de surcharge per-group
+                                validatedGroupFees.set(groupKey, { deliveryFee: groupValidatedFee, distanceKm: groupDistKm, operationalCost: 0 });
                             } else {
                                 // ISSUE-008: NUNCA usar fee del cliente como fallback — retornar error
                                 orderLogger.error({ groupKey, clientFee: groupClientFee, distanceKm: groupDistKm }, "Server fee calc returned 0 for multi-vendor group");
@@ -351,6 +356,10 @@ export async function POST(request: Request) {
                         const existing = validatedGroupFees.get(groupKey);
                         if (existing) {
                             existing.deliveryFee += groupSurcharge;
+                            // Rama refactor/separar-motor-y-finanzas: capturamos el operationalCost
+                            // del grupo para que el snapshot de SubOrder lo persista. Sin esto,
+                            // payouts.ts no puede derivar tripCost exacto.
+                            existing.operationalCost = groupSurcharge;
                         }
                     }
                     validatedDeliveryFee += totalOpSurcharge;
@@ -837,20 +846,27 @@ export async function POST(request: Request) {
 
                     let groupCommission = 0;
                     let groupPayout = 0;
+                    // Rama refactor/separar-motor-y-finanzas: snapshot del rate + source
+                    // que se persiste en SubOrder.merchantCommissionRate / Source.
+                    // NUNCA recalcular sobre orders cerradas.
+                    let snapshotRate: number | undefined;
+                    let snapshotSource: import("@/lib/merchant-loyalty").CommissionSource | undefined;
 
                     // Calculate commission for merchant groups.
-                    // ISSUE-020: pasamos por getEffectiveCommission() para que
-                    // multi-vendor respete el loyalty tier y el mes 1 gratis.
-                    // Usamos ?? (no ||) porque el mes gratis puede devolver 0.
+                    // ISSUE-020: pasamos por getEffectiveCommissionWithSource() para que
+                    // multi-vendor respete el loyalty tier y el mes 1 gratis,
+                    // capturando además el origen del rate para auditoría.
                     if (group.merchantId) {
-                        const gLoyaltyRate = await getEffectiveCommission(group.merchantId);
+                        const effective = await getEffectiveCommissionWithSource(group.merchantId);
                         const gMerchant = await tx.merchant.findUnique({
                             where: { id: group.merchantId },
                             select: { commissionRate: true },
                         });
-                        const rate = gLoyaltyRate ?? gMerchant?.commissionRate ?? defaultMerchantCommission;
+                        const rate = effective.rate ?? gMerchant?.commissionRate ?? defaultMerchantCommission;
                         groupCommission = groupSubtotal * (rate / 100);
                         groupPayout = groupSubtotal - groupCommission;
+                        snapshotRate = rate;
+                        snapshotSource = effective.source;
                     } else if (group.sellerId) {
                         // Seller commission from Biblia Financiera (StoreSettings)
                         const sellerRate = opsSettings.defaultSellerCommission;
@@ -862,6 +878,26 @@ export async function POST(request: Request) {
                     const groupKey = group.merchantId || group.sellerId || "unknown";
                     const groupFeeData = validatedGroupFees.get(groupKey);
                     const groupDeliveryFee = isPickup ? 0 : (groupFeeData?.deliveryFee || 0);
+
+                    // Rama refactor/separar-motor-y-finanzas: snapshot financiero del SubOrder.
+                    // Single-vendor no setea operationalCost en el Map (ver bloque else de
+                    // surcharge), así que lo derivamos de subtotal × opCostPct si falta.
+                    // Si es pickup, no hay operativo ni viaje.
+                    const opCostPctForSnapshot = opsSettings.operationalCostPercent || 0;
+                    const groupOperationalCost = isPickup
+                        ? 0
+                        : (groupFeeData?.operationalCost ?? Math.round(groupSubtotal * (opCostPctForSnapshot / 100)));
+
+                    const financialSnapshot = await buildSubOrderFinancialSnapshot({
+                        subtotal: groupSubtotal,
+                        deliveryFee: groupDeliveryFee,
+                        operationalCost: groupOperationalCost,
+                        merchantId: group.merchantId || null,
+                        sellerId: group.sellerId || null,
+                        sellerCommissionRate: opsSettings.defaultSellerCommission,
+                        precomputedMerchantRate: snapshotRate,
+                        precomputedMerchantSource: snapshotSource,
+                    });
 
                     // PIN doble por SubOrder: solo para multi-vendor con delivery.
                     // Cada SubOrder tiene su propio driver → necesita su propio par de PINs
@@ -879,6 +915,14 @@ export async function POST(request: Request) {
                             total: groupSubtotal + groupDeliveryFee,
                             moovyCommission: groupCommission,
                             sellerPayout: groupPayout,
+                            // Rama refactor/separar-motor-y-finanzas: snapshot inmutable
+                            // del Motor Logístico + Reparto Financiero. payouts.ts consume
+                            // driverPayoutAmount cuando != null (en vez de aproximar al 70%).
+                            tripCost: financialSnapshot.tripCost,
+                            operationalCost: financialSnapshot.operationalCost,
+                            driverPayoutAmount: financialSnapshot.driverPayoutAmount,
+                            merchantCommissionRate: financialSnapshot.merchantCommissionRate,
+                            merchantCommissionSource: financialSnapshot.merchantCommissionSource,
                             // PIN doble: solo para multi-vendor con delivery
                             pickupPin: subOrderPinPair?.pickupPin || null,
                             deliveryPin: subOrderPinPair?.deliveryPin || null,
