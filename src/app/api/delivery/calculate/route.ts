@@ -2,7 +2,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { calculateDistance, calculateDeliveryCost, DeliverySettings } from "@/lib/delivery";
+import { calculateDistance } from "@/lib/delivery";
+import { calculateShippingCost } from "@/lib/shipping-cost-calculator";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
 import { deliveryLogger } from "@/lib/logger";
@@ -256,42 +257,95 @@ export async function POST(request: Request) {
         const zoneMultiplier = zoneSnapshot.zoneMultiplier;
         const climateMultiplier = climateMultipliers[activeClimate] ?? 1.0;
 
-        const deliverySettings: DeliverySettings = {
-            fuelPricePerLiter: settings.fuelPricePerLiter,
-            fuelConsumptionPerKm: settings.fuelConsumptionPerKm,
-            baseDeliveryFee: settings.baseDeliveryFee,
-            maintenanceFactor: settings.maintenanceFactor,
-            freeDeliveryMinimum: settings.freeDeliveryMinimum,
-            maxDeliveryDistance: settings.maxDeliveryDistance,
-            originLat,
-            originLng,
-            zoneMultiplier,
-            climateMultiplier,
-            operationalCostPercent,
-            orderSubtotal: orderTotal,
-        };
+        // ─── Rama fix/delivery-fee-preview-vs-cobro ────────────────────────────
+        // ANTES: este endpoint usaba calculateDeliveryCost (delivery.ts, fórmula
+        // maestra) mientras que POST /api/orders usaba calculateShippingCost
+        // (shipping-cost-calculator.ts). Producían resultados muy distintos →
+        // el cliente veía $2.763 en checkout pero al pagar se cobraba $1.315.
+        // Disparaba "FRAUD ALERT: Client delivery fee differs >25%".
+        //
+        // AHORA: replicamos EXACTAMENTE el flujo de POST /api/orders:
+        //   1. calculateShippingCost con MEDIUM/STANDARD/orderTotal=0 → base + km
+        //   2. Si orderTotal > 0, sumar operational cost surcharge (5% subtotal)
+        //   3. Aplicar climate multiplier
+        //   4. Aplicar zone multiplier
+        //
+        // Resultado: el preview coincide al peso con el cobro real. Sin mismatch.
 
-        const result = calculateDeliveryCost(distanceKm, deliverySettings, orderTotal);
+        const merchantPackageCategory = "MEDIUM";   // default que usa orders/route.ts
+        const merchantShipmentType = "STANDARD";    // default que usa orders/route.ts
+        const isWithinRange = settings.maxDeliveryDistance > 0
+            ? distanceKm <= settings.maxDeliveryDistance
+            : true;
+
+        const baseShippingResult = calculateShippingCost({
+            distanceKm,
+            packageCategory: merchantPackageCategory,
+            shipmentTypeCode: merchantShipmentType,
+            orderTotal: 0,                              // mismo default que orders/route.ts
+            freeDeliveryMinimum: settings.freeDeliveryMinimum,
+        });
+
+        // 2. Operational cost surcharge sobre el orderTotal real (igual que orders/route.ts)
+        const opSurcharge = orderTotal > 0
+            ? Math.round(orderTotal * (operationalCostPercent / 100))
+            : 0;
+
+        // 3 + 4. Aplicar climate y zone multipliers
+        let finalTotal = baseShippingResult.total + opSurcharge;
+        if (climateMultiplier !== 1.0) {
+            finalTotal = Math.round(finalTotal * climateMultiplier);
+        }
+        if (zoneMultiplier !== 1.0) {
+            finalTotal = Math.round(finalTotal * zoneMultiplier);
+        }
+
+        // Free delivery: si el comercio definió freeDeliveryMinimum y el orderTotal lo cumple,
+        // el cliente NO paga el viaje pero sí el operacional + extras de zona/clima
+        // (Moovy NO regala el costo MP). Mismo criterio que calculateShippingCost.
+        const isFreeDelivery = baseShippingResult.isFreeDelivery;
+
+        deliveryLogger.info(
+            {
+                distanceKm: parseFloat(distanceKm.toFixed(2)),
+                baseShipping: baseShippingResult.total,
+                opSurcharge,
+                climateMultiplier,
+                zoneMultiplier,
+                finalTotal,
+                isFreeDelivery,
+                source: "calculateShippingCost-unified",
+            },
+            "Delivery fee preview calculated (matches POST /api/orders)"
+        );
 
         return NextResponse.json({
-            ...result,
+            distanceKm,
+            // Desglose del shipping (compatibilidad con consumidores que muestran detalles)
+            baseCost: baseShippingResult.baseCost,
+            distanceCost: baseShippingResult.distanceCost,
+            shipmentSurcharge: baseShippingResult.shipmentSurcharge,
+            operationalCost: opSurcharge,
+            // Total final que paga el cliente — matchea el cobro de POST /api/orders
+            totalCost: finalTotal,
+            isWithinRange,
+            isFreeDelivery,
             storeAddress: originAddress,
             isRealRoadDistance,
             zone,
-            // Rama feat/zonas-delivery-multiplicador: snapshot completo de zona
-            // para que el frontend muestre "Zona Norte +15%" en el desglose del fee.
+            // Snapshot de zona para el desglose del checkout (línea "Zona X +Y%")
             zoneSnapshot: {
                 zoneCode: zoneSnapshot.zoneCode,
                 zoneMultiplier: zoneSnapshot.zoneMultiplier,
                 zoneDriverBonus: zoneSnapshot.zoneDriverBonus,
             },
             activeClimate,
-            message: result.isWithinRange
-                ? result.isFreeDelivery
+            message: isWithinRange
+                ? isFreeDelivery
                     ? "¡Envío gratis!"
                     : isRealRoadDistance
-                        ? `Costo de envío (recorrido real): $${result.totalCost}`
-                        : `Costo de envío (estimado): $${result.totalCost}`
+                        ? `Costo de envío (recorrido real): $${finalTotal}`
+                        : `Costo de envío (estimado): $${finalTotal}`
                 : "Lo sentimos, la dirección está fuera de nuestra zona de delivery",
         });
     } catch (error) {

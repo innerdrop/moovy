@@ -50,18 +50,51 @@ if ($lockFile -and (Test-Path $lockFile)) {
     Remove-Item -Force $lockFile -ErrorAction SilentlyContinue
 }
 
-# 3. Pedir mensaje de commit
+# 3. Resolver mensaje de commit
+# Prioridad:
+#   a) Argumento -Message pasado al script
+#   b) Archivo .commit-message en el root del repo (escrito por Claude al
+#      terminar los cambios — gitignored, se borra post-commit)
+#   c) Fallback: prompt interactivo (modo legacy)
+$commitMsgFile = ".commit-message"
+$commitMsgFileUsed = $false
 if ([string]::IsNullOrWhiteSpace($Message)) {
-    Write-Host ""
-    Write-Host "Descripcion del cambio (una linea; si queres body extenso, 'git commit --amend' despues):" -ForegroundColor Cyan
-    $Message = Read-Host "Mensaje"
+    if (Test-Path $commitMsgFile) {
+        $Message = (Get-Content -Path $commitMsgFile -Raw -Encoding UTF8).Trim()
+        $commitMsgFileUsed = $true
+        Write-Host ""
+        Write-Host "[MSG] Mensaje leido de .commit-message (auto-cierre)" -ForegroundColor Green
+        $preview = if ($Message.Length -gt 120) { $Message.Substring(0, 120) + "..." } else { $Message }
+        Write-Host "      $preview" -ForegroundColor Gray
+    } else {
+        Write-Host ""
+        Write-Host "Descripcion del cambio (una linea; si queres body extenso, 'git commit --amend' despues):" -ForegroundColor Cyan
+        Write-Host "Tip: si Claude dejo .commit-message en el root, este prompt no aparece." -ForegroundColor DarkGray
+        $Message = Read-Host "Mensaje"
+    }
 }
 
 if ([string]::IsNullOrWhiteSpace($Message)) {
     Stop-WithError "El mensaje de commit no puede estar vacio"
 }
 
-# 4. Exportar Base de Datos (UTF-8 raw)
+# 4. Doble verificación de TypeScript (rama fix/delivery-fee-preview-vs-cobro)
+# Corre tsc-strict.ps1 que limpia .next/, regenera tipos y valida con
+# tsconfig.strict.json. Si falla, abortamos antes de tocar git/db.
+# El skip-tsc flag (env var) permite saltearlo en emergencias.
+if ($env:SKIP_TSC -eq "1") {
+    Write-Host "[TSC] Saltado por SKIP_TSC=1 (NO recomendado)" -ForegroundColor Yellow
+} else {
+    Write-Host ""
+    Write-Host "[TSC] Doble verificacion de tipos antes de commitear (~20s)..." -ForegroundColor Yellow
+    Write-Host "      Para saltear: \$env:SKIP_TSC=1 y volve a correr finish.ps1"
+    & "$PSScriptRoot\tsc-strict.ps1"
+    if ($LASTEXITCODE -ne 0) {
+        Stop-WithError "[TSC] tsc-strict fallo - corregi los errores de tipos antes de cerrar la rama."
+    }
+}
+
+# 5. Exportar Base de Datos (UTF-8 raw)
 # fix/utf8-encoding-pipeline (2026-04-30): generamos el dump dentro del container
 # y lo copiamos con docker cp (bytes raw). Antes haciamos `pg_dump > file.sql` en
 # PowerShell, lo cual reinterpretaba los bytes UTF-8 con el codepage de Windows
@@ -160,6 +193,11 @@ if (-not $skipCommit) {
         git commit -F $tempMsgFile
         if ($LASTEXITCODE -ne 0) {
             Stop-WithError "'git commit' fallo con codigo $LASTEXITCODE. Tus cambios siguen staged."
+        }
+        # Borrar .commit-message si fue usado (post-commit exitoso)
+        if ($commitMsgFileUsed -and (Test-Path $commitMsgFile)) {
+            Remove-Item -Force $commitMsgFile
+            Write-Host "[MSG] .commit-message consumido y borrado" -ForegroundColor DarkGray
         }
     } finally {
         if (Test-Path $tempMsgFile) { Remove-Item -Force $tempMsgFile }

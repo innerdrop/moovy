@@ -45,6 +45,17 @@ next-env.d.ts
 # database dumps (compartir fuera de Git)
 database_dump.sql
 
+# Auto-cierre de rama: archivo temporal con el mensaje de commit que
+# Claude deja pre-cargado para que finish.ps1 lo lea sin pedir prompt.
+# Se borra automáticamente después del commit exitoso.
+.commit-message
+
+# Auto-apertura de rama: archivo temporal con tipo y nombre de la rama
+# que Claude deja pre-cargado para que start.ps1 los lea sin pedir prompts.
+# Formato: una linea "tipo nombre" o dos lineas separadas. Se borra al
+# crear la rama. Tipos válidos: feat fix hotfix refactor config chore docs style perf
+.next-branch
+
 # load testing results
 /load-testing/results/
 *.json.gz

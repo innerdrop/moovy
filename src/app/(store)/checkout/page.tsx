@@ -228,6 +228,28 @@ export default function CheckoutPage() {
         }
     }, [status]);
 
+    // Auto-calcular delivery fee cuando hay address válida.
+    // Rama fix/delivery-fee-preview-vs-cobro: antes el fee solo aparecía al
+    // tocar "Continuar al pago" (step 1 → 2). Ahora se muestra inline en el
+    // resumen "Tu Pedido" desde el momento que el buyer tiene dirección.
+    //
+    // No exigimos lat/lng: si la address en DB no tiene coords, el endpoint
+    // /api/delivery/calculate hace geocoding automático con Google Maps.
+    // Si el geocoding falla, el endpoint devuelve un mensaje claro.
+    //
+    // Debounce 500ms para no machacar el endpoint mientras el buyer tipea.
+    useEffect(() => {
+        if (deliveryMethod !== "home") return;
+        if (isPickup) return;
+        if (!address.street || !address.number) return;
+        if (isCalculating) return;
+        const timer = setTimeout(() => {
+            calculateDelivery();
+        }, 500);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [address.street, address.number, address.latitude, address.longitude, deliveryMethod]);
+
     const selectAddress = (addr: any) => {
         setSelectedAddressId(addr.id);
         setIsNewAddress(false);

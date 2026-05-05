@@ -168,12 +168,23 @@ function pointInPolygon(lng: number, lat: number, polygon: [number, number][]): 
 // ─── API pública ────────────────────────────────────────────────────────────
 
 /**
- * Devuelve la zona aplicable a una coordenada, o null si la dirección no cae
- * en ninguna zona configurada (en ese caso el caller usa default 1.0 / 0).
+ * Devuelve la zona aplicable a una coordenada.
  *
- * Si la location cae en MÚLTIPLES zonas (overlap), devuelve la de mayor
- * displayOrder (porque las zonas en cache ya vienen ordenadas DESC y es la
- * primera que matchee).
+ * REGLAS:
+ *   1. Si la location cae en algún polígono → devuelve esa zona.
+ *      Si cae en MÚLTIPLES (overlap) → la de mayor displayOrder gana
+ *      (las zonas en cache vienen ordenadas DESC, gana la primera que matchee).
+ *   2. Si NO cae en ningún polígono → fallback a la zona con displayOrder
+ *      MÁS BAJO (típicamente "Zona A — Centro" con multiplier 1.0). Esto
+ *      resuelve el problema de "gaps" entre polígonos cuando el admin no
+ *      dibuja con precisión milimétrica.
+ *
+ * PATRÓN "capa base + zonas modificadoras" (Glovo/PedidosYa/Rappi):
+ *   - Zona A es la "capa base" que cubre toda la ciudad
+ *   - Zonas B/C son áreas específicas con recargo, viven "encima" de A
+ *   - Donde no se dibujó B ni C, cae en A automáticamente
+ *
+ * Si NO hay zonas configuradas → devuelve null (caller usa defaults 1.0/0).
  */
 export async function getZoneForLocation(
     lat: number,
@@ -189,7 +200,18 @@ export async function getZoneForLocation(
             return zone;
         }
     }
-    return null;
+
+    // Fallback: zona "default" = la de displayOrder más BAJO. Como las zonas
+    // están ordenadas DESC en el cache, la última del array es la default.
+    // Si el admin solo dibujó B y C, la dirección cae en A automáticamente.
+    const fallbackZone = zones[zones.length - 1];
+    if (fallbackZone) {
+        zonesLogger.debug(
+            { lat, lng, fallbackZone: fallbackZone.name },
+            "No polygon match — using fallback zone (lowest displayOrder)"
+        );
+    }
+    return fallbackZone || null;
 }
 
 /**

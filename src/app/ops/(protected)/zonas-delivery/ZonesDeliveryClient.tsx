@@ -163,7 +163,11 @@ export default function ZonesDeliveryClient() {
     const [deleteConfirmText, setDeleteConfirmText] = useState("");
     // Warnings de overlap recibidos del backend después de guardar.
     // Si la zona recién guardada se superpone con otras, mostramos modal informativo.
-    const [overlapWarning, setOverlapWarning] = useState<{ zoneName: string; overlaps: { id: string; name: string }[] } | null>(null);
+    // Nota: la detección de overlaps en backend sigue activa (logs Pino con
+    // overlapsCount), pero el modal de warning se eliminó porque el approach
+    // canónico ahora es "capa base + modificadoras" — los overlaps son
+    // intencionales (Zona A grande cubre todo, B y C encima). El sistema
+    // resuelve por displayOrder DESC. Avisar al admin generaba ruido inútil.
     // Edición in-line de polígono: el admin hace click en una zona del listado
     // o desde el modal y los vértices del polygon se vuelven arrastrables
     // directamente en el mapa, sin redibujar desde cero.
@@ -404,14 +408,11 @@ export default function ZonesDeliveryClient() {
                 const body = await res.json().catch(() => ({}));
                 throw new Error(body.error || "Error al guardar");
             }
-            const respBody = await res.json().catch(() => ({}));
-            const editedZone = zones.find((z) => z.id === inlineEditZoneId);
+            await res.json().catch(() => ({})); // consumir respuesta
             await fetchZones();
             setInlineEditZoneId(null);
             setInlineEditDraft(null);
-            if (editedZone && Array.isArray(respBody.overlaps) && respBody.overlaps.length > 0) {
-                setOverlapWarning({ zoneName: editedZone.name, overlaps: respBody.overlaps });
-            }
+            // Overlap warning desactivado — overlaps son intencionales con el patrón "capa base".
         } catch (err) {
             setError(err instanceof Error ? err.message : "Error al guardar");
         } finally {
@@ -498,16 +499,10 @@ export default function ZonesDeliveryClient() {
                 const body = await res.json().catch(() => ({}));
                 throw new Error(body.error || "Error al guardar");
             }
-            // Capturamos overlaps del response para mostrar warning informativo
-            const respBody = await res.json().catch(() => ({}));
+            await res.json().catch(() => ({})); // consumir respuesta
             await fetchZones();
             setModalOpen(false);
-            if (Array.isArray(respBody.overlaps) && respBody.overlaps.length > 0) {
-                setOverlapWarning({
-                    zoneName: draft.name,
-                    overlaps: respBody.overlaps,
-                });
-            }
+            // Overlap warning desactivado — overlaps son intencionales con el patrón "capa base".
         } catch (err) {
             setError(err instanceof Error ? err.message : "Error al guardar");
         } finally {
@@ -1095,44 +1090,6 @@ export default function ZonesDeliveryClient() {
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 Guardar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal de warning: overlap detectado al guardar zona */}
-            {overlapWarning && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                                <AlertTriangle className="w-5 h-5 text-amber-600" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">Zonas superpuestas detectadas</h3>
-                        </div>
-                        <div className="text-sm text-gray-700 space-y-2">
-                            <p>
-                                <strong>{overlapWarning.zoneName}</strong> se superpone con:
-                            </p>
-                            <ul className="list-disc list-inside space-y-0.5 text-gray-600">
-                                {overlapWarning.overlaps.map((o) => (
-                                    <li key={o.id}>{o.name}</li>
-                                ))}
-                            </ul>
-                            <p className="text-xs text-gray-500 pt-2">
-                                Los pedidos cuya dirección caiga en el área compartida cobrarán según
-                                la zona con <strong>orden de prioridad más alto</strong>. Esto puede ser intencional
-                                (ej: una zona "premium" dentro de una más amplia) o un error de dibujo.
-                                Si querés que las zonas no se solapen, editá los polígonos desde el panel.
-                            </p>
-                        </div>
-                        <div className="flex items-center justify-end">
-                            <button
-                                onClick={() => setOverlapWarning(null)}
-                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2 rounded-xl"
-                            >
-                                Entendido
                             </button>
                         </div>
                     </div>
