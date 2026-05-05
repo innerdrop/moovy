@@ -25,9 +25,9 @@ const prisma = new PrismaClient();
 /**
  * Precio nafta super YPF Ushuaia.
  * VERIFICAR el dia del lanzamiento en la estacion mas cercana.
- * Fuente: InfoFueguina 25/03/2026 → $1.607
+ * Valor confirmado por founder el 2026-04-30: $1.658/litro
  */
-const FUEL_PRICE_PER_LITER = 1607;
+const FUEL_PRICE_PER_LITER = 1658;
 
 /**
  * Comision merchants mes 1: 0% (30 dias gratis, estrategia adquisicion).
@@ -302,8 +302,8 @@ async function seedMoovyConfig() {
     },
     {
       key: "usd_ars_reference",
-      value: "1395",
-      description: "Cotizacion dolar referencia (blue 8/4/2026)",
+      value: "1400",
+      description: "Cotizacion dolar oficial referencia (cierre abril 2026)",
     },
     // Operaciones
     {

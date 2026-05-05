@@ -52,7 +52,12 @@ async function main() {
 
     for (const cat of STORE_CATEGORIES) {
         const slug = toSlug(cat.name);
-        const existing = await prisma.category.findUnique({ where: { slug } });
+        // Buscar por slug O nombre — ambos tienen unique constraint en DB.
+        // Sin esto, si el slug se calcula distinto pero el name ya existe
+        // (ej: tildes), el create() de abajo revienta con P2002.
+        const existing = await prisma.category.findFirst({
+            where: { OR: [{ slug }, { name: cat.name }] },
+        });
 
         if (existing) {
             // Update scope if it was generic
@@ -88,7 +93,12 @@ async function main() {
 
     for (const cat of MARKETPLACE_CATEGORIES) {
         const slug = toSlug(cat.name);
-        const existing = await prisma.category.findUnique({ where: { slug } });
+        // Buscar por slug O nombre — ambos tienen unique constraint en DB.
+        // Sin esto, si el slug se calcula distinto pero el name ya existe
+        // (ej: tildes), el create() de abajo revienta con P2002.
+        const existing = await prisma.category.findFirst({
+            where: { OR: [{ slug }, { name: cat.name }] },
+        });
 
         if (existing) {
             if (existing.scope === "BOTH") {

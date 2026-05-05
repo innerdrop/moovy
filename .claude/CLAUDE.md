@@ -158,6 +158,7 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 - **Wording user-facing**: NUNCA "OPS" → "el equipo de Moovy". NUNCA mencionar competidores
 - **PIN doble entrega**: state machine bloquea PICKED_UP sin pickup verified, DELIVERED sin delivery verified. Geofence 100m+gracia, 5 intentos, fraudScore +1 al lockear, auto-suspend ≥3 incidentes
 - **proxy.ts no chequea roles JWT** para `/comercios/*` ni `/repartidor/*`. Solo sesión. Layout protegido decide vía DB. ADMIN sí en proxy para `/ops/*`
+- **Zonas de delivery con polígonos** (rama `feat/zonas-delivery-multiplicador`): la fuente de verdad de multiplicadores y bonus driver por zona es la tabla `DeliveryZone` (PostGIS Polygon SRID 4326 + GiST index), editable desde `/ops/zonas-delivery` con drawing UX pro (click-by-click / pintar freehand / edit inline). Helper canónico `getZoneSnapshotForLocation(lat, lng)` con cache invalidable. Snapshot inmutable persistido en `SubOrder.zoneCode/zoneMultiplier/zoneDriverBonus` al crear pedido (NUNCA recalcular retroactivo). El campo `StoreSettings.zoneMultipliersJson` queda como legacy del simulador en `/ops/config-biblia` y NO afecta el cobro real. Detección de overlaps con `ST_Intersects` al guardar zona — informativo, gana displayOrder mayor.
 
 ## Reglas acumuladas (#1-#28)
 
