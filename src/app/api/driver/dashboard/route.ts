@@ -2,6 +2,18 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateDistance, estimateTravelTime, formatDistance } from "@/lib/geo";
+import { DRIVER_ACTIVE_STATUSES } from "@/lib/orders/order-status-machine";
+
+// Estados legacy "activos" — fallback para pedidos pre-rama state-machine-paralela
+// que todavía no tienen driverStatus seteado. Las queries usan OR contra ambos
+// para no perder pedidos viejos.
+const LEGACY_ACTIVE_STATUSES = [
+    "READY",
+    "DRIVER_ASSIGNED",
+    "DRIVER_ARRIVED",
+    "PICKED_UP",
+    "IN_DELIVERY",
+];
 
 export async function GET(request: Request) {
     // Get driver location from query params (sent from frontend)
@@ -64,14 +76,18 @@ export async function GET(request: Request) {
         });
         const completedToday = completedOrders.length;
 
-        // Pedidos En Camino (Asignados al driver y no entregados)
+        // Pedidos En Camino — Bug #1 fix (rama fix/state-machine-paralela-merchant-driver)
+        // Filtra por driverStatus paralelo cuando existe; cae a status legacy para
+        // pedidos viejos. Antes solo filtraba por status legacy y un pedido recién
+        // aceptado podía caer fuera del filtro y aparecer en "Historial".
         const enCamino = await prisma.order.count({
             where: {
                 driverId: driver.id,
-                status: {
-                    in: ["READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
-                }
-            }
+                OR: [
+                    { driverStatus: { in: DRIVER_ACTIVE_STATUSES } },
+                    { driverStatus: null, status: { in: LEGACY_ACTIVE_STATUSES } },
+                ],
+            },
         });
 
         // Ganancias Hoy — real sum of deliveryFee × rider commission %
@@ -89,13 +105,15 @@ export async function GET(request: Request) {
         });
 
         // --- Pedidos Activos (Lista) ---
-        // Fetch active orders for this driver
+        // Fetch active orders for this driver. Mismo OR que enCamino arriba:
+        // driverStatus paralelo cuando existe, status legacy como fallback.
         const activeOrders = await prisma.order.findMany({
             where: {
                 driverId: driver.id,
-                status: {
-                    in: ["READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"]
-                }
+                OR: [
+                    { driverStatus: { in: DRIVER_ACTIVE_STATUSES } },
+                    { driverStatus: null, status: { in: LEGACY_ACTIVE_STATUSES } },
+                ],
             },
             include: {
                 merchant: { select: { name: true, address: true, latitude: true, longitude: true } },
@@ -170,6 +188,9 @@ export async function GET(request: Request) {
                 merchantLng: order.merchant?.longitude,
                 customerLat: order.address?.latitude,
                 customerLng: order.address?.longitude,
+                // Notas que el cliente dejó al repartidor en checkout
+                // (Bug 6 rama fix/state-machine-paralela-merchant-driver)
+                deliveryNotes: order.deliveryNotes || null,
                 // Chat targets
                 hasMerchant,
                 sellersEnPedido
@@ -270,7 +291,10 @@ export async function GET(request: Request) {
                 tiempoAlComercio: timeToMerchant,
                 tiempoAlCliente: timeToCustomer,
                 distanciaTotal: formatDistance(frozenDistKm),
-                gananciaEstimada
+                gananciaEstimada,
+                // Notas del cliente — el driver las ve ANTES de aceptar la oferta
+                // (Bug 6 rama fix/state-machine-paralela-merchant-driver)
+                deliveryNotes: order.deliveryNotes || null
             };
         };
 

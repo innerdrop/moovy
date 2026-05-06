@@ -117,15 +117,22 @@ export async function PATCH(
         }
 
         // Update delivery status AND sync order.status to match
+        // Rama fix/state-machine-paralela-merchant-driver: tambien actualizamos
+        // driverStatus (y merchantStatus en pickup) para que el dashboard del
+        // driver y los chequeos del merchant lean los campos paralelos.
         const updateData: any = { deliveryStatus };
 
         // Keep order.status in sync with deliveryStatus for consistency
         if (deliveryStatus === "DRIVER_ARRIVED") {
             updateData.status = "DRIVER_ARRIVED";
+            updateData.driverStatus = "AT_MERCHANT";
         } else if (deliveryStatus === "PICKED_UP") {
             updateData.status = "PICKED_UP";
+            updateData.driverStatus = "ON_ROUTE_TO_CUSTOMER";
+            updateData.merchantStatus = "PICKED_UP";
         } else if (deliveryStatus === "DELIVERED") {
             updateData.status = "DELIVERED";
+            updateData.driverStatus = "DELIVERED";
             updateData.deliveredAt = new Date();
 
             // Increment driver's delivery count (only if it's a driver, not admin override)

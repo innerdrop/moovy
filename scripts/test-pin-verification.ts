@@ -8,11 +8,11 @@
  *
  * Tests incluidos:
  *  A. Funciones puras de src/lib/pin.ts
- *     - generatePin: formato 6 dígitos con leading zeros, distribución razonable
+ *     - generatePin: formato 4 dígitos con leading zeros, distribución razonable
  *     - generatePinPair: pickup y delivery nunca coinciden
  *     - verifyPin: timing-safe, rechaza null/undefined/longitud distinta
- *     - sanitizePinInput: acepta "048 291" / "048-291" / clampa a 6 chars
- *     - formatPinForDisplay: "048291" → "048 291"
+ *     - sanitizePinInput: acepta "04 82" / "04-82" / clampa a 4 chars
+ *     - formatPinForDisplay: "0482" se muestra tal cual
  *     - Constantes: PIN_MAX_ATTEMPTS, PIN_FRAUD_THRESHOLD, PIN_GEOFENCE_METERS
  *
  *  B. Sanity checks de datos (read-only sobre DB real)
@@ -67,7 +67,7 @@ function fail(name: string, error: string) {
 function testGeneratePinFormat() {
     try {
         const samples = Array.from({ length: 1000 }, () => generatePin());
-        const bad = samples.filter((p) => !/^\d{6}$/.test(p));
+        const bad = samples.filter((p) => !/^\d{4}$/.test(p));
         if (bad.length > 0) {
             fail("generatePin formato", `${bad.length}/1000 PINs con formato inválido (ej: "${bad[0]}")`);
             return;
@@ -99,7 +99,7 @@ function testGeneratePinPair() {
                 fail("generatePinPair no colisión", `Iteración ${i}: pickup === delivery === "${pickupPin}"`);
                 return;
             }
-            if (!/^\d{6}$/.test(pickupPin) || !/^\d{6}$/.test(deliveryPin)) {
+            if (!/^\d{4}$/.test(pickupPin) || !/^\d{4}$/.test(deliveryPin)) {
                 fail("generatePinPair formato", `Iteración ${i}: formato inválido pickup="${pickupPin}" delivery="${deliveryPin}"`);
                 return;
             }
@@ -113,30 +113,30 @@ function testGeneratePinPair() {
 function testVerifyPin() {
     try {
         // Igual → true
-        if (!verifyPin("048291", "048291")) {
+        if (!verifyPin("0482", "0482")) {
             fail("verifyPin match exacto", "Rechazó PINs iguales");
             return;
         }
         // Distinto → false
-        if (verifyPin("048291", "123456")) {
+        if (verifyPin("0482", "1234")) {
             fail("verifyPin mismatch", "Aceptó PINs distintos");
             return;
         }
         // Longitud distinta → false (también protege timingSafeEqual)
-        if (verifyPin("12345", "123456")) {
+        if (verifyPin("123", "1234")) {
             fail("verifyPin longitud", "Aceptó PINs de longitud distinta");
             return;
         }
-        if (verifyPin("1234567", "123456")) {
+        if (verifyPin("12345", "1234")) {
             fail("verifyPin longitud", "Aceptó PIN más largo que el stored");
             return;
         }
         // Null/undefined en cualquier lado → false
-        if (verifyPin(null, "123456")) {
+        if (verifyPin(null, "1234")) {
             fail("verifyPin null input", "Aceptó null como input");
             return;
         }
-        if (verifyPin("123456", null)) {
+        if (verifyPin("1234", null)) {
             fail("verifyPin null stored", "Aceptó null como stored");
             return;
         }
@@ -157,13 +157,13 @@ function testVerifyPin() {
 function testSanitizePinInput() {
     try {
         const cases: Array<[string | null | undefined, string]> = [
-            ["048291", "048291"],
-            ["048 291", "048291"],
-            ["048-291", "048291"],
-            ["048.291", "048291"],
-            ["  048 291  ", "048291"],
-            ["abc048291", "048291"],
-            ["0482911234", "048291"], // clampea a 6
+            ["0482", "0482"],
+            ["04 82", "0482"],
+            ["04-82", "0482"],
+            ["04.82", "0482"],
+            ["  04 82  ", "0482"],
+            ["abc0482", "0482"],
+            ["04829134", "0482"], // clampea a 4
             ["", ""],
             [null, ""],
             [undefined, ""],
@@ -184,11 +184,11 @@ function testSanitizePinInput() {
 
 function testFormatPinForDisplay() {
     try {
+        // Con 4 dígitos no se aplica separador — la gente recuerda el bloque de 4 entero.
         const cases: Array<[string | null | undefined, string]> = [
-            ["048291", "048 291"],
-            ["000000", "000 000"],
-            ["999999", "999 999"],
-            ["12345", "12345"], // longitud incorrecta: devuelve tal cual
+            ["0482", "0482"],
+            ["0000", "0000"],
+            ["9999", "9999"],
             ["", ""],
             [null, ""],
             [undefined, ""],
@@ -269,8 +269,8 @@ async function testOrdersWithPin() {
         const sameBoth = advanced.filter((o) => o.pickupPin && o.deliveryPin && o.pickupPin === o.deliveryPin);
         const badFormat = advanced.filter(
             (o) =>
-                (o.pickupPin && !/^\d{6}$/.test(o.pickupPin)) ||
-                (o.deliveryPin && !/^\d{6}$/.test(o.deliveryPin))
+                (o.pickupPin && !/^\d{4}$/.test(o.pickupPin)) ||
+                (o.deliveryPin && !/^\d{4}$/.test(o.deliveryPin))
         );
 
         if (missingPickup.length > 0) {
@@ -297,7 +297,7 @@ async function testOrdersWithPin() {
         if (badFormat.length > 0) {
             fail(
                 "Orders PINs formato",
-                `${badFormat.length} orders con PIN que no es 6 dígitos. Ej: ${badFormat[0].orderNumber} pickup="${badFormat[0].pickupPin}"`
+                `${badFormat.length} orders con PIN que no es 4 dígitos. Ej: ${badFormat[0].orderNumber} pickup="${badFormat[0].pickupPin}"`
             );
             return;
         }

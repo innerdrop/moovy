@@ -383,6 +383,19 @@ model Order {
   orderChats          OrderChat[]
   locationHistory     DriverLocationHistory[]
   deliveryAttempts    DeliveryAttempt[]
+  // ─── State machine paralela merchant + driver (Order single-vendor) ──────
+  // Rama: fix/state-machine-paralela-merchant-driver
+  // Ver explicación completa en SubOrder. Mismos 6 campos para que single-vendor
+  // (Order directo, sin SubOrder) tenga el mismo flujo paralelo.
+  //
+  // Para multi-vendor (isMultiVendor=true), estos campos en Order se ignoran;
+  // los que mandan son los del SubOrder de cada comercio.
+  merchantStatus       String?    @default("PREPARING")
+  driverStatus         String?    @default("ASSIGNED")
+  waitingStartedAt     DateTime?
+  noShowReportedAt     DateTime?
+  payoutHoldUntil      DateTime?
+  noShowFlag           Boolean    @default(false)
 
   @@index([status])
   @@index([paymentStatus])
@@ -391,6 +404,8 @@ model Order {
   @@index([userId])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([merchantStatus])
+  @@index([driverStatus])
 }
 
 model OrderItem {
@@ -492,6 +507,49 @@ model SubOrder {
   // ISSUE-013 — push "tu repartidor esta cerca" por SubOrder (multi-vendor: cada SubOrder tiene su driver)
   nearDestinationNotified Boolean @default(false)
   deliveryAttempts      DeliveryAttempt[]
+  // ─── State machine paralela merchant + driver ────────────────────────────
+  // Rama: fix/state-machine-paralela-merchant-driver
+  //
+  // CONTEXTO: el campo `status` legacy mezclaba el flujo del comercio con el
+  // del driver en un solo string. Eso bloqueaba paralelismo: si el driver
+  // llegaba antes de que el comercio dijera "listo", el comercio no podía
+  // marcar listo (el endpoint chequeaba `status IN ("PREPARING","DRIVER_ASSIGNED")`
+  // y rechazaba "DRIVER_ARRIVED"). Bug reportado en smoke test pre-launch.
+  //
+  // SOLUCIÓN: dos campos independientes. `status` queda como vista derivada
+  // calculada en cada transición (ver src/lib/orders/derive-status.ts).
+  //
+  //   merchantStatus:
+  //     PREPARING → READY → PICKED_UP → RETURNED (si no-show)
+  //
+  //   driverStatus:
+  //     ASSIGNED → AT_MERCHANT → ON_ROUTE_TO_CUSTOMER → AT_CUSTOMER
+  //              → WAITING_FOR_CUSTOMER → DELIVERED
+  //              (alt) WAITING_FOR_CUSTOMER → RETURNING_TO_MERCHANT → RETURNED
+  //
+  // Sincronización solo en dos puntos:
+  //   - Pickup PIN: requiere merchantStatus=READY AND driverStatus=AT_MERCHANT
+  //   - Delivery PIN: requiere driverStatus=WAITING_FOR_CUSTOMER
+  //
+  // NULLABLE para no romper SubOrders existentes; helpers en src/lib/orders/
+  // hacen fallback a `status` legacy cuando son null.
+  merchantStatus       String?    @default("PREPARING")
+  driverStatus         String?    @default("ASSIGNED")
+  // ─── No-show flow (cliente no apareció en domicilio) ─────────────────────
+  // Cuando el driver toca "Llegué" → driverStatus pasa a WAITING_FOR_CUSTOMER
+  // y se setea waitingStartedAt. El driver no puede marcar "Cliente no responde"
+  // hasta que pase >= 10 min desde waitingStartedAt (validación en endpoint).
+  //
+  // Si marca no-show → noShowReportedAt se setea, payoutHoldUntil = +24h.
+  // El payout del driver queda en hold por 24h: si el cliente no reclama,
+  // se libera. Si reclama, queda congelado para review manual de OPS.
+  // noShowFlag se usa en buildSubOrderFinancialSnapshot para aplicar la
+  // política de cobro especial (cliente paga 100%, driver +$300, Moovy
+  // come la comisión).
+  waitingStartedAt     DateTime?
+  noShowReportedAt     DateTime?
+  payoutHoldUntil      DateTime?
+  noShowFlag           Boolean    @default(false)
 
   @@index([status])
   @@index([paymentStatus])
@@ -499,6 +557,8 @@ model SubOrder {
   @@index([merchantId])
   @@index([orderId])
   @@index([driverId])
+  @@index([merchantStatus])
+  @@index([driverStatus])
 }
 
 model Merchant {

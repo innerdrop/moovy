@@ -10,6 +10,116 @@
 
 ---
 
+## 2026-05-06 (rama `fix/state-machine-paralela-merchant-driver`)
+
+fix: state machine paralela merchant + driver, PIN 4 digitos, bulk fix de filtros de estados
+
+PROBLEMA RAIZ: el campo `Order.status` mezclaba el flujo del comercio con el del driver
+en un solo string. Eso bloqueaba paralelismo (merchant no podia marcar listo si el
+driver ya habia llegado) y multiples filtros hardcodeados de estados activos olvidaban
+agregar estados nuevos del flujo (DRIVER_ARRIVED), haciendo que pedidos en curso
+"desapareciera" o quedaran mal clasificados en buyer/comercio/driver/admin.
+
+SCHEMA (Order y SubOrder):
+- merchantStatus: PREPARING -> READY -> PICKED_UP -> RETURNED (independiente)
+- driverStatus: ASSIGNED -> AT_MERCHANT -> ON_ROUTE_TO_CUSTOMER -> AT_CUSTOMER ->
+  WAITING_FOR_CUSTOMER -> DELIVERED (independiente; alt: RETURNING_TO_MERCHANT -> RETURNED)
+- waitingStartedAt, noShowReportedAt, payoutHoldUntil, noShowFlag (preparados
+  para futura rama de no-show flow)
+- `status` legacy queda como vista derivada (deriveLegacyStatus)
+
+HELPER CANONICO src/lib/orders/order-status-machine.ts:
+- legacyStatusToParallel + getEffectiveMerchantStatus + getEffectiveDriverStatus
+  para back-fill y compat con consumers viejos
+- DRIVER_ACTIVE_STATUSES, DRIVER_HISTORICAL_STATUSES (parallel)
+- LEGACY_TERMINAL_STATUSES, LEGACY_ACTIVE_STATUSES (legacy)
+- Patron canonico: enumerar terminales (chico, estable) y derivar
+  "activo = NO terminal" -> estados nuevos del flujo caen automaticamente
+  en activos sin tocar filtros
+
+PIN doble cambiado de 6 a 4 digitos:
+- src/lib/pin.ts: generatePin, sanitizePinInput, formatPinForDisplay
+- src/lib/pin-verification.ts: validacion shape
+- src/components/rider/PinKeypad.tsx: PIN_LENGTH + textos UI
+- scripts/test-pin-verification.ts: tests + regex actualizados
+- Razon: estandar industria (Rappi/PedidosYa/Uber Eats/Glovo). UX a -5C
+  con guantes. Anti-fraude conservado por rate limit + geofence + auto-suspend.
+
+BUG 1 - Driver dashboard mandaba pedidos a Historial:
+- src/app/api/driver/dashboard/route.ts: filtra por driverStatus paralelo +
+  fallback legacy con OR (cubre pedidos viejos sin merchantStatus seteado).
+
+BUG 2 - Merchant bloqueado para "Listo" cuando driver ya llego:
+- src/app/api/merchant/orders/[id]/ready/route.ts: chequea merchantStatus,
+  no status legacy. Permite marcar listo independiente del driverStatus.
+
+BUG 3 - Buyer ve pedido en Historial al "Llegue al comercio":
+- src/app/(store)/mis-pedidos/page.tsx: invertido a TERMINAL_STATUSES + activo derivado
+- src/app/(store)/mis-pedidos/[orderId]/page.tsx: agregado DRIVER_ARRIVED al
+  timeline + showMap + tracking
+- src/components/orders/OrderTrackingMiniMap.tsx: TRACKABLE_STATUSES con DRIVER_ARRIVED
+
+BUG 4 - Comercio panel manda pedido a "Todos":
+- src/app/comercios/(protected)/pedidos/page.tsx: isActiveStatus() derivado
+  (NO completed AND NO failed). failedStatuses ampliado con REFUNDED, EXPIRED,
+  RETURNED para futuro-proof.
+
+BULK FIX (5 endpoints + KPI dashboard):
+- src/app/api/orders/active/route.ts
+- src/app/api/admin/active-orders/route.ts
+- src/app/api/ops/orders/live/route.ts (+ bucket driverFlow nuevo)
+- src/app/ops/(protected)/dashboard/page.tsx (KPI activeOrders)
+- src/app/api/driver/orders/route.ts (3 tabs)
+Todos migrados a `notIn: LEGACY_TERMINAL_STATUSES` para que estados nuevos
+del flujo no rompan los listings.
+
+CLAIM y STATUS endpoints actualizados para mantener parallel + legacy en sync:
+- src/app/api/driver/orders/[id]/claim/route.ts: setea driverStatus="ASSIGNED"
+- src/app/api/driver/orders/[id]/status/route.ts: actualiza driverStatus +
+  merchantStatus en cada transicion (DRIVER_ARRIVED, PICKED_UP, DELIVERED)
+
+BUG 5 - Comercio no se actualiza en tiempo real con nuevos pedidos:
+- src/app/comercios/(protected)/pedidos/page.tsx: polling adaptativo bajado
+  de 60s a 10s constante. Socket sigue como primary path. Agregado log visible
+  en consola para debug del estado de conexion.
+
+BUG 6 - Notas del cliente al repartidor no llegaban al driver:
+- src/app/api/driver/dashboard/route.ts: deliveryNotes en payload de oferta
+  + pedido activo
+- src/app/api/driver/orders/route.ts: deliveryNotes en output de 3 tabs
+- src/app/repartidor/(protected)/dashboard/page.tsx: banner ambar con notas
+  visible en oferta (antes de aceptar) y en pedido activo (durante todo el flow).
+- Type Order y PendingOrderOffer: deliveryNotes?: string | null
+
+INFRA:
+- scripts/start.ps1: fix em-dash em-dash UTF-8 sin BOM (rompia parser PowerShell 5.1)
+- scripts/tsc-strict.ps1: reescritura ASCII puro (sin box-drawing chars,
+  emojis, em-dashes, tildes en comentarios). Captura log del build a archivo
+  temporal y lo muestra si falla (antes silenciaba el output con Out-Null).
+- scripts/finish.ps1: pre-flight PSParser::Tokenize + invocacion via
+  powershell.exe -File (subproceso) para que parse errors propaguen exit code.
+  Antes silenciosamente continuaba commiteando aunque tsc-strict no parseara.
+- scripts/clean-old-orders.ts: script ad-hoc para limpiar pedidos viejos de
+  prueba sin tocar zonas, comercios, drivers, productos.
+
+TESTING:
+- 12/12 tests de PIN pasando (tras update a 4 digitos)
+- DB limpiada: 23 orders viejos eliminados, 4 zonas / 5 merchants / 4 drivers /
+  9 products preservados
+- Smoke test end-to-end del flow normal (buyer paga -> comercio acepta y marca
+  listo -> driver retira con PIN 4 digitos -> delivery con PIN 4 digitos -> DELIVERED)
+  funciona sin trabarse en ningun panel (buyer / comercio / driver / ops live).
+
+POST-LAUNCH (anotado, NO en esta rama):
+- feat/payment-pending-cancellation: cancelar pedidos sin pago + cron auto-cancel 30min
+- feat/driver-offer-map-and-timer: mapa preview en oferta + countdown visible
+- feat/driver-availability-checkout: pre-validacion drivers + auto-refund sin drivers
+- No-show flow completo (UI driver para WAITING_FOR_CUSTOMER, devolucion al comercio)
+- Limpieza de PIN sanitization en api/orders/[id]/route.ts (incluir DRIVER_ARRIVED
+  cuando se implemente AT_CUSTOMER en parallel)
+
+**Archivos:** prisma/schema.prisma, scripts/clean-old-orders.ts, scripts/finish.ps1, scripts/start.ps1, scripts/test-pin-verification.ts, scripts/tsc-strict.ps1, src/app/(store)/mis-pedidos/[orderId]/page.tsx, src/app/(store)/mis-pedidos/page.tsx (+16 mas)
+
 ## 2026-05-05 (rama `fix/delivery-fee-preview-vs-cobro`)
 
 fix(delivery): unificar fee preview vs cobro + auto-flujo de ramas + zona fallback. Bug crítico: el preview en /api/delivery/calculate usaba calculateDeliveryCost (delivery.ts, fórmula maestra con factor 2.2) mientras que POST /api/orders usaba calculateShippingCost (shipping-cost-calculator.ts, por categoría de paquete) — el cliente veía $2.763 en checkout pero al pagar se cobraba $1.315 (FRAUD ALERT por diff >25%). Fix: el preview ahora replica EXACTAMENTE el flow del POST (calculateShippingCost MEDIUM/STANDARD/orderTotal=0 → suma operacional 5% subtotal → climate multiplier → zone multiplier). Cliente y server muestran el mismo monto al peso. UX checkout: agregado useEffect con debounce 500ms que dispara calculateDelivery automáticamente al cargar el checkout cuando hay address con street+number (no exige lat/lng — el endpoint hace geocoding fallback con Google Maps si faltan coords). Antes el fee solo aparecía al tocar "Continuar al pago"; ahora se muestra inline en "Tu Pedido" desde el primer render. Helper delivery-zones.ts: getZoneForLocation devuelve la zona con displayOrder más BAJO como fallback cuando no hay match en ningún polígono — patrón "capa base + modificadoras" estilo Glovo/Rappi/PedidosYa que elimina los gaps milimétricos entre zonas dibujadas a mano. Cero gaps lógicos: si el admin solo dibuja B y C, las direcciones que caen fuera caen automáticamente en A. Quitado el modal de warning de overlaps en /ops/zonas-delivery porque el approach nuevo asume overlaps intencionales (Zona A grande cubre todo, B y C encima ganan por displayOrder DESC); el endpoint sigue logueando overlapsCount en Pino para debug futuro. Doble verificación TypeScript: tsconfig.json mantiene .next/dev/types en include (Next.js lo regenera en cada start del dev) pero suma .next/dev en exclude (TSC respeta exclude sobre include). tsconfig.strict.json nuevo extiende del base e incluye TODO. scripts/tsc-strict.ps1 nuevo limpia .next, regenera tipos con next build, y corre tsc strict. scripts/finish.ps1 ahora ejecuta tsc-strict ANTES de cualquier acción de git/db; si falla aborta el commit con SKIP_TSC=1 como override. Auto-flujo de ramas: scripts/finish.ps1 lee .commit-message del root si existe (en vez del prompt interactivo), lo usa para el commit y lo borra post-exitoso. scripts/start.ps1 lee .next-branch (formato "tipo nombre" en una o dos líneas), crea la rama sin prompts y borra el archivo. Sanitiza el nombre (espacios → guiones, sin chars especiales). Ambos archivos en .gitignore. Mauro deja de pegar mensajes y elegir tipos: yo los dejo pre-cargados. Fallback a modo interactivo si los archivos no existen. Archivos modificados: src/app/api/delivery/calculate/route.ts, src/app/(store)/checkout/page.tsx, src/lib/delivery-zones.ts, src/app/ops/(protected)/zonas-delivery/ZonesDeliveryClient.tsx, tsconfig.json, scripts/finish.ps1, scripts/start.ps1, .gitignore. Archivos nuevos: tsconfig.strict.json, scripts/tsc-strict.ps1.

@@ -45,6 +45,11 @@ export async function POST(
                 driverId: driver.id,
                 status: "DRIVER_ASSIGNED",
                 deliveryStatus: "DRIVER_ASSIGNED",
+                // Rama fix/state-machine-paralela-merchant-driver:
+                // setear driverStatus paralelo cuando el driver acepta.
+                // El dashboard filtra por driverStatus IN DRIVER_ACTIVE_STATUSES,
+                // y "ASSIGNED" es el primer estado activo del flujo del driver.
+                driverStatus: "ASSIGNED",
             },
         });
 

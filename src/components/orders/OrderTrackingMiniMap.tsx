@@ -132,17 +132,21 @@ function OrderTrackingMiniMapInner({
 
     const { isLoaded } = useGoogleMaps();
 
+    // Estados durante los cuales el driver está activo en el mapa.
+    // Rama fix/state-machine-paralela-merchant-driver: agregado DRIVER_ARRIVED
+    // (driver llegó al comercio, sigue trackeable mientras espera el pickup).
+    const TRACKABLE_STATUSES = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"];
+
     // Get socket auth token
     const { token: socketToken } = useSocketAuth(
-        ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(orderStatus)
+        TRACKABLE_STATUSES.includes(orderStatus)
     );
 
     // Handle Socket Connection
     useEffect(() => {
         if (!orderId || !socketToken) return;
 
-        const trackableStatuses = ["DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
-        if (!trackableStatuses.includes(orderStatus)) return;
+        if (!TRACKABLE_STATUSES.includes(orderStatus)) return;
 
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "https://somosmoovy.com";
         const socket = io(`${socketUrl}/logistica`, {

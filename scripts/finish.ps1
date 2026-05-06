@@ -78,19 +78,52 @@ if ([string]::IsNullOrWhiteSpace($Message)) {
     Stop-WithError "El mensaje de commit no puede estar vacio"
 }
 
-# 4. Doble verificación de TypeScript (rama fix/delivery-fee-preview-vs-cobro)
+# 4. Doble verificacion de TypeScript
 # Corre tsc-strict.ps1 que limpia .next/, regenera tipos y valida con
 # tsconfig.strict.json. Si falla, abortamos antes de tocar git/db.
+#
+# IMPORTANTE: invocamos via `powershell.exe -File` (subproceso) en vez de
+# `& "$path"` (mismo PowerShell). Razon: si tsc-strict.ps1 tiene un parse
+# error de PowerShell (ej: caracteres UTF-8 sin BOM mal interpretados),
+# `& "$path"` deja pasar el error sin setear $LASTEXITCODE, y finish.ps1
+# continuaba commiteando como si todo hubiera salido bien. Con subproceso
+# el parse error retorna exit code != 0 y aca abortamos.
+#
+# Pre-flight check adicional: parseamos el script con PSParser ANTES de
+# invocarlo. Si tiene tokens invalidos, abortamos con mensaje claro.
+#
 # El skip-tsc flag (env var) permite saltearlo en emergencias.
 if ($env:SKIP_TSC -eq "1") {
     Write-Host "[TSC] Saltado por SKIP_TSC=1 (NO recomendado)" -ForegroundColor Yellow
 } else {
     Write-Host ""
     Write-Host "[TSC] Doble verificacion de tipos antes de commitear (~20s)..." -ForegroundColor Yellow
-    Write-Host "      Para saltear: \$env:SKIP_TSC=1 y volve a correr finish.ps1"
-    & "$PSScriptRoot\tsc-strict.ps1"
-    if ($LASTEXITCODE -ne 0) {
-        Stop-WithError "[TSC] tsc-strict fallo - corregi los errores de tipos antes de cerrar la rama."
+    Write-Host "      Para saltear: `$env:SKIP_TSC=1 y volve a correr finish.ps1"
+
+    $tscScriptPath = Join-Path $PSScriptRoot "tsc-strict.ps1"
+    if (-not (Test-Path $tscScriptPath)) {
+        Stop-WithError "[TSC] No encontre $tscScriptPath. Algo raro paso con el repo."
+    }
+
+    # Pre-flight: parsear el script para detectar errores de encoding antes de invocar
+    $parseErrors = $null
+    $null = [System.Management.Automation.PSParser]::Tokenize(
+        (Get-Content $tscScriptPath -Raw),
+        [ref]$parseErrors
+    )
+    if ($parseErrors -and $parseErrors.Count -gt 0) {
+        Write-Host "[TSC] tsc-strict.ps1 tiene errores de parseo (probable encoding UTF-8 sin BOM):" -ForegroundColor Red
+        foreach ($pe in $parseErrors) {
+            Write-Host "      Linea $($pe.Token.StartLine): $($pe.Message)" -ForegroundColor Red
+        }
+        Stop-WithError "[TSC] tsc-strict.ps1 no parsea -- arregla el script antes de cerrar la rama."
+    }
+
+    # Invocar como subproceso para que parse errors propaguen exit code
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $tscScriptPath
+    $tscExit = $LASTEXITCODE
+    if ($tscExit -ne 0) {
+        Stop-WithError "[TSC] tsc-strict fallo (exit code $tscExit) - corregi los errores de tipos antes de cerrar la rama."
     }
 }
 

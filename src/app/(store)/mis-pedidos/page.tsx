@@ -72,6 +72,7 @@ const statusConfig: Record<string, {
     PREPARING: { label: "En preparacion", color: "text-red-600", bg: "bg-red-50", dot: "bg-red-500", icon: <Package className="w-4 h-4" />, step: 3 },
     READY: { label: "Listo para retirar", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500", icon: <Package className="w-4 h-4" />, step: 4 },
     DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500", icon: <Truck className="w-4 h-4" />, step: 5 },
+    DRIVER_ARRIVED: { label: "Repartidor en el comercio", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500", icon: <Truck className="w-4 h-4" />, step: 5 },
     PICKED_UP: { label: "Retirado", color: "text-orange-600", bg: "bg-orange-50", dot: "bg-orange-500", icon: <Truck className="w-4 h-4" />, step: 6 },
     IN_DELIVERY: { label: "En camino", color: "text-[#e60012]", bg: "bg-red-50", dot: "bg-[#e60012]", icon: <Truck className="w-4 h-4" />, step: 7 },
     DELIVERED: { label: "Entregado", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500", icon: <CheckCircle className="w-4 h-4" />, step: 8 },
@@ -235,11 +236,28 @@ export default function MisPedidosPage() {
         };
     }, [isAuth, orders, loadOrders]);
 
-    // fix/bugs-checkout-pre-launch (Bug A): AWAITING_PAYMENT también es "en curso" — el pedido
-    // ya fue creado y está esperando que MP confirme el pago. Antes caía en "Historial".
-    const activeStatuses = useMemo(() => ["PENDING", "AWAITING_PAYMENT", "PENDING_PAYMENT", "SCHEDULED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"], []);
-    const activeOrders = useMemo(() => orders.filter(o => activeStatuses.includes(o.status)), [orders, activeStatuses]);
-    const historyOrders = useMemo(() => orders.filter(o => !activeStatuses.includes(o.status)), [orders, activeStatuses]);
+    // fix/state-machine-paralela-merchant-driver (Bug 3 buyer-historial-prematuro):
+    // Antes la lista enumeraba estados activos (PENDING, CONFIRMED, PREPARING, ...),
+    // y CADA estado nuevo del flujo (DRIVER_ARRIVED, RETURNING, WAITING_FOR_CUSTOMER, ...)
+    // que se olvidaba quedaba mal clasificado: el pedido en curso aparecía en "Historial"
+    // y el cliente creía que se le había cancelado.
+    //
+    // Solución canónica: definir el conjunto TERMINAL (chico, estable, raramente se agrega
+    // algo) y derivar "activo = NO terminal". Así futuros estados nuevos no rompen el filtro.
+    //
+    // TERMINAL = estados desde los que el pedido NO puede volver a ningún flujo activo.
+    const TERMINAL_STATUSES = useMemo(
+        () => ["DELIVERED", "CANCELLED", "RETURNED", "REFUNDED", "EXPIRED"],
+        []
+    );
+    const activeOrders = useMemo(
+        () => orders.filter(o => !TERMINAL_STATUSES.includes(o.status)),
+        [orders, TERMINAL_STATUSES]
+    );
+    const historyOrders = useMemo(
+        () => orders.filter(o => TERMINAL_STATUSES.includes(o.status)),
+        [orders, TERMINAL_STATUSES]
+    );
     const filtered = tab === "active" ? activeOrders : historyOrders;
 
     // ─── Loading / Unauthenticated ───
@@ -341,7 +359,7 @@ export default function MisPedidosPage() {
                     <div className="space-y-3 lg:space-y-4">
                         {filtered.map((order, idx) => {
                             const st = statusConfig[order.status] || statusConfig.PENDING;
-                            const isActive = activeStatuses.includes(order.status);
+                            const isActive = !TERMINAL_STATUSES.includes(order.status);
                             const isCancelled = order.status === "CANCELLED";
 
                             return (

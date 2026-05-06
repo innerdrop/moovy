@@ -7,21 +7,29 @@
  *
  * Generación: crypto.randomInt para entropía criptográfica.
  * Comparación: timingSafeEqual para prevenir ataques de timing.
- * Formato: 6 dígitos con leading zeros (ej: "048291").
+ * Formato: 4 dígitos con leading zeros (ej: "0482").
+ *
+ * LONGITUD = 4 (rama fix/state-machine-paralela-merchant-driver):
+ * Estándar industria (Rappi/PedidosYa/Uber Eats/Glovo). 4 dígitos da 10.000
+ * combinaciones, suficiente con las defensas en capa: rate limit 5 intentos
+ * (PIN_MAX_ATTEMPTS), geofence 100m, PIN único por SubOrder, auto-suspend a
+ * 3 fraudScore (PIN_FRAUD_THRESHOLD), hold 24h del payout en no-show.
+ * UX: comercio dictándolo a -5°C con guantes, cliente recordándolo de cabeza.
  */
 
 import { randomInt, timingSafeEqual } from "crypto";
 
 /**
- * Genera un PIN de 6 dígitos con leading zeros.
- * Rango: 000000-999999 (1M posibles combinaciones).
+ * Genera un PIN de 4 dígitos con leading zeros.
+ * Rango: 0000-9999 (10K posibles combinaciones).
  *
- * Probabilidad de colisión en 100K pedidos/mes: ~0.5% (aceptable porque
- * el PIN es específico al orderId, no es un identificador global).
+ * Probabilidad de colisión: irrelevante porque el PIN es específico al
+ * SubOrder (no global). Dos pedidos en paralelo pueden compartir el mismo PIN
+ * sin riesgo, porque la validación lo cruza con el SubOrder específico.
  */
 export function generatePin(): string {
-    const n = randomInt(0, 1_000_000);
-    return n.toString().padStart(6, "0");
+    const n = randomInt(0, 10_000);
+    return n.toString().padStart(4, "0");
 }
 
 /**
@@ -57,20 +65,21 @@ export function verifyPin(input: string | null | undefined, stored: string | nul
 
 /**
  * Sanitiza un input de PIN (elimina espacios, caracteres no numéricos).
- * Útil para tolerar inputs como "048 291" o "048-291".
+ * Útil para tolerar inputs como "04-82" o "04 82".
  */
 export function sanitizePinInput(input: string | null | undefined): string {
     if (!input) return "";
-    return input.replace(/\D/g, "").slice(0, 6);
+    return input.replace(/\D/g, "").slice(0, 4);
 }
 
 /**
- * Formatea un PIN "048291" como "048 291" para mostrar en UI.
- * Facilita la lectura visual y dictado verbal (driver ↔ comercio/buyer).
+ * Formatea un PIN para display. Con 4 dígitos lo dejamos junto ("1234"),
+ * la gente lo lee y recuerda como un bloque (igual que código de cajero,
+ * CVV, código SMS). Separarlo en "12 34" introduce ruido visual sin valor.
  */
 export function formatPinForDisplay(pin: string | null | undefined): string {
-    if (!pin || pin.length !== 6) return pin ?? "";
-    return `${pin.slice(0, 3)} ${pin.slice(3)}`;
+    if (!pin) return "";
+    return pin;
 }
 
 /**

@@ -1,6 +1,7 @@
 // Admin Dashboard - Panel Principal
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/delivery";
+import { LEGACY_TERMINAL_STATUSES } from "@/lib/orders/order-status-machine";
 import {
     Package,
     ShoppingCart,
@@ -73,8 +74,21 @@ async function getStats() {
             // Orders
             prisma.order.count(),
             prisma.order.count({ where: { status: "PENDING" } }),
+            // Rama fix/state-machine-paralela-merchant-driver: cualquier pedido NO terminal
+            // y NO pendiente de pago. Antes la lista hardcodeada olvidaba DRIVER_ARRIVED y
+            // pedidos con driver en el comercio se contaban como cero en el KPI.
             prisma.order.count({
-                where: { status: { in: ["CONFIRMED", "PREPARING", "READY", "IN_DELIVERY"] } },
+                where: {
+                    status: {
+                        notIn: [
+                            ...LEGACY_TERMINAL_STATUSES,
+                            "PENDING",
+                            "AWAITING_PAYMENT",
+                            "PENDING_PAYMENT",
+                        ],
+                    },
+                    deletedAt: null,
+                },
             }),
             prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
             prisma.order.count({

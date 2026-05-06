@@ -137,6 +137,7 @@ const timeline = [
     { key: "PREPARING", label: "Preparando tu pedido", icon: Package },
     { key: "READY", label: "Listo para retirar", icon: Package },
     { key: "DRIVER_ASSIGNED", label: "Repartidor en camino al local", icon: Truck },
+    { key: "DRIVER_ARRIVED", label: "Repartidor en el comercio", icon: Truck },
     { key: "PICKED_UP", label: "Pedido retirado", icon: Truck },
     { key: "IN_DELIVERY", label: "En camino a tu domicilio", icon: Truck },
     { key: "DELIVERED", label: "Entregado", icon: CheckCircle },
@@ -325,7 +326,7 @@ export default function OrderDetailPage() {
     const canCancel = order && ["PENDING", "CONFIRMED"].includes(order.status);
     const isDelivered = order?.status === "DELIVERED";
     const isCancelled = order?.status === "CANCELLED";
-    const showMap = isActive && ["READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status || "");
+    const showMap = isActive && ["READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status || "");
 
     const currentStepIdx = useMemo(() => {
         if (!order) return -1;

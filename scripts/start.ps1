@@ -47,7 +47,7 @@ if (Test-Path $nextBranchFile) {
                 Write-Host "      Tipo:   $prefix" -ForegroundColor Gray
                 Write-Host "      Nombre: $name" -ForegroundColor Gray
             } else {
-                Write-Host "[BRANCH] .next-branch tiene tipo invalido '$candidatePrefix' — falling back a prompt" -ForegroundColor Yellow
+                Write-Host "[BRANCH] .next-branch tiene tipo invalido '$candidatePrefix' -- falling back a prompt" -ForegroundColor Yellow
             }
         }
     }

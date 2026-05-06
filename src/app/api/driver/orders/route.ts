@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireDriverApi } from "@/lib/driver-auth";
+import { LEGACY_TERMINAL_STATUSES } from "@/lib/orders/order-status-machine";
 
 export const dynamic = "force-dynamic";
 
@@ -64,12 +65,15 @@ export async function GET(request: Request) {
 
             orders = rawOrders;
         } else if (status === "activos") {
-            // My active deliveries
+            // My active deliveries — rama fix/state-machine-paralela-merchant-driver:
+            // antes filtraba sólo por ["IN_DELIVERY", "PICKED_UP"] y un pedido en
+            // DRIVER_ASSIGNED/DRIVER_ARRIVED no aparecía en este tab. Ahora filtra
+            // por NO terminales (cualquier estado activo del flujo).
             if (driver) {
                 const rawOrders = await prisma.order.findMany({
                     where: {
                         driverId: driver.id,
-                        status: { in: ["IN_DELIVERY", "PICKED_UP"] },
+                        status: { notIn: [...LEGACY_TERMINAL_STATUSES] },
                     },
                     include: orderInclude,
                     orderBy: { createdAt: "asc" },
@@ -77,12 +81,13 @@ export async function GET(request: Request) {
                 orders = rawOrders;
             }
         } else if (status === "historial") {
-            // My completed/cancelled deliveries
+            // My completed/cancelled deliveries — incluir todos los terminales
+            // (DELIVERED, CANCELLED, REJECTED, UNASSIGNABLE, REFUNDED, EXPIRED, RETURNED).
             if (driver) {
                 const rawOrders = await prisma.order.findMany({
                     where: {
                         driverId: driver.id,
-                        status: { in: ["DELIVERED", "CANCELLED"] },
+                        status: { in: [...LEGACY_TERMINAL_STATUSES] },
                     },
                     include: orderInclude,
                     orderBy: { createdAt: "desc" },
@@ -102,6 +107,8 @@ export async function GET(request: Request) {
             estado: o.status,
             total: o.total,
             createdAt: o.createdAt,
+            // Notas del cliente al repartidor (Bug 6 rama fix/state-machine-paralela)
+            deliveryNotes: o.deliveryNotes || null,
         }));
 
         return NextResponse.json(formattedOrders);

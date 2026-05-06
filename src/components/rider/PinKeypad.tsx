@@ -1,8 +1,10 @@
 "use client";
 
 // ISSUE-001: PIN doble de entrega
-// Modal con keypad numérico de 6 dígitos para que el driver ingrese el PIN
+// Modal con keypad numérico de 4 dígitos para que el driver ingrese el PIN
 // entregado por el comercio (pickup) o por el comprador (delivery).
+// Longitud cambiada a 4 en rama fix/state-machine-paralela-merchant-driver
+// (estándar industria + UX a -5°C con guantes).
 // Diseñado para uso en calle: botones grandes, feedback háptico, tolerante a
 // errores (backspace, paste desde portapapeles, instrucciones claras).
 import { useEffect, useState, useCallback } from "react";
@@ -33,7 +35,7 @@ interface PinKeypadProps {
     onVerified?: () => void | Promise<void>;
 }
 
-const PIN_LENGTH = 6;
+const PIN_LENGTH = 4;
 
 const haptic = {
     light: () => typeof navigator !== "undefined" && navigator.vibrate?.(10),
@@ -74,8 +76,8 @@ export default function PinKeypad({
     const title = pinType === "pickup" ? "PIN de retiro" : "PIN de entrega";
     const subtitle =
         pinType === "pickup"
-            ? `Pedile al comercio${counterpartName ? ` (${counterpartName})` : ""} el código de 6 dígitos`
-            : `Pedile al comprador${counterpartName ? ` (${counterpartName})` : ""} el código de 6 dígitos`;
+            ? `Pedile al comercio${counterpartName ? ` (${counterpartName})` : ""} el código de 4 dígitos`
+            : `Pedile al comprador${counterpartName ? ` (${counterpartName})` : ""} el código de 4 dígitos`;
 
     const submit = useCallback(
         async (fullPin: string) => {
@@ -126,7 +128,7 @@ export default function PinKeypad({
             setPin(next);
             setError(null);
             setErrorCode(null);
-            // Auto-submit cuando se alcanzan los 6 dígitos
+            // Auto-submit cuando se alcanzan los 4 dígitos
             if (next.length === PIN_LENGTH) {
                 submit(next);
             }
@@ -206,7 +208,7 @@ export default function PinKeypad({
                     </button>
                 </div>
 
-                {/* 6-digit display */}
+                {/* 4-digit display */}
                 <div className="flex justify-center gap-2 sm:gap-3 mb-4" role="group" aria-label="Dígitos del PIN">
                     {Array.from({ length: PIN_LENGTH }).map((_, i) => {
                         const filled = i < pin.length;

@@ -1,10 +1,21 @@
-// Merchant Mark Order Ready — PREPARING → READY + notify driver
+// Merchant Mark Order Ready — merchantStatus PREPARING -> READY + notify driver
+//
+// Rama fix/state-machine-paralela-merchant-driver:
+// Antes chequeaba `order.status IN ["PREPARING","DRIVER_ASSIGNED"]` y bloqueaba
+// cuando el driver ya había llegado (status = "DRIVER_ARRIVED"). Ahora chequea
+// el merchantStatus paralelo, independiente del flujo del driver. El comercio
+// puede marcar listo en cualquier momento mientras esté en PREPARING.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyDriver, notifyBuyer } from "@/lib/notifications";
 import { sendOrderReadyForPickupEmail } from "@/lib/email-legal-ux";
+import {
+    getEffectiveMerchantStatus,
+    getEffectiveDriverStatus,
+    deriveLegacyStatus,
+} from "@/lib/orders/order-status-machine";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
 
@@ -50,6 +61,8 @@ export async function POST(
             select: {
                 id: true,
                 status: true,
+                merchantStatus: true,
+                driverStatus: true,
                 merchantId: true,
                 userId: true,
                 orderNumber: true,
@@ -67,22 +80,36 @@ export async function POST(
             return NextResponse.json({ error: "Pedido no pertenece a tu comercio" }, { status: 403 });
         }
 
-        // Allow PREPARING or DRIVER_ASSIGNED → READY
-        const readyableStatuses = ["PREPARING", "DRIVER_ASSIGNED"];
-        if (!readyableStatuses.includes(order.status)) {
+        // El comercio puede marcar READY siempre que esté en PREPARING,
+        // independiente de dónde esté el driver (incluso si ya llegó).
+        // Esto fixea el bug pre-launch: antes bloqueaba cuando driver=DRIVER_ARRIVED.
+        const effectiveMerchantStatus = getEffectiveMerchantStatus(order);
+        if (effectiveMerchantStatus !== "PREPARING") {
             return NextResponse.json(
-                { error: `No se puede marcar como listo un pedido en estado ${order.status}` },
+                { error: `El pedido ya está en estado ${effectiveMerchantStatus.toLowerCase()}, no se puede marcar como listo otra vez` },
                 { status: 400 }
             );
         }
 
-        // Atomic conditional update to prevent race condition
+        // Recalcular `status` legacy a partir de los campos parallel (mantener consumers en sync)
+        const newDriverStatus = getEffectiveDriverStatus(order);
+        const newLegacyStatus = deriveLegacyStatus("READY", newDriverStatus);
+
+        // Atomic conditional update: solo si merchantStatus sigue en PREPARING
+        // (defensa contra race con otro click simultaneo)
         const updateResult = await prisma.order.updateMany({
             where: {
                 id: orderId,
-                status: { in: readyableStatuses },
+                OR: [
+                    { merchantStatus: "PREPARING" },
+                    // Fallback para pedidos viejos sin merchantStatus seteado
+                    { merchantStatus: null, status: { in: ["PREPARING", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"] } },
+                ],
             },
-            data: { status: "READY" },
+            data: {
+                merchantStatus: "READY",
+                status: newLegacyStatus,
+            },
         });
 
         if (updateResult.count === 0) {

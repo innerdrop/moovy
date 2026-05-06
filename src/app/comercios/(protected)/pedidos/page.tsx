@@ -323,12 +323,24 @@ export default function ComercioPedidosPage() {
         loadOrders();
     }, [loadOrders]);
 
-    // Adaptive polling: 10s when socket disconnected, 60s when connected
+    // Adaptive polling — Bug 5 (rama fix/state-machine-paralela-merchant-driver):
+    // antes era 60s con socket conectado, 10s sin. Pero 60s era muy largo:
+    // si el socket no entregaba un evento (race condition al login, evento
+    // perdido en el dispatcher, server reboot), el merchant esperaba un minuto
+    // y refrescaba manual. Bajamos a 10s siempre — el socket sigue siendo el
+    // primary path para latencia < 1s, el polling es la red de seguridad.
+    // 10s de polling es liviano: 1 query indexada cada 10s por merchant logueado.
     useEffect(() => {
-        const pollingInterval = isConnected ? 60000 : 10000;
-        const intervalId = setInterval(() => loadOrders(true), pollingInterval);
+        const intervalId = setInterval(() => loadOrders(true), 10000);
         return () => clearInterval(intervalId);
-    }, [isConnected, loadOrders]);
+    }, [loadOrders]);
+
+    // Log visible en consola para debug del socket merchant
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            console.log(`[MerchantPanel] Socket isConnected=${isConnected}, polling cada 10s como red de seguridad`);
+        }
+    }, [isConnected]);
 
     // ─── Dedicated endpoint handlers ────────────────────────────────────────
 
@@ -461,14 +473,23 @@ export default function ComercioPedidosPage() {
     //   - ACTIVE: en curso desde la perspectiva del merchant (todavía hay que hacer algo).
     //   - COMPLETED: entregado con éxito (DELIVERED).
     //   - FAILED: no llegó al buyer (sin repartidor, cancelado por merchant/buyer/admin, rechazado).
-    // Si agregamos un status nuevo a Order.status, hay que sumarlo a uno de estos 3
-    // arrays, o el tab "Todos" va a mostrar un pedido fantasma.
-    const activeStatuses = ["PENDING", "AWAITING_PAYMENT", "SCHEDULED", "SCHEDULED_CONFIRMED", "CONFIRMED", "PREPARING", "READY", "DRIVER_ASSIGNED", "PICKED_UP", "IN_DELIVERY"];
+    //
+    // PATRÓN INVERTIDO (rama fix/state-machine-paralela-merchant-driver):
+    // Antes ACTIVE era una enumeración hardcodeada y cada estado nuevo del flujo
+    // (DRIVER_ARRIVED, RETURNING_TO_MERCHANT, WAITING_FOR_CUSTOMER, ...) que se
+    // olvidaba quedaba mal clasificado: pedidos en curso aparecían en "Todos"
+    // pero NO en "Activos". Bug 4 reportado en smoke test pre-launch.
+    //
+    // Solución: enumerar SOLO los terminales (chico, estable) y derivar
+    // "ACTIVE = NO terminal". Estados nuevos del flujo caen en ACTIVE
+    // automáticamente sin tocar este filtro.
     const completedStatuses = ["DELIVERED"];
-    const failedStatuses = ["UNASSIGNABLE", "CANCELLED", "REJECTED"];
+    const failedStatuses = ["UNASSIGNABLE", "CANCELLED", "REJECTED", "REFUNDED", "EXPIRED", "RETURNED"];
+    const isActiveStatus = (s: string) =>
+        !completedStatuses.includes(s) && !failedStatuses.includes(s);
 
     const filteredOrders = orders.filter(order => {
-        if (filter === "active" && !activeStatuses.includes(order.status)) return false;
+        if (filter === "active" && !isActiveStatus(order.status)) return false;
         if (filter === "completed" && !completedStatuses.includes(order.status)) return false;
         if (filter === "failed" && !failedStatuses.includes(order.status)) return false;
         if (dateFrom) {
@@ -570,7 +591,7 @@ export default function ComercioPedidosPage() {
                 return (
             <div className="flex gap-2 bg-gray-100 p-1 rounded-xl overflow-x-auto">
                 {[
-                    { key: "active", label: "Activos", count: orders.filter(o => activeStatuses.includes(o.status)).length, tone: "default" as const },
+                    { key: "active", label: "Activos", count: orders.filter(o => isActiveStatus(o.status)).length, tone: "default" as const },
                     { key: "completed", label: "Completados", count: orders.filter(o => completedStatuses.includes(o.status)).length, tone: "default" as const },
                     { key: "failed", label: "Fallidos", count: failedCount, tone: "danger" as const },
                     { key: "all", label: "Todos", count: orders.length, tone: "default" as const },

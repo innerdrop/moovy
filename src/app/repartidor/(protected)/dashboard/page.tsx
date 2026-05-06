@@ -108,6 +108,8 @@ interface Order {
     items?: any[];
     telefonoCliente?: string;
     nombreCliente?: string;
+    // Notas del cliente al repartidor (Bug 6 rama fix/state-machine-paralela)
+    deliveryNotes?: string | null;
     // Chat targets: comercio (single-vendor) y vendedores (multi-vendor)
     hasMerchant?: boolean;
     sellersEnPedido?: Array<{ subOrderId: string; sellerName: string }>;
@@ -129,6 +131,9 @@ interface PendingOrderOffer {
     tiempoAlCliente: number;
     distanciaTotal: string;
     gananciaEstimada: number;
+    // Notas del cliente al repartidor — visibles ANTES de aceptar la oferta
+    // (Bug 6 rama fix/state-machine-paralela-merchant-driver)
+    deliveryNotes?: string | null;
 }
 
 export default function RiderDashboard() {
@@ -915,6 +920,24 @@ export default function RiderDashboard() {
                                                 </div>
                                             </div>
 
+                                            {/* Notas del cliente al repartidor — visible durante todo el flow del pedido activo.
+                                                Bug 6 rama fix/state-machine-paralela-merchant-driver: antes el campo se guardaba
+                                                en DB pero no llegaba al driver. Decisión UX: siempre visible mientras el driver
+                                                tenga el pedido, así puede leerla cuando llegue al cliente sin tener que buscar. */}
+                                            {pedidoActivo.deliveryNotes && (
+                                                <div className="mt-4 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                                                    <div className="flex items-start gap-2.5">
+                                                        <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                            <span className="text-xs font-extrabold text-white">!</span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-1">Notas del cliente</p>
+                                                            <p className="text-sm text-amber-900 dark:text-amber-100 font-semibold leading-snug whitespace-pre-wrap">{pedidoActivo.deliveryNotes}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Chat con comprador */}
                                             <OrderChatPanel
                                                 orderId={pedidoActivo.id}
@@ -1359,6 +1382,20 @@ export default function RiderDashboard() {
                                                     </div>
                                                 </div>
                                             </div>
+                                            {/* Notas del cliente al repartidor — Bug 6 rama fix/state-machine-paralela */}
+                                            {pedido.deliveryNotes && (
+                                                <div className="mb-5 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                            <span className="text-[11px] font-extrabold text-white">!</span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-1">Notas del cliente</p>
+                                                            <p className="text-[13px] text-amber-900 dark:text-amber-100 font-semibold leading-tight whitespace-pre-wrap">{pedido.deliveryNotes}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="flex gap-3">
                                                 <button
                                                     onClick={() => setDismissedOfferIds(prev => new Set([...prev, pedido.id]))}

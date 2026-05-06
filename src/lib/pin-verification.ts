@@ -85,11 +85,11 @@ export async function verifyOrderOrSubOrderPin(
 
     // 1. Sanitize + format check (prevent wasting attempts on obvious typos)
     const sanitized = sanitizePinInput(pinInput);
-    if (sanitized.length !== 6) {
+    if (sanitized.length !== 4) {
         return {
             success: false,
             status: 400,
-            error: "El PIN debe tener 6 dígitos numéricos",
+            error: "El PIN debe tener 4 dígitos numéricos",
             errorCode: "INVALID_FORMAT",
         };
     }

@@ -1,9 +1,14 @@
 // API Route: Ops Live Orders
 // Returns active orders for real-time ops monitoring
+//
+// Rama fix/state-machine-paralela-merchant-driver: filtro por NOT IN terminales
+// en vez de enumerar activos. Antes pedidos con status=DRIVER_ARRIVED desaparecían
+// del live dashboard del ops.
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { LEGACY_TERMINAL_STATUSES } from "@/lib/orders/order-status-machine";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +29,7 @@ export async function GET() {
         // y los pedidos eliminados desde /ops/pedidos quedaban "colgados" en /ops/live.
         const orders = await prisma.order.findMany({
             where: {
-                status: { in: ["PENDING", "CONFIRMED", "PREPARING", "READY", "IN_DELIVERY"] },
+                status: { notIn: [...LEGACY_TERMINAL_STATUSES] },
                 deletedAt: null,
             },
             include: {
@@ -38,12 +43,15 @@ export async function GET() {
             take: 50,
         });
 
-        // Calculate stats
+        // Calculate stats. Buckets mutuamente excluyentes — cada pedido cae en uno solo.
+        // Bucket "driverFlow" agrupa los estados donde driver ya está involucrado
+        // (asignado, llegando al comercio, o llegó al comercio sin pickup todavía).
         const stats = {
             pending: orders.filter(o => o.status === "PENDING").length,
             inProgress: orders.filter(o => ["CONFIRMED", "PREPARING"].includes(o.status)).length,
             ready: orders.filter(o => o.status === "READY").length,
-            inDelivery: orders.filter(o => o.status === "IN_DELIVERY").length,
+            driverFlow: orders.filter(o => ["DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(o.status)).length,
+            inDelivery: orders.filter(o => ["PICKED_UP", "IN_DELIVERY"].includes(o.status)).length,
         };
 
         return NextResponse.json({ orders, stats });
