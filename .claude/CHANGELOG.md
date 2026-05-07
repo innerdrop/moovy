@@ -10,6 +10,121 @@
 
 ---
 
+## 2026-05-07 (rama `feat/no-show-flow`)
+
+feat: flow no-show completo (driver llega, cliente no aparece, devolucion al comercio)
+
+PROBLEMA QUE RESUELVE:
+La regla canonica de Moovy es "el pedido jamas se cierra sin PIN". Pero hay un
+escenario edge: driver llega al domicilio del cliente y el cliente no esta.
+Antes de esta rama no habia flow operativo para eso — el driver quedaba
+trabado sin poder ni entregar ni devolver.
+
+NUEVOS ESTADOS DEL DRIVER STATE MACHINE:
+
+  driverStatus: ON_ROUTE_TO_CUSTOMER -> AT_CUSTOMER (driver entro al geofence)
+              -> WAITING_FOR_CUSTOMER (driver toco "Llegue", timer 10 min)
+              -> DELIVERED (cliente aparece, dicta PIN, fin)
+              o RETURNING_TO_MERCHANT (cliente NO aparece, vuelve al comercio)
+              -> RETURNED (driver devuelve con PIN del comercio)
+
+ENDPOINTS NUEVOS:
+
+1) POST /api/driver/orders/[id]/start-waiting
+   - Driver toca "Llegue al cliente" en el dashboard.
+   - Setea driverStatus=WAITING_FOR_CUSTOMER, waitingStartedAt=now.
+   - Push al cliente: "Tu repartidor llego. PIN: 4321. Tenes 10 minutos."
+   - Audit log de la transicion.
+   - Solo permite desde ON_ROUTE_TO_CUSTOMER o AT_CUSTOMER (idempotente).
+
+2) POST /api/driver/orders/[id]/report-no-show
+   - Driver marca "Cliente no responde".
+   - VALIDACION ANTI-FRAUDE: rechaza si pasaron <10 min desde waitingStartedAt
+     (admin puede saltarse el chequeo via override). Devuelve remainingSeconds
+     para que el frontend muestre countdown preciso.
+   - Setea driverStatus=RETURNING_TO_MERCHANT, noShowReportedAt, noShowFlag=true,
+     payoutHoldUntil=+24h (anti-fraude: si cliente impugna, hold del payout).
+   - Push al cliente: "No te encontramos. Si fue error, reporta ahora."
+   - Audit log con elapsedMinutes para investigacion en disputas.
+
+3) POST /api/driver/orders/[id]/return-to-merchant
+   - Driver vuelve al comercio. Comercio le da el MISMO PIN del pickup.
+   - Driver lo ingresa, valida con verifyOrderOrSubOrderPin (rate limit, geofence,
+     timing-safe compare).
+   - Si OK: cierra como driverStatus=RETURNED, merchantStatus=RETURNED, status=RETURNED.
+   - Audit log final del flow.
+
+LOGICA FINANCIERA NO-SHOW:
+
+src/lib/orders/order-totals.ts agrega applyNoShowAdjustment(snapshot, noShowFlag):
+  - Cliente paga 100% (responsabilidad de estar disponible).
+  - Comercio recibe normal (ya cocino/preparo).
+  - Driver recibe payout completo + bonus NO_SHOW_DRIVER_BONUS_ARS (default 300).
+  - Moovy come la comision (gesto de buena fe, separa cobro tipico).
+  - NO modifica el snapshot persistido — calcula los cobros AJUSTADOS al hacer
+    payouts. Asi se respeta la regla canonica "el snapshot original no se
+    recalcula" (necesaria para cierres fiscales AFIP).
+
+NOTIFICACIONES NUEVAS (src/lib/notifications.ts):
+
+  - notifyCustomerDriverArrived: push urgente con PIN + countdown 10 min.
+  - notifyCustomerNoShowReported: push empatico para impugnacion temprana.
+
+UI DRIVER (src/app/repartidor/(protected)/dashboard/page.tsx):
+
+  - Nuevos riderStage: "waiting_customer" y "returning_to_merchant".
+  - Componente NoShowWaitingPanel:
+    * Timer countdown 10 min visible (formato MM:SS, tabular-nums).
+    * Boton "PIN del cliente" (abre keypad para que el cliente dicte).
+    * Boton "Cliente no responde" disabled hasta cumplir 10 min reales (anti-fraude
+      del frontend, redundante con la del backend pero mejor UX).
+    * Confirm dialog antes de reportar no-show.
+  - Componente NoShowReturnPanel:
+    * Banner rojo "Volver al comercio".
+    * Boton "Ingresar PIN del comercio" abre keypad en modo returnToMerchantMode.
+  - SwipeToConfirm modificado: en deliveryStatus=PICKED_UP/IN_DELIVERY, el swipe
+    llama a /start-waiting (no directo a DELIVERED).
+  - PinModal soporta returnToMerchantMode: cuando true, valida contra
+    /return-to-merchant en vez de /verify-pickup-pin.
+  - Endpoint /api/driver/dashboard expone driverStatus, merchantStatus,
+    waitingStartedAt, noShowReportedAt para que el frontend distinga estados.
+
+PROTECCIONES ANTI-FRAUDE DEL DRIVER:
+
+  - waitingStartedAt SOLO seteado por endpoint /start-waiting (no editable
+    por el driver directamente).
+  - report-no-show rechaza si <10 min desde waitingStartedAt.
+  - payoutHoldUntil=+24h: si el cliente impugna y prueba que estaba en casa,
+    el payout queda congelado durante esa ventana para review manual.
+  - Audit logs en cada transicion con timestamps + elapsedMinutes.
+
+CONSIDERACION DE PRODUCTO:
+  El cliente paga 100% en no-show es estandar industria (Rappi, PedidosYa, Glovo).
+  La responsabilidad legal de estar en el domicilio es del cliente. Argentina
+  defensa del consumidor (Ley 24.240) exige notificacion clara y oportunidad
+  de impugnar — la notificacion push tras no-show con boton "Reportar fraude"
+  cubre esto.
+
+TESTING:
+- TSC strict pasa limpio.
+- Smoke test manual sugerido:
+    1. Driver retira pedido con PIN del comercio.
+    2. Driver llega al domicilio del cliente (geofence).
+    3. Toca "Llegue al cliente" → ve panel WAITING con countdown 10 min.
+    4. Espera 10 min reales.
+    5. Toca "Cliente no responde" → confirma → ve panel RETURN.
+    6. Vuelve al comercio. Comercio le dicta el mismo PIN del pickup.
+    7. Ingresa PIN → cierra como RETURNED.
+
+POST-LAUNCH:
+- Hold 24h del payout: la logica de payouts batch (post-launch) tiene que
+  respetar payoutHoldUntil antes de procesar.
+- Sistema de impugnacion: cliente que recibio push de no-show puede tocar
+  boton "Estaba en casa, reportar fraude" para abrir caso en /ops/fraude.
+  No implementado en esta rama — endpoint y panel quedan para rama legal/UX.
+
+**Archivos:** src/app/api/driver/dashboard/route.ts, src/app/api/driver/orders/[id]/report-no-show/route.ts, src/app/api/driver/orders/[id]/return-to-merchant/route.ts, src/app/api/driver/orders/[id]/start-waiting/route.ts, src/app/repartidor/(protected)/dashboard/page.tsx, src/lib/notifications.ts, src/lib/orders/order-totals.ts
+
 ## 2026-05-07 (rama `feat/driver-offer-map-and-timer`)
 
 feat: mapa preview + timer countdown visible en oferta del driver

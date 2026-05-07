@@ -175,3 +175,91 @@ export async function buildSubOrderFinancialSnapshot(
         zoneDriverBonus,
     };
 }
+
+// ─── No-show adjustments ────────────────────────────────────────────────────
+// Rama feat/no-show-flow: cuando el cliente no aparece en el domicilio y el
+// driver vuelve al comercio (Order.noShowFlag=true), los cobros se ajustan:
+//
+//   - Cliente paga 100% (es responsabilidad suya estar disponible).
+//     El cobro al cliente NO cambia respecto al snapshot original.
+//
+//   - Comercio recibe normal (ya cocinó/preparó). NO cambia tampoco.
+//
+//   - Driver recibe payout completo + bonus de NO_SHOW_DRIVER_BONUS_ARS pesos
+//     (compensación por viaje perdido, va de Moovy).
+//
+//   - Moovy COME la comisión del comercio (gesto de buena fe). En el
+//     adjusted snapshot, merchantCommissionRate efectiva queda en 0.
+//
+// IMPORTANTE: este helper NO modifica el snapshot persistido. Devuelve un
+// snapshot AJUSTADO que se usa al PROCESAR LOS PAYOUTS, no al crear el order.
+// Esto preserva la regla canónica "el snapshot original NUNCA se recalcula"
+// (necesaria para cierres fiscales AFIP).
+
+/**
+ * Bonus que recibe el driver por viaje perdido en no-show.
+ * Configurable post-launch desde MoovyConfig.no_show_driver_bonus_ars (default 300).
+ */
+export const NO_SHOW_DRIVER_BONUS_ARS_DEFAULT = 300;
+
+export interface NoShowAdjustedFinancials {
+    /** Cobro al cliente: NO cambia, mismo que entrega normal */
+    customerCharge: number;
+    /** Lo que recibe el comercio: subtotal sin comisión (Moovy come la comisión) */
+    merchantPayout: number;
+    /** Lo que recibe el driver: payout completo + bonus no-show */
+    driverPayout: number;
+    /** Lo que cobra Moovy: solo el operationalCost (NO cobra comisión al comercio) */
+    moovyRevenue: number;
+    /** Indica que estos cobros tienen ajuste de no-show aplicado */
+    noShowApplied: true;
+    /** Bonus aplicado al driver (para audit) */
+    noShowDriverBonus: number;
+}
+
+/**
+ * Calcula los cobros EFECTIVOS de un order/subOrder cuando ocurrió no-show.
+ *
+ * Llamar SOLO si `Order.noShowFlag === true`. El input son los campos
+ * persistidos del snapshot original + el subtotal del order.
+ *
+ * USO: este helper se invoca desde el panel de payouts (manual o automático)
+ * y desde reportes financieros del admin. NO se invoca al crear el order
+ * (ahí siempre noShowFlag=false porque todavía no pasó nada).
+ */
+export function applyNoShowAdjustment(input: {
+    subtotal: number;
+    deliveryFee: number;
+    snapshot: SubOrderFinancialSnapshot;
+    noShowDriverBonus?: number;
+}): NoShowAdjustedFinancials {
+    const {
+        subtotal,
+        deliveryFee,
+        snapshot,
+        noShowDriverBonus = NO_SHOW_DRIVER_BONUS_ARS_DEFAULT,
+    } = input;
+
+    // Cliente paga lo mismo: subtotal + deliveryFee (incluye operativo).
+    const customerCharge = subtotal + deliveryFee;
+
+    // Comercio recibe el subtotal completo (Moovy NO cobra la comisión en no-show).
+    const merchantPayout = subtotal;
+
+    // Driver recibe payout completo + bonus.
+    const driverPayout = snapshot.driverPayoutAmount + noShowDriverBonus;
+
+    // Moovy se queda con: operationalCost (cubre fee MP + margen) MENOS bonus driver.
+    // En no-show Moovy puede salir con margen positivo o levemente negativo según
+    // la zona (operativo es ~5% del subtotal, bonus driver es $300 fijo).
+    const moovyRevenue = snapshot.operationalCost - noShowDriverBonus;
+
+    return {
+        customerCharge,
+        merchantPayout,
+        driverPayout,
+        moovyRevenue,
+        noShowApplied: true,
+        noShowDriverBonus,
+    };
+}

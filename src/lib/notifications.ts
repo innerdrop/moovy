@@ -270,6 +270,56 @@ export async function notifyBuyerDeliveryPin(
 }
 
 /**
+ * Rama feat/no-show-flow: el driver tocó "Llegué al cliente" en el domicilio.
+ * Le mandamos al buyer un push URGENTE con su PIN + countdown 10 min para que
+ * sepa que tiene que estar en la puerta. Si no abre en 10 min, el sistema marca
+ * no-show y el driver vuelve al comercio (cobro al cliente igual, ver capa
+ * financiera en order-totals.ts).
+ *
+ * Tag distinto a `order-pin-${orderNumber}` para que no colapse con el push
+ * inicial del PIN (cuando el driver salió del comercio).
+ */
+export async function notifyCustomerDriverArrived(
+    userId: string,
+    orderNumber: string,
+    deliveryPin: string,
+    orderId?: string
+): Promise<number> {
+    const deepLink = orderId ? `/mis-pedidos/${orderId}` : '/mis-pedidos';
+
+    return sendPushToUser(userId, {
+        title: '🛵 Tu repartidor llegó',
+        body: `Bajá a recibir tu pedido ${orderNumber}. PIN: ${deliveryPin}. Tenés 10 minutos.`,
+        url: deepLink,
+        tag: `order-arrived-${orderNumber}`,
+    });
+}
+
+/**
+ * Rama feat/no-show-flow: el driver marcó que el cliente no respondió en 10 min.
+ * El pedido vuelve al comercio. El cliente paga 100% (es responsabilidad suya
+ * estar en el domicilio cuando llega el repartidor; igual que en Rappi/PedidosYa).
+ *
+ * Push con tono empático pero claro: "Tu pedido vuelve al comercio. Si fue un
+ * error reportá ahora". Esto le da al cliente una ventana para impugnar si
+ * realmente estaba en casa (lo cual queda flagged en audit log para review).
+ */
+export async function notifyCustomerNoShowReported(
+    userId: string,
+    orderNumber: string,
+    orderId?: string
+): Promise<number> {
+    const deepLink = orderId ? `/mis-pedidos/${orderId}` : '/mis-pedidos';
+
+    return sendPushToUser(userId, {
+        title: '❌ No te encontramos',
+        body: `Tu pedido ${orderNumber} vuelve al comercio. Si fue un error, reportá ahora desde la app.`,
+        url: deepLink,
+        tag: `order-noshow-${orderNumber}`,
+    });
+}
+
+/**
  * ISSUE-015: Push cuando el sistema auto-cancela un pedido por falta de repartidor.
  *
  * Cuando el retry cron agota los 6 intentos de asignación (~30min), cancelamos

@@ -145,6 +145,138 @@ function useOfferCountdown(expiresAt: string | null, onExpire: () => void): {
 }
 
 /**
+ * NoShowWaitingPanel
+ * Rama feat/no-show-flow.
+ *
+ * Panel que reemplaza el SwipeToConfirm cuando el driver tocó "Llegué al cliente"
+ * y está esperando que aparezca. Muestra:
+ *   - Timer countdown de 10 min (calculado desde waitingStartedAt).
+ *   - Botón "PIN del cliente" — abre PIN keypad para que el cliente dicte.
+ *   - Botón "Cliente no responde" — disabled hasta que pasen 10 min reales
+ *     (anti-fraude del driver). Después de 10 min queda rojo y habilitado.
+ */
+interface NoShowWaitingPanelProps {
+    pedido: { waitingStartedAt?: string | null };
+    onPinClient: () => void;
+    onReportNoShow: () => Promise<void>;
+}
+
+function NoShowWaitingPanel({ pedido, onPinClient, onReportNoShow }: NoShowWaitingPanelProps) {
+    const NO_SHOW_MIN_WAIT_SECONDS = 10 * 60;
+    const [now, setNow] = useState(Date.now());
+    const [reporting, setReporting] = useState(false);
+
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const startedAtMs = pedido.waitingStartedAt ? new Date(pedido.waitingStartedAt).getTime() : null;
+    const elapsedSec = startedAtMs ? Math.floor((now - startedAtMs) / 1000) : 0;
+    const remainingSec = Math.max(0, NO_SHOW_MIN_WAIT_SECONDS - elapsedSec);
+    const canReportNoShow = remainingSec === 0;
+
+    const min = Math.floor(remainingSec / 60);
+    const sec = remainingSec % 60;
+    const timeText = canReportNoShow
+        ? "Tiempo cumplido"
+        : `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+
+    const handleNoShowClick = async () => {
+        if (!canReportNoShow || reporting) return;
+        const ok = window.confirm(
+            "¿Confirmar que el cliente no respondió? El pedido se marca como no-show y vas a tener que volver al comercio para devolverlo.",
+        );
+        if (!ok) return;
+        setReporting(true);
+        try {
+            await onReportNoShow();
+        } finally {
+            setReporting(false);
+        }
+    };
+
+    return (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span className="text-[11px] font-extrabold text-amber-700 uppercase tracking-widest">
+                        Esperando al cliente
+                    </span>
+                </div>
+                <span className={`text-2xl font-extrabold tabular-nums ${
+                    canReportNoShow ? "text-red-600" : "text-amber-700"
+                }`}>
+                    {timeText}
+                </span>
+            </div>
+            <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-snug">
+                {canReportNoShow
+                    ? "Si el cliente no apareció, podés marcar no-show y volver al comercio."
+                    : "Esperá al cliente. Si no aparece, podés marcar no-show cuando llegue a 00:00."}
+            </p>
+            <div className="flex gap-2">
+                <button
+                    onClick={onPinClient}
+                    className="flex-1 py-3 bg-[var(--rider-online)] text-white font-extrabold rounded-xl text-[12px] uppercase tracking-widest active:scale-95 transition-all"
+                >
+                    PIN del cliente
+                </button>
+                <button
+                    onClick={handleNoShowClick}
+                    disabled={!canReportNoShow || reporting}
+                    className={`flex-1 py-3 font-extrabold rounded-xl text-[12px] uppercase tracking-widest active:scale-95 transition-all ${
+                        canReportNoShow
+                            ? "bg-red-500 text-white"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    } disabled:opacity-50`}
+                >
+                    {reporting ? "..." : "No responde"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * NoShowReturnPanel
+ * Rama feat/no-show-flow.
+ *
+ * Panel que reemplaza el SwipeToConfirm cuando el driver marcó no-show y vuelve
+ * al comercio para devolver el pedido. El comercio le da el mismo PIN del pickup
+ * y el driver lo ingresa para cerrar como RETURNED.
+ */
+interface NoShowReturnPanelProps {
+    pedido: { comercio: string };
+    onPinMerchant: () => void;
+}
+
+function NoShowReturnPanel({ pedido, onPinMerchant }: NoShowReturnPanelProps) {
+    return (
+        <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <ArrowRight className="w-4 h-4 text-red-600 -rotate-180" />
+                <span className="text-[11px] font-extrabold text-red-700 uppercase tracking-widest">
+                    Volver al comercio
+                </span>
+            </div>
+            <p className="text-[12px] text-red-800 dark:text-red-200 leading-snug">
+                Devolvé el pedido a <strong>{pedido.comercio}</strong>. El comercio te dará su PIN
+                (el mismo del retiro) para confirmar la devolución.
+            </p>
+            <button
+                onClick={onPinMerchant}
+                className="w-full py-3 bg-red-500 text-white font-extrabold rounded-xl text-[12px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+                Ingresar PIN del comercio
+                <ArrowRight className="w-4 h-4" />
+            </button>
+        </div>
+    );
+}
+
+/**
  * OfferCard
  * Card del modal de oferta. Extraído del .map() interno para poder usar el
  * hook useOfferCountdown (los hooks no pueden estar dentro de un .map directo).
@@ -353,6 +485,11 @@ interface Order {
     labelDireccion: string;
     estado: string;
     deliveryStatus: string | null;
+    // Rama feat/no-show-flow: state machine paralelo del driver
+    driverStatus?: string | null;
+    merchantStatus?: string | null;
+    waitingStartedAt?: string | null;
+    noShowReportedAt?: string | null;
     hora: string;
     navLat: number;
     navLng: number;
@@ -441,6 +578,10 @@ export default function RiderDashboard() {
         type: "pickup" | "delivery";
         orderId: string | null;
         counterpartName: string | null;
+        // Rama feat/no-show-flow: cuando es true, el PIN del comercio (type="pickup")
+        // se valida contra el endpoint /return-to-merchant para cerrar el order
+        // como RETURNED (después del flow de no-show), no contra /verify-pickup-pin.
+        returnToMerchantMode?: boolean;
     }>({ open: false, type: "pickup", orderId: null, counterpartName: null });
 
     // SPA Navigation State
@@ -609,18 +750,28 @@ export default function RiderDashboard() {
             alreadyVerified?: boolean;
         }> => {
             if (!pinModal.orderId) return { success: false, error: "No hay pedido activo" };
+            // Rama feat/no-show-flow: cuando returnToMerchantMode=true (PIN del comercio
+            // tras flow de no-show), validamos contra /return-to-merchant que cierra el
+            // order como RETURNED. En modo normal va al verify-pickup-pin/verify-delivery-pin.
             const endpoint =
-                pinModal.type === "pickup"
-                    ? `/api/driver/orders/${pinModal.orderId}/verify-pickup-pin`
-                    : `/api/driver/orders/${pinModal.orderId}/verify-delivery-pin`;
+                pinModal.returnToMerchantMode
+                    ? `/api/driver/orders/${pinModal.orderId}/return-to-merchant`
+                    : pinModal.type === "pickup"
+                        ? `/api/driver/orders/${pinModal.orderId}/verify-pickup-pin`
+                        : `/api/driver/orders/${pinModal.orderId}/verify-delivery-pin`;
             try {
                 const gps = location?.latitude && location?.longitude
                     ? { lat: location.latitude, lng: location.longitude, accuracy: location.accuracy ?? undefined }
                     : null;
+                // El endpoint return-to-merchant espera `pin` y `driverGps`
+                // (no `gps` como los otros). Adaptamos el body según el endpoint.
+                const body = pinModal.returnToMerchantMode
+                    ? { pin, driverGps: gps }
+                    : { pin, gps };
                 const res = await fetch(endpoint, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ pin, gps }),
+                    body: JSON.stringify(body),
                 });
                 const data = await res.json().catch(() => ({}));
                 return {
@@ -635,7 +786,7 @@ export default function RiderDashboard() {
                 return { success: false, error: "Error de conexión" };
             }
         },
-        [pinModal.orderId, pinModal.type, location]
+        [pinModal.orderId, pinModal.type, pinModal.returnToMerchantMode, location]
     );
 
     // Connect to real-time socket for driver events
@@ -987,8 +1138,22 @@ export default function RiderDashboard() {
     // to_merchant: yendo al comercio (DRIVER_ASSIGNED / sin status)
     // at_merchant: llegó al comercio, esperando pickup (DRIVER_ARRIVED)
     // to_customer: ya retiró, yendo al cliente (PICKED_UP / IN_DELIVERY)
-    type RiderStage = "to_merchant" | "at_merchant" | "to_customer";
+    // waiting_customer: tocó "Llegué al cliente", esperando que aparezca (10 min máx)
+    // returning_to_merchant: cliente no apareció, vuelve al comercio para devolver
+    // (rama feat/no-show-flow)
+    type RiderStage =
+        | "to_merchant"
+        | "at_merchant"
+        | "to_customer"
+        | "waiting_customer"
+        | "returning_to_merchant";
     const riderStage: RiderStage = (() => {
+        // Prioridad al state machine paralelo (driverStatus) que tiene los
+        // estados nuevos. Fallback al deliveryStatus legacy para retrocompat.
+        const drvStatus = (pedidoActivo?.driverStatus || "").toUpperCase();
+        if (drvStatus === "WAITING_FOR_CUSTOMER") return "waiting_customer";
+        if (drvStatus === "RETURNING_TO_MERCHANT") return "returning_to_merchant";
+
         const ds = (pedidoActivo?.deliveryStatus || "").toUpperCase();
         if (ds === "DRIVER_ARRIVED") return "at_merchant";
         if (["PICKED_UP", "IN_DELIVERY"].includes(ds)) return "to_customer";
@@ -1229,63 +1394,120 @@ export default function RiderDashboard() {
                                                 />
                                             ))}
 
-                                            {/* SwipeToConfirm */}
-                                            <SwipeToConfirm
-                                                label={
-                                                    (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
-                                                        ? "Deslizá → Llegué"
-                                                        : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
-                                                        ? "Deslizá → Recogí"
-                                                        : pedidoActivo.deliveryStatus === "PICKED_UP"
-                                                        ? "Deslizá → Entregado"
-                                                        : "Deslizá → Entregado"
-                                                }
-                                                bgColor={
-                                                    (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
-                                                        ? "bg-amber-500"
-                                                        : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
-                                                        ? "bg-blue-600"
-                                                        : "bg-[var(--rider-online)]"
-                                                }
-                                                shadowColor={
-                                                    (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
-                                                        ? "shadow-amber-500/30"
-                                                        : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
-                                                        ? "shadow-blue-500/30"
-                                                        : "shadow-green-500/30"
-                                                }
-                                                disabled={advancingStatus}
-                                                onConfirm={async () => {
-                                                    // Use deliveryStatus (delivery tracking field) for transitions, NOT order.status
-                                                    const ds = pedidoActivo.deliveryStatus || "DRIVER_ASSIGNED";
-                                                    const nextStatus =
-                                                        ds === "DRIVER_ASSIGNED" ? "DRIVER_ARRIVED"
-                                                        : ds === "DRIVER_ARRIVED" ? "PICKED_UP"
-                                                        : "DELIVERED";
-                                                    // ISSUE-001: transiciones sensibles piden PIN PRIMERO.
-                                                    // Abrimos el modal y el advanceDeliveryStatus se dispara
-                                                    // desde onVerified. Para DRIVER_ARRIVED no hay PIN que pedir.
-                                                    if (nextStatus === "PICKED_UP") {
-                                                        setPinModal({
-                                                            open: true,
-                                                            type: "pickup",
-                                                            orderId: pedidoActivo.id,
-                                                            counterpartName: pedidoActivo.comercio || null,
-                                                        });
-                                                        return;
+                                            {/* Flow no-show — Rama feat/no-show-flow.
+                                                Si el driver ya llegó al cliente y está esperando, mostramos
+                                                el panel especial con timer + botones (no SwipeToConfirm normal). */}
+                                            {riderStage === "waiting_customer" && (
+                                                <NoShowWaitingPanel
+                                                    pedido={pedidoActivo}
+                                                    onPinClient={() => setPinModal({
+                                                        open: true,
+                                                        type: "delivery",
+                                                        orderId: pedidoActivo.id,
+                                                        counterpartName: pedidoActivo.nombreCliente || null,
+                                                    })}
+                                                    onReportNoShow={async () => {
+                                                        try {
+                                                            const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/report-no-show`, { method: "POST" });
+                                                            const data = await res.json();
+                                                            if (res.ok) {
+                                                                toast.success("No-show registrado. Volvé al comercio.");
+                                                                haptic.medium();
+                                                                await fetchDashboard(true);
+                                                            } else {
+                                                                toast.error(data.error || "No se pudo reportar");
+                                                            }
+                                                        } catch (e) {
+                                                            console.error(e);
+                                                            toast.error("Error de conexión");
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+
+                                            {riderStage === "returning_to_merchant" && (
+                                                <NoShowReturnPanel
+                                                    pedido={pedidoActivo}
+                                                    onPinMerchant={() => setPinModal({
+                                                        open: true,
+                                                        type: "pickup",
+                                                        orderId: pedidoActivo.id,
+                                                        counterpartName: pedidoActivo.comercio || null,
+                                                        // Modo especial: el PIN del comercio cierra como RETURNED, no como PICKED_UP
+                                                        returnToMerchantMode: true,
+                                                    })}
+                                                />
+                                            )}
+
+                                            {/* SwipeToConfirm — solo en flow normal (no waiting / no returning) */}
+                                            {riderStage !== "waiting_customer" && riderStage !== "returning_to_merchant" && (
+                                                <SwipeToConfirm
+                                                    label={
+                                                        (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
+                                                            ? "Deslizá → Llegué"
+                                                            : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
+                                                            ? "Deslizá → Recogí"
+                                                            : pedidoActivo.deliveryStatus === "PICKED_UP" || pedidoActivo.deliveryStatus === "IN_DELIVERY"
+                                                            ? "Deslizá → Llegué al cliente"
+                                                            : "Deslizá → Entregado"
                                                     }
-                                                    if (nextStatus === "DELIVERED") {
-                                                        setPinModal({
-                                                            open: true,
-                                                            type: "delivery",
-                                                            orderId: pedidoActivo.id,
-                                                            counterpartName: pedidoActivo.nombreCliente || null,
-                                                        });
-                                                        return;
+                                                    bgColor={
+                                                        (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
+                                                            ? "bg-amber-500"
+                                                            : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
+                                                            ? "bg-blue-600"
+                                                            : "bg-[var(--rider-online)]"
                                                     }
-                                                    await advanceDeliveryStatus(pedidoActivo.id, nextStatus);
-                                                }}
-                                            />
+                                                    shadowColor={
+                                                        (pedidoActivo.deliveryStatus === "DRIVER_ASSIGNED" || !pedidoActivo.deliveryStatus)
+                                                            ? "shadow-amber-500/30"
+                                                            : pedidoActivo.deliveryStatus === "DRIVER_ARRIVED"
+                                                            ? "shadow-blue-500/30"
+                                                            : "shadow-green-500/30"
+                                                    }
+                                                    disabled={advancingStatus}
+                                                    onConfirm={async () => {
+                                                        // Use deliveryStatus (delivery tracking field) for transitions, NOT order.status
+                                                        const ds = pedidoActivo.deliveryStatus || "DRIVER_ASSIGNED";
+                                                        // Rama feat/no-show-flow:
+                                                        // PICKED_UP/IN_DELIVERY → start-waiting (NO directo a DELIVERED).
+                                                        // El PIN del cliente se pide en el panel WAITING después de tocar "Llegué".
+                                                        if (ds === "PICKED_UP" || ds === "IN_DELIVERY") {
+                                                            try {
+                                                                const res = await fetch(`/api/driver/orders/${pedidoActivo.id}/start-waiting`, { method: "POST" });
+                                                                const data = await res.json();
+                                                                if (res.ok) {
+                                                                    toast.success("Llegaste al cliente");
+                                                                    haptic.medium();
+                                                                    await fetchDashboard(true);
+                                                                } else {
+                                                                    toast.error(data.error || "No se pudo registrar tu llegada");
+                                                                }
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                                toast.error("Error de conexión");
+                                                            }
+                                                            return;
+                                                        }
+
+                                                        const nextStatus =
+                                                            ds === "DRIVER_ASSIGNED" ? "DRIVER_ARRIVED"
+                                                            : ds === "DRIVER_ARRIVED" ? "PICKED_UP"
+                                                            : "DELIVERED";
+                                                        // ISSUE-001: transiciones sensibles piden PIN PRIMERO.
+                                                        if (nextStatus === "PICKED_UP") {
+                                                            setPinModal({
+                                                                open: true,
+                                                                type: "pickup",
+                                                                orderId: pedidoActivo.id,
+                                                                counterpartName: pedidoActivo.comercio || null,
+                                                            });
+                                                            return;
+                                                        }
+                                                        await advanceDeliveryStatus(pedidoActivo.id, nextStatus);
+                                                    }}
+                                                />
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="py-8 text-center">

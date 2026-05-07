@@ -179,6 +179,13 @@ export async function GET(request: Request) {
                 labelDireccion: displayLabel,
                 estado: order.status.toLowerCase(),
                 deliveryStatus: order.deliveryStatus || null, // Actual delivery tracking field
+                // Rama feat/no-show-flow: campos del state machine paralelo necesarios
+                // para que la UI distinga entre AT_CUSTOMER, WAITING_FOR_CUSTOMER,
+                // RETURNING_TO_MERCHANT, etc. El deliveryStatus legacy no los tiene.
+                driverStatus: order.driverStatus || null,
+                merchantStatus: order.merchantStatus || null,
+                waitingStartedAt: order.waitingStartedAt ? order.waitingStartedAt.toISOString() : null,
+                noShowReportedAt: order.noShowReportedAt ? order.noShowReportedAt.toISOString() : null,
                 hora: order.updatedAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
                 // Navigation coordinates (for Google Maps button)
                 navLat,
