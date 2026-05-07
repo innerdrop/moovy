@@ -81,6 +81,10 @@ export default function CheckoutPage() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [deliveryMethod, setDeliveryMethod] = useState<"home" | "pickup">("home");
     const [hasDrivers, setHasDrivers] = useState(true);
+    // Rama feat/driver-availability-checkout: información granular de drivers
+    // disponibles para el pre-banner del checkout. 0 → rojo, 1 → amarillo, 2+ → ok.
+    const [availableDrivers, setAvailableDrivers] = useState<number>(2); // default optimista mientras carga
+    const [estimatedWaitMinutes, setEstimatedWaitMinutes] = useState<number | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deliveryType, setDeliveryType] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
@@ -167,17 +171,32 @@ export default function CheckoutPage() {
         }
     }, [status, router]);
 
-    // Fetch driver availability
+    // Fetch driver availability — re-fetch cuando cambia el merchant primario,
+    // así obtenemos el count localizado al radio del comercio (no global).
+    // Re-fetcha cada 30s para mantener el banner actualizado si los drivers
+    // entran/salen mientras el cliente decide.
     useEffect(() => {
-        fetch("/api/delivery/availability")
-            .then(res => res.json())
-            .then(data => {
-                setHasDrivers(data.hasDrivers);
-                // Force scheduled delivery when no drivers available
-                if (!data.hasDrivers) setDeliveryType("SCHEDULED");
-            })
-            .catch(err => console.error("Error checking driver availability", err));
-    }, []);
+        const fetchAvailability = () => {
+            const url = primaryMerchantId
+                ? `/api/delivery/availability?merchantId=${primaryMerchantId}`
+                : "/api/delivery/availability";
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    setHasDrivers(data.hasDrivers);
+                    setAvailableDrivers(data.availableDrivers ?? 0);
+                    setEstimatedWaitMinutes(data.estimatedWaitMinutes ?? null);
+                    // Force scheduled delivery when no drivers available
+                    if (!data.hasDrivers) setDeliveryType("SCHEDULED");
+                })
+                .catch(err => console.error("Error checking driver availability", err));
+        };
+
+        fetchAvailability();
+        const interval = setInterval(fetchAvailability, 30_000);
+        return () => clearInterval(interval);
+    }, [primaryMerchantId]);
 
     // Fetch vendor schedules for scheduled delivery slots
     useEffect(() => {
@@ -1321,6 +1340,56 @@ export default function CheckoutPage() {
                                         )}
                                     </div>
 
+                                    {/* Banner pre-validación de drivers disponibles.
+                                        Rama feat/driver-availability-checkout: el cliente sabe ANTES de pagar
+                                        si hay riesgo de que su pedido se cancele por falta de repartidor.
+                                        Solo se muestra para delivery a domicilio inmediato (pickup y scheduled
+                                        no necesitan driver inmediato). */}
+                                    {!isPickup && deliveryType === "IMMEDIATE" && (
+                                        <>
+                                            {availableDrivers === 0 && (
+                                                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-xl">🛵</span>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-red-900 text-sm">Sin repartidores disponibles ahora</p>
+                                                            <p className="text-xs text-red-700 mt-1 leading-relaxed">
+                                                                No hay repartidores online en este momento. Esperá unos minutos y refrescá,
+                                                                o elegí <strong>retirar en el local</strong> si querés tu pedido ya.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {availableDrivers === 1 && (
+                                                <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-xl">⏱️</span>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-amber-900 text-sm">Solo 1 repartidor disponible</p>
+                                                            <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                                                                Puede haber demora{estimatedWaitMinutes ? ` (~${estimatedWaitMinutes} min)` : ""}.
+                                                                Si no se asigna en 10 min, te devolvemos la plata automáticamente.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {availableDrivers >= 2 && estimatedWaitMinutes !== null && (
+                                                <div className="mt-6 p-3 bg-green-50 border border-green-100 rounded-xl">
+                                                    <p className="text-xs text-green-800 flex items-center gap-2">
+                                                        <span>✓</span>
+                                                        <span><strong>{availableDrivers} repartidores</strong> disponibles. Asignación estimada: ~{estimatedWaitMinutes} min</span>
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
                                     <div className="flex gap-4 lg:gap-6 mt-6 lg:mt-8">
                                         <button
                                             onClick={() => setStep(2)}
@@ -1330,7 +1399,14 @@ export default function CheckoutPage() {
                                         </button>
                                         <button
                                             onClick={handleSubmitOrder}
-                                            disabled={isSubmitting || (!isPickup && deliveryType === "SCHEDULED" && !scheduledSlotStart) || (!isPickup && !allVendorsInRange)}
+                                            disabled={
+                                                isSubmitting
+                                                || (!isPickup && deliveryType === "SCHEDULED" && !scheduledSlotStart)
+                                                || (!isPickup && !allVendorsInRange)
+                                                // Bloquear pago si NO hay drivers Y es delivery inmediato.
+                                                // Pickup y scheduled siguen disponibles.
+                                                || (!isPickup && deliveryType === "IMMEDIATE" && availableDrivers === 0)
+                                            }
                                             className="btn-primary flex-1 lg:py-4 lg:text-base lg:font-semibold flex items-center justify-center gap-2"
                                         >
                                             {isSubmitting ? (

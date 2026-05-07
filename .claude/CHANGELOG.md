@@ -10,6 +10,78 @@
 
 ---
 
+## 2026-05-07 (rama `feat/driver-availability-checkout`)
+
+feat: pre-validación de drivers en checkout (banner rojo/amarillo + bloqueo)
+
+PROBLEMA QUE RESUELVE:
+Antes de esta rama, si el cliente hacía un pedido cuando no había drivers
+disponibles, el flow era:
+  1. Cliente paga con MP
+  2. Sistema busca driver -> no hay
+  3. 30 min después, cron auto-cancela + refund automatico
+  4. Cliente queda con mala experiencia ("pagué algo que se canceló solo")
+
+Mejor experiencia: avisarle ANTES de pagar, así decide si esperar o usar pickup.
+
+CAMBIOS:
+
+1) Endpoint /api/delivery/availability mejorado
+   - Antes: count global de drivers online (sin filtro por zona).
+   - Ahora: si recibe ?merchantId=X, hace query PostGIS ST_DWithin con radio
+     leído de MoovyConfig.driver_search_radius_meters (default 50km, mismo
+     criterio que assignment-engine).
+   - Nuevos campos en response: estimatedWaitMinutes (5/8/12 min según
+     cantidad de drivers), radiusMeters, hasDrivers.
+   - Filtros canónicos: isOnline + isActive + approvalStatus=APPROVED +
+     availabilityStatus=DISPONIBLE + ubicacion IS NOT NULL.
+
+2) Hook + banner en checkout (src/app/(store)/checkout/page.tsx)
+   - useEffect re-fetcha availability cada 30s con merchantId del primer
+     vendor del carrito.
+   - Banner rojo si availableDrivers === 0:
+     "Sin repartidores disponibles ahora" + sugerencia de pickup.
+   - Banner amarillo si availableDrivers === 1:
+     "Solo 1 repartidor — puede haber demora (~12 min)".
+   - Banner verde mini si availableDrivers >= 2:
+     "X repartidores disponibles. Asignación estimada: ~X min".
+   - Solo se muestra si delivery="home" + deliveryType="IMMEDIATE" (pickup
+     y programado no necesitan driver inmediato).
+
+3) Bloqueo del botón "Confirmar Pedido"
+   - Disabled si availableDrivers === 0 + delivery="home" + IMMEDIATE.
+   - Cliente todavía puede usar pickup o programar (deliveryType=SCHEDULED
+     se fuerza automáticamente cuando hasDrivers=false, ya estaba implementado).
+
+DECISIONES DEL CONSEJO QUE NO ENTRARON:
+
+- Inicialmente planeamos diferir notifyMerchant hasta tener driver asignado
+  (para que el comercio no cocine si no va a haber driver). Tras analizar el
+  flow real (búsqueda de drivers ocurre cuando merchant marca "Listo", NO al
+  pagar) y considerando la nueva pre-validación, esta capa quedó innecesaria.
+  La cocina paralela mientras se busca driver ahorra 10-20 min al cliente.
+  El escenario edge "comercio cocinó pero no hay driver" está cubierto por:
+  (a) la pre-validación que acabamos de hacer, (b) auto-refund automático del
+  cron retry-assignments cuando no se asigna driver tras 6 intentos.
+
+- Inicialmente planeamos radio expansivo 3km -> 5km -> 8km. No es necesario:
+  Ushuaia es chica, el radio default 50km cubre toda la ciudad.
+
+CAPAS DE PROTECCION RESULTANTES (defense-in-depth):
+
+  Capa 1: pre-validación al checkout (esta rama) → cliente sabe ANTES.
+  Capa 2: búsqueda de driver con PostGIS radio 50km (existente).
+  Capa 3: cron retry-assignments (existente, max 3 retries con escalado).
+  Capa 4: auto-cancel + refund automático tras 6 intentos (existente).
+
+TESTING:
+- TSC strict pasa limpio.
+- Endpoint testeable con: GET /api/delivery/availability?merchantId=X
+- Verificación visual: poner offline todos los drivers y ver banner rojo,
+  poner 1 driver online y ver banner amarillo, 2+ ver verde.
+
+**Archivos:** src/app/(store)/checkout/page.tsx, src/app/api/delivery/availability/route.ts
+
 ## 2026-05-07 (rama `chore/cron-monitoring-completo`)
 
 chore: monitoreo completo de crons + alertas email + retention 30d + panel pro
