@@ -20,7 +20,7 @@ export default function TerminosComercioPage() {
                 </Link>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Términos y Condiciones para Comercios</h1>
-                <p className="text-gray-500 mb-8">Última actualización: Marzo 2026</p>
+                <p className="text-gray-500 mb-8">Última actualización: 7 de mayo de 2026</p>
 
                 <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 space-y-8">
                     {/* 1. Introducción */}
@@ -153,9 +153,45 @@ export default function TerminosComercioPage() {
                         </ul>
                     </section>
 
+                    {/* 6.bis Operativa de PIN, no-show y cancelaciones (rama docs/terms-privacy-pre-launch) */}
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">7. PIN del Comercio y Devoluciones por No-Show</h2>
+                        <p className="text-gray-600 mb-4">
+                            <strong>PIN doble del pedido:</strong> al momento de crear cada pedido, el sistema
+                            genera dos PINs de 4 dígitos: uno para el retiro (visible para el Comercio) y otro
+                            para la entrega (visible para el Comprador). El PIN del Comercio se le muestra al
+                            Comercio en su panel cuando el repartidor llega y el pedido está marcado como
+                            &quot;Listo para retirar&quot;. El Comercio se lo dicta al repartidor para que lo
+                            ingrese en su app. Sin esa validación, el repartidor no puede llevarse el pedido.
+                        </p>
+                        <p className="text-gray-600 mb-4">
+                            <strong>Devolución por no-show:</strong> si el repartidor llega al domicilio del
+                            cliente y el cliente no responde en 10 minutos, el sistema marca el pedido como
+                            no-show y el repartidor debe devolverlo al Comercio. Para cerrar la devolución
+                            oficialmente, el Comercio le dicta el <strong>mismo PIN del retiro</strong>{" "}
+                            (no se genera uno nuevo). El Comercio queda libre de decidir qué hacer con el
+                            pedido devuelto (reutilizar, descartar, donar) según sus normas internas.
+                        </p>
+                        <p className="text-gray-600 mb-4">
+                            <strong>Cobro al Comercio en no-show:</strong> en caso de no-show del cliente,
+                            el Comercio recibe el pago como si el pedido se hubiera entregado normalmente
+                            (subtotal completo menos comisión habitual). MOOVY se hace cargo del costo del
+                            viaje fallido y absorbe la comisión usual como gesto operativo. La responsabilidad
+                            del no-show es del cliente, no del Comercio ni del repartidor.
+                        </p>
+                        <p className="text-gray-600">
+                            <strong>Cancelación por el Comercio:</strong> el Comercio puede rechazar un
+                            pedido mientras esté en estado <em>PENDING</em>, <em>CONFIRMED</em> o{" "}
+                            <em>PREPARING</em> (antes de marcar &quot;Listo para retirar&quot;). En ese
+                            caso, MOOVY dispara reembolso automático al cliente. Una vez marcado como
+                            listo, NO se puede cancelar desde el panel del Comercio: cualquier problema
+                            posterior requiere contacto con soporte para resolución manual.
+                        </p>
+                    </section>
+
                     {/* 7. Propiedad Intelectual */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">7. Contenido y Propiedad Intelectual</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">8. Contenido y Propiedad Intelectual</h2>
                         <p className="text-gray-600 mb-4">
                             El Comercio garantiza que las imágenes, logos, descripciones y todo contenido que publique
                             en la plataforma son de su propiedad o cuenta con las licencias necesarias para su uso.
@@ -169,7 +205,7 @@ export default function TerminosComercioPage() {
 
                     {/* 8. Suspensión */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">8. Suspensión y Baja de Cuenta</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">9. Suspensión y Baja de Cuenta</h2>
                         <p className="text-gray-600 mb-4">
                             MOOVY podrá suspender temporal o permanentemente la cuenta de un Comercio en los siguientes casos:
                         </p>
@@ -189,7 +225,7 @@ export default function TerminosComercioPage() {
 
                     {/* 9. Modificaciones */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">9. Modificaciones a los Términos</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">10. Modificaciones a los Términos</h2>
                         <p className="text-gray-600">
                             MOOVY se reserva el derecho de modificar estos Términos en cualquier momento.
                             Las modificaciones serán notificadas al Comercio con al menos 15 días de anticipación
@@ -201,7 +237,7 @@ export default function TerminosComercioPage() {
 
                     {/* 10. Ley Aplicable */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">10. Ley Aplicable y Jurisdicción</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Ley Aplicable y Jurisdicción</h2>
                         <p className="text-gray-600">
                             Estos Términos se rigen por las leyes de la República Argentina.
                             Cualquier controversia será sometida a los tribunales ordinarios de la ciudad de Ushuaia,
@@ -212,7 +248,7 @@ export default function TerminosComercioPage() {
 
                     {/* 11. Servicios de Publicidad y Posicionamiento */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Servicios de Publicidad y Posicionamiento</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">12. Servicios de Publicidad y Posicionamiento</h2>
                         <p className="text-gray-600 mb-4">
                             MOOVY ofrece espacios publicitarios dentro de la plataforma como servicio
                             opcional para los Comercios adheridos (&quot;Servicios de Publicidad&quot;). La contratación
@@ -293,7 +329,7 @@ export default function TerminosComercioPage() {
 
                     {/* 12. Contacto */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">12. Contacto</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">13. Contacto</h2>
                         <p className="text-gray-600">
                             Para consultas sobre estos términos: <br />
                             <strong>Email:</strong> legal@somosmoovy.com <br />

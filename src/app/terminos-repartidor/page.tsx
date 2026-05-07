@@ -20,7 +20,7 @@ export default function TerminosRepartidorPage() {
                 </Link>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Términos y Condiciones para Repartidores</h1>
-                <p className="text-gray-500 mb-8">Última actualización: Marzo 2026</p>
+                <p className="text-gray-500 mb-8">Última actualización: 7 de mayo de 2026</p>
 
                 <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 space-y-8">
                     {/* 1. Introducción */}
@@ -186,9 +186,88 @@ export default function TerminosRepartidorPage() {
                         </ul>
                     </section>
 
-                    {/* 9. Suspensión */}
+                    {/* 9. Sistema operativo: PIN, geofence, GPS, no-show, fraudScore (rama docs/terms-privacy-pre-launch) */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">9. Suspensión y Baja de Cuenta</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">9. Sistema Operativo de Seguridad</h2>
+                        <p className="text-gray-600 mb-4">
+                            La plataforma cuenta con un sistema de validación operativa para proteger
+                            tanto al Repartidor como a los compradores y comercios. Al aceptar estos
+                            términos, el Repartidor acepta operar bajo este sistema.
+                        </p>
+
+                        <h3 className="font-semibold text-gray-800 mt-4 mb-2">9.1 PIN doble (4 dígitos)</h3>
+                        <p className="text-gray-600 mb-3">
+                            Cada pedido tiene dos PINs de 4 dígitos: uno para el retiro (que el
+                            Comercio le dicta al Repartidor para validar el pickup) y otro para
+                            la entrega (que el Comprador le dicta al Repartidor para confirmar
+                            la entrega). Sin estos PINs el pedido NO puede cerrarse, garantizando
+                            que solo el destinatario legítimo recibe el pedido. El Repartidor no
+                            tiene acceso al PIN del Comprador hasta que este se lo dicte; este es
+                            un mecanismo crítico anti-fraude. Cinco intentos fallidos consecutivos
+                            de PIN bloquean el pedido y disparan investigación.
+                        </p>
+
+                        <h3 className="font-semibold text-gray-800 mt-4 mb-2">9.2 Geofence y validación de ubicación</h3>
+                        <p className="text-gray-600 mb-3">
+                            La validación de PIN solo es aceptada cuando el Repartidor está dentro
+                            de un radio de <strong>100 metros</strong> del comercio (para pickup) o del
+                            domicilio del cliente (para delivery), con 50 metros adicionales de gracia
+                            para casos de GPS impreciso. Si el Repartidor está fuera del geofence,
+                            la app le pide acercarse antes de permitir el ingreso del PIN. Esto previene
+                            el fraude tipo &quot;ingresar PIN desde casa sin haber entregado&quot;.
+                        </p>
+
+                        <h3 className="font-semibold text-gray-800 mt-4 mb-2">9.3 GPS continuo durante el delivery</h3>
+                        <p className="text-gray-600 mb-3">
+                            Mientras el Repartidor tiene un pedido activo, su ubicación GPS se reporta
+                            cada 30 segundos a la plataforma. Esto sirve para: (a) tracking en vivo
+                            del Comprador, (b) evidencia anti-fraude en disputas, (c) cálculo
+                            de pagos y bonus por zona. La información se almacena en logs operativos
+                            que se purgan a los 30 días.
+                        </p>
+
+                        <h3 className="font-semibold text-gray-800 mt-4 mb-2">9.4 Política de no-show y bonus compensatorio</h3>
+                        <p className="text-gray-600 mb-3">
+                            Si el Repartidor llega al domicilio del cliente y este no responde, debe
+                            tocar el botón &quot;Llegué al cliente&quot; en la app, lo cual inicia un
+                            timer obligatorio de <strong>10 minutos reales</strong>. Solo cuando el timer
+                            llega a 0, el Repartidor puede marcar &quot;Cliente no responde&quot; y
+                            volver al comercio para devolver el pedido. La plataforma valida en el
+                            backend que pasaron los 10 minutos completos — no es posible saltarse el tiempo.
+                        </p>
+                        <p className="text-gray-600 mb-3">
+                            Cuando el Repartidor completa una devolución por no-show válida, recibe
+                            su payout completo del viaje <strong>+ un bonus compensatorio de $300</strong>
+                            {" "}por el viaje fallido. Sin embargo, el payout queda en{" "}
+                            <strong>hold por 24 horas</strong> para permitir al cliente impugnar el caso
+                            si tiene evidencia de que estaba disponible. Si el cliente no impugna en 24h,
+                            el payout se libera automáticamente. Si impugna y se determina que el
+                            Repartidor reportó no-show de mala fe, el payout se cancela y el caso queda
+                            registrado en el fraudScore.
+                        </p>
+
+                        <h3 className="font-semibold text-gray-800 mt-4 mb-2">9.5 fraudScore y suspensión automática</h3>
+                        <p className="text-gray-600 mb-3">
+                            La plataforma asigna un <strong>fraudScore</strong> al Repartidor que se
+                            incrementa por cada incidente sospechoso: 5 intentos fallidos consecutivos
+                            de PIN, no-show impugnado por el cliente con evidencia, salir del geofence
+                            durante el período de espera, etc.
+                        </p>
+                        <p className="text-gray-600">
+                            Al alcanzar <strong>3 incidentes registrados</strong>, la cuenta del
+                            Repartidor se suspende automáticamente de manera preventiva. La sesión se
+                            invalida y el Repartidor no puede tomar pedidos hasta que el equipo de
+                            MOOVY revise manualmente el caso desde el panel administrativo. La
+                            decisión final (reactivar la cuenta o mantenerla suspendida) la toma el
+                            equipo en función del contexto de cada incidente. Esta política protege
+                            a los Compradores y al ecosistema MOOVY de comportamientos sistemáticos
+                            de fraude.
+                        </p>
+                    </section>
+
+                    {/* 10. Suspensión */}
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">10. Suspensión y Baja de Cuenta</h2>
                         <p className="text-gray-600 mb-4">
                             MOOVY podrá suspender temporal o permanentemente la cuenta de un Repartidor en los siguientes casos:
                         </p>
@@ -209,7 +288,7 @@ export default function TerminosRepartidorPage() {
 
                     {/* 10. Ley Aplicable */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">10. Ley Aplicable y Jurisdicción</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Ley Aplicable y Jurisdicción</h2>
                         <p className="text-gray-600">
                             Estos Términos se rigen por las leyes de la República Argentina.
                             Cualquier controversia será sometida a los tribunales ordinarios de la ciudad de Ushuaia,
@@ -220,7 +299,7 @@ export default function TerminosRepartidorPage() {
 
                     {/* 11. Contacto */}
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">11. Contacto</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">12. Contacto</h2>
                         <p className="text-gray-600">
                             Para consultas sobre estos términos: <br />
                             <strong>Email:</strong> legal@somosmoovy.com <br />

@@ -10,6 +10,85 @@
 
 ---
 
+## 2026-05-07 (rama `docs/terms-privacy-pre-launch`)
+
+docs: actualizacion de terminos y privacidad pre-launch
+
+PROBLEMA QUE RESUELVE:
+Las ramas de funcionalidad introdujeron flows nuevos (cancelacion automatica
+de pago pendiente, no-show, PIN doble, GPS continuo, retencion 30d de logs)
+sin actualizar la documentacion legal correspondiente. Argentina exige
+notificacion expresa de tratamiento de datos (Ley 25.326), reembolsos y
+cancelaciones (Ley 24.240), y las defensas en disputas se pierden si los
+terminos no cubren explicitamente cada caso.
+
+CAMBIOS:
+
+1) /privacidad — nueva subseccion 2.4 "Informacion operativa de la entrega"
+   - Notas para el repartidor (texto que el cliente escribe en checkout)
+   - GPS continuo del repartidor cada 30s durante delivery
+   - Logs de auditoria operativa (CronRunLog) con retencion 30 dias rolling
+   - Datos de pago de MercadoPago (sin almacenar tarjetas)
+   Bump fecha "Enero 2026" -> "7 de mayo de 2026".
+
+2) /terminos — clausulas nuevas en secciones existentes (sin tocar TOC)
+   En seccion 5 (Compras y Pagos):
+     - Cancelacion automatica por falta de pago (timeout 30 min)
+     - Reembolso automatico por pago tardio (race window)
+   En seccion 6 (Entregas y Horarios):
+     - Politica de cliente ausente / no-show (10 min espera, cobro 100%)
+     - Como evitar el no-show (push, instrucciones)
+     - Impugnacion de no-show con ventana de 24h post-evento
+   Bump fecha "22 de marzo de 2026" -> "7 de mayo de 2026".
+
+3) /terminos-comercio — nueva seccion 7 "PIN del Comercio y Devoluciones por
+   No-Show" + renumeracion subsiguientes (8-13)
+   - PIN doble del pedido (4 digitos pickup + 4 digitos delivery)
+   - Devolucion por no-show: comercio recibe con MISMO PIN del pickup
+   - Cobro al comercio en no-show: recibe normal, MOOVY come la comision
+   - Cancelacion por el comercio: solo en PENDING/CONFIRMED/PREPARING
+   Bump fecha "Marzo 2026" -> "7 de mayo de 2026".
+
+4) /terminos-repartidor — nueva seccion 9 "Sistema Operativo de Seguridad"
+   con 5 subsecciones + renumeracion subsiguientes (10-12)
+   9.1 PIN doble 4 digitos (pickup + delivery)
+   9.2 Geofence 100m + 50m gracia
+   9.3 GPS continuo durante delivery (cada 30s)
+   9.4 Politica de no-show + bonus $300 compensatorio + hold 24h del payout
+   9.5 fraudScore con auto-suspend a 3 incidentes registrados
+   Bump fecha "Marzo 2026" -> "7 de mayo de 2026".
+
+NO TOCADOS:
+- /terminos-vendedor: marketplace separado del flow de delivery, no requiere
+  actualizacion en esta rama.
+- /terminos-moover: programa de fidelidad standalone, no aplica.
+
+LEYES ARGENTINAS COBERTAS:
+- Ley 25.326 (Proteccion de Datos Personales): subseccion 2.4 de privacidad
+  declara explicitamente que datos se recopilan, para que, cuanto se retienen,
+  y cumple principio de minimizacion.
+- Ley 24.240 (Defensa del Consumidor): seccion 5 de terminos generales
+  declara reembolsos automaticos con plazo (5-15 dias), metodo y notificacion.
+- Ley 26.951 (Antispam Argentina): los emails transaccionales son
+  consentimiento implicito (necesarios para el servicio), no requieren
+  opt-in explicito. Marketing si requiere — manejado en otra rama.
+
+POST-LAUNCH ANOTADO:
+- Disparar email "terms_updated" (la funcion ya existe en email-legal-ux.ts)
+  a usuarios existentes notificandoles del cambio. NO disparado en esta rama
+  porque no hay usuarios existentes pre-launch — al lanzar, los usuarios nuevos
+  aceptan estos terminos directamente al registrarse.
+- Cuando se active "leave at door" (post-launch), agregar clausula sobre foto
+  del paquete con numero de puerta (no fachada) para preservar privacidad.
+
+TESTING:
+- TSC strict pasa limpio (paginas son JSX puro con strings, sin tipos complejos).
+- Verificacion visual sugerida: abrir /terminos, /privacidad, /terminos-comercio
+  y /terminos-repartidor en browser y comprobar que renderizan sin errores
+  de hidratacion ni warnings.
+
+**Archivos:** src/app/privacidad/page.tsx, src/app/terminos-comercio/page.tsx, src/app/terminos-repartidor/page.tsx, src/app/terminos/page.tsx
+
 ## 2026-05-07 (rama `chore/email-templates-faltantes`)
 
 chore: 4 templates de email faltantes (payment timeout, late refund, no-show)

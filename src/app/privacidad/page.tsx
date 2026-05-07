@@ -20,7 +20,7 @@ export default function PrivacidadPage() {
                 </Link>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Política de Privacidad</h1>
-                <p className="text-gray-500 mb-8">Última actualización: Enero 2026</p>
+                <p className="text-gray-500 mb-8">Última actualización: 7 de mayo de 2026</p>
 
                 <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 space-y-8">
                     {/* 1. Introducción */}
@@ -61,10 +61,46 @@ export default function PrivacidadPage() {
                         </ul>
 
                         <h3 className="font-semibold text-gray-800 mt-4 mb-2">2.3 Información de terceros:</h3>
-                        <ul className="list-disc list-inside space-y-1 text-gray-600">
+                        <ul className="list-disc list-inside space-y-1 text-gray-600 mb-4">
                             <li>Datos de autenticación si inicia sesión con proveedores externos (Google, etc.)</li>
                             <li>Información de referidos si se registró con un código de invitación</li>
                         </ul>
+
+                        <h3 className="font-semibold text-gray-800 mt-4 mb-2">2.4 Información operativa de la entrega:</h3>
+                        <p className="text-gray-600 mb-3">
+                            Para coordinar tu pedido y proteger a las partes involucradas, recopilamos
+                            datos específicos durante el ciclo de delivery:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 text-gray-600 mb-3">
+                            <li>
+                                <strong>Notas para el repartidor:</strong> el texto que escribís al pedir
+                                (ej: &quot;tocar timbre 2 veces&quot;, &quot;1° A&quot;) se guarda en el pedido y se le
+                                comparte al repartidor asignado. No se usa para nada más.
+                            </li>
+                            <li>
+                                <strong>Ubicación GPS continua del repartidor:</strong> durante el delivery,
+                                la app del repartidor envía su posición cada 30 segundos. Esto sirve para
+                                el tracking en vivo en tu app y como evidencia anti-fraude (que el repartidor
+                                realmente llegó al domicilio). Esta información NO se comparte con vos en
+                                tiempo real cuando él aún no retiró el pedido del comercio.
+                            </li>
+                            <li>
+                                <strong>Logs de auditoría operativa:</strong> registros de transiciones de
+                                estado del pedido, intentos de PIN, geofence, y eventos del sistema. Se usan
+                                para debugging, prevención de fraude y disputas. Se almacenan por 30 días
+                                rolling y luego se borran automáticamente (cron de retention).
+                            </li>
+                            <li>
+                                <strong>Datos de pago de MercadoPago:</strong> recibimos confirmación de
+                                pago, ID de transacción y método (tarjeta/dinero en cuenta). NO almacenamos
+                                números completos de tarjeta — solo los maneja MercadoPago directamente.
+                            </li>
+                        </ul>
+                        <p className="text-gray-600 text-sm">
+                            Esta información se trata bajo los principios de minimización de datos:
+                            recopilamos solo lo necesario para operar el servicio y se descarta cuando
+                            ya no sirve a su propósito.
+                        </p>
                     </section>
 
                     {/* 3. Uso de la Información */}

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function TerminosPage() {
-  const lastUpdated = "22 de marzo de 2026";
+  const lastUpdated = "7 de mayo de 2026";
   const whatsappNumber = "5492901553173";
 
   return (
@@ -298,6 +298,28 @@ export default function TerminosPage() {
                 <strong>Reembolsos:</strong> En caso de pago rechazado o error,
                 MercadoPago procesa reembolsos automáticamente (3-5 días hábiles).
               </p>
+
+              <p>
+                <strong>Cancelación automática por falta de pago:</strong> si
+                seleccionás MercadoPago y no completás el pago dentro de los{" "}
+                <strong>30 minutos</strong> de creado el pedido, el sistema lo
+                cancela automáticamente y libera el stock para que esté disponible
+                a otros clientes. Vas a recibir un email de aviso. No se cobra
+                nada — si MercadoPago retiene la operación por error, se acredita
+                automáticamente en las próximas 48hs. También podés cancelar el
+                pedido manualmente desde &quot;Mis Pedidos&quot; mientras esté en
+                estado &quot;Esperando confirmación de pago&quot;.
+              </p>
+
+              <p>
+                <strong>Reembolso automático por pago tardío:</strong> en el caso
+                edge donde el pedido se cancela y MercadoPago confirma el pago
+                igual (race con el timeout o cancelación manual posterior),
+                disparamos un reembolso automático del 100% del monto pagado.
+                Vas a recibir email con el detalle del reembolso, monto exacto,
+                método (mismo del pago original) y plazo estimado (5 a 15 días
+                hábiles según tu banco).
+              </p>
             </div>
           </section>
 
@@ -340,6 +362,37 @@ export default function TerminosPage() {
                 <strong>Efectivo:</strong> Si pagás en efectivo, debes tener el
                 monto exacto o mayor. El repartidor puede rechazar el pedido si
                 no tiene cambio.
+              </p>
+
+              <p>
+                <strong>Política de cliente ausente (no-show):</strong> cuando
+                el repartidor llega a tu domicilio, te notificamos por push y/o
+                email con el PIN de entrega. Tenés <strong>10 minutos</strong>{" "}
+                para bajar a recibir el pedido o atender la puerta. Si no aparecés
+                en ese plazo, el repartidor puede marcar &quot;cliente no
+                responde&quot; y el pedido vuelve al comercio. El cobro se
+                mantiene al 100% (es responsabilidad tuya estar disponible cuando
+                el repartidor llegó a tiempo). Esta política es estándar en la
+                industria del delivery (Rappi, PedidosYa, Glovo aplican la misma
+                regla).
+              </p>
+
+              <p>
+                <strong>Cómo evitar el no-show:</strong> tener notificaciones
+                push activadas, mantener el celular cerca durante los últimos
+                minutos del pedido, y dejar instrucciones claras en el campo
+                &quot;Notas para el repartidor&quot; si vivís en edificio con
+                portero, casa con difícil acceso, etc.
+              </p>
+
+              <p>
+                <strong>Impugnación de no-show:</strong> si recibiste el aviso
+                de no-show pero estabas efectivamente disponible (problema con
+                el push, repartidor no tocó timbre, dirección equivocada del
+                repartidor), podés impugnar el caso desde la app dentro de las
+                24 horas siguientes. Revisamos manualmente con la evidencia GPS
+                del repartidor + timestamps + tu reporte. Si se determina que
+                fue error nuestro o del repartidor, te reembolsamos el 100%.
               </p>
             </div>
           </section>
