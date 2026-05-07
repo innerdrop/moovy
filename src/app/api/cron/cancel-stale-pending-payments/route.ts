@@ -196,6 +196,28 @@ export async function POST(req: NextRequest) {
                         orderId: order.id,
                     }).catch(console.error);
 
+                    // Email de respaldo (rama chore/email-templates-faltantes).
+                    // Si el cliente tiene push deshabilitado, esto es lo que ve.
+                    // Importante legalmente: prueba documental de la cancelacion.
+                    (async () => {
+                        try {
+                            const buyer = await prisma.user.findUnique({
+                                where: { id: order.userId },
+                                select: { email: true, firstName: true },
+                            });
+                            if (!buyer?.email) return;
+                            const { sendPaymentTimeoutCancelledEmail } = await import("@/lib/email-legal-ux");
+                            await sendPaymentTimeoutCancelledEmail({
+                                buyerEmail: buyer.email,
+                                buyerName: buyer.firstName ?? null,
+                                orderNumber: order.orderNumber,
+                                timeoutMinutes,
+                            });
+                        } catch (err) {
+                            console.error(`[CancelStalePending] Email failed for ${order.id}:`, err);
+                        }
+                    })().catch(() => { /* fire-and-forget */ });
+
                     // Socket emits
                     const socketData = {
                         orderId: order.id,

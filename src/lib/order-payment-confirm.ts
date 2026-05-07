@@ -309,6 +309,24 @@ export async function confirmOrderPaymentFromMp(
             }).catch((err) => paymentLogger.error({ orderId, error: err?.message }, "[late-payment] refund failed"));
         }).catch(() => { /* import safety */ });
 
+        // Email al cliente notificando el reembolso automático.
+        // Rama chore/email-templates-faltantes: Ley 24.240 exige notificación
+        // expresa cuando se procesa un reembolso, con detalle del monto.
+        (async () => {
+            try {
+                if (!order.user?.email) return;
+                const { sendPaymentLateRefundEmail } = await import("@/lib/email-legal-ux");
+                await sendPaymentLateRefundEmail({
+                    buyerEmail: order.user.email,
+                    buyerName: order.user.name ?? null,
+                    orderNumber: order.orderNumber,
+                    refundAmount: mpAmount,
+                });
+            } catch (err) {
+                paymentLogger.error({ orderId, error: err }, "[late-payment] email send failed");
+            }
+        })().catch(() => { /* fire-and-forget */ });
+
         return {
             confirmed: false, alreadyConfirmed: false, notApplicable: true, failed: false,
             paymentStatus: "PAID", mpStatus, amount: mpAmount,

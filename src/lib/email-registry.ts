@@ -1495,6 +1495,129 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             ${emailAlertBox(`<p style="margin: 0; font-size: 14px;"><strong>Tenés 24 horas</strong> para configurar tu contraseña con este link.</p>`, 'warning')}
         `),
     },
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RAMA chore/email-templates-faltantes (no-show flow + payment timeout)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    {
+        id: 'payment_timeout_cancelled',
+        number: 60,
+        name: 'Pedido cancelado por timeout de pago',
+        category: 'Ciclo de vida — Pagos',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'Cron cancel-stale-pending-payments (30 min sin confirmar pago)',
+        subject: 'Pedido [N] cancelado por pago no confirmado',
+        functionName: 'sendPaymentTimeoutCancelledEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0; font-size: 22px;">Tu pedido fue cancelado</h2>
+            <p style="color: #4b5563; font-size: 15px; line-height: 1.7;">
+                ${SAMPLE.buyerName}, cancelamos automáticamente tu pedido <strong>${SAMPLE.orderNumber}</strong>
+                porque el pago no se confirmó dentro de los <strong>30 minutos</strong> permitidos.
+            </p>
+            ${emailInfoBox(`
+                <strong>El stock fue restaurado.</strong> Podés volver a hacer el pedido cuando
+                quieras. No se cobró nada — si MercadoPago retiene la operación, se acreditará
+                automáticamente en las próximas 48hs.
+            `)}
+            <p style="color: #4b5563; font-size: 14px; line-height: 1.6; margin-top: 18px;">
+                Si creés que fue un error o tu pago se confirmó después, contactanos en
+                <a href="mailto:soporte@somosmoovy.com" style="color: #e60012; font-weight: 600;">soporte@somosmoovy.com</a>
+                con el número de pedido.
+            </p>
+            ${emailButton("Volver a la tienda", `https://somosmoovy.com/tienda`, "red")}
+        `),
+    },
+
+    {
+        id: 'payment_late_refund',
+        number: 61,
+        name: 'Pago tardío post-cancelación → refund automático',
+        category: 'Ciclo de vida — Pagos',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'Webhook MP confirma approved en pedido ya cancelado (race condition)',
+        subject: 'Reembolso automático $X — pedido [N]',
+        functionName: 'sendPaymentLateRefundEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0; font-size: 22px;">Recibimos tu pago tarde — te lo devolvemos</h2>
+            <p style="color: #4b5563; font-size: 15px; line-height: 1.7;">
+                ${SAMPLE.buyerName}, MercadoPago confirmó tu pago del pedido
+                <strong>${SAMPLE.orderNumber}</strong> después de que el pedido se cancelara.
+                Como ya no podemos prepararlo, te devolvemos el dinero
+                <strong>automáticamente</strong>.
+            </p>
+            ${emailAlertBox(`
+                <strong>Monto a devolver:</strong> $${SAMPLE.total.toLocaleString('es-AR')}<br/>
+                <strong>Plazo estimado:</strong> 5 a 15 días hábiles según tu banco.<br/>
+                <strong>Método:</strong> el mismo de tu pago original.
+            `, "info")}
+            ${emailButton("Hacer un nuevo pedido", `https://somosmoovy.com/tienda`, "red")}
+        `),
+    },
+
+    {
+        id: 'customer_no_show_returned',
+        number: 62,
+        name: 'Cliente no apareció → pedido vuelve al comercio',
+        category: 'Ciclo de vida — Entrega',
+        recipient: 'comprador',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'Endpoint report-no-show (driver esperó 10 min sin respuesta)',
+        subject: 'No te encontramos — pedido [N]',
+        functionName: 'sendCustomerNoShowReturnedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0; font-size: 22px;">No te encontramos en el domicilio</h2>
+            <p style="color: #4b5563; font-size: 15px; line-height: 1.7;">
+                ${SAMPLE.buyerName}, tu repartidor llegó al domicilio del pedido
+                <strong>${SAMPLE.orderNumber}</strong> y esperó 10 minutos, pero nadie respondió.
+                El pedido vuelve a <strong>${SAMPLE.merchantName}</strong>.
+            </p>
+            ${emailAlertBox(`
+                <strong>Importante:</strong> el cobro se mantiene porque el pedido se preparó
+                y entregamos a tiempo. Si creés que fue un error, podés reportarlo desde la app.
+            `, "warning")}
+            ${emailButton("Ver el pedido", `https://somosmoovy.com/mis-pedidos`, "red")}
+        `),
+    },
+
+    {
+        id: 'merchant_order_returned',
+        number: 63,
+        name: 'Comercio recibe pedido devuelto por no-show',
+        category: 'Ciclo de vida — Entrega',
+        recipient: 'comercio',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'Endpoint report-no-show (paralelo al email del comprador)',
+        subject: 'Pedido [N] vuelve por no-show del cliente',
+        functionName: 'sendMerchantOrderReturnedEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #111827; margin-top: 0; font-size: 22px;">Un pedido vuelve a tu comercio</h2>
+            <p style="color: #4b5563; font-size: 15px; line-height: 1.7;">
+                <strong>${SAMPLE.merchantName}</strong>, el repartidor del pedido
+                <strong>${SAMPLE.orderNumber}</strong> de ${SAMPLE.buyerName} no encontró al cliente.
+                El pedido vuelve a vos.
+            </p>
+            ${emailInfoBox(`
+                <strong>Cuando llegue el repartidor:</strong> dale el <strong>mismo PIN de retiro</strong>
+                que ya le habías dado. Lo va a ingresar en la app para cerrar la devolución.
+            `)}
+            ${emailAlertBox(`
+                <strong>Sobre el cobro:</strong> tu pago no se ve afectado. Cobrás como si el
+                pedido se hubiera entregado. Moovy se hace cargo del costo del viaje fallido.
+            `, "success")}
+            ${emailButton("Ver el pedido", `https://somosmoovy.com/comercios/pedidos`, "red")}
+        `),
+    },
 ];
 
 // ─── Helpers de búsqueda ────────────────────────────────────────────────────

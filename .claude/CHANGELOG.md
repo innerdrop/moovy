@@ -10,6 +10,92 @@
 
 ---
 
+## 2026-05-07 (rama `chore/email-templates-faltantes`)
+
+chore: 4 templates de email faltantes (payment timeout, late refund, no-show)
+
+PROBLEMA QUE RESUELVE:
+Las ramas anteriores (cancelacion de pago pendiente, no-show flow) crearon
+endpoints y crons que mandaban PUSH al cliente, pero NO email. Eso es un
+problema legal (Ley 24.240 exige notificacion documentada de cancelaciones y
+reembolsos) y de UX (clientes con push deshabilitado no se enteran).
+
+Esta rama completa los 4 emails que faltaban siguiendo el patron canonico de
+EMAIL_REGISTRY + funciones en email-legal-ux.ts + tag igual al id del registry.
+
+TEMPLATES NUEVOS (4):
+
+1) payment_timeout_cancelled — al comprador
+   Trigger: cron cancel-stale-pending-payments cancela pedido sin pago confirmado
+   en 30 min.
+   Funcion: sendPaymentTimeoutCancelledEmail
+   Cubre: pedido cancelado, stock restaurado, instrucciones si MP retiene fondos.
+
+2) payment_late_refund — al comprador
+   Trigger: webhook MP confirma pago APPROVED en pedido ya cancelado (race con
+   timeout o cancelacion manual del cliente).
+   Funcion: sendPaymentLateRefundEmail
+   Cubre: notificacion expresa de reembolso automatico (Ley 24.240), monto exacto,
+   plazo estimado 5-15 dias habiles, metodo (mismo del pago original).
+
+3) customer_no_show_returned — al comprador
+   Trigger: endpoint report-no-show (driver espero 10 min y cliente no aparecio).
+   Funcion: sendCustomerNoShowReturnedEmail
+   Cubre: el repartidor llego pero no te encontramos, el pedido vuelve al
+   comercio, el cobro se mantiene (estandar industria), instrucciones de
+   impugnacion + sugerencias para evitarlo.
+
+4) merchant_order_returned — al comercio
+   Trigger: endpoint report-no-show (paralelo al email del comprador).
+   Funcion: sendMerchantOrderReturnedEmail
+   Cubre: aviso al comercio que un pedido vuelve, instrucciones de recibirlo con
+   el mismo PIN del pickup, aclaracion que el cobro al comercio NO se afecta
+   (Moovy come la comision en no-show).
+
+REGISTRO EN EMAIL_REGISTRY:
+
+  Numbers 60-63, category "Ciclo de vida — Pagos" / "Ciclo de vida — Entrega".
+  Status "new" hasta validar en produccion. Visibles en /ops/emails con preview.
+
+TRIGGERS CONECTADOS:
+
+  - src/app/api/cron/cancel-stale-pending-payments/route.ts:
+    fire-and-forget despues del notifyBuyer push.
+  - src/lib/order-payment-confirm.ts (bloque late payment detection):
+    despues del refundOrderIfPaid, fire-and-forget del email.
+  - src/app/api/driver/orders/[id]/report-no-show/route.ts:
+    fire-and-forget DOS emails (buyer + merchant) despues del notifyCustomer push.
+    Ampliado el findUnique para incluir order.user.email/firstName y
+    order.merchant.email/name (necesarios para los emails).
+
+PATRON USADO:
+
+  Todas las funciones siguen el patron canonico de email-legal-ux.ts:
+    - Importan { sendEmail, emailLayout, emailButton, emailInfoBox, emailAlertBox,
+      baseUrl } desde "./email"
+    - Async, devuelven Promise<boolean> (resultado del sendEmail)
+    - Tag = id del EMAIL_REGISTRY (trazabilidad en logs Pino)
+    - Manejo de buyerName null (greeting condicional)
+    - Subject claro con orderNumber
+
+  Los triggers son fire-and-forget para no bloquear el flow operativo del
+  cron/endpoint si SMTP esta caido.
+
+TESTING:
+- TSC strict pasa limpio.
+- Verificacion: /ops/emails muestra los 4 nuevos (numbers 60-63), preview
+  renderiza correctamente con datos de SAMPLE.
+- Trigger smoke test: crear pedido → abandonar pago → esperar cron → verificar
+  email recibido por el buyer (en sandbox SMTP en local).
+
+POST-LAUNCH:
+- En produccion verificar que los emails llegan con SMTP_HOST de produccion.
+- Considerar agregar email al driver cuando completa devolucion (gana bonus
+  $300). Hoy solo recibe push genérico, podria ser un email "te depositamos
+  X bonus por viaje fallido".
+
+**Archivos:** src/app/api/cron/cancel-stale-pending-payments/route.ts, src/app/api/driver/orders/[id]/report-no-show/route.ts, src/lib/email-legal-ux.ts, src/lib/email-registry.ts, src/lib/order-payment-confirm.ts
+
 ## 2026-05-07 (rama `feat/no-show-flow`)
 
 feat: flow no-show completo (driver llega, cliente no aparece, devolucion al comercio)

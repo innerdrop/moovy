@@ -57,6 +57,11 @@ export async function POST(
                 driverStatus: true,
                 waitingStartedAt: true,
                 deletedAt: true,
+                // Rama chore/email-templates-faltantes: necesario para enviar
+                // emails de no-show al buyer y al merchant.
+                merchantId: true,
+                user: { select: { email: true, firstName: true } },
+                merchant: { select: { email: true, name: true } },
             },
         });
 
@@ -174,6 +179,47 @@ export async function POST(
         ).catch((err) => {
             noShowLogger.error({ err, orderId }, "Failed to notify customer of no-show");
         });
+
+        // Emails de respaldo (rama chore/email-templates-faltantes).
+        // Push puede estar deshabilitado del lado del cliente, y legalmente
+        // necesitamos prueba documental de que se notificó al cliente.
+        // Al comercio también — para que sepa que un pedido le vuelve.
+        // Fire-and-forget: si email falla, no bloquea el flow del driver.
+        (async () => {
+            try {
+                const { sendCustomerNoShowReturnedEmail, sendMerchantOrderReturnedEmail } =
+                    await import("@/lib/email-legal-ux");
+
+                const merchantName = order.merchant?.name || "el comercio";
+                const buyerFirstName = order.user?.firstName ?? null;
+
+                // Email al cliente: "no te encontramos, tu pedido vuelve al comercio"
+                if (order.user?.email) {
+                    await sendCustomerNoShowReturnedEmail({
+                        buyerEmail: order.user.email,
+                        buyerName: buyerFirstName,
+                        orderNumber: order.orderNumber,
+                        merchantName,
+                    }).catch((err) =>
+                        noShowLogger.error({ err, orderId }, "Customer no-show email failed"),
+                    );
+                }
+
+                // Email al comercio: "un pedido te vuelve, recibilo con el mismo PIN"
+                if (order.merchant?.email) {
+                    await sendMerchantOrderReturnedEmail({
+                        merchantEmail: order.merchant.email,
+                        merchantName,
+                        orderNumber: order.orderNumber,
+                        customerName: buyerFirstName,
+                    }).catch((err) =>
+                        noShowLogger.error({ err, orderId }, "Merchant return email failed"),
+                    );
+                }
+            } catch (err) {
+                noShowLogger.error({ err, orderId }, "No-show emails import failed");
+            }
+        })().catch(() => { /* fire-and-forget */ });
 
         return NextResponse.json({
             success: true,
