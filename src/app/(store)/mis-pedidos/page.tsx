@@ -54,6 +54,8 @@ interface Order {
         longitude?: number;
         user: { name: string; phone?: string };
     };
+    // Rama feat/payment-pending-cancellation: para banner "Continuar pago" / "Cancelar"
+    mpPreferenceId?: string | null;
 }
 
 // ─── Status config ────────────────────────────────────────
@@ -122,12 +124,49 @@ function CardSkeleton({ i }: { i: number }) {
     );
 }
 
+// ─── Helpers de pago pendiente (rama feat/payment-pending-cancellation) ───
+//
+// Un pedido queda "pendiente de pago" cuando el buyer creó el pedido + preference
+// MP pero no completó el redirect (cierre de pestaña, abandono de MP, etc).
+//
+// Sin threshold de espera (decisión del consejo): apenas el cliente entra a
+// "Mis Pedidos" con un pedido en AWAITING_PAYMENT, mostramos el banner. Razón:
+// el cliente que vuelve a este listado YA salió de MP (sea pagando o abandonando).
+// Si pagó, el webhook llega en ~30s y el frontend hace probing automático contra
+// /api/payments/[orderId]/status (mecanismo pendingProbeRef) que detecta el
+// pago tardío y refresca; el banner desaparece solo. Si abandonó, le damos
+// control inmediato sin obligarlo a esperar.
+//
+// Caso edge (race con webhook MP): si el cliente toca "Cancelar pedido" en el
+// window de pocos segundos donde MP ya cobró pero Moovy todavía no se enteró,
+// el cancel dispara refund automático (helper canónico refundOrderIfPaid +
+// fix en order-payment-confirm.ts para late payments). La plata vuelve.
+
+const PENDING_PAYMENT_STATUSES = ["AWAITING_PAYMENT", "PENDING"] as const;
+const TERMINAL_ORDER_STATUSES_FOR_BANNER = ["DELIVERED", "CANCELLED", "REJECTED", "REFUNDED", "EXPIRED", "RETURNED"];
+
+function isPendingPayment(o: Order): boolean {
+    // Si el pedido ya está cerrado (CANCELLED/DELIVERED/etc), NO mostrar banner.
+    // El cancel endpoint marca status=CANCELLED pero deja paymentStatus en
+    // AWAITING_PAYMENT (no se pagó nada), entonces sin este chequeo el banner
+    // sobreviviría a la cancelación, mostrando botones inútiles en Historial.
+    if (TERMINAL_ORDER_STATUSES_FOR_BANNER.includes(o.status)) return false;
+    if (!PENDING_PAYMENT_STATUSES.includes(o.paymentStatus as typeof PENDING_PAYMENT_STATUSES[number])) return false;
+    if (o.paymentMethod !== "mercadopago" && o.paymentMethod !== "MercadoPago") return false;
+    return true;
+}
+
+function mercadopagoCheckoutUrl(mpPreferenceId: string): string {
+    return `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${encodeURIComponent(mpPreferenceId)}`;
+}
+
 // ─── Main Component ───────────────────────────────────────
 export default function MisPedidosPage() {
     const { data: session, status: authStatus } = useSession();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState<"active" | "history">("active");
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
     const prevStatuses = useRef<Map<string, string>>(new Map());
 
     const isAuth = authStatus === "authenticated";
@@ -146,6 +185,33 @@ export default function MisPedidosPage() {
             if (!silent) setLoading(false);
         }
     }, []);
+
+    // Handler: cancelar pedido pendiente de pago. Confirmación textual antes de
+    // disparar el endpoint para evitar tap accidental.
+    const cancelPendingOrder = useCallback(async (orderId: string, orderNumber: string) => {
+        const confirmed = window.confirm(
+            `¿Cancelar el pedido ${orderNumber}?\n\nSi ya pagaste, te devolvemos la plata automáticamente. ` +
+            `Si no completaste el pago, simplemente se libera el stock para que vuelvas a pedir cuando quieras.`
+        );
+        if (!confirmed) return;
+
+        setCancellingId(orderId);
+        try {
+            const res = await fetch(`/api/orders/${orderId}/cancel`, { method: "POST" });
+            if (res.ok) {
+                toast.success("Pedido cancelado");
+                await loadOrders(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data?.error || "No se pudo cancelar el pedido");
+            }
+        } catch (e) {
+            console.error("Error cancelling order:", e);
+            toast.error("Error de conexión");
+        } finally {
+            setCancellingId(null);
+        }
+    }, [loadOrders]);
 
     // Realtime
     const { isConnected } = useRealtimeOrders({
@@ -410,6 +476,48 @@ export default function MisPedidosPage() {
                                                 </span>
                                             )}
                                         </div>
+
+                                        {/* Banner: pago pendiente con acciones (rama feat/payment-pending-cancellation).
+                                            Aparece si el pedido lleva 5+ min en AWAITING_PAYMENT con MP. Si el cliente
+                                            cerró la pestaña de MP, le da control inmediato para retomar o cancelar. */}
+                                        {isPendingPayment(order) && (
+                                            <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                <div className="flex items-start gap-2 mb-2">
+                                                    <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs font-bold text-amber-900 leading-tight">Esperando confirmación de pago</p>
+                                                        <p className="text-[11px] text-amber-700 leading-tight mt-0.5">
+                                                            Si abandonaste el pago, podés cancelar y empezar de nuevo, o seguir pagando con MercadoPago.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    {order.mpPreferenceId && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                window.location.href = mercadopagoCheckoutUrl(order.mpPreferenceId!);
+                                                            }}
+                                                            className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors active:scale-95"
+                                                        >
+                                                            Continuar pago
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            cancelPendingOrder(order.id, order.orderNumber);
+                                                        }}
+                                                        disabled={cancellingId === order.id}
+                                                        className="flex-1 py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg transition-colors active:scale-95 disabled:opacity-50"
+                                                    >
+                                                        {cancellingId === order.id ? "Cancelando..." : "Cancelar pedido"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Row 3: Items chips */}
                                         <div className="flex flex-wrap gap-1.5 mb-3">

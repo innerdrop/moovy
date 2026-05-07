@@ -10,6 +10,80 @@
 
 ---
 
+## 2026-05-06 (rama `feat/payment-pending-cancellation`)
+
+feat: cancelacion de pago pendiente + descripcion de producto obligatoria
+
+PROBLEMA RAIZ que resuelve:
+Cuando el buyer paga con MercadoPago pero abandona el redirect (cierra pestaña,
+vuelve atras, error de red), el pedido quedaba "fantasma" en estado AWAITING_PAYMENT
+para siempre. Stock reservado, cliente sin poder hacer nada, comercio sin saber.
+
+SOLUCION (4 capas, defense-in-depth):
+
+1. UI BUYER — banner inmediato (sin espera de minutos):
+   - src/app/(store)/mis-pedidos/page.tsx
+   - Apenas el cliente entra a "Mis Pedidos" con un pedido en AWAITING_PAYMENT,
+     ve banner ambar con dos acciones: "Continuar pago" (redirect a MP via
+     mpPreferenceId) y "Cancelar pedido" (con confirm modal).
+   - Banner desaparece automaticamente cuando paymentStatus pasa a PAID
+     (probing existente vs MP API) o cuando status pasa a CANCELLED.
+   - Filtro `isPendingPayment()` chequea: status NO terminal AND paymentStatus
+     pendiente AND paymentMethod=mercadopago.
+
+2. CRON AUTO-CANCEL (red de seguridad):
+   - src/app/api/cron/cancel-stale-pending-payments/route.ts (NUEVO)
+   - Corre cada minuto. Cancela pedidos con createdAt > 30 min sin pago
+     confirmado. Restaura stock (Listing + Product) en transaccion Serializable.
+   - Timeout configurable desde MoovyConfig.payment_pending_timeout_minutes.
+   - Wrapped en recordCronRun para healthcheck OPS.
+   - Audit log + notifyBuyer + sockets a admin/customer/merchant.
+
+3. WEBHOOK MP — pago tardio post-cancelacion -> refund automatico:
+   - src/lib/order-payment-confirm.ts
+   - Antes: si MP confirmaba un pago despues de que el pedido estaba CANCELLED,
+     el sistema REACTIVABA el pedido (status pasaba a CONFIRMED). Doble bug:
+     reactivaba contra la voluntad del cliente Y se quedaba con la plata.
+   - Ahora: detecta TERMINAL_STATUSES_LATE_PAYMENT antes del update. Si esta
+     terminal, NO reactiva. Persiste el Payment para audit, marca paymentStatus=PAID
+     para que refundOrderIfPaid lo detecte, dispara refund automatico.
+   - Audit log con action LATE_PAYMENT_AFTER_CANCELLATION.
+   - Defense-in-depth: si race condition entre query y update, refund tambien.
+
+4. CRON_EXPECTATIONS:
+   - src/lib/cron-health.ts: agregada entrada cancel-stale-pending-payments
+     (maxHours: 1) para que el dashboard OPS lo monitoree.
+
+FIX BONUS: PIN prematuro al comercio
+- src/app/api/merchant/orders/route.ts
+- Antes: PIN aparecia al comercio apenas el driver llegaba (DRIVER_ARRIVED),
+  sin importar si el comercio habia marcado "Listo para retirar". El comercio
+  veia el PIN cuando todavia no habia terminado de preparar.
+- Ahora: PIN solo aparece si AMBAS son verdad: (a) driver llego (deliveryStatus=
+  DRIVER_ARRIVED o driverStatus=AT_MERCHANT) Y (b) comercio marco listo
+  (merchantStatus=READY/PICKED_UP/RETURNED o legacy status correspondiente).
+- Compat retro: pedidos pre-rama state-machine-paralela con merchantStatus=null
+  caen al fallback legacy.
+
+FIX BONUS: descripcion de producto obligatoria
+- src/app/comercios/actions.ts
+- Bug: el comercio reportaba "Invalid input: expected string, received null" al
+  editar productos. Causa: schema Zod tenia description.optional() pero
+  formData.get() retorna null (no undefined) para campos vacios, y .optional()
+  NO acepta null.
+- Decision de producto: descripciones venden y son SEO-relevantes (Rappi,
+  MercadoLibre obligan). Cambiamos a z.string().min(10, "...") con mensaje claro.
+- Implicacion: productos legacy con descripcion null se fuerzan a completarse al
+  editar. Intencional — oportunidad para completar catalogo pre-launch.
+
+POST-LAUNCH (anotado, NO en esta rama):
+- feat/driver-offer-map-and-timer: mapa preview + countdown en oferta del driver
+- feat/driver-availability-checkout: pre-validacion drivers + auto-refund sin drivers
+- feat/no-show-flow: UI driver para WAITING_FOR_CUSTOMER, devolucion al comercio
+- Otros campos obligatorios al editar producto (categoria, peso) en rama propia
+
+**Archivos:** src/app/(store)/mis-pedidos/page.tsx, src/app/api/cron/cancel-stale-pending-payments/route.ts, src/app/api/merchant/orders/route.ts, src/app/comercios/actions.ts, src/lib/cron-health.ts, src/lib/order-payment-confirm.ts
+
 ## 2026-05-06 (rama `fix/state-machine-paralela-merchant-driver`)
 
 fix: state machine paralela merchant + driver, PIN 4 digitos, bulk fix de filtros de estados

@@ -37,6 +37,11 @@ interface OrderForConfirm {
     discount: number;
     paymentMethod: string | null;
     paymentStatus: string;
+    // Rama feat/payment-pending-cancellation: necesario para detectar pagos
+    // tardíos sobre orders ya canceladas (status === "CANCELLED") y disparar
+    // refund automático en lugar de reactivar el pedido.
+    status: string;
+    userId: string;
     mpStatus: string | null;
     paidAt: Date | null;
     isPickup: boolean;
@@ -228,11 +233,99 @@ export async function confirmOrderPaymentFromMp(
         paymentLogger.error({ orderId, error: err?.message }, "[order-payment-confirm] Payment upsert failed");
     });
 
+    // === Detección de pago tardío post-cancelación ===
+    // Rama feat/payment-pending-cancellation: si el pedido ya está en estado
+    // terminal (CANCELLED por timeout del cron o decisión del cliente, o
+    // REFUNDED/etc), NO debemos reactivarlo. Antes el updateMany sólo filtraba
+    // por paymentStatus, así que un pago tardío reactivaba un pedido cancelado
+    // (status pasaba a CONFIRMED) — el cliente había decidido cancelar pero el
+    // sistema le revivía el pedido contra su voluntad.
+    //
+    // Solución: chequear PRIMERO si está cancelado. Si lo está → disparar refund
+    // automático y NO actualizar status. Si no, proceder con el path normal.
+    const TERMINAL_STATUSES_LATE_PAYMENT = ["CANCELLED", "REJECTED", "RETURNED", "EXPIRED", "REFUNDED"];
+    if (TERMINAL_STATUSES_LATE_PAYMENT.includes(order.status)) {
+        paymentLogger.warn(
+            { orderId, orderStatus: order.status, mpPaymentId, mpAmount },
+            "[order-payment-confirm] LATE PAYMENT for already-terminal order — disparando refund automatico"
+        );
+
+        // Persistir el Payment para audit (todavía no estaba)
+        await prisma.payment.upsert({
+            where: { mpPaymentId },
+            create: {
+                orderId: order.id,
+                mpPaymentId,
+                mpStatus,
+                mpStatusDetail: mpPayment.status_detail || null,
+                amount: mpAmount,
+                currency: mpPayment.currency_id || "ARS",
+                payerEmail: mpPayment.payer?.email || null,
+                paymentMethod: mpPayment.payment_type_id || null,
+                rawPayload: mpPayment as any,
+            },
+            update: {
+                mpStatus,
+                mpStatusDetail: mpPayment.status_detail || null,
+                rawPayload: mpPayment as any,
+            },
+        }).catch((err) => paymentLogger.error({ orderId, error: err?.message }, "[late-payment] Payment upsert failed"));
+
+        // Marcar el paymentStatus como PAID para que refundOrderIfPaid lo detecte
+        // y dispare el refund. NO tocamos `status` (queda CANCELLED).
+        await prisma.order.update({
+            where: { id: orderId },
+            data: {
+                paymentStatus: "PAID",
+                mpPaymentId,
+                mpStatus,
+                paidAt: new Date(),
+            },
+        }).catch((err) => paymentLogger.error({ orderId, error: err?.message }, "[late-payment] paymentStatus update failed"));
+
+        // Audit log del evento (rama feat/payment-pending-cancellation)
+        await prisma.auditLog.create({
+            data: {
+                action: "LATE_PAYMENT_AFTER_CANCELLATION",
+                entityType: "Order",
+                entityId: order.id,
+                userId: order.userId, // El buyer dueño del pedido (no es accion del sistema, es resultado para él)
+                details: JSON.stringify({
+                    orderNumber: order.orderNumber,
+                    orderStatus: order.status,
+                    mpPaymentId,
+                    mpAmount,
+                    triggeredAutoRefund: true,
+                }),
+            },
+        }).catch(() => { /* nice-to-have */ });
+
+        // Disparar refund automático (helper canónico, idempotente)
+        import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
+            refundOrderIfPaid(order.id, {
+                triggeredBy: "cron",
+                actorId: null,
+                reason: `Pago confirmado por MercadoPago despues de la cancelacion. Reembolso automatico.`,
+            }).catch((err) => paymentLogger.error({ orderId, error: err?.message }, "[late-payment] refund failed"));
+        }).catch(() => { /* import safety */ });
+
+        return {
+            confirmed: false, alreadyConfirmed: false, notApplicable: true, failed: false,
+            paymentStatus: "PAID", mpStatus, amount: mpAmount,
+            reason: `late_payment_after_${order.status}_auto_refund_triggered`,
+        };
+    }
+
     const now = new Date();
     const updateResult = await prisma.order.updateMany({
         where: {
             id: order.id,
             paymentStatus: { in: ["AWAITING_PAYMENT", "PENDING"] },
+            // Defense-in-depth: filtrar tambien por status NO terminal (el bloque de
+            // late-payment de arriba ya cubre el caso, pero esto es double-check
+            // contra race conditions donde el cancel ocurre entre el findUnique
+            // de arriba y este updateMany).
+            status: { notIn: TERMINAL_STATUSES_LATE_PAYMENT },
         },
         data: {
             paymentStatus: "PAID",
@@ -246,8 +339,25 @@ export async function confirmOrderPaymentFromMp(
     if (updateResult.count === 0) {
         const fresh = await prisma.order.findUnique({
             where: { id: orderId },
-            select: { paymentStatus: true, mpStatus: true, paidAt: true },
+            select: { paymentStatus: true, mpStatus: true, paidAt: true, status: true },
         });
+
+        // Si el motivo del 0 es que el status pasó a terminal entre la query y el
+        // update (race extremo), tratar como late-payment también
+        if (fresh?.status && TERMINAL_STATUSES_LATE_PAYMENT.includes(fresh.status)) {
+            paymentLogger.warn(
+                { orderId, orderStatus: fresh.status, mpPaymentId },
+                "[order-payment-confirm] race condition: order cancelled mid-update, deferring to refund"
+            );
+            import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
+                refundOrderIfPaid(order.id, {
+                    triggeredBy: "cron",
+                    actorId: null,
+                    reason: "Cancelacion concurrente con confirmacion de pago",
+                }).catch(() => {});
+            }).catch(() => {});
+        }
+
         return {
             confirmed: false, alreadyConfirmed: true, notApplicable: false, failed: false,
             paymentStatus: fresh?.paymentStatus || "PAID",

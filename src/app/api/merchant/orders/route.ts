@@ -51,19 +51,45 @@ export async function GET() {
             take: 50, // Limit to recent orders
         });
 
-        // ISSUE-001: PIN doble — solo mostrar pickupPin cuando el driver llegó al comercio.
+        // ISSUE-001: PIN doble — solo mostrar pickupPin cuando AMBAS condiciones se cumplen:
+        //   (a) el driver llegó al comercio (deliveryStatus=DRIVER_ARRIVED o driverStatus=AT_MERCHANT)
+        //   (b) el comercio ya marcó "Listo para retirar" (merchantStatus=READY o status legacy=READY)
+        //
+        // Rama feat/payment-pending-cancellation (fix bug PIN prematuro):
+        // Antes solo chequeaba (a). Si el driver llegaba antes que el comercio dijera
+        // listo, el PIN aparecía igual y desaparecía la opción "Listo para retirar".
+        // El comercio veía "ya está, dale el PIN al driver" cuando todavía no había
+        // terminado de preparar. Ahora chequeamos ambas — el PIN aparece solo cuando
+        // el comercio marcó listo Y el driver llegó.
+        //
         // Defense-in-depth: aunque el merchant sea dueño del pedido, no exponemos el PIN
-        // hasta que sea necesario (DRIVER_ARRIVED). Esto previene leaks accidentales o
-        // ataques de phishing donde un falso driver llama antes de llegar.
+        // hasta que sea necesario. Previene leaks accidentales y ataques de phishing
+        // donde un falso driver llama antes de llegar.
+        const canShowPickupForOrder = (o: any): boolean => {
+            const driverArrived = o.deliveryStatus === "DRIVER_ARRIVED" || o.driverStatus === "AT_MERCHANT";
+            // Compat retro: pedidos pre-rama state-machine-paralela tienen merchantStatus=null,
+            // en ese caso fallback al status legacy.
+            const merchantReady = o.merchantStatus
+                ? ["READY", "PICKED_UP", "RETURNED"].includes(o.merchantStatus)
+                : ["READY", "PICKED_UP", "IN_DELIVERY", "DELIVERED"].includes(o.status);
+            return driverArrived && merchantReady;
+        };
+        const canShowPickupForSubOrder = (sub: any): boolean => {
+            const driverArrived = sub.deliveryStatus === "DRIVER_ARRIVED" || sub.driverStatus === "AT_MERCHANT";
+            const merchantReady = sub.merchantStatus
+                ? ["READY", "PICKED_UP", "RETURNED"].includes(sub.merchantStatus)
+                : ["READY", "PICKED_UP", "IN_DELIVERY", "DELIVERED"].includes(sub.status);
+            return driverArrived && merchantReady;
+        };
+
         const sanitizedOrders = orders.map((order: any) => {
-            const canShowPickup = order.deliveryStatus === "DRIVER_ARRIVED";
             return {
                 ...order,
-                pickupPin: canShowPickup ? order.pickupPin : null,
+                pickupPin: canShowPickupForOrder(order) ? order.pickupPin : null,
                 deliveryPin: null, // Nunca exponer el deliveryPin al merchant
                 subOrders: order.subOrders?.map((sub: any) => ({
                     ...sub,
-                    pickupPin: sub.deliveryStatus === "DRIVER_ARRIVED" ? sub.pickupPin : null,
+                    pickupPin: canShowPickupForSubOrder(sub) ? sub.pickupPin : null,
                     deliveryPin: null,
                 })),
             };

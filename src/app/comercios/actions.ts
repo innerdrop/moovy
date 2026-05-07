@@ -9,7 +9,21 @@ import { z } from "zod";
 
 const productSchema = z.object({
     name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-    description: z.string().optional(),
+    // Rama feat/payment-pending-cancellation (fix bug "expected string, received null"):
+    // Descripción ahora es OBLIGATORIA con mínimo 10 caracteres. Antes era opcional
+    // y `formData.get()` retornaba null para campos vacíos, lo cual Zod .optional()
+    // NO acepta (acepta undefined pero no null). Eso disparaba el error genérico
+    // "Invalid input: expected string, received null" sin contexto al comercio.
+    //
+    // Decisión de producto: descripciones venden y son SEO-relevantes. Apps grandes
+    // (Rappi, MercadoLibre) obligan descripción. Para Moovy pre-launch, queremos
+    // catálogos completos. min(10) descarta "ok", "test", "-" pero permite descripciones
+    // legítimas cortas como "Pizza muzzarella" o "Coca-Cola 2.25L".
+    //
+    // Implicación: productos legacy con descripción null/vacía van a forzar al
+    // comercio a agregar una al editar. Es intencional — oportunidad para completar
+    // datos faltantes antes del launch.
+    description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
     price: z.coerce.number().min(0, "El precio no puede ser negativo"),
     stock: z.coerce.number().int().min(0, "El stock no puede ser negativo"),
     imageUrls: z.string().transform((val) => {
@@ -20,18 +34,19 @@ const productSchema = z.object({
             return [];
         }
     }).refine((arr) => arr.length > 0, "Debes subir al menos una imagen"),
-    categoryId: z.string().optional(),
+    // Rama feat/payment-pending-cancellation: usamos `.nullish()` (acepta null Y
+    // undefined) en lugar de `.optional()` (solo undefined). formData.get() retorna
+    // null para campos vacíos, lo cual rompía la validación con el error genérico
+    // "Invalid input: expected string, received null".
+    categoryId: z.string().nullish(),
     // Rama feat/peso-volumen-productos: campos opcionales con fallback en
     // resolveItemWeight(). Permitimos 0 como "no cargado" → null en DB.
-    // El form principal manda los gramos derivados del SizeSelector (Glovo-style);
-    // el modo avanzado permite tipearlos exactos. productSize es informativo
-    // para audit/analítica futura (ver qué tan bien acierta la sugerencia).
-    weightGrams: z.coerce.number().int().min(0).max(500000).optional()
+    weightGrams: z.coerce.number().int().min(0).max(500000).nullish()
         .transform((v) => (v && v > 0 ? v : null)),
-    volumeMl: z.coerce.number().int().min(0).max(1000000).optional()
+    volumeMl: z.coerce.number().int().min(0).max(1000000).nullish()
         .transform((v) => (v && v > 0 ? v : null)),
-    packageCategoryId: z.string().optional().transform((v) => (v && v.length > 0 ? v : null)),
-    productSize: z.enum(["MICRO", "SMALL", "MEDIUM", "LARGE", "XL", ""]).optional(),
+    packageCategoryId: z.string().nullish().transform((v) => (v && v.length > 0 ? v : null)),
+    productSize: z.enum(["MICRO", "SMALL", "MEDIUM", "LARGE", "XL", ""]).nullish(),
 });
 
 // Helper to verify merchant ownership
@@ -182,7 +197,19 @@ export async function createProduct(formData: FormData) {
     const validation = productSchema.safeParse(rawData);
 
     if (!validation.success) {
-        return { error: validation.error.issues[0].message };
+        // Rama feat/payment-pending-cancellation: incluir el campo que falla en el
+        // mensaje. Antes solo mostraba el mensaje (ej: "Invalid input: expected
+        // string, received null") sin decir QUÉ campo, lo cual hacía imposible
+        // depurar desde la UI del comercio.
+        const issue = validation.error.issues[0];
+        const fieldPath = issue.path.length > 0 ? issue.path.join(".") : "campo desconocido";
+        console.error("[productSchema] Validation failed:", {
+            field: fieldPath,
+            message: issue.message,
+            code: issue.code,
+            allIssues: validation.error.issues,
+        });
+        return { error: `${fieldPath}: ${issue.message}` };
     }
 
     const data = validation.data;
@@ -257,7 +284,19 @@ export async function updateProduct(productId: string, formData: FormData) {
     const validation = productSchema.safeParse(rawData);
 
     if (!validation.success) {
-        return { error: validation.error.issues[0].message };
+        // Rama feat/payment-pending-cancellation: incluir el campo que falla en el
+        // mensaje. Antes solo mostraba el mensaje (ej: "Invalid input: expected
+        // string, received null") sin decir QUÉ campo, lo cual hacía imposible
+        // depurar desde la UI del comercio.
+        const issue = validation.error.issues[0];
+        const fieldPath = issue.path.length > 0 ? issue.path.join(".") : "campo desconocido";
+        console.error("[productSchema] Validation failed:", {
+            field: fieldPath,
+            message: issue.message,
+            code: issue.code,
+            allIssues: validation.error.issues,
+        });
+        return { error: `${fieldPath}: ${issue.message}` };
     }
 
     const data = validation.data;

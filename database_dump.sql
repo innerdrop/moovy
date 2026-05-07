@@ -1992,7 +1992,6 @@ COPY public."AdminNote" (id, "userId", "adminId", content, pinned, "createdAt", 
 --
 
 COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm") FROM stdin;
-cmouo6tjm0014x4kt3lj7bsgq	cmouo606g000rx4ktv41n224g	cmoqaehms000permanxjcoebd	1	2026-05-06 23:09:40.643	2026-05-06 23:10:00.464	ACCEPTED	\N
 \.
 
 
@@ -2105,6 +2104,10 @@ cmoucdlyo0021dndef7194tou	ORDERS_HARD_DELETED	Order	cmouccaka001rdndee72n3ans	cm
 cmoucgawl002edndev3no4kh7	ORDERS_HARD_DELETED	Order	cmouced440026dndezvzm4fss	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":1,"requestedIds":["cmouced440026dndezvzm4fss"],"snapshot":[{"id":"cmouced440026dndezvzm4fss","orderNumber":"MOV-CBYP","total":9656,"status":"PENDING","userId":"cmoqaeh2r0000erma67dv4jv8","wasSoftDeleted":false}]}	2026-05-06 17:41:27.478
 cmounyu16000kx4ktol98u8ho	PIN_GEOFENCE_FAIL	Order	cmounrgk00005x4kt2ete17tm	cmoqaehm7000kerma58f7mpn4	{"pinType":"pickup","driverId":"cmoqaehms000permanxjcoebd","distanceMeters":452,"threshold":100,"accuracy":80}	2026-05-06 23:03:47.85
 cmouo24v2000mx4ktl9z7jyep	ORDERS_HARD_DELETED	Order	cmounrgk00005x4kt2ete17tm	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":1,"requestedIds":["cmounrgk00005x4kt2ete17tm"],"snapshot":[{"id":"cmounrgk00005x4kt2ete17tm","orderNumber":"MOV-CQSD","total":3356,"status":"DRIVER_ARRIVED","userId":"cmoqaeh2r0000erma67dv4jv8","wasSoftDeleted":false}]}	2026-05-06 23:06:21.855
+cmouqsiow0001192pq6c0vxmy	ORDERS_HARD_DELETED	Order	cmouo606g000rx4ktv41n224g	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":1,"requestedIds":["cmouo606g000rx4ktv41n224g"],"snapshot":[{"id":"cmouo606g000rx4ktv41n224g","orderNumber":"MOV-JB9A","total":1571,"status":"DRIVER_ASSIGNED","userId":"cmoqaeh2r0000erma67dv4jv8","wasSoftDeleted":false}]}	2026-05-07 00:22:52.063
+cmour9lk2000d192pky40p781	ORDERS_HARD_DELETED	Order	cmouqv1xa0006192p6wanuvup	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":1,"requestedIds":["cmouqv1xa0006192p6wanuvup"],"snapshot":[{"id":"cmouqv1xa0006192p6wanuvup","orderNumber":"MOV-K96T","total":14328,"status":"CANCELLED","userId":"cmoqaeh2r0000erma67dv4jv8","wasSoftDeleted":false}]}	2026-05-07 00:36:08.93
+cmourfhzh000p192pnxud6vf5	ORDERS_HARD_DELETED	Order	cmourb2ii000i192pb2d3ih19	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":1,"requestedIds":["cmourb2ii000i192pb2d3ih19"],"snapshot":[{"id":"cmourb2ii000i192pb2d3ih19","orderNumber":"MOV-733H","total":38478,"status":"CANCELLED","userId":"cmoqaeh2r0000erma67dv4jv8","wasSoftDeleted":false}]}	2026-05-07 00:40:44.237
+cmous2wue0019192pxw3cj53i	ORDERS_HARD_DELETED	Order	cmourhssa000u192pjt1jaqma	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":1,"requestedIds":["cmourhssa000u192pjt1jaqma"],"snapshot":[{"id":"cmourhssa000u192pjt1jaqma","orderNumber":"MOV-NDX2","total":38478,"status":"PENDING","userId":"cmoqaeh2r0000erma67dv4jv8","wasSoftDeleted":false}]}	2026-05-07 00:58:56.581
 \.
 
 
@@ -2286,7 +2289,7 @@ COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel
 cmobtv7ww000stqiamj6sh7w5	cmobtv7wq000ptqia8qc32mkw	AUTO	Fiat	Cronos	2025	Negro	AA123AB	11465303571ad0ab892b7021ef498bb4:19b7fd1ef2212e4e9b3281494fdebd4b:338944da06a188b008d40f4645	\N	\N	\N	\N	\N	2026-04-23 18:41:19.558	f	f	0	\N	2026-04-23 18:41:19.568	2026-04-25 05:32:31.916	FUERA_DE_SERVICIO	\N	\N	\N	REJECTED	2026-04-23 18:43:05.258	Aun falta documentación	\N	f	\N	\N	\N	0	\N	2026-04-23 18:41:19.558	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	2026-04-24 19:54:45.067	\N	APPROVED	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N
 cmohdinef0002tf8b8fsd3yov	cmodw2bcv0004ornia10d6of8	CAMIONETA	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-04-27 15:50:16.301	t	f	0	\N	2026-04-27 15:50:16.309	2026-04-28 14:19:19.384	FUERA_DE_SERVICIO	2026-04-28 14:19:29.957	-54.83189142542994	-68.35034410002064	APPROVED	2026-04-28 13:41:49.084	\N	0101000020E6100000DAFBA8096C1651C0AF05116B7B6A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N
 cmocz8aty0001ju1tiijq1c94	cmobkazic0002w4k6sk1luhha	CAMIONETA	Jeep	Renegade	2024	Gris	AA123BB	61728dc61b349d576ac83410337d2f79:4001b3ab937893ce7ab46910f67f7fc9:069687e10f894f0b92e288	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038752559-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038763186-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038766670-IMG_4108.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038361921-IMG_4107.webp	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038366210-IMG_4108.webp	2026-04-24 13:59:14.119	t	f	0	\N	2026-04-24 13:59:14.133	2026-05-01 15:55:40.221	FUERA_DE_SERVICIO	2026-05-05 19:56:34.215	-54.82590279087443	-68.36027040420461	APPROVED	2026-04-24 15:11:49.405	\N	0101000020E6100000A2F198AB0E1751C08B3DC22EB7694BC0	f	\N	\N	\N	0	\N	\N	\N	2026-04-30 00:00:00	0	\N	PENDING	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038770570-IMG_4108.webp	\N	\N	PENDING	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1777038375264-ARCA_-_Agencia_de_Recaudación_y_Control_Aduanero.pdf	2026-04-25 21:21:34.232	\N	APPROVED	\N	\N	PENDING	\N	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	2026-04-30 00:00:00	0	\N	PENDING	\N	\N	\N	\N	\N	DIGITAL	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N
-cmoqaehms000permanxjcoebd	cmoqaehm7000kerma58f7mpn4	MOTO	Honda	Wave	2022	Rojo	AC123BD	20234567894	\N	\N	\N	\N	\N	2026-05-05 19:38:35.171	t	t	0	\N	2026-05-03 21:32:58.948	2026-05-06 23:10:00.475	OCUPADO	2026-05-06 23:12:15.353	-54.83161294073903	-68.35046494289132	APPROVED	2026-05-05 19:38:35.171	\N	0101000020E6100000370783046E1651C0C7B3F74A726A4BC0	f	\N	\N	\N	0	\N	2026-05-05 19:38:35.171	2026-05-05 19:38:35.171	\N	0	\N	APPROVED	\N	2026-05-05 19:38:35.171	\N	APPROVED	\N	2026-05-05 19:38:35.171	\N	APPROVED	2026-05-05 19:38:35.171	\N	APPROVED	2026-05-05 19:38:35.171	\N	APPROVED	2026-05-05 19:38:35.171	2027-05-05 19:38:35.171	0	\N	APPROVED	2026-05-05 19:38:35.171	2026-11-01 19:38:35.171	0	\N	APPROVED	2026-05-05 19:38:35.171	2027-05-05 19:38:35.171	0	\N	APPROVED	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-05-05 19:38:35.171	\N	0070123456789012345679	APPROVED	\N	\N	\N	\N
+cmoqaehms000permanxjcoebd	cmoqaehm7000kerma58f7mpn4	MOTO	Honda	Wave	2022	Rojo	AC123BD	20234567894	\N	\N	\N	\N	\N	2026-05-05 19:38:35.171	t	f	0	\N	2026-05-03 21:32:58.948	2026-05-07 01:12:25.33	FUERA_DE_SERVICIO	2026-05-07 01:18:54.941	-54.83163086251625	-68.35043646674599	APPROVED	2026-05-05 19:38:35.171	\N	0101000020E6100000FDFF128D6D1651C0006D4EE1726A4BC0	f	\N	\N	\N	0	\N	2026-05-05 19:38:35.171	2026-05-05 19:38:35.171	\N	0	\N	APPROVED	\N	2026-05-05 19:38:35.171	\N	APPROVED	\N	2026-05-05 19:38:35.171	\N	APPROVED	2026-05-05 19:38:35.171	\N	APPROVED	2026-05-05 19:38:35.171	\N	APPROVED	2026-05-05 19:38:35.171	2027-05-05 19:38:35.171	0	\N	APPROVED	2026-05-05 19:38:35.171	2026-11-01 19:38:35.171	0	\N	APPROVED	2026-05-05 19:38:35.171	2027-05-05 19:38:35.171	0	\N	APPROVED	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-05-05 19:38:35.171	\N	0070123456789012345679	APPROVED	\N	\N	\N	\N
 \.
 
 
@@ -2498,7 +2501,6 @@ COPY public."MpWebhookLog" (id, "eventId", "eventType", "resourceId", processed,
 --
 
 COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt") FROM stdin;
-cmouo606g000rx4ktv41n224g	MOV-JB9A	cmoqaeh2r0000erma67dv4jv8	cmoubv255000sdndem76eks2g	cmoqaehc10009ermak74cbcs4	DRIVER_ASSIGNED	\N	PENDING	cash	800	771	0	1571	f	0.522575389773936	Cuidado con el perro	\N	cmoqaehms000permanxjcoebd	DRIVER_ASSIGNED	\N	\N	\N	\N	2026-05-06 23:09:22.408	2026-05-06 23:10:00.445	\N	f	\N	800	0	\N	\N	\N	\N	\N	\N	1	\N	\N	2026-05-06 23:09:40.648	\N	\N	\N	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N	\N	\N	7756	0	\N	\N	\N	2979	0	\N	f	\N	ASSIGNED	PREPARING	f	\N	\N	\N
 \.
 
 
@@ -2531,7 +2533,6 @@ COPY public."OrderChatMessage" (id, "chatId", "senderId", content, "isRead", "is
 --
 
 COPY public."OrderItem" (id, "orderId", "productId", "listingId", name, price, quantity, "variantName", subtotal, "subOrderId", "packageCategoryName") FROM stdin;
-cmouo606s000tx4kt3jvfns8j	cmouo606g000rx4ktv41n224g	cmoqaehct000derma4qas6i7j	\N	Alfajor Havanna individual	800	1	\N	800	cmouo607n000vx4kts7jo5rnp	\N
 \.
 
 
@@ -2597,7 +2598,6 @@ COPY public."PayoutItem" (id, "batchId", "recipientType", "recipientId", "recipi
 --
 
 COPY public."PendingAssignment" (id, "orderId", "currentDriverId", "attemptNumber", "expiresAt", status, "createdAt", "updatedAt") FROM stdin;
-cmouo6e7p000zx4kty1kfd57k	cmouo606g000rx4ktv41n224g	cmoqaehms000permanxjcoebd	1	2026-05-06 23:10:40.594	COMPLETED	2026-05-06 23:09:40.598	2026-05-06 23:10:00.453
 \.
 
 
@@ -2663,10 +2663,10 @@ COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balance
 --
 
 COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "createdAt", "updatedAt", "packageCategoryId", "deletedAt", "deletedBy", "deletedReason", "volumeMl", "weightGrams") FROM stdin;
+cmoqaehd9000hermalnwipcy1	Kit almacén básico	kit-almac-n-b-sico-test	Yerba 1kg + azúcar 1kg + aceite 1.5L + fideos 500g	cmoqaehc10009ermak74cbcs4	12000	8400	14	5	t	f	2026-05-03 21:32:58.605	2026-05-07 00:32:26.475	cmnw2pz7r00183ooe6a3uhqx2	\N	\N	\N	5500	4500
+cmoqaehdg000jermac3hjby8u	Caja electrodoméstico chico	caja-electrodom-stico-chico-test	Pava eléctrica con caja	cmoqaehc10009ermak74cbcs4	35000	24500	5	5	t	f	2026-05-03 21:32:58.612	2026-05-07 01:16:16.113	cmnw2pz7y00193ooe51d5kek8	\N	\N	\N	15000	2500
 cmobttv3e000etqia530fetso	Fernet 1882	fernet-1882-1776969616296		cmobll552000cw4k6blur8j08	12000	8400	99	5	t	f	2026-04-23 18:40:16.298	2026-04-25 13:58:54.532	\N	\N	\N	\N	\N	\N
-cmoqaehd9000hermalnwipcy1	Kit almacén básico	kit-almac-n-b-sico-test	Yerba 1kg + azúcar 1kg + aceite 1.5L + fideos 500g	cmoqaehc10009ermak74cbcs4	12000	8400	14	5	t	f	2026-05-03 21:32:58.605	2026-05-06 05:11:11.397	cmnw2pz7r00183ooe6a3uhqx2	\N	\N	\N	5500	4500
 cmoeetc0y000o2klv7irp0img	MONSTER	monster-1777125795872	Bebida energizante	cmodwjkyu000hornifywezk15	8000	5600	99	5	t	f	2026-04-25 14:03:15.875	2026-04-25 14:48:49.674	\N	\N	\N	\N	\N	\N
-cmoqaehdg000jermac3hjby8u	Caja electrodoméstico chico	caja-electrodom-stico-chico-test	Pava eléctrica con caja	cmoqaehc10009ermak74cbcs4	35000	24500	5	5	t	f	2026-05-03 21:32:58.612	2026-05-06 17:39:02.556	cmnw2pz7y00193ooe51d5kek8	\N	\N	\N	15000	2500
 cmoqaehcz000fermagmweua41	Pizza muzzarella grande	pizza-muzzarella-grande-test	Pizza de muzzarella tamaño grande, 8 porciones	cmoqaehc10009ermak74cbcs4	8500	5950	11	5	t	f	2026-05-03 21:32:58.595	2026-05-06 17:39:57.049	cmnw2pz7r00183ooe6a3uhqx2	\N	\N	\N	5000	900
 cmoqaehci000bermav3efvpi9	Gaseosa Coca Cola 1.5L	gaseosa-coca-cola-1-5l-test	Botella retornable 1.5L	cmoqaehc10009ermak74cbcs4	2500	1750	41	5	t	f	2026-05-03 21:32:58.578	2026-05-06 22:58:03.828	cmnw2pz7m00173ooelfp0vilx	\N	\N	\N	1500	1500
 cmoqaehct000derma4qas6i7j	Alfajor Havanna individual	alfajor-havanna-individual-test	Alfajor de chocolate con dulce de leche	cmoqaehc10009ermak74cbcs4	800	560	96	5	t	f	2026-05-03 21:32:58.589	2026-05-06 23:09:22.426	cmnw2pz7c00163ooeim6ijao4	\N	\N	\N	100	60
@@ -2698,6 +2698,7 @@ cmoefpcdd00132klvn47uhmhq	cmoeetc0y000o2klv7irp0img	https://pub-8e9cd8ba192646df
 cmoefpcdd00142klvtlxrn1y0	cmoeetc0y000o2klv7irp0img	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777127165556-13230-dr-lemon-pomelo-1000-cc-73fc9439e93a74786317458555373454-640-0.webp	MONSTER	2
 cmomcamcf0000svo3kdmihple	cmomaxm4l000114j41e37poed	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777602670899-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp	PRINGLES Sabor Original	0
 cmop8s88h000ve0hdiovjk6y8	cmop8s88h000ue0hdn8awyjwx	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777780674880-hepatalgina-en-gotas-x-120-ml-digestivo.webp	Hepatalgina	0
+cmousp6yz00007475tyzn8wz2	cmoqaehdg000jermac3hjby8u	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1778116569760-Gemini_Generated_Image_acsvtpacsvtpacsv.webp	Caja electrodoméstico chico	0
 \.
 
 
@@ -2875,6 +2876,7 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 --
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "updatedAt", "cartValue", "lastRemindedAt", "recoveredAt", "reminderCount") FROM stdin;
+cmouspnnp00017475ly27h5v2	cmoqaeh2r0000erma67dv4jv8	[{"id": "cmoqaehdg000jermac3hjby8u-default-1778116596623", "name": "Caja electrodoméstico chico", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1778116569760-Gemini_Generated_Image_acsvtpacsvtpacsv.webp", "price": 35000, "quantity": 1, "productId": "cmoqaehdg000jermac3hjby8u", "merchantId": "cmoqaehc10009ermak74cbcs4"}]	\N	2026-05-07 01:16:37.762	2026-05-07 01:16:37.762	35000	\N	\N	0
 cmodwjlus000iorniu8elogho	cmobth34p0002tqiaji23ve3q	[{"id": "cmobttv3e000etqia530fetso-default-1777068938059", "name": "Fernet 1882", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1776969587703-Fernet-1882-jpg.webp", "price": 12000, "quantity": 1, "productId": "cmobttv3e000etqia530fetso", "merchantId": "cmobll552000cw4k6blur8j08"}]	\N	2026-04-25 05:31:48.964	2026-04-27 15:34:30.348	12000	\N	\N	0
 cmomcchdn0003svo31lfazjua	cmoem7nkg0001k8grd394va3v	[{"id": "cmomaxm4l000114j41e37poed-default-1777605378380", "name": "PRINGLES Sabor Original", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1777602670899-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp", "price": 6000, "quantity": 1, "productId": "cmomaxm4l000114j41e37poed", "merchantId": "cmoem7nl10004k8grsztmzdot"}]	\N	2026-05-01 03:16:19.832	2026-05-01 03:16:19.832	6000	\N	\N	0
 \.
@@ -2911,7 +2913,6 @@ settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pront
 --
 
 COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "driverPayoutAmount", "merchantCommissionRate", "merchantCommissionSource", "operationalCost", "tripCost", "zoneCode", "zoneDriverBonus", "zoneMultiplier", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt") FROM stdin;
-cmouo607n000vx4kts7jo5rnp	cmouo606g000rx4ktv41n224g	cmoqaehc10009ermak74cbcs4	\N	PENDING	800	0	0	800	\N	0	800	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-05-06 23:09:22.451	2026-05-06 23:09:22.451	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	0	0	FIRST_MONTH	40	0	Zona A — Centro	0	1	ASSIGNED	PREPARING	f	\N	\N	\N
 \.
 
 
@@ -2954,7 +2955,7 @@ cmobth34p0002tqiaji23ve3q	ing.iyad@gmail.com	$2b$10$t1KKn.nw6Dzd2gWVPlJfSOtLXKvF
 cmobkazic0002w4k6sk1luhha	maugrod@gmail.com	$2b$10$JmJnWqfoL3YLcfI084JdauwXXLsOK9slbvTEG8ROtpEsebHH4H6AG	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-3CYV	\N	2026-04-23 14:13:39.009	2026-05-03 04:02:16.051	2026-04-23 14:13:39.006	2026-04-23 14:13:39.006	\N	\N	\N	\N	f	\N	\N	\N	2026-04-23 14:15:45.524	t	\N	\N	t	2026-04-23 14:13:39.006	\N	2.0	1.1	\N	0	\N
 cmoir8pja0006rxa6e52geiv5	test1@somosmoovy.com	$2b$10$RiIllcOya8YhIlgjDJyFY.0JXeZauzFgLS.4kNNhDbPhrM2KVoaTm	Marcos Perez	Marcos	Perez	\N	USER	\N	\N	0	0	f	cmoir8pja0007rxa6hwl9rfp8	\N	2026-04-28 15:02:13.317	2026-04-28 15:02:24.53	\N	\N	61163917cf5d721cb08febc1034666a9d4737cd5f1c5630a8c3940f7503ceeb9	2026-04-29 15:02:13.125	2026-04-28 15:02:24.529	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
 cmoqaehm7000kerma58f7mpn4	driver.test@moovy.local	$2b$12$MEeHryTYZuvNaGQ/yBRjgOCAKUbbzEugqSCq4loCIh0J4KhbBF3JC	Repartidor Test	\N	\N	\N	USER	\N	\N	0	0	f	cmoqaehm7000lermanglgw29j	\N	2026-05-03 21:32:58.927	2026-05-05 20:14:48.874	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmoqaehbn0004erma23omyvjs	merchant.test@moovy.local	$2b$12$qOwVk0PVs.anfaNvcBqv7eDCZN1lXMdTucyizA.8BSXiDOiqyxBg.	 				USER	\N	\N	0	0	f	cmoqaehbn0005erma6znjky5y	\N	2026-05-03 21:32:58.547	2026-05-06 17:33:41.934	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmoqaehbn0004erma23omyvjs	merchant.test@moovy.local	$2b$12$qOwVk0PVs.anfaNvcBqv7eDCZN1lXMdTucyizA.8BSXiDOiqyxBg.	 				USER	\N	\N	0	0	f	cmoqaehbn0005erma6znjky5y	\N	2026-05-03 21:32:58.547	2026-05-07 00:27:41.107	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	2026-05-07 00:27:41.104	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
 \.
 
 
@@ -2990,6 +2991,7 @@ cmou875hx001efehvcaje7ykv	cmoqaehbn0004erma23omyvjs	ORDER_CONFIRMED	Order	cmou83
 cmoubz5xx0015dndekvj2wvx7	cmoqaehbn0004erma23omyvjs	ORDER_CONFIRMED	Order	cmoubv2c6000vdnde7r01x8we	{"orderNumber":"MOV-HZZ3"}	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	2026-05-06 17:28:07.893
 cmouced6o002cdnde933nepmz	cmoqaeh2r0000erma67dv4jv8	ORDER_CREATED	Order	cmouced440026dndezvzm4fss	{"orderNumber":"MOV-CBYP","total":9656,"isMultiVendor":false}	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	2026-05-06 17:39:57.12
 cmouo6097000xx4ktgfda06fr	cmoqaeh2r0000erma67dv4jv8	ORDER_CREATED	Order	cmouo606g000rx4ktv41n224g	{"orderNumber":"MOV-JB9A","total":1571,"isMultiVendor":false}	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	2026-05-06 23:09:22.508
+cmourrykr0014192pk4bff8ke	cmoqaehbn0004erma23omyvjs	ORDER_CONFIRMED	Order	cmourhssa000u192pjt1jaqma	{"orderNumber":"MOV-NDX2"}	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	2026-05-07 00:50:25.61
 cmobtx23c0010tqiapbqxwr20	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-04-23 18:42:45.336
 cmodw2box000corniydmodk2k	cmodw2bcv0004ornia10d6of8	LOGIN	User	cmodw2bcv0004ornia10d6of8	{"method":"credentials"}	\N	\N	2026-04-25 05:18:22.641
 cmodwkj0v000lornirlzr23gt	cmobtv7wq000ptqia8qc32mkw	ADMIN_USER_DELETED	User	cmobtv7wq000ptqia8qc32mkw	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"facundotdf@gmail.com","name":"Facundo Bellotto","roles":["USER","DRIVER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	2026-04-25 05:32:31.951

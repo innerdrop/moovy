@@ -120,6 +120,16 @@ export const CRON_EXPECTATIONS: Record<string, { maxHours: number; label: string
         maxHours: 30,
         label: "Aviso de puntos MOOVER próximos a vencer",
     },
+    // Rama feat/payment-pending-cancellation: cron cada minuto que cancela
+    // pedidos en paymentStatus AWAITING_PAYMENT/PENDING con createdAt > 30 min
+    // (o lo que diga MoovyConfig.payment_pending_timeout_minutes). Restaura stock,
+    // dispara refund automatico si MP confirmo despues del cancel, push al cliente.
+    // Critico: si el cron deja de correr, pedidos fantasma se acumulan y stock
+    // queda reservado indefinidamente.
+    "cancel-stale-pending-payments": {
+        maxHours: 1,
+        label: "Auto-cancelar pedidos sin pago confirmado (timeout 30 min)",
+    },
 };
 
 export type CronHealthStatus = "healthy" | "stale" | "never-ran" | "failing";
