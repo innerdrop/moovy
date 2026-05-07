@@ -13,6 +13,7 @@ import { cronLogger } from "@/lib/logger";
 import { createRefund } from "@/lib/mercadopago";
 import { recordPointsTransaction, reverseOrderPoints } from "@/lib/points";
 import { notifyBuyerOrderAutoCancelled } from "@/lib/notifications";
+import { recordCronRun } from "@/lib/cron-health";
 
 // ISSUE-010: Umbrales para detección de driver offline mid-delivery
 const DRIVER_OFFLINE_THRESHOLD_MINUTES = 15;
@@ -356,6 +357,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        return await recordCronRun<NextResponse>("retry-assignments", async () => {
         const MAX_RETRIES = 3;
 
         // Find orders in CONFIRMED status with no driver and no active PendingAssignment
@@ -677,15 +679,19 @@ export async function POST(req: NextRequest) {
             driverOfflineAlerts++;
         }
 
-        return NextResponse.json({
-            success: true,
-            retried,
-            escalated,
-            subOrderRetried,
-            driverOfflineAlerts,
-            total: stuckOrders.length,
-            totalSubOrders: stuckSubOrders.length,
-            message: `Processed ${stuckOrders.length} stuck orders (retried: ${retried}, escalated: ${escalated}) + ${stuckSubOrders.length} stuck SubOrders (retried: ${subOrderRetried}) + ${driverOfflineAlerts} driver-offline alerts`,
+        return {
+            result: NextResponse.json({
+                success: true,
+                retried,
+                escalated,
+                subOrderRetried,
+                driverOfflineAlerts,
+                total: stuckOrders.length,
+                totalSubOrders: stuckSubOrders.length,
+                message: `Processed ${stuckOrders.length} stuck orders (retried: ${retried}, escalated: ${escalated}) + ${stuckSubOrders.length} stuck SubOrders (retried: ${subOrderRetried}) + ${driverOfflineAlerts} driver-offline alerts`,
+            }) as NextResponse,
+            itemsProcessed: retried + escalated + subOrderRetried + driverOfflineAlerts,
+        };
         });
     } catch (error) {
         cronLogger.error(

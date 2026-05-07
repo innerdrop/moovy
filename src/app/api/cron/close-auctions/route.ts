@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyBearerToken } from "@/lib/env-validation";
+import { recordCronRun } from "@/lib/cron-health";
 
 /**
  * POST /api/cron/close-auctions
@@ -13,17 +14,25 @@ import { verifyBearerToken } from "@/lib/env-validation";
  * Protegido con CRON_SECRET.
  */
 export async function POST(req: NextRequest) {
-    // ISSUE-002: Subastas deshabilitadas para lanzamiento. Cron inactivo.
-    // Reactivar en Fase 2 removiendo este return.
-    return NextResponse.json({ message: "Auctions disabled for launch", closed: 0 });
-
-    // Auth: CRON_SECRET
+    // Auth: CRON_SECRET (validar primero para que el panel /ops/crons reciba 401 visible)
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
     if (!verifyBearerToken(token, process.env.CRON_SECRET)) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    // ISSUE-002: Subastas deshabilitadas para lanzamiento. Cron inactivo.
+    // Igual lo registramos como corrida exitosa con itemsProcessed=0 para que
+    // aparezca en el dashboard /ops/crons como "healthy" (rama chore/cron-monitoring-completo).
+    return await recordCronRun<NextResponse>("close-auctions", async () => {
+        return {
+            result: NextResponse.json({ message: "Auctions disabled for launch", closed: 0 }) as NextResponse,
+            itemsProcessed: 0,
+        };
+    });
+
+    // CÓDIGO LEGACY (no se ejecuta): la lógica completa de cierre cuando se reactiven subastas.
+    // eslint-disable-next-line no-unreachable
     try {
         const now = new Date();
 

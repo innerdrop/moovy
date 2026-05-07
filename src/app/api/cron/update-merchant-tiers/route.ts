@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { updateAllMerchantTiers, updateMerchantTier, getTierConfig } from "@/lib/merchant-loyalty";
 import logger from "@/lib/logger";
 import { emailLayout, emailButton, emailAlertBox, sendEmail } from "@/lib/email";
+import { recordCronRun } from "@/lib/cron-health";
 
 const cronLogger = logger.child({ context: "cron-merchant-tiers" });
 
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    return await recordCronRun<NextResponse>("update-merchant-tiers", async () => {
     cronLogger.info({}, "Starting merchant tier recalculation");
 
     // Get all approved merchants
@@ -129,16 +131,20 @@ export async function POST(req: NextRequest) {
       "Merchant tier recalculation completed"
     );
 
-    return NextResponse.json({
-      success: true,
-      message: `Recalculated ${merchants.length} merchants, ${changedCount} tier changes`,
-      changedCount,
-      tierChanges: tierChanges.map((c) => ({
-        merchantId: c.merchantId,
-        name: c.name,
-        oldTier: c.oldTier,
-        newTier: c.newTier,
-      })),
+    return {
+      result: NextResponse.json({
+        success: true,
+        message: `Recalculated ${merchants.length} merchants, ${changedCount} tier changes`,
+        changedCount,
+        tierChanges: tierChanges.map((c) => ({
+          merchantId: c.merchantId,
+          name: c.name,
+          oldTier: c.oldTier,
+          newTier: c.newTier,
+        })),
+      }) as NextResponse,
+      itemsProcessed: changedCount,
+    };
     });
   } catch (error) {
     cronLogger.error({ error }, "Cron update-merchant-tiers failed");

@@ -9,6 +9,7 @@ import { sendPushToUser } from "@/lib/push";
 import { notifyBuyer } from "@/lib/notifications";
 import { startAssignmentCycle } from "@/lib/assignment-engine";
 import { cronLogger } from "@/lib/logger";
+import { recordCronRun } from "@/lib/cron-health";
 
 /** Read a MoovyConfig value by key with default fallback */
 async function getConfigValue(key: string, defaultValue: string): Promise<string> {
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 });
         }
 
+        return await recordCronRun<NextResponse>("scheduled-notify", async () => {
         const now = new Date();
         let notified = 0;
         let cancelled = 0;
@@ -200,12 +202,16 @@ export async function POST(request: Request) {
             assigned++;
         }
 
-        return NextResponse.json({
-            success: true,
-            notified,
-            cancelled,
-            assigned,
-            timestamp: now.toISOString(),
+        return {
+            result: NextResponse.json({
+                success: true,
+                notified,
+                cancelled,
+                assigned,
+                timestamp: now.toISOString(),
+            }) as NextResponse,
+            itemsProcessed: notified + cancelled + assigned,
+        };
         });
     } catch (error) {
         cronLogger.error(

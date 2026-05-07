@@ -23,6 +23,7 @@ import { paymentApi } from "@/lib/mercadopago";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { paymentLogger } from "@/lib/logger";
 import { socketEmitToRooms } from "@/lib/socket-emit";
+import { recordCronRun } from "@/lib/cron-health";
 
 const reconcileLogger = paymentLogger.child({ context: "cron-mp-reconcile" });
 
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        return await recordCronRun<NextResponse>("mp-reconcile", async () => {
         // Find orders stuck in AWAITING_PAYMENT for more than 5 minutes
         // that have an mpPaymentId (meaning MP sent a preference at least)
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -92,11 +94,14 @@ export async function POST(req: NextRequest) {
         });
 
         if (stuckOrders.length === 0) {
-            return NextResponse.json({
-                success: true,
-                reconciled: 0,
-                message: "No stuck orders found",
-            });
+            return {
+                result: NextResponse.json({
+                    success: true,
+                    reconciled: 0,
+                    message: "No stuck orders found",
+                }) as NextResponse,
+                itemsProcessed: 0,
+            };
         }
 
         reconcileLogger.info(
@@ -169,13 +174,17 @@ export async function POST(req: NextRequest) {
             "MP reconciliation complete"
         );
 
-        return NextResponse.json({
-            success: true,
-            total: stuckOrders.length,
-            reconciled,
-            skipped,
-            alerted,
-            errors: errors.length > 0 ? errors : undefined,
+        return {
+            result: NextResponse.json({
+                success: true,
+                total: stuckOrders.length,
+                reconciled,
+                skipped,
+                alerted,
+                errors: errors.length > 0 ? errors : undefined,
+            }) as NextResponse,
+            itemsProcessed: reconciled,
+        };
         });
     } catch (error) {
         reconcileLogger.error({ error }, "Critical error in MP reconciliation cron");

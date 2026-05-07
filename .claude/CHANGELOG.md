@@ -10,6 +10,99 @@
 
 ---
 
+## 2026-05-07 (rama `chore/cron-monitoring-completo`)
+
+chore: monitoreo completo de crons + alertas email + retention 30d + panel pro
+
+PROBLEMA QUE RESUELVE:
+Antes de esta rama, el panel /ops/crons mostraba solo 7 de los 16 crons del
+sistema, y dentro de esos 7 uno (process-broadcasts) aparecia "Nunca corrio"
+aunque estaba corriendo. Los otros 9 crons funcionaban silenciosamente sin
+visibilidad. Si alguno fallaba a las 3am, nadie se enteraba hasta que un
+cliente reportaba un sintoma.
+
+OBJETIVO: monitoreo completo nivel pro (Datadog/Sentry-style).
+
+CAMBIOS:
+
+1) Envolver con recordCronRun los 9 crons que no lo tenian
+   - assignment-tick, cart-recovery, close-auctions, merchant-timeout,
+     mp-reconcile, retry-assignments, scheduled-notify, seller-resume,
+     update-merchant-tiers
+   Ahora todos registran en CronRunLog y aparecen en el dashboard.
+
+2) Bug fix: process-broadcasts aparecia "Nunca corrio"
+   - Causa: el handler usaba recordCronRun pero el return final era
+     `return NextResponse.json(stats)` donde stats era el resultado del
+     wrapper, no un NextResponse valido. La excepcion al serializar se tragaba
+     en el try/catch y nunca se registraba el run en CronRunLog.
+   - Fix: tipar `recordCronRun<NextResponse>` y devolver
+     `result: NextResponse.json(...) as NextResponse` desde el callback.
+
+3) Helper cron-health.ts ampliado con metricas pro
+   - Tipo CronHealth extendido con: successRate24h, successRate7d,
+     avgDurationMs, totalRuns24h, totalRuns7d, consecutiveFailures.
+   - Funcion getRecentCronErrors(jobName) para drawer de detalle.
+   - Funcion shouldAlertCronFailures con check de idempotencia anti-spam
+     (solo 1 alerta por hora por cron).
+
+4) Sistema de alertas por email automaticas
+   - sendCronFailureAlertIfNeeded() llamada desde recordCronRun cuando un cron
+     acumula 3+ fallos consecutivos.
+   - Email a NOTIFICATION_EMAIL (fallback OPS_LOGIN_EMAIL) con detalle del
+     error, count de fallos, link al panel.
+   - Idempotente via AuditLog action="CRON_FAILURE_ALERT_EMAIL_SENT".
+   - Fire-and-forget: si el email falla, NO bloquea el throw del error real.
+
+5) CRON_EXPECTATIONS completado
+   - Agregadas 9 entries que faltaban + 1 nueva (cleanup-cron-runs).
+   - Ahora son 17 crons registrados, todos visibles en /ops/crons.
+
+6) Endpoints nuevos
+   - POST /api/admin/crons/[jobName]/trigger — boton "Ejecutar ahora".
+     Reutiliza el endpoint del cron real con el CRON_SECRET, asi se preserva
+     toda la logica (auth + recordCronRun + side effects).
+   - GET /api/admin/crons/[jobName]/errors — lista de ultimos 20 errores
+     para el drawer del panel.
+
+7) Cron nuevo: cleanup-cron-runs
+   - Diario 2:30am, retention 30 dias configurable via MoovyConfig.
+   - Sin esto, CronRunLog crece ~7K filas/dia y degrada el panel.
+
+8) Panel /ops/crons rediseñado nivel pro
+   - Banner rojo arriba si hay failing/stale.
+   - Stats agregadas (4 cards: OK / atrasados / fallando / nunca corrio).
+   - Filtros por estado (chips clickables).
+   - Cards mejoradas: success rate barra mini, tiempo promedio, runs 24h,
+     consecutive failures destacados.
+   - Botones "Ejecutar ahora" + "Ver errores" en cada card.
+   - Drawer modal con stack trace de errores recientes (responsive).
+   - Auto-refresh 30s (solo si pestaña visible).
+
+9) VPS — crontab regenerado
+   - 18 entries totales (17 crons + 1 backup diario DB).
+   - Migrado de TOKEN hardcodeado a `$(grep ^CRON_SECRET .env)` para que
+     rotaciones del secret no requieran editar el crontab.
+   - Cron nuevo cleanup-cron-runs activado (2:30am).
+
+PENDIENTE QUE SE DIFIERE:
+- Implementacion completa de campañas de publicidad (process-broadcasts cron
+  ya esta arreglado pero la logica de campañas se decide post-launch).
+
+TESTING:
+- TSC strict pasa limpio (npx tsc --noEmit --skipLibCheck).
+- Verificacion en VPS: 18 entries en crontab, cleanup-cron-runs registrado
+  en CRON_EXPECTATIONS.
+
+POST-DEPLOY EN PRODUCCION (despues de devmain.ps1):
+- Verificar /ops/crons: deberian aparecer los 17 crons (era 7 antes).
+- Verificar que los nuevos cron cards tengan metricas: success rate 24h,
+  tiempo promedio, runs 24h.
+- Probar boton "Ejecutar ahora" en cualquier cron.
+- Probar drawer "Ver errores" (puede estar vacio si nunca fallaron).
+
+**Archivos:** docs/referencias/observaciones_prod.md, src/app/api/admin/crons/[jobName]/errors/route.ts, src/app/api/admin/crons/[jobName]/trigger/route.ts, src/app/api/cron/assignment-tick/route.ts, src/app/api/cron/cart-recovery/route.ts, src/app/api/cron/cleanup-cron-runs/route.ts, src/app/api/cron/close-auctions/route.ts, src/app/api/cron/merchant-timeout/route.ts (+8 mas)
+
 ## 2026-05-06 (rama `chore/export-delivery-zones-to-prod`)
 
 chore: script para exportar delivery zones a produccion

@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import logger from "@/lib/logger";
 import { sendCartAbandonmentEmail } from "@/lib/email-p0";
 import { sendPushToUser } from "@/lib/push";
+import { recordCronRun } from "@/lib/cron-health";
 
 const cronLogger = logger.child({ context: "cron-cart-recovery" });
 
@@ -42,14 +43,18 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        return await recordCronRun<NextResponse>("cart-recovery", async () => {
         // Check if cart recovery is enabled
         const enabled = await getConfigValue("cart_recovery_enabled", "true");
         if (enabled !== "true") {
-            return NextResponse.json({
-                success: true,
-                message: "Cart recovery is disabled",
-                processed: 0
-            });
+            return {
+                result: NextResponse.json({
+                    success: true,
+                    message: "Cart recovery is disabled",
+                    processed: 0
+                }) as NextResponse,
+                itemsProcessed: 0,
+            };
         }
 
         // Read config values
@@ -212,7 +217,11 @@ export async function POST(req: NextRequest) {
         };
 
         cronLogger.info(result, "Cart recovery cron completed");
-        return NextResponse.json(result);
+        return {
+            result: NextResponse.json(result) as NextResponse,
+            itemsProcessed: emailsSent + pushSent,
+        };
+        });
 
     } catch (error) {
         cronLogger.error({ error }, "Cart recovery cron failed");

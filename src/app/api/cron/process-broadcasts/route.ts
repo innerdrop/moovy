@@ -35,7 +35,11 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const stats = await recordCronRun("process-broadcasts", async () => {
+        // Rama chore/cron-monitoring-completo: arreglo del bug "Nunca corrió" en /ops/crons.
+        // El return previo era `return NextResponse.json(stats)` donde stats venía
+        // del wrapper que no encaja con el tipo. Ahora tipamos explícitamente
+        // <NextResponse> y devolvemos NextResponse desde dentro del callback.
+        return await recordCronRun<NextResponse>("process-broadcasts", async () => {
         const now = new Date();
 
         // 1. Auto-promover campañas SCHEDULED con scheduledAt <= now a RUNNING
@@ -199,16 +203,14 @@ export async function POST(request: NextRequest) {
         }
 
         return {
-            result: {
+            result: NextResponse.json({
                 campaignsProcessed: totalProcessed,
                 totalSent,
                 totalFailed,
-            },
+            }) as NextResponse,
             itemsProcessed: totalSent + totalFailed,
         };
         });
-
-        return NextResponse.json(stats);
     } catch (error) {
         logger.error({ error }, "[cron/process-broadcasts] fallo global");
         return NextResponse.json(
