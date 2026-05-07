@@ -10,6 +10,80 @@
 
 ---
 
+## 2026-05-07 (rama `feat/driver-offer-map-and-timer`)
+
+feat: mapa preview + timer countdown visible en oferta del driver
+
+PROBLEMA QUE RESUELVE:
+El modal de oferta del driver tenía dos puntos débiles vs apps grandes:
+  1. SIN MAPA: solo mostraba "501m, 9 min" como texto. El driver no podía
+     ver visualmente la ruta antes de aceptar (Rappi/Uber Eats sí lo muestran).
+  2. TIMER OCULTO: el sistema tenía `assignmentExpiresAt` en DB pero el driver
+     no veía el countdown. La oferta podía expirar mientras decidía y aparecía
+     el error "esta oferta ya no está disponible" sin warning previo.
+
+CAMBIOS:
+
+1) Componente NUEVO: src/components/rider/DriverOfferMapPreview.tsx
+   - Mini mapa estático ~150px de altura optimizado para el modal de oferta.
+   - 2 AdvancedMarkerElement: comercio (azul, label "A") y cliente (rojo, "B").
+   - Polyline dashed naranja entre origen y destino.
+   - Auto-fit a bounds con padding generoso (no se pegan al borde).
+   - Sin interacción (gestureHandling: none, draggable: false, scrollwheel: false).
+   - Por qué un componente NUEVO en vez de reusar RiderMiniMap:
+     * RiderMiniMap es 1000+ líneas para navegación activa (turn-by-turn,
+       off-route detection, head-up camera).
+     * Para el preview de oferta no necesitamos eso — solo orientación visual.
+     * Línea recta dashed evita 1 llamada extra a Routes API por cada oferta
+       (el driver puede recibir 10-20 ofertas/hora; el costo sumaría rápido).
+
+2) Hook NUEVO: useOfferCountdown(expiresAt, onExpire)
+   - Calcula segundos restantes hasta expiresAt, re-renderiza cada 1s.
+   - Dispara onExpire() cuando llega a 0 (auto-dismiss del card).
+   - Retorna: secondsLeft, progressPercent (para la barra), isUrgent (<=10s),
+     isExpired.
+   - Cleanup automático del setInterval en unmount.
+
+3) Componente NUEVO interno: OfferCard
+   - Extraído del .map() inline porque los hooks no pueden usarse dentro de
+     un map directo.
+   - Renderiza el card completo: header, ganancia, mapa preview, direcciones,
+     notas del cliente, botones.
+   - Usa useOfferCountdown para tener el timer encapsulado por card (cada
+     oferta tiene su propio expiresAt independiente).
+
+4) Mejoras visuales del card:
+   - Barra de progreso arriba (1.5px alto): naranja por default, rojo cuando
+     isUrgent. Se vacía linealmente. Reemplaza el "pulse gradient" estático.
+   - Botón ACEPTAR muestra "Aceptar (32s) →" con tabular-nums.
+   - Color del botón cambia a rojo cuando faltan ≤10s (urgencia visual).
+   - Botón disabled cuando isExpired (muestra "Expiró").
+   - Estado de loading "Aceptando..." con spinner mientras se acepta.
+   - Markers visuales A/B con letras (más profesional que circulitos sin texto).
+
+DECISIONES DE PRODUCTO:
+
+- Línea recta dashed en vez de Routes API: el driver tiene mapa real-time
+  cuando acepta. El preview es solo orientación. Ahorra costo de API.
+- Mapa solo se muestra si las 4 coords (merchant + customer) están presentes.
+  Si alguna falta, el card cae al layout sin mapa (graceful degradation).
+- Auto-dismiss respeta el dismissedOfferIds existente: la oferta expirada
+  desaparece del modal pero queda registro local en el set hasta que
+  fetchDashboard() la limpia del backend.
+
+TESTING:
+- TSC strict pasa limpio.
+- Verificación visual: cuando llega una oferta nueva, el mapa renderiza con
+  los 2 markers, la barra empieza llena (naranja) y se vacía. A los 10s
+  cambia a rojo. Al llegar a 0 el card desaparece automáticamente.
+
+POST-LAUNCH (anotado, NO en esta rama):
+- Si en el futuro el costo de Maps no es problema, swap la línea dashed por
+  Routes API real para ver el camino exacto (ETA + tráfico).
+- Mostrar también la posición actual del driver (un 3er marker) en el preview.
+
+**Archivos:** src/app/repartidor/(protected)/dashboard/page.tsx, src/components/rider/DriverOfferMapPreview.tsx
+
 ## 2026-05-07 (rama `feat/driver-availability-checkout`)
 
 feat: pre-validación de drivers en checkout (banner rojo/amarillo + bloqueo)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import "./gps-error.css";
 import {
@@ -61,6 +61,261 @@ const BottomSheet = dynamic(() => import("@/components/rider/BottomSheet"), {
 });
 
 const RiderBottomNav = dynamic(() => import("@/components/rider/RiderBottomNav"), { ssr: false });
+
+// Mapa preview en el modal de oferta del driver (rama feat/driver-offer-map-and-timer).
+// Componente liviano, distinto a RiderMiniMap que es para navegación activa.
+const DriverOfferMapPreview = dynamic(() => import("@/components/rider/DriverOfferMapPreview"), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-[150px] bg-gray-100 dark:bg-[#22252f] rounded-2xl animate-pulse" />
+    ),
+});
+
+/**
+ * useOfferCountdown
+ * Hook que calcula segundos restantes hasta `expiresAt` y dispara `onExpire`
+ * cuando llega a 0. Re-renderiza cada 1s mientras hay tiempo.
+ *
+ * Rama feat/driver-offer-map-and-timer: la oferta del driver tiene
+ * `assignmentExpiresAt` en DB. Antes el timer existía pero no era visible.
+ * Ahora se muestra en el botón "ACEPTAR (XXs)" + barra de progreso.
+ */
+function useOfferCountdown(expiresAt: string | null, onExpire: () => void): {
+    secondsLeft: number | null;
+    progressPercent: number;
+    isExpired: boolean;
+    isUrgent: boolean;
+} {
+    const [secondsLeft, setSecondsLeft] = useState<number | null>(() => {
+        if (!expiresAt) return null;
+        const ms = new Date(expiresAt).getTime() - Date.now();
+        return Math.max(0, Math.ceil(ms / 1000));
+    });
+    const totalDurationRef = useRef<number | null>(null);
+    const onExpireRef = useRef(onExpire);
+    onExpireRef.current = onExpire;
+
+    useEffect(() => {
+        if (!expiresAt) {
+            setSecondsLeft(null);
+            totalDurationRef.current = null;
+            return;
+        }
+
+        // Calcular duración total (asumimos típico 30-60s desde el envío de la oferta)
+        // Si no podemos saber el total exacto, usamos 60s como ventana visual de la barra.
+        const initialMs = new Date(expiresAt).getTime() - Date.now();
+        const initialSec = Math.max(0, Math.ceil(initialMs / 1000));
+        if (totalDurationRef.current == null) {
+            totalDurationRef.current = Math.max(initialSec, 30);
+        }
+
+        if (initialSec <= 0) {
+            setSecondsLeft(0);
+            onExpireRef.current?.();
+            return;
+        }
+
+        setSecondsLeft(initialSec);
+        const interval = setInterval(() => {
+            const ms = new Date(expiresAt).getTime() - Date.now();
+            const sec = Math.max(0, Math.ceil(ms / 1000));
+            setSecondsLeft(sec);
+            if (sec <= 0) {
+                clearInterval(interval);
+                onExpireRef.current?.();
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [expiresAt]);
+
+    const progressPercent = useMemo(() => {
+        if (secondsLeft == null || totalDurationRef.current == null) return 100;
+        const pct = (secondsLeft / totalDurationRef.current) * 100;
+        return Math.max(0, Math.min(100, pct));
+    }, [secondsLeft]);
+
+    return {
+        secondsLeft,
+        progressPercent,
+        isExpired: secondsLeft === 0,
+        isUrgent: secondsLeft != null && secondsLeft <= 10,
+    };
+}
+
+/**
+ * OfferCard
+ * Card del modal de oferta. Extraído del .map() interno para poder usar el
+ * hook useOfferCountdown (los hooks no pueden estar dentro de un .map directo).
+ *
+ * Rama feat/driver-offer-map-and-timer:
+ *   - Mapa preview entre comercio (origen, marker A azul) y cliente (B rojo)
+ *   - Timer countdown visible: barra de progreso arriba + segundos en botón
+ *   - Color rojo cuando faltan <= 10s (urgencia visual)
+ *   - Auto-dismiss cuando el timer llega a 0 (oferta expirada)
+ */
+interface OfferCardProps {
+    pedido: PendingOrderOffer;
+    onDismiss: (id: string) => void;
+    onAccept: (id: string) => Promise<void>;
+}
+
+function OfferCard({ pedido, onDismiss, onAccept }: OfferCardProps) {
+    const [accepting, setAccepting] = useState(false);
+
+    // Auto-dismiss cuando el timer expira: agrega el id al set de dismissed.
+    const handleExpire = useCallback(() => {
+        onDismiss(pedido.id);
+    }, [onDismiss, pedido.id]);
+
+    const { secondsLeft, progressPercent, isExpired, isUrgent } = useOfferCountdown(
+        pedido.expiresAt,
+        handleExpire,
+    );
+
+    const handleAcceptClick = async () => {
+        if (accepting || isExpired) return;
+        setAccepting(true);
+        try {
+            await onAccept(pedido.id);
+        } finally {
+            // No reseteamos accepting porque tras aceptar OK, el card desaparece.
+            // En caso de error, sí queremos resetear para reintentar.
+            setAccepting(false);
+        }
+    };
+
+    return (
+        <div className="bg-white dark:bg-[#1a1d27] rounded-[28px] p-6 shadow-2xl relative overflow-hidden">
+            {/* Barra de progreso del timer (reemplaza al gradient pulse anterior).
+                Cambia a rojo cuando faltan <=10s para crear urgencia visual. */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gray-100 dark:bg-gray-800">
+                <div
+                    className={`h-full transition-all duration-1000 ease-linear ${
+                        isUrgent ? "bg-red-500" : "bg-orange-500"
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                />
+            </div>
+
+            <div className="flex justify-between items-center mb-4 pt-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                        <Package className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-[2px]">Nueva oferta</span>
+                </div>
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">#{pedido.orderNumber}</span>
+            </div>
+
+            <div className="bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-2xl px-5 py-3 mb-4 flex items-center justify-between">
+                <span className="text-[13px] font-bold uppercase tracking-wider">Ganancia estimada</span>
+                <span className="text-2xl font-extrabold">${pedido.gananciaEstimada}</span>
+            </div>
+
+            {/* Mapa preview — comercio (origen) y cliente (destino) con línea entre ambos.
+                Rama feat/driver-offer-map-and-timer: el driver puede evaluar visualmente
+                la ruta antes de aceptar, igual que en Rappi/Uber Eats. */}
+            {pedido.merchantLat && pedido.merchantLng && pedido.customerLat && pedido.customerLng && (
+                <div className="mb-4">
+                    <DriverOfferMapPreview
+                        merchantLat={pedido.merchantLat}
+                        merchantLng={pedido.merchantLng}
+                        customerLat={pedido.customerLat}
+                        customerLng={pedido.customerLng}
+                        height="140px"
+                    />
+                </div>
+            )}
+
+            <div className="space-y-1 mb-4">
+                <div className="flex items-start gap-4">
+                    <div className="flex flex-col items-center mt-1">
+                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                            <span className="text-[9px] font-extrabold text-blue-600">A</span>
+                        </div>
+                        <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200 my-1" />
+                        <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                            <span className="text-[9px] font-extrabold text-red-600">B</span>
+                        </div>
+                    </div>
+                    <div className="flex-1">
+                        <div className="mb-4">
+                            <p className="text-sm font-bold text-[var(--rider-text)] leading-tight">{pedido.comercio}</p>
+                            <p className="text-[11px] text-gray-400 font-medium truncate">{pedido.direccion}</p>
+                            <div className="mt-1 flex items-center gap-1.5 text-blue-600 font-bold text-[11px] uppercase">
+                                <Navigation className="w-3 h-3" />
+                                A {pedido.tiempoAlComercio} min de ti
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-[var(--rider-text)] leading-tight">{pedido.direccionCliente || "Entrega al cliente"}</p>
+                            <p className="text-[11px] text-gray-400 font-medium uppercase tracking-tighter">Total: {pedido.distanciaTotal}</p>
+                            <div className="mt-1 flex items-center gap-1.5 text-gray-500 font-bold text-[11px] uppercase">
+                                <Clock className="w-3 h-3" />
+                                Llevas el pedido en {pedido.tiempoAlCliente} min
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Notas del cliente al repartidor — Bug 6 rama fix/state-machine-paralela */}
+            {pedido.deliveryNotes && (
+                <div className="mb-4 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                    <div className="flex items-start gap-2">
+                        <div className="w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-[11px] font-extrabold text-white">!</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-1">Notas del cliente</p>
+                            <p className="text-[13px] text-amber-900 dark:text-amber-100 font-semibold leading-tight whitespace-pre-wrap">{pedido.deliveryNotes}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex gap-3">
+                <button
+                    onClick={() => onDismiss(pedido.id)}
+                    disabled={accepting}
+                    className="flex-1 py-4 bg-gray-50 dark:bg-[#22252f] text-gray-500 dark:text-gray-400 font-bold rounded-2xl text-[11px] uppercase tracking-widest border border-gray-100 dark:border-white/10 active:scale-95 transition-all disabled:opacity-50"
+                >
+                    Rechazar
+                </button>
+                <button
+                    onClick={handleAcceptClick}
+                    disabled={accepting || isExpired}
+                    className={`flex-[2] py-4 text-white font-extrabold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-[13px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 ${
+                        isUrgent
+                            ? "bg-red-500 shadow-red-500/30"
+                            : "bg-orange-500 shadow-orange-500/30"
+                    }`}
+                >
+                    {accepting ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Aceptando...
+                        </>
+                    ) : isExpired ? (
+                        <>Expiró</>
+                    ) : (
+                        <>
+                            Aceptar
+                            {secondsLeft != null && (
+                                <span className="ml-1 text-[11px] font-bold opacity-90 tabular-nums">
+                                    ({secondsLeft}s)
+                                </span>
+                            )}
+                            <ArrowRight className="w-5 h-5" />
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+}
 
 const ShiftSummaryModal = dynamic(
     () => import("@/components/rider/ShiftSummaryModal").then(mod => mod.ShiftSummaryModal),
@@ -1336,98 +1591,28 @@ export default function RiderDashboard() {
                                 <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]" />
                                 <div className="relative z-10 w-full max-w-md mx-4 mb-2 animate-[slideUp_0.4s_cubic-bezier(0.32,0.72,0,1)]">
                                     {visibleOffers.map((pedido) => (
-                                        <div key={pedido.id} className="bg-white dark:bg-[#1a1d27] rounded-[28px] p-6 shadow-2xl relative overflow-hidden">
-                                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400 animate-pulse" />
-                                            <div className="flex justify-between items-center mb-5 pt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                                        <Package className="w-4 h-4 text-orange-600" />
-                                                    </div>
-                                                    <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-[2px]">Nueva oferta</span>
-                                                </div>
-                                                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">#{pedido.orderNumber}</span>
-                                            </div>
-                                            <div className="bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-2xl px-5 py-3 mb-5 flex items-center justify-between">
-                                                <span className="text-[13px] font-bold uppercase tracking-wider">Ganancia estimada</span>
-                                                <span className="text-2xl font-extrabold">${pedido.gananciaEstimada}</span>
-                                            </div>
-                                            <div className="space-y-1 mb-5">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="flex flex-col items-center mt-1">
-                                                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                                        </div>
-                                                        <div className="w-0.5 h-6 border-l-2 border-dashed border-gray-200 my-1" />
-                                                        <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                                            <div className="w-2 h-2 bg-red-500 rounded-full" />
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="mb-5">
-                                                            <p className="text-sm font-bold text-[var(--rider-text)] leading-tight">{pedido.comercio}</p>
-                                                            <p className="text-[11px] text-gray-400 font-medium truncate">{pedido.direccion}</p>
-                                                            <div className="mt-1 flex items-center gap-1.5 text-blue-600 font-bold text-[11px] uppercase">
-                                                                <Navigation className="w-3 h-3" />
-                                                                A {pedido.tiempoAlComercio} min de ti
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-[var(--rider-text)] leading-tight">{pedido.direccionCliente || "Entrega al cliente"}</p>
-                                                            <p className="text-[11px] text-gray-400 font-medium uppercase tracking-tighter">Total: {pedido.distanciaTotal}</p>
-                                                            <div className="mt-1 flex items-center gap-1.5 text-gray-500 font-bold text-[11px] uppercase">
-                                                                <Clock className="w-3 h-3" />
-                                                                Llevas el pedido en {pedido.tiempoAlCliente} min
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {/* Notas del cliente al repartidor — Bug 6 rama fix/state-machine-paralela */}
-                                            {pedido.deliveryNotes && (
-                                                <div className="mb-5 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
-                                                    <div className="flex items-start gap-2">
-                                                        <div className="w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                            <span className="text-[11px] font-extrabold text-white">!</span>
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-widest mb-1">Notas del cliente</p>
-                                                            <p className="text-[13px] text-amber-900 dark:text-amber-100 font-semibold leading-tight whitespace-pre-wrap">{pedido.deliveryNotes}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="flex gap-3">
-                                                <button
-                                                    onClick={() => setDismissedOfferIds(prev => new Set([...prev, pedido.id]))}
-                                                    className="flex-1 py-4 bg-gray-50 dark:bg-[#22252f] text-gray-500 dark:text-gray-400 font-bold rounded-2xl text-[11px] uppercase tracking-widest border border-gray-100 dark:border-white/10 active:scale-95 transition-all"
-                                                >
-                                                    Rechazar
-                                                </button>
-                                                <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            haptic.medium();
-                                                            const res = await fetch(`/api/driver/orders/${pedido.id}/accept`, { method: "POST" });
-                                                            if (res.ok) {
-                                                                toast.success("Pedido aceptado");
-                                                                haptic.success();
-                                                                await fetchDashboard(true);
-                                                            } else {
-                                                                const data = await res.json();
-                                                                toast.error(data.error || "No se pudo aceptar");
-                                                            }
-                                                        } catch (e) {
-                                                            console.error(e);
-                                                            toast.error("Error de conexion");
-                                                        }
-                                                    }}
-                                                    className="flex-[2] py-4 bg-orange-500 text-white font-extrabold rounded-2xl shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 text-[13px] uppercase tracking-widest active:scale-95 transition-all"
-                                                >
-                                                    Aceptar
-                                                    <ArrowRight className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        <OfferCard
+                                            key={pedido.id}
+                                            pedido={pedido}
+                                            onDismiss={(id) => setDismissedOfferIds(prev => new Set([...prev, id]))}
+                                            onAccept={async (id) => {
+                                                try {
+                                                    haptic.medium();
+                                                    const res = await fetch(`/api/driver/orders/${id}/accept`, { method: "POST" });
+                                                    if (res.ok) {
+                                                        toast.success("Pedido aceptado");
+                                                        haptic.success();
+                                                        await fetchDashboard(true);
+                                                    } else {
+                                                        const data = await res.json();
+                                                        toast.error(data.error || "No se pudo aceptar");
+                                                    }
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    toast.error("Error de conexion");
+                                                }
+                                            }}
+                                        />
                                     ))}
                                 </div>
                             </div>
