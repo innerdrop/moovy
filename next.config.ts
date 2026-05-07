@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // Helper to get host from URL safely
 const getHost = (url: string | undefined, defaultHost: string) => {
@@ -110,7 +111,7 @@ const nextConfig: NextConfig = {
           {
             // V-007 FIX: Removed unsafe-eval from CSP. Added base-uri and form-action restrictions.
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com https://*.r2.dev; connect-src 'self' data: blob: https://api.mercadopago.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://cloudflareinsights.com https://*.cloudflareinsights.com ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com https://*.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.cdnfonts.com; img-src 'self' data: https: blob: https://*.gstatic.com https://*.googleapis.com https://*.ggpht.com https://*.r2.dev; connect-src 'self' data: blob: https://api.mercadopago.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://cloudflareinsights.com https://*.cloudflareinsights.com https://*.sentry.io https://*.ingest.sentry.io ws://localhost:3001 http://localhost:3001 ws://${socketIp}:3001 http://${socketIp}:3001 http://${appHost}:3000 https://somosmoovy.com:* https://*.somosmoovy.com:* wss://somosmoovy.com:* wss://*.somosmoovy.com:*; frame-src https://*.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';`,
           },
         ],
       },
@@ -204,4 +205,38 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default nextConfig;
+// ── Sentry wrapper ──
+// Tunnel route /monitoring proxea los requests del SDK al backend de Sentry,
+// evitando que adblockers o CSP estrictos bloqueen *.ingest.sentry.io.
+// Source maps se suben automáticamente en build si SENTRY_AUTH_TOKEN está seteado.
+const sentryEnabled = !!process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+export default sentryEnabled
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+
+      // Subir source maps solo en CI/build con token configurado
+      silent: !process.env.CI,
+
+      // Hacer que los errores en build NO rompan el deploy si Sentry no está
+      // configurado correctamente — preferimos deploy parcial a deploy roto.
+      widenClientFileUpload: true,
+
+      // Tunnel — proxy /monitoring → Sentry, esquiva adblockers
+      tunnelRoute: "/monitoring",
+
+      // Source maps: en v9 no se exponen al cliente por default (el plugin las
+      // sube a Sentry y borra del bundle público). Si SENTRY_AUTH_TOKEN no está
+      // seteado, no se suben — el build sigue funcionando con stack traces minificados.
+      sourcemaps: {
+        disable: false,
+      },
+
+      // Disable telemetría del propio plugin de Sentry
+      telemetry: false,
+
+      // Auto-instrument server actions y route handlers para tracing
+      automaticVercelMonitors: false, // No estamos en Vercel
+    })
+  : nextConfig;

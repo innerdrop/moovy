@@ -476,3 +476,179 @@ export async function sendAccountCreatedByAdminEmail(data: {
 function emailDivider(): string {
     return `<div style="height: 1px; background: #f0f0f0; margin: 28px 0;"></div>`;
 }
+
+// ─── #7 — Resumen diario de revenue al CEO/admin ──────────────────────────────
+// Rama: feat/sentry-revenue-error-pages
+//
+// Email matutino (9 AM ART) con KPIs del día anterior. Inspirado en el
+// "Daily flash" que mandan empresas grandes al management. La idea: mauro
+// abre el mail con el café y en 30 segundos sabe si el día anterior fue
+// bueno, malo, o si hay alguna alarma.
+//
+// El cron que lo dispara hace todas las queries y le pasa los números
+// pre-calculados. Esta función SOLO arma el HTML.
+
+export interface DailyRevenueSummaryData {
+    /** Fecha del reporte (= ayer, formato "lunes 6 de mayo de 2026"). */
+    reportDateLabel: string;
+    /** Pedidos DELIVERED ayer. */
+    ordersDelivered: number;
+    /** Diferencia % vs el día previo (ayer-2). +5 = +5%, -10 = -10%. null si no hay datos. */
+    ordersDeltaPct: number | null;
+    /** GMV — suma de subtotales de pedidos DELIVERED. */
+    gmv: number;
+    /** Revenue de Moovy — comisiones cobradas + costo operativo retenido. */
+    moovyRevenue: number;
+    /** Pagos a comercios. */
+    merchantPayouts: number;
+    /** Pagos a repartidores. */
+    driverPayouts: number;
+    /** Pedidos cancelados ayer (timeout pago + manual + no-show). */
+    ordersCancelled: number;
+    /** No-shows reportados ayer. */
+    noShows: number;
+    /** Drivers que entregaron al menos 1 pedido ayer. */
+    activeDrivers: number;
+    /** Comercios con al menos 1 pedido DELIVERED ayer. */
+    activeMerchants: number;
+    /** Top 3 comercios por pedidos. */
+    topMerchants: Array<{ name: string; orders: number; revenue: number }>;
+    /** Drivers con fraudScore >= 2 (alerta — 3 = auto-suspend). */
+    fraudAlerts: Array<{ name: string; score: number }>;
+    /** Pedidos AWAITING_PAYMENT acumulados (no se cancelaron solos por algún motivo). */
+    pendingPaymentsStuck: number;
+}
+
+export async function sendDailyRevenueSummaryEmail(
+    data: DailyRevenueSummaryData,
+): Promise<boolean> {
+    const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-AR")}`;
+    const pct = (n: number | null) => {
+        if (n === null) return "—";
+        const sign = n > 0 ? "+" : "";
+        const color = n > 0 ? "#10b981" : n < 0 ? "#ef4444" : "#6b7280";
+        return `<span style="color: ${color}; font-weight: 600;">${sign}${n.toFixed(0)}%</span>`;
+    };
+
+    // KPI block — la primera vista que ve el CEO
+    const kpiBlock = `
+        <div style="display: table; width: 100%; border-collapse: collapse; margin: 24px 0;">
+            <div style="display: table-row;">
+                <div style="display: table-cell; padding: 16px; background: #f9fafb; border-radius: 12px; text-align: center; width: 50%;">
+                    <p style="margin: 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Pedidos entregados</p>
+                    <p style="margin: 8px 0 4px 0; color: #111827; font-size: 32px; font-weight: 700;">${data.ordersDelivered}</p>
+                    <p style="margin: 0; font-size: 12px;">${pct(data.ordersDeltaPct)} vs ayer</p>
+                </div>
+                <div style="display: table-cell; width: 12px;"></div>
+                <div style="display: table-cell; padding: 16px; background: #fef2f2; border-radius: 12px; text-align: center; width: 50%;">
+                    <p style="margin: 0; color: #991b1b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Revenue Moovy</p>
+                    <p style="margin: 8px 0 4px 0; color: #e60012; font-size: 32px; font-weight: 700;">${fmt(data.moovyRevenue)}</p>
+                    <p style="margin: 0; color: #6b7280; font-size: 12px;">comisiones + operativo</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Financial breakdown
+    const financialBlock = emailInfoBox(`
+        <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>GMV:</strong> ${fmt(data.gmv)}</p>
+        <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Pagos a comercios:</strong> ${fmt(data.merchantPayouts)}</p>
+        <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Pagos a repartidores:</strong> ${fmt(data.driverPayouts)}</p>
+        <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Comercios activos:</strong> ${data.activeMerchants}</p>
+        <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Repartidores activos:</strong> ${data.activeDrivers}</p>
+    `);
+
+    // Top merchants
+    const topMerchantsBlock =
+        data.topMerchants.length === 0
+            ? `<p style="color: #9ca3af; font-style: italic; font-size: 14px;">— sin pedidos —</p>`
+            : data.topMerchants
+                  .map(
+                      (m, i) => `
+                <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: ${i === 0 ? "#fef3c7" : "#f9fafb"}; border-radius: 8px; margin-bottom: 6px;">
+                    <span style="color: #111827; font-size: 14px; font-weight: 500;">${i + 1}. ${m.name}</span>
+                    <span style="color: #6b7280; font-size: 14px;">${m.orders} pedidos · ${fmt(m.revenue)}</span>
+                </div>`,
+                  )
+                  .join("");
+
+    // Alertas — secciones que solo se renderizan si tienen contenido
+    const alertsBlocks: string[] = [];
+    if (data.noShows > 0) {
+        alertsBlocks.push(
+            emailAlertBox(
+                `<strong>${data.noShows} no-show${data.noShows === 1 ? "" : "s"} reportado${data.noShows === 1 ? "" : "s"} ayer.</strong> Revisar en /ops/pedidos para chequear si son patrones de un mismo cliente o repartidor.`,
+                "warning",
+            ),
+        );
+    }
+    if (data.fraudAlerts.length > 0) {
+        const list = data.fraudAlerts
+            .map((d) => `<li><strong>${d.name}</strong> — score ${d.score}</li>`)
+            .join("");
+        alertsBlocks.push(
+            emailAlertBox(
+                `<strong>Repartidores con fraudScore alto:</strong><ul style="margin: 8px 0 0 0; padding-left: 20px;">${list}</ul>A 3 incidentes se auto-suspenden.`,
+                "error",
+            ),
+        );
+    }
+    if (data.pendingPaymentsStuck > 0) {
+        alertsBlocks.push(
+            emailAlertBox(
+                `<strong>${data.pendingPaymentsStuck} pedidos en AWAITING_PAYMENT acumulados.</strong> Si supera el threshold de cancel-stale-pending-payments, revisar en /ops/crons.`,
+                "warning",
+            ),
+        );
+    }
+
+    const alertsSection =
+        alertsBlocks.length === 0
+            ? emailAlertBox("Día limpio — sin alertas operativas.", "success")
+            : alertsBlocks.join("\n");
+
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 16px;">
+            ${emailBadge("📊 Daily Flash", "#fef2f2", "#991b1b")}
+        </div>
+        <h2 style="color: #111827; margin: 0 0 8px 0; font-size: 22px; font-weight: 600; text-align: center;">
+            Resumen del ${data.reportDateLabel}
+        </h2>
+        <p style="color: #6b7280; font-size: 14px; line-height: 1.6; text-align: center; margin: 0 0 8px 0;">
+            Resumen automático de operaciones del día anterior.
+        </p>
+
+        ${kpiBlock}
+
+        <h3 style="color: #111827; font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Financiero</h3>
+        ${financialBlock}
+
+        <h3 style="color: #111827; font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Top comercios</h3>
+        ${topMerchantsBlock}
+
+        <h3 style="color: #111827; font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Alertas</h3>
+        ${alertsSection}
+
+        ${emailDivider()}
+
+        <p style="color: #6b7280; font-size: 13px; line-height: 1.6;">
+            <strong>Cancelados ayer:</strong> ${data.ordersCancelled} pedidos.<br/>
+            Detalle completo en <a href="${baseUrl}/ops/dashboard" style="color: #e60012; font-weight: 500;">/ops/dashboard</a>.
+        </p>
+
+        ${emailButton("Abrir panel OPS", `${baseUrl}/ops/dashboard`, "red")}
+    `);
+
+    const recipients = await getAlertEmails();
+    const results = await Promise.all(
+        recipients.map((to) =>
+            sendEmail({
+                to,
+                subject: `📊 Moovy daily — ${data.ordersDelivered} pedidos · ${fmt(data.moovyRevenue)} revenue (${data.reportDateLabel})`,
+                html,
+                tag: "admin_daily_revenue_summary",
+            }),
+        ),
+    );
+    return results.some(Boolean);
+}

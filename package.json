@@ -24,6 +24,7 @@
     "@fontsource-variable/dm-sans": "^5.2.8",
     "@prisma/client": "^5.22.0",
     "@react-google-maps/api": "^2.20.8",
+    "@sentry/nextjs": "^10.52.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/nodemailer": "^7.0.5",
     "bcryptjs": "^3.0.3",

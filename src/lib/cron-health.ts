@@ -293,6 +293,13 @@ export const CRON_EXPECTATIONS: Record<string, { maxHours: number; label: string
         maxHours: 30,
         label: "Limpieza de CronRunLog antiguos (retention 30d)",
     },
+    // Rama feat/sentry-revenue-error-pages: resumen matutino del día anterior
+    // al admin (alert_emails). KPIs operativos + alertas de fraudScore + no-shows.
+    // Si deja de correr el CEO se queda sin pulso diario del negocio.
+    "daily-revenue-summary": {
+        maxHours: 30,
+        label: "Resumen diario de revenue al CEO (9 AM ART)",
+    },
 };
 
 export type CronHealthStatus = "healthy" | "stale" | "never-ran" | "failing";

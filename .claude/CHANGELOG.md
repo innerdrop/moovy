@@ -10,6 +10,177 @@
 
 ---
 
+## 2026-05-07 (rama `feat/sentry-revenue-error-pages`)
+
+feat: error tracking con Sentry + reporte diario de revenue al CEO + 404/500 con marca
+
+PROBLEMA QUE RESUELVE:
+Pre-launch nos faltaban tres piezas de visibilidad operativa que las
+empresas serias tienen desde el dia 1:
+
+1) Si la app rompe en produccion en el navegador de un usuario, no nos
+   enteramos hasta que alguien nos escribe por WhatsApp 3 dias despues.
+   Sin error tracking estabamos ciegos a errores reales del cliente.
+
+2) El CEO abre el dia sin un pulso operativo claro. Tener que entrar a
+   /ops/dashboard y mirar 8 KPIs distintos cada manana es friccion.
+   Falta un "daily flash" matutino con los numeros que importan.
+
+3) Las paginas 404 y 500 default de Next son blancas, en ingles, sin
+   marca. Primer error que ve un comprador = "esta app es trucha".
+
+CAMBIOS:
+
+1) SENTRY — error tracking client + server + edge con PII scrubbing AAIP
+   ─────────────────────────────────────────────────────────────────────
+   Archivos nuevos:
+     - src/lib/sentry-scrub.ts
+       Helper canonico de scrubbing. Patrones: emails, CBU 22 digitos,
+       CUIT XX-XXXXXXXX-X, DNI 7-8 digitos, MP tokens (APP_USR-*, TEST-*),
+       JWT, Bearer, PIN 4 digitos, tarjetas. Headers Authorization/Cookie/
+       x-api-key/x-cron-secret/x-mp-signature siempre [REDACTED].
+       Hook beforeSend canonico scrubSentryEvent que se aplica en todos los
+       runtimes. Cumple Ley 25.326 — ningun PII sale a Sentry (US-based).
+
+     - sentry.client.config.ts (browser)
+       tracesSampleRate 10% prod / 100% dev. ignoreErrors de network/
+       extensions/cross-origin scripts. denyUrls de chrome-extension/
+       googletagmanager. Activacion condicional: si no hay DSN, no init.
+
+     - sentry.server.config.ts (Node runtime)
+       tracesSampleRate 20% prod. ignoreErrors de AbortError/ECONNRESET/
+       P1001 transitorios. beforeBreadcrumb tambien con scrub.
+
+     - sentry.edge.config.ts (proxy.ts middleware)
+       tracesSampleRate 5% prod (alto trafico). Scrub minimo por
+       limitaciones del Edge runtime (sin require dinamico).
+
+     - instrumentation.ts
+       Hook canonico de Next 16. register() carga server o edge config
+       segun NEXT_RUNTIME. onRequestError captura errores RSC/streaming
+       que no llegan a route handlers.
+
+   Modificados:
+     - next.config.ts
+       Wrappeado con withSentryConfig. tunnelRoute "/monitoring" para
+       esquivar adblockers + simplificar CSP. CSP actualizado con
+       *.sentry.io. hideSourceMaps removido (Sentry v9 lo maneja auto).
+       Activacion condicional: si NEXT_PUBLIC_SENTRY_DSN no esta seteado,
+       devuelve nextConfig sin wrappear. Local dev sin proyecto Sentry
+       funciona normal.
+
+     - src/app/error.tsx + src/app/global-error.tsx
+       Sentry.captureException(error) en useEffect. Las paginas 404/500/
+       global-error ya existian con marca Moovy — solo agregamos el hook
+       de captura.
+
+   Decisiones canonicas (documentadas en CLAUDE.md):
+     - PII scrubbing OBLIGATORIO antes de enviar a Sentry
+     - Tunnel /monitoring para esquivar adblockers
+     - Sample rates: client 10% / server 20% / edge 5% en prod
+     - Source maps solo en CI con SENTRY_AUTH_TOKEN
+     - Activacion condicional por DSN
+
+2) CRON DAILY REVENUE SUMMARY — email matutino al CEO
+   ───────────────────────────────────────────────────
+   Archivo nuevo:
+     - src/app/api/cron/daily-revenue-summary/route.ts
+       Corre 9 AM ART (12 UTC). Calcula KPIs del dia anterior y dispara
+       email al alert_emails (configurable desde MoovyConfig).
+
+       KPIs incluidos:
+         - Pedidos DELIVERED ayer + delta % vs anteayer
+         - GMV (suma de subtotales)
+         - Revenue Moovy = sum(moovyCommission) + sum(operationalCost)
+         - Pagos a comercios (sum(merchantPayout) Order / sellerPayout SubOrder)
+         - Pagos a repartidores (sum(driverPayoutAmount) snapshot, fallback
+           a deliveryFee × 0.8 para single-vendor sin snapshot)
+         - Pedidos cancelados ayer (status CANCELLED + updatedAt en ventana)
+         - No-shows reportados ayer (Order.noShowReportedAt en ventana)
+         - Drivers/comercios activos (al menos 1 pedido entregado)
+         - Top 3 comercios por # pedidos
+         - Drivers con fraudScore >= 2 (alerta — 3 = auto-suspend)
+         - Pedidos AWAITING_PAYMENT acumulados >1h (señal de cron stale)
+
+       Idempotencia: AuditLog con action="daily-revenue-summary-YYYY-MM-DD"
+       como key. Si retrigger manual desde /ops/crons mismo dia, skip y
+       devuelve { skipped: true, reason: "already_sent_today" }.
+
+       Timezone: hardcoded UTC-3 (Argentina sin DST). Window de "ayer" se
+       calcula en hora local AR para alinear con el dia natural del CEO.
+
+   Modificados:
+     - src/lib/email-admin-ops.ts
+       Funcion sendDailyRevenueSummaryEmail + interface DailyRevenueSummaryData.
+       Email pro estilo "daily flash" con KPIs grandes arriba (pedidos +
+       revenue), bloque financiero, top 3 comercios, alertas condicionales
+       (fraudScore / no-shows / pending stuck), CTA al panel OPS.
+
+     - src/lib/email-registry.ts
+       Entry #63 admin_daily_revenue_summary. generatePreview() con datos
+       sample. Aparece en /ops/emails para que el admin pueda preview.
+
+     - src/lib/cron-health.ts
+       Entry "daily-revenue-summary" en CRON_EXPECTATIONS con maxHours: 30
+       (corre 1× por dia). Aparece automaticamente en /ops/crons sin
+       cambios al dashboard.
+
+3) PAGINAS DE ERROR (404 + 500) — ya existian, conectadas a Sentry
+   ──────────────────────────────────────────────────────────────
+   Las paginas /not-found, /error y /global-error ya estaban creadas con
+   marca Moovy de ramas anteriores. En esta solo agregamos el hook
+   Sentry.captureException(error) en error.tsx y global-error.tsx para
+   que los errores boundary-caught lleguen al panel.
+
+DOCUMENTACION:
+- .claude/CLAUDE.md
+  + Variable de entorno: Sentry: NEXT_PUBLIC_SENTRY_DSN, SENTRY_ORG,
+    SENTRY_PROJECT, SENTRY_AUTH_TOKEN (solo build/CI)
+  + Tabla de Dependencias externas: nueva fila "Sentry"
+  + NPM clave: + @sentry/nextjs 9
+  + Seccion nueva "Sentry — decisiones canonicas" con 6 items
+    (scrubbing, tunnel, sample rates, source maps, activacion condicional,
+    error pages)
+
+VARIABLES DE ENTORNO NUEVAS:
+- NEXT_PUBLIC_SENTRY_DSN  (publico por diseño, va al cliente)
+- SENTRY_ORG              (slug org, ej: "moovy-u7")
+- SENTRY_PROJECT          (slug proyecto, ej: "moovy")
+- SENTRY_AUTH_TOKEN       (SECRETO — solo en build/CI para subir source maps;
+                          se genera mas adelante cuando llegue el deploy)
+
+CRON LINE PARA EL VPS (agregar al crontab):
+0 12 * * * curl -X POST -H "Authorization: Bearer $(grep ^CRON_SECRET /var/www/moovy/.env | cut -d= -f2)" https://somosmoovy.com/api/cron/daily-revenue-summary > /dev/null 2>&1
+
+12:00 UTC = 9:00 AM ART. Misma autenticacion via $(grep) que el resto de
+crons del VPS.
+
+NPM:
+- @sentry/nextjs ^9.0.0 agregado en package.json (146 paquetes nuevos)
+
+TESTING:
+- TSC strict paso limpio post-fixes:
+  * next.config.ts: sourcemaps en lugar de hideSourceMaps (Sentry v9 API)
+  * route.ts: SubOrder no tiene merchantPayout (solo Order); usar sellerPayout
+- Verificacion sugerida en runtime:
+  * Disparar test event: npx @sentry/wizard@latest -i nextjs (saltearlo,
+    pero el wizard tiene un step "throw an error" que sirve)
+  * O simplemente abrir /sentry-example-page si existe
+  * Verificar que el evento aparezca en moovy-u7.sentry.io con PII redactado
+  * Curl al cron daily-revenue-summary con CRON_SECRET, verificar que llega
+    el email al alert_emails configurado
+
+POST-LAUNCH ANOTADO:
+- Cuando hagamos devmain.ps1 a prod, generar SENTRY_AUTH_TOKEN en
+  Sentry > Settings > Auth Tokens (scopes: project:releases, org:read)
+  y agregarlo al .env del VPS para que el build suba source maps.
+- Considerar upgrade a Sentry Team plan (USD 26/mes) cuando crucemos
+  los 5K errors/month del free tier (mes 3-4 estimado).
+- Activar Session Replay cuando upgrade a paid plan — util para debug
+  de bugs que el usuario describe mal por chat.
+
+**Archivos:** .claude/CLAUDE.md, docs/referencias/observaciones_prod.md, instrumentation.ts, next.config.ts, package-lock.json, package.json, sentry.client.config.ts, sentry.edge.config.ts (+8 mas)
+
 ## 2026-05-07 (rama `docs/terms-privacy-pre-launch`)
 
 docs: actualizacion de terminos y privacidad pre-launch

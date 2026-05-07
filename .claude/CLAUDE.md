@@ -205,6 +205,7 @@ OPS:       OPS_LOGIN_EMAIL, OPS_LOGIN_PASSWORD
 Push:      NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
 Maps:      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID, NEXT_PUBLIC_USE_ROUTES_API (opcional)
 Redis:     REDIS_URL (opcional, fallback in-memory automático)
+Sentry:    NEXT_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN (solo build/CI)
 ```
 
 ## Scripts
@@ -369,10 +370,20 @@ Cada decisión debe reducir la probabilidad de al menos una.
 | Pino v9         | ✅          | Logging                         |
 | Sharp v0.33     | ✅          | Compresión imágenes             |
 | Redis ioredis   | 🟡 Opcional | Rate limit (fallback in-memory) |
+| Sentry          | ✅          | Error tracking client/server/edge con PII scrubbing AAIP |
 
 ### NPM clave
 
-next 16 | react 19 | prisma 5.22 | next-auth 5 (beta) | @react-google-maps 2 | socket.io 4 | mercadopago 2 | bcryptjs 2 | zod 3 | zustand 4 | ioredis 5
+next 16 | react 19 | prisma 5.22 | next-auth 5 (beta) | @react-google-maps 2 | socket.io 4 | mercadopago 2 | bcryptjs 2 | zod 3 | zustand 4 | ioredis 5 | @sentry/nextjs 9
+
+### Sentry — decisiones canónicas
+
+- **PII scrubbing obligatorio**: hook `beforeSend` aplica `scrubSentryEvent` (helper en `src/lib/sentry-scrub.ts`) a todos los eventos. Cumple Ley 25.326 AAIP. Redacta emails, CBU, CUIT, DNI, MP tokens (APP_USR/TEST), JWT, Bearer tokens, PIN 4 dígitos, tarjetas, headers Authorization/Cookie/x-api-key.
+- **Tunnel route `/monitoring`**: el SDK proxea por nuestro propio dominio para esquivar adblockers y simplificar CSP. Configurado en `withSentryConfig`.
+- **Sample rates**: client tracing 10% prod, server 20% prod, edge 5% prod (alto tráfico). Errors siempre 100%.
+- **Source maps**: solo se suben en CI con `SENTRY_AUTH_TOKEN`. `hideSourceMaps: true` evita que queden accesibles en el bundle del cliente.
+- **Activación condicional**: si `NEXT_PUBLIC_SENTRY_DSN` no está seteado, Sentry no se inicializa (local dev sin proyecto Sentry funciona normal).
+- **Error pages**: `error.tsx` y `global-error.tsx` capturan con `Sentry.captureException` automáticamente.
 
 ### Protocolo
 

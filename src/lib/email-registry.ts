@@ -1589,8 +1589,69 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
     },
 
     {
-        id: 'merchant_order_returned',
+        id: 'admin_daily_revenue_summary',
         number: 63,
+        name: 'Resumen diario de revenue al CEO/admin',
+        category: 'Operaciones — Reportes',
+        recipient: 'admin',
+        priority: 'P1',
+        status: 'new',
+        trigger: 'Cron daily-revenue-summary (9 AM ART)',
+        subject: '📊 Moovy daily — N pedidos · $X revenue',
+        functionName: 'sendDailyRevenueSummaryEmail',
+        file: 'src/lib/email-admin-ops.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 16px;">
+                ${emailBadge('📊 Daily Flash', '#fef2f2', '#991b1b')}
+            </div>
+            <h2 style="color: #111827; margin: 0 0 8px 0; font-size: 22px; font-weight: 600; text-align: center;">
+                Resumen del lunes 5 de mayo de 2026
+            </h2>
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.6; text-align: center; margin: 0 0 8px 0;">
+                Resumen automático de operaciones del día anterior.
+            </p>
+
+            <div style="display: table; width: 100%; border-collapse: collapse; margin: 24px 0;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; padding: 16px; background: #f9fafb; border-radius: 12px; text-align: center; width: 50%;">
+                        <p style="margin: 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Pedidos entregados</p>
+                        <p style="margin: 8px 0 4px 0; color: #111827; font-size: 32px; font-weight: 700;">42</p>
+                        <p style="margin: 0; font-size: 12px;"><span style="color: #10b981; font-weight: 600;">+12%</span> vs ayer</p>
+                    </div>
+                    <div style="display: table-cell; width: 12px;"></div>
+                    <div style="display: table-cell; padding: 16px; background: #fef2f2; border-radius: 12px; text-align: center; width: 50%;">
+                        <p style="margin: 0; color: #991b1b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Revenue Moovy</p>
+                        <p style="margin: 8px 0 4px 0; color: #e60012; font-size: 32px; font-weight: 700;">$28.450</p>
+                        <p style="margin: 0; color: #6b7280; font-size: 12px;">comisiones + operativo</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="color: #111827; font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Financiero</h3>
+            ${emailInfoBox(`
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>GMV:</strong> $189.500</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Pagos a comercios:</strong> $158.640</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Pagos a repartidores:</strong> $24.800</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Comercios activos:</strong> 8</p>
+                <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Repartidores activos:</strong> 5</p>
+            `)}
+
+            <h3 style="color: #111827; font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Top comercios</h3>
+            <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: #fef3c7; border-radius: 8px; margin-bottom: 6px;">
+                <span style="color: #111827; font-size: 14px; font-weight: 500;">1. ${SAMPLE.merchantName}</span>
+                <span style="color: #6b7280; font-size: 14px;">12 pedidos · $54.200</span>
+            </div>
+
+            <h3 style="color: #111827; font-size: 15px; font-weight: 600; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Alertas</h3>
+            ${emailAlertBox('Día limpio — sin alertas operativas.', 'success')}
+
+            ${emailButton('Abrir panel OPS', `https://somosmoovy.com/ops/dashboard`, 'red')}
+        `),
+    },
+
+    {
+        id: 'merchant_order_returned',
+        number: 64,
         name: 'Comercio recibe pedido devuelto por no-show',
         category: 'Ciclo de vida — Entrega',
         recipient: 'comercio',
