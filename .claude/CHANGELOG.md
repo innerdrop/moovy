@@ -10,6 +10,52 @@
 
 ---
 
+## 2026-05-06 (rama `chore/export-delivery-zones-to-prod`)
+
+chore: script para exportar delivery zones a produccion
+
+PROBLEMA QUE RESUELVE:
+Las zonas de delivery son polígonos PostGIS (tipo Unsupported() en Prisma).
+`prisma db push` solo sincroniza schema, NO copia data. Los seeds normales
+no pueden insertar polígonos via Prisma Client. Hasta ahora no había forma
+limpia de transferir las zonas configuradas localmente (con sus polígonos
+dibujados a mano en /ops/zonas-delivery) a la DB de produccion.
+
+SOLUCION:
+- scripts/export-delivery-zones-to-prod.ts (NUEVO)
+  - Lee las zonas locales con $queryRaw (incluye ST_AsText del polygon)
+  - Genera scripts/seed-delivery-zones-prod.sql con INSERTs idempotentes
+    (ON CONFLICT (name) DO NOTHING) usando ST_GeomFromText() para polígonos
+  - Modo PREVIEW por default (dry-run, no toca nada)
+  - Modo --write genera el archivo SQL
+  - Tabla preview con vértices por zona para verificar antes de exportar
+
+FLUJO COMPLETO DE DEPLOY DE ZONAS:
+  Local:
+    1. npx tsx scripts/export-delivery-zones-to-prod.ts          (preview)
+    2. npx tsx scripts/export-delivery-zones-to-prod.ts --write  (genera SQL)
+    3. .\scripts\finish.ps1                                       (commit + push)
+    4. .\scripts\devmain.ps1                                      (deploy a prod)
+
+  En el servidor de produccion (despues del deploy):
+    1. npx prisma db push                                         (sincroniza schema)
+    2. npx tsx scripts/apply-postgis-zones-index.ts               (crea indice GIST)
+    3. psql $DATABASE_URL -f scripts/seed-delivery-zones-prod.sql (carga las zonas)
+
+IDEMPOTENCIA:
+ON CONFLICT (name) DO NOTHING — correr el SQL dos veces es seguro. Si una
+zona ya existe en produccion, NO se sobreescribe (defensa contra race).
+Para reemplazar: borrar manualmente desde /ops/zonas-delivery primero o
+DELETE en produccion antes de re-correr el seed.
+
+ZONAS EXPORTADAS EN ESTA RUN:
+- Zona C — Alta / Dificil   (×1.35, +$350, 26 vertices)
+- Zona B — Intermedia       (×1.15, +$150, 80 vertices)
+- Zona A — Centro           (×1.00,   +$0, 79 vertices)
+- USHUAIA                   (×1.00,   +$0,  8 vertices, capa base displayOrder=0)
+
+**Archivos:** scripts/export-delivery-zones-to-prod.ts, scripts/seed-delivery-zones-prod.sql
+
 ## 2026-05-06 (rama `feat/payment-pending-cancellation`)
 
 feat: cancelacion de pago pendiente + descripcion de producto obligatoria
