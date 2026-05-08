@@ -10,6 +10,142 @@
 
 ---
 
+## 2026-05-08 (rama `style/quienes-somos-rediseno`)
+
+style: rediseno /nosotros con Claude Design - piloto de la fase de diseno
+
+PROBLEMA QUE RESUELVE:
+La pagina /nosotros (titulada "Quienes Somos") era el primer test del
+nuevo proceso de diseno con Claude Design. Visualmente la version anterior
+tenia 10 problemas identificados en el diagnostico previo:
+
+1) Hero gigante con 3 lineas a 96px font-black - gritaba en lugar de seducir
+2) Cero imagenes/ilustracion de Ushuaia - hablaba de la ciudad sin mostrarla
+3) font-black peso 900 abusado - todo se sentia igual de gritado
+4) CTAs duplicados 3 veces - fatiga
+5) CTA final con fondo rojo entero - patron "panic red" amateur
+6) Stats en rojo + black + 5xl - visualmente agresivo
+7) Cero social proof / trust signals
+8) Background blanco uniforme - falta diferenciacion entre secciones
+9) Falta jerarquia - todas las secciones del mismo peso
+10) Sin "wow moment" - nada visual memorable
+
+PROPOSITO DEL PILOTO:
+Validar end-to-end el workflow de diseno: Claude Design (descripcion natural -> generacion AI) -> screenshot -> aprobacion -> traduccion a Next.js + Tailwind 4 -> pagina en produccion. Si el ciclo funcionaba con una pagina de baja complejidad, el metodo escala a las ~50 surfaces que necesita Moovy.
+
+DISENO DE SOFIA VEGA (Principal Product Designer, via Claude Design):
+Filosofia visual: "blanco que respira con un hilo de rojo en momentos clave".
+El rojo aparece SOLO en: CTA primario, % de las stats, faro/luz del hero,
+borde izquierdo del cierre de historia, dato de contacto, linea sobre el
+CTA final. Plus Jakarta Sans en el design original; en implementacion
+usamos Nunito (font real del proyecto, metricas similares, mas calido por
+terminales redondeadas).
+
+CAMBIOS:
+
+1) src/app/nosotros/page.tsx (REESCRITO desde cero)
+   - Server component con metadata + JSON-LD structured data preservados
+   - 7 secciones nuevas con alternancia #fff / #fafaf9 para diferenciar
+   - Navbar sticky con back arrow + logo Moovy
+   - Hero: titulo "Nacimos en Ushuaia." en una sola linea, subtitulo gris,
+     lede, 2 CTAs (rojo + outline), ilustracion vectorial de montanas + faro
+     Les Eclaireurs con la luz roja como unico acento de color
+   - Historia: 5 parrafos con el cierre destacado con borde-izquierdo rojo
+   - Stats: 4 numeros con count-up animado (80k habitantes, 0% retencion,
+     8% comision, 80% repartidores)
+   - Diferenciadores: 4 cards con iconos lucide-react (Zap/Scale/MessageCircle/MapPin)
+   - Comercios: 60-40 grid con texto + CTAs a la izquierda, FAQ accordion
+     a la derecha
+   - Contacto: 3 cards (WhatsApp / Email / Instagram) con hover lift + arrow
+     translate
+   - CTA final: fondo crema calido #faf7f3 con linea roja 3px arriba, "Empezar"
+     en CTA rojo + "Suma tu comercio" outline. Reemplaza el fondo oscuro
+     #111827 original que competia visualmente con el footer (dos bloques
+     oscuros seguidos = pesado).
+
+2) src/app/nosotros/_components/StatsCounter.tsx (NUEVO)
+   - Client component (use client)
+   - IntersectionObserver con threshold 0.3 para activar animacion al scroll
+   - 800ms ease-out cubic count-up via requestAnimationFrame
+   - El "%" rojo Moovy (#e60012, 28-32px) y el numero entero negro (#111827,
+     48-56px) - el hilo de rojo del que habla el design rationale
+
+3) src/app/nosotros/_components/MerchantFAQ.tsx (NUEVO)
+   - Client component (use client)
+   - Accordion con un solo item abierto a la vez
+   - El icono Plus rota 45 grados a "x" rojo cuando el item se abre
+   - max-height transition para animar el panel
+
+ICONOS:
+Los SVG inline genericos del export de Claude Design se reemplazaron por
+componentes lucide-react que ya estan instalados en el proyecto:
+ArrowLeft, ArrowRight, Mail, Instagram, MessageCircle, Zap, Scale, MapPin, Plus.
+
+CTAs CONECTADOS A RUTAS REALES:
+- "Pedir ahora" -> /tienda
+- "Suma tu comercio" -> /comercio/registro (4 ocurrencias)
+- "Habla con nosotros" -> WhatsApp +54 9 2901 553173 con prefill comercio
+- "Empezar" -> /empezar
+- WhatsApp generico -> wa.me con prefill "Hola Moovy! Me gustaria saber mas"
+- Email -> mailto:somosmoovy@gmail.com con subject prefill
+- Instagram -> instagram.com/somosmoovy
+
+CONSERVADO INTACTO:
+- Metadata SEO (title, description, keywords, openGraph)
+- JSON-LD Organization structured data
+- Footer existente (@/components/layout/Footer)
+- Datos reales (numero WhatsApp, email, Instagram)
+- Copy de la historia (la frase del repartidor a -5C se queda)
+
+ITERACIONES:
+v1: CTA final con fondo #111827 oscuro tal como diseno Sofia.
+v2 (post-feedback): cambiamos CTA final a #faf7f3 crema calido sutil + linea
+roja 3px arriba. El fondo oscuro original competia con el footer creando
+"dos bloques oscuros seguidos" que se sentian pesados. Ahora el footer es
+el unico momento oscuro de la pagina.
+
+VALIDACION DEL METODO (lo importante de este piloto):
+- Claude Design genera output decente al primer prompt si se prompted con
+  brand-specific descriptive language y constraints claros (mobile-first,
+  exact tokens, voz argentina, EVITAR list)
+- Iteracion via feedback en lenguaje natural funciona bien
+- Export como standalone HTML + extraccion de bundle base64+gzip funciona
+  programaticamente para obtener HTML/CSS limpio
+- Traduccion HTML/CSS -> Next.js + Tailwind 4 + lucide-react es 1:1 con
+  pequenos ajustes (font swap Nunito por Plus Jakarta, iconos a lucide)
+- Tiempo total del piloto: ~90 min (30 min Claude Design + 30 min
+  traduccion a codigo + 30 min iteracion)
+
+SIGUIENTES PASOS DOCUMENTADOS:
+- Rama style/tienda-skeleton: rediseno de la home/tienda con metodo de
+  3 sub-sesiones (Skeleton -> Components -> Composed) para evitar generar
+  algo busy y sin foco en una sola sesion.
+- Roadmap completo: ~10 paginas Buyer + 6 Comercio + 5 Repartidor + 20
+  OPS + estaticas. Total ~50 surfaces visuales.
+
+TESTING:
+- TSC strict paso limpio
+- Verificacion visual en localhost:3000/nosotros con Chrome DevTools
+  iPhone 14 Pro Max (430x932) confirmada por el CEO
+- Hover states de cards y CTAs funcionan
+- FAQ accordion abre/cierra con animacion de icono +/x
+- Stats count-up se dispara al entrar en viewport
+- Links externos abren en target=_blank con rel=noopener noreferrer
+- JSON-LD valido, metadata correcta para SEO
+
+NO TOCADOS:
+- Footer existente
+- Layout root
+- Cualquier otra pagina del sitio
+- next.config.ts (la URL /nosotros se mantiene; el redirect /equipo.html
+  -> /nosotros sigue intacto)
+
+URL CONSERVADA:
+La URL queda como /nosotros (el titulo y el JSON-LD son "Quienes Somos").
+Mover a /quienes-somos hubiera roto SEO/redirects historicos sin beneficio.
+
+**Archivos:** src/app/nosotros/_components/MerchantFAQ.tsx, src/app/nosotros/_components/StatsCounter.tsx, src/app/nosotros/page.tsx
+
 ## 2026-05-07 (rama `feat/sentry-revenue-error-pages`)
 
 feat: error tracking con Sentry + reporte diario de revenue al CEO + 404/500 con marca
