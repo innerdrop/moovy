@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkContent, COMMENT_LIMITS } from "@/lib/moderation";
+import { logAudit } from "@/lib/audit";
 
 // POST - Rate a delivered order
 export async function POST(
@@ -23,6 +25,18 @@ export async function POST(
         if (!rating || rating < 1 || rating > 5) {
             return NextResponse.json({ error: "La calificación debe ser entre 1 y 5" }, { status: 400 });
         }
+
+        // feat/propinas-y-ratings-post-entrega (2026-05-08): validar limite +
+        // moderacion automatica del comentario al driver (max 300 chars).
+        const trimmedComment = typeof comment === "string" ? comment.trim() : "";
+        if (trimmedComment.length > COMMENT_LIMITS.DRIVER) {
+            return NextResponse.json(
+                { error: `El comentario debe tener máximo ${COMMENT_LIMITS.DRIVER} caracteres` },
+                { status: 400 }
+            );
+        }
+        const moderation = checkContent(trimmedComment);
+        const moderationStatus = moderation.isClean ? "AUTO_APPROVED" : "PENDING";
 
         // Get order
         const order = await prisma.order.findUnique({
@@ -61,12 +75,13 @@ export async function POST(
                 throw new Error("ALREADY_RATED");
             }
 
-            // Update order with rating and mark as COMPLETED
+            // Update order with rating + moderation status del comment.
             await tx.order.update({
                 where: { id: orderId },
                 data: {
                     driverRating: rating,
-                    ratingComment: comment || null,
+                    ratingComment: trimmedComment || null,
+                    driverRatingModerationStatus: moderationStatus,
                     ratedAt: new Date(),
                     status: "COMPLETED"
                 }
@@ -94,10 +109,25 @@ export async function POST(
             return avgRating;
         }, { isolationLevel: "Serializable" });
 
+        if (!moderation.isClean) {
+            await logAudit({
+                action: "REVIEW_COMMENT_FLAGGED",
+                entityType: "Order",
+                entityId: orderId,
+                userId,
+                details: {
+                    target: "DRIVER",
+                    matchedPatterns: moderation.matchedPatterns,
+                    commentLength: trimmedComment.length,
+                },
+            }).catch(() => {});
+        }
+
         return NextResponse.json({
             success: true,
             message: "¡Gracias por tu calificación!",
-            newDriverRating: result.toFixed(1)
+            newDriverRating: result.toFixed(1),
+            moderationStatus,
         });
     } catch (error) {
         if (error instanceof Error && error.message === "ALREADY_RATED") {

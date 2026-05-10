@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkContent, COMMENT_LIMITS } from "@/lib/moderation";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(
     request: NextRequest,
@@ -21,6 +23,18 @@ export async function POST(
         if (!rating || rating < 1 || rating > 5) {
             return NextResponse.json({ error: "La calificación debe ser entre 1 y 5" }, { status: 400 });
         }
+
+        // feat/propinas-y-ratings-post-entrega (2026-05-08): validar limite +
+        // moderacion automatica del comentario.
+        const trimmedComment = typeof comment === "string" ? comment.trim() : "";
+        if (trimmedComment.length > COMMENT_LIMITS.SELLER) {
+            return NextResponse.json(
+                { error: `El comentario debe tener máximo ${COMMENT_LIMITS.SELLER} caracteres` },
+                { status: 400 }
+            );
+        }
+        const moderation = checkContent(trimmedComment);
+        const moderationStatus = moderation.isClean ? "AUTO_APPROVED" : "PENDING";
 
         // Find the order and its sub-orders with sellers
         const order = await prisma.order.findUnique({
@@ -69,12 +83,13 @@ export async function POST(
                 throw new Error("ALREADY_RATED");
             }
 
-            // Update order with seller rating
+            // Update order with seller rating + moderation status del comment.
             await tx.order.update({
                 where: { id: orderId },
                 data: {
                     sellerRating: rating,
-                    ...(comment ? { sellerRatingComment: comment } : {}),
+                    ...(trimmedComment ? { sellerRatingComment: trimmedComment } : {}),
+                    sellerRatingModerationStatus: moderationStatus,
                 }
             });
 
@@ -102,10 +117,25 @@ export async function POST(
             return avgRating;
         }, { isolationLevel: "Serializable" });
 
+        if (!moderation.isClean) {
+            await logAudit({
+                action: "REVIEW_COMMENT_FLAGGED",
+                entityType: "Order",
+                entityId: orderId,
+                userId,
+                details: {
+                    target: "SELLER",
+                    matchedPatterns: moderation.matchedPatterns,
+                    commentLength: trimmedComment.length,
+                },
+            }).catch(() => {});
+        }
+
         return NextResponse.json({
             success: true,
             message: "¡Gracias por tu calificación!",
-            newSellerRating: result.toFixed(1)
+            newSellerRating: result.toFixed(1),
+            moderationStatus,
         });
     } catch (error) {
         if (error instanceof Error && error.message === "ALREADY_RATED") {

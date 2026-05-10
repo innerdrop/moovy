@@ -62,6 +62,9 @@ const navSections: NavSection[] = [
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
             { href: "/ops/fraude", icon: Shield, label: "Fraude" },
+            // feat/propinas-y-ratings-post-entrega (2026-05-08): queue de
+            // reseñas que la blacklist o la comunidad mando a revisar.
+            { href: "/ops/reviews-pendientes", icon: Shield, label: "Reseñas pendientes" },
             { href: "/ops/auditoria", icon: FileText, label: "Auditoría" },
         ],
     },

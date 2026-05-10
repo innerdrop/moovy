@@ -10,6 +10,175 @@
 
 ---
 
+## 2026-05-10 (rama `feat/propinas-y-ratings-post-entrega`)
+
+feat(ratings+propinas): modal post-entrega + moderacion auto + propina directa
+
+Implementacion completa del flow post-entrega para el buyer: calificar al
+comercio, seller (si marketplace), repartidor + declarar propina al driver,
+todo en un solo modal que aparece automaticamente 30s despues de DELIVERED.
+
+DECISIONES DE PRODUCTO (CEO + UX):
+
+1) Propina al repartidor: 100% directa entre buyer y driver. Moovy NO procesa.
+   - Efectivo (en mano) o transferencia al alias bancario del driver.
+   - Sin pago via MP, sin comision MP, sin payouts especiales, sin refunds.
+   - Si el driver no tiene bankAlias cargado, solo "Efectivo" / "Esta vez no".
+   - El buyer declara informativamente que medio eligio (analytics + reporting
+     al driver "este mes te declararon $X de propinas").
+
+2) Calificacion: estrellas obligatorias + comentario opcional con limites.
+   - Driver: max 300c (experiencia delivery, suele ser corta).
+   - Comercio: max 500c (atencion + producto + packaging).
+   - Seller: max 500c (paridad con comercio).
+   - Modal con boton discreto "Calificar despues" — vuelve a aparecer la
+     proxima vez que el buyer abra el pedido.
+
+3) Moderacion de comentarios: 2 niveles tipo Uber/Trip Advisor.
+   - Nivel 1 al enviar: blacklist local (~80 patrones argentinos: slurs
+     racistas/homofobicos/sexistas, amenazas explicitas, acoso sexual,
+     discriminacion). Match -> moderationStatus = PENDING (invisible publico).
+   - Nivel 2 reportes comunidad: cualquier user puede reportar. >= 3 reportes
+     bajan el comment a PENDING automaticamente.
+   - OPS revisa en /ops/reviews-pendientes. Resuelve APPROVED (publica) o
+     REJECTED (borra el texto, mantiene rating numerico).
+   - El rating numerico SIEMPRE cuenta en el avg, sin importar moderacion del
+     comment. Solo se modera la visibilidad del texto.
+
+ARCHIVOS TOCADOS:
+
+Schema (prisma db push requerido antes del finish):
+1) prisma/schema.prisma
+   - Order: 6 campos nuevos de moderacion (driver/merchant/seller cada uno
+     con *RatingModerationStatus String @default("AUTO_APPROVED") +
+     *RatingReportCount Int @default(0)) + 3 de propina (driverTipMethod,
+     driverTipAmount, driverTipDeclaredAt) + 3 indices nuevos por status.
+   - User: relacion ratingReportsFiled RatingReport[].
+   - Tabla nueva RatingReport (id, orderId, reporterUserId, target, reason,
+     resolvedAt, resolvedBy, resolution + indices).
+
+Helper de moderacion:
+2) src/lib/moderation.ts (NUEVO)
+   - BLACKLIST_PATTERNS: regex case-insensitive (~80 entradas) cuidadosamente
+     seleccionadas para minimizar falsos positivos. NO matcheamos puteadas
+     argentinas comunes ("la puta madre", "boludo") porque son tan culturales
+     que filtrarlas dispararia falsos positivos masivos. Confiamos en reportes
+     de comunidad para esos casos.
+   - checkContent(text) -> { isClean, matchedPatterns }.
+   - COMMENT_LIMITS export (DRIVER 300, MERCHANT 500, SELLER 500, REPORT_REASON 200).
+   - REPORT_THRESHOLD = 3.
+
+Endpoints modificados (los 3 de rating + check de moderacion):
+3) src/app/api/orders/[id]/rate-merchant/route.ts
+4) src/app/api/orders/[id]/rate-seller/route.ts
+5) src/app/api/orders/[id]/rate/route.ts
+   - Validan limite de chars del comentario (400 si excede).
+   - Llaman checkContent antes de persistir.
+   - Si match -> moderationStatus PENDING + auditLog REVIEW_COMMENT_FLAGGED.
+   - Si limpio -> AUTO_APPROVED.
+   - Rating numerico se persiste igual y sigue contando en avg.
+
+Endpoints nuevos:
+6) src/app/api/reviews/report/route.ts
+   - POST. Auth obligatoria. Anti-duplicado (mismo reporter no reporta dos
+     veces el mismo target). Anti-self-report (no reportes tu propia review).
+   - Crea RatingReport, bumpea reportCount, si >= 3 baja a PENDING.
+7) src/app/api/orders/[id]/tip/route.ts
+   - POST. method enum CASH/TRANSFER/NONE + amount opcional.
+   - Solo persiste informativo, sin pago real.
+   - Una vez por order (anti-spam, anti-fat-finger).
+8) src/app/api/admin/review-moderation/route.ts
+   - GET: lista plana de items pendientes (uno por target en moderacion
+     dentro de cada Order). Incluye reportes asociados con razones.
+   - PATCH: resuelve { orderId, target, resolution: APPROVED | REJECTED }.
+     APPROVED publica el comment. REJECTED lo borra (rating numerico se
+     mantiene). Cierra todos los RatingReport pendientes asociados.
+
+Endpoint de detalle de orden:
+9) src/app/api/orders/[id]/route.ts
+   - Agrega bankAlias al select del driver (necesario para que la UI muestre
+     la opcion de transferencia con alias copiable).
+
+Componentes:
+10) src/components/orders/PostDeliveryRatingModal.tsx (NUEVO)
+    - Modal unificado mobile-first. Renderiza solo las secciones pendientes
+      (si el comercio ya fue calificado, esa seccion no aparece).
+    - Estrellas + textarea con char counter para cada rating.
+    - Seccion de propina al driver con 3 botones (CASH / TRANSFER / NONE)
+      + alias copiable + monto opcional. Si no hay bankAlias, solo CASH y NONE.
+    - Sub-componente RatingSection reusable.
+    - Promise.all para enviar todo en paralelo. Tracking de fallas parciales.
+
+11) src/app/(store)/mis-pedidos/[orderId]/page.tsx
+    - Importa PostDeliveryRatingModal.
+    - Calcula needs* (rating de comercio/seller/driver + propina).
+    - useEffect que muestra el modal 30s post-DELIVERED si hay needs y no
+      fue postpuesto.
+    - State postDeliveryPostponed para que "Calificar despues" no haga
+      reaparecer en la misma sesion.
+    - Interface Order extendida con deliveredAt + driverTipMethod +
+      driver.bankAlias.
+
+Driver UI:
+12) src/app/api/driver/earnings/route.ts
+    - Devuelve totalTipsDeclared + totalTipsCount + hasBankAlias para el
+      reporte del driver.
+13) src/components/rider/views/EarningsView.tsx
+    - Seccion "Propinas declaradas" si totalTipsCount > 0.
+    - Banner amber si hasBankAlias === false: "Cargá tu alias para recibir
+      propinas".
+
+OPS:
+14) src/app/ops/(protected)/reviews-pendientes/page.tsx (NUEVO)
+    - Lista de reseñas pendientes (cards con: target icon, rating, comment
+      reportado, lista de reportes con razones).
+    - Botones APROBAR (publica) / RECHAZAR (borra texto, mantiene rating).
+    - Banner explicativo de que el rating numerico cuenta independiente.
+15) src/components/ops/OpsSidebar.tsx
+    - Item nuevo "Reseñas pendientes" en seccion Operaciones, link a
+      /ops/reviews-pendientes.
+
+QUE NO SE INCLUYE EN ESTA RAMA (para futuras):
+- Boton "Reportar" en la UI publica de reseñas. Hoy las reseñas no se
+  muestran publicamente en /tienda/[slug] u otras paginas — el endpoint
+  /api/reviews/report ya esta listo, falta consumirlo desde una UI publica.
+  Cuando se haga la rama "publicar reseñas en pagina de comercio", agregar
+  el boton es trivial.
+- Notificacion email a OPS cuando un comment cae en PENDING. Por ahora se
+  ven en /ops/reviews-pendientes manualmente. En una rama futura se puede
+  agregar notificacion proactiva.
+- Welcome email para SELLER al activar perfil marketplace (rama separada
+  identificada en sprint anterior, post-launch).
+
+INSTRUCCIONES POST-CHECKOUT (orden importante):
+
+ANTES del finish.ps1, correr:
+
+  npx prisma db push
+
+Esto sincroniza el schema con la DB (campos nuevos + tabla RatingReport)
+y regenera el cliente Prisma. Sin esto, el tsc va a fallar porque los
+endpoints referencian campos que no existen en el cliente generado todavia.
+
+Despues:
+
+  .\scripts\finish.ps1
+
+VERIFICACION POST-DEPLOY:
+
+- En staging, finalizar un pedido (DELIVERED). Esperar 30s y verificar
+  que el modal aparece automatico.
+- Calificar comercio + driver + dejar propina TRANSFER. Verificar que se
+  abre el alias copiable y el monto opcional funciona.
+- Probar comentario inocente: deberia quedar AUTO_APPROVED.
+- Probar comentario con palabra de la blacklist (ej: "puto de mierda"):
+  deberia quedar PENDING y aparecer en /ops/reviews-pendientes.
+- En /ops/reviews-pendientes, aprobar uno y rechazar otro. Verificar
+  que ambos desaparecen de la queue y los logs dejan registro.
+- Verificar que el driver ve "Propinas declaradas" en su EarningsView.
+
+**Archivos:** ISSUES.md, prisma/schema.prisma, src/app/(store)/mis-pedidos/[orderId]/page.tsx, src/app/api/admin/review-moderation/route.ts, src/app/api/driver/earnings/route.ts, src/app/api/orders/[id]/rate-merchant/route.ts, src/app/api/orders/[id]/rate-seller/route.ts, src/app/api/orders/[id]/rate/route.ts (+8 mas)
+
 ## 2026-05-10 (rama `feat/rto-no-obligatorio-driver`)
 
 feat(driver): RTO no obligatorio + declaracion jurada en T&C

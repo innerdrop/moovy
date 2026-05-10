@@ -29,13 +29,13 @@ export async function GET(
                 items: { include: { product: true } },
                 address: true,
                 user: { select: { id: true, name: true, email: true, phone: true } },
-                driver: { select: { id: true, latitude: true, longitude: true, user: { select: { name: true, phone: true } } } },
+                driver: { select: { id: true, latitude: true, longitude: true, bankAlias: true, user: { select: { name: true, phone: true } } } },
                 merchant: { select: { name: true, latitude: true, longitude: true, address: true } },
                 subOrders: {
                     include: {
                         merchant: { select: { id: true, name: true, latitude: true, longitude: true, address: true } },
                         seller: { select: { id: true, displayName: true } },
-                        driver: { select: { id: true, latitude: true, longitude: true, user: { select: { name: true, phone: true } } } },
+                        driver: { select: { id: true, latitude: true, longitude: true, bankAlias: true, user: { select: { name: true, phone: true } } } },
                         items: { select: { id: true, name: true, quantity: true, price: true } },
                     },
                 },

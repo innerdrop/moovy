@@ -38,6 +38,7 @@ import { useCartStore } from "@/store/cart";
 import RateMerchantModal from "@/components/orders/RateMerchantModal";
 import RateSellerModal from "@/components/orders/RateSellerModal";
 import RateDriverModal from "@/components/orders/RateDriverModal";
+import PostDeliveryRatingModal from "@/components/orders/PostDeliveryRatingModal";
 import OrderChatPanel from "@/components/orders/OrderChatPanel";
 import { buildDeliveryContext } from "@/lib/delivery-chat";
 import dynamic from "next/dynamic";
@@ -90,6 +91,7 @@ interface OrderDetail {
         latitude?: number;
         longitude?: number;
         deliveries?: number;
+        bankAlias?: string | null;
         user: { name: string; phone?: string };
     };
     driverRating?: number;
@@ -98,6 +100,11 @@ interface OrderDetail {
     merchantRatingComment?: string;
     sellerRating?: number;
     sellerRatingComment?: string;
+    // feat/propinas-y-ratings-post-entrega (2026-05-08): si el buyer ya
+    // declaro como va a dejar la propina (CASH | TRANSFER | NONE), no le
+    // re-mostramos esa seccion del modal. (deliveredAt ya esta declarado mas
+    // arriba en la interface — lo usamos para el delay de 30s del modal.)
+    driverTipMethod?: string | null;
     // ISSUE-001: PIN doble — deliveryPin sólo viene populado desde el backend cuando el pedido
     // está en PICKED_UP / IN_DELIVERY. Para cualquier otro estado llega null.
     deliveryPin?: string | null;
@@ -200,6 +207,14 @@ export default function OrderDetailPage() {
     const [showMerchantRating, setShowMerchantRating] = useState(false);
     const [showSellerRating, setShowSellerRating] = useState(false);
     const [showDriverRating, setShowDriverRating] = useState(false);
+    // feat/propinas-y-ratings-post-entrega (2026-05-08): control del modal
+    // unificado post-entrega. Aparece automaticamente 30s despues de DELIVERED
+    // si hay alguna accion pendiente. El buyer puede postergar — postponed se
+    // resetea al cambiar de pedido o recargar la pagina (no persiste, es
+    // intencional para que vuelva a aparecer cuando el buyer realmente quiera
+    // calificar).
+    const [showPostDeliveryModal, setShowPostDeliveryModal] = useState(false);
+    const [postDeliveryPostponed, setPostDeliveryPostponed] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [driverLocation, setDriverLocation] = useState<any>(null);
@@ -326,6 +341,37 @@ export default function OrderDetailPage() {
     const canCancel = order && ["PENDING", "CONFIRMED"].includes(order.status);
     const isDelivered = order?.status === "DELIVERED";
     const isCancelled = order?.status === "CANCELLED";
+
+    // feat/propinas-y-ratings-post-entrega (2026-05-08): calcular si hay
+    // acciones pendientes que justifiquen mostrar el modal unificado.
+    // El modal aparece automaticamente 30s post-DELIVERED si:
+    //   - hay al menos 1 rating pendiente o la propina no fue declarada;
+    //   - el buyer no postergo el modal en esta sesion.
+    // El delay de 30s evita molestar al buyer mientras todavia esta sacando
+    // el pedido del bolso o pagando si quedo algo en efectivo.
+    const hasMerchant = !!order?.merchant;
+    const hasSeller = !!order?.subOrders?.some(so => so.seller);
+    const hasDriver = !!order?.driver;
+    const needsMerchantRating = isDelivered && hasMerchant && !order?.merchantRating;
+    const needsSellerRating = isDelivered && hasSeller && !order?.sellerRating;
+    const needsDriverRating = isDelivered && hasDriver && !order?.driverRating;
+    const needsTipDeclaration = isDelivered && hasDriver && !order?.driverTipMethod;
+    const hasAnyPending = needsMerchantRating || needsSellerRating || needsDriverRating || needsTipDeclaration;
+
+    useEffect(() => {
+        if (!isDelivered || !hasAnyPending || postDeliveryPostponed) {
+            setShowPostDeliveryModal(false);
+            return;
+        }
+        // 30s post-DELIVERED. Si el order viene con deliveredAt en el pasado
+        // (ej: el buyer abre la pagina horas despues), el delay efectivo es 0.
+        const deliveredMs = order?.deliveredAt ? new Date(order.deliveredAt).getTime() : Date.now();
+        const elapsedMs = Date.now() - deliveredMs;
+        const remainingMs = Math.max(0, 30_000 - elapsedMs);
+        const t = setTimeout(() => setShowPostDeliveryModal(true), remainingMs);
+        return () => clearTimeout(t);
+    }, [isDelivered, hasAnyPending, postDeliveryPostponed, order?.deliveredAt]);
+
     const showMap = isActive && ["READY", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "PICKED_UP", "IN_DELIVERY"].includes(order?.status || "");
 
     const currentStepIdx = useMemo(() => {
@@ -1057,6 +1103,41 @@ export default function OrderDetailPage() {
                     onClose={() => setShowDriverRating(false)}
                     onSuccess={() => {
                         fetch(`/api/orders/${orderId}`).then(r => r.json()).then(d => setOrder(d)).catch(() => {});
+                    }}
+                />
+            )}
+
+            {/* feat/propinas-y-ratings-post-entrega (2026-05-08): modal unificado
+                post-entrega. Aparece automaticamente 30s post-DELIVERED si hay
+                acciones pendientes (ratings y/o propina). Permite postergar.
+                Los modales individuales de arriba siguen disponibles via los
+                botones "Calificar" del UI normal — son fallback / re-rating. */}
+            {showPostDeliveryModal && order.driver && (
+                <PostDeliveryRatingModal
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    merchant={order.merchant ? { name: order.merchant.name } : null}
+                    needsMerchantRating={needsMerchantRating}
+                    seller={
+                        order.subOrders?.find(so => so.seller)?.seller
+                            ? { displayName: order.subOrders.find(so => so.seller)!.seller!.displayName || "Vendedor" }
+                            : null
+                    }
+                    needsSellerRating={needsSellerRating}
+                    driver={{
+                        name: order.driver.user.name,
+                        bankAlias: order.driver.bankAlias ?? null,
+                    }}
+                    needsDriverRating={needsDriverRating}
+                    needsTipDeclaration={needsTipDeclaration}
+                    onClose={() => setShowPostDeliveryModal(false)}
+                    onSuccess={() => {
+                        setShowPostDeliveryModal(false);
+                        fetch(`/api/orders/${orderId}`).then(r => r.json()).then(d => setOrder(d)).catch(() => {});
+                    }}
+                    onPostpone={() => {
+                        setShowPostDeliveryModal(false);
+                        setPostDeliveryPostponed(true);
                     }}
                 />
             )}

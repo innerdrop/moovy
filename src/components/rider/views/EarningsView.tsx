@@ -26,6 +26,12 @@ interface EarningsData {
     avgPerDay: number;
     previousPeriodTotal: number;
     dailyBreakdown: EarningDay[];
+    // feat/propinas-y-ratings-post-entrega (2026-05-08): propinas declaradas
+    // por buyers en este periodo. Informativas — Moovy NO procesa el pago,
+    // las recibe el driver directo (efectivo / transferencia al alias).
+    totalTipsDeclared?: number;
+    totalTipsCount?: number;
+    hasBankAlias?: boolean;
 }
 
 interface EarningsViewProps {
@@ -164,6 +170,38 @@ export default function EarningsView({ onBack }: EarningsViewProps) {
                                 </div>
                             )}
                         </div>
+
+                        {/* feat/propinas-y-ratings-post-entrega (2026-05-08):
+                            seccion de propinas declaradas — Moovy NO las procesa
+                            (las recibe el driver directo del buyer en efectivo
+                            o por transferencia al alias). Mostramos el monto
+                            agregado solo como referencia. */}
+                        {(data.totalTipsCount ?? 0) > 0 && (
+                            <div className="bg-white dark:bg-[#1a1d27] rounded-xl p-5 shadow-sm border-l-4 border-green-500">
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Propinas declaradas</p>
+                                <p className="text-3xl font-bold text-green-600 dark:text-green-400">${formatARS(data.totalTipsDeclared ?? 0)}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {data.totalTipsCount} pedido{data.totalTipsCount !== 1 ? "s" : ""} con propina · cobradas directo del buyer
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Recordatorio de cargar alias bancario si todavia no tiene */}
+                        {data.hasBankAlias === false && (
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                    <Wallet className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">
+                                            Cargá tu alias para recibir propinas
+                                        </p>
+                                        <p className="text-xs text-amber-800 dark:text-amber-300">
+                                            Sin alias bancario, los buyers solo te pueden dejar propina en efectivo. Cargalo desde tu perfil para que también te puedan transferir.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Tips */}
                         <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white">

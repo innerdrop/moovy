@@ -1086,7 +1086,16 @@ CREATE TABLE public."Order" (
     "noShowFlag" boolean DEFAULT false NOT NULL,
     "noShowReportedAt" timestamp(3) without time zone,
     "payoutHoldUntil" timestamp(3) without time zone,
-    "waitingStartedAt" timestamp(3) without time zone
+    "waitingStartedAt" timestamp(3) without time zone,
+    "driverRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
+    "driverRatingReportCount" integer DEFAULT 0 NOT NULL,
+    "driverTipAmount" double precision,
+    "driverTipDeclaredAt" timestamp(3) without time zone,
+    "driverTipMethod" text,
+    "merchantRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
+    "merchantRatingReportCount" integer DEFAULT 0 NOT NULL,
+    "sellerRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
+    "sellerRatingReportCount" integer DEFAULT 0 NOT NULL
 );
 
 
@@ -1513,6 +1522,25 @@ CREATE TABLE public."PushSubscription" (
 
 
 ALTER TABLE public."PushSubscription" OWNER TO postgres;
+
+--
+-- Name: RatingReport; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."RatingReport" (
+    id text NOT NULL,
+    "orderId" text NOT NULL,
+    "reporterUserId" text NOT NULL,
+    target text NOT NULL,
+    reason text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "resolvedAt" timestamp(3) without time zone,
+    "resolvedBy" text,
+    resolution text
+);
+
+
+ALTER TABLE public."RatingReport" OWNER TO postgres;
 
 --
 -- Name: Referral; Type: TABLE; Schema: public; Owner: postgres
@@ -2500,7 +2528,7 @@ COPY public."MpWebhookLog" (id, "eventId", "eventType", "resourceId", processed,
 -- Data for Name: Order; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt") FROM stdin;
+COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt", "driverRatingModerationStatus", "driverRatingReportCount", "driverTipAmount", "driverTipDeclaredAt", "driverTipMethod", "merchantRatingModerationStatus", "merchantRatingReportCount", "sellerRatingModerationStatus", "sellerRatingReportCount") FROM stdin;
 \.
 
 
@@ -2860,6 +2888,14 @@ cmomajvlv003sf17ougcw0am8	27b478f280d13af7c24257a2be5aba5f8a128534953035c5791b96
 --
 
 COPY public."PushSubscription" (id, "userId", endpoint, p256dh, auth, "createdAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: RatingReport; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."RatingReport" (id, "orderId", "reporterUserId", target, reason, "createdAt", "resolvedAt", "resolvedBy", resolution) FROM stdin;
 \.
 
 
@@ -3503,6 +3539,14 @@ ALTER TABLE ONLY public."PushSubscription"
 
 
 --
+-- Name: RatingReport RatingReport_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."RatingReport"
+    ADD CONSTRAINT "RatingReport_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: Referral Referral_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3912,13 +3956,6 @@ CREATE INDEX "DeliveryZone_isActive_idx" ON public."DeliveryZone" USING btree ("
 --
 
 CREATE UNIQUE INDEX "DeliveryZone_name_key" ON public."DeliveryZone" USING btree (name);
-
-
---
--- Name: DeliveryZone_polygon_gist_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "DeliveryZone_polygon_gist_idx" ON public."DeliveryZone" USING gist (polygon);
 
 
 --
@@ -4398,10 +4435,24 @@ CREATE INDEX "Order_driverId_idx" ON public."Order" USING btree ("driverId");
 
 
 --
+-- Name: Order_driverRatingModerationStatus_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "Order_driverRatingModerationStatus_idx" ON public."Order" USING btree ("driverRatingModerationStatus");
+
+
+--
 -- Name: Order_driverStatus_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "Order_driverStatus_idx" ON public."Order" USING btree ("driverStatus");
+
+
+--
+-- Name: Order_merchantRatingModerationStatus_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "Order_merchantRatingModerationStatus_idx" ON public."Order" USING btree ("merchantRatingModerationStatus");
 
 
 --
@@ -4423,6 +4474,13 @@ CREATE UNIQUE INDEX "Order_orderNumber_key" ON public."Order" USING btree ("orde
 --
 
 CREATE INDEX "Order_paymentStatus_idx" ON public."Order" USING btree ("paymentStatus");
+
+
+--
+-- Name: Order_sellerRatingModerationStatus_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "Order_sellerRatingModerationStatus_idx" ON public."Order" USING btree ("sellerRatingModerationStatus");
 
 
 --
@@ -4626,6 +4684,34 @@ CREATE UNIQUE INDEX "PushSubscription_endpoint_key" ON public."PushSubscription"
 --
 
 CREATE INDEX "PushSubscription_userId_idx" ON public."PushSubscription" USING btree ("userId");
+
+
+--
+-- Name: RatingReport_orderId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "RatingReport_orderId_idx" ON public."RatingReport" USING btree ("orderId");
+
+
+--
+-- Name: RatingReport_reporterUserId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "RatingReport_reporterUserId_idx" ON public."RatingReport" USING btree ("reporterUserId");
+
+
+--
+-- Name: RatingReport_resolvedAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "RatingReport_resolvedAt_idx" ON public."RatingReport" USING btree ("resolvedAt");
+
+
+--
+-- Name: RatingReport_target_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "RatingReport_target_idx" ON public."RatingReport" USING btree (target);
 
 
 --
@@ -5407,6 +5493,22 @@ ALTER TABLE ONLY public."Product"
 
 ALTER TABLE ONLY public."PushSubscription"
     ADD CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: RatingReport RatingReport_orderId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."RatingReport"
+    ADD CONSTRAINT "RatingReport_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES public."Order"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: RatingReport RatingReport_reporterUserId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."RatingReport"
+    ADD CONSTRAINT "RatingReport_reporterUserId_fkey" FOREIGN KEY ("reporterUserId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --

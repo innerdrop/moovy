@@ -102,6 +102,10 @@ model User {
   consentLogs        ConsentLog[]
   adminNotesAbout    AdminNote[]         @relation("AdminNotesAboutUser")    // notas que admins dejaron sobre mi
   adminNotesWritten  AdminNote[]         @relation("AdminNotesWrittenByAdmin") // notas que yo (admin) dejé sobre otros
+  // feat/propinas-y-ratings-post-entrega (2026-05-08): reportes de reviews
+  // que este user disparo. No hay relacion inversa para reviews recibidas
+  // porque las reviews viven en Order (no en User directamente).
+  ratingReportsFiled RatingReport[]      @relation("RatingReportReporter")
 
   @@index([isSuspended])
   @@index([archivedAt])
@@ -354,6 +358,28 @@ model Order {
   merchantRatingComment String?
   sellerRating        Int?
   sellerRatingComment String?
+  // feat/propinas-y-ratings-post-entrega (2026-05-08): moderacion automatica
+  // de comentarios de reviews. Estados: AUTO_APPROVED (default — paso la
+  // blacklist sin match), PENDING (matcheo blacklist o recibio >=3 reportes
+  // de la comunidad, queda invisible hasta que OPS revise), APPROVED (OPS
+  // confirmo manualmente), REJECTED (OPS borro el comentario por inapropiado).
+  // Cada uno de los 3 ratings (driver/merchant/seller) tiene su propio status
+  // porque pueden tener problemas independientes.
+  driverRatingModerationStatus    String  @default("AUTO_APPROVED")
+  driverRatingReportCount         Int     @default(0)
+  merchantRatingModerationStatus  String  @default("AUTO_APPROVED")
+  merchantRatingReportCount       Int     @default(0)
+  sellerRatingModerationStatus    String  @default("AUTO_APPROVED")
+  sellerRatingReportCount         Int     @default(0)
+  // Propinas al driver — modelo informativo, Moovy NO procesa el pago.
+  // El buyer indica si va a dejar propina y por que medio (efectivo en mano
+  // o transferencia al alias del driver). Sirve para analytics, reporting al
+  // driver ("propinas declaradas este mes") y para que el driver sepa antes
+  // del cobro. Si method = TRANSFER, amount es el monto declarado; si CASH,
+  // amount puede ser null (lo arregla en mano y puede no estar predefinido).
+  driverTipMethod     String?  // CASH | TRANSFER | NONE
+  driverTipAmount     Float?
+  driverTipDeclaredAt DateTime?
   assignmentAttempts  Int         @default(0)
   assignmentExpiresAt DateTime?
   attemptedDriverIds  Json?
@@ -397,6 +423,8 @@ model Order {
   payoutHoldUntil      DateTime?
   noShowFlag           Boolean    @default(false)
 
+  ratingReports       RatingReport[]
+
   @@index([status])
   @@index([paymentStatus])
   @@index([deliveryStatus])
@@ -406,6 +434,41 @@ model Order {
   @@index([deletedAt])
   @@index([merchantStatus])
   @@index([driverStatus])
+  @@index([driverRatingModerationStatus])
+  @@index([merchantRatingModerationStatus])
+  @@index([sellerRatingModerationStatus])
+}
+
+// feat/propinas-y-ratings-post-entrega (2026-05-08): reportes de reviews por
+// la comunidad. Cualquier user logueado que ve una review publica puede
+// reportarla. Append-only — cada reporte deja registro incluso despues de
+// que OPS lo resuelva, para auditoria y deteccion de patrones (ej: usuarios
+// que reportan masivamente para tirar abajo a comercios competidores).
+//
+// Cuando el reportCount del rating en Order pasa >= 3, el sistema baja el
+// comentario a moderationStatus = PENDING automaticamente y queda invisible
+// hasta que OPS apruebe o rechace desde /ops/moderacion.
+model RatingReport {
+  id              String   @id @default(cuid())
+  orderId         String
+  reporterUserId  String
+  // Que rating se reporta dentro del Order: DRIVER | MERCHANT | SELLER
+  target          String
+  // Razon opcional que dejo el reporter (max 200 chars).
+  reason          String?
+  createdAt       DateTime @default(now())
+  // Resolucion OPS — null mientras este pendiente
+  resolvedAt      DateTime?
+  resolvedBy      String?  // userId del admin
+  resolution      String?  // APPROVED | REJECTED — si OPS confirmo el reporte (REJECTED del comentario) o lo descarto (APPROVED del comentario).
+
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reporter        User     @relation("RatingReportReporter", fields: [reporterUserId], references: [id])
+
+  @@index([orderId])
+  @@index([reporterUserId])
+  @@index([target])
+  @@index([resolvedAt])
 }
 
 model OrderItem {
