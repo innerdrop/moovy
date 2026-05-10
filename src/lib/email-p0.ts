@@ -1209,3 +1209,54 @@ export async function sendCartAbandonmentEmail(data: {
         tag: data.isSecondReminder ? 'cart_abandonment_2nd' : 'cart_abandonment_1st'
     });
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CATEGORÍA — ONBOARDING SELLER MARKETPLACE
+// feat/welcome-email-seller (2026-05-10): completa la simetria del set de
+// welcome emails (BUYER, COMERCIO, DRIVER ya tienen sus variantes). El seller
+// es distinto a los otros porque NO requiere aprobacion admin — se autoactiva
+// al cargar CUIT en POST /api/auth/activate-seller. Por eso este email es
+// directamente confirmacion + onboarding inicial ("ya estas activo, publica
+// tu primer producto"), no "recibimos tu solicitud, esperá".
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Seller activado — bienvenida al marketplace.
+ * Trigger: POST /api/auth/activate-seller éxito.
+ */
+export async function sendSellerActivatedEmail(data: {
+    email: string;
+    sellerName: string;
+    displayName: string;
+}) {
+    const html = emailLayout(`
+        ${emailBadge('Marketplace activo', '#ede9fe', '#5b21b6')}
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Bienvenido al marketplace, ${data.sellerName}</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            Tu perfil de vendedor <strong>${data.displayName}</strong> ya est&aacute; activo en MOOVY. A partir de ahora pod&eacute;s publicar productos o servicios en el marketplace y empezar a vender entre vecinos de Ushuaia.
+        </p>
+
+        ${emailInfoBox(`
+            <h4 style="color: #4a5568; margin: 0 0 12px 0; font-size: 14px;">Primeros pasos:</h4>
+            <ol style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                <li>Publicá tu primera publicación con foto, precio y descripción</li>
+                <li>Configurá tu disponibilidad y horarios</li>
+                <li>Cargá tu CBU o alias bancario para recibir los pagos</li>
+                <li>Revisá los Términos para Vendedores para conocer comisiones (12%) y políticas</li>
+            </ol>
+        `)}
+
+        ${emailButton('Ir al panel de vendedor', `${baseUrl}/vendedor`, 'blue')}
+
+        <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 20px 0 0 0;">
+            Tu primer producto tiene m&aacute;s chances de venderse si llev&aacute; foto clara, descripci&oacute;n breve y precio realista. Si ten&eacute;s dudas, respond&eacute; este correo y te ayudamos.
+        </p>
+    `);
+
+    return sendEmail({
+        to: data.email,
+        subject: 'Tu perfil de vendedor está activo — MOOVY',
+        html,
+        tag: 'seller_activated',
+    });
+}

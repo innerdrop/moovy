@@ -10,6 +10,83 @@
 
 ---
 
+## 2026-05-10 (rama `feat/welcome-email-seller`)
+
+feat(emails): welcome email para SELLER al activar perfil marketplace
+
+Completa la simetria del set de welcome emails: BUYER, COMERCIO y DRIVER
+ya tenian sus variantes (las dos ultimas las conectamos en la rama
+feat/welcome-emails-driver-merchant). SELLER era el unico actor que se
+quedaba sin email post-activacion. Asimetria que generaba la sensacion
+de "Moovy se olvido de mi" justo al momento mas importante (cuando el
+seller acaba de crear su perfil y deberia recibir guia para publicar).
+
+DECISION DE PRODUCTO:
+
+A diferencia de driver/merchant que tienen flujo de "solicitud recibida,
+esperá aprobación 24-48hs hábiles", el SELLER se autoactiva al cargar
+CUIT en /api/auth/activate-seller (no requiere admin approval — ver
+src/lib/roles.ts derivacion de SELLER desde SellerProfile.isActive). Por
+eso este email NO es "recibimos tu solicitud", es directamente
+confirmacion + onboarding inicial:
+
+  - Subject: "Tu perfil de vendedor está activo — MOOVY"
+  - Cuerpo: badge "Marketplace activo" + saludo personal + lista de
+    primeros pasos (publicar primer listing, configurar disponibilidad,
+    cargar CBU/alias, revisar T&C con comisión 12%) + CTA al panel
+    /vendedor + tip final sobre la calidad de la primera publicación.
+
+CAMBIOS (3 archivos):
+
+1) src/lib/email-p0.ts
+   - Nueva categoria "ONBOARDING SELLER MARKETPLACE" al final del archivo.
+   - Funcion sendSellerActivatedEmail con args { email, sellerName,
+     displayName }. Devuelve el sendEmail con tag "seller_activated"
+     para que el log SMTP la rastree.
+
+2) src/lib/email-registry.ts
+   - Tipo recipient extendido con 'vendedor' (antes solo
+     'comprador' | 'comercio' | 'repartidor' | 'admin' | 'owner').
+   - SAMPLE extendido con sellerName, sellerDisplayName, sellerEmail
+     para que la preview en /ops/emails muestre datos coherentes.
+   - Entrada nueva id "seller_activated" #19 (status "new", priority P0,
+     trigger "POST /api/auth/activate-seller", file "src/lib/email-p0.ts")
+     con su generatePreview.
+
+3) src/app/api/auth/activate-seller/route.ts
+   - Import de sendSellerActivatedEmail desde @/lib/email-p0.
+   - Despues del recordConsent (TERMS + PRIVACY), fetcheamos el user
+     (email + name) y disparamos el welcome email fire-and-forget.
+   - Si el fetch del user falla, logueamos y seguimos. El activate-seller
+     NO falla por un email roto (es el patron de la regla #11 de CLAUDE.md).
+   - displayName del email viene de body.displayName o cae a user.name.
+
+QUE NO CAMBIA:
+- Schema de DB no se toca.
+- /api/auth/activate-seller mantiene su contrato — sigue devolviendo
+  { success: true, role: "SELLER", status: "ACTIVE" }. El email es side
+  effect post-respuesta.
+- Otros emails de seller (futuros: order received as seller, payout
+  ready, etc.) quedan fuera del scope — esta rama solo cierra la
+  asimetria del welcome.
+
+VERIFICACION SUGERIDA POST-DEPLOY:
+- En staging, activar un perfil SELLER nuevo desde /vendedor/registro o
+  /mi-perfil con CUIT valido y T&C aceptados.
+- Verificar que llega un email al inbox del user con subject
+  "Tu perfil de vendedor está activo — MOOVY".
+- En /ops/emails buscar la entry "seller_activated" y abrir la preview
+  para confirmar que el sample render bien.
+- Si el SMTP esta caido, confirmar que la activacion igual completa
+  exitosamente (el endpoint no debe fallar por el email).
+
+QUEDA EN BACKLOG (no incluido aca):
+- Otros emails del ciclo seller marketplace (nuevo pedido recibido,
+  payout disponible, listing rechazado por moderacion, etc.). Cuando se
+  prioricen, se agregan con el mismo patron.
+
+**Archivos:** ISSUES.md, src/app/api/auth/activate-seller/route.ts, src/lib/email-p0.ts, src/lib/email-registry.ts
+
 ## 2026-05-10 (rama `feat/propinas-y-ratings-post-entrega`)
 
 feat(ratings+propinas): modal post-entrega + moderacion auto + propina directa

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { encryptSellerData, decryptSellerData } from "@/lib/fiscal-crypto";
 import { recordConsent } from "@/lib/consent";
 import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
+import { sendSellerActivatedEmail } from "@/lib/email-p0";
 
 // POST - Activate SELLER role for authenticated user
 export async function POST(request: NextRequest) {
@@ -145,6 +146,29 @@ export async function POST(request: NextRequest) {
             });
         } catch (err) {
             console.error("[ACTIVATE SELLER] Failed to persist consent log:", err);
+        }
+
+        // feat/welcome-email-seller (2026-05-10): bienvenida al marketplace.
+        // A diferencia de driver/merchant, el seller no requiere aprobacion
+        // admin — esto es directamente confirmacion + onboarding inicial.
+        // Fire-and-forget para no bloquear la response. La funcion +
+        // entrada en EMAIL_REGISTRY (id "seller_activated") ya existian.
+        try {
+            const sellerUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { email: true, name: true },
+            });
+            if (sellerUser?.email) {
+                sendSellerActivatedEmail({
+                    email: sellerUser.email,
+                    sellerName: sellerUser.name || "Vendedor",
+                    displayName: body.displayName || sellerUser.name || "Vendedor",
+                }).catch((err) =>
+                    console.error("[ACTIVATE SELLER] Failed to send welcome email:", err)
+                );
+            }
+        } catch (err) {
+            console.error("[ACTIVATE SELLER] Failed to load user for welcome email:", err);
         }
 
         return NextResponse.json({ success: true, role: "SELLER", status: "ACTIVE" });

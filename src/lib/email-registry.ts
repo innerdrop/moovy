@@ -16,7 +16,7 @@ export interface EmailRegistryEntry {
     number: number;          // # del audit
     name: string;
     category: string;
-    recipient: 'comprador' | 'comercio' | 'repartidor' | 'admin' | 'owner';
+    recipient: 'comprador' | 'comercio' | 'repartidor' | 'vendedor' | 'admin' | 'owner';
     priority: 'P0' | 'P1' | 'P2' | 'P3';
     status: 'implemented' | 'new' | 'partial';
     trigger: string;
@@ -37,6 +37,11 @@ const SAMPLE = {
     merchantEmail: 'contacto@donjuan.com',
     driverName: 'Carlos Gómez',
     driverEmail: 'carlos@ejemplo.com',
+    // feat/welcome-email-seller (2026-05-10): para preview del email
+    // de bienvenida al vendedor marketplace.
+    sellerName: 'Ana Martínez',
+    sellerDisplayName: 'Las Vasijas de Ana',
+    sellerEmail: 'ana@ejemplo.com',
     orderNumber: 'MOV-20260320-001',
     referralCode: 'MARIA2026',
     total: 4500,
@@ -323,6 +328,40 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Lamentamos informarte que tu solicitud para ser repartidor en MOOVY no pudo ser aprobada.</p>
             ${emailAlertBox('<p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Licencia de conducir vencida. Por favor renovála y volvé a postularte.</p>', 'warning')}
             ${emailButton('Contactar Soporte', `${baseUrl}/ayuda`, 'blue')}
+        `),
+    },
+    {
+        // feat/welcome-email-seller (2026-05-10): completa la simetria del set
+        // de welcomes. El seller marketplace se autoactiva al cargar CUIT (no
+        // requiere aprobacion admin), asi que este email es directamente
+        // confirmacion + onboarding inicial. Trigger en /api/auth/activate-seller.
+        id: 'seller_activated',
+        number: 19,
+        name: 'Vendedor activado (Bienvenida marketplace)',
+        category: 'Registro y Onboarding',
+        recipient: 'vendedor',
+        priority: 'P0',
+        status: 'new',
+        trigger: 'POST /api/auth/activate-seller',
+        subject: 'Tu perfil de vendedor está activo — MOOVY',
+        functionName: 'sendSellerActivatedEmail',
+        file: 'src/lib/email-p0.ts',
+        generatePreview: () => emailLayout(`
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('Marketplace activo', '#ede9fe', '#5b21b6')}</div>
+            <h2 style="color: #111827; margin-top: 0; text-align: center;">Bienvenido al marketplace, ${SAMPLE.sellerName}</h2>
+            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+                Tu perfil de vendedor <strong>${SAMPLE.sellerDisplayName}</strong> ya está activo en MOOVY. A partir de ahora podés publicar productos o servicios en el marketplace y empezar a vender entre vecinos de Ushuaia.
+            </p>
+            ${emailInfoBox(`
+                <h4 style="color: #4a5568; margin: 0 0 12px 0; font-size: 14px;">Primeros pasos:</h4>
+                <ol style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                    <li>Publicá tu primera publicación con foto, precio y descripción</li>
+                    <li>Configurá tu disponibilidad y horarios</li>
+                    <li>Cargá tu CBU o alias bancario para recibir los pagos</li>
+                    <li>Revisá los Términos para Vendedores (comisión 12%)</li>
+                </ol>
+            `)}
+            ${emailButton('Ir al panel de vendedor', `${baseUrl}/vendedor`, 'blue')}
         `),
     },
     {
