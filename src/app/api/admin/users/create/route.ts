@@ -35,17 +35,26 @@ import crypto from "crypto";
 const WELCOME_TOKEN_EXPIRY_HOURS = 24;
 
 // Discriminated union — el body cambia según el type.
+//
+// fix/ops-form-paridad-registro (2026-05-08): el schema pide firstName +
+// lastName separados (igual que /api/auth/register publico y register/driver).
+// Antes recibia un solo campo "name" que el endpoint partia por el primer
+// espacio para inferir firstName/lastName, lo que rompia con nombres
+// compuestos ("Maria del Carmen Di Tella" -> firstName "Maria", lastName
+// "del Carmen Di Tella"). Ahora el admin OPS provee ambos directamente.
 const createUserSchema = z.discriminatedUnion("type", [
     z.object({
         type: z.literal("BUYER"),
         email: z.string().email("Email inválido").max(254),
-        name: z.string().min(2, "Nombre mínimo 2 caracteres").max(80),
+        firstName: z.string().min(2, "Nombre mínimo 2 caracteres").max(50),
+        lastName: z.string().min(2, "Apellido mínimo 2 caracteres").max(50),
         phone: z.string().max(30).optional().nullable(),
     }),
     z.object({
         type: z.literal("DRIVER"),
         email: z.string().email("Email inválido").max(254),
-        name: z.string().min(2, "Nombre mínimo 2 caracteres").max(80),
+        firstName: z.string().min(2, "Nombre mínimo 2 caracteres").max(50),
+        lastName: z.string().min(2, "Apellido mínimo 2 caracteres").max(50),
         phone: z.string().max(30).optional().nullable(),
         // Vehicle type opcional al crear — driver lo completa después.
         vehicleType: z.enum([
@@ -56,7 +65,8 @@ const createUserSchema = z.discriminatedUnion("type", [
     z.object({
         type: z.literal("SELLER"),
         email: z.string().email("Email inválido").max(254),
-        name: z.string().min(2, "Nombre mínimo 2 caracteres").max(80),
+        firstName: z.string().min(2, "Nombre mínimo 2 caracteres").max(50),
+        lastName: z.string().min(2, "Apellido mínimo 2 caracteres").max(50),
         phone: z.string().max(30).optional().nullable(),
         // displayName opcional al crear — seller lo completa después.
         displayName: z.string().min(2).max(80).optional().nullable(),
@@ -83,6 +93,11 @@ export async function POST(request: NextRequest) {
 
         const data = parsed.data;
         const emailLower = data.email.toLowerCase().trim();
+        // fix/ops-form-paridad-registro (2026-05-08): fullName se construye
+        // del input del admin, igual que /api/auth/register publico.
+        const firstNameClean = data.firstName.trim();
+        const lastNameClean = data.lastName.trim();
+        const fullName = `${firstNameClean} ${lastNameClean}`;
 
         // Anti-resurrección + duplicados
         const existingUser = await prisma.user.findUnique({
@@ -132,9 +147,9 @@ export async function POST(request: NextRequest) {
                 data: {
                     email: emailLower,
                     password: placeholderPassword,
-                    name: data.name,
-                    firstName: data.name.split(" ")[0] || data.name,
-                    lastName: data.name.split(" ").slice(1).join(" ") || "",
+                    name: fullName,
+                    firstName: firstNameClean,
+                    lastName: lastNameClean,
                     phone: data.phone || null,
                     role: "USER",
                     resetToken: tokenHash,
@@ -161,7 +176,7 @@ export async function POST(request: NextRequest) {
                 const seller = await tx.sellerProfile.create({
                     data: {
                         userId: newUser.id,
-                        displayName: data.displayName || data.name,
+                        displayName: data.displayName || fullName,
                         // isActive: false por default — seller completa su perfil
                         // y se activa después.
                     },

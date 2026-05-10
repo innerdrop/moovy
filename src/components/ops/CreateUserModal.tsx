@@ -35,7 +35,12 @@ interface CreateUserModalProps {
 export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalProps) {
     const [accountType, setAccountType] = useState<AccountType>("BUYER");
     const [email, setEmail] = useState("");
-    const [name, setName] = useState("");
+    // fix/ops-form-paridad-registro (2026-05-08): firstName + lastName separados
+    // (igual que /repartidor/registro y /registro publicos). Antes era un solo
+    // campo "Nombre completo" que el endpoint partia por el primer espacio,
+    // rompiendo nombres compuestos ("Maria del Carmen Di Tella").
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [phone, setPhone] = useState("");
     const [vehicleType, setVehicleType] = useState<string>("");
     const [displayName, setDisplayName] = useState("");
@@ -67,7 +72,8 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
     function resetForm() {
         setAccountType("BUYER");
         setEmail("");
-        setName("");
+        setFirstName("");
+        setLastName("");
         setPhone("");
         setVehicleType("");
         setDisplayName("");
@@ -84,8 +90,8 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
         e.preventDefault();
         setError(null);
 
-        if (!email.trim() || !name.trim()) {
-            setError("Email y nombre son obligatorios");
+        if (!email.trim() || !firstName.trim() || !lastName.trim()) {
+            setError("Email, nombre y apellido son obligatorios");
             return;
         }
 
@@ -95,7 +101,8 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
         const body: any = {
             type: accountType,
             email: email.trim(),
-            name: name.trim(),
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
             phone: phone.trim() || null,
         };
         if (accountType === "DRIVER" && vehicleType) {
@@ -219,21 +226,39 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            Nombre completo <span className="text-red-600">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            disabled={submitting}
-                            required
-                            minLength={2}
-                            maxLength={80}
-                            placeholder="Ej. Juan Pérez"
-                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 disabled:bg-gray-50"
-                        />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Nombre <span className="text-red-600">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                disabled={submitting}
+                                required
+                                minLength={2}
+                                maxLength={50}
+                                placeholder="Juan"
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 disabled:bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Apellido <span className="text-red-600">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                disabled={submitting}
+                                required
+                                minLength={2}
+                                maxLength={50}
+                                placeholder="Pérez"
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 disabled:bg-gray-50"
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -314,7 +339,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
                         </button>
                         <button
                             type="submit"
-                            disabled={submitting || !email.trim() || !name.trim()}
+                            disabled={submitting || !email.trim() || !firstName.trim() || !lastName.trim()}
                             className="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-[#e60012] text-white hover:bg-[#cc000f] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {submitting ? (

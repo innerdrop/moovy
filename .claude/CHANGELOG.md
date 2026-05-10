@@ -10,6 +10,56 @@
 
 ---
 
+## 2026-05-10 (rama `fix/ops-form-paridad-registro`)
+
+fix(ops): modal Crear cuenta pide firstName + lastName separados
+
+Smoke test produccion 2026-05-07 (observacion 1A): el modal "Crear cuenta"
+del panel OPS pedia el nombre completo en un solo campo, mientras que los
+formularios publicos de /registro y /repartidor/registro piden firstName
+y lastName por separado. El endpoint /api/admin/users/create cubria la
+diferencia partiendo el string por el primer espacio:
+
+  firstName: data.name.split(" ")[0],
+  lastName: data.name.split(" ").slice(1).join(" ")
+
+Esto rompia con nombres compuestos. Ejemplo:
+  "Maria del Carmen Di Tella" -> firstName "Maria",
+                                 lastName "del Carmen Di Tella"
+
+Con apellidos compuestos que tambien tienen espacio, la separacion era
+arbitraria y dejaba User.firstName y User.lastName con datos incoherentes
+respecto a lo que el mismo user habria cargado por su cuenta.
+
+CAMBIOS:
+
+1) src/components/ops/CreateUserModal.tsx
+   - State: campo unico "name" reemplazado por "firstName" + "lastName".
+   - Form: input "Nombre completo" reemplazado por dos inputs (Nombre /
+     Apellido) en grid 2 columnas. Ambos required, min 2 / max 50 chars.
+   - resetForm, handleSubmit y disabled del boton actualizados.
+   - Body del POST envia firstName + lastName separados.
+
+2) src/app/api/admin/users/create/route.ts
+   - Zod discriminatedUnion (3 variantes: BUYER/DRIVER/SELLER): "name"
+     reemplazado por "firstName" + "lastName" (ambos min 2 / max 50).
+   - Construye fullName = firstName + " " + lastName antes del create.
+   - User.create usa firstName/lastName directos del input (no mas split).
+   - User.name = fullName (preserva la columna legacy para queries).
+   - SellerProfile.displayName: default a fullName en vez de data.name.
+   - Audit log targetName sigue funcionando porque sale del select
+     {id, email, name} del User.create.
+
+QUE NO CAMBIA:
+- Schema de DB no se toca (User.firstName, User.lastName, User.name ya
+  existian).
+- Magic-link / token reset / 24h expiry / placeholder password: igual.
+- Flujo anti-resurreccion de cuentas eliminadas: igual.
+- Email "Bienvenido a MOOVY - configura tu contraseña": sigue recibiendo
+  el name (full) por el campo result.user.name.
+
+**Archivos:** ISSUES.md, src/app/api/admin/users/create/route.ts, src/components/ops/CreateUserModal.tsx
+
 ## 2026-05-10 (rama `fix/confirmacion-driver-campos-vacios`)
 
 fix(driver-registro): step 3 no muestra "—" en filas opcionales
