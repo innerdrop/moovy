@@ -10,6 +10,68 @@
 
 ---
 
+## 2026-05-10 (rama `feat/ops-badge-pendientes`)
+
+feat(ops): badge amarillo de pendientes en sidebar OPS
+
+Smoke test produccion 2026-05-07 (observacion 1B con captura img03):
+cuando un usuario se registra como repartidor o como comercio, el admin
+no tiene ningun indicador visual en el sidebar de que hay trabajo
+pendiente. El item "En Vivo" ya tiene su live indicator verde con
+contador de pedidos activos, pero "Usuarios" y "Pipeline Comercios"
+quedaban sin badge — el admin tenia que entrar a cada seccion para
+descubrir si habia algo nuevo. Mauro pidio "circulito amarillo con
+numero como En Vivo pero para los pendientes".
+
+CAMBIOS:
+
+1) src/app/api/admin/pending-counts/route.ts (NUEVO)
+   - GET con auth ADMIN. Devuelve { merchants, drivers, total }.
+   - Counts por approvalStatus = "PENDING" sobre Merchant y Driver
+     (ambos modelos tienen indice en approvalStatus, ver schema linea
+     699 y 867 — count es O(log n)).
+   - Filtro adicional por owner.deletedAt / user.deletedAt = null para
+     no contar registros huerfanos de cuentas eliminadas (no son
+     actionables por el admin).
+   - Sin cache server-side: dos counts indexados son baratos y queremos
+     que el badge baje al instante cuando se aprueba un caso.
+   - Behavior degradado: si falla auth o query, devuelve ceros para no
+     romper el render del sidebar (mismo patron que /api/admin/active-orders).
+
+2) src/components/ops/OpsSidebar.tsx
+   - Items "Usuarios" y "Pipeline Comercios" estrenan campo
+     badge: "pending-total" / "pending-merchants" respectivamente.
+   - Nuevo state pendingMerchants / pendingDrivers + useEffect con
+     polling cada 60s al endpoint nuevo. Polling separado del de
+     activeOrders (15s) porque la cadencia es distinta.
+   - Render del badge: bg-yellow-400, texto slate-900 bold, min-w 20px,
+     h-5, px-1.5, rounded-full, text-[10px]. Estilo consistente con el
+     live indicator pero amarillo en vez de verde con ping.
+   - 0 pendientes -> no muestra nada (limpio).
+   - 1-99 -> muestra el numero.
+   - >99 -> muestra "99+" (formatBadgeCount helper).
+
+QUE NO CAMBIA:
+- Schema de DB no se toca (Merchant.approvalStatus y Driver.approvalStatus
+  ya existian con sus indices).
+- "En Vivo" sigue con su live-indicator verde (no se toco).
+- Ningun otro item del sidebar cambia.
+
+DECISION DE SCOPE:
+Sellers no se incluyen en el badge porque su flow es distinto: no
+requieren aprobacion admin, se autoactivan al cargar CUIT en
+/api/auth/activate-seller. No tienen "pending state" comparable.
+
+VERIFICACION SUGERIDA POST-DEPLOY:
+- Registrar un driver de prueba en staging y confirmar que el badge
+  amarillo aparece en "Usuarios" dentro de 60s.
+- Aprobar el driver desde el panel y confirmar que el badge baja en
+  el siguiente polling.
+- Repetir con merchant: verificar badge en "Usuarios" Y en "Pipeline
+  Comercios".
+
+**Archivos:** ISSUES.md, src/app/api/admin/pending-counts/route.ts, src/components/ops/OpsSidebar.tsx
+
 ## 2026-05-10 (rama `feat/welcome-emails-driver-merchant`)
 
 feat(emails): conectar welcome emails de driver y merchant al registro

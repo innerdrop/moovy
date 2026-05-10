@@ -68,8 +68,13 @@ const navSections: NavSection[] = [
     {
         title: "Actores",
         items: [
-            { href: "/ops/usuarios", icon: Users, label: "Usuarios" },
-            { href: "/ops/pipeline-comercios", icon: GitBranch, label: "Pipeline Comercios" },
+            // feat/ops-badge-pendientes (2026-05-08): badge tipo "pending-total"
+            // muestra suma de drivers + merchants con approvalStatus = PENDING.
+            // "pending-merchants" muestra solo merchants pendientes (es donde
+            // se gestiona el pipeline). Ambos polean cada 60s desde
+            // /api/admin/pending-counts.
+            { href: "/ops/usuarios", icon: Users, label: "Usuarios", badge: "pending-total" },
+            { href: "/ops/pipeline-comercios", icon: GitBranch, label: "Pipeline Comercios", badge: "pending-merchants" },
         ],
     },
     {
@@ -143,6 +148,12 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
     const pathname = usePathname();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [activeOrders, setActiveOrders] = useState(0);
+    // feat/ops-badge-pendientes (2026-05-08): counts de aprobacion pendiente
+    // para los badges amarillos del sidebar (items "Usuarios" y "Pipeline
+    // Comercios"). Polling cada 60s — no es real-time critico, los pendientes
+    // pueden esperar 1 minuto. Endpoint devuelve ceros si falla auth.
+    const [pendingMerchants, setPendingMerchants] = useState(0);
+    const [pendingDrivers, setPendingDrivers] = useState(0);
 
     // Poll active orders every 15s for live indicator
     useEffect(() => {
@@ -156,6 +167,26 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
         const interval = setInterval(fetchActive, 15000);
         return () => clearInterval(interval);
     }, []);
+
+    // Poll pending counts every 60s for "Usuarios" + "Pipeline Comercios" badges
+    useEffect(() => {
+        const fetchPending = () => {
+            fetch("/api/admin/pending-counts")
+                .then(r => r.json())
+                .then(d => {
+                    setPendingMerchants(d.merchants || 0);
+                    setPendingDrivers(d.drivers || 0);
+                })
+                .catch(() => {});
+        };
+        fetchPending();
+        const interval = setInterval(fetchPending, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const pendingTotal = pendingMerchants + pendingDrivers;
+    // Cap visual: >99 -> "99+" para que el badge no se desborde
+    const formatBadgeCount = (n: number) => (n > 99 ? "99+" : String(n));
 
     const closeMobileMenu = () => setIsMobileOpen(false);
 
@@ -293,6 +324,18 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                                                         <span className="flex h-2 w-2 rounded-full bg-slate-600" />
                                                     )}
                                                 </span>
+                                            ) : item.badge === "pending-total" ? (
+                                                pendingTotal > 0 ? (
+                                                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-yellow-400 text-slate-900 text-[10px] font-bold">
+                                                        {formatBadgeCount(pendingTotal)}
+                                                    </span>
+                                                ) : null
+                                            ) : item.badge === "pending-merchants" ? (
+                                                pendingMerchants > 0 ? (
+                                                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-yellow-400 text-slate-900 text-[10px] font-bold">
+                                                        {formatBadgeCount(pendingMerchants)}
+                                                    </span>
+                                                ) : null
                                             ) : item.badge ? (
                                                 <span className="ml-auto text-xs">{item.badge}</span>
                                             ) : null}
