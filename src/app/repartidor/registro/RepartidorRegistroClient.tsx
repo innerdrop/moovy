@@ -785,12 +785,15 @@ function RepartidorRegistroContent() {
 
                             {/* feat/registro-simplificado (2026-04-27): datos del vehículo y docs
                                 eliminados del registro. El driver completa marca, modelo, patente,
-                                licencia, seguro, RTO, cédula verde, etc en su perfil después. */}
+                                licencia, seguro, cédula verde, etc en su perfil después.
+                                feat/rto-no-obligatorio-driver (2026-05-08): RTO sacado del listado
+                                de docs requeridos. Sigue siendo subible voluntariamente desde el
+                                panel del driver. */}
                             {isMotorized && (
                                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
                                     <p className="font-semibold mb-1">Después te pediremos los datos del vehículo</p>
                                     <p>Cuando entres al panel vas a ver la documentación que necesitamos:
-                                    licencia, seguro, RTO, cédula verde y datos del vehículo. El equipo de
+                                    licencia, seguro, cédula verde y datos del vehículo. El equipo de
                                     Moovy te avisa por email cuando tu cuenta queda aprobada.</p>
                                 </div>
                             )}

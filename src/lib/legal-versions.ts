@@ -9,8 +9,13 @@
 export const PRIVACY_POLICY_VERSION = "2.0";
 export const PRIVACY_POLICY_UPDATED_AT = "2026-04-21";
 
-export const TERMS_VERSION = "1.1";
-export const TERMS_UPDATED_AT = "2026-03-29";
+// feat/rto-no-obligatorio-driver (2026-05-08): bump a 1.2 — T&C de
+// repartidor agregaron seccion 4 "Declaraciones y Compromisos del
+// Repartidor" (declaracion jurada + responsabilidad por RTO) y sacaron
+// RTO del listado de docs obligatorios. Drivers existentes con consent
+// version 1.1 deberan re-aceptar la proxima vez que entren al panel.
+export const TERMS_VERSION = "1.2";
+export const TERMS_UPDATED_AT = "2026-05-08";
 
 export const COOKIES_POLICY_VERSION = "1.1";
 export const COOKIES_POLICY_UPDATED_AT = "2026-04-21";

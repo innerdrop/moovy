@@ -122,13 +122,19 @@ const DOC_DESCRIPTORS: DocDescriptor[] = [
     },
     {
         key: "vtvUrl",
-        label: "RTO (Revisión Técnica)",
-        shortLabel: "RTO",
+        // feat/rto-no-obligatorio-driver (2026-05-08): RTO ya no es requerido
+        // para activar la cuenta. Sigue mostrandose en el panel para que el
+        // driver pueda subirlo voluntariamente — la auto-activacion del driver
+        // (en src/lib/driver-document-approval.ts) ya no exige RTO. Si el
+        // driver lo carga, el cron sigue avisando antes del vencimiento, pero
+        // no auto-suspende.
+        label: "RTO (Revisión Técnica) — opcional",
+        shortLabel: "RTO (opcional)",
         kind: "url",
         motorizedOnly: true,
         hasExpiration: true,
         expirationKey: "vtvExpiresAt",
-        helpText: "RTO vigente (Revisión Técnica Obligatoria).",
+        helpText: "RTO vigente. Subilo si tu vehículo lo tiene — es opcional. Es responsabilidad tuya mantener tu vehículo en regla con las obligaciones provinciales.",
     },
     {
         key: "cedulaVerdeUrl",

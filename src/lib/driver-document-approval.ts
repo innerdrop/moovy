@@ -21,7 +21,13 @@
  *
  *   - MOTORIZADO: moto, auto, camioneta, pickup, SUV, flete.
  *     Requiere: cuit, constanciaCuit, dniFrente, dniDorso, licencia, seguro,
- *               vtv (RTO), cedulaVerde (8 docs)
+ *               cedulaVerde (7 docs)
+ *     OPCIONAL: vtv (RTO). El driver puede subirlo voluntariamente, pero
+ *     no bloquea la activacion ni dispara auto-suspension al vencer (rama
+ *     feat/rto-no-obligatorio-driver, 2026-05-08). Es responsabilidad
+ *     exclusiva del driver mantener su vehiculo en regla con obligaciones
+ *     provinciales — Moovy no garantiza ni verifica el RTO. Ver clausula
+ *     "Declaraciones y Compromisos del Repartidor" en T&C.
  *
  * Regla de oro: la auto-activación del driver se dispara AUTOMÁTICAMENTE
  * cuando todos los documentos requeridos quedan en estado "APPROVED".
@@ -159,9 +165,17 @@ export const DRIVER_DOCUMENT_COLUMNS: Record<DriverDocumentField, DocumentColumn
         sourceColumn: "vtvApprovalSource",
         noteColumn: "vtvApprovalNote",
         valueColumn: "vtvUrl",
-        label: "RTO (Revisión Técnica)",
+        label: "RTO (Revisión Técnica) — opcional",
         alwaysRequired: false,
-        motorizedOnly: true,
+        // feat/rto-no-obligatorio-driver (2026-05-08): RTO ya no es requerido
+        // para activar al driver motorizado. Queda como doc opcional que el
+        // driver puede subir voluntariamente; el cron de expiry sigue avisando
+        // 7d/3d/1d antes de vencer si esta cargado y aprobado, pero NO dispara
+        // auto-suspension porque getRequiredDriverDocumentFields ya no lo
+        // incluye (ver linea ~205). El campo vtvUrl/vtvStatus/vtvExpiresAt
+        // sigue existiendo en el schema y los endpoints de upload/aprobacion
+        // siguen aceptandolo igual que cualquier otro doc.
+        motorizedOnly: false,
         hasExpiration: true,
         expirationColumn: "vtvExpiresAt",
         notifiedStageColumn: "vtvNotifiedStage",

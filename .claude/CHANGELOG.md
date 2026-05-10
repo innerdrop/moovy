@@ -10,6 +10,128 @@
 
 ---
 
+## 2026-05-10 (rama `feat/rto-no-obligatorio-driver`)
+
+feat(driver): RTO no obligatorio + declaracion jurada en T&C
+
+Smoke test produccion 2026-05-07 (observacion 2A): el formulario de registro
+de driver y los T&C exigian RTO (Revision Tecnica Obligatoria) como doc
+requerido para activacion. Mauro pidio opinion legal: pedir RTO sube
+fricción del onboarding, los competidores serios (PedidosYa, Rappi) no lo
+piden y, mas grave, exigirlo en el onboarding le da munition a un
+demandante para argumentar que MOOVY "garantizo" la idoneidad del vehiculo,
+cuando en realidad es responsabilidad provincial del titular.
+
+Decision (CEO + Legal): RTO deja de ser obligatorio. Se reemplaza por una
+declaracion jurada en T&C donde el repartidor se compromete a mantener su
+vehiculo en regla con las obligaciones provinciales aplicables. Patron
+estandar en Uber, DoorDash y Lyft: las "Declaraciones del Contractor"
+viven en su propia seccion legalmente vinculante, separadas de los
+requisitos operativos.
+
+CAMBIOS (5 archivos):
+
+1) src/lib/driver-document-approval.ts
+   - vtvUrl.motorizedOnly: true -> false. Esto es el unico cambio funcional:
+     getRequiredDriverDocumentFields() deja de incluir RTO para motorizados,
+     lo que automaticamente:
+       a) la auto-activacion del driver no espera el RTO (queda en 7 docs);
+       b) el cron driver-docs-expiry deja de auto-suspender por RTO vencido
+          (usa el mismo helper para decidir si suspender).
+   - El campo vtvUrl/vtvStatus/vtvExpiresAt sigue existiendo en el schema
+     y los endpoints de upload/aprobacion siguen aceptandolo igual que
+     cualquier otro doc — el driver puede subirlo voluntariamente.
+   - Comentario top-of-file actualizado: 7 docs requeridos para motorizados
+     (no 8). RTO clasificado como OPCIONAL.
+   - label nuevo: "RTO (Revision Tecnica) — opcional".
+
+2) src/app/repartidor/registro/RepartidorRegistroClient.tsx
+   - Bloque info de step 2 ya no menciona RTO en el listado de docs que se
+     pediran luego. El listado pasa a "licencia, seguro, cedula verde y
+     datos del vehiculo".
+
+3) src/app/terminos-repartidor/page.tsx (refactor mayor)
+   - Fecha "Ultima actualizacion" 2026-05-08.
+   - Seccion 3.2 (Requisitos Motorizados): saca "Revision Tecnica
+     Obligatoria (RTO) vigente". Agrega item generico que apunta a la
+     nueva seccion 4: "Cumplimiento de las obligaciones provinciales
+     aplicables (incluida RTO en jurisdicciones que la exijan). Ver
+     Seccion 4."
+   - NUEVA SECCION 4: "Declaraciones y Compromisos del Repartidor".
+     Declaracion jurada con 7 items (informacion veraz, capacidad legal,
+     vehiculo en condiciones, cumplimiento provincial incluido RTO con
+     indemnidad para Moovy, seguros vigentes, normas de transito,
+     comunicacion de cambios). Bloque de alerta amber al final aclarando
+     que la declaracion jurada habilita suspension/baja por falsedad u
+     omision.
+   - Renumeracion en cascada de las secciones siguientes: la antigua 4
+     pasa a 5, 5->6, 6->7, 7->8, 8->9, 9->10 (con sub 10.1 a 10.5),
+     10->11, 11->12, 12->13.
+   - Seccion 5 (ex 4) "Documentacion Requerida": el listado obligatorio
+     ya NO incluye RTO. Agrega cedula verde explicitamente. Parrafo
+     nuevo aclarando que RTO es documentacion opcional que el driver
+     puede cargar desde su panel sin condicionar la activacion.
+   - Seccion 11 (ex 10) "Suspension": el item de "documentacion vencida"
+     ya NO menciona RTO (queda licencia, seguro, cedula verde). Agrega
+     item nuevo "Falsedad u omision en las declaraciones del Repartidor
+     (Seccion 4)".
+   - Bug pre-existente de numeracion duplicada (habia dos secciones "10")
+     queda corregido implicitamente con la renumeracion.
+
+4) src/components/rider/views/ProfileView.tsx
+   - Config del campo vtvUrl: label cambia a "RTO (Revision Tecnica) —
+     opcional" y shortLabel a "RTO (opcional)" para que el driver vea
+     visualmente que NO es bloqueante. helpText reformulado para enfatizar
+     que la responsabilidad recae en el driver.
+   - motorizedOnly: true se mantiene (driver no-motorizado no ve el campo).
+
+5) src/lib/legal-versions.ts
+   - TERMS_VERSION: 1.1 -> 1.2 (cambio sustantivo en T&C de repartidor).
+   - TERMS_UPDATED_AT: 2026-03-29 -> 2026-05-08.
+   - Drivers existentes (consent version 1.1) van a tener que re-aceptar
+     los nuevos T&C la proxima vez que entren al panel — comportamiento
+     correcto del sistema de consentimientos AAIP.
+
+QUE NO SE TOCA:
+- Schema Prisma: ningun migrate. vtvUrl/vtvStatus/vtvExpiresAt/vtvNotifiedStage
+  siguen existiendo igual.
+- Cron driver-docs-expiry: cero cambios. Lee getRequiredDriverDocumentFields,
+  asi que automaticamente deja de auto-suspender por RTO vencido. Sigue
+  enviando avisos preventivos 7d/3d/1d si el driver lo cargo voluntariamente
+  (info util sin penalizacion).
+- Endpoints driver/admin de upload/aprobacion: siguen aceptando vtvUrl como
+  cualquier otro doc.
+- Emails genericos de "documento vencido": siguen funcionando.
+- Pagina admin /ops/usuarios/[id]: el admin sigue viendo el campo RTO; ahora
+  el label refleja "opcional" via la config de ProfileView que ya esta
+  importada.
+
+MIGRACION MANUAL RECOMENDADA (NO incluida en la rama):
+Drivers actualmente SUSPENDED con suspensionReason que menciona RTO
+("Documento vencido: RTO (Revision Tecnica)"): el admin puede revisar
+caso por caso desde /ops/usuarios y reactivar manualmente. NO se hace
+automatico porque puede haber otros problemas en el caso (multiples docs
+vencidos, fraudScore alto, etc.) — decision de negocio caso por caso.
+Query sugerida:
+  WHERE isSuspended = true
+    AND suspensionReason LIKE '%RTO%'
+    AND vtvStatus IN ('EXPIRED', 'PENDING')
+
+VERIFICACION SUGERIDA POST-DEPLOY:
+- Registrar driver motorizado de prueba en staging, completar 7 docs
+  obligatorios (sin RTO) y confirmar que la cuenta queda APPROVED
+  automaticamente.
+- Cargar luego el RTO opcional y confirmar que el driver sigue activo,
+  no cambia status.
+- Forzar vencimiento del RTO (script de backfill) y correr el cron
+  driver-docs-expiry: confirmar que el driver NO queda suspendido.
+- Re-loguear con un user que ya habia aceptado TERMS 1.1 y verificar que
+  el flujo de re-aceptacion de T&C dispara (segun la implementacion actual
+  del consentimiento — si la pantalla de re-aceptacion no esta implementada,
+  agregarla en otra rama).
+
+**Archivos:** ISSUES.md, src/app/repartidor/registro/RepartidorRegistroClient.tsx, src/app/terminos-repartidor/page.tsx, src/components/rider/views/ProfileView.tsx, src/lib/driver-document-approval.ts, src/lib/legal-versions.ts
+
 ## 2026-05-10 (rama `feat/ops-badge-pendientes`)
 
 feat(ops): badge amarillo de pendientes en sidebar OPS
