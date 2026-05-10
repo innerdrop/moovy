@@ -10,6 +10,71 @@
 
 ---
 
+## 2026-05-10 (rama `feat/welcome-emails-driver-merchant`)
+
+feat(emails): conectar welcome emails de driver y merchant al registro
+
+Smoke test produccion 2026-05-07 (observacion 3B): cuando un usuario se
+registra como repartidor o como comercio, no recibe ningun email de
+confirmacion. Solo el admin/owner recibe la notificacion ("nuevo driver
+pendiente" / "nueva solicitud de comercio"), mientras que el solicitante
+queda "en el aire" durante las 24-48hs habiles que tarda la revision de
+documentacion. Resultado: ansiedad post-registro y churn pre-onboarding.
+
+Las funciones de email ya estaban escritas hace varias ramas atras:
+
+  - sendDriverRequestReceivedEmail   (src/lib/email-p0.ts:126)
+  - sendMerchantRequestReceivedEmail (src/lib/email-p0.ts:30)
+
+Y tambien sus entradas correspondientes en EMAIL_REGISTRY con status
+"new" y trigger documentado:
+
+  - id 14 "driver_request_received"   trigger: POST /api/auth/activate-driver
+  - id  6 "merchant_request_received" trigger: POST /api/auth/register/merchant
+
+Pero el TRIGGER nunca estuvo conectado en el endpoint correspondiente.
+Esto rompe la regla #11 del CLAUDE.md ("Email transaccional - funcion
+exportada + entrada en EMAIL_REGISTRY + trigger conectado"): tener los
+dos primeros sin el tercero deja al sistema con la ilusion de que el
+email se manda, cuando en realidad nadie lo dispara.
+
+CAMBIOS:
+
+1) src/app/api/auth/register/driver/route.ts
+   - Import de sendDriverRequestReceivedEmail desde @/lib/email-p0.
+   - Trigger fire-and-forget despues del email a admin que ya existia.
+   - Pasa email + driverName (fullName ya construido del firstName +
+     lastName) + vehicleType (uppercase ya normalizado).
+   - Errores se loguean en consola, no bloquean la response.
+
+2) src/app/api/auth/register/merchant/route.ts
+   - Import de sendMerchantRequestReceivedEmail desde @/lib/email-p0.
+   - Trigger fire-and-forget despues de los dos emails a admin que ya
+     existian (sendMerchantRequestNotification + sendAdminNewMerchantPendingEmail).
+   - Pasa email + businessName + contactName (firstName + lastName trimmed).
+   - Errores se loguean en consola, no bloquean la response.
+
+QUE NO CAMBIA:
+- email-p0.ts no se toco. Las funciones ya estaban listas.
+- email-registry.ts no se toco. Las entradas ya estaban registradas.
+- email.ts (legacy sendMerchantRequestNotification) sigue mandando al
+  admin. Mantenemos ambos canales (admin + merchant) sin solapar.
+- Schema de DB no se toca.
+- Ningun otro endpoint cambia.
+
+QUEDA PARA OTRA RAMA (no incluido aca):
+- Welcome email para SELLER al activar su perfil de marketplace
+  (/api/auth/activate-seller). No tiene funcion ni entry en EMAIL_REGISTRY,
+  asi que requiere mas trabajo: crear sendSellerActivatedEmail, agregar
+  entry, y conectar trigger. Scope distinto, mejor en otra rama.
+
+VERIFICACION SUGERIDA POST-DEPLOY:
+- Registrar un driver de prueba en staging y confirmar que llegan dos
+  emails: uno al admin (notificacion) y uno al driver (acuse).
+- Idem con merchant: tres emails (dos al admin, uno al merchant).
+
+**Archivos:** ISSUES.md, src/app/api/auth/register/driver/route.ts, src/app/api/auth/register/merchant/route.ts
+
 ## 2026-05-10 (rama `fix/ops-form-paridad-registro`)
 
 fix(ops): modal Crear cuenta pide firstName + lastName separados

@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { sendMerchantRequestNotification } from "@/lib/email";
 import { sendAdminNewMerchantPendingEmail } from "@/lib/email-admin-ops";
+import { sendMerchantRequestReceivedEmail } from "@/lib/email-p0";
 import { encryptMerchantData } from "@/lib/fiscal-crypto";
 import { logAudit } from "@/lib/audit";
 import { recordConsent } from "@/lib/consent";
@@ -234,6 +235,20 @@ export async function POST(request: NextRequest) {
             merchantId: resultUser.merchantId,
         }).catch((err) =>
             console.error("[Register Merchant] Failed to send admin pending email:", err)
+        );
+
+        // feat/welcome-emails-driver-merchant (2026-05-08): acuse de recibo
+        // al merchant que se registro. La funcion + entrada en EMAIL_REGISTRY
+        // ya existian (id 6, "merchant_request_received") pero el trigger
+        // nunca estuvo conectado, asi que el comercio no recibia ningun email
+        // post-registro y se quedaba "en el aire" hasta la aprobacion del
+        // admin (pueden ser 24-48 hs habiles). Fire-and-forget.
+        sendMerchantRequestReceivedEmail({
+            email: data.email,
+            businessName: data.businessName,
+            contactName: `${data.firstName} ${data.lastName}`.trim(),
+        }).catch((err) =>
+            console.error("[Register Merchant] Failed to send request-received email:", err)
         );
 
         return NextResponse.json({

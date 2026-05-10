@@ -16,6 +16,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 import { encryptDriverData } from "@/lib/fiscal-crypto";
 import { recordConsent } from "@/lib/consent";
 import { sendAdminNewDriverPendingEmail } from "@/lib/email-admin-ops";
+import { sendDriverRequestReceivedEmail } from "@/lib/email-p0";
 import { PRIVACY_POLICY_VERSION, TERMS_VERSION } from "@/lib/legal-versions";
 import { validateCuit } from "@/lib/cuit";
 import { validatePatente } from "@/lib/patente";
@@ -296,6 +297,20 @@ export async function POST(request: NextRequest) {
             driverId: resultUser.driverId,
         }).catch((err) =>
             console.error("[Register Driver] Failed to send admin pending email:", err)
+        );
+
+        // feat/welcome-emails-driver-merchant (2026-05-08): acuse de recibo al
+        // driver que se registro. La funcion + entrada en EMAIL_REGISTRY ya
+        // existian (id 14, "driver_request_received") pero el trigger nunca
+        // estuvo conectado, asi que el repartidor no recibia ninguna senial
+        // post-registro y se quedaba "en el aire" hasta que un admin aprobaba
+        // o rechazaba. Fire-and-forget — el email no debe bloquear la response.
+        sendDriverRequestReceivedEmail({
+            email: data.email,
+            driverName: fullName,
+            vehicleType: vehicleTypeUpper,
+        }).catch((err) =>
+            console.error("[Register Driver] Failed to send request-received email:", err)
         );
 
         return NextResponse.json({

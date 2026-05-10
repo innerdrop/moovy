@@ -44,6 +44,7 @@ _(ningún importante abierto al cierre del sprint del 2026-04-30)_
 | Issue | Rama | Resumen |
 |---|---|---|
 | (smoke-1A) | `fix/ops-form-paridad-registro` | Modal OPS "Crear cuenta" ahora pide nombre y apellido por separado (igual que /repartidor/registro y /registro publicos). Endpoint Zod schema actualizado: deja de partir el nombre completo por el primer espacio (rompía nombres compuestos como "Maria del Carmen Di Tella"). |
+| (smoke-3B) | `feat/welcome-emails-driver-merchant` | Driver y merchant ahora reciben email de acuse de recibo al registrarse. Las funciones `sendDriverRequestReceivedEmail` y `sendMerchantRequestReceivedEmail` ya existían en `email-p0.ts` con su entry en EMAIL_REGISTRY pero no estaban conectadas a sus triggers. Antes solo el admin recibía notificación; el driver/merchant se quedaban "en el aire" durante las 24-48hs hasta la aprobación. |
 | (smoke-2B) | `fix/confirmacion-driver-campos-vacios` | Step 3 del registro driver: filas DNI/CUIT/Color/Patente y todo el bloque Vencimientos solo se renderizan si tienen valor. Antes mostraban "—" siempre, contradiciendo el flujo simplificado donde son opcionales. |
 | (smoke-2C) | (Cloudflare) | Email Address Obfuscation desactivado en Cloudflare. Resuelve React #418 en `/terminos-repartidor` (Cloudflare reemplazaba `legal@somosmoovy.com` post-SSR causando hydration mismatch). Sin código. |
 | ISSUE-061 | `fix/utf8-encoding-pipeline` | UTF-8 pipeline export: pg_dump + docker cp (bytes raw) en vez de PowerShell `>`. Tildes preservadas. |
