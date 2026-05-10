@@ -10,6 +10,88 @@
 
 ---
 
+## 2026-05-10 (rama `chore/github-actions-ci`)
+
+chore(ci): GitHub Actions con tsc + lint automatico en cada push
+
+Hoy el chequeo de tipos es honor system — depende de que el dev corra
+.\scripts\finish.ps1 antes de pushear. Si alguien (yo en un descuido,
+un dev futuro, o un git push directo desde un cliente visual) saltea el
+script, codigo roto puede entrar a develop. Este workflow convierte el
+chequeo en automatico y obligatorio: GitHub Actions descarga el codigo
+en sus runners de Ubuntu, instala dependencias y corre tsc + lint en
+~3-4 min. Si falla, el commit queda marcado con X rojo y manda email
+al autor.
+
+ARCHIVOS:
+
+1) .github/workflows/ci.yml (NUEVO)
+   - Triggers: push a develop/main + PRs a esas ramas.
+   - concurrency con cancel-in-progress: si llega un push nuevo a la
+     misma rama mientras corre uno previo, cancela el viejo para no
+     gastar minutos en revisiones obsoletas.
+   - Job typecheck:
+     a) actions/checkout@v4 (descarga del repo).
+     b) actions/setup-node@v4 con node 20 + cache de npm.
+     c) npm ci (respeta package-lock exacto, mas reproducible que install).
+     d) npx prisma generate (sin esto, los modelos de Prisma serian "any"
+        y tsc daria errores de tipos masivos en los endpoints).
+     e) npx tsc --noEmit --skipLibCheck (mismo comando que corremos
+        localmente en tsc-strict.ps1).
+     f) npm run lint (eslint del proyecto).
+   - Job validate-db: COMENTADO. Lo dejamos preparado en YAML para
+     activar en una siguiente rama. Requiere levantar postgres con
+     PostGIS extension, correr prisma db push, y disparar
+     validate-ops-config.ts + validate-role-flows.ts contra la DB de
+     test. Esos scripts requieren DATABASE_URL real (ver headers de los
+     scripts en /scripts/).
+
+2) .github/workflows/security.yml (MODIFICADO)
+   - Job "typecheck" pre-existente eliminado porque duplicaba el de
+     ci.yml (y ademas no corria prisma generate ni --skipLibCheck, asi
+     que era menos confiable).
+   - Quedan los jobs audit (npm audit + audit-ci) y secrets-scan
+     (gitleaks). Esos no se tocan.
+
+QUE NO CAMBIA:
+- Schema, codigo de la app, package.json: nada.
+- El flujo local sigue igual: start.ps1 / finish.ps1 / tsc-strict.ps1
+  funcionan exactamente como antes. CI es complemento, no reemplazo.
+
+COSTO:
+- $0. GitHub Free tier incluye 2000 minutos de CI por mes para repos
+  privados. Cada run dura ~3-4 min, asi que tenemos ~500 runs/mes
+  gratis. Para el flujo de Moovy (~5-10 commits/dia), estamos muy
+  lejos de pasarnos.
+
+COMO VERIFICAR POST-MERGE:
+1. Ir a github.com/[org]/moovy -> pestaña "Actions".
+2. Despues del primer push, deberia aparecer el run "CI / TypeScript
+   check" corriendo.
+3. Si pasa, verde. Si falla, rojo + email al autor con el log.
+4. En cada commit del repo, GitHub muestra el circulo verde/rojo al
+   lado del hash.
+5. (Opcional, mas adelante) en Settings -> Branches -> Branch
+   protection rules, marcar "Require status checks to pass before
+   merging" eligiendo el job typecheck. Eso bloquea merges a main si
+   CI esta rojo.
+
+PROXIMOS PASOS NATURALES (en otras ramas):
+
+a) Activar el job validate-db descomentando el bloque del YAML. Eso
+   agrega ~5 min al CI pero corre los scripts validate-* contra una
+   DB postgres+PostGIS limpia, atajando bugs de lógica que tsc no
+   detecta (ej: race conditions, regla de comisiones rota, etc.).
+
+b) Si en algun momento el codebase queda 100% sin warnings de ESLint,
+   cambiar "npm run lint" por "npm run lint -- --max-warnings 0" para
+   que tampoco se cuelen warnings nuevos en PRs futuros.
+
+c) Considerar habilitar "Required status checks" en branch protection
+   de main para bloquear merges con CI rojo.
+
+**Archivos:** .github/workflows/ci.yml, .github/workflows/security.yml, ISSUES.md
+
 ## 2026-05-10 (rama `feat/welcome-email-seller`)
 
 feat(emails): welcome email para SELLER al activar perfil marketplace

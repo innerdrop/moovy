@@ -1,0 +1,133 @@
+# Moovy CI — chore/github-actions-ci (2026-05-10)
+#
+# Que hace: cada push a develop/main y cada Pull Request hacia esas ramas
+# dispara este workflow en los servidores de GitHub (Ubuntu free tier).
+# El runner descarga el codigo, instala dependencias, genera el cliente
+# Prisma (con el schema actual) y corre tsc --noEmit. Si TS encuentra
+# errores, el commit queda marcado con X rojo en GitHub y manda email
+# automatico al autor.
+#
+# Por que es util: hoy el chequeo de tipos es honor system — depende de
+# que el dev corra .\scripts\finish.ps1 antes de pushear. Si alguien (o
+# yo mismo en un descuido) hace git push directo sin pasar por el script,
+# el codigo roto entra a develop. Con este workflow GitHub captura esos
+# casos antes de que lleguen a producion.
+#
+# Costo: $0. GitHub Free tier incluye 2000 min/mes de CI para repos
+# privados. Cada run dura ~3-4 min, asi que tenemos ~500 runs/mes
+# gratis. Muy lejos de cualquier escenario realista.
+#
+# Como verificar: despues del primer push, ir a github.com/[org]/moovy
+# pestaña "Actions". Cada commit muestra circulo verde (paso) o rojo
+# (fallo) al lado del hash.
+
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+# Cancelar runs anteriores si llega un push mas nuevo a la misma rama
+# (evita gastar minutos en revisiones obsoletas).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # ci en vez de install: respeta package-lock.json exactamente,
+        # no instala versiones nuevas. Reproducible y un poco mas rapido.
+        run: npm ci
+
+      - name: Generate Prisma client
+        # tsc necesita los tipos del cliente Prisma generados a partir
+        # del schema (sin esto, todos los modelos serian "any" y los
+        # endpoints darian errores de tipos masivos).
+        run: npx prisma generate
+
+      - name: Run TypeScript check
+        # --skipLibCheck: salta el check de node_modules (estandar en
+        # proyectos grandes, evita ruido de tipos de terceros).
+        # --noEmit: solo chequea, no genera archivos .js.
+        run: npx tsc --noEmit --skipLibCheck
+
+      - name: Run ESLint
+        # Lint del codigo. Si el proyecto tiene warnings pre-existentes,
+        # esto los muestra pero NO falla el CI — agregar --max-warnings 0
+        # cuando el codebase este 100% limpio para que tampoco se pasen
+        # warnings nuevos.
+        run: npm run lint
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB FUTURO: validacion contra DB real (commented out hasta que
+  # decidamos activarlo). Requiere levantar postgres + PostGIS extension
+  # en el runner y correr prisma db push antes de los scripts.
+  #
+  # Para activarlo, descomentar todo el bloque siguiente:
+  # ─────────────────────────────────────────────────────────────────
+  #
+  # validate-db:
+  #   name: Validate against DB
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #
+  #   services:
+  #     postgres:
+  #       image: postgis/postgis:14-3.4
+  #       env:
+  #         POSTGRES_USER: postgres
+  #         POSTGRES_PASSWORD: postgres
+  #         POSTGRES_DB: moovy_ci
+  #       ports:
+  #         - 5436:5432
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #
+  #   env:
+  #     DATABASE_URL: postgresql://postgres:postgres@localhost:5436/moovy_ci
+  #     # Variables minimas para que los scripts no fallen al cargar.
+  #     # Valores dummy — no se hacen llamadas reales a estos servicios.
+  #     AUTH_SECRET: ci-dummy-secret-not-for-prod-32-chars-aaa
+  #     NEXTAUTH_SECRET: ci-dummy-secret-not-for-prod-32-chars-aaa
+  #     CRON_SECRET: ci-dummy-cron-secret
+  #     NEXT_PUBLIC_APP_URL: http://localhost:3000
+  #     NEXT_PUBLIC_SOCKET_URL: http://localhost:3001
+  #     MP_ACCESS_TOKEN: TEST-dummy
+  #     MP_PUBLIC_KEY: TEST-dummy
+  #     MP_WEBHOOK_SECRET: dummy
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
+  #     - run: npm ci
+  #     - name: Push Prisma schema to test DB
+  #       run: npx prisma db push --skip-generate
+  #     - name: Generate Prisma client
+  #       run: npx prisma generate
+  #     - name: validate-ops-config
+  #       run: npx tsx scripts/validate-ops-config.ts
+  #     - name: validate-role-flows
+  #       run: npx tsx scripts/validate-role-flows.ts
