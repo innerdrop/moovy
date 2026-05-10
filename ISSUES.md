@@ -39,10 +39,12 @@ _(ningún importante abierto al cierre del sprint del 2026-04-30)_
 
 ---
 
-## ✅ Resueltos en este sprint (2026-04-25 → 2026-04-30)
+## ✅ Resueltos en este sprint (2026-04-25 → 2026-05-08)
 
 | Issue | Rama | Resumen |
 |---|---|---|
+| (smoke-2B) | `fix/confirmacion-driver-campos-vacios` | Step 3 del registro driver: filas DNI/CUIT/Color/Patente y todo el bloque Vencimientos solo se renderizan si tienen valor. Antes mostraban "—" siempre, contradiciendo el flujo simplificado donde son opcionales. |
+| (smoke-2C) | (Cloudflare) | Email Address Obfuscation desactivado en Cloudflare. Resuelve React #418 en `/terminos-repartidor` (Cloudflare reemplazaba `legal@somosmoovy.com` post-SSR causando hydration mismatch). Sin código. |
 | ISSUE-061 | `fix/utf8-encoding-pipeline` | UTF-8 pipeline export: pg_dump + docker cp (bytes raw) en vez de PowerShell `>`. Tildes preservadas. |
 | ISSUE-062 | `fix/auth-bloqueo-y-reset` | Warning intentos restantes + unlock dual-layer + auditoría reset password |
 | (multifoto) | `fix/producto-multifoto-carousel` | Carousel táctil + dots + flechas en detalle producto/listing |

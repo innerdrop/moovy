@@ -858,10 +858,22 @@ function RepartidorRegistroContent() {
                                             ? (session?.user?.name || "—")
                                             : `${formData.firstName} ${formData.lastName}`}
                                     </span>
-                                    <span className="text-gray-500">DNI:</span>
-                                    <span className="text-gray-800 font-medium">{formData.dni || "—"}</span>
-                                    <span className="text-gray-500">CUIT:</span>
-                                    <span className="text-gray-800 font-medium">{formData.cuit || "—"}</span>
+                                    {/* fix/confirmacion-driver-campos-vacios (2026-05-08): cada fila opcional
+                                        solo se renderiza si tiene valor. Antes mostraban "—" siempre, lo que
+                                        daba sensacion de "te falta cargar algo" en el flujo simplificado donde
+                                        todos estos campos son opcionales en el registro. */}
+                                    {formData.dni && (
+                                        <>
+                                            <span className="text-gray-500">DNI:</span>
+                                            <span className="text-gray-800 font-medium">{formData.dni}</span>
+                                        </>
+                                    )}
+                                    {formData.cuit && (
+                                        <>
+                                            <span className="text-gray-500">CUIT:</span>
+                                            <span className="text-gray-800 font-medium">{formData.cuit}</span>
+                                        </>
+                                    )}
                                     <span className="text-gray-500">Vehículo:</span>
                                     <span className="text-gray-800 font-medium capitalize">
                                         {vehicleMeta?.label || formData.vehicleType || "—"}
@@ -869,28 +881,50 @@ function RepartidorRegistroContent() {
                                         {isMotorized && formData.vehicleModel && ` ${formData.vehicleModel}`}
                                         {isMotorized && formData.vehicleYear && ` (${formData.vehicleYear})`}
                                     </span>
-                                    {isMotorized && (
+                                    {isMotorized && formData.vehicleColor && (
                                         <>
                                             <span className="text-gray-500">Color:</span>
-                                            <span className="text-gray-800 font-medium">{formData.vehicleColor || "—"}</span>
+                                            <span className="text-gray-800 font-medium">{formData.vehicleColor}</span>
+                                        </>
+                                    )}
+                                    {isMotorized && formData.licensePlate && (
+                                        <>
                                             <span className="text-gray-500">Patente:</span>
-                                            <span className="text-gray-800 font-medium uppercase tracking-wider">{formData.licensePlate || "—"}</span>
+                                            <span className="text-gray-800 font-medium uppercase tracking-wider">{formData.licensePlate}</span>
                                         </>
                                     )}
                                 </div>
 
-                                {isMotorized && (
+                                {/* Bloque "Vencimientos cargados" solo si motorizado AND al menos uno cargado.
+                                    Cada fila individual tambien condicional para no mostrar "—" sueltos. */}
+                                {isMotorized && (formData.licenciaExpiresAt || formData.seguroExpiresAt || formData.rtoExpiresAt || formData.cedulaVerdeExpiresAt) && (
                                     <div className="mt-2 pt-2 border-t border-gray-200">
                                         <p className="text-[11px] text-gray-500 mb-1">Vencimientos cargados:</p>
                                         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[11px]">
-                                            <span className="text-gray-500">Licencia:</span>
-                                            <span className="text-gray-700">{formatDateAR(formData.licenciaExpiresAt)}</span>
-                                            <span className="text-gray-500">Seguro:</span>
-                                            <span className="text-gray-700">{formatDateAR(formData.seguroExpiresAt)}</span>
-                                            <span className="text-gray-500">RTO:</span>
-                                            <span className="text-gray-700">{formatDateAR(formData.rtoExpiresAt)}</span>
-                                            <span className="text-gray-500">Cédula verde:</span>
-                                            <span className="text-gray-700">{formatDateAR(formData.cedulaVerdeExpiresAt)}</span>
+                                            {formData.licenciaExpiresAt && (
+                                                <>
+                                                    <span className="text-gray-500">Licencia:</span>
+                                                    <span className="text-gray-700">{formatDateAR(formData.licenciaExpiresAt)}</span>
+                                                </>
+                                            )}
+                                            {formData.seguroExpiresAt && (
+                                                <>
+                                                    <span className="text-gray-500">Seguro:</span>
+                                                    <span className="text-gray-700">{formatDateAR(formData.seguroExpiresAt)}</span>
+                                                </>
+                                            )}
+                                            {formData.rtoExpiresAt && (
+                                                <>
+                                                    <span className="text-gray-500">RTO:</span>
+                                                    <span className="text-gray-700">{formatDateAR(formData.rtoExpiresAt)}</span>
+                                                </>
+                                            )}
+                                            {formData.cedulaVerdeExpiresAt && (
+                                                <>
+                                                    <span className="text-gray-500">Cédula verde:</span>
+                                                    <span className="text-gray-700">{formatDateAR(formData.cedulaVerdeExpiresAt)}</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 )}

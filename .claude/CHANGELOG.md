@@ -10,6 +10,47 @@
 
 ---
 
+## 2026-05-10 (rama `fix/confirmacion-driver-campos-vacios`)
+
+fix(driver-registro): step 3 no muestra "—" en filas opcionales
+
+Smoke test de produccion 2026-05-07 (observacion 2B con captura img02): en
+/repartidor/registro paso 3 (Confirmacion), el "Resumen de tu solicitud"
+mostraba siempre las filas DNI, CUIT, Color, Patente y los 4 vencimientos
+(Licencia, Seguro, RTO, Cedula verde) con "—" cuando el driver no las habia
+cargado. Esto contradice la rama feat/registro-simplificado (2026-04-27)
+que volvio TODOS estos campos opcionales en el registro: el driver los
+completa despues en su panel. La pantalla de confirmacion daba sensacion
+de "te falta cargar algo", justo lo opuesto al mensaje deseado.
+
+CAMBIOS en src/app/repartidor/registro/RepartidorRegistroClient.tsx (step 3):
+- Filas DNI y CUIT: solo se renderizan si formData.dni / formData.cuit
+  tienen valor (wrapped en {formData.X && (<>...</>)}).
+- Filas Color y Patente: dentro del bloque isMotorized, cada una solo se
+  renderiza si su valor esta cargado.
+- Bloque "Vencimientos cargados" entero: solo aparece si motorizado AND al
+  menos uno de los 4 (licencia/seguro/RTO/cedula verde) esta cargado. Cada
+  fila individual tambien condicional.
+- Filas Nombre y Vehiculo siguen renderizandose siempre (Nombre es required;
+  Vehiculo es required en step 2 - ambos se completan en el registro).
+
+QUE NO CAMBIA:
+- formData type igual (todos los campos opcionales siguen como string con
+  default "").
+- Endpoint /api/auth/register/driver no cambia: sigue aceptando todos
+  estos campos como opcionales.
+- Pagina /repartidor/(protected)/perfil (donde el driver completa los docs
+  faltantes) no se toco.
+
+OBSERVACION 2C (resuelta en paralelo, sin codigo):
+Misma sesion smoke test detecto React error #418 en /terminos-repartidor.
+Causa: Cloudflare Email Address Obfuscation reemplazaba legal@somosmoovy.com
+en el HTML server-side post-SSR, causando hydration mismatch. Fix: desactivado
+desde Cloudflare Dashboard (Scrape Shield > Email Obfuscation: OFF). No
+requirio cambios de codigo.
+
+**Archivos:** ISSUES.md, src/app/repartidor/registro/RepartidorRegistroClient.tsx
+
 ## 2026-05-08 (rama `style/quienes-somos-rediseno`)
 
 style: rediseno /nosotros con Claude Design - piloto de la fase de diseno
