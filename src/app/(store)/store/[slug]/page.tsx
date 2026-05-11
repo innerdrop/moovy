@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/store/ProductCard";
 import MerchantScheduleWidget from "@/components/store/MerchantScheduleWidget";
 import EmptyState from "@/components/ui/EmptyState";
+import ReviewsSection from "@/components/store/ReviewsSection";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
 import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck, ShoppingBag } from "lucide-react";
 
@@ -246,6 +247,23 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                         primaryCta={{ label: "Ver otros comercios", href: "/tiendas" }}
                     />
                 )}
+
+                {/* feat/resenas-publicas-tienda (2026-05-10): sección publica de
+                    reseñas. Solo se muestran las que pasaron moderacion
+                    (AUTO_APPROVED + APPROVED). El rating numerico siempre
+                    cuenta en el avg/distribution, el texto del comentario es
+                    lo que se modera. */}
+                <section className="mt-12 pb-8">
+                    <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                        Reseñas
+                    </h2>
+                    <ReviewsSection
+                        entityType="merchant"
+                        entityId={merchant.id}
+                        entityLabel={merchant.name}
+                    />
+                </section>
             </div>
         </div>
     );

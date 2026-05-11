@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star, Package, ArrowLeft, ShieldCheck, Clock, TrendingUp, Award } from "lucide-react";
 import ListingCard from "@/components/store/ListingCard";
 import { getSoldCountsExcludingAutoPurchases } from "@/lib/listing-counts";
+import ReviewsSection from "@/components/store/ReviewsSection";
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -241,6 +242,23 @@ export default async function SellerProfilePage({ params }: Props) {
                             ))}
                         </div>
                     )}
+
+                    {/* feat/resenas-publicas-tienda (2026-05-10): sección publica
+                        de reseñas del seller marketplace. Mismo componente que
+                        usamos en /store/[slug], cambia solo entityType. */}
+                    <section className="mt-12 pb-8">
+                        <h2 className="font-bold text-lg text-gray-900 mb-5 flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-purple-50">
+                                <Star className="h-3 w-3 text-[#7C3AED] fill-[#7C3AED]" />
+                            </span>
+                            Reseñas de {seller.displayName || "este vendedor"}
+                        </h2>
+                        <ReviewsSection
+                            entityType="seller"
+                            entityId={seller.id}
+                            entityLabel={seller.displayName || "Vendedor"}
+                        />
+                    </section>
                 </div>
             </div>
         </div>

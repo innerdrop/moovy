@@ -10,6 +10,120 @@
 
 ---
 
+## 2026-05-11 (rama `feat/resenas-publicas-tienda`)
+
+feat(resenas): UI publica de reseñas con boton reportar en tienda + marketplace
+
+Cierra el ciclo abierto por feat/propinas-y-ratings-post-entrega. Ahora
+las reseñas que el buyer escribe en el modal post-entrega son visibles
+para cualquier visitante de la pagina del comercio o el perfil del seller
+marketplace. Boost de confianza directo — cada estrella vista vende.
+
+DECISIONES DE PRODUCTO:
+
+1) Filtro de moderacion: solo se muestran reseñas con moderationStatus
+   IN (AUTO_APPROVED, APPROVED). Las PENDING (blacklist o >=3 reportes)
+   y REJECTED (OPS las elimino) NO se renderizan. El rating numerico
+   SI cuenta en el avg/distribution incluso cuando el comment esta
+   oculto — el rating en si no necesita moderacion, solo el texto.
+
+2) Endpoint publico sin auth: cualquiera puede ver las reseñas (incluyendo
+   usuarios deslogueados explorando). Solo el endpoint de REPORTAR requiere
+   auth (anti-spam).
+
+3) Boton "Reportar" en cada reseña: si el user esta deslogueado, redirige
+   a /login con callbackUrl. Si esta logueado, abre modal compacto con
+   textarea de razon opcional (max 200c) y dispara el endpoint existente
+   /api/reviews/report (creado en la rama de propinas+ratings).
+
+4) Optimistic remove: al reportar, la reseña desaparece del view del
+   reporter inmediatamente (mejor UX que dejarla visible). El backend
+   decide si llega al threshold de 3 reportes y bajarla a PENDING.
+
+5) Driver fuera del scope: el driver no tiene pagina publica individual
+   ("perfil del driver") donde mostrar reseñas — su rating vive en el
+   panel interno (/mis-pedidos). Si en el futuro se decide construir un
+   perfil publico del repartidor (por ej. para que el buyer pueda
+   "favoritear" repartidores), se agrega en otra rama.
+
+CAMBIOS (5 archivos):
+
+1) src/app/api/reviews/[entityType]/[entityId]/route.ts (NUEVO)
+   - GET publico. entityType debe ser "merchant" o "seller", entityId
+     es el id del Merchant o SellerProfile.
+   - Paginacion ?page=1&limit=10 (cap limit=50).
+   - Para merchant: filtra Order.merchantId = entityId.
+   - Para seller: filtra subOrders.some(sellerId = entityId).
+   - Where: rating no-null + moderationStatus visible + soft delete null.
+   - Devuelve items (id/rating/comment/authorName/createdAt), total,
+     avgRating (1 decimal), distribution { 1..5 → count }, hasMore.
+   - groupBy por valor de rating + suma manual para avg (mas eficiente
+     que aggregate cuando ya necesitamos la distribucion igual).
+   - Soft-deleted users → authorName = "Usuario" (anonimizado).
+
+2) src/components/store/ReviewsSection.tsx (NUEVO)
+   - "use client" component. Recibe { entityType, entityId, entityLabel }.
+   - Header con avg grande (text-5xl) + estrellas + total reseñas.
+   - Distribucion de 5 a 1 estrella con barras de % estilo Google/Amazon.
+     Las barras se normalizan al max count (no al total) para que cuando
+     todas las reseñas son de 5 estrellas se vea una barra llena, no
+     todas mini. Tambien muestra el % real al lado.
+   - Lista paginada de reseñas: estrellas + autor + fecha relativa
+     ("hace 3 días") + comment + boton "Reportar".
+   - "Ver mas reseñas" carga la siguiente pagina con deduplicacion por id.
+   - Estado vacio si total === 0: icono + mensaje "Sé el primero".
+   - Auth check para reportar: si !session, redirige a /login con
+     callbackUrl preservando la URL actual.
+
+3) src/components/store/ReportReviewModal.tsx (NUEVO)
+   - Modal "report this review". Recibe la review + entityType.
+   - Preview de la reseña reportada (rating + comment line-clamp-4).
+   - Textarea opcional con char counter (max 200c).
+   - POST a /api/reviews/report con { orderId: review.id, target, reason }.
+     target se deriva: entityType "merchant" -> "MERCHANT", "seller" -> "SELLER".
+   - Pantalla de exito (icono check + mensaje) durante 1.5s antes de
+     llamar onSubmitted y cerrarse.
+   - Click en backdrop cierra; click en el modal mismo no.
+
+4) src/app/(store)/store/[slug]/page.tsx
+   - Import de ReviewsSection.
+   - Seccion nueva al final del container de productos:
+       <h2><Star/> Reseñas</h2>
+       <ReviewsSection entityType="merchant" entityId={merchant.id} ... />
+   - El icono Star ya estaba importado en el archivo.
+
+5) src/app/(store)/marketplace/vendedor/[id]/page.tsx
+   - Import de ReviewsSection.
+   - Seccion nueva al final de la grid de listings con header violeta
+     (paleta del marketplace) y entityType="seller". entityId=seller.id
+     (no userId — la moderacion y queries usan SellerProfile.id).
+
+QUE NO CAMBIA:
+- Schema, otros endpoints, logica de moderacion: nada. Esta rama solo
+  EXPONE al publico lo que ya existia internamente.
+- El endpoint /api/reviews/report (creado en rama anterior) sigue igual.
+- El modal post-entrega que genera las reseñas no cambia.
+- El panel OPS /ops/reviews-pendientes no cambia.
+
+VERIFICACION POST-DEPLOY:
+- Entrar a /store/[slug] de un comercio que tenga al menos una orden
+  DELIVERED con rating. Verificar que se ve la seccion "Reseñas" con
+  estrellas, distribucion y al menos una reseña.
+- Click en boton "Reportar" de una reseña deslogueado: deberia ir a
+  /login. Logueado: abre el modal.
+- Reportar con razon: deberia mostrar mensaje de exito y la reseña
+  desaparecer de la lista del reporter.
+- Verificar en /ops/auditoria que aparece audit log REVIEW_COMMENT_REPORTED.
+- Para sellers: entrar a /marketplace/vendedor/[id] con orden marketplace
+  DELIVERED + rated. Mismo comportamiento.
+
+PROXIMO PASO NATURAL (otra rama):
+- Notificacion email a OPS cuando un comment cae en PENDING (1h).
+  Cierra el ciclo proactivo: hoy OPS tiene que ir manual a la queue,
+  ese email los alerta al instante.
+
+**Archivos:** ISSUES.md, src/app/(store)/marketplace/vendedor/[id]/page.tsx, src/app/(store)/store/[slug]/page.tsx, src/app/api/reviews/[entityType]/[entityId]/route.ts, src/components/store/ReportReviewModal.tsx, src/components/store/ReviewsSection.tsx
+
 ## 2026-05-11 (rama `fix/ci-eslint-ignores-archivos-auxiliares`)
 
 fix(ci): excluir archivos auxiliares del lint para destrabar GitHub Actions
