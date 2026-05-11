@@ -10,6 +10,78 @@
 
 ---
 
+## 2026-05-11 (rama `fix/ci-eslint-ignores-archivos-auxiliares`)
+
+fix(ci): excluir archivos auxiliares del lint para destrabar GitHub Actions
+
+Follow-up de chore/github-actions-ci. El primer run del workflow CI en
+GitHub Actions fallo en el step "npm run lint" con ~50 errores y
+warnings en archivos pre-existentes:
+
+  - scripts/*.ts y scripts/*.js   (admin / seed / migracion CLI scripts)
+  - prisma/seed-local-reset.ts    (seed)
+  - prisma/seed.ts                (seed default)
+  - load-testing/k6/*.js          (tests de carga, otro runtime)
+  - public/sw.js                  (service worker viejo)
+
+Reglas que disparan:
+  - @typescript-eslint/no-require-imports
+  - @typescript-eslint/no-explicit-any
+  - @typescript-eslint/no-unused-vars
+  - import/no-anonymous-default-export
+
+Estos errores son DEUDA TECNICA HISTORICA — no fueron introducidos en
+esta sesion. Existian desde hace tiempo pero nunca se vieron porque
+"npm run lint" no se corria como gate (no esta en tsc-strict.ps1).
+Al agregarlo al CI, salieron a la luz.
+
+PROBLEMA: arreglar los ~50 errores uno por uno (cambiar require() por
+import, tipar todos los any, remover vars unused) son cambios chiquitos
+en archivos auxiliares que no afectan el bundle de la app. Hacerlo
+ahora bloqueando el CI no aporta valor — son scripts CLI de admin que
+se ejecutan manualmente con tsx, y la app de produccion no los carga.
+
+DECISION CEO: el lint de src/** (el codigo que se compila al bundle de
+produccion y al que afectan los buyers/drivers/admins en runtime) sigue
+corriendo completo y exigente. Los archivos auxiliares de mantenimiento
+quedan ignorados en el lint hasta que decidamos limpiarlos en una rama
+dedicada (no urgente). Si se introducen errores nuevos en src/**, el
+CI los va a atajar.
+
+CAMBIOS:
+
+1) eslint.config.mjs
+   - globalIgnores extendido con:
+       scripts/**          (admin/seed/migracion)
+       prisma/seed*.ts     (seeds, tsx no es bundle)
+       prisma/seed*.mjs
+       load-testing/**     (k6 tests)
+       public/sw.js        (service worker pre-existente)
+   - El bloque ya existente de defaults se mantiene (.next/, out/, build/,
+     next-env.d.ts).
+   - Comentario explicativo apunta a esta rama por contexto.
+
+QUE NO CAMBIA:
+- ci.yml: no se toca. El step "npm run lint" sigue corriendo igual,
+  pero ahora con los ignores nuevos pasa limpio.
+- Schema, codigo de la app, package.json: nada.
+
+VERIFICACION POST-MERGE:
+- En GitHub Actions, el siguiente run de CI deberia mostrar el step
+  "Run ESLint" en verde.
+- Si aparecen nuevos errores en archivos de src/**, el CI los va a
+  marcar igual (no estamos relajando el lint del codigo de la app).
+
+DEUDA PENDIENTE (para limpiar cuando convenga, sin urgencia):
+- scripts/*.{ts,js}: migrar de require() a import, tipar los any.
+- prisma/seed*.ts: tipar los any.
+- public/sw.js: remover vars unused.
+- load-testing/k6/*: agregar nombres a los default exports.
+Cada uno es chico y aislado, se pueden hacer en una sola rama
+"chore/limpiar-lint-archivos-auxiliares" cuando se priorice.
+
+**Archivos:** ISSUES.md, eslint.config.mjs
+
 ## 2026-05-10 (rama `chore/github-actions-ci`)
 
 chore(ci): GitHub Actions con tsc + lint automatico en cada push
