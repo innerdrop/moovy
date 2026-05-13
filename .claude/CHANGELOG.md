@@ -10,6 +10,96 @@
 
 ---
 
+## 2026-05-12 (rama `fix/ci-quitar-lint-bloqueante`)
+
+fix(ci): sacar step de ESLint del CI hasta limpiar deuda historica
+
+Segundo follow-up de la rama chore/github-actions-ci. Despues de excluir
+los archivos auxiliares del lint (fix/ci-eslint-ignores-archivos-auxiliares),
+el CI seguia rojo porque src/lib/** tiene ~823 errores + ~427 warnings
+PRE-EXISTENTES de las reglas:
+
+  - @typescript-eslint/no-explicit-any  (mayoria, ~800 casos)
+  - @typescript-eslint/no-unused-vars
+  - @typescript-eslint/no-require-imports
+  - @next/next/no-img-element
+
+Archivos afectados incluyen modulos criticos:
+  - src/lib/encryption.ts
+  - src/lib/fiscal-crypto.ts
+  - src/lib/ops-config.ts
+  - src/lib/points.ts
+  - src/lib/order-payment-confirm.ts
+  - src/lib/order-refund.ts
+  - src/lib/merchant-loyalty.ts
+  - src/lib/sentry-scrub.ts
+  - src/proxy.ts
+  - etc.
+
+DECISION CEO: NO arreglar esto pre-launch.
+
+Razones:
+1) Son deuda de ESTILO, no bugs reales. La app corre en produccion sin
+   problemas con todo este "any". Las reglas son opinadas — TypeScript
+   permite `any` perfectamente; ESLint estricto no lo recomienda.
+2) Arreglar ~823 errores en codigo sensible (criptografia, pagos,
+   puntos) es trabajo de varios dias-semanas. RIESGO alto de introducir
+   regresiones reales tratando de "prolijar" tipos que ya funcionan.
+3) El VALOR REAL del CI lo da `tsc --noEmit`, que SI atrapa errores
+   de tipos genuinos. Lint es complementario, no fundamental.
+4) Es practica industrial estandar: Stripe, Vercel, Linear y otros
+   no usan lint estricto como gate de CI bloqueante. Lo corren en
+   pre-commit hooks locales o como job separado opt-in.
+
+CAMBIO (1 archivo):
+
+.github/workflows/ci.yml
+  - Removido el step "Run ESLint".
+  - El job typecheck pasa a hacer solo:
+      checkout → setup-node → npm ci → prisma generate → tsc
+  - Comentario extenso en el lugar del step removido explicando:
+    a) por que se removio (deuda historica);
+    b) que el CI no se rompe (sigue corriendo tsc);
+    c) que lint queda disponible localmente (`npm run lint`);
+    d) plan post-launch para limpiar la deuda y re-introducir el
+       step con `--max-warnings 0` cuando el codigo este limpio.
+
+QUE NO CAMBIA:
+- security.yml: sigue corriendo `npm audit` + `audit-ci` + `gitleaks`.
+- tsc check sigue siendo gate obligatorio (atrapa bugs reales).
+- `npm run lint` sigue funcionando local — el dev que quiera correrlo
+  puede hacerlo y ver los warnings, solo deja de bloquear CI.
+- eslint.config.mjs no se toca — los globalIgnores de archivos
+  auxiliares (scripts/**, prisma/seed*, load-testing/**, public/sw.js)
+  agregados en la rama anterior siguen vigentes (el lint local sigue
+  ignorando esos).
+
+VERIFICACION POST-MERGE:
+- Proximo push a develop deberia disparar CI y este vez quedar VERDE.
+- En github.com/innerdrop/moovy → Actions → CI: el run mas reciente
+  con commit hash del merge de esta rama deberia mostrar checkmark
+  verde.
+
+PROXIMOS PASOS POST-LAUNCH:
+- Rama "chore/limpiar-lint-src" (despues de lanzar y bajar el estres):
+  1. Correr `npx eslint --fix src/**/*.{ts,tsx}` para auto-fix de lo
+     facil (~80% de unused-vars y require-imports se arreglan solos).
+  2. Revisar manualmente los `any` criticos:
+     - src/lib/encryption.ts y src/lib/fiscal-crypto.ts (criptografia
+       de datos AAIP — tipar con cuidado, no romper compatibilidad
+       binaria de lo cifrado existente).
+     - src/lib/ops-config.ts (~50 `any` que probablemente son JSON
+       config types que se pueden tipar con un Zod schema).
+     - src/lib/points.ts y src/lib/order-payment-confirm.ts (logica
+       de dinero — extra cuidado).
+  3. Cuando el lint corra limpio, descomentar el step en ci.yml con
+     `npm run lint -- --max-warnings 0` para que sea gate de aqui en
+     mas (cero tolerancia a deuda nueva).
+- Esa rama es ~2-3 dias de trabajo focused. Mejor hacerlo aislado
+  que mezclado con features.
+
+**Archivos:** .github/workflows/ci.yml, ISSUES.md
+
 ## 2026-05-11 (rama `feat/resenas-publicas-tienda`)
 
 feat(resenas): UI publica de reseñas con boton reportar en tienda + marketplace
