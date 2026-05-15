@@ -39,7 +39,15 @@ _(ningún importante abierto al cierre del sprint del 2026-04-30)_
 
 ---
 
-## ✅ Resueltos en este sprint (2026-04-25 → 2026-05-08)
+## ✅ Resueltos en este sprint (2026-04-25 → 2026-05-13)
+
+| Issue | Rama | Resumen |
+|---|---|---|
+| (smoke2-2A) | `fix/driver-acceso-panel-post-registro` | BUG CRÍTICO funcional: post-registro el driver no tenía botón al panel y quedaba "esperando aprobación imposible" — sin acceso al perfil no podía cargar la documentación, sin documentación nunca lo aprobaban. Loop muerto que rompía el onboarding. Fix: botón "Cargar mi documentación" en step 4 del registro + en `/repartidor/pendiente-aprobacion`. Lleva a `/repartidor` que redirige a login y de ahí al dashboard. La protección de "no aceptar pedidos sin aprobación" sigue funcionando como antes. |
+
+---
+
+## ✅ Resueltos en sprint anterior (2026-04-25 → 2026-05-08)
 
 | Issue | Rama | Resumen |
 |---|---|---|

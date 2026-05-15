@@ -10,6 +10,85 @@
 
 ---
 
+## 2026-05-14 (rama `fix/driver-acceso-panel-post-registro`)
+
+fix(driver): boton al panel post-registro para que el driver pueda cargar docs
+
+Bug funcional CRITICO detectado en el 2do smoke test de produccion
+(observacion 2A del nuevo archivo observaciones_prod.md). El flujo del
+driver post-registro estaba ROTO en loop muerto:
+
+  1. Driver completa el formulario en /repartidor/registro y lo envia.
+  2. Sistema crea User + Driver con approvalStatus = PENDING.
+  3. Aparece pantalla "Solicitud Enviada" o /repartidor/pendiente-aprobacion.
+  4. La pantalla solo tenia link "Volver al inicio".
+  5. Driver no tenia forma de llegar a /repartidor/(protected)/perfil
+     que es donde se cargan los documentos faltantes (licencia, seguro,
+     cedula verde, DNI fotos, constancia AFIP, etc).
+  6. Sin documentos -> admin no aprueba.
+  7. Sin aprobacion -> driver no opera.
+  -> NUNCA se completaba ningun onboarding nuevo.
+
+Importante: la rama feat/registro-simplificado (2026-04-27) volvio los
+docs OPCIONALES en el registro publico — el driver los carga DESPUES
+desde su panel. Pero nos olvidamos de darle al driver la puerta de
+entrada al panel. Esta rama cierra ese gap.
+
+CAMBIOS (2 archivos):
+
+1) src/app/repartidor/registro/RepartidorRegistroClient.tsx
+   - Step 4 (pantalla de exito post-submit): nueva CTA principal grande
+     verde "Cargar mi documentación" / "Ir a mi panel" (texto cambia si
+     fromProfile esta autenticado).
+     - fromProfile && isAuthenticated → href="/repartidor/dashboard"
+       (el user ya tiene sesion porque entro desde mi-perfil).
+     - resto → href="/repartidor" (esa ruta redirige a /repartidor/login
+       si no hay sesion, y de ahi al dashboard tras autenticar).
+   - Link existente "Volver al inicio" / "Volver al perfil" se mantiene
+     como secundario debajo del CTA.
+   - Copy del parrafo descriptivo reescrito para reflejar el nuevo flow:
+     antes decia "tu solicitud está en revisión, te contactaremos pronto"
+     (mentira porque no podia hacer nada), ahora dice "tu cuenta ya fue
+     creada, ingresá al panel para cargar los documentos faltantes".
+   - Bloque "Próximos pasos" tambien actualizado en mismo sentido.
+   - Import nuevo: ArrowRight de lucide-react.
+
+2) src/app/repartidor/pendiente-aprobacion/page.tsx
+   - CTA principal nuevo "Cargar mi documentación" con icono ArrowRight,
+     fondo rojo Moovy (#e60012), arriba del bloque de soporte por email.
+     Apunta a /repartidor (que internamente decide login o dashboard).
+   - Copy del parrafo descriptivo reescrito en linea con el nuevo flow.
+   - Link "Volver al inicio" sigue al final como secundario.
+   - Import nuevo: ArrowRight.
+
+QUE NO CAMBIA:
+- /repartidor/(protected)/perfil sigue siendo donde el driver carga
+  sus docs. Solo agregamos como llegar.
+- /repartidor/(protected)/dashboard sigue sin permitir aceptar pedidos
+  hasta que el driver tenga approvalStatus = APPROVED. Esa proteccion
+  estaba bien antes y sigue bien.
+- Endpoint /api/auth/register/driver no se toca — sigue NO creando
+  sesion auto (el driver tiene que loguear manualmente despues del
+  registro publico). Si en el futuro queremos auto-login post-registro
+  para reducir mas la friccion, es otro cambio.
+- Logica de approvalStatus / aprobacion admin / cron docs expiry: sin
+  cambios.
+
+VERIFICACION POST-DEPLOY:
+1) Registrar driver nuevo en staging desde /repartidor/registro
+   (sin estar logueado).
+2) Submit del paso 3 -> ver el step 4 "¡Solicitud Enviada!" con boton
+   verde grande "Cargar mi documentación".
+3) Click en ese boton -> deberia ir a /repartidor que redirige a
+   /repartidor/login.
+4) Loguear con las credenciales del driver recien creado.
+5) Aterrizar en /repartidor/dashboard y desde ahi acceder al perfil
+   para subir la documentacion.
+6) Verificar que la proteccion "no podes conectarte" sigue activa hasta
+   que admin apruebe.
+
+**Archivos:** ISSUES.md, docs/referencias/observaciones_prod.md, src/app/repartidor/pendiente-aprobacion/page.tsx, src/app/repartidor/registro/RepartidorRegistroClient.tsx
+
 ## 2026-05-12 (rama `fix/ci-quitar-lint-bloqueante`)
 
 fix(ci): sacar step de ESLint del CI hasta limpiar deuda historica

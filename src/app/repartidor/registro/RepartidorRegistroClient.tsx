@@ -37,6 +37,7 @@ import {
     Phone,
     FileText,
     ArrowLeft,
+    ArrowRight,
     CheckCircle2,
     Clock,
     AlertTriangle,
@@ -533,26 +534,43 @@ function RepartidorRegistroContent() {
                         </div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Solicitud Enviada!</h2>
                         <p className="text-gray-500 mb-6">
-                            Tu solicitud para ser repartidor MOOVY está en revisión. Te contactaremos pronto para coordinar la verificación de documentos.
+                            Tu cuenta de repartidor ya fue creada. Antes de poder aceptar pedidos necesitamos verificar tu documentación — ingresá al panel para cargar los documentos faltantes.
                         </p>
 
-                        <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
+                        <div className="bg-green-50 rounded-xl p-4 mb-6 border border-green-200">
                             <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 text-green-600" />
+                                <Clock className="w-5 h-5 text-green-600 flex-shrink-0" />
                                 <div className="text-left">
                                     <p className="font-medium text-green-900">Próximos pasos</p>
-                                    <p className="text-sm text-green-700">Nuestro equipo revisará tu documentación y te contactaremos en las próximas 24-48 horas.</p>
+                                    <p className="text-sm text-green-700">Subí tu documentación en el panel. Cuando esté completa, el equipo de Moovy la revisa en 24 a 48 horas y te habilita para aceptar pedidos.</p>
                                 </div>
                             </div>
                         </div>
 
-                        <Link
-                            href={fromProfile ? "/mi-perfil" : "/"}
-                            className="inline-flex items-center gap-2 text-green-600 font-medium hover:underline"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            {fromProfile ? "Volver al perfil" : "Volver al inicio"}
-                        </Link>
+                        {/* fix/driver-acceso-panel-post-registro (2026-05-13): boton principal
+                            al panel del driver. Sin esto el driver post-registro no tenia forma
+                            de llegar al perfil donde sube sus documentos — quedaba esperando una
+                            aprobacion imposible porque no podia cargar los docs.
+                            - Caso fromProfile (ya logueado): va directo a /repartidor/dashboard.
+                            - Caso registro publico (sin sesion): va a /repartidor que redirige
+                              a /repartidor/login y de ahi al dashboard tras autenticar. */}
+                        <div className="flex flex-col gap-3 items-center">
+                            <Link
+                                href={fromProfile && isAuthenticated ? "/repartidor/dashboard" : "/repartidor"}
+                                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition w-full active:scale-95"
+                            >
+                                {fromProfile && isAuthenticated ? "Ir a mi panel" : "Cargar mi documentación"}
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
+
+                            <Link
+                                href={fromProfile ? "/mi-perfil" : "/"}
+                                className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mt-1"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                {fromProfile ? "Volver al perfil" : "Volver al inicio"}
+                            </Link>
+                        </div>
                     </div>
                 )}
 

@@ -1,4 +1,4 @@
-import { Clock, Mail, ArrowLeft, CheckCircle2, FileText, Shield } from "lucide-react";
+import { Clock, Mail, ArrowLeft, ArrowRight, CheckCircle2, FileText, Shield } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -38,8 +38,9 @@ export default function PendienteAprobacionRepartidorPage() {
                         ¡Estamos revisando tu solicitud!
                     </h1>
                     <p className="text-gray-500 mb-6 leading-relaxed text-sm">
-                        Nuestro equipo está verificando tu documentación.
-                        Te notificaremos por email apenas estés aprobado como repartidor.
+                        Tu cuenta ya fue creada. Para empezar a recibir pedidos
+                        necesitás cargar tu documentación desde el panel y esperar
+                        nuestra verificación.
                     </p>
 
                     {/* Timeline steps */}
@@ -83,6 +84,22 @@ export default function PendienteAprobacionRepartidorPage() {
                             <span className="text-sm font-semibold text-[#e60012]">Tiempo estimado: 24 a 48 horas</span>
                         </div>
                     </div>
+
+                    {/* fix/driver-acceso-panel-post-registro (2026-05-13): boton
+                        principal al panel del driver. Era el bug critico del 2do
+                        smoke test: sin este boton el driver post-registro no tenia
+                        forma de entrar al panel para subir sus documentos —
+                        quedaba esperando una aprobacion imposible. /repartidor
+                        redirige a /repartidor/login si no hay sesion (no sabemos
+                        desde acá si el driver esta logueado, esa ruta lo decide).
+                    */}
+                    <Link
+                        href="/repartidor"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition w-full mb-4 active:scale-95"
+                    >
+                        Cargar mi documentación
+                        <ArrowRight className="w-4 h-4" />
+                    </Link>
 
                     {/* Support */}
                     <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4 mb-6">
