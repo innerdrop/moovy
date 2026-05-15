@@ -44,6 +44,7 @@ _(ningún importante abierto al cierre del sprint del 2026-04-30)_
 | Issue | Rama | Resumen |
 |---|---|---|
 | (smoke2-2A) | `fix/driver-acceso-panel-post-registro` | BUG CRÍTICO funcional: post-registro el driver no tenía botón al panel y quedaba "esperando aprobación imposible" — sin acceso al perfil no podía cargar la documentación, sin documentación nunca lo aprobaban. Loop muerto que rompía el onboarding. Fix: botón "Cargar mi documentación" en step 4 del registro + en `/repartidor/pendiente-aprobacion`. Lleva a `/repartidor` que redirige a login y de ahí al dashboard. La protección de "no aceptar pedidos sin aprobación" sigue funcionando como antes. |
+| (smoke2-modal-rating) | `fix/modal-calificacion-tapado-por-bottomnav` | BUG CRÍTICO funcional: el modal post-entrega de calificación no mostraba el footer con los botones "Calificar después" / "Enviar y cerrar" porque el BottomNav fijo (z-50) tapaba el footer del modal (que usaba items-end + max-h-92vh en mobile). Sin esos botones la calificación NO se podía guardar — el usuario solo podía cerrar el modal con la X sin persistir nada. Fix en `PostDeliveryRatingModal.tsx`: z-[60]→z-[100], items-end sm:items-center→items-center siempre, max-h-92vh→max-h-85vh, animación fade-in zoom-in-95 en vez de slide-in-from-bottom. |
 
 ---
 

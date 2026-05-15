@@ -207,7 +207,7 @@ export default function PostDeliveryRatingModal({
     // Pantalla de exito (igual estilo que los modales individuales)
     if (success) {
         return (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
                 <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Check className="w-8 h-8 text-green-600" />
@@ -219,9 +219,20 @@ export default function PostDeliveryRatingModal({
         );
     }
 
+    // fix/modal-calificacion-tapado-por-bottomnav (2026-05-13): el BottomNav del
+    // layout (z-50, fixed bottom-0) estaba tapando el footer del modal cuando el
+    // modal usaba items-end + max-h-[92vh] en mobile. El footer quedaba donde
+    // aparece el BottomNav y aunque z-[60] del modal era mayor, por stacking
+    // context el BottomNav se renderizaba arriba, ocultando los botones
+    // "Calificar despues" / "Enviar y cerrar". Sin esos botones la calificacion
+    // no se podia guardar.
+    //
+    // Fix: subir a z-[100], centrar el modal siempre (sin items-end mobile),
+    // bajar max-h a 85vh para dejar margen arriba y abajo. Patron estandar de
+    // modales sobre apps con bottom nav.
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[92vh] flex flex-col animate-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
                     <div>

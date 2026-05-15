@@ -10,6 +10,91 @@
 
 ---
 
+## 2026-05-14 (rama `fix/modal-calificacion-tapado-por-bottomnav`)
+
+fix(modal): footer de calificacion tapado por el BottomNav en mobile
+
+BUG CRITICO detectado en el 2do smoke test de produccion (Mauro paso
+captura del flujo en mobile). El modal post-entrega de calificacion
+(PostDeliveryRatingModal) NO mostraba el footer con los botones
+"Calificar despues" y "Enviar y cerrar" en mobile. El usuario solo
+podia cerrar el modal con la X arriba a la derecha, lo que cerraba el
+modal SIN persistir la calificacion.
+
+Resultado: ninguna calificacion generada en mobile se guardaba realmente.
+Todo el sistema de ratings + reseñas publicas que armamos en las ramas
+anteriores (feat/propinas-y-ratings-post-entrega + feat/resenas-publicas-tienda)
+quedaba inutilizable en produccion mobile, que es ~95% del trafico esperado.
+
+CAUSA:
+
+El componente PostDeliveryRatingModal.tsx estaba construido como bottom
+sheet en mobile + dialog centrado en desktop:
+
+  className="fixed inset-0 ... flex items-end sm:items-center
+             justify-center z-[60] p-0 sm:p-4 ..."
+  className="... rounded-t-2xl sm:rounded-2xl ... max-h-[92vh]
+             flex flex-col animate-in slide-in-from-bottom-2 ..."
+
+En mobile (< 640px) el modal se pegaba al borde inferior con items-end
+y ocupaba 92vh. El BottomNav del layout (BottomNav.tsx linea 65) tiene:
+
+  className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t..."
+
+es decir z-50, opaco, posicion fija al borde inferior. Aunque el modal
+tenia z-[60], por algun stacking context (probablemente alguno de los
+parents del BottomNav crea un contexto propio con transform/opacity),
+el BottomNav se renderizaba VISUALMENTE arriba del footer del modal —
+tapando justo los botones de submit.
+
+En desktop el modal funcionaba bien porque items-center lo centraba y
+el BottomNav esta oculto por `lg:hidden`.
+
+FIX:
+
+Convertir el modal en un dialog centrado clasico en TODAS las
+resoluciones, para no superponerse nunca con el BottomNav.
+
+CAMBIOS (1 archivo, 2 ediciones):
+
+1) src/components/orders/PostDeliveryRatingModal.tsx
+   - Pantalla de exito (overlay del success state):
+       z-[60] -> z-[100]
+   - Pantalla principal del modal:
+       z-[60] -> z-[100]                          (mucho headroom z-index)
+       items-end sm:items-center -> items-center  (centrado siempre)
+       p-0 sm:p-4 -> p-4                          (padding siempre)
+       rounded-t-2xl sm:rounded-2xl -> rounded-2xl (full rounded)
+       max-h-[92vh] -> max-h-[85vh]               (deja margen arriba/abajo)
+       slide-in-from-bottom-2 -> fade-in zoom-in-95 (animacion centrada)
+       w-full sm:max-w-md -> w-full max-w-md      (mismo cap en mobile)
+   - Comentario extenso explicando el bug + la decision de centrar.
+
+QUE NO CAMBIA:
+- Logica de envio del formulario, validaciones, fetches a los endpoints
+  de rating y propina: cero cambios. Solo posicionamiento visual.
+- Pantalla de exito y todos los textos/labels: igual.
+- Endpoints, schema, otros componentes: nada.
+
+VERIFICACION POST-DEPLOY:
+1) Hacer un pedido en staging hasta DELIVERED.
+2) Esperar 30s post-entrega y ver el modal aparecer.
+3) Verificar en mobile (DevTools responsive 380px iPhone): el modal
+   se centra y el footer con "Calificar despues" / "Enviar y cerrar"
+   queda visible arriba del BottomNav (no superpuesto).
+4) Calificar comercio + driver con estrellas, dejar comentario y
+   submit "Enviar y cerrar". Verificar que se guarda en la DB.
+5) En desktop (lg+): el modal sigue funcionando igual que antes.
+
+NOTA POST-MORTEM (lesson learned):
+Cuando hay un BottomNav fijo (z-50, bg opaco), los modales deben:
+- Tener z-index MUY por encima (z-[100]+).
+- NO usar items-end ni max-h cercano a 100vh en mobile.
+- O alternativamente, ocultar el BottomNav cuando el modal esta abierto.
+Aplica a futuros modales / bottom sheets que se construyan.
+
+**Archivos:** ISSUES.md, src/components/orders/PostDeliveryRatingModal.tsx
+
 ## 2026-05-14 (rama `fix/driver-acceso-panel-post-registro`)
 
 fix(driver): boton al panel post-registro para que el driver pueda cargar docs
