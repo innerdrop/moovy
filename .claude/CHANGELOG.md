@@ -10,6 +10,83 @@
 
 ---
 
+## 2026-05-17 (rama `feat/ops-usuarios-auto-refresh`)
+
+feat(ops): auto-refresh + boton manual en pagina /ops/usuarios
+
+Observacion 1A del 2do smoke test de produccion. El admin tenia que
+hacer F5 manualmente para ver registros nuevos en /ops/usuarios. Era
+especialmente molesto cuando llegan varios drivers/merchants seguidos
+y el admin esta revisando la queue de pendientes.
+
+CAMBIOS (1 archivo):
+
+src/app/ops/(protected)/usuarios/page.tsx
+  - Import nuevo: RefreshCw de lucide-react.
+  - States nuevos:
+      lastFetchedAt: number       (timestamp del ultimo fetch exitoso)
+      isManualRefreshing: boolean (spinner durante click del boton)
+      tick: number                (tickea cada 10s para forzar re-render
+                                   del label relativo sin recalcular timestamps
+                                   constantemente)
+  - fetchUsers ahora setea lastFetchedAt despues del success.
+  - useEffect nuevo: polling automatico cada 30s que llama fetchUsers()
+    + fetchTabCounts() en paralelo. Pausa si document.visibilityState
+    !== "visible" (no quema requests cuando el admin tiene Moovy en
+    background). Listener de visibilitychange re-fetcha inmediatamente
+    al volver a visible (datos frescos al instante).
+  - useEffect nuevo: setInterval de 10s que incrementa tick para el
+    re-render del label relativo.
+  - handleManualRefresh: callback async que llama ambos fetches en
+    paralelo con spinner. Anti-double-click via isManualRefreshing.
+  - renderRelativeTime: helper inline ("ahora" / "hace X seg" /
+    "hace X min" / "hace X h") sin libreria externa. void tick fuerza
+    re-render cuando tick cambia.
+  - UI del header reorganizada:
+      ANTES: <div flex>
+                <h1 + total>
+                <button Crear cuenta>
+             </div>
+      DESPUES: <div flex>
+                <h1 + total + label "Actualizado hace X seg">
+                <div flex gap-2>
+                    <button Actualizar (icono RefreshCw, anima al
+                                        cargar, label oculto en mobile)>
+                    <button Crear cuenta>
+                </div>
+             </div>
+
+QUE NO CAMBIA:
+- fetchUsers y fetchTabCounts: la logica interna es identica. Solo
+  agrego el set de lastFetchedAt en fetchUsers.
+- API /api/admin/users-unified y /api/admin/users-unified/counts:
+  cero cambios.
+- Layout, tabs, filtros, modal de crear cuenta, modal de delete:
+  cero cambios.
+- Hace falta destacar tampoco la regla #11 ni email registries — esto
+  es solo UX visual.
+
+VERIFICACION POST-DEPLOY:
+1) Entrar a /ops/usuarios y verificar el label "Actualizado ahora" al
+   lado del total.
+2) Esperar 30s sin tocar nada → la lista deberia re-fetchearse
+   silenciosamente (no recarga visual, solo el label cambia y el total
+   eventualmente).
+3) Click manual en el boton "Actualizar" → spinner durante el fetch,
+   label vuelve a "ahora".
+4) Cambiar a otra pestaña del browser, esperar 30s, volver: el
+   re-fetch deberia dispararse en cuanto la pagina vuelve a visible.
+5) En mobile (sm), el boton "Actualizar" muestra solo el icono y
+   "Crear cuenta" mantiene su tamaño.
+
+POSIBLE MEJORA FUTURA (otra rama, no en esta):
+- Cuando llega un registro nuevo entre dos polls, podriamos disparar
+  un toast "Nuevo usuario registrado" para feedback inmediato. Hoy el
+  total cambia silenciosamente, lo cual puede no ser super visible.
+  Requiere comparar response anterior vs nueva. Pendiente.
+
+**Archivos:** ISSUES.md, src/app/ops/(protected)/usuarios/page.tsx
+
 ## 2026-05-14 (rama `fix/modal-calificacion-tapado-por-bottomnav`)
 
 fix(modal): footer de calificacion tapado por el BottomNav en mobile

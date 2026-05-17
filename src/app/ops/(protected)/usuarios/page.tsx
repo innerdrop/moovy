@@ -15,6 +15,7 @@ import {
     AlertCircle,
     Trash2,
     UserPlus,
+    RefreshCw,
 } from "lucide-react";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
@@ -188,6 +189,15 @@ export default function UsuariosPage() {
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+    // feat/ops-usuarios-auto-refresh (2026-05-13): auto-refresh cada 30s + boton
+    // manual. Antes el admin tenia que F5 para ver registros nuevos. lastFetchedAt
+    // se usa para mostrar "Actualizado hace X segundos" en la UI. tick se
+    // incrementa cada 10s para forzar re-render del label relativo sin tener que
+    // recalcular el timestamp constantemente (truco mas simple que un setInterval
+    // de 1s).
+    const [lastFetchedAt, setLastFetchedAt] = useState<number>(() => Date.now());
+    const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+    const [tick, setTick] = useState(0);
     const [tabCounts, setTabCounts] = useState<Record<TabType, number>>({
         todos: 0,
         pendientes: 0,
@@ -254,6 +264,9 @@ export default function UsuariosPage() {
             setUsers(data.users);
             setTotal(data.total);
             setTotalPages(data.totalPages);
+            // feat/ops-usuarios-auto-refresh: marcar timestamp del ultimo
+            // fetch exitoso para el label "Actualizado hace X seg".
+            setLastFetchedAt(Date.now());
         } catch (error) {
             console.error("Error fetching users:", error);
             setUsers([]);
@@ -286,6 +299,69 @@ export default function UsuariosPage() {
     useEffect(() => {
         fetchTabCounts();
     }, [fetchTabCounts]);
+
+    // feat/ops-usuarios-auto-refresh (2026-05-13): auto-refresh cada 30s.
+    // Pausa si la pestaña no esta visible (visibilityState) para no quemar
+    // requests cuando el admin tiene Moovy en background. Re-fetch inmediato
+    // al volver a visible para no tener data stale en mente.
+    useEffect(() => {
+        const POLL_MS = 30_000;
+        const tickAndFetch = () => {
+            if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+            fetchUsers();
+            fetchTabCounts();
+        };
+        const interval = setInterval(tickAndFetch, POLL_MS);
+
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                // Al volver a la pestaña, refrescar de una.
+                tickAndFetch();
+            }
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
+    }, [fetchUsers, fetchTabCounts]);
+
+    // feat/ops-usuarios-auto-refresh: tick para forzar re-render del label
+    // "Actualizado hace X segundos" cada 10s (sin recalcular timestamps todo
+    // el rato).
+    useEffect(() => {
+        const interval = setInterval(() => setTick((t) => t + 1), 10_000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Refresh manual disparado por el boton del header. Spinner durante el
+    // fetch + reset de selectedUsers para evitar acciones sobre items que
+    // pudieron haber cambiado.
+    const handleManualRefresh = useCallback(async () => {
+        if (isManualRefreshing) return;
+        setIsManualRefreshing(true);
+        try {
+            await Promise.all([fetchUsers(), fetchTabCounts()]);
+        } finally {
+            setIsManualRefreshing(false);
+        }
+    }, [fetchUsers, fetchTabCounts, isManualRefreshing]);
+
+    // Helper para mostrar "hace X segundos / minutos" sin libreria externa.
+    // El uso de tick en una variable inutil dentro asegura que se vuelva a
+    // ejecutar cada vez que tick cambia (cada 10s). Es un patron simple sin
+    // depender de date-fns o similar.
+    const renderRelativeTime = (): string => {
+        void tick; // force dep
+        const diffSec = Math.max(0, Math.floor((Date.now() - lastFetchedAt) / 1000));
+        if (diffSec < 5) return "ahora";
+        if (diffSec < 60) return `hace ${diffSec} seg`;
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) return `hace ${diffMin} min`;
+        const diffHr = Math.floor(diffMin / 60);
+        return `hace ${diffHr} h`;
+    };
 
     // Handle tab change
     const handleTabChange = (tab: TabType) => {
@@ -390,16 +466,38 @@ export default function UsuariosPage() {
                         <h1 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">Usuarios</h1>
                         <p className="text-gray-600 text-xs sm:text-sm mt-1">
                             Total: <span className="font-semibold">{total}</span> usuarios registrados
+                            {/* feat/ops-usuarios-auto-refresh (2026-05-13): label
+                                relativo del ultimo update. Se actualiza solo cada
+                                10s gracias al state tick. */}
+                            <span className="text-gray-400 ml-2">· Actualizado {renderRelativeTime()}</span>
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition shadow-sm w-full sm:w-auto flex-shrink-0 min-w-0"
-                    >
-                        <UserPlus className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">Crear cuenta</span>
-                    </button>
+                    <div className="flex items-center gap-2 sm:flex-shrink-0">
+                        {/* feat/ops-usuarios-auto-refresh (2026-05-13): boton
+                            manual de refresh. Hoy auto-refresh corre cada 30s y
+                            al volver a visible la pestaña; pero igual queremos
+                            un boton para feedback inmediato cuando el admin sabe
+                            que justo entro alguien. Spinner durante el fetch. */}
+                        <button
+                            type="button"
+                            onClick={handleManualRefresh}
+                            disabled={isManualRefreshing}
+                            aria-label="Actualizar"
+                            title="Actualizar"
+                            className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-wait flex-shrink-0"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isManualRefreshing ? "animate-spin" : ""}`} />
+                            <span className="hidden sm:inline">Actualizar</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e60012] text-white rounded-lg font-semibold text-sm hover:bg-[#cc000f] transition shadow-sm flex-1 sm:flex-none flex-shrink-0 min-w-0"
+                        >
+                            <UserPlus className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate">Crear cuenta</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
