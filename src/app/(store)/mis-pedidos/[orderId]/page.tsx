@@ -694,7 +694,10 @@ export default function OrderDetailPage() {
                                         <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-2.5">
                                             <Truck className="w-3.5 h-3.5 text-green-500" />
                                             <span className="text-xs font-medium text-gray-700">{soDriver.user.name}</span>
-                                            {soDriver.user.phone && (
+                                            {/* fix/contacto-modal-soporte (2026-05-13): solo mientras el
+                                                pedido este activo (no DELIVERED ni CANCELLED). Una vez
+                                                entregado no tiene sentido seguir teniendo contacto. */}
+                                            {soDriver.user.phone && isActive && (
                                                 <a href={`tel:${soDriver.user.phone}`} className="ml-auto text-xs text-green-600 font-semibold hover:underline">
                                                     Llamar
                                                 </a>
@@ -774,7 +777,10 @@ export default function OrderDetailPage() {
                                         <span className="text-xs font-bold text-gray-700">{order.merchantRating}</span>
                                     </div>
                                 )}
-                                {order.merchant.phone && (
+                                {/* fix/contacto-modal-soporte (2026-05-13): solo mientras
+                                    el pedido este activo. Post-DELIVERED el contacto
+                                    al comercio no aplica. */}
+                                {order.merchant.phone && isActive && (
                                     <a href={`tel:${order.merchant.phone}`} className="w-9 h-9 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center justify-center text-white transition active:scale-95">
                                         <Phone className="w-4 h-4" />
                                     </a>
@@ -878,7 +884,9 @@ export default function OrderDetailPage() {
                                     <span className="text-xs font-bold text-gray-700">{order.driverRating}</span>
                                 </div>
                             ) : null}
-                            {order.driver.user.phone && (
+                            {/* fix/contacto-modal-soporte (2026-05-13): solo mientras
+                                el pedido este activo (no DELIVERED/CANCELLED). */}
+                            {order.driver.user.phone && isActive && (
                                 <a href={`tel:${order.driver.user.phone}`} className="w-9 h-9 bg-green-500 hover:bg-green-600 rounded-lg flex items-center justify-center text-white transition active:scale-95">
                                     <Phone className="w-4 h-4" />
                                 </a>

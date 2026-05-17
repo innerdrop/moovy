@@ -451,6 +451,27 @@ export default function PinKeypad({
                         ? "Sin este PIN no podés marcar el pedido como retirado."
                         : "Sin este PIN no podés marcar el pedido como entregado."}
                 </p>
+
+                {/* fix/contacto-modal-soporte (2026-05-13): boton de soporte
+                    SIEMPRE visible (no solo despues de un OUT_OF_GEOFENCE).
+                    Permite al driver pedir ayuda proactivamente — ej: el
+                    comercio no le dicta bien el PIN, hay problema con el
+                    pedido, no encuentra la direccion. orderId opcional —
+                    si no esta cargado igual se permite WhatsApp (pero no
+                    el reporte interno porque requiere orderId). */}
+                {orderId && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10 flex flex-col gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowReportModal(true)}
+                            disabled={submitting}
+                            className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-amber-700 dark:hover:text-amber-400 transition disabled:opacity-50"
+                        >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                            ¿Tenés problemas? Hablá con soporte
+                        </button>
+                    </div>
+                )}
             </div>
 
             <style jsx>{`

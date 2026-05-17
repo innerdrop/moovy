@@ -10,6 +10,141 @@
 
 ---
 
+## 2026-05-17 (rama `fix/contacto-modal-soporte`)
+
+fix: 3 fixes en mis-pedidos + PinKeypad + modal calificacion
+
+Rama unificada con 3 fixes relacionados al contacto/soporte durante y
+post entrega, mas el BUG CRITICO del modal de calificacion que estaba
+impidiendo guardar reviews en mobile (las reseñas que el buyer rellenaba
+NO se persistian).
+
+═══════════════════════════════════════════════════════════════════════
+FIX 1 — BUG CRITICO: Modal de calificacion no se podia guardar en mobile
+═══════════════════════════════════════════════════════════════════════
+
+Mauro reporto que la pantalla de calificacion reaparece cada vez que
+abre el pedido en el historial, lo que indica que NUNCA se guardaba.
+
+DIAGNOSTICO: el footer del PostDeliveryRatingModal (con los botones
+"Calificar despues" y "Enviar y cerrar") quedaba VISUALMENTE TAPADO por
+el BottomNav del layout, aunque el modal tuviera z-[100] y el BottomNav
+z-50. Razon probable: algun stacking context del layout (transform,
+opacity, o filter en un parent) hacia que el z-index del BottomNav
+ganara contra el del modal.
+
+Resultado: el buyer rellenaba estrellas y comentarios, intentaba clickear
+"Enviar" pero el boton estaba oculto, terminaba cerrando con la X.
+La X dispara onPostpone (NO submit), entonces nada se persistia. Al
+volver al pedido, needsMerchantRating/needsDriverRating seguian true y
+el modal reaparecia.
+
+FIX DEFINITIVO:
+- Regla CSS global en globals.css:
+    body.modal-hides-bottom-nav nav.fixed.bottom-0 { display: none !important }
+- El modal aplica esa class al <body> en su useEffect de mount y la
+  remueve al unmount.
+- Plus: z-[100] → z-[200] (mucho headroom).
+- Plus: max-h-[85vh] → max-h-[80vh] (un poquito mas de margen al fondo).
+
+Con esto el BottomNav LITERALMENTE no se renderiza mientras el modal
+esta abierto, asi que es imposible que tape nada. Es el patron robusto
+estandar para modales sobre apps con bottom nav.
+
+═══════════════════════════════════════════════════════════════════════
+FIX 2 — Botones de telefono ocultos post-DELIVERED
+═══════════════════════════════════════════════════════════════════════
+
+Mauro pidio que el buyer NO pueda contactarse con comercio ni driver
+una vez entregado el pedido. El chat ya se ocultaba automaticamente
+(estaba controlado por isActive = !["DELIVERED", "CANCELLED"]). Lo que
+faltaba eran los botones tel: en 3 lugares de
+/mis-pedidos/[orderId]/page.tsx:
+- Linea ~697: telefono del driver dentro del bloque multi-vendor SubOrder
+- Linea ~777: telefono del merchant (boton azul redondo con icono Phone)
+- Linea ~881: telefono del driver (boton verde redondo con icono Phone)
+
+Los 3 envueltos con && isActive. Comentario explicativo agregado al lado
+de cada uno.
+
+═══════════════════════════════════════════════════════════════════════
+FIX 3 — Boton "Soporte" siempre visible en PinKeypad
+═══════════════════════════════════════════════════════════════════════
+
+Mauro pidio que el driver pueda contactar a soporte mientras esta
+ingresando el PIN, sin tener que esperar a fallar por OUT_OF_GEOFENCE.
+La rama feat/driver-soporte-gps-bloqueado anterior agrego botones de
+soporte SOLO dentro del banner de error de geofence — no eran visibles
+en el estado normal.
+
+FIX: agregar boton discreto "¿Tenés problemas? Hablá con soporte" debajo
+del keypad, separado por un borde superior. Visible SIEMPRE mientras el
+modal del PIN este abierto (cuando hay orderId). Reusa la logica
+existente (setShowReportModal abre el mismo sub-modal de reporte que ya
+teniamos — con textarea + boton "Enviar reporte" + opcion WhatsApp).
+
+CAMBIOS (4 archivos):
+
+1) src/app/globals.css
+   - Regla CSS nueva al final: body.modal-hides-bottom-nav
+     nav.fixed.bottom-0 { display: none !important }
+   - Comentario explicativo del patron.
+
+2) src/components/orders/PostDeliveryRatingModal.tsx
+   - useEffect del body scroll lock extendido: ademas agrega/remueve la
+     class "modal-hides-bottom-nav" al <body>.
+   - z-[100] → z-[200] (en 2 lugares: success screen + modal principal).
+   - max-h-[85vh] → max-h-[80vh] en el modal principal.
+
+3) src/app/(store)/mis-pedidos/[orderId]/page.tsx
+   - 3 botones tel: envueltos con && isActive.
+   - Comentario inline en cada uno.
+
+4) src/components/rider/PinKeypad.tsx
+   - Despues del parrafo de ayuda "Sin este PIN no podes...", agregar
+     bloque con border-t y boton discreto "¿Tenes problemas? Habla con
+     soporte" que dispara setShowReportModal(true). Solo si orderId
+     esta definido (orden + sub-modal de reporte ya existian).
+
+QUE NO CAMBIA:
+- Schema, endpoints, validaciones, audit log: cero cambios.
+- El chat con comercio/driver/seller post-DELIVERED ya estaba oculto
+  (isActive). No se toca.
+- El sub-modal de reporte que abre el boton de soporte es exactamente
+  el mismo que ya existia (showReportModal state).
+- Estilos y branding del modal de calificacion: igual, solo cambia el
+  z-index y max-h.
+
+VERIFICACION POST-DEPLOY:
+
+Modal calificacion:
+1) Hacer un pedido nuevo en staging, llevarlo a DELIVERED.
+2) Esperar 30s, ver aparecer el modal.
+3) En mobile (DevTools responsive 380px): verificar que el BottomNav
+   NO se ve mientras el modal esta abierto.
+4) Verificar que el footer con "Calificar despues" + "Enviar y cerrar"
+   esta visible y se puede tocar.
+5) Rellenar estrellas + comentarios, click "Enviar y cerrar" → pantalla
+   verde "Gracias", modal se cierra.
+6) Volver al pedido → modal NO reaparece (ratings ya estan guardados).
+
+Contacto post-entrega:
+1) En el pedido DELIVERED, ir a /mis-pedidos/[id].
+2) Verificar que el botón Phone del comercio NO aparece (era boton azul
+   redondo al lado del nombre).
+3) Idem con el del driver (boton verde redondo).
+4) Idem en multi-vendor con el "Llamar" del driver en cada SubOrder.
+
+Soporte en PIN:
+1) Como driver, intentar marcar PICKED_UP o DELIVERED → se abre el
+   PinKeypad.
+2) Antes de intentar el PIN, debajo del keypad ver el boton
+   "¿Tenes problemas? Habla con soporte".
+3) Click → se abre el sub-modal de reporte (igual al que aparecia tras
+   OUT_OF_GEOFENCE).
+
+**Archivos:** ISSUES.md, src/app/(store)/mis-pedidos/[orderId]/page.tsx, src/app/globals.css, src/components/orders/PostDeliveryRatingModal.tsx, src/components/rider/PinKeypad.tsx
+
 ## 2026-05-17 (rama `feat/email-ops-comment-pending`)
 
 feat(ops): email automatico cuando un comment cae en moderacion PENDING

@@ -1233,3 +1233,14 @@ h4, h5, h6 {
     font-size: 15px;
   }
 }
+
+/* fix/contacto-modal-soporte (2026-05-13): cuando un modal full-screen
+   esta abierto, ocultamos el BottomNav del layout (BottomNav.tsx, fixed
+   bottom-0 z-50). Sin esto, el footer de algunos modales con max-h ~80vh
+   en mobile queda visualmente tapado por el BottomNav aunque el modal
+   tenga z-index superior — bug clasico de stacking contexts. La class
+   "modal-hides-bottom-nav" se aplica al <body> desde el componente del
+   modal en su useEffect y se remueve al cerrar. */
+body.modal-hides-bottom-nav nav.fixed.bottom-0 {
+  display: none !important;
+}
