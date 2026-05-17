@@ -42,6 +42,7 @@ import {
     GitBranch,
     Wallet,
     ClipboardCheck,
+    ToggleRight,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -128,6 +129,9 @@ const navSections: NavSection[] = [
         items: [
             { href: "/ops/analytics", icon: BarChart3, label: "Analytics" },
             { href: "/ops/configuracion", icon: Settings, label: "Configuración" },
+            // feat/feature-flags-ops (2026-05-13): toggles para activar/desactivar
+            // features sin redeploy (publicidad, paquetes, marketplace, etc.).
+            { href: "/ops/feature-flags", icon: ToggleRight, label: "Feature Flags" },
             { href: "/ops/configuracion-logistica", icon: Truck, label: "Logística" },
             { href: "/ops/zonas-excluidas", icon: MapPin, label: "Zonas Excluidas" },
             { href: "/ops/zonas-delivery", icon: MapPin, label: "Zonas Delivery" },

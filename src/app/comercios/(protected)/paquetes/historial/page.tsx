@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 import {
     Clock, CheckCircle2, XCircle, Package, Loader2,
     ChevronLeft, ShoppingBag, ArrowRight, AlertCircle
@@ -38,6 +39,20 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function PurchaseHistoryPage() {
+    return (
+        <FeatureFlagGuard
+            flag="merchant.paquetes"
+            backHref="/comercios"
+            backLabel="Volver al panel"
+            title="Paquetes B2B — disponible próximamente"
+            description="Te avisaremos cuando puedas adquirir paquetes."
+        >
+            <PurchaseHistoryPageInner />
+        </FeatureFlagGuard>
+    );
+}
+
+function PurchaseHistoryPageInner() {
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const [stats, setStats] = useState({ totalPurchases: 0, totalSpent: 0, totalImported: 0, pendingPayments: 0 });
     const [loading, setLoading] = useState(true);

@@ -10,6 +10,188 @@
 
 ---
 
+## 2026-05-17 (rama `feat/feature-flags-ops`)
+
+feat(ops): sistema de feature flags para activar/desactivar features sin redeploy
+
+Observacion 1B del 2do smoke test. CEO pidio poder activar/desactivar
+opciones en los paneles de comercio/vendedor sin tocar codigo, para
+ocultar features incompletas (publicidad, paquetes B2B) hasta que esten
+listas. Despues del analisis, el alcance se amplio a 8 flags totales
+cubriendo MERCHANT, SELLER y BUYER para tener control completo
+pre-launch sobre features experimentales o incompletas.
+
+SCHEMA NUEVO (1 migrate via prisma db push):
+
+  model FeatureFlag {
+      id, key (unique), label, description, scope,
+      isActive (default false), createdAt, updatedAt,
+      lastToggledByUserId, lastToggledAt
+  }
+  Indices: scope, isActive.
+
+8 FLAGS INICIALES (todos default false, seedeados al correr el script):
+
+  MERCHANT:
+    - merchant.publicidad         (Publicidad para destacar productos)
+    - merchant.paquetes           (Paquetes B2B)
+    - merchant.tracking-en-vivo   (Tracking del driver en panel comercio)
+  SELLER:
+    - seller.paquetes             (Paquetes para vendedores marketplace)
+  BUYER:
+    - buyer.marketplace           (Marketplace entre vecinos)
+    - buyer.scheduled-delivery    (Pedidos programados)
+    - buyer.cash-payment          (Pago en efectivo)
+    - buyer.puntos-moover         (Sistema de puntos MOOVER)
+
+ARCHIVOS (16 archivos creados/modificados):
+
+A) FUNDACION:
+
+1) prisma/schema.prisma
+   - Modelo FeatureFlag agregado al final.
+
+2) src/lib/feature-flags.ts (NUEVO)
+   - Constantes FEATURE_FLAGS con las 8 keys canonicas.
+   - isFeatureEnabled(key) con cache in-memory 30s.
+   - getFeatureFlags(keys[]) para lecturas en paralelo.
+   - clearFeatureFlagCache() para invalidacion manual.
+   - Defaults conservadores: si la query falla o el flag no existe,
+     devuelve false (esconde la feature).
+
+3) src/hooks/useFeatureFlags.ts (NUEVO)
+   - Hook cliente con cache module-level + subscribers pattern para
+     que multiples componentes en la misma pagina compartan 1 sola
+     query a /api/features/list.
+   - useFeatureFlag(key): { flag, loading }
+   - useFeatureFlags(keys[]): { flags, loading }
+   - invalidateFeatureFlagsCache() para forzar re-fetch.
+
+4) src/components/shared/FeatureFlagGuard.tsx (NUEVO)
+   - Wrapper para envolver paginas/secciones enteras. Muestra spinner
+     durante loading y "Feature no disponible todavía" cuando el flag
+     esta OFF, con boton para volver.
+
+B) ENDPOINTS:
+
+5) src/app/api/features/list/route.ts (NUEVO)
+   - GET publico (sin auth). Devuelve { flags: { key: boolean } }.
+   - Filtro opcional ?scope=MERCHANT|SELLER|BUYER|GLOBAL.
+
+6) src/app/api/admin/features/route.ts (NUEVO)
+   - GET admin. Devuelve flags completos (label, description,
+     lastToggledBy enriquecido con datos del User).
+
+7) src/app/api/admin/features/[key]/route.ts (NUEVO)
+   - GET admin: 1 flag por key.
+   - PATCH admin: { isActive: bool }. Audit log + invalida cache
+     server. Idempotente (no-op si ya esta en el estado pedido).
+
+C) UI OPS:
+
+8) src/app/ops/(protected)/feature-flags/page.tsx (NUEVO)
+   - Lista de flags agrupados por scope con toggle visual, descripcion,
+     label, key (codigo), badge active/inactive, ultima modificacion.
+   - Toggle inline con spinner durante el PATCH + toast de feedback.
+
+9) src/components/ops/OpsSidebar.tsx
+   - Item nuevo "Feature Flags" en seccion Sistema. Icono ToggleRight.
+
+D) SEED:
+
+10) scripts/seed-feature-flags.ts (NUEVO)
+    - Idempotente: upsert por key. Si el flag ya existe, preserva
+      isActive (no resetea) y solo actualiza label/description/scope si
+      cambiaron.
+    - Para correr: npx tsx scripts/seed-feature-flags.ts
+
+E) INTEGRACIONES — MERCHANT:
+
+11) src/components/comercios/MobileMoreMenu.tsx
+    - Items "Paquetes" y "Publicidad" con requiresFlag.
+    - useFeatureFlags filtra el array de items visibles antes de render.
+
+12) src/app/comercios/(protected)/publicidad/page.tsx
+    - export default wrapper con <FeatureFlagGuard flag="merchant.publicidad">.
+    - Componente interno renombrado a PublicidadPageInner.
+
+13) src/app/comercios/(protected)/adquirir-paquetes/page.tsx
+    - Mismo patron con "merchant.paquetes".
+
+14) src/app/comercios/(protected)/paquetes/historial/page.tsx
+    - Mismo patron con "merchant.paquetes".
+
+F) INTEGRACIONES — BUYER:
+
+15) src/components/layout/BottomNav.tsx
+    - Items "Marketplace" y "MOOVER" (puntos) construidos
+      condicionalmente segun flags buyer.marketplace y buyer.puntos-moover.
+    - Si MOOVER esta OFF, el centro del BottomNav queda libre y los
+      otros items se redistribuyen.
+
+16) src/app/(store)/marketplace/page.tsx
+    - Wrapper con FeatureFlagGuard "buyer.marketplace".
+
+17) src/app/(store)/puntos/page.tsx
+    - Wrapper con FeatureFlagGuard "buyer.puntos-moover".
+
+18) src/app/moover/page.tsx
+    - Wrapper con FeatureFlagGuard "buyer.puntos-moover".
+
+19) src/app/(store)/checkout/page.tsx
+    - useFeatureFlags para buyer.cash-payment y buyer.scheduled-delivery.
+    - Opcion "Pago en efectivo" se oculta cuando flag OFF.
+    - Si user tenia "cash" seleccionado y el flag se apaga, se cambia
+      automaticamente a mercadopago via useEffect.
+    - Toggle "Inmediata vs Programada" se oculta cuando scheduled-delivery
+      esta OFF. Si user tenia SCHEDULED, vuelve a IMMEDIATE.
+
+FLAGS QUE QUEDAN "PREPARADOS" (sin UI a tocar todavia):
+- merchant.tracking-en-vivo: el comercio aun no tiene UI especifica de
+  tracking en vivo del driver (es feature a futuro). El flag existe en
+  DB y endpoint, listo para conectar cuando se implemente la UI.
+- seller.paquetes: idem, no hay UI especifica de paquetes para sellers.
+
+QUE NO CAMBIA:
+- Los endpoints de las features (ej: /api/merchant/ad-placements,
+  /api/merchant/packages/*) NO se tocan. Si alguien llega por API
+  directa con el flag OFF, sigue funcionando. La proteccion es a nivel
+  UI (esconder el feature al usuario), no a nivel API. Eso es deliberado:
+  los flags son toggles de UX, no security gates.
+- Si querés hacerlos "hard gates" a nivel API en el futuro, se agrega
+  un middleware isFeatureEnabled() en los endpoints. Pero por ahora
+  no hace falta.
+
+PASOS POST-MERGE (IMPORTANTES — orden):
+
+  1. npx prisma db push                           (crea tabla FeatureFlag)
+  2. npx tsx scripts/seed-feature-flags.ts        (seed 8 flags OFF)
+  3. .\scripts\finish.ps1                         (tsc + commit)
+
+VERIFICACION POST-DEPLOY:
+
+  - Entrar a /ops/feature-flags como admin -> ver 8 flags listados,
+    todos en OFF.
+  - Activar merchant.publicidad -> entrar como comercio -> ver item
+    "Publicidad" en el menu mas.
+  - Desactivar buyer.marketplace -> entrar como buyer mobile -> el
+    BottomNav NO muestra item Marketplace.
+  - Idem con cada flag en su contexto.
+  - Verificar audit log: cada toggle queda registrado con FEATURE_FLAG_TOGGLED.
+
+EXTENSIONES FUTURAS (otras ramas):
+- Conectar merchant.tracking-en-vivo cuando se implemente el mapa en
+  el panel del comercio.
+- Conectar seller.paquetes cuando se implemente la UI.
+- A/B testing: si quisieramos features con rollout gradual (10%, 25%,
+  50%, 100%), agregar columna `rolloutPercentage` y logica de hash en
+  el helper.
+- Per-user overrides para QA: agregar tabla
+  `FeatureFlagUserOverride { userId, flagKey, isActive }` para que QA
+  pueda probar features sin afectar produccion.
+
+**Archivos:** ISSUES.md, prisma/schema.prisma, scripts/seed-feature-flags.ts, src/app/(store)/checkout/page.tsx, src/app/(store)/marketplace/page.tsx, src/app/(store)/puntos/page.tsx, src/app/api/admin/features/[key]/route.ts, src/app/api/admin/features/route.ts (+12 mas)
+
 ## 2026-05-17 (rama `feat/driver-soporte-gps-bloqueado`)
 
 feat(driver): escalamiento a soporte cuando el GPS bloquea la validacion del PIN

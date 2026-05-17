@@ -28,6 +28,7 @@ import {
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import TimeSlotPicker, { type VendorSchedule } from "@/components/checkout/TimeSlotPicker";
 import { toast } from "@/store/toast";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface DeliveryResult {
     distanceKm: number;
@@ -85,11 +86,38 @@ export default function CheckoutPage() {
     // disponibles para el pre-banner del checkout. 0 → rojo, 1 → amarillo, 2+ → ok.
     const [availableDrivers, setAvailableDrivers] = useState<number>(2); // default optimista mientras carga
     const [estimatedWaitMinutes, setEstimatedWaitMinutes] = useState<number | null>(null);
+    // feat/feature-flags-ops (2026-05-13): si buyer.cash-payment esta OFF,
+    // ocultamos la opcion efectivo y forzamos mercadopago como default.
+    // Si buyer.scheduled-delivery esta OFF, ocultamos la opcion de "programado"
+    // y forzamos IMMEDIATE.
+    const { flags: featureFlags } = useFeatureFlags(["buyer.cash-payment", "buyer.scheduled-delivery"]);
+    const allowCashPayment = featureFlags["buyer.cash-payment"];
+    const allowScheduledDelivery = featureFlags["buyer.scheduled-delivery"];
+
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
+
+    // Si el flag cambia mientras el user esta en el checkout y tenia "cash"
+    // seleccionado, lo movemos a mercadopago automaticamente para evitar que
+    // submita con un metodo inactivo.
+    useEffect(() => {
+        if (!allowCashPayment && paymentMethod === "cash") {
+            setPaymentMethod("mercadopago");
+        }
+    }, [allowCashPayment, paymentMethod]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deliveryType, setDeliveryType] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
     const [scheduledSlotStart, setScheduledSlotStart] = useState<string | undefined>();
     const [scheduledSlotEnd, setScheduledSlotEnd] = useState<string | undefined>();
+
+    // Si scheduled-delivery se apaga mientras el user tenia SCHEDULED, volver
+    // a IMMEDIATE para que el submit no falle.
+    useEffect(() => {
+        if (!allowScheduledDelivery && deliveryType === "SCHEDULED") {
+            setDeliveryType("IMMEDIATE");
+            setScheduledSlotStart(undefined);
+            setScheduledSlotEnd(undefined);
+        }
+    }, [allowScheduledDelivery, deliveryType]);
     const [geoLoading, setGeoLoading] = useState(false);
 
     // Get primary merchantId for delivery calc (first merchant group, if any)
@@ -1050,7 +1078,12 @@ export default function CheckoutPage() {
                                         vive en el paso Entrega — es una decisión del "cuándo"
                                         de la entrega, no del pago. Antes estaba mezclado con
                                         método de pago en el último paso. */}
-                                    {deliveryMethod === "home" && (
+                                    {/* feat/feature-flags-ops: el toggle "Inmediata vs Programada"
+                                        solo se muestra si buyer.scheduled-delivery esta ON.
+                                        Cuando esta OFF, el deliveryType queda hardcoded en
+                                        IMMEDIATE (setteado por el state inicial) y el bloque
+                                        completo se oculta. */}
+                                    {deliveryMethod === "home" && allowScheduledDelivery && (
                                         <div className="mt-6 lg:mt-8 pt-6 border-t border-gray-100">
                                             <h3 className="text-sm lg:text-base font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
                                                 <Calendar className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -1168,21 +1201,24 @@ export default function CheckoutPage() {
                                     </div>
 
                                     <div className="space-y-3 lg:space-y-4">
-                                        <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
-                                            }`}>
-                                            <input
-                                                type="radio"
-                                                name="payment"
-                                                value="cash"
-                                                checked={paymentMethod === "cash"}
-                                                onChange={() => setPaymentMethod("cash")}
-                                                className="sr-only"
-                                            />
-                                            <div className="flex-1">
-                                                <span className="font-semibold lg:text-lg">💵 Efectivo</span>
-                                                <p className="text-sm lg:text-base text-gray-600">Pagás al recibir el pedido</p>
-                                            </div>
-                                        </label>
+                                        {/* feat/feature-flags-ops: efectivo solo si flag ON */}
+                                        {allowCashPayment && (
+                                            <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
+                                                }`}>
+                                                <input
+                                                    type="radio"
+                                                    name="payment"
+                                                    value="cash"
+                                                    checked={paymentMethod === "cash"}
+                                                    onChange={() => setPaymentMethod("cash")}
+                                                    className="sr-only"
+                                                />
+                                                <div className="flex-1">
+                                                    <span className="font-semibold lg:text-lg">💵 Efectivo</span>
+                                                    <p className="text-sm lg:text-base text-gray-600">Pagás al recibir el pedido</p>
+                                                </div>
+                                            </label>
+                                        )}
 
                                         <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
                                             }`}>

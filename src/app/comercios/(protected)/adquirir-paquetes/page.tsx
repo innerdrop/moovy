@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import UploadImage from "@/components/ui/UploadImage";
+import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 import {
     ShoppingBag, Search, Loader2, ChevronLeft, Check,
     ImageIcon, Layers, ArrowRight, Plus, Sparkles,
@@ -48,7 +49,23 @@ interface PricingTier {
 
 type ViewMode = "home" | "catalog" | "category-detail" | "custom-builder" | "manage";
 
+// feat/feature-flags-ops (2026-05-13): wrapper que esconde la pagina si
+// merchant.paquetes esta OFF.
 export default function PackageCatalogPage() {
+    return (
+        <FeatureFlagGuard
+            flag="merchant.paquetes"
+            backHref="/comercios"
+            backLabel="Volver al panel"
+            title="Paquetes B2B — disponible próximamente"
+            description="Estamos coordinando con proveedores los primeros paquetes para tu comercio. Te avisaremos cuando puedas adquirirlos."
+        >
+            <PackageCatalogPageInner />
+        </FeatureFlagGuard>
+    );
+}
+
+function PackageCatalogPageInner() {
     const router = useRouter();
     const [view, setView] = useState<ViewMode>("home");
     const [categories, setCategories] = useState<Category[]>([]);

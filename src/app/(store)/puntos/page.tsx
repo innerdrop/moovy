@@ -7,6 +7,7 @@ import Link from "next/link";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { formatPrice } from "@/lib/delivery";
 import { toast } from "@/store/toast";
+import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 import {
     Gift,
     TrendingUp,
@@ -63,7 +64,24 @@ interface PointsConfigData {
     maxDiscountPercent: number;
 }
 
+// feat/feature-flags-ops (2026-05-13): wrapper que esconde la pagina si
+// buyer.puntos-moover esta OFF. Si en algún momento detectamos un bug en
+// el balance / earn / burn, apagar este flag es la valvula de emergencia.
 export default function PuntosPage() {
+    return (
+        <FeatureFlagGuard
+            flag="buyer.puntos-moover"
+            backHref="/"
+            backLabel="Volver a la tienda"
+            title="Puntos MOOVER — pausado"
+            description="El sistema de puntos no está disponible en este momento. Tu saldo está intacto y vamos a reactivarlo pronto."
+        >
+            <PuntosPageInner />
+        </FeatureFlagGuard>
+    );
+}
+
+function PuntosPageInner() {
     const { data: session, status: authStatus } = useSession();
     const [balance, setBalance] = useState(0);
     const [pointsLifetime, setPointsLifetime] = useState(0);

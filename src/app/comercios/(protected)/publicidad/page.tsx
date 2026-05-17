@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
+import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 
 interface AdPlacement {
   id: string;
@@ -475,7 +476,24 @@ function AccordionItem({
   );
 }
 
+// feat/feature-flags-ops (2026-05-13): wrapper que esconde toda la pagina
+// si el flag merchant.publicidad esta OFF. El admin lo activa desde
+// /ops/feature-flags cuando la feature este lista.
 export default function PublicidadPage() {
+  return (
+    <FeatureFlagGuard
+      flag="merchant.publicidad"
+      backHref="/comercios"
+      backLabel="Volver al panel"
+      title="Publicidad — disponible próximamente"
+      description="Estamos preparando el sistema para destacar tus productos y captar más clientes. Te avisaremos cuando esté activo."
+    >
+      <PublicidadPageInner />
+    </FeatureFlagGuard>
+  );
+}
+
+function PublicidadPageInner() {
   const [data, setData] = useState<Pricing | null>(null);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);

@@ -2118,3 +2118,38 @@ model PayoutItem {
   @@index([batchId])
   @@index([recipientType, recipientId])
 }
+
+// feat/feature-flags-ops (2026-05-13): toggles para activar/desactivar
+// features experimentales o incompletas (publicidad, paquetes B2B,
+// marketplace para buyers, scheduled delivery, efectivo, puntos MOOVER,
+// tracking en vivo del comercio, etc.). El admin los togglea desde
+// /ops/feature-flags sin necesidad de redeploy.
+//
+// scope: agrupa los flags por panel afectado para mostrar mejor en OPS:
+//   MERCHANT — afecta el panel/menu del comercio.
+//   SELLER   — afecta el panel/menu del vendedor marketplace.
+//   BUYER    — afecta el panel/menu del comprador (tienda).
+//   GLOBAL   — afecta toda la plataforma.
+//
+// key: identificador unico tipo "scope.feature" (ej: "merchant.publicidad").
+// El codigo lee los flags por key, asi que NO renombrar keys una vez
+// deployadas — si quisieras renombrar, agregar un flag nuevo y migrar.
+//
+// isActive: default false a proposito — features incompletas se quedan
+// OFF hasta que OPS explicitamente las prenda. Anti-accidente.
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String   // Texto humano para OPS ("Publicidad", "Paquetes B2B")
+  description String?  // Detalle largo para que admin entienda que hace el flag
+  scope       String   // MERCHANT | SELLER | BUYER | GLOBAL
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Audit minimo: quien la prendio/apago la ultima vez (userId admin)
+  lastToggledByUserId String?
+  lastToggledAt       DateTime?
+
+  @@index([scope])
+  @@index([isActive])
+}

@@ -4,11 +4,23 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { MoreHorizontal, X, Store, Megaphone, Star, Settings, Building2 } from "lucide-react";
 import { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
-const moreItems = [
+// feat/feature-flags-ops (2026-05-13): los items "Paquetes" y "Publicidad"
+// estan flag-gated. Si los flags estan OFF, el item NO aparece. Permite
+// ocultar features experimentales/incompletas sin redeploy.
+interface MoreItem {
+    href: string;
+    icon: typeof Store;
+    label: string;
+    /** Flag key requerido para mostrar este item. Si es undefined, siempre se muestra. */
+    requiresFlag?: string;
+}
+
+const moreItems: MoreItem[] = [
     { href: "/comercios/mi-comercio", icon: Building2, label: "Mi Comercio" },
-    { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
-    { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
+    { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes", requiresFlag: "merchant.paquetes" },
+    { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad", requiresFlag: "merchant.publicidad" },
     { href: "/comercios/resenas", icon: Star, label: "Reseñas" },
     // Soporte handled separately
     { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
@@ -17,6 +29,12 @@ const moreItems = [
 export default function MobileMoreMenu() {
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    // feat/feature-flags-ops: leer flags de la lista. Cualquier item que tenga
+    // requiresFlag y el flag este OFF se filtra del menu.
+    const { flags } = useFeatureFlags(["merchant.paquetes", "merchant.publicidad"]);
+    const visibleItems = moreItems.filter(
+        (item) => !item.requiresFlag || flags[item.requiresFlag as keyof typeof flags]
+    );
 
     // Close on outside click
     useEffect(() => {
@@ -65,7 +83,7 @@ export default function MobileMoreMenu() {
                     {/* Menu */}
                     <div className="absolute bottom-full right-0 mb-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                         <div className="py-2">
-                            {moreItems.map((item) => (
+                            {visibleItems.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}

@@ -710,6 +710,26 @@ CREATE TABLE public."Favorite" (
 ALTER TABLE public."Favorite" OWNER TO postgres;
 
 --
+-- Name: FeatureFlag; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."FeatureFlag" (
+    id text NOT NULL,
+    key text NOT NULL,
+    label text NOT NULL,
+    description text,
+    scope text NOT NULL,
+    "isActive" boolean DEFAULT false NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "lastToggledByUserId" text,
+    "lastToggledAt" timestamp(3) without time zone
+);
+
+
+ALTER TABLE public."FeatureFlag" OWNER TO postgres;
+
+--
 -- Name: HeroSlide; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2402,6 +2422,22 @@ COPY public."Favorite" (id, "userId", "merchantId", "productId", "listingId", "c
 
 
 --
+-- Data for Name: FeatureFlag; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."FeatureFlag" (id, key, label, description, scope, "isActive", "createdAt", "updatedAt", "lastToggledByUserId", "lastToggledAt") FROM stdin;
+cmp9w9vu10000hfbsiyk6vgtt	merchant.publicidad	Publicidad	Permite a los comercios pagar por destacar productos o aparecer en banners. Mientras este OFF, el item 'Publicidad' no aparece en el menu del comercio y la pagina /comercios/publicidad redirige al dashboard.	MERCHANT	f	2026-05-17 14:52:52.969	2026-05-17 14:52:52.969	\N	\N
+cmp9w9vuc0001hfbsbacg4brf	merchant.paquetes	Paquetes B2B	Permite a los comercios adquirir paquetes pre-armados de productos (combos de proveedores). Mientras este OFF, los items 'Adquirir paquetes' e 'Historial de paquetes' no aparecen en el menu y las paginas correspondientes redirigen al dashboard.	MERCHANT	f	2026-05-17 14:52:52.981	2026-05-17 14:52:52.981	\N	\N
+cmp9w9vui0002hfbs2bnc7hjm	merchant.tracking-en-vivo	Tracking en vivo del driver	Muestra al comercio el mapa con la ubicacion en tiempo real del repartidor que retiro su pedido. Si esta OFF, el comercio solo ve el estado de texto (DRIVER_ASSIGNED, PICKED_UP, etc.) sin mapa.	MERCHANT	f	2026-05-17 14:52:52.986	2026-05-17 14:52:52.986	\N	\N
+cmp9w9vun0003hfbsdpo0djx1	seller.paquetes	Paquetes para vendedores	Permite a los vendedores del marketplace adquirir paquetes B2B. Mientras este OFF, los items relacionados no aparecen en el menu del vendedor.	SELLER	f	2026-05-17 14:52:52.992	2026-05-17 14:52:52.992	\N	\N
+cmp9w9vuu0004hfbswpp81d5x	buyer.marketplace	Marketplace entre vecinos	Habilita la seccion Marketplace en la tienda (productos vendidos por vecinos, no comercios). Mientras este OFF, el item 'Marketplace' no aparece en el BottomNav del comprador y la pagina /marketplace redirige al inicio.	BUYER	f	2026-05-17 14:52:52.998	2026-05-17 14:52:52.998	\N	\N
+cmp9w9vuz0005hfbs40dh1828	buyer.scheduled-delivery	Pedidos programados	Habilita la opcion de programar entregas a una franja horaria futura (ej: 'entregar entre 20:00 y 21:00'). Mientras este OFF, todos los pedidos son entrega inmediata.	BUYER	f	2026-05-17 14:52:53.003	2026-05-17 14:52:53.003	\N	\N
+cmp9w9vv80006hfbsset0o5kv	buyer.cash-payment	Pago en efectivo	Habilita el pago al driver con efectivo al recibir el pedido. Mientras este OFF, todos los pedidos se pagan online via MercadoPago.	BUYER	f	2026-05-17 14:52:53.013	2026-05-17 14:52:53.013	\N	\N
+cmp9w9vvi0007hfbsvn0iu88p	buyer.puntos-moover	Puntos MOOVER	Habilita el sistema de puntos para compradores (ganar al comprar, canjear al pagar). Mientras este OFF, el menu del comprador no muestra la seccion 'Puntos', el widget de canje no aparece en el checkout, y el cron de earn/burn no asigna puntos. Importante: apagar esto solo se usa para emergencias (bug critico en balance/race).	BUYER	f	2026-05-17 14:52:53.022	2026-05-17 14:52:53.022	\N	\N
+\.
+
+
+--
 -- Data for Name: HeroSlide; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -3290,6 +3326,14 @@ ALTER TABLE ONLY public."Favorite"
 
 
 --
+-- Name: FeatureFlag FeatureFlag_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FeatureFlag"
+    ADD CONSTRAINT "FeatureFlag_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: HeroSlide HeroSlide_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4160,6 +4204,27 @@ CREATE UNIQUE INDEX "Favorite_userId_merchantId_key" ON public."Favorite" USING 
 --
 
 CREATE UNIQUE INDEX "Favorite_userId_productId_key" ON public."Favorite" USING btree ("userId", "productId");
+
+
+--
+-- Name: FeatureFlag_isActive_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "FeatureFlag_isActive_idx" ON public."FeatureFlag" USING btree ("isActive");
+
+
+--
+-- Name: FeatureFlag_key_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "FeatureFlag_key_key" ON public."FeatureFlag" USING btree (key);
+
+
+--
+-- Name: FeatureFlag_scope_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "FeatureFlag_scope_idx" ON public."FeatureFlag" USING btree (scope);
 
 
 --
