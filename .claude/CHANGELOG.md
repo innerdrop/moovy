@@ -10,6 +10,80 @@
 
 ---
 
+## 2026-05-17 (rama `feat/email-ops-comment-pending`)
+
+feat(ops): email automatico cuando un comment cae en moderacion PENDING
+
+Cierra el ultimo ciclo del sistema de moderacion. Antes el admin tenia que
+entrar manualmente a /ops/reviews-pendientes para descubrir si habia algo
+en la queue. Ahora recibe email proactivo apenas hay algo para revisar.
+
+Cuando se dispara:
+  - Al crear el comment, si la blacklist matchea (los 3 endpoints rate-*).
+  - Al recibir el 3er reporte de la comunidad (alcance threshold en
+    /api/reviews/report).
+  - SOLO una vez por review — los reports adicionales post-threshold NO
+    re-disparan email (evita spam).
+
+CAMBIOS (5 archivos):
+
+1) src/lib/email-admin-ops.ts (FUNCION NUEVA)
+   - sendAdminReviewPendingEmail({ orderId, orderNumber, target,
+     entityName, rating, comment, authorName, authorEmail, reason }).
+   - reason es union discriminada:
+       { source: "BLACKLIST", matchedPatterns: string[] }
+       { source: "REPORTS", reportCount, recentReports: [{ reason, reporterName }] }
+   - El email muestra UI distinta segun source:
+       BLACKLIST -> lista de patterns matchados (codigo) en alertBox.
+       REPORTS   -> lista de reporters + razones que dejaron.
+   - Header con badge "Reseña en revisión", info del pedido + autor +
+     rating con estrellas + comentario en blockquote.
+   - Boton al panel /ops/reviews-pendientes.
+   - Manda a getAlertEmails() (los admins configurados).
+   - Tag "admin_review_pending" para tracking SMTP.
+
+2) src/app/api/orders/[id]/rate-merchant/route.ts
+   - Import sendAdminReviewPendingEmail.
+   - Despues del audit log REVIEW_COMMENT_FLAGGED, IIFE async que
+     fetcha contexto extra (orderNumber, autor) y dispara el email
+     fire-and-forget con reason BLACKLIST.
+
+3) src/app/api/orders/[id]/rate-seller/route.ts
+   - Idem rate-merchant pero target SELLER. entityName viene de
+     subOrders[0].seller.displayName.
+
+4) src/app/api/orders/[id]/rate/route.ts (driver)
+   - Idem pero target DRIVER. entityName del driver.user.name.
+
+5) src/app/api/reviews/report/route.ts
+   - Si result.reachedThreshold (3er report justo lo gatillo), fetcha
+     contexto + ratingReports recientes + dispara email con reason
+     REPORTS incluyendo los 5 reportes mas recientes con sus razones.
+   - Construye entityName/comment/rating segun el target.
+   - Skip silencioso si el comment no esta o el rating no existe
+     (defensivo — no deberia pasar pero igual).
+
+QUE NO CAMBIA:
+- Schema: cero migrations. Solo agregamos una funcion + 4 triggers.
+- Logica de moderacion (blacklist, threshold de 3): igual.
+- Panel /ops/reviews-pendientes: igual. El admin sigue resolviendo desde
+  ahi. El email solo es un trigger proactivo.
+- Si SMTP falla, el flow del usuario NO se rompe (fire-and-forget +
+  try/catch). El audit log queda igual asi que OPS tiene record.
+
+VERIFICACION POST-DEPLOY:
+1) En staging, crear una reseña con un comentario que matchee la
+   blacklist (ej: "puto de mierda" o cualquier slur de la lista).
+2) En el mailbox de admin (getAlertEmails()) deberia llegar un email
+   con subject "🚨 Reseña pendiente — [tipo] · pedido [#]".
+3) El email debe mostrar el comentario + razon (patterns matchados).
+4) Click en "Revisar en panel OPS" debe llevar a /ops/reviews-pendientes.
+5) Para el caso de reports: hacer 3 reportes a una misma review limpia
+   (con 3 users distintos) y verificar que al 3ro llega el email con
+   reason REPORTS + las 3 razones.
+
+**Archivos:** ISSUES.md, src/app/api/orders/[id]/rate-merchant/route.ts, src/app/api/orders/[id]/rate-seller/route.ts, src/app/api/orders/[id]/rate/route.ts, src/app/api/reviews/report/route.ts, src/lib/email-admin-ops.ts
+
 ## 2026-05-17 (rama `feat/feature-flags-ops`)
 
 feat(ops): sistema de feature flags para activar/desactivar features sin redeploy

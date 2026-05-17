@@ -736,3 +736,122 @@ function escapeHtml(text: string): string {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// feat/email-ops-comment-pending (2026-05-13): alerta a OPS cuando un
+// comentario de reseña cae en moderationStatus = PENDING. Cierra el ciclo
+// abierto del sistema de moderacion (feat/propinas-y-ratings-post-entrega +
+// feat/resenas-publicas-tienda). Antes el admin tenia que entrar a mano a
+// /ops/reviews-pendientes para descubrir si habia algo en la queue; ahora
+// recibe email proactivo apenas hay material para revisar.
+//
+// Se dispara desde:
+//   - /api/orders/[id]/rate (cuando el comment del driver matchea blacklist)
+//   - /api/orders/[id]/rate-merchant (idem para merchant)
+//   - /api/orders/[id]/rate-seller (idem para seller)
+//   - /api/reviews/report (cuando reportCount llega al threshold de 3)
+//
+// reason: union discriminada que dice POR QUE cayo en PENDING. La UI del
+// email cambia segun el origen — si fue blacklist mostramos los patterns
+// matchados, si fue reportes mostramos las razones de los reporters.
+// ─────────────────────────────────────────────────────────────────────────
+
+type ReviewPendingReason =
+    | { source: "BLACKLIST"; matchedPatterns: string[] }
+    | {
+          source: "REPORTS";
+          reportCount: number;
+          recentReports: Array<{ reason: string | null; reporterName: string | null }>;
+      };
+
+export async function sendAdminReviewPendingEmail(data: {
+    orderId: string;
+    orderNumber: string;
+    target: "DRIVER" | "MERCHANT" | "SELLER";
+    entityName: string | null;
+    rating: number;
+    comment: string;
+    authorName: string | null;
+    authorEmail: string | null;
+    reason: ReviewPendingReason;
+}): Promise<boolean> {
+    const targetLabel =
+        data.target === "DRIVER" ? "repartidor" :
+        data.target === "MERCHANT" ? "comercio" :
+        "vendedor";
+
+    const starsHtml = "★".repeat(data.rating) + "☆".repeat(5 - data.rating);
+
+    // Bloque de "razon" — texto distinto segun source.
+    const reasonHtml = (() => {
+        if (data.reason.source === "BLACKLIST") {
+            const patterns = data.reason.matchedPatterns.slice(0, 5);
+            const items = patterns.map((p) => `<li><code>${escapeHtml(p)}</code></li>`).join("");
+            const more = data.reason.matchedPatterns.length > 5
+                ? `<p style="margin: 6px 0 0; color: #666; font-size: 12px;">+ ${data.reason.matchedPatterns.length - 5} patrones más.</p>`
+                : "";
+            return emailAlertBox(
+                `<p style="margin: 0 0 8px; font-size: 14px;"><strong>Motivo:</strong> matcheo automático de la blacklist al crear el comentario.</p>
+                 <p style="margin: 4px 0; font-size: 13px; color: #666;">Patrones que disparon:</p>
+                 <ul style="margin: 4px 0 0 18px; padding: 0; color: #444; font-size: 13px;">${items}</ul>
+                 ${more}`,
+                "warning"
+            );
+        }
+        const reports = data.reason.recentReports.slice(0, 5);
+        const items = reports.map((r) => {
+            const reporter = r.reporterName ? escapeHtml(r.reporterName) : "Anónimo";
+            const reason = r.reason ? escapeHtml(r.reason) : "<em>(sin detalle)</em>";
+            return `<li><strong>${reporter}:</strong> ${reason}</li>`;
+        }).join("");
+        return emailAlertBox(
+            `<p style="margin: 0 0 8px; font-size: 14px;"><strong>Motivo:</strong> ${data.reason.reportCount} usuarios reportaron este comentario como inapropiado.</p>
+             <p style="margin: 4px 0; font-size: 13px; color: #666;">Razones dejadas:</p>
+             <ul style="margin: 4px 0 0 18px; padding: 0; color: #444; font-size: 13px;">${items}</ul>`,
+            "warning"
+        );
+    })();
+
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 20px;">
+            ${emailBadge('🚨 Reseña en revisión', '#fef3c7', '#92400e')}
+        </div>
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">
+            Reseña pendiente de moderar (${targetLabel})
+        </h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            Un comentario de reseña cayó en estado <strong>PENDING</strong> y está oculto del público hasta que lo revises. Aprobalo o eliminalo desde el panel.
+        </p>
+
+        ${emailInfoBox(`
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Pedido:</strong> ${escapeHtml(data.orderNumber)}</p>
+            ${data.entityName ? `<p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>${targetLabel.charAt(0).toUpperCase() + targetLabel.slice(1)}:</strong> ${escapeHtml(data.entityName)}</p>` : ""}
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Autor:</strong> ${data.authorName ? escapeHtml(data.authorName) : "Anónimo"}${data.authorEmail ? ` (${escapeHtml(data.authorEmail)})` : ""}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Calificación:</strong> <span style="color: #f59e0b; font-size: 16px;">${starsHtml}</span> ${data.rating}/5</p>
+            <p style="margin: 12px 0 4px; color: #333; font-size: 14px;"><strong>Comentario:</strong></p>
+            <blockquote style="margin: 0; padding: 10px 14px; background: #fff; border-left: 3px solid #f59e0b; color: #444; font-size: 14px; font-style: italic;">
+                &ldquo;${escapeHtml(data.comment)}&rdquo;
+            </blockquote>
+        `)}
+
+        ${reasonHtml}
+
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            En el panel podés aprobar el comentario (queda público) o rechazarlo (se borra el texto, el rating numérico se mantiene). En ambos casos queda audit log.
+        </p>
+        ${emailButton('Revisar en panel OPS', `${baseUrl}/ops/reviews-pendientes`, 'blue')}
+    `);
+
+    const recipients = await getAlertEmails();
+    const results = await Promise.all(
+        recipients.map((to) =>
+            sendEmail({
+                to,
+                subject: `🚨 Reseña pendiente — ${targetLabel} · pedido ${data.orderNumber}`,
+                html,
+                tag: "admin_review_pending",
+            }),
+        ),
+    );
+    return results.some(Boolean);
+}

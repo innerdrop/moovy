@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkContent, COMMENT_LIMITS } from "@/lib/moderation";
 import { logAudit } from "@/lib/audit";
+import { sendAdminReviewPendingEmail } from "@/lib/email-admin-ops";
 
 export async function POST(
     request: NextRequest,
@@ -124,6 +125,37 @@ export async function POST(
                     commentLength: trimmedComment.length,
                 },
             }).catch(() => {});
+
+            // feat/email-ops-comment-pending (2026-05-13): notificacion proactiva
+            // a OPS. Fire-and-forget. Trae datos del autor y de la entidad para
+            // que el admin tenga contexto sin abrir el panel.
+            (async () => {
+                try {
+                    const ctx = await prisma.order.findUnique({
+                        where: { id: orderId },
+                        select: {
+                            orderNumber: true,
+                            user: { select: { name: true, email: true } },
+                        },
+                    });
+                    await sendAdminReviewPendingEmail({
+                        orderId,
+                        orderNumber: ctx?.orderNumber || orderId,
+                        target: "MERCHANT",
+                        entityName: order.merchant?.name || null,
+                        rating,
+                        comment: trimmedComment,
+                        authorName: ctx?.user?.name || null,
+                        authorEmail: ctx?.user?.email || null,
+                        reason: {
+                            source: "BLACKLIST",
+                            matchedPatterns: moderation.matchedPatterns,
+                        },
+                    });
+                } catch (err) {
+                    console.error("[rate-merchant] failed to notify OPS:", err);
+                }
+            })();
         }
 
         return NextResponse.json({

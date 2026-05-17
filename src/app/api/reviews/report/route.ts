@@ -25,6 +25,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { COMMENT_LIMITS, REPORT_THRESHOLD } from "@/lib/moderation";
 import { logAudit } from "@/lib/audit";
+import { sendAdminReviewPendingEmail } from "@/lib/email-admin-ops";
 
 const reportSchema = z.object({
     orderId: z.string().min(1, "orderId requerido"),
@@ -178,6 +179,89 @@ export async function POST(request: NextRequest) {
                 triggeredAutoHide: result.reachedThreshold,
             },
         }).catch(() => {});
+
+        // feat/email-ops-comment-pending (2026-05-13): si este reporte fue el
+        // que gatillo el threshold (3+), avisamos a OPS para que revise. Solo
+        // se manda UNA vez por review (cuando pasa de < threshold a >=
+        // threshold) — los reportes adicionales post-threshold no re-disparan
+        // el email para evitar spam.
+        if (result.reachedThreshold) {
+            (async () => {
+                try {
+                    const ctx = await prisma.order.findUnique({
+                        where: { id: orderId },
+                        select: {
+                            orderNumber: true,
+                            user: { select: { name: true, email: true } },
+                            merchant: { select: { name: true } },
+                            driver: { select: { user: { select: { name: true } } } },
+                            subOrders: {
+                                where: { sellerId: { not: null } },
+                                select: { seller: { select: { displayName: true } } },
+                                take: 1,
+                            },
+                            ratingReports: {
+                                where: { orderId, target, resolvedAt: null },
+                                select: {
+                                    reason: true,
+                                    reporter: { select: { name: true } },
+                                },
+                                orderBy: { createdAt: "desc" },
+                                take: 5,
+                            },
+                        },
+                    });
+
+                    // Construir entityName + comment + rating segun target
+                    const orderForFields = await prisma.order.findUnique({
+                        where: { id: orderId },
+                        select: {
+                            ratingComment: true,
+                            driverRating: true,
+                            merchantRatingComment: true,
+                            merchantRating: true,
+                            sellerRatingComment: true,
+                            sellerRating: true,
+                        },
+                    });
+                    const commentText =
+                        target === "DRIVER" ? orderForFields?.ratingComment :
+                        target === "MERCHANT" ? orderForFields?.merchantRatingComment :
+                        orderForFields?.sellerRatingComment;
+                    const ratingValue =
+                        target === "DRIVER" ? orderForFields?.driverRating :
+                        target === "MERCHANT" ? orderForFields?.merchantRating :
+                        orderForFields?.sellerRating;
+                    const entityName =
+                        target === "DRIVER" ? ctx?.driver?.user?.name || null :
+                        target === "MERCHANT" ? ctx?.merchant?.name || null :
+                        ctx?.subOrders?.[0]?.seller?.displayName || null;
+
+                    if (commentText && typeof ratingValue === "number") {
+                        await sendAdminReviewPendingEmail({
+                            orderId,
+                            orderNumber: ctx?.orderNumber || orderId,
+                            target,
+                            entityName,
+                            rating: ratingValue,
+                            comment: commentText,
+                            authorName: ctx?.user?.name || null,
+                            authorEmail: ctx?.user?.email || null,
+                            reason: {
+                                source: "REPORTS",
+                                reportCount: result.newCount,
+                                recentReports: (ctx?.ratingReports || []).map((r) => ({
+                                    reason: r.reason,
+                                    reporterName: r.reporter?.name || null,
+                                })),
+                            },
+                        });
+                    }
+                } catch (err) {
+                    console.error("[reviews/report] failed to notify OPS:", err);
+                }
+            })();
+        }
 
         return NextResponse.json({
             success: true,

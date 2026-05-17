@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkContent, COMMENT_LIMITS } from "@/lib/moderation";
 import { logAudit } from "@/lib/audit";
+import { sendAdminReviewPendingEmail } from "@/lib/email-admin-ops";
 
 export async function POST(
     request: NextRequest,
@@ -129,6 +130,40 @@ export async function POST(
                     commentLength: trimmedComment.length,
                 },
             }).catch(() => {});
+
+            // feat/email-ops-comment-pending (2026-05-13): notificacion a OPS.
+            (async () => {
+                try {
+                    const ctx = await prisma.order.findUnique({
+                        where: { id: orderId },
+                        select: {
+                            orderNumber: true,
+                            user: { select: { name: true, email: true } },
+                            subOrders: {
+                                where: { sellerId: { not: null } },
+                                select: { seller: { select: { displayName: true } } },
+                                take: 1,
+                            },
+                        },
+                    });
+                    await sendAdminReviewPendingEmail({
+                        orderId,
+                        orderNumber: ctx?.orderNumber || orderId,
+                        target: "SELLER",
+                        entityName: ctx?.subOrders?.[0]?.seller?.displayName || null,
+                        rating,
+                        comment: trimmedComment,
+                        authorName: ctx?.user?.name || null,
+                        authorEmail: ctx?.user?.email || null,
+                        reason: {
+                            source: "BLACKLIST",
+                            matchedPatterns: moderation.matchedPatterns,
+                        },
+                    });
+                } catch (err) {
+                    console.error("[rate-seller] failed to notify OPS:", err);
+                }
+            })();
         }
 
         return NextResponse.json({
