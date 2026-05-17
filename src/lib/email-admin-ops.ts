@@ -652,3 +652,87 @@ export async function sendDailyRevenueSummaryEmail(
     );
     return results.some(Boolean);
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// feat/driver-soporte-gps-bloqueado (2026-05-13): alerta a OPS cuando un
+// driver reporta problemas con el GPS durante la verificación del PIN.
+// Trigger: POST /api/driver/report-pin-issue (driver pinchó el botón
+// "Tengo problemas con la ubicación" después de un OUT_OF_GEOFENCE).
+// Va a getAlertEmails() — los mismos admins que reciben otras notifs.
+// ─────────────────────────────────────────────────────────────────────────
+
+export async function sendAdminPinIssueEmail(data: {
+    driverName: string;
+    driverPhone: string;
+    orderId: string;
+    orderNumber: string;
+    pinType: "pickup" | "delivery";
+    distanceMeters: number | null;
+    currentLat: number | null;
+    currentLng: number | null;
+    comment: string | null;
+}): Promise<boolean> {
+    const pinTypeLabel = data.pinType === "pickup" ? "retiro (comercio)" : "entrega (cliente)";
+    const distanceStr = typeof data.distanceMeters === "number"
+        ? `${Math.round(data.distanceMeters)}m`
+        : "desconocida";
+    const locationStr = (typeof data.currentLat === "number" && typeof data.currentLng === "number")
+        ? `${data.currentLat.toFixed(5)}, ${data.currentLng.toFixed(5)}`
+        : "no disponible";
+    const mapsLink = (typeof data.currentLat === "number" && typeof data.currentLng === "number")
+        ? `https://www.google.com/maps?q=${data.currentLat},${data.currentLng}`
+        : null;
+
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 20px;">
+            ${emailBadge('📍 GPS bloqueado', '#fef3c7', '#92400e')}
+        </div>
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">
+            Repartidor reporta problemas con la ubicación
+        </h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            <strong>${data.driverName}</strong> no pudo validar el PIN de ${pinTypeLabel}
+            porque el sistema lo ubicó fuera del geofence. Reportó el problema desde la app
+            para que soporte lo asista.
+        </p>
+        ${emailInfoBox(`
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Pedido:</strong> ${data.orderNumber}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Repartidor:</strong> ${data.driverName}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Teléfono:</strong> ${data.driverPhone}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Tipo de PIN:</strong> ${pinTypeLabel}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Distancia reportada:</strong> ${distanceStr}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Ubicación del driver:</strong> ${locationStr}${mapsLink ? ` (<a href="${mapsLink}" style="color: #2563eb;">ver en Maps</a>)` : ""}</p>
+        `)}
+        ${data.comment ? emailAlertBox(`<p style="margin: 0; font-size: 14px;"><strong>Lo que dice el driver:</strong><br>${escapeHtml(data.comment)}</p>`, 'info') : ''}
+        <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
+            Pasos sugeridos: contactá al driver por WhatsApp al ${data.driverPhone},
+            confirmá que está en el lugar (puede pedir foto), y si todo OK,
+            ayudalo a destrabar el caso desde el panel del pedido.
+        </p>
+        ${emailButton('Ver pedido en OPS', `${baseUrl}/ops/pedidos/${data.orderId}`, 'blue')}
+    `);
+
+    const recipients = await getAlertEmails();
+    const results = await Promise.all(
+        recipients.map((to) =>
+            sendEmail({
+                to,
+                subject: `📍 PIN bloqueado por GPS — ${data.driverName} · pedido ${data.orderNumber}`,
+                html,
+                tag: "admin_driver_pin_issue",
+            }),
+        ),
+    );
+    return results.some(Boolean);
+}
+
+// Mini helper para escapar HTML en el comment libre que escribe el driver.
+// Defensa básica anti-XSS aunque solo lo lea el admin (defensa en profundidad).
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}

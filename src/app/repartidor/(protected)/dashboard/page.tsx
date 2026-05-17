@@ -1987,6 +1987,7 @@ export default function RiderDashboard() {
                 isOpen={pinModal.open}
                 pinType={pinModal.type}
                 counterpartName={pinModal.counterpartName}
+                orderId={pinModal.orderId}
                 onClose={() => setPinModal(prev => ({ ...prev, open: false }))}
                 onVerify={verifyPinAgainstBackend}
                 onVerified={async () => {

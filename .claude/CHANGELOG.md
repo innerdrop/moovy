@@ -10,6 +10,121 @@
 
 ---
 
+## 2026-05-17 (rama `feat/driver-soporte-gps-bloqueado`)
+
+feat(driver): escalamiento a soporte cuando el GPS bloquea la validacion del PIN
+
+Observacion 3A del 2do smoke test. Caso real frecuente en Ushuaia: el GPS
+del celular del driver es impreciso (clima frio -5C + edificios con
+metales + señal degradada en zonas perifericas). El sistema le dice
+"estas a 120m del destino, acercate", el driver INSISTE que esta en la
+puerta del cliente, no puede ingresar el PIN, queda bloqueado sin
+salida visible.
+
+Hoy el unico mensaje era "Estas a Xm del destino. Acercate mas e
+intentá de nuevo." — sin escape hatch. Si el driver no puede acercarse
+(porque YA esta en el lugar), no tenia forma de destrabar el pedido y
+quedaba esperando que el sistema lo desbloquee solo.
+
+CAMBIOS (3 archivos, ningun schema):
+
+1) src/lib/email-admin-ops.ts (FUNCION NUEVA)
+   - sendAdminPinIssueEmail({ driverName, driverPhone, orderId, orderNumber,
+     pinType, distanceMeters, currentLat, currentLng, comment }).
+   - Manda email a getAlertEmails() (los admins configurados).
+   - Header con badge naranja "GPS bloqueado".
+   - Cuerpo: pedido, datos del driver (telefono incluido para llamar
+     directo), tipo de PIN, distancia reportada por el sistema, ubicacion
+     del driver con link a Google Maps si tenemos coords.
+   - Si el driver dejo comentario, lo incluye en un emailAlertBox.
+   - Sugerencias para el admin ("contactá al driver por WhatsApp...").
+   - Boton al pedido en /ops/pedidos/[id].
+   - Helper escapeHtml para defensa anti-XSS del comment libre.
+
+2) src/app/api/driver/report-pin-issue/route.ts (ENDPOINT NUEVO)
+   - POST con auth driver (requireDriverApi). NO permite admin override
+     porque el endpoint es para que EL driver reporte, no para tomar
+     accion administrativa.
+   - Zod schema: orderId, pinType, distanceMeters?, currentLat?,
+     currentLng?, comment? (max 500c).
+   - Verifica que el order le pertenezca al driver (chequea tanto
+     order.driverId como subOrders[].driverId para multi-vendor).
+   - Loguea AUDIT con TODO el contexto (driverId, pinType, distancia,
+     lat/lng, comment, userAgent).
+   - Dispara sendAdminPinIssueEmail fire-and-forget (no bloquea la
+     response). Si el SMTP falla, el audit igual queda.
+   - Devuelve { success, message: "Soporte revisará tu caso" }.
+
+3) src/components/rider/PinKeypad.tsx (UI DRIVER)
+   - Imports nuevos: HelpCircle, Send, Phone, ArrowLeft (lucide-react).
+   - Constantes: SUPPORT_WHATSAPP_NUMBER = "5492901553173" (mismo que
+     T&C, hardcoded por simplicidad — TO-DO mover a StoreSettings).
+     REPORT_COMMENT_MAX = 500.
+   - Prop nueva opcional: orderId. Si no se pasa, los botones de
+     escalamiento NO se muestran (compat con call sites legacy).
+   - States nuevos: showReportModal, reportComment, reportSubmitting,
+     reportSubmitted, reportError. Se resetean en isOpen=false.
+   - Callback submitGpsIssueReport: intenta capturar lat/lng con
+     navigator.geolocation.getCurrentPosition (timeout 5s, sin bloquear
+     si el permiso esta denegado), POST al endpoint nuevo, set
+     reportSubmitted=true al ok.
+   - Callback openWhatsAppSupport: arma url wa.me con texto pre-armado
+     (orderId, distancia, tipo de PIN), abre en tab nueva.
+   - UI condicional cuando isOutOfGeofence && orderId:
+       boton primario "Tengo problemas con la ubicación" (abre sub-modal)
+       boton secundario "o escribí a soporte por WhatsApp"
+   - Sub-modal nuevo z-[120] (mas alto que el modal principal):
+       header con titulo + close
+       cuerpo:
+         si reportSubmitted -> mensaje exito + boton WhatsApp + volver
+         si no -> textarea con char counter (max 500) + bloque amber
+           recordando distancia + error si applies
+       footer: boton "Enviar reporte" (amber) + boton text "WhatsApp"
+
+4) src/app/repartidor/(protected)/dashboard/page.tsx
+   - Pasa orderId={pinModal.orderId} al PinKeypad. Solo 1 linea.
+
+QUE NO CAMBIA:
+- Schema Prisma: NINGUN migrate. Reusamos audit log + email.
+- Logica de geofence/PIN: idem (sigue siendo 100m + 50m gracia, 5
+  intentos lock).
+- El endpoint NO hace override automatico del geofence. El admin
+  recibe el reporte y resuelve manualmente desde /ops/pedidos/[id]
+  (puede reasignar driver, marcar manualmente como PICKED_UP/DELIVERED,
+  etc.). Anti-fraude: cualquier override queda con audit trail.
+- Call sites del PinKeypad fuera del dashboard del driver: si no le
+  pasan orderId, los botones de escalamiento no aparecen
+  (backwards-compatible).
+
+VERIFICACION POST-DEPLOY:
+1) En staging, hacer un pedido y avanzar hasta que el driver intente
+   marcar PICKUP/DELIVERY estando lejos del destino.
+2) El modal del PIN deberia mostrar el banner amber "Estas a Xm del
+   destino" + 2 botones nuevos.
+3) Click en "Tengo problemas con la ubicación" -> sub-modal con
+   textarea + bloque informativo de distancia.
+4) Escribir comentario + click "Enviar reporte" -> spinner -> pantalla
+   exito.
+5) Verificar en mailbox de admin: llega email con todo el contexto +
+   link a Google Maps de la posicion del driver.
+6) Verificar audit log: entry DRIVER_PIN_ISSUE_REPORTED con detalles.
+7) Test del WhatsApp: click "Hablar con soporte por WhatsApp" deberia
+   abrir wa.me con mensaje pre-armado.
+
+DEUDA / FUTURE WORK (no en esta rama):
+- Numero de WhatsApp soporte hardcoded. Mover a StoreSettings para que
+  OPS pueda cambiarlo sin tocar codigo.
+- UI admin dedicada para gestionar reportes de PIN issues en
+  /ops/fraude o tab nuevo en /ops/pedidos. Hoy admin solo se entera
+  por email y resuelve manual.
+- Boton "Override geofence" en /ops/pedidos/[id] para que admin pueda
+  destrabar el PIN sin pedirle al driver que se mueva. Hoy admin tiene
+  que reasignar o cambiar status manual.
+- Cuando el driver reporta varios casos en poco tiempo, alerta
+  anti-fraude (fraudScore++).
+
+**Archivos:** ISSUES.md, src/app/api/driver/report-pin-issue/route.ts, src/app/repartidor/(protected)/dashboard/page.tsx, src/components/rider/PinKeypad.tsx, src/lib/email-admin-ops.ts
+
 ## 2026-05-17 (rama `feat/ops-usuarios-auto-refresh`)
 
 feat(ops): auto-refresh + boton manual en pagina /ops/usuarios

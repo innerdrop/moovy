@@ -8,7 +8,15 @@
 // Diseñado para uso en calle: botones grandes, feedback háptico, tolerante a
 // errores (backspace, paste desde portapapeles, instrucciones claras).
 import { useEffect, useState, useCallback } from "react";
-import { KeyRound, X, Delete, Loader2, AlertCircle, CheckCircle, MapPin } from "lucide-react";
+import { KeyRound, X, Delete, Loader2, AlertCircle, CheckCircle, MapPin, HelpCircle, Send, Phone, ArrowLeft } from "lucide-react";
+
+// feat/driver-soporte-gps-bloqueado (2026-05-13): WhatsApp de soporte de Moovy
+// (mismo que figura en /terminos-repartidor). Hardcoded por simplicidad — si
+// cambia, actualizar aca + en T&C. Idealmente en el futuro se mueve a
+// StoreSettings para que OPS lo edite sin tocar codigo.
+const SUPPORT_WHATSAPP_NUMBER = "5492901553173";
+// Limite del comentario en el reporte. Coincide con el COMMENT_MAX del endpoint.
+const REPORT_COMMENT_MAX = 500;
 
 export type PinVerifyResult = {
     success: boolean;
@@ -33,6 +41,13 @@ interface PinKeypadProps {
     onVerify: (pin: string) => Promise<PinVerifyResult>;
     /** Callback después de verificación exitosa (ej: avanzar a PICKED_UP/DELIVERED) */
     onVerified?: () => void | Promise<void>;
+    /**
+     * feat/driver-soporte-gps-bloqueado (2026-05-13): orderId del pedido en
+     * curso. Si se pasa, cuando el sistema bloquea por OUT_OF_GEOFENCE se
+     * muestra el sub-modal de "Reportar problema de ubicación". Si no se
+     * pasa, los botones de soporte no aparecen (modo legacy compatible).
+     */
+    orderId?: string | null;
 }
 
 const PIN_LENGTH = 4;
@@ -51,6 +66,7 @@ export default function PinKeypad({
     onClose,
     onVerify,
     onVerified,
+    orderId,
 }: PinKeypadProps) {
     const [pin, setPin] = useState("");
     const [submitting, setSubmitting] = useState(false);
@@ -59,6 +75,15 @@ export default function PinKeypad({
     const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
     const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
     const [success, setSuccess] = useState(false);
+
+    // feat/driver-soporte-gps-bloqueado (2026-05-13): state del sub-modal de
+    // reporte de GPS. Se abre cuando el driver pincha "Tengo problemas con la
+    // ubicación" desde el banner de error OUT_OF_GEOFENCE.
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportComment, setReportComment] = useState("");
+    const [reportSubmitting, setReportSubmitting] = useState(false);
+    const [reportSubmitted, setReportSubmitted] = useState(false);
+    const [reportError, setReportError] = useState<string | null>(null);
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -70,6 +95,11 @@ export default function PinKeypad({
             setRemainingAttempts(null);
             setDistanceMeters(null);
             setSuccess(false);
+            setShowReportModal(false);
+            setReportComment("");
+            setReportSubmitting(false);
+            setReportSubmitted(false);
+            setReportError(null);
         }
     }, [isOpen]);
 
@@ -143,6 +173,77 @@ export default function PinKeypad({
         setError(null);
         setErrorCode(null);
     }, [submitting, success]);
+
+    // feat/driver-soporte-gps-bloqueado (2026-05-13): envia el reporte de
+    // problema de GPS al endpoint nuevo /api/driver/report-pin-issue.
+    // Intenta capturar la ubicacion actual del driver con getCurrentPosition
+    // (no bloquea si el permiso esta denegado, manda null). El admin
+    // recibira el email con todo el contexto + telefono del driver.
+    const submitGpsIssueReport = useCallback(async () => {
+        if (!orderId || reportSubmitting) return;
+        setReportSubmitting(true);
+        setReportError(null);
+
+        // Intentar capturar la ubicacion actual. Si falla o el permiso esta
+        // denegado, mandamos null para que el admin igual reciba el reporte.
+        const tryGetLocation = (): Promise<{ lat: number; lng: number } | null> => {
+            return new Promise((resolve) => {
+                if (typeof navigator === "undefined" || !navigator.geolocation) {
+                    resolve(null);
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    () => resolve(null),
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+                );
+            });
+        };
+
+        try {
+            const location = await tryGetLocation();
+            const res = await fetch("/api/driver/report-pin-issue", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orderId,
+                    pinType,
+                    distanceMeters: distanceMeters ?? null,
+                    currentLat: location?.lat ?? null,
+                    currentLng: location?.lng ?? null,
+                    comment: reportComment.trim() || null,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setReportError(data?.error || "No pudimos enviar el reporte. Probá con WhatsApp.");
+                setReportSubmitting(false);
+                return;
+            }
+            setReportSubmitted(true);
+            setReportSubmitting(false);
+        } catch {
+            setReportError("Error de conexión. Probá con WhatsApp soporte.");
+            setReportSubmitting(false);
+        }
+    }, [orderId, pinType, distanceMeters, reportComment, reportSubmitting]);
+
+    // Abre WhatsApp con un mensaje pre-armado al soporte. Funciona en mobile
+    // (abre la app WA) y en desktop (web WA en el browser).
+    const openWhatsAppSupport = useCallback(() => {
+        const distanceStr = typeof distanceMeters === "number"
+            ? `${Math.round(distanceMeters)}m`
+            : "una distancia que no me deja";
+        const pinTypeLabel = pinType === "pickup" ? "retiro del pedido" : "entrega al cliente";
+        const orderRef = orderId ? ` (pedido ${orderId.slice(-6)})` : "";
+        const text = encodeURIComponent(
+            `Hola Moovy, tengo problemas con el GPS para validar el PIN de ${pinTypeLabel}${orderRef}. El sistema me dice que estoy a ${distanceStr} pero estoy en el lugar correcto. ¿Me ayudan?`
+        );
+        const url = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${text}`;
+        if (typeof window !== "undefined") {
+            window.open(url, "_blank", "noopener,noreferrer");
+        }
+    }, [distanceMeters, pinType, orderId]);
 
     // Soporte de teclado físico (útil en tablets / teclado Bluetooth)
     useEffect(() => {
@@ -280,6 +381,34 @@ export default function PinKeypad({
                                         Contactá al soporte de MOOVY para desbloquear el pedido.
                                     </p>
                                 )}
+
+                                {/* feat/driver-soporte-gps-bloqueado (2026-05-13):
+                                    botones de escalamiento cuando geofence bloquea.
+                                    Salida para drivers con GPS impreciso (frecuente
+                                    en Ushuaia con -5°C y senial degradada). orderId
+                                    es opcional: si no se paso, no mostramos esto
+                                    para mantener compatibilidad con call sites que
+                                    no lo conozcan. */}
+                                {isOutOfGeofence && orderId && (
+                                    <div className="mt-3 flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowReportModal(true)}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition active:scale-95"
+                                        >
+                                            <HelpCircle className="w-3.5 h-3.5" />
+                                            Tengo problemas con la ubicación
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={openWhatsAppSupport}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition"
+                                        >
+                                            <Phone className="w-3.5 h-3.5" />
+                                            o escribí a soporte por WhatsApp
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -332,6 +461,123 @@ export default function PinKeypad({
                 }
                 .animate-shake { animation: shake 0.4s ease-in-out; }
             `}</style>
+
+            {/* feat/driver-soporte-gps-bloqueado (2026-05-13): sub-modal de
+                reporte de problema de ubicacion. Overlay sobre el modal del
+                PIN. z-index mas alto que el modal principal (que es z-[100]
+                en general). El driver escribe un comentario opcional, envia y
+                aparece confirmacion de exito. Plus opcion WhatsApp como
+                fallback rapido. */}
+            {showReportModal && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="bg-white dark:bg-[#1a1d27] rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="px-5 py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-amber-600" />
+                                <h3 className="text-base font-bold text-gray-900 dark:text-white">Reportar problema</h3>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (reportSubmitting) return;
+                                    setShowReportModal(false);
+                                }}
+                                disabled={reportSubmitting}
+                                aria-label="Cerrar"
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition disabled:opacity-50"
+                            >
+                                <X className="w-4 h-4 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        {reportSubmitted ? (
+                            <div className="px-5 py-8 text-center">
+                                <div className="w-14 h-14 bg-green-100 dark:bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <CheckCircle className="w-7 h-7 text-green-600" />
+                                </div>
+                                <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Reporte enviado</h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+                                    Soporte va a contactarte para destrabar el caso. Si es urgente, también podés escribir por WhatsApp.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={openWhatsAppSupport}
+                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition mb-2"
+                                >
+                                    <Phone className="w-4 h-4" />
+                                    Escribir a soporte por WhatsApp
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReportModal(false)}
+                                    className="block mx-auto mt-1 text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                    Volver
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="overflow-y-auto px-5 py-4 space-y-3">
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                        Si tu GPS te ubica fuera del rango pero estás en el lugar correcto, contanos qué pasa y vamos a ayudarte a destrabar el caso.
+                                    </p>
+                                    {typeof distanceMeters === "number" && (
+                                        <div className="text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg p-2.5 text-amber-800 dark:text-amber-200">
+                                            El sistema dice que estás a <strong>{Math.round(distanceMeters)}m</strong> del destino.
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                            ¿Qué está pasando? <span className="text-gray-400 font-normal">(opcional)</span>
+                                        </label>
+                                        <textarea
+                                            value={reportComment}
+                                            onChange={(e) => setReportComment(e.target.value.slice(0, REPORT_COMMENT_MAX))}
+                                            disabled={reportSubmitting}
+                                            placeholder="Ej: estoy en la puerta pero el GPS me ubica a media cuadra..."
+                                            rows={3}
+                                            maxLength={REPORT_COMMENT_MAX}
+                                            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-white/10 dark:bg-[#22252f] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400 disabled:opacity-50 resize-none"
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-1 text-right">
+                                            {reportComment.length} / {REPORT_COMMENT_MAX}
+                                        </p>
+                                    </div>
+                                    {reportError && (
+                                        <div className="flex gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg text-xs text-red-700 dark:text-red-300">
+                                            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                            <p>{reportError}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer */}
+                                <div className="px-5 py-3 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-[#22252f] flex flex-col gap-2 flex-shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={submitGpsIssueReport}
+                                        disabled={reportSubmitting}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-lg hover:bg-amber-700 transition disabled:opacity-50 active:scale-95"
+                                    >
+                                        {reportSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                        {reportSubmitting ? "Enviando..." : "Enviar reporte"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={openWhatsAppSupport}
+                                        disabled={reportSubmitting}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition disabled:opacity-50"
+                                    >
+                                        <Phone className="w-3.5 h-3.5" />
+                                        O hablar con soporte por WhatsApp
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
