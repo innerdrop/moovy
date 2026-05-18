@@ -10,6 +10,80 @@
 
 ---
 
+## 2026-05-18 (rama `fix/referral-code-formato-forzado`)
+
+fix(registro): forzar formato MOV-XXXX en código de referido
+
+PROBLEMA: el campo "código de referido" del registro de comprador
+aceptaba cualquier texto. Doble bug:
+
+  Bug 1 — placeholder erróneo
+    Decía "Ej: MOOV-ABC123" (doble O, 6 chars). El formato real que
+    genera el backend (`generateReferralCode()` en register/route.ts)
+    es "MOV-XXXX" (1 sola O, 4 chars del set sin ambiguos).
+
+  Bug 2 — sin validación
+    El input solo hacía .toUpperCase() y el server aceptaba cualquier
+    string como referralCode. Si el usuario tipeaba "pepito" se
+    enviaba al backend y silenciosamente no encontraba al referrer.
+
+FORMATO CANÓNICO (en `src/lib/referral.ts` nuevo):
+  - Prefijo literal: "MOV-"
+  - 4 caracteres del set: ABCDEFGHJKLMNPQRSTUVWXYZ23456789
+    (excluye I, O, 0, 1 y S/5 para no confundir al copiar a mano)
+  - Total: 8 caracteres → ej. MOV-AB23
+  - Regex: /^MOV-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/
+
+CAMBIOS:
+
+1. src/lib/referral.ts (nuevo)
+   Fuente única de verdad del formato. Exporta:
+   - REFERRAL_CHARS, REFERRAL_CODE_REGEX, REFERRAL_CODE_LENGTH
+   - isValidReferralCode(code): boolean — valida formato exacto
+   - formatReferralCode(input): string — auto-corrige progresivamente
+     mientras el usuario tipea (uppercase, filtra chars, fuerza el
+     prefijo MOV-, limita a 8 chars)
+
+2. src/lib/validations.ts
+   Agrega regex al schema Zod del RegisterSchema.referralCode con
+   mensaje claro: "Código de referido inválido. Formato: MOV-XXXX
+   (ej. MOV-AB23)". Mantiene .optional() — vacío sigue permitido.
+
+3. src/app/api/auth/register/route.ts
+   - Import del helper isValidReferralCode
+   - Si data.referralCode tiene contenido pero no matchea la regex
+     → 400 con mensaje que explica el formato y aclara que el campo
+     es opcional ("Si no tenés código, dejá el campo vacío")
+   - Si tiene formato válido pero NO existe en la DB → mantenemos el
+     "silently ignore" (NO devolvemos 404). Justificación: el espacio
+     de códigos válidos es 32^4 = ~1M; si avisamos "no existe",
+     facilitamos enumeración por brute force.
+
+4. src/app/(store)/registro/page.tsx
+   - Placeholder corregido: "Ej: MOOV-ABC123" → "Ej: MOV-AB23"
+   - onChange usa formatReferralCode() — el usuario no puede ingresar
+     chars inválidos, todo lo que tipea se auto-formatea
+   - maxLength={8} en el input
+   - Feedback visual inline:
+       Vacío         → borde azul neutro + helper text azul
+       Inválido      → borde rojo + ícono AlertCircle + helper rojo
+                       "Completá el código: 8 caracteres formato MOV-XXXX"
+       Válido        → borde verde + ícono Check + helper verde
+                       "✓ Código válido — ¡Vas a sumar puntos extra!"
+   - Validación pre-submit: si tiene contenido y no es válido, NO
+     deja submitear, muestra el error en el banner rojo de la página.
+   - useEffect del query param ?ref ahora también pasa por
+     formatReferralCode() para normalizar links externos.
+
+Archivos:
+- src/lib/referral.ts (nuevo)
+- src/lib/validations.ts
+- src/app/api/auth/register/route.ts
+- src/app/(store)/registro/page.tsx
+- ISSUES.md
+
+**Archivos:** ISSUES.md, src/app/(store)/registro/page.tsx, src/app/api/auth/register/route.ts, src/lib/referral.ts, src/lib/validations.ts
+
 ## 2026-05-18 (rama `chore/checklist-explicaciones-amigables`)
 
 chore(checklist): reescritura amigable de todos los items (no-tech friendly)

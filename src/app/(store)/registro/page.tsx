@@ -15,9 +15,11 @@ import {
     Check,
     ArrowLeft,
     Gift,
+    AlertCircle,
 } from "lucide-react";
 import PhoneInput from "@/components/ui/forms/PhoneInput";
 import InfoTooltip from "@/components/ui/forms/InfoTooltip";
+import { formatReferralCode, isValidReferralCode } from "@/lib/referral";
 
 function RegistrationForm() {
     const router = useRouter();
@@ -44,9 +46,23 @@ function RegistrationForm() {
     useEffect(() => {
         const refParam = searchParams.get("ref");
         if (refParam) {
-            setReferralCode(refParam.toUpperCase());
+            // Pasamos el ref por el formateador igual que cualquier input del
+            // usuario — si vino con formato raro lo normaliza, si no es
+            // matcheable lo deja vacío.
+            setReferralCode(formatReferralCode(refParam));
         }
     }, [searchParams]);
+
+    // Rama fix/referral-code-formato-forzado (2026-05-17):
+    // Estados derivados del campo de código para feedback inline.
+    // - isEmpty: el usuario no escribió nada todavía (estado neutro).
+    // - isComplete: ya tiene los 8 caracteres del formato canónico.
+    // - isValid: matchea exacto la regex. Solo true cuando isComplete.
+    // - isPartialOrInvalid: tiene contenido pero todavía no es válido.
+    //   En este caso mostramos el borde rojo + mensaje.
+    const referralCodeEmpty = referralCode.length === 0;
+    const referralCodeValid = isValidReferralCode(referralCode);
+    const referralCodeShowError = !referralCodeEmpty && !referralCodeValid;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,6 +85,17 @@ function RegistrationForm() {
 
         if (!age18Confirmed) {
             setError("Tenés que confirmar que sos mayor de 18 años para registrarte (Ley 25.326)");
+            return;
+        }
+
+        // Rama fix/referral-code-formato-forzado (2026-05-17):
+        // Validar formato del código de referido antes de mandarlo al server.
+        // El campo es opcional — vacío está permitido. Solo bloqueamos si el
+        // usuario escribió algo pero no completó el formato MOV-XXXX.
+        if (referralCode.length > 0 && !isValidReferralCode(referralCode)) {
+            setError(
+                "El código de referido tiene formato inválido. Debe ser MOV-XXXX (ej. MOV-AB23). Si no tenés código, dejá el campo vacío.",
+            );
             return;
         }
 
@@ -295,24 +322,61 @@ function RegistrationForm() {
 
                         <hr className="border-gray-100 my-4" />
 
-                        {/* Referral Code (Optional) */}
+                        {/* Referral Code (Optional)
+                            Rama fix/referral-code-formato-forzado (2026-05-17):
+                            - El input es un campo controlado que pasa cada
+                              tecla por formatReferralCode(): auto-uppercase,
+                              filtra caracteres ambiguos, fuerza el prefijo
+                              MOV-, limita a 8 caracteres.
+                            - Feedback visual inline: verde + check cuando
+                              está completo y válido, rojo + alerta si tiene
+                              contenido pero todavía no es válido, neutro si
+                              está vacío.
+                            - Helper text aclara el formato y maxLength=8
+                              previene caracteres extra. */}
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                                 <Gift className="w-4 h-4 text-blue-500" />
                                 ¿Tenés un código de referido?
                                 <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">Opcional</span>
                             </label>
-                            <input
-                                type="text"
-                                value={referralCode}
-                                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                                placeholder="Ej: MOOV-ABC123"
-                                className="input uppercase font-mono tracking-wider text-center border-blue-200 focus:border-blue-500 focus:ring-blue-200"
-                                autoComplete="off"
-                            />
-                            <p className="text-xs text-blue-600 mt-2 text-center font-medium">
-                                ¡Sumás puntos extra si te invita un amigo! 🎁
-                            </p>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={referralCode}
+                                    onChange={(e) => setReferralCode(formatReferralCode(e.target.value))}
+                                    placeholder="Ej: MOV-AB23"
+                                    maxLength={8}
+                                    className={`input uppercase font-mono tracking-wider text-center pr-10 ${
+                                        referralCodeShowError
+                                            ? "border-red-300 focus:border-red-500 focus:ring-red-200 bg-red-50/30"
+                                            : referralCodeValid
+                                                ? "border-green-400 focus:border-green-500 focus:ring-green-200 bg-green-50/30"
+                                                : "border-blue-200 focus:border-blue-500 focus:ring-blue-200"
+                                    }`}
+                                    autoComplete="off"
+                                    aria-invalid={referralCodeShowError}
+                                />
+                                {referralCodeValid && (
+                                    <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                )}
+                                {referralCodeShowError && (
+                                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+                                )}
+                            </div>
+                            {referralCodeShowError ? (
+                                <p className="text-xs text-red-600 mt-2 text-center font-medium">
+                                    Completá el código: 8 caracteres con formato MOV-XXXX
+                                </p>
+                            ) : referralCodeValid ? (
+                                <p className="text-xs text-green-700 mt-2 text-center font-medium">
+                                    ✓ Código válido — ¡Vas a sumar puntos extra al hacer tu primer pedido!
+                                </p>
+                            ) : (
+                                <p className="text-xs text-blue-600 mt-2 text-center font-medium">
+                                    8 caracteres, formato MOV-XXXX. ¡Sumás puntos si te invita un amigo! 🎁
+                                </p>
+                            )}
                         </div>
 
                         {/* Legal Consent */}

@@ -162,12 +162,24 @@ export const LoginSchema = z.object({
     password: z.string().min(8, "Contraseña mínimo 8 caracteres"),
 });
 
+// Rama fix/referral-code-formato-forzado (2026-05-17): el referralCode ya
+// no acepta cualquier string. Validación con regex canónica del formato
+// MOV-XXXX (definida en src/lib/referral.ts). Si el usuario lo deja vacío,
+// está permitido (campo opcional). Si lo manda con formato inválido, el
+// schema rechaza con un mensaje claro.
 export const RegisterSchema = z.object({
     name: z.string().min(2, "Nombre mínimo 2 caracteres").max(100),
     email: z.string().email("Email inválido"),
     password: z.string().min(8, "Contraseña mínimo 8 caracteres"),
     phone: z.string().min(8, "Teléfono inválido").optional(),
-    referralCode: z.string().optional(),
+    referralCode: z
+        .string()
+        .regex(
+            /^MOV-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/,
+            "Código de referido inválido. Formato: MOV-XXXX (ej. MOV-AB23)",
+        )
+        .optional()
+        .or(z.literal("")),
 });
 
 // ─── Helper ─────────────────────────────────────────────────────────────────

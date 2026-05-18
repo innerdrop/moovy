@@ -12,6 +12,7 @@ import {
     TERMS_VERSION,
     MARKETING_CONSENT_VERSION,
 } from "@/lib/legal-versions";
+import { isValidReferralCode } from "@/lib/referral";
 
 export const dynamic = "force-dynamic";
 
@@ -124,11 +125,34 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if referral code is valid and find referrer
+        //
+        // Rama fix/referral-code-formato-forzado (2026-05-17):
+        // Antes el endpoint aceptaba cualquier string como referralCode y
+        // "silently ignore" si no matcheaba con ningún user. Eso ocultaba
+        // errores del usuario (tipear "pepito" en vez del código real).
+        // Ahora:
+        //   - Si el campo está vacío → opcional, seguimos sin referrer.
+        //   - Si tiene contenido pero NO tiene formato MOV-XXXX → 400 con
+        //     mensaje claro. El usuario sabe que se equivocó al escribir.
+        //   - Si tiene formato válido pero el código no existe en la DB →
+        //     "silently ignore" (mantenemos el comportamiento). No queremos
+        //     exponer enumeración de códigos válidos vía brute force.
         let referrerId: string | null = null;
         let referrerInfo: { id: string; name: string | null; pointsBalance: number } | null = null;
 
         if (data.referralCode && data.referralCode.trim()) {
             const referralCodeClean = data.referralCode.trim().toUpperCase();
+
+            if (!isValidReferralCode(referralCodeClean)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "Código de referido inválido. El formato correcto es MOV-XXXX (ej. MOV-AB23). Si no tenés código, dejá el campo vacío.",
+                    },
+                    { status: 400 },
+                );
+            }
+
             referrerInfo = await prisma.user.findUnique({
                 where: { referralCode: referralCodeClean },
                 select: { id: true, name: true, pointsBalance: true }
@@ -138,7 +162,9 @@ export async function POST(request: NextRequest) {
                 referrerId = referrerInfo.id;
                 // Referral code validated successfully
             } else {
-                // Invalid referral code — silently ignore
+                // Formato válido pero no existe en la DB — silently ignore para
+                // no exponer enumeración (alguien podría brute-forcear el espacio
+                // de 32^4 = ~1M códigos válidos buscando "hits").
             }
         }
 
