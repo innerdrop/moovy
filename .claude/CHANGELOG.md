@@ -10,6 +10,88 @@
 
 ---
 
+## 2026-05-18 (rama `chore/prelaunch-qa-checklist`)
+
+chore(qa): pre-launch QA checklist (MD + HTML interactivo branded)
+
+Sistema de control de calidad para el pre-launch con dos archivos
+complementarios en la raíz del repo:
+
+1. PRELAUNCH_CHECKLIST.md
+   Fuente de verdad versionable. ~180 items organizados por viaje de
+   usuario (Buyer / Comercio / Repartidor / Vendedor / OPS / Cross-
+   cutting). Cada item con criticidad 🔴 (bloqueante launch) / 🟡 (no
+   bloquea) y 5 estados de marca posibles:
+     [ ]  pendiente
+     [✅] pasa
+     [❌] falla
+     [⚠️] parcial / con observaciones
+     [🚫] bloqueado por otra cosa
+
+2. prelaunch-checklist.html
+   UI companion interactiva, self-contained, single-file. Open desde
+   file:// o desde el server. Diseño con branding Moovy:
+   - Plus Jakarta Sans (Google Fonts con fallback system stack)
+   - Gradient rojo #e60012 → #b8000e en el header
+   - Sidebar sticky con contadores por sección (X/Y items hechos)
+   - Filtros chip arriba: todos / pendientes / pasan / fallan /
+     parciales / bloqueados + criticidad (bloqueantes / no-bloquean)
+   - Búsqueda live por texto
+   - Cards por item con 4 botones pill (pasa/falla/parcial/bloqueado)
+     y textarea de observación que se auto-expande
+   - Items con color de fondo según estado (verde/rojo/ámbar/gris)
+   - Barra de progreso global animada en el header con desglose por
+     estado (chips de colores)
+   - FAB cluster bottom-right: 📥 Exportar MD, 🌓 Tema, 🔄 Reset
+   - Dark mode toggle con persistencia
+   - Mobile-first: sidebar drawer en mobile, FAB compactos
+   - Persistencia automática en localStorage (no se pierde el
+     progreso al cerrar la pestaña)
+   - Exportar MD genera un archivo con timestamp con TODOS los
+     estados + observaciones del usuario
+
+COBERTURA (consejo 14 roles):
+
+  Buyer (~50 items):    registro / login / store / cart / checkout
+                        MP+efectivo / scheduled / tracking / chat /
+                        rating / puntos MOOVER / marketplace / perfil
+  Comercio (~35):       registro / docs aprobación / dashboard /
+                        pedidos PENDING→DELIVERED / productos /
+                        config / payouts
+  Repartidor (~30):     registro / docs (DNI/licencia/seguro/RTO/CV)
+                        / online/offline / asignación / PIN doble /
+                        geofence / ganancias / pagos recibidos /
+                        soporte
+  Vendedor (~15):       registro / listings CRUD / pedidos / chat
+  OPS (~30):            login / usuarios / pedidos live / refunds /
+                        payouts / config-biblia / zones / emails /
+                        flags
+  Cross-cutting (~50):  seguridad (IDOR+rate+Zod+uploads) / perf
+                        (3G+lists) / legal (T&C+consent+soft delete)
+                        / infra (env+servicios) / monitoreo (Sentry+
+                        Pino) / pagos (webhook idempotente) / comms
+                        (matrix de eventos) / soporte (WA+errors)
+
+FLUJO DE USO:
+
+  1. Mauro abre prelaunch-checklist.html en su browser
+  2. Va probando cada flujo end-to-end y marca con un click
+  3. Si algo falla, escribe observación en el textarea
+  4. localStorage persiste todo automáticamente
+  5. Cuando termina, click "📥 Exportar MD" → descarga archivo .md
+  6. Pega el .md en Cowork y dice "leé el checklist y armá el plan
+     de acción para lanzar"
+  7. Claude cuenta % testeado, lista los ❌ y ⚠️ ordenados por
+     criticidad, propone plan priorizado, dice si está listo el
+     launch o qué falta
+
+Archivos:
+- PRELAUNCH_CHECKLIST.md (nuevo)
+- prelaunch-checklist.html (nuevo)
+- ISSUES.md (entry)
+
+**Archivos:** ISSUES.md, MOOVY-Deck-9410.pdf, PRELAUNCH_CHECKLIST.md, prelaunch-checklist.html
+
 ## 2026-05-18 (rama `fix/pin-bloqueado-mostrar-soporte`)
 
 fix(rider): PIN bloqueado por intentos ahora muestra soporte prominente

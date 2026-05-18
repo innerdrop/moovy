@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moovy — Pre-Launch QA Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --moovy-red: #e60012;
+            --moovy-red-dark: #b8000e;
+            --moovy-violet: #7C3AED;
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f4f4f5;
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-tertiary: #a1a1aa;
+            --border: #e4e4e7;
+            --border-strong: #d4d4d8;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+            --shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.12), 0 8px 16px -8px rgba(0, 0, 0, 0.06);
+            --state-pass: #16a34a;
+            --state-pass-bg: #f0fdf4;
+            --state-fail: #dc2626;
+            --state-fail-bg: #fef2f2;
+            --state-partial: #d97706;
+            --state-partial-bg: #fffbeb;
+            --state-blocked: #6b7280;
+            --state-blocked-bg: #f3f4f6;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #18181b;
+            --bg-tertiary: #27272a;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border: #27272a;
+            --border-strong: #3f3f46;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+            --shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.6), 0 8px 16px -8px rgba(0, 0, 0, 0.4);
+            --state-pass-bg: rgba(22, 163, 74, 0.12);
+            --state-fail-bg: rgba(220, 38, 38, 0.12);
+            --state-partial-bg: rgba(217, 119, 6, 0.12);
+            --state-blocked-bg: rgba(107, 114, 128, 0.18);
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-weight: 500;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background 0.2s, color 0.2s;
+            padding-bottom: 100px;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--moovy-red) 0%, var(--moovy-red-dark) 100%);
+            color: white;
+            padding: 32px 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 220px;
+            height: 220px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            filter: blur(40px);
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 22px;
+            backdrop-filter: blur(8px);
+        }
+
+        .brand-text { font-size: 13px; font-weight: 700; letter-spacing: 0.18em; opacity: 0.85; }
+        h1 { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+        .subtitle { margin: 8px 0 0; font-size: 15px; opacity: 0.92; font-weight: 500; }
+
+        /* GLOBAL PROGRESS */
+        .global-progress {
+            margin-top: 24px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .global-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .global-progress-label { font-size: 13px; font-weight: 600; opacity: 0.85; letter-spacing: 0.04em; text-transform: uppercase; }
+        .global-progress-numbers { font-size: 24px; font-weight: 800; }
+        .global-progress-numbers .small { font-size: 14px; opacity: 0.7; font-weight: 600; }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: white;
+            border-radius: 999px;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
+        }
+
+        .progress-breakdown {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .progress-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .chip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* FILTERS BAR */
+        .filters {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 240px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px 10px 38px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: all 0.15s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--moovy-red);
+            background: var(--bg-secondary);
+            box-shadow: 0 0 0 3px rgba(230, 0, 18, 0.08);
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            opacity: 0.5;
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .chip:hover { background: var(--border); }
+        .chip.active {
+            background: var(--moovy-red);
+            color: white;
+            border-color: var(--moovy-red);
+        }
+
+        /* LAYOUT */
+        .layout {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; padding: 16px; }
+            .sidebar { display: none; }
+            .sidebar.open { display: block; position: fixed; inset: 0; z-index: 100; background: var(--bg-primary); padding: 24px; overflow-y: auto; }
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-tertiary);
+            margin-bottom: 12px;
+            padding-left: 12px;
+        }
+
+        .section-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px;
+        }
+
+        .section-nav-item {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+
+        .section-nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .section-nav-item.active { background: var(--moovy-red); color: white; }
+        .section-nav-icon { font-size: 16px; }
+        .section-nav-count {
+            margin-left: auto;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 7px;
+            border-radius: 999px;
+        }
+        .section-nav-item.active .section-nav-count { background: rgba(255, 255, 255, 0.2); }
+        [data-theme="dark"] .section-nav-count { background: rgba(255, 255, 255, 0.06); }
+
+        /* MAIN */
+        .main { min-width: 0; }
+
+        .section {
+            margin-bottom: 40px;
+            scroll-margin-top: 80px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .section-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        .section-header-progress {
+            font-size: 14px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+        }
+
+        .section-progress {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 999px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .section-progress-fill {
+            height: 100%;
+            background: var(--moovy-red);
+            border-radius: 999px;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .subsection {
+            margin-bottom: 28px;
+        }
+
+        .subsection-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-tertiary);
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subsection-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* CARDS */
+        .items-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            transition: all 0.15s;
+        }
+
+        .item:hover {
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .item.state-pass { background: var(--state-pass-bg); border-color: var(--state-pass); }
+        .item.state-fail { background: var(--state-fail-bg); border-color: var(--state-fail); }
+        .item.state-partial { background: var(--state-partial-bg); border-color: var(--state-partial); }
+        .item.state-blocked { background: var(--state-blocked-bg); border-color: var(--state-blocked); }
+
+        .item-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .criticality-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            margin-top: 1px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .criticality-badge.critical {
+            background: rgba(230, 0, 18, 0.1);
+            color: var(--moovy-red);
+            border: 1px solid rgba(230, 0, 18, 0.2);
+        }
+
+        .criticality-badge.optional {
+            background: rgba(217, 119, 6, 0.1);
+            color: #d97706;
+            border: 1px solid rgba(217, 119, 6, 0.2);
+        }
+
+        .item-text {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            min-width: 0;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .state-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 11px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .state-btn:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-1px);
+        }
+
+        .state-btn.active.pass { background: var(--state-pass); color: white; border-color: var(--state-pass); }
+        .state-btn.active.fail { background: var(--state-fail); color: white; border-color: var(--state-fail); }
+        .state-btn.active.partial { background: var(--state-partial); color: white; border-color: var(--state-partial); }
+        .state-btn.active.blocked { background: var(--state-blocked); color: white; border-color: var(--state-blocked); }
+
+        .item-obs {
+            width: 100%;
+            min-height: 0;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            padding: 0;
+            border: none;
+            background: transparent;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--text-primary);
+            resize: none;
+            font-weight: 500;
+        }
+
+        .item.expanded .item-obs {
+            max-height: 200px;
+            opacity: 1;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            outline: none;
+            margin-top: 4px;
+        }
+
+        .item.expanded .item-obs:focus {
+            border-color: var(--moovy-red);
+            box-shadow: 0 0 0 3px rgba(230, 0, 18, 0.06);
+        }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .obs-toggle {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .obs-toggle:hover { color: var(--moovy-red); background: rgba(230, 0, 18, 0.05); }
+
+        /* FAB CLUSTER */
+        .fab-cluster {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 90;
+        }
+
+        .fab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .fab:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg), 0 0 20px rgba(230, 0, 18, 0.15);
+        }
+
+        .fab.primary {
+            background: var(--moovy-red);
+            color: white;
+            border-color: var(--moovy-red);
+        }
+
+        .fab.danger {
+            background: var(--bg-secondary);
+            color: var(--state-fail);
+            border-color: rgba(220, 38, 38, 0.3);
+        }
+
+        .fab-icon { font-size: 16px; }
+
+        /* MOBILE MENU TOGGLE */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 101;
+            background: var(--moovy-red);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        @media (max-width: 900px) {
+            .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+            .fab-cluster { bottom: 16px; right: 16px; }
+            .fab span:not(.fab-icon) { display: none; }
+            .fab { padding: 12px 14px; }
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: var(--text-primary);
+            color: var(--bg-secondary);
+            padding: 12px 20px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 200;
+            box-shadow: var(--shadow-lg);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-emoji { font-size: 48px; margin-bottom: 12px; }
+        .empty-state-text { font-size: 14px; font-weight: 600; }
+
+        /* HIDDEN */
+        .hidden { display: none !important; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menú">☰</button>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-logo">M</div>
+                <div>
+                    <div class="brand-text">MOOVY</div>
+                </div>
+            </div>
+            <h1>Pre-Launch QA Checklist</h1>
+            <p class="subtitle">Control de calidad meticuloso antes del lanzamiento público.</p>
+
+            <div class="global-progress">
+                <div class="global-progress-header">
+                    <span class="global-progress-label">Progreso global</span>
+                    <span class="global-progress-numbers" id="global-numbers">
+                        <span id="global-done">0</span><span class="small">/<span id="global-total">0</span></span>
+                        <span class="small" style="margin-left: 8px;">(<span id="global-pct">0</span>%)</span>
+                    </span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="global-bar" style="width: 0%"></div>
+                </div>
+                <div class="progress-breakdown" id="progress-breakdown"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="filters">
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Buscar test por descripción..." autocomplete="off">
+        </div>
+        <div class="filter-chips" id="status-filter">
+            <span class="chip active" data-filter="all">Todos</span>
+            <span class="chip" data-filter="pending">⬜ Pendientes</span>
+            <span class="chip" data-filter="pass">✅ Pasan</span>
+            <span class="chip" data-filter="fail">❌ Fallan</span>
+            <span class="chip" data-filter="partial">⚠️ Parciales</span>
+            <span class="chip" data-filter="blocked">🚫 Bloqueados</span>
+        </div>
+        <div class="filter-chips" id="criticality-filter">
+            <span class="chip" data-criticality="critical">🔴 Bloqueantes</span>
+            <span class="chip" data-criticality="optional">🟡 No bloquean</span>
+        </div>
+    </div>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-title">Secciones</div>
+            <ul class="section-nav" id="section-nav"></ul>
+        </aside>
+
+        <main class="main" id="main"></main>
+    </div>
+
+    <div class="fab-cluster">
+        <button class="fab primary" id="fab-export">
+            <span class="fab-icon">📥</span>
+            <span>Exportar MD</span>
+        </button>
+        <button class="fab" id="fab-theme">
+            <span class="fab-icon">🌓</span>
+            <span>Tema</span>
+        </button>
+        <button class="fab danger" id="fab-reset">
+            <span class="fab-icon">🔄</span>
+            <span>Reset</span>
+        </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    /* ─────────────────────────────────────────────────────────────────
+       DATA — mirror del PRELAUNCH_CHECKLIST.md
+       ───────────────────────────────────────────────────────────────── */
+    const SECTIONS = [
+        {
+            id: 'buyer', title: 'Buyer (Comprador)', icon: '🛒',
+            subsections: [
+                {
+                    title: 'Registro y login',
+                    items: [
+                        { c: 1, t: 'Crear cuenta nueva con email válido → recibe BuyerWelcome email + sesión iniciada' },
+                        { c: 1, t: 'Crear cuenta con email ya existente (soft-deleted) → devuelve 410, NO permite resurrección' },
+                        { c: 1, t: 'Crear cuenta sin aceptar T&C → bloquea submit + crea ConsentLog cuando acepta' },
+                        { c: 1, t: 'Login con credenciales válidas → JWT de 7 días + redirect a /' },
+                        { c: 1, t: 'Login con password incorrecto → mensaje claro "Credenciales inválidas"' },
+                        { c: 0, t: 'Recuperar password → flujo completo email + reset' },
+                        { c: 1, t: 'Logout → limpia sesión + redirect a /' },
+                        { c: 0, t: 'Login + cuenta deletedAt != null → bloquea + sugiere soporte' },
+                    ]
+                },
+                {
+                    title: 'Tienda y descubrimiento',
+                    items: [
+                        { c: 1, t: 'Home / carga en <3s en 3G simulado → hero + categorías + comercios' },
+                        { c: 1, t: 'Comercios sin image no aparecen en listado público' },
+                        { c: 1, t: 'Comercios con approvalStatus !== APPROVED no aparecen en listado público' },
+                        { c: 1, t: 'Tap en categoría → filtra comercios correctamente' },
+                        { c: 1, t: 'Búsqueda → resultados relevantes en <500ms' },
+                        { c: 0, t: 'Estado vacío en búsqueda → mensaje + CTA volver al inicio' },
+                        { c: 1, t: 'Página de comercio cerrado por horario → muestra cartel "Cerrado" + próximo horario apertura' },
+                        { c: 1, t: 'Página de comercio en zona excluida → muestra mensaje "No entregamos en esta zona"' },
+                    ]
+                },
+                {
+                    title: 'Carrito y checkout',
+                    items: [
+                        { c: 1, t: 'Agregar producto al carrito desde home → toast + contador BottomNav' },
+                        { c: 1, t: 'Aumentar/disminuir cantidad → recalcula subtotal correctamente' },
+                        { c: 1, t: 'Eliminar producto → desaparece del carrito + actualiza totales' },
+                        { c: 1, t: 'Carrito persiste al cerrar/reabrir pestaña (SavedCart)' },
+                        { c: 1, t: 'Checkout con MercadoPago Sandbox → redirect a MP + vuelta con payment_id + status PAID' },
+                        { c: 1, t: 'Checkout con pago en efectivo (feature flag ON) → crea Order PENDING sin pasar por MP' },
+                        { c: 1, t: 'Checkout con efectivo desactivado en OPS → la opción NO aparece en el selector de pago' },
+                        { c: 1, t: 'Checkout con scheduled delivery → permite elegir slot + queda como SCHEDULED' },
+                        { c: 1, t: 'Cupón válido → aplica descuento, absorbe Moovy (no el comercio)' },
+                        { c: 0, t: 'Cupón vencido / mal escrito → error específico' },
+                        { c: 1, t: 'Aplicar puntos MOOVER en checkout → respeta min 500pts, max 20% subtotal' },
+                        { c: 1, t: 'Subtotal $0 después de descuentos → bloquea checkout (no permitir)' },
+                        { c: 1, t: 'Distancia > umbral o zona excluida → bloquea checkout con mensaje claro' },
+                        { c: 1, t: 'Comercio en pausa durante checkout → bloquea con mensaje' },
+                        { c: 1, t: 'Stock 0 durante checkout → bloquea ese item y permite continuar sin él' },
+                    ]
+                },
+                {
+                    title: 'Tracking y pedido',
+                    items: [
+                        { c: 1, t: '/mis-pedidos lista todos los pedidos del usuario' },
+                        { c: 1, t: 'Filtros (activos/finalizados) funcionan' },
+                        { c: 1, t: 'Detalle de pedido /mis-pedidos/[orderId] muestra estado actual' },
+                        { c: 1, t: 'Status del pedido se actualiza en tiempo real (Socket.IO)' },
+                        { c: 1, t: 'Mapa de tracking en vivo se actualiza con la posición del driver' },
+                        { c: 1, t: 'Push notification cuando driver está cerca (nearDestinationNotified)' },
+                        { c: 1, t: 'Chat con comercio funciona mientras el pedido está activo' },
+                        { c: 1, t: 'Chat con driver funciona desde DRIVER_ASSIGNED hasta DELIVERED' },
+                        { c: 1, t: 'Botones de teléfono/chat se ocultan después de DELIVERED' },
+                        { c: 0, t: 'Botón de soporte visible y accesible en todos los estados' },
+                        { c: 1, t: 'Modal de calificación aparece automáticamente al pasar a DELIVERED' },
+                        { c: 1, t: 'Modal NO se cierra accidentalmente (no z-index conflicts con BottomNav)' },
+                        { c: 1, t: 'Modal persiste si el usuario lo cierra → reaparece la próxima vez' },
+                        { c: 1, t: 'Calificar al driver → guarda rating + comentario + el pedido NO vuelve a Pendiente' },
+                        { c: 1, t: 'Calificar al comercio → guarda rating + comentario sin afectar status' },
+                    ]
+                },
+                {
+                    title: 'Puntos MOOVER',
+                    items: [
+                        { c: 1, t: 'Botón MOOVER siempre visible en BottomNav (NUNCA detrás de flag)' },
+                        { c: 1, t: '/puntos carga balance, lifetime, redeemableValue' },
+                        { c: 1, t: 'Earn al pasar pedido a DELIVERED (10pts / $1.000 si nivel MOOVER)' },
+                        { c: 1, t: 'Earn es idempotente — pasar a DELIVERED dos veces NO duplica' },
+                        { c: 1, t: 'Burn en checkout — 1pt = $1 ARS, min 500, max 20% subtotal' },
+                        { c: 1, t: 'Niveles dinámicos suben en pedidos 5 (SILVER), 15 (GOLD), 40 (BLACK)' },
+                        { c: 1, t: 'Balance nunca negativo (defensa server-side)' },
+                        { c: 0, t: 'Cancelar pedido revierte EARN, devuelve REDEEM (reverseOrderPoints idempotente)' },
+                        { c: 0, t: 'Expiración 6 meses sin pedidos' },
+                        { c: 0, t: 'Signup bonus se otorga al crear cuenta (1.000 mes 1 / 500 mes 2+)' },
+                        { c: 0, t: 'Referral bonus al completar primer pedido del referido (1.000 + 500)' },
+                    ]
+                },
+                {
+                    title: 'Marketplace',
+                    items: [
+                        { c: 1, t: 'Botón Marketplace siempre visible en BottomNav (NUNCA detrás de flag)' },
+                        { c: 1, t: '/marketplace carga listings de vendedores' },
+                        { c: 1, t: 'Filtros por categoría / precio / condición funcionan' },
+                        { c: 1, t: 'Búsqueda dentro del marketplace funciona' },
+                        { c: 1, t: 'Detalle de listing muestra fotos, descripción, vendedor' },
+                        { c: 1, t: 'Agregar listing al carrito → genera SubOrder con sellerId' },
+                    ]
+                },
+                {
+                    title: 'Perfil y datos',
+                    items: [
+                        { c: 1, t: '/mi-perfil muestra datos del usuario' },
+                        { c: 1, t: 'Editar dirección → guarda + valida con Places API' },
+                        { c: 1, t: 'Cambiar password → flujo completo' },
+                        { c: 0, t: 'Direcciones múltiples → CRUD funciona' },
+                        { c: 1, t: 'Auto-delete (self-delete) anonimiza email + soft-delete + revoke sesión' },
+                        { c: 1, t: 'Notificaciones push funcionan (permisos solicitados al usuario)' },
+                    ]
+                },
+            ]
+        },
+        {
+            id: 'merchant', title: 'Comercio', icon: '🏪',
+            subsections: [
+                {
+                    title: 'Registro y aprobación',
+                    items: [
+                        { c: 1, t: 'Registro merchant desde /comercios/registro → crea Merchant con approvalStatus=PENDING' },
+                        { c: 1, t: 'Email recibido confirmando registro + esperar aprobación' },
+                        { c: 1, t: 'Upload de docs (DNI, CUIT, monotributo, etc.) con status PENDING por doc' },
+                        { c: 1, t: 'Validación CUIT con checksum AFIP (src/lib/cuit.ts)' },
+                        { c: 1, t: 'OPS aprueba doc por doc → cuando TODOS los requeridos están APPROVED, auto-activa' },
+                        { c: 1, t: 'OPS aprueba con source PHYSICAL requiere nota mínimo 5 chars (audit AAIP)' },
+                        { c: 1, t: 'OPS rechaza doc → notificación con rejectionReason' },
+                        { c: 1, t: 'Email cuando se aprueba el comercio' },
+                        { c: 1, t: 'Hard-lock server-side de docs aprobados — UI nunca es defensa' },
+                        { c: 0, t: 'Cambio post-aprobación → change-request formal con audit log' },
+                    ]
+                },
+                {
+                    title: 'Dashboard y pedidos',
+                    items: [
+                        { c: 1, t: '/comercios carga el dashboard con métricas' },
+                        { c: 1, t: 'Listado de pedidos con filtros (status, fecha)' },
+                        { c: 1, t: 'Pedido nuevo → notificación sonora + visual + push' },
+                        { c: 1, t: 'Confirmar pedido → status pasa a CONFIRMED + notifica al buyer' },
+                        { c: 1, t: 'Rechazar pedido → status REJECTED + refund automático si pagado MP' },
+                        { c: 1, t: 'Marcar listo → status READY + busca driver' },
+                        { c: 1, t: 'PIN de retiro visible SOLO cuando driver llegó Y comercio READY' },
+                        { c: 1, t: 'Timeout en PENDING → bloquea botón "Aceptar" automáticamente' },
+                        { c: 1, t: 'Pedidos programados aparecen con badge SCHEDULED + tiempo restante' },
+                        { c: 1, t: '"Tu venta" muestra subtotal (no total con delivery fee)' },
+                        { c: 1, t: '"Cobrás $X (-Y%)" muestra el neto post-comisión con tier dinámico' },
+                        { c: 1, t: 'Chat con buyer disponible en pedido activo' },
+                    ]
+                },
+                {
+                    title: 'Productos y catálogo',
+                    items: [
+                        { c: 1, t: 'Crear producto manual → guarda con todos los campos requeridos' },
+                        { c: 1, t: 'Crear producto con tamaño/peso → selector Glovo-style + advanced mode' },
+                        { c: 1, t: 'Editar producto → banner flotante "Tenés cambios sin guardar"' },
+                        { c: 1, t: 'Eliminar producto → confirmación + soft delete' },
+                        { c: 1, t: 'Importar paquete del catálogo MOOVY → carga productos con foto profesional' },
+                        { c: 1, t: 'Stock se descuenta automáticamente con cada venta' },
+                        { c: 1, t: 'Subir foto producto → comprimida a sharp + crop 1:1' },
+                        { c: 0, t: 'Categorías custom del comercio funcionan' },
+                        { c: 0, t: 'Productos destacados / sugeridos' },
+                    ]
+                },
+                {
+                    title: 'Configuración del comercio',
+                    items: [
+                        { c: 1, t: 'Editar perfil → banner flotante de cambios sin guardar' },
+                        { c: 1, t: 'Cambiar horarios → guarda + se aplica para mostrar "Abierto/Cerrado" en tienda' },
+                        { c: 1, t: 'Cambiar imagen del comercio → comprime + queda visible en listado' },
+                        { c: 1, t: 'Conectar MercadoPago OAuth → guarda mpAccessToken cifrado' },
+                        { c: 1, t: 'Pausar tienda manualmente → comercio aparece como CERRADO' },
+                        { c: 1, t: 'Loyalty tier (BRONCE/PLATA/ORO/DIAMANTE) refleja comisión correcta' },
+                        { c: 0, t: 'Redes sociales (Instagram, FB, WhatsApp) se muestran en perfil público' },
+                    ]
+                },
+                {
+                    title: 'Pagos al comercio (payouts)',
+                    items: [
+                        { c: 1, t: 'OPS genera PayoutBatch MERCHANT → CSV correcto' },
+                        { c: 1, t: 'Al marcar PAID → Order.commissionPaid se setea a true en los orders incluidos' },
+                        { c: 1, t: 'Comercio ve el histórico de pagos recibidos en su panel' },
+                        { c: 0, t: 'Comercio puede descargar CSV propio de su histórico' },
+                    ]
+                },
+            ]
+        },
+        {
+            id: 'driver', title: 'Repartidor', icon: '🛵',
+            subsections: [
+                {
+                    title: 'Registro y aprobación',
+                    items: [
+                        { c: 1, t: 'Registro desde /repartidor/registro con todos los datos requeridos' },
+                        { c: 1, t: 'Upload de docs: DNI, licencia, seguro, RTO, cédula verde (status per-doc)' },
+                        { c: 1, t: 'RTO NO es obligatorio pero declaración jurada T&C sí' },
+                        { c: 1, t: 'Validación CBU con checksum BCRA (src/lib/bank-account.ts)' },
+                        { c: 1, t: 'Botón "Cargar mi documentación" después del registro lleva al panel' },
+                        { c: 1, t: 'Confirmación del registro muestra DNI/CUIT cargados (no campos vacíos)' },
+                        { c: 1, t: 'Sin error de consola en aceptación T&C' },
+                        { c: 1, t: 'Cron diario de vencimiento docs avisa 7d/3d/1d antes + auto-suspende al vencer' },
+                        { c: 1, t: 'Aprobación driver dispara email + activa rol DRIVER en JWT (socket roles_updated)' },
+                    ]
+                },
+                {
+                    title: 'Estado online y asignación',
+                    items: [
+                        { c: 1, t: 'Toggle online/offline funciona' },
+                        { c: 1, t: 'Estado online persiste tras reload' },
+                        { c: 1, t: 'GPS pidiendo permisos al ir online' },
+                        { c: 1, t: 'Driver con GPS denegado NO puede ir online (muestra mensaje claro)' },
+                        { c: 1, t: 'Pedido asignado → notificación sonora + push + UI con detalles' },
+                        { c: 1, t: 'Aceptar → arranca tracking + state PICKED_UP_PENDING' },
+                        { c: 1, t: 'Rechazar → vuelve a PendingAssignment para próximo driver' },
+                        { c: 1, t: 'Timeout sin responder → auto-reasigna' },
+                        { c: 0, t: 'Smart batching <3km funciona (asigna 2 pedidos al mismo driver)' },
+                        { c: 0, t: 'Sin drivers disponibles → status UNASSIGNABLE + refund auto si MP' },
+                    ]
+                },
+                {
+                    title: 'PIN doble y entrega',
+                    items: [
+                        { c: 1, t: 'Llegar al comercio → state DRIVER_ARRIVED + comercio ve el PIN' },
+                        { c: 1, t: 'Ingresar PIN correcto de retiro → state PICKED_UP' },
+                        { c: 1, t: 'PIN incorrecto → muestra intentos restantes' },
+                        { c: 1, t: 'Máximo intentos PIN retiro → state bloqueado + botones soporte VISIBLES' },
+                        { c: 1, t: 'Geofence: PIN fuera de 100m bloquea con mensaje claro + botones soporte' },
+                        { c: 1, t: 'Ingresar PIN correcto de entrega → state DELIVERED' },
+                        { c: 1, t: 'Máximo intentos PIN entrega → mismo flujo de soporte' },
+                        { c: 1, t: 'Driver con ≥3 incidentes PIN → fraudScore + auto-suspend' },
+                        { c: 1, t: 'Reportar problema desde modal → email a alertEmails + audit log' },
+                        { c: 1, t: 'WhatsApp soporte abre con mensaje pre-armado contextual al error' },
+                    ]
+                },
+                {
+                    title: 'Ganancias y pagos',
+                    items: [
+                        { c: 1, t: 'EarningsView carga "Mis ganancias" con tabs "Ganancias" y "Pagos recibidos"' },
+                        { c: 1, t: 'Selector de período: Esta semana / Este mes / últimos 12 meses / Todo el tiempo' },
+                        { c: 1, t: 'Tab "Pagos recibidos" muestra historial de PayoutBatch PAID del driver' },
+                        { c: 1, t: 'Total acumulado histórico se calcula correctamente' },
+                        { c: 1, t: 'Propinas declaradas aparecen separadas (no las procesa Moovy)' },
+                        { c: 0, t: 'Driver sin bankAlias ve warning para cargarlo' },
+                        { c: 1, t: 'Tracking GPS se sube al server cada 10s mientras tiene pedido activo' },
+                    ]
+                },
+            ]
+        },
+        {
+            id: 'seller', title: 'Vendedor Marketplace', icon: '🛍️',
+            subsections: [
+                {
+                    title: 'Registro y configuración',
+                    items: [
+                        { c: 1, t: 'Registro seller desde /vendedor/registro → SellerProfile creado' },
+                        { c: 1, t: 'Email de bienvenida (rama feat/welcome-email-seller)' },
+                        { c: 1, t: 'Validación de docs fiscales + DNI/CUIT' },
+                        { c: 1, t: 'Aprobación admin → activa rol SELLER' },
+                        { c: 0, t: 'Conectar MP OAuth → token cifrado' },
+                    ]
+                },
+                {
+                    title: 'Listings y ventas',
+                    items: [
+                        { c: 1, t: 'Crear listing con foto, descripción, precio, categoría peso' },
+                        { c: 1, t: 'Editar listing' },
+                        { c: 1, t: 'Pausar/activar listing' },
+                        { c: 1, t: 'Eliminar listing → soft delete' },
+                        { c: 1, t: 'Variantes (talle, color) funcionan si aplican' },
+                        { c: 1, t: 'Stock se descuenta con cada venta' },
+                    ]
+                },
+                {
+                    title: 'Pedidos y panel',
+                    items: [
+                        { c: 1, t: '/vendedor/pedidos lista SubOrders del seller' },
+                        { c: 1, t: 'Filtros por estado funcionan' },
+                        { c: 1, t: '"Tu venta" muestra subtotal, "Cobrás" muestra sellerPayout (12% comisión)' },
+                        { c: 1, t: 'Chat con buyer disponible en pedido activo' },
+                        { c: 1, t: 'Chat con driver disponible en multi-vendor' },
+                        { c: 1, t: 'Notificación sonora + visual + push en pedido nuevo' },
+                    ]
+                },
+            ]
+        },
+        {
+            id: 'ops', title: 'OPS (Admin)', icon: '🛠️',
+            subsections: [
+                {
+                    title: 'Login y acceso',
+                    items: [
+                        { c: 1, t: 'Login OPS desde /ops/login con credenciales admin' },
+                        { c: 1, t: 'Proxy bloquea /ops/* sin rol ADMIN' },
+                        { c: 1, t: 'Logout → limpia sesión + redirect a login' },
+                        { c: 1, t: 'Selector de panel después de login (si tiene múltiples roles)' },
+                    ]
+                },
+                {
+                    title: 'Gestión de usuarios',
+                    items: [
+                        { c: 1, t: '/ops/usuarios lista todos los usuarios con paginación' },
+                        { c: 1, t: 'Auto-refresh cada 30s (pausa cuando pestaña no visible)' },
+                        { c: 1, t: 'Botón "Actualizar" manual + label "Hace X segundos"' },
+                        { c: 1, t: 'Filtros por rol (Buyer, Merchant, Driver, Seller, Admin)' },
+                        { c: 1, t: 'Tabs con contadores (PENDING, APPROVED, etc.)' },
+                        { c: 1, t: 'Badge de pendientes en menú de OPS' },
+                        { c: 1, t: 'Form de creación admin coincide con registro público (paridad)' },
+                        { c: 1, t: 'Soft-delete user desde OPS funciona (no anonimiza email)' },
+                    ]
+                },
+                {
+                    title: 'Pedidos en vivo',
+                    items: [
+                        { c: 1, t: '/ops/pedidos/live muestra pedidos activos en tiempo real' },
+                        { c: 1, t: 'Refund manual con confirmación textual "ELIMINAR DEFINITIVAMENTE"' },
+                        { c: 1, t: 'Reasignar driver con audit log' },
+                        { c: 1, t: 'Override geofence con audit log' },
+                    ]
+                },
+                {
+                    title: 'Aprobaciones de docs',
+                    items: [
+                        { c: 1, t: 'Per-doc status (PENDING/APPROVED/REJECTED) + bloqueo server-side' },
+                        { c: 1, t: 'Aprobación PHYSICAL pide nota mín 5 chars' },
+                        { c: 1, t: 'Auto-activación cuando TODOS los requeridos en APPROVED' },
+                        { c: 1, t: 'Auto-refresh del JWT del actor afectado (socket roles_updated)' },
+                        { c: 1, t: 'Mutations admin parsean data.error y muestran en toast' },
+                    ]
+                },
+                {
+                    title: 'Configuración',
+                    items: [
+                        { c: 1, t: 'Config Biblia v3 editable (riderCommissionPercent, costo km, etc.)' },
+                        { c: 1, t: 'Zonas de delivery (PostGIS) editable desde /ops/zonas-delivery' },
+                        { c: 1, t: 'Zonas excluidas configurables (no hardcoded)' },
+                        { c: 1, t: 'PointsConfig editable' },
+                        { c: 1, t: 'MerchantLoyaltyConfig (tiers) editable' },
+                        { c: 1, t: 'EmailTemplate editable con preview' },
+                        { c: 1, t: 'PlaybookChecklist editable' },
+                        { c: 1, t: 'Segmentos de usuarios + broadcast campaigns con consent check' },
+                        { c: 1, t: 'Feature flags togglean correctamente con cache 30s + invalidación' },
+                        { c: 1, t: 'Panel /ops/feature-flags NO muestra buyer.marketplace ni buyer.puntos-moover (post-cleanup)' },
+                    ]
+                },
+                {
+                    title: 'Payouts y refunds',
+                    items: [
+                        { c: 1, t: 'Generar PayoutBatch DRIVER con periodo configurable → CSV correcto' },
+                        { c: 1, t: 'Generar PayoutBatch MERCHANT idem' },
+                        { c: 1, t: 'Mark-paid con confirmación textual "CONFIRMAR PAGO" + audit log' },
+                        { c: 1, t: 'Refund manual con confirmación + audit + email al buyer' },
+                        { c: 1, t: 'CSV cuadra: ingreso_moovy = comisión_merchant + comisión_seller + delivery_fee × (1 - riderCommission%)' },
+                    ]
+                },
+            ]
+        },
+        {
+            id: 'cross', title: 'Cross-cutting', icon: '🔧',
+            subsections: [
+                {
+                    title: 'Seguridad',
+                    items: [
+                        { c: 1, t: 'IDOR test: usuario A intenta ver pedido de usuario B → 403' },
+                        { c: 1, t: 'IDOR test: driver A intenta marcar PIN de driver B → 403' },
+                        { c: 1, t: 'IDOR test: merchant A intenta editar producto de merchant B → 403' },
+                        { c: 1, t: 'Rate limit 60 req/min en endpoints públicos' },
+                        { c: 1, t: 'Rate limit en login (5/min para evitar brute force)' },
+                        { c: 1, t: 'Zod schema en TODOS los inputs de API routes' },
+                        { c: 1, t: 'Upload de imágenes valida magic bytes + max 10MB' },
+                        { c: 1, t: 'SQL injection bloqueada (Prisma + $queryRaw revisado)' },
+                        { c: 1, t: 'XSS: dangerouslySetInnerHTML sanitizado donde aplica' },
+                        { c: 1, t: 'CSRF: origin check en endpoints sensibles' },
+                        { c: 1, t: 'Tokens cifrados (mpAccessToken, mpRefreshToken) en DB' },
+                        { c: 1, t: 'CUIT/CBU/DNI cifrados — decrypt<Modelo>Data antes de response' },
+                        { c: 1, t: 'Audit log para refund / delete / reassign / role-change' },
+                        { c: 0, t: 'Headers de seguridad (CSP, X-Frame-Options, etc.) configurados' },
+                    ]
+                },
+                {
+                    title: 'Performance',
+                    items: [
+                        { c: 1, t: 'Home / carga en <3s en 3G simulado (DevTools throttling)' },
+                        { c: 1, t: 'Listado de 50+ pedidos en /ops/pedidos paginado correctamente' },
+                        { c: 1, t: 'Mapa con muchos markers no traba el browser' },
+                        { c: 1, t: 'Imágenes optimizadas con sharp + next/image' },
+                        { c: 0, t: 'Lazy loading de dynamic imports donde aplica' },
+                        { c: 0, t: 'Sin N+1 queries (revisar logs de Prisma con ?logging=true)' },
+                        { c: 0, t: 'Caché in-memory de StoreSettings/PointsConfig (30s TTL)' },
+                    ]
+                },
+                {
+                    title: 'Legal y privacidad',
+                    items: [
+                        { c: 1, t: '/terminos accesible y actualizado' },
+                        { c: 1, t: '/politica-privacidad accesible y actualizado' },
+                        { c: 1, t: 'ConsentLog se crea al aceptar T&C' },
+                        { c: 1, t: 'Soft delete obligatorio para User / Merchant / Driver' },
+                        { c: 1, t: 'Self-delete anonimiza email del usuario eliminado' },
+                        { c: 1, t: 'Self-delete revoca todas las sesiones activas' },
+                        { c: 1, t: 'Hard delete (Order/SubOrder) requiere confirmación textual literal' },
+                        { c: 1, t: 'Datos sensibles (CUIT/CBU/DNI/tokens) cifrados at-rest' },
+                        { c: 0, t: 'GDPR/AAIP: usuario puede exportar sus datos' },
+                        { c: 0, t: 'Política de retención de logs documentada' },
+                    ]
+                },
+                {
+                    title: 'Infra y configuración',
+                    items: [
+                        { c: 1, t: 'Variables de entorno completas en .env.production (DATABASE_URL, AUTH_SECRET, MP_*, SMTP_*, VAPID_*, GOOGLE_MAPS_*, SENTRY_*)' },
+                        { c: 1, t: 'PostGIS Docker arriba en puerto 5436 (prod)' },
+                        { c: 1, t: 'MP webhook URL configurada en panel MP apuntando a prod' },
+                        { c: 1, t: 'SMTP funciona — test: enviar BuyerWelcome y recibirlo' },
+                        { c: 1, t: 'Sentry recibe errores client + server + edge' },
+                        { c: 1, t: 'Sentry tunnel route /monitoring funciona' },
+                        { c: 1, t: 'Sentry PII scrubbing aplicado (no leaks de email/CBU/CUIT/tokens)' },
+                        { c: 1, t: 'Socket.IO socket-server arriba' },
+                        { c: 1, t: 'Crons configurados (CRON_SECRET headers): expiración docs, location-cleanup, broadcasts' },
+                        { c: 0, t: 'Redis (opcional) — si no, fallback in-memory activo' },
+                    ]
+                },
+                {
+                    title: 'Monitoreo y observabilidad',
+                    items: [
+                        { c: 1, t: 'Logs estructurados con Pino (orderId, userId, action)' },
+                        { c: 1, t: 'Webhooks loguean recepción + procesamiento + resultado' },
+                        { c: 1, t: 'Sentry recibe error capturado al disparar uno intencional' },
+                        { c: 1, t: 'Healthcheck /api/healthcheck responde 200' },
+                        { c: 1, t: 'CronRunLog se popula correctamente' },
+                        { c: 0, t: 'Métricas básicas (req count, error rate, p95 latency) visibles' },
+                    ]
+                },
+                {
+                    title: 'Pagos y MercadoPago',
+                    items: [
+                        { c: 1, t: 'Webhook MP en producción recibe eventos (test card aprobado)' },
+                        { c: 1, t: 'Webhook valida monto vs total con tolerancia $1' },
+                        { c: 1, t: 'Webhook idempotente — mandar el mismo evento 2 veces NO duplica' },
+                        { c: 1, t: 'Refund automático en webhook RECHAZADO + restore stock' },
+                        { c: 1, t: 'EventId determinístico (no UUID random) en MpWebhookLog' },
+                        { c: 1, t: 'Test cards: APRO (aprobado), CONT (en proceso), CALL (rechazado)' },
+                        { c: 1, t: 'Split payments funcionando si MP OAuth conectado en merchants' },
+                        { c: 1, t: 'Comisiones: comercio MES 1 → 0%' },
+                        { c: 1, t: 'Comisiones: comercio MES 2 BRONCE → 8%' },
+                        { c: 1, t: 'Comisiones: seller marketplace → 12%' },
+                        { c: 1, t: 'Cupón → absorbe Moovy (no comercio)' },
+                    ]
+                },
+                {
+                    title: 'Comunicaciones (matrix por evento)',
+                    items: [
+                        { c: 1, t: 'Pedido creado → push buyer + email + in-app' },
+                        { c: 1, t: 'Pedido confirmado por comercio → push buyer + email' },
+                        { c: 1, t: 'Pedido listo (READY) → push buyer' },
+                        { c: 1, t: 'Driver asignado → push buyer + socket + chat enabled' },
+                        { c: 1, t: 'Driver en camino al comercio (PICKED_UP) → push buyer' },
+                        { c: 1, t: 'Driver cerca del destino → push (nearDestinationNotified)' },
+                        { c: 1, t: 'Pedido entregado (DELIVERED) → push buyer + modal calificación auto' },
+                        { c: 1, t: 'Pedido cancelado por comercio → push buyer + email + refund' },
+                        { c: 1, t: 'Pedido sin driver (UNASSIGNABLE) → push buyer + email + refund' },
+                        { c: 1, t: 'Welcome email al crear cuenta (per role: buyer/merchant/driver/seller)' },
+                        { c: 1, t: 'Email a OPS cuando comentario en review se marca como PENDING' },
+                        { c: 0, t: 'Push de calificación pendiente 24h después de DELIVERED' },
+                    ]
+                },
+                {
+                    title: 'Soporte y UX',
+                    items: [
+                        { c: 1, t: 'WhatsApp soporte funciona desde PinKeypad (OUT_OF_GEOFENCE)' },
+                        { c: 1, t: 'WhatsApp soporte funciona desde PinKeypad (TOO_MANY_ATTEMPTS)' },
+                        { c: 1, t: 'WhatsApp soporte funciona desde botón universal "¿Tenés problemas?"' },
+                        { c: 1, t: 'WhatsApp soporte funciona desde /soporte página pública' },
+                        { c: 1, t: 'Errores user-facing dicen QUÉ HACER (no "Error 500")' },
+                        { c: 1, t: 'Errores en español argentino sin anglicismos' },
+                        { c: 1, t: 'NUNCA "OPS" en strings user-facing → "el equipo de Moovy"' },
+                        { c: 1, t: 'NUNCA mencionar competidores en strings user-facing' },
+                        { c: 1, t: 'Empty states amigables (no en blanco)' },
+                        { c: 1, t: 'Loading states con skeleton (no spinner blanco)' },
+                        { c: 1, t: 'Mobile-first: todos los flujos críticos funcionan en celular' },
+                        { c: 1, t: 'Touch targets ≥44px en mobile' },
+                    ]
+                },
+            ]
+        }
+    ];
+
+    /* ─────────────────────────────────────────────────────────────────
+       Build IDs and flat list
+       ───────────────────────────────────────────────────────────────── */
+    let ITEM_COUNT = 0;
+    const FLAT_ITEMS = [];
+    SECTIONS.forEach((section, si) => {
+        section.subsections.forEach((sub, ssi) => {
+            sub.items.forEach((item, ii) => {
+                item.id = `${section.id}-${ssi.toString().padStart(2, '0')}-${ii.toString().padStart(2, '0')}`;
+                item.sectionId = section.id;
+                item.sectionTitle = section.title;
+                item.subsectionTitle = sub.title;
+                FLAT_ITEMS.push(item);
+                ITEM_COUNT++;
+            });
+        });
+    });
+
+    /* ─────────────────────────────────────────────────────────────────
+       State management
+       ───────────────────────────────────────────────────────────────── */
+    const STORAGE_KEY = 'moovy-prelaunch-checklist-v1';
+    const THEME_KEY = 'moovy-prelaunch-theme';
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            return parsed.items || {};
+        } catch { return {}; }
+    }
+
+    function saveState() {
+        const payload = {
+            items: state,
+            savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    let state = loadState();
+    let currentStatusFilter = 'all';
+    let currentCriticalityFilter = null;
+    let currentSearch = '';
+
+    function getItemState(id) {
+        return state[id] || { state: null, obs: '', updatedAt: null };
+    }
+
+    function setItemState(id, patch) {
+        const existing = state[id] || { state: null, obs: '', updatedAt: null };
+        state[id] = {
+            ...existing,
+            ...patch,
+            updatedAt: new Date().toISOString(),
+        };
+        saveState();
+        render();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Render
+       ───────────────────────────────────────────────────────────────── */
+    const STATE_MAP = {
+        pass: { emoji: '✅', class: 'pass', mdSymbol: '✅' },
+        fail: { emoji: '❌', class: 'fail', mdSymbol: '❌' },
+        partial: { emoji: '⚠️', class: 'partial', mdSymbol: '⚠️' },
+        blocked: { emoji: '🚫', class: 'blocked', mdSymbol: '🚫' },
+    };
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function matchesFilters(item) {
+        const itemState = getItemState(item.id);
+        // Status filter
+        if (currentStatusFilter !== 'all') {
+            const s = itemState.state;
+            if (currentStatusFilter === 'pending' && s !== null) return false;
+            if (currentStatusFilter !== 'pending' && s !== currentStatusFilter) return false;
+        }
+        // Criticality filter
+        if (currentCriticalityFilter === 'critical' && item.c !== 1) return false;
+        if (currentCriticalityFilter === 'optional' && item.c !== 0) return false;
+        // Search
+        if (currentSearch) {
+            const q = currentSearch.toLowerCase();
+            if (!item.t.toLowerCase().includes(q)) return false;
+        }
+        return true;
+    }
+
+    function renderProgressBreakdown(stats) {
+        const el = document.getElementById('progress-breakdown');
+        el.innerHTML = `
+            <span class="progress-chip"><span class="chip-dot" style="background:#22c55e"></span>${stats.pass} pasan</span>
+            <span class="progress-chip"><span class="chip-dot" style="background:#ef4444"></span>${stats.fail} fallan</span>
+            <span class="progress-chip"><span class="chip-dot" style="background:#f59e0b"></span>${stats.partial} parciales</span>
+            <span class="progress-chip"><span class="chip-dot" style="background:#9ca3af"></span>${stats.blocked} bloqueados</span>
+            <span class="progress-chip"><span class="chip-dot" style="background:rgba(255,255,255,0.3)"></span>${stats.pending} pendientes</span>
+        `;
+    }
+
+    function computeStats(items) {
+        const stats = { total: items.length, pass: 0, fail: 0, partial: 0, blocked: 0, pending: 0, done: 0 };
+        items.forEach(it => {
+            const s = getItemState(it.id).state;
+            if (s === 'pass') { stats.pass++; stats.done++; }
+            else if (s === 'fail') { stats.fail++; stats.done++; }
+            else if (s === 'partial') { stats.partial++; stats.done++; }
+            else if (s === 'blocked') { stats.blocked++; stats.done++; }
+            else stats.pending++;
+        });
+        return stats;
+    }
+
+    function renderSidebar() {
+        const nav = document.getElementById('section-nav');
+        nav.innerHTML = '';
+        SECTIONS.forEach(section => {
+            const items = FLAT_ITEMS.filter(i => i.sectionId === section.id);
+            const stats = computeStats(items);
+            const li = document.createElement('li');
+            li.className = 'section-nav-item';
+            li.dataset.section = section.id;
+            li.innerHTML = `
+                <span class="section-nav-icon">${section.icon}</span>
+                <span style="flex:1;">${section.title}</span>
+                <span class="section-nav-count">${stats.done}/${stats.total}</span>
+            `;
+            li.onclick = () => {
+                document.getElementById(`section-${section.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('sidebar').classList.remove('open');
+            };
+            nav.appendChild(li);
+        });
+    }
+
+    function renderMain() {
+        const main = document.getElementById('main');
+        main.innerHTML = '';
+
+        let totalVisible = 0;
+
+        SECTIONS.forEach(section => {
+            const sectionItems = FLAT_ITEMS.filter(i => i.sectionId === section.id);
+            const sectionStats = computeStats(sectionItems);
+            const sectionEl = document.createElement('div');
+            sectionEl.className = 'section';
+            sectionEl.id = `section-${section.id}`;
+
+            const visibleSectionItems = sectionItems.filter(matchesFilters);
+            totalVisible += visibleSectionItems.length;
+
+            const pct = sectionStats.total > 0 ? Math.round((sectionStats.done / sectionStats.total) * 100) : 0;
+
+            sectionEl.innerHTML = `
+                <div class="section-header">
+                    <h2>${section.icon} ${section.title}</h2>
+                    <span class="section-header-progress">${sectionStats.done}/${sectionStats.total} · ${pct}%</span>
+                </div>
+                <div class="section-progress">
+                    <div class="section-progress-fill" style="width:${pct}%"></div>
+                </div>
+            `;
+
+            section.subsections.forEach(sub => {
+                const visibleSubItems = sub.items.filter(matchesFilters);
+                if (visibleSubItems.length === 0) return;
+
+                const subEl = document.createElement('div');
+                subEl.className = 'subsection';
+                subEl.innerHTML = `<h3 class="subsection-title">${sub.title}</h3><div class="items-grid"></div>`;
+                const grid = subEl.querySelector('.items-grid');
+
+                visibleSubItems.forEach(item => {
+                    const itemState = getItemState(item.id);
+                    const stateClass = itemState.state ? `state-${itemState.state}` : '';
+                    const expanded = (itemState.obs && itemState.obs.length > 0) ? 'expanded' : '';
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = `item ${stateClass} ${expanded}`;
+                    itemEl.dataset.id = item.id;
+
+                    const criticalityHtml = item.c === 1
+                        ? `<span class="criticality-badge critical" title="Bloqueante para launch">🔴</span>`
+                        : `<span class="criticality-badge optional" title="No bloquea launch">🟡</span>`;
+
+                    itemEl.innerHTML = `
+                        <div class="item-header">
+                            ${criticalityHtml}
+                            <div class="item-text">${escapeHtml(item.t)}</div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="state-btn pass ${itemState.state === 'pass' ? 'active' : ''}" data-state="pass">✅ Pasa</button>
+                            <button class="state-btn fail ${itemState.state === 'fail' ? 'active' : ''}" data-state="fail">❌ Falla</button>
+                            <button class="state-btn partial ${itemState.state === 'partial' ? 'active' : ''}" data-state="partial">⚠️ Parcial</button>
+                            <button class="state-btn blocked ${itemState.state === 'blocked' ? 'active' : ''}" data-state="blocked">🚫 Bloqueado</button>
+                        </div>
+                        <textarea class="item-obs" placeholder="Observación, qué falla, cómo reproducir, contexto...">${escapeHtml(itemState.obs || '')}</textarea>
+                        <div class="item-meta">
+                            <button class="obs-toggle">${expanded ? 'Cerrar observación' : '+ Agregar observación'}</button>
+                            <span>${itemState.updatedAt ? `Última actualización: ${new Date(itemState.updatedAt).toLocaleString('es-AR')}` : ''}</span>
+                        </div>
+                    `;
+
+                    itemEl.querySelectorAll('.state-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            const newState = btn.dataset.state;
+                            const cur = getItemState(item.id).state;
+                            setItemState(item.id, { state: cur === newState ? null : newState });
+                        };
+                    });
+
+                    const textarea = itemEl.querySelector('.item-obs');
+                    textarea.oninput = (e) => {
+                        const id = item.id;
+                        const existing = state[id] || { state: null, obs: '', updatedAt: null };
+                        state[id] = { ...existing, obs: e.target.value, updatedAt: new Date().toISOString() };
+                        saveState();
+                    };
+                    textarea.onblur = () => render();
+
+                    itemEl.querySelector('.obs-toggle').onclick = (e) => {
+                        e.preventDefault();
+                        itemEl.classList.toggle('expanded');
+                        if (itemEl.classList.contains('expanded')) {
+                            textarea.focus();
+                        }
+                    };
+
+                    grid.appendChild(itemEl);
+                });
+
+                sectionEl.appendChild(subEl);
+            });
+
+            if (visibleSectionItems.length > 0) {
+                main.appendChild(sectionEl);
+            }
+        });
+
+        if (totalVisible === 0) {
+            main.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-emoji">🔍</div>
+                    <div class="empty-state-text">No hay tests que coincidan con los filtros</div>
+                </div>
+            `;
+        }
+    }
+
+    function renderProgress() {
+        const stats = computeStats(FLAT_ITEMS);
+        const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+        document.getElementById('global-done').textContent = stats.done;
+        document.getElementById('global-total').textContent = stats.total;
+        document.getElementById('global-pct').textContent = pct;
+        document.getElementById('global-bar').style.width = pct + '%';
+        renderProgressBreakdown(stats);
+    }
+
+    function render() {
+        renderProgress();
+        renderSidebar();
+        renderMain();
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Theme
+       ───────────────────────────────────────────────────────────────── */
+    function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        localStorage.setItem(THEME_KEY, theme);
+    }
+    applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+
+    document.getElementById('fab-theme').onclick = () => {
+        const current = document.documentElement.dataset.theme;
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+        toast(`Tema ${current === 'dark' ? 'claro' : 'oscuro'}`);
+    };
+
+    /* ─────────────────────────────────────────────────────────────────
+       Toast
+       ───────────────────────────────────────────────────────────────── */
+    let toastTimeout;
+    function toast(text) {
+        const t = document.getElementById('toast');
+        t.textContent = text;
+        t.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       Export MD
+       ───────────────────────────────────────────────────────────────── */
+    function exportToMD() {
+        const lines = [];
+        lines.push('# Moovy — Pre-Launch QA Checklist (resultados exportados)');
+        lines.push('');
+        const stats = computeStats(FLAT_ITEMS);
+        const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+        lines.push(`> **Exportado**: ${new Date().toISOString()}`);
+        lines.push(`> **Progreso**: ${stats.done}/${stats.total} (${pct}%)`);
+        lines.push(`> ✅ ${stats.pass} pasan · ❌ ${stats.fail} fallan · ⚠️ ${stats.partial} parciales · 🚫 ${stats.blocked} bloqueados · ⬜ ${stats.pending} pendientes`);
+        lines.push('');
+        lines.push('---');
+        lines.push('');
+
+        SECTIONS.forEach(section => {
+            const sectionItems = FLAT_ITEMS.filter(i => i.sectionId === section.id);
+            const sStats = computeStats(sectionItems);
+            const sPct = sStats.total > 0 ? Math.round((sStats.done / sStats.total) * 100) : 0;
+            lines.push(`## ${section.icon} ${section.title}  (${sStats.done}/${sStats.total} · ${sPct}%)`);
+            lines.push('');
+            section.subsections.forEach(sub => {
+                lines.push(`### ${sub.title}`);
+                lines.push('');
+                sub.items.forEach(item => {
+                    const is = getItemState(item.id);
+                    const symbol = is.state ? STATE_MAP[is.state].mdSymbol : ' ';
+                    const crit = item.c === 1 ? '🔴' : '🟡';
+                    lines.push(`- [${symbol}] ${crit} ${item.t}`);
+                    if (is.obs && is.obs.trim()) {
+                        const obsLines = is.obs.split('\n').map(l => `  > ${l}`).join('\n');
+                        lines.push(obsLines);
+                    }
+                });
+                lines.push('');
+            });
+        });
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        a.href = url;
+        a.download = `moovy-checklist-${stamp}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast('Checklist exportado a .md');
+    }
+
+    document.getElementById('fab-export').onclick = exportToMD;
+
+    /* ─────────────────────────────────────────────────────────────────
+       Reset
+       ───────────────────────────────────────────────────────────────── */
+    document.getElementById('fab-reset').onclick = () => {
+        if (!confirm('¿Resetear TODO el progreso? Esto borra todas las marcas y observaciones de localStorage. No se puede deshacer.')) return;
+        state = {};
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+        toast('Progreso reseteado');
+    };
+
+    /* ─────────────────────────────────────────────────────────────────
+       Filters
+       ───────────────────────────────────────────────────────────────── */
+    document.querySelectorAll('#status-filter .chip').forEach(chip => {
+        chip.onclick = () => {
+            document.querySelectorAll('#status-filter .chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentStatusFilter = chip.dataset.filter;
+            renderMain();
+        };
+    });
+
+    document.querySelectorAll('#criticality-filter .chip').forEach(chip => {
+        chip.onclick = () => {
+            const value = chip.dataset.criticality;
+            if (currentCriticalityFilter === value) {
+                currentCriticalityFilter = null;
+                chip.classList.remove('active');
+            } else {
+                document.querySelectorAll('#criticality-filter .chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                currentCriticalityFilter = value;
+            }
+            renderMain();
+        };
+    });
+
+    document.getElementById('search').oninput = (e) => {
+        currentSearch = e.target.value;
+        renderMain();
+    };
+
+    /* Mobile menu */
+    document.getElementById('mobile-menu-btn').onclick = () => {
+        document.getElementById('sidebar').classList.toggle('open');
+    };
+
+    /* ─────────────────────────────────────────────────────────────────
+       Initial render
+       ───────────────────────────────────────────────────────────────── */
+    render();
+    </script>
+</body>
+</html>
