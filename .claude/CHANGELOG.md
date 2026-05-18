@@ -10,6 +10,92 @@
 
 ---
 
+## 2026-05-18 (rama `fix/restaurar-moover-y-marketplace-sin-flags`)
+
+fix(flags): Marketplace y MOOVER siempre visibles, sin feature flag
+
+CORRIGE OVER-REACH del sistema de feature flags introducido por la rama
+feat/feature-flags-ops (2026-05-13).
+
+El pedido original era ocultarle al comercio las pestañas "Publicidad"
+y "Adquirir paquetes" en el menú merchant. Pero la implementación también
+introdujo dos flags que NUNCA debieron existir:
+
+  - buyer.marketplace      → ocultaba botón Marketplace + bloqueaba página
+  - buyer.puntos-moover    → ocultaba botón MOOVER + bloqueaba página
+
+Marketplace y MOOVER son PRODUCTO CORE de Moovy. No deben poder
+ocultarse desde OPS. Si en algún momento se necesita pausar
+temporalmente, se discute y se crea un flag dedicado en ese momento.
+
+CAMBIOS:
+
+1. src/components/layout/BottomNav.tsx
+   - Quita el hook useFeatureFlags(). Items siempre: Inicio |
+     Marketplace | MOOVER (centro) | Pedidos | Perfil.
+
+2. src/app/(store)/marketplace/page.tsx
+   - Quita el wrapper <FeatureFlagGuard>. Página siempre carga.
+
+3. src/app/(store)/puntos/page.tsx
+   - Quita el wrapper. Página siempre carga.
+
+4. src/app/moover/page.tsx
+   - Quita el wrapper. Landing pública del programa siempre carga.
+
+5. scripts/seed-feature-flags.ts
+   - Saca las 2 entradas del array SEED_FLAGS. Las próximas corridas del
+     seed ya no van a recrear esos flags.
+
+6. src/lib/feature-flags.ts
+   - Saca las constantes BUYER_MARKETPLACE y BUYER_PUNTOS_MOOVER del
+     objeto FEATURE_FLAGS. Si algún código nuevo quisiera usarlas, TS
+     lo va a rechazar.
+
+7. src/hooks/useFeatureFlags.ts y src/app/api/features/list/route.ts
+   - Actualizan comentarios-ejemplo para no referenciar flags borrados.
+
+FLAGS QUE SE MANTIENEN (los que SÍ pediste originalmente):
+
+  merchant.publicidad         ✓ comercio no ve esa pestaña
+  merchant.paquetes           ✓ comercio no ve esa pestaña
+  merchant.tracking-en-vivo   ✓ preparación futura
+  seller.paquetes             ✓ preparación futura
+  buyer.scheduled-delivery    ✓ controlable desde OPS
+  buyer.cash-payment          ✓ controlable desde OPS
+
+CLEANUP DB (eliminar las filas huérfanas que ya existen):
+
+Sin esto, los flags quedan en la tabla FeatureFlag y siguen apareciendo
+en el panel /ops/feature-flags (aunque el código no los consuma).
+
+Hay un script con patrón dry-run + --execute:
+
+  # local (Docker port 5436)
+  npx tsx scripts/cleanup-deprecated-feature-flags.ts             # ver
+  npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute   # borrar
+
+  # prod (después de devmain.ps1, en el VPS con DATABASE_URL=prod)
+  npx tsx scripts/cleanup-deprecated-feature-flags.ts
+  npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute
+
+Pide confirmación "SI LIMPIAR" + audit log + transaction Serializable.
+Idempotente: correrlo dos veces = la segunda no hace nada.
+
+Archivos:
+- src/components/layout/BottomNav.tsx
+- src/app/(store)/marketplace/page.tsx
+- src/app/(store)/puntos/page.tsx
+- src/app/moover/page.tsx
+- scripts/seed-feature-flags.ts
+- scripts/cleanup-deprecated-feature-flags.ts (nuevo)
+- src/lib/feature-flags.ts
+- src/hooks/useFeatureFlags.ts
+- src/app/api/features/list/route.ts
+- ISSUES.md
+
+**Archivos:** ISSUES.md, scripts/cleanup-deprecated-feature-flags.ts, scripts/seed-feature-flags.ts, src/app/(store)/marketplace/page.tsx, src/app/(store)/puntos/page.tsx, src/app/api/features/list/route.ts, src/app/moover/page.tsx, src/components/layout/BottomNav.tsx (+2 mas)
+
 ## 2026-05-17 (rama `feat/driver-historial-ganancias-y-pagos`)
 
 feat(driver): historial completo de ganancias + tab "Pagos recibidos"

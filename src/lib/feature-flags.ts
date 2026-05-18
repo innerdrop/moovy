@@ -10,7 +10,7 @@
 //   espera resultados; 30s de delay es aceptable).
 //
 // CONVENCION DE KEYS:
-//   scope.feature  → ej: "merchant.publicidad", "buyer.marketplace"
+//   scope.feature  → ej: "merchant.publicidad", "buyer.cash-payment"
 //
 // IMPORTANTE:
 // - NUNCA renombrar una key una vez deployada. Si quisieras renombrar,
@@ -37,10 +37,11 @@ export const FEATURE_FLAGS = {
     SELLER_PAQUETES: "seller.paquetes",
 
     // Scope BUYER — afecta el panel/menu del comprador (tienda)
-    BUYER_MARKETPLACE: "buyer.marketplace",
+    // NOTA: BUYER_MARKETPLACE y BUYER_PUNTOS_MOOVER fueron removidos en la
+    // rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17).
+    // Esas secciones son producto core y nunca deben ocultarse desde OPS.
     BUYER_SCHEDULED_DELIVERY: "buyer.scheduled-delivery",
     BUYER_CASH_PAYMENT: "buyer.cash-payment",
-    BUYER_PUNTOS_MOOVER: "buyer.puntos-moover",
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];

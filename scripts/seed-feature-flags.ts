@@ -1,4 +1,4 @@
-// feat/feature-flags-ops (2026-05-13): seed que crea los 8 flags iniciales.
+// feat/feature-flags-ops (2026-05-13): seed que crea los flags iniciales.
 //
 // Idempotente: usa upsert por `key`, asi que correrlo multiples veces no
 // rompe nada. Si un flag ya existe con un estado distinto al default,
@@ -8,6 +8,14 @@
 // - Primera vez post-migracion (`npx prisma db push` ya ejecutado).
 // - Si se agrega un flag nuevo al schema, agregarlo a SEED_FLAGS y volver
 //   a correr — el upsert solo crea el faltante.
+//
+// Rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17):
+// Sacamos los flags `buyer.marketplace` y `buyer.puntos-moover` del seed
+// porque esas secciones forman parte del producto core y nunca deberían
+// ocultarse desde OPS. El código ya no las consume. Los rows que quedaron
+// en la DB de prod los limpia un DELETE manual una vez (ver
+// .commit-message). Los flags MERCHANT, SELLER y los otros BUYER se
+// mantienen.
 //
 // Uso:
 //   npx tsx scripts/seed-feature-flags.ts
@@ -57,13 +65,10 @@ const SEED_FLAGS: SeedFlag[] = [
     },
 
     // ─── BUYER ─────────────────────────────────────────────────────────────
-    {
-        key: "buyer.marketplace",
-        label: "Marketplace entre vecinos",
-        description:
-            "Habilita la seccion Marketplace en la tienda (productos vendidos por vecinos, no comercios). Mientras este OFF, el item 'Marketplace' no aparece en el BottomNav del comprador y la pagina /marketplace redirige al inicio.",
-        scope: "BUYER",
-    },
+    // NOTA: los flags `buyer.marketplace` y `buyer.puntos-moover` fueron
+    // removidos en la rama fix/restaurar-moover-y-marketplace-sin-flags
+    // (2026-05-17). Esas secciones son producto core y no deben ocultarse
+    // desde OPS.
     {
         key: "buyer.scheduled-delivery",
         label: "Pedidos programados",
@@ -76,13 +81,6 @@ const SEED_FLAGS: SeedFlag[] = [
         label: "Pago en efectivo",
         description:
             "Habilita el pago al driver con efectivo al recibir el pedido. Mientras este OFF, todos los pedidos se pagan online via MercadoPago.",
-        scope: "BUYER",
-    },
-    {
-        key: "buyer.puntos-moover",
-        label: "Puntos MOOVER",
-        description:
-            "Habilita el sistema de puntos para compradores (ganar al comprar, canjear al pagar). Mientras este OFF, el menu del comprador no muestra la seccion 'Puntos', el widget de canje no aparece en el checkout, y el cron de earn/burn no asigna puntos. Importante: apagar esto solo se usa para emergencias (bug critico en balance/race).",
         scope: "BUYER",
     },
 ];

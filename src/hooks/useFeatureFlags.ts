@@ -6,11 +6,11 @@
 // pagina no hagan requests duplicados.
 //
 // Uso:
-//   const { flag } = useFeatureFlag("buyer.marketplace");
+//   const { flag } = useFeatureFlag("merchant.publicidad");
 //   if (!flag) return null; // ocultar la feature
 //
-//   const { flags, loading } = useFeatureFlags(["buyer.marketplace", "buyer.puntos-moover"]);
-//   // flags["buyer.marketplace"] -> boolean
+//   const { flags, loading } = useFeatureFlags(["merchant.publicidad", "merchant.paquetes"]);
+//   // flags["merchant.publicidad"] -> boolean
 //
 // IMPORTANTE: para no parpadear (flash de contenido visible que luego
 // desaparece cuando carga el flag), los componentes que consumen estos

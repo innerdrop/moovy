@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ListingCard from "@/components/store/ListingCard";
-import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 import {
     Search,
     Loader2,
@@ -64,24 +63,12 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 
 const LIMIT = 12;
 
-// feat/feature-flags-ops (2026-05-13): wrapper que esconde la pagina si
-// buyer.marketplace esta OFF. Util en pre-launch hasta que haya suficientes
-// vendedores publicando listings.
+// Rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17):
+// Marketplace forma parte del producto core y no debería estar detrás de
+// un feature flag. Antes había un FeatureFlagGuard que ocultaba la página
+// si buyer.marketplace estaba OFF — eso fue un over-reach del sistema de
+// flags. La página ahora siempre carga.
 export default function MarketplacePage() {
-    return (
-        <FeatureFlagGuard
-            flag="buyer.marketplace"
-            backHref="/"
-            backLabel="Volver a la tienda"
-            title="Marketplace — próximamente"
-            description="Estamos sumando a los primeros vendedores entre vecinos. Te avisaremos cuando esté disponible."
-        >
-            <MarketplacePageInner />
-        </FeatureFlagGuard>
-    );
-}
-
-function MarketplacePageInner() {
     const searchParams = useSearchParams();
     const sellCtaRef = useRef<HTMLDivElement>(null);
     const [sellCtaVisible, setSellCtaVisible] = useState(false);

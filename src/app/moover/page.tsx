@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowLeft, Star, Gift, Users, Award, TrendingUp, Crown, Zap, ChevronRight, CheckCircle2, ArrowRight, Instagram, ShoppingBag } from "lucide-react";
 import { MOOVER_LEVELS } from "@/lib/moover-level";
 import { useEffect, useState } from "react";
-import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 
 // Floating Star Component
 function FloatingStar({ delay, duration, left, top, size = 4 }: { delay: number, duration: number, left: string, top: string, size?: number }) {
@@ -43,21 +42,12 @@ interface Level {
     benefits: string[];
 }
 
+// Rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17):
+// La landing pública de MOOVER (programa de puntos) forma parte del
+// producto core y no debe ocultarse desde OPS. Antes había un
+// FeatureFlagGuard que la escondía si buyer.puntos-moover estaba OFF —
+// over-reach del sistema de flags. Ahora siempre carga.
 export default function MooverPage() {
-    return (
-        <FeatureFlagGuard
-            flag="buyer.puntos-moover"
-            backHref="/"
-            backLabel="Volver a la tienda"
-            title="MOOVER — pausado"
-            description="El programa de puntos no está disponible en este momento. Vamos a reactivarlo pronto."
-        >
-            <MooverPageInner />
-        </FeatureFlagGuard>
-    );
-}
-
-function MooverPageInner() {
     const [config, setConfig] = useState<PointsConfig | null>(null);
     const [levels, setLevels] = useState<Level[]>([]);
     const [isLoading, setIsLoading] = useState(true);

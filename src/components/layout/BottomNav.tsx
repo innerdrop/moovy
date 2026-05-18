@@ -13,7 +13,6 @@ import {
     LogIn
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface BottomNavProps {
     isLoggedIn?: boolean;
@@ -24,19 +23,16 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
     const closeCart = useCartStore((state) => state.closeCart);
 
     const [showAuthModal, setShowAuthModal] = useState(false);
-    // feat/feature-flags-ops (2026-05-13): los items "Marketplace" y "MOOVER"
-    // (puntos) se ocultan del BottomNav si los flags estan OFF. Mientras
-    // marketplace.buyer este apagado, evitamos que el comprador entre a una
-    // seccion vacia. Idem con puntos. El centro del BottomNav cambia
-    // segun que items quedan visibles.
-    const { flags } = useFeatureFlags(["buyer.marketplace", "buyer.puntos-moover"]);
-    const showMarketplace = flags["buyer.marketplace"];
-    const showPuntos = flags["buyer.puntos-moover"];
 
-    // Navegación: Inicio | Marketplace? | MOOVER? (Centro) | Pedidos | Perfil
-    // Si MOOVER esta OFF, el centro queda vacio y el resto se centra. Si
-    // marketplace esta OFF, el item desaparece pero los otros mantienen
-    // su orden.
+    // Rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17):
+    // Marketplace y MOOVER ahora son SIEMPRE visibles. Antes estaban
+    // controlados por feature flags (buyer.marketplace, buyer.puntos-moover)
+    // pero eso fue un over-reach del sistema de flags — esas secciones son
+    // parte del producto y nunca deberían ocultarse desde OPS. Si en algún
+    // momento se necesita pausar temporalmente Marketplace o Moover, se hace
+    // con un flag dedicado y discutido, no por default.
+    //
+    // Navegación: Inicio | Marketplace | MOOVER (Centro) | Pedidos | Perfil
     const items: Array<{
         href: string;
         icon: typeof Home;
@@ -45,24 +41,20 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
         isAction?: boolean;
     }> = [
         { href: "/", icon: Home, label: "Inicio" },
+        { href: "/marketplace", icon: Store, label: "Marketplace" },
+        { href: "/puntos", icon: Star, label: "MOOVER", isCenter: true },
+        {
+            href: isLoggedIn ? "/mis-pedidos" : "#",
+            icon: Package,
+            label: "Pedidos",
+            isAction: !isLoggedIn,
+        },
+        {
+            href: isLoggedIn ? "/mi-perfil" : "/login",
+            icon: isLoggedIn ? User : LogIn,
+            label: isLoggedIn ? "Perfil" : "Ingresar",
+        },
     ];
-    if (showMarketplace) {
-        items.push({ href: "/marketplace", icon: Store, label: "Marketplace" });
-    }
-    if (showPuntos) {
-        items.push({ href: "/puntos", icon: Star, label: "MOOVER", isCenter: true });
-    }
-    items.push({
-        href: isLoggedIn ? "/mis-pedidos" : "#",
-        icon: Package,
-        label: "Pedidos",
-        isAction: !isLoggedIn,
-    });
-    items.push({
-        href: isLoggedIn ? "/mi-perfil" : "/login",
-        icon: isLoggedIn ? User : LogIn,
-        label: isLoggedIn ? "Perfil" : "Ingresar",
-    });
 
     const handleNavClick = (e: React.MouseEvent, item: any) => {
         if (item.isAction) {

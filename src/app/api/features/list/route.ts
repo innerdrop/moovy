@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Devolvemos como objeto keyed por flag.key para que el cliente lo
-        // consuma directo como flags["buyer.marketplace"].
+        // consuma directo como flags["merchant.publicidad"].
         const flagsMap: Record<string, boolean> = {};
         for (const f of flags) {
             flagsMap[f.key] = f.isActive;
