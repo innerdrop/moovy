@@ -597,7 +597,68 @@
             border-color: rgba(220, 38, 38, 0.3);
         }
 
+        .fab.violet {
+            background: var(--bg-secondary);
+            color: var(--moovy-violet);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .fab.violet:hover {
+            color: white;
+            background: var(--moovy-violet);
+            border-color: var(--moovy-violet);
+            box-shadow: var(--shadow-lg), 0 0 20px rgba(124, 58, 237, 0.25);
+        }
+
         .fab-icon { font-size: 16px; }
+
+        /* Auto-save indicator y warning banner */
+        .autosave-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .autosave-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .autosave-dot.warning {
+            background: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+        }
+
+        .warning-banner {
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: white;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.5;
+        }
+
+        .warning-banner strong { font-weight: 700; }
+        .warning-banner-icon { flex-shrink: 0; font-size: 16px; line-height: 1; margin-top: 1px; }
 
         /* MOBILE MENU TOGGLE */
         .mobile-menu-btn {
@@ -693,6 +754,15 @@
                     <div class="progress-bar-fill" id="global-bar" style="width: 0%"></div>
                 </div>
                 <div class="progress-breakdown" id="progress-breakdown"></div>
+                <div class="autosave-indicator">
+                    <span class="autosave-dot" id="autosave-dot"></span>
+                    <span id="autosave-text">Guardado automático activo</span>
+                </div>
+            </div>
+
+            <div class="warning-banner hidden" id="localstorage-warning">
+                <span class="warning-banner-icon">⚠️</span>
+                <span>El guardado automático no está disponible en este browser (ej. pestaña incógnito o configuración de privacidad estricta). Para no perder tu progreso, usá <strong>💾 Guardar progreso</strong> cada cierto rato y <strong>📂 Cargar progreso</strong> al volver.</span>
             </div>
         </div>
     </header>
@@ -729,6 +799,14 @@
             <span class="fab-icon">📥</span>
             <span>Exportar MD</span>
         </button>
+        <button class="fab violet" id="fab-save">
+            <span class="fab-icon">💾</span>
+            <span>Guardar progreso</span>
+        </button>
+        <button class="fab" id="fab-load">
+            <span class="fab-icon">📂</span>
+            <span>Cargar progreso</span>
+        </button>
         <button class="fab" id="fab-theme">
             <span class="fab-icon">🌓</span>
             <span>Tema</span>
@@ -738,6 +816,7 @@
             <span>Reset</span>
         </button>
     </div>
+    <input type="file" id="file-input" accept="application/json,.json" style="display:none">
 
     <div class="toast" id="toast"></div>
 
@@ -1249,21 +1328,50 @@
     const STORAGE_KEY = 'moovy-prelaunch-checklist-v1';
     const THEME_KEY = 'moovy-prelaunch-theme';
 
+    // Rama fix/checklist-save-load-json (2026-05-17):
+    // localStorage no siempre está disponible (incognito, file:// con
+    // configuración estricta, browsers con privacidad alta). Testeamos
+    // al inicio y si falla, mostramos un warning + el botón "💾 Guardar
+    // progreso" pasa a ser el mecanismo principal de persistencia.
+    function testLocalStorage() {
+        try {
+            const k = '__moovy_test__';
+            localStorage.setItem(k, '1');
+            const works = localStorage.getItem(k) === '1';
+            localStorage.removeItem(k);
+            return works;
+        } catch {
+            return false;
+        }
+    }
+
+    const LS_AVAILABLE = testLocalStorage();
+    let lastSavedAt = null;
+
     function loadState() {
+        if (!LS_AVAILABLE) return {};
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
             if (!raw) return {};
             const parsed = JSON.parse(raw);
+            if (parsed.savedAt) lastSavedAt = new Date(parsed.savedAt).getTime();
             return parsed.items || {};
         } catch { return {}; }
     }
 
     function saveState() {
+        if (!LS_AVAILABLE) return;
         const payload = {
             items: state,
             savedAt: new Date().toISOString(),
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            lastSavedAt = Date.now();
+            updateAutoSaveIndicator();
+        } catch {
+            // Cuota llena o algo similar — ignorar silenciosamente.
+        }
     }
 
     let state = loadState();
@@ -1582,12 +1690,134 @@
        Reset
        ───────────────────────────────────────────────────────────────── */
     document.getElementById('fab-reset').onclick = () => {
-        if (!confirm('¿Resetear TODO el progreso? Esto borra todas las marcas y observaciones de localStorage. No se puede deshacer.')) return;
+        if (!confirm('¿Resetear TODO el progreso? Esto borra todas las marcas y observaciones. No se puede deshacer.')) return;
         state = {};
-        localStorage.removeItem(STORAGE_KEY);
+        if (LS_AVAILABLE) localStorage.removeItem(STORAGE_KEY);
+        lastSavedAt = null;
         render();
+        updateAutoSaveIndicator();
         toast('Progreso reseteado');
     };
+
+    /* ─────────────────────────────────────────────────────────────────
+       Save / Load progress as JSON file
+       Rama fix/checklist-save-load-json (2026-05-17).
+       Persistencia confiable que NO depende de localStorage. El usuario
+       descarga un .json con todo su progreso y lo puede volver a cargar
+       desde cualquier máquina/browser. Es el camino seguro cuando
+       localStorage no funciona o no es de fiar.
+       ───────────────────────────────────────────────────────────────── */
+    function saveStateToFile() {
+        const payload = {
+            version: 1,
+            app: 'moovy-prelaunch-checklist',
+            savedAt: new Date().toISOString(),
+            itemCount: Object.keys(state).length,
+            items: state,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        a.href = url;
+        a.download = `moovy-checklist-state-${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast(`Progreso guardado (${payload.itemCount} items)`);
+    }
+
+    document.getElementById('fab-save').onclick = saveStateToFile;
+
+    document.getElementById('fab-load').onclick = () => {
+        document.getElementById('file-input').click();
+    };
+
+    document.getElementById('file-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const parsed = JSON.parse(event.target.result);
+                if (!parsed || !parsed.items || typeof parsed.items !== 'object') {
+                    throw new Error('Invalid structure');
+                }
+                if (parsed.app && parsed.app !== 'moovy-prelaunch-checklist') {
+                    throw new Error('Wrong app');
+                }
+                const itemCount = Object.keys(parsed.items).length;
+
+                const hasExisting = Object.keys(state).length > 0;
+                if (hasExisting) {
+                    if (!confirm(`El archivo tiene ${itemCount} items con progreso. Esto va a reemplazar tu progreso actual. ¿Continuar?`)) {
+                        e.target.value = '';
+                        return;
+                    }
+                }
+
+                state = parsed.items;
+                if (LS_AVAILABLE) saveState();
+                render();
+
+                const exportedDate = parsed.savedAt ? new Date(parsed.savedAt).toLocaleString('es-AR') : 'sin fecha';
+                toast(`Progreso cargado: ${itemCount} items (guardado ${exportedDate})`);
+            } catch (err) {
+                toast('Archivo inválido — no es un progreso del checklist Moovy');
+            }
+            e.target.value = '';
+        };
+        reader.onerror = () => {
+            toast('Error al leer el archivo');
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    };
+
+    /* ─────────────────────────────────────────────────────────────────
+       Auto-save indicator
+       Muestra cuándo fue el último auto-save al localStorage. Si LS no
+       está disponible, muestra warning persistente.
+       ───────────────────────────────────────────────────────────────── */
+    function updateAutoSaveIndicator() {
+        const textEl = document.getElementById('autosave-text');
+        const dotEl = document.getElementById('autosave-dot');
+        if (!textEl || !dotEl) return;
+
+        if (!LS_AVAILABLE) {
+            textEl.textContent = 'Guardado automático no disponible — usá 💾 manualmente';
+            dotEl.classList.add('warning');
+            return;
+        }
+
+        if (!lastSavedAt) {
+            textEl.textContent = 'Guardado automático activo';
+            return;
+        }
+
+        const ageMs = Date.now() - lastSavedAt;
+        const ageSec = Math.floor(ageMs / 1000);
+        const ageMin = Math.floor(ageSec / 60);
+        const ageHour = Math.floor(ageMin / 60);
+
+        let text;
+        if (ageSec < 5) text = 'Guardado ahora';
+        else if (ageSec < 60) text = `Guardado hace ${ageSec} seg`;
+        else if (ageMin < 60) text = `Guardado hace ${ageMin} min`;
+        else if (ageHour < 24) text = `Guardado hace ${ageHour} h`;
+        else text = `Guardado el ${new Date(lastSavedAt).toLocaleString('es-AR')}`;
+
+        textEl.textContent = text;
+    }
+
+    // Update cada 10 segundos para que el "hace X seg" se actualice
+    setInterval(updateAutoSaveIndicator, 10000);
+
+    // Si LS no funciona, mostrar warning banner desde el inicio
+    if (!LS_AVAILABLE) {
+        document.getElementById('localstorage-warning').classList.remove('hidden');
+    }
 
     /* ─────────────────────────────────────────────────────────────────
        Filters
@@ -1630,6 +1860,7 @@
        Initial render
        ───────────────────────────────────────────────────────────────── */
     render();
+    updateAutoSaveIndicator();
     </script>
 </body>
 </html>

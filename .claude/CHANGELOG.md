@@ -10,6 +10,83 @@
 
 ---
 
+## 2026-05-18 (rama `fix/checklist-save-load-json`)
+
+fix(checklist): persistencia robusta con Guardar/Cargar JSON + indicador
+
+PROBLEMA: Mauro reportó que al cerrar/reabrir el HTML del checklist
+perdía todo el progreso marcado.
+
+CAUSA: localStorage no es 100% confiable en este escenario:
+- `file://` tiene scope estricto por path en Chrome Windows
+- Pestañas incógnito no persisten localStorage entre sesiones
+- Configuración "borrar cookies al cerrar" purga el storage
+- Algunos browsers limitan localStorage en file://
+
+FIX: agregar persistencia explícita a archivo JSON que NO depende de
+localStorage. localStorage sigue como auto-save best-effort, pero el
+usuario tiene un mecanismo confiable y portable.
+
+CAMBIOS en prelaunch-checklist.html:
+
+1. Dos FABs nuevos en el cluster bottom-right:
+   - 💾 Guardar progreso (color violeta Moovy #7C3AED)
+     Descarga `moovy-checklist-state-YYYY-MM-DD-HH-MM-SS.json` con:
+       { version: 1, app: "moovy-prelaunch-checklist",
+         savedAt: ISO, itemCount, items: {...} }
+   - 📂 Cargar progreso
+     Abre file picker. Valida estructura (items es object) y la
+     marca de app. Si ya hay progreso, pide confirmación antes de
+     reemplazar. Si el archivo es inválido o de otro app, toast de
+     error claro.
+
+2. Indicador de auto-save visible en el header:
+   - Dot verde animado + texto "Guardado hace X seg/min/h"
+   - Update cada 10 segundos
+   - Si localStorage funciona normal, dot verde con pulse
+   - Si NO funciona, dot ámbar + texto "Guardado automático no
+     disponible — usá 💾 manualmente"
+
+3. Warning banner ámbar abajo del progress global:
+   - Solo aparece si testLocalStorage() falla
+   - Mensaje claro: cómo usar 💾 / 📂 para no perder el progreso
+
+4. Robustez:
+   - testLocalStorage() al inicio (writes a test key, reads it back)
+   - saveState() ahora try/catch para no romper si la cuota está
+     llena u otro error de quota
+   - loadState() también guard si LS no disponible
+   - Reset también limpia lastSavedAt para que el indicador se
+     actualice correctamente
+
+DECISIONES DE DISEÑO:
+
+- El JSON tiene una marca explícita `app: "moovy-prelaunch-checklist"`
+  para que `Cargar` rechace archivos de otras apps con un toast claro.
+- El JSON es human-readable (JSON.stringify con indent 2) por si el
+  usuario quiere verificarlo o editarlo manualmente.
+- El timestamp en el filename evita pisar archivos previos al
+  guardar de nuevo — cada guardado crea un archivo nuevo, así el
+  usuario puede tener snapshots de su progreso.
+- Confirmación antes de reemplazar progreso existente (no destruye
+  silenciosamente).
+
+UX FLOW IDEAL:
+
+  1. Mauro abre HTML, marca algunos items
+  2. Auto-save invisible al localStorage (si funciona)
+  3. Cada cierto rato click "💾 Guardar progreso" → descarga JSON
+  4. Lo guarda en su Desktop / Dropbox / wherever
+  5. Cuando vuelve, abre HTML. Si localStorage persistió → todo OK
+  6. Si NO persistió → click "📂 Cargar progreso" → elige el JSON
+     → todo restaurado
+
+Archivos:
+- prelaunch-checklist.html
+- ISSUES.md
+
+**Archivos:** ISSUES.md, prelaunch-checklist.html
+
 ## 2026-05-18 (rama `chore/prelaunch-qa-checklist`)
 
 chore(qa): pre-launch QA checklist (MD + HTML interactivo branded)
