@@ -10,6 +10,73 @@
 
 ---
 
+## 2026-05-18 (rama `chore/checklist-explicaciones-amigables`)
+
+chore(checklist): reescritura amigable de todos los items (no-tech friendly)
+
+OBJETIVO: que un colaborador no-técnico pueda usar el checklist sin
+tener que preguntar qué significa cada item. El primer borrador usaba
+mucha jerga ("approvalStatus", "Socket.IO", "Zod", "BuyerWelcome",
+"PendingAssignment") que no es transferible.
+
+CAMBIO DE FORMATO:
+
+Antes — un solo campo:
+  { c: 1, t: 'Crear cuenta nueva con email válido → recibe BuyerWelcome
+    email + sesión iniciada' }
+
+Ahora — tres campos:
+  { c: 1,
+    t: 'Crear una cuenta nueva',
+    how: 'Entrá a /empezar. Completá un email que NO hayas usado antes
+          en Moovy, una contraseña, tu nombre y apellido. Aceptá los
+          términos y condiciones. Dale "Crear cuenta".',
+    expect: 'Quedás logueado automáticamente (tu nombre aparece arriba).
+             En pocos minutos te llega a la casilla un email de
+             bienvenida con el asunto "Bienvenido a Moovy" — si no
+             aparece, revisá spam.' }
+
+REGLAS QUE SEGUÍ EN LA REESCRITURA:
+
+- Cero jerga técnica visible. "ConsentLog" → "registro de
+  consentimiento". "Socket.IO" → "se actualiza en tiempo real". "JWT"
+  → "tu sesión". "approvalStatus" → "estado de aprobación".
+- Imperativos argentinos: "Andá a...", "Dale al botón...", "Esperá".
+- Criterios verificables: "Aparece un cartel verde que dice X", "El
+  número sube en 1", "NO te deja confirmar".
+- Cuando es útil, qué buscar si falla: "Si no aparece el cartel, es ❌".
+- Cuando un test requiere ayuda técnica, lo dice explícito: "Pedile al
+  equipo técnico que confirme".
+
+CAMBIOS:
+
+1. PRELAUNCH_CHECKLIST.md — reformato completo. Cada item ahora ocupa
+   3-4 líneas con sub-bullets `**Cómo probarlo**` y `**Qué deberías
+   ver**`. Header del documento actualizado para explicar el nuevo
+   formato.
+
+2. prelaunch-checklist.html
+   - Data structure: { c, t } → { c, t, how, expect }
+   - CSS nuevo: .item-details grid con dos label cards (Cómo probarlo
+     violeta, Qué deberías ver verde). Responsive: 2 columnas en
+     desktop, 1 columna en mobile <540px.
+   - renderMain: cada card ahora muestra título + las dos secciones de
+     explicación antes de los botones de estado.
+   - exportToMD: cuando exporta, incluye los campos how y expect en
+     formato MD compatible con el .md principal.
+   - Título del item ahora en bold (font-weight 700) — antes era
+     regular 500.
+
+COBERTURA: 180+ items reescritos en 6 secciones (Buyer 50, Comercio 35,
+Driver 30, Vendedor 15, OPS 30, Cross-cutting 50).
+
+Archivos:
+- PRELAUNCH_CHECKLIST.md
+- prelaunch-checklist.html
+- ISSUES.md
+
+**Archivos:** ISSUES.md, MOOVY-Deck-9410.pdf, PRELAUNCH_CHECKLIST.md, prelaunch-checklist.html
+
 ## 2026-05-18 (rama `fix/checklist-save-load-json`)
 
 fix(checklist): persistencia robusta con Guardar/Cargar JSON + indicador

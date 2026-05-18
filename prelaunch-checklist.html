@@ -455,9 +455,45 @@
         .item-text {
             flex: 1;
             font-size: 14px;
-            line-height: 1.5;
+            font-weight: 700;
+            line-height: 1.4;
             color: var(--text-primary);
             min-width: 0;
+        }
+
+        .item-details {
+            margin: 6px 0 10px 32px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .item-detail {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .item-detail-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-tertiary);
+            padding-top: 2px;
+        }
+
+        .item-detail-label.how { color: var(--moovy-violet); }
+        .item-detail-label.expect { color: var(--state-pass); }
+
+        .item-detail-text { color: var(--text-secondary); }
+
+        @media (max-width: 540px) {
+            .item-details { margin-left: 0; }
+            .item-detail { grid-template-columns: 1fr; gap: 2px; }
+            .item-detail-label { padding-top: 6px; }
         }
 
         .item-actions {
@@ -831,105 +867,105 @@
                 {
                     title: 'Registro y login',
                     items: [
-                        { c: 1, t: 'Crear cuenta nueva con email válido → recibe BuyerWelcome email + sesión iniciada' },
-                        { c: 1, t: 'Crear cuenta con email ya existente (soft-deleted) → devuelve 410, NO permite resurrección' },
-                        { c: 1, t: 'Crear cuenta sin aceptar T&C → bloquea submit + crea ConsentLog cuando acepta' },
-                        { c: 1, t: 'Login con credenciales válidas → JWT de 7 días + redirect a /' },
-                        { c: 1, t: 'Login con password incorrecto → mensaje claro "Credenciales inválidas"' },
-                        { c: 0, t: 'Recuperar password → flujo completo email + reset' },
-                        { c: 1, t: 'Logout → limpia sesión + redirect a /' },
-                        { c: 0, t: 'Login + cuenta deletedAt != null → bloquea + sugiere soporte' },
+                        { c: 1, t: 'Crear una cuenta nueva', how: 'Entrá a /empezar. Completá un email que NO hayas usado antes en Moovy, una contraseña, tu nombre y apellido. Aceptá los términos y condiciones. Dale "Crear cuenta".', expect: 'Quedás logueado automáticamente (tu nombre aparece arriba). En pocos minutos te llega a la casilla un email de bienvenida con el asunto "Bienvenido a Moovy" — si no aparece, revisá spam.' },
+                        { c: 1, t: 'No se puede crear cuenta con un email que ya fue eliminado', how: 'Probá crear cuenta con un email de un usuario que ya borraste o que pediste eliminar de Moovy.', expect: 'Te sale un mensaje claro tipo "Este email no se puede usar" o similar. NO te permite crear la cuenta nueva con ese mismo email.' },
+                        { c: 1, t: 'Sin aceptar términos no se puede registrar', how: 'Empezá a crear una cuenta pero no toques el checkbox de "Acepto los términos". Intentá darle a "Crear cuenta".', expect: 'El botón está bloqueado o te tira un error que dice que tenés que aceptar los términos. Cuando los aceptás, ahí sí podés crear cuenta.' },
+                        { c: 1, t: 'Login con email y contraseña correctos', how: 'Andá a /login, escribí tu email y contraseña, dale "Ingresar".', expect: 'Te lleva al inicio de la tienda y arriba a la derecha aparece tu nombre. Si cerrás y volvés a abrir el browser, seguís logueado por hasta 7 días.' },
+                        { c: 1, t: 'Login con contraseña incorrecta lo bloquea', how: 'Andá a /login, escribí tu email correcto pero una contraseña inventada. Dale "Ingresar".', expect: 'Te aparece un mensaje claro "Credenciales inválidas" o "Email o contraseña incorrectos". NO te logueás.' },
+                        { c: 0, t: 'Recuperar contraseña olvidada', how: 'En /login, click en "Olvidé mi contraseña". Poné tu email. Revisá la casilla, abrí el link de recuperación, elegí una nueva contraseña.', expect: 'Te llega el email con el link en pocos minutos. El link te lleva a una página para poner contraseña nueva. Después podés loguear con la nueva.' },
+                        { c: 1, t: 'Cerrar sesión limpia los datos', how: 'Logueado, andá a tu perfil y dale "Cerrar sesión".', expect: 'Te lleva a la pantalla de inicio sin tu nombre arriba. Si refrescás, seguís deslogueado. NO ves más tu carrito ni tus pedidos.' },
+                        { c: 0, t: 'Una cuenta auto-eliminada no puede volver a entrar', how: 'Eliminate la cuenta desde el perfil. Después intentá loguear con el mismo email y contraseña.', expect: 'NO te deja loguear. Te aparece un mensaje sugiriendo que contactes soporte si querés recuperar la cuenta.' },
                     ]
                 },
                 {
                     title: 'Tienda y descubrimiento',
                     items: [
-                        { c: 1, t: 'Home / carga en <3s en 3G simulado → hero + categorías + comercios' },
-                        { c: 1, t: 'Comercios sin image no aparecen en listado público' },
-                        { c: 1, t: 'Comercios con approvalStatus !== APPROVED no aparecen en listado público' },
-                        { c: 1, t: 'Tap en categoría → filtra comercios correctamente' },
-                        { c: 1, t: 'Búsqueda → resultados relevantes en <500ms' },
-                        { c: 0, t: 'Estado vacío en búsqueda → mensaje + CTA volver al inicio' },
-                        { c: 1, t: 'Página de comercio cerrado por horario → muestra cartel "Cerrado" + próximo horario apertura' },
-                        { c: 1, t: 'Página de comercio en zona excluida → muestra mensaje "No entregamos en esta zona"' },
+                        { c: 1, t: 'La página de inicio carga rápido', how: 'Abrí https://somosmoovy.com en una pestaña incógnito. Cronometrá hasta que ves el contenido completo (no solo el spinner).', expect: 'Carga en menos de 3 segundos en conexión normal. Aparecen el banner principal, las categorías y los comercios destacados. En 3G simulado debería seguir cargando antes de los 6-8 segundos.' },
+                        { c: 1, t: 'Comercios sin logo no aparecen en la tienda pública', how: 'En el panel OPS, dejá un comercio sin foto/logo subido. Después entrá a la tienda como comprador y buscá ese comercio en el listado de la categoría.', expect: 'El comercio NO aparece. Los compradores solo ven comercios que ya tienen logo cargado.' },
+                        { c: 1, t: 'Comercios todavía no aprobados no aparecen en la tienda', how: 'Creá un comercio nuevo en estado pendiente de aprobación. Entrá a la tienda como comprador.', expect: 'El comercio pendiente NO aparece a los compradores. Solo aparece cuando lo aprobás desde OPS.' },
+                        { c: 1, t: 'Las categorías filtran bien los comercios', how: 'En la home, click en una categoría como "Restaurantes" o "Pizzería".', expect: 'La página solo muestra comercios de esa categoría. Si vas a "Heladería", no deberías ver pizzerías.' },
+                        { c: 1, t: 'La búsqueda encuentra lo que buscás', how: 'En la barra de búsqueda escribí el nombre de un comercio o producto que sabés que existe.', expect: 'Aparecen resultados relevantes en menos de medio segundo. El comercio/producto buscado figura entre los primeros.' },
+                        { c: 0, t: 'Buscar algo que no existe muestra mensaje amigable', how: 'Buscá algo random como "xyzabc123".', expect: 'NO ves una pantalla en blanco. Aparece un mensaje tipo "No encontramos resultados" con un botón para volver al inicio.' },
+                        { c: 1, t: 'Comercio cerrado por horario se ve como cerrado', how: 'Entrá a la página de un comercio en un horario en que sabés que está cerrado (ej. de noche si abre solo de día).', expect: 'Aparece un cartel claro "Cerrado" + el próximo horario de apertura. NO podés agregar productos al carrito.' },
+                        { c: 1, t: 'Comercios fuera de zona de cobertura muestran mensaje', how: 'Configurá tu dirección de entrega en una zona que sabés que NO cubre Moovy. Entrá a un comercio.', expect: 'Aparece un mensaje "No entregamos en esta zona" o similar. NO podés finalizar la compra.' },
                     ]
                 },
                 {
-                    title: 'Carrito y checkout',
+                    title: 'Carrito y compra',
                     items: [
-                        { c: 1, t: 'Agregar producto al carrito desde home → toast + contador BottomNav' },
-                        { c: 1, t: 'Aumentar/disminuir cantidad → recalcula subtotal correctamente' },
-                        { c: 1, t: 'Eliminar producto → desaparece del carrito + actualiza totales' },
-                        { c: 1, t: 'Carrito persiste al cerrar/reabrir pestaña (SavedCart)' },
-                        { c: 1, t: 'Checkout con MercadoPago Sandbox → redirect a MP + vuelta con payment_id + status PAID' },
-                        { c: 1, t: 'Checkout con pago en efectivo (feature flag ON) → crea Order PENDING sin pasar por MP' },
-                        { c: 1, t: 'Checkout con efectivo desactivado en OPS → la opción NO aparece en el selector de pago' },
-                        { c: 1, t: 'Checkout con scheduled delivery → permite elegir slot + queda como SCHEDULED' },
-                        { c: 1, t: 'Cupón válido → aplica descuento, absorbe Moovy (no el comercio)' },
-                        { c: 0, t: 'Cupón vencido / mal escrito → error específico' },
-                        { c: 1, t: 'Aplicar puntos MOOVER en checkout → respeta min 500pts, max 20% subtotal' },
-                        { c: 1, t: 'Subtotal $0 después de descuentos → bloquea checkout (no permitir)' },
-                        { c: 1, t: 'Distancia > umbral o zona excluida → bloquea checkout con mensaje claro' },
-                        { c: 1, t: 'Comercio en pausa durante checkout → bloquea con mensaje' },
-                        { c: 1, t: 'Stock 0 durante checkout → bloquea ese item y permite continuar sin él' },
+                        { c: 1, t: 'Agregar producto al carrito desde la home', how: 'En la home o en un comercio, click "Agregar al carrito" en un producto.', expect: 'Aparece un cartelito (toast) tipo "Producto agregado". El contador del icono de carrito en el menú de abajo sube en 1.' },
+                        { c: 1, t: 'Subir y bajar cantidad de un producto en el carrito', how: 'Abrí el carrito. Usá los botones + y − para cambiar cantidades de un producto.', expect: 'El subtotal de ese producto se recalcula bien (si vale $500 y ponés 3, el subtotal del producto es $1.500). El total del carrito también se actualiza.' },
+                        { c: 1, t: 'Eliminar un producto del carrito', how: 'En el carrito, click en el icono de tacho o "X" de un producto.', expect: 'El producto desaparece de la lista. El total se ajusta al nuevo monto sin ese producto.' },
+                        { c: 1, t: 'El carrito no se pierde si cerrás el browser', how: 'Agregá productos al carrito. Cerrá la pestaña o el browser completo. Volvelo a abrir y entrá a Moovy.', expect: 'Los productos siguen en el carrito tal como los dejaste. Esto requiere que estés logueado.' },
+                        { c: 1, t: 'Pago con MercadoPago (sandbox)', how: 'Hacé un pedido y elegí pago con MercadoPago. Usá una tarjeta de prueba (ej. 4509 9535 6623 3704, vencimiento 11/30, CVV 123).', expect: 'Te lleva a la página de MercadoPago. Después de pagar te trae de vuelta a Moovy con un cartel "Pago confirmado". El pedido aparece en mis pedidos con estado "Confirmado".' },
+                        { c: 1, t: 'Pago en efectivo cuando está activado en OPS', how: 'Desde OPS asegurate que el flag buyer.cash-payment esté en ON. Como buyer, hacé un pedido y en el checkout elegí pagar al recibir con efectivo.', expect: 'El pedido se crea sin pasar por MercadoPago. Queda como "Esperando confirmación del comercio". El driver te lo cobra cuando llega.' },
+                        { c: 1, t: 'Pago en efectivo desactivado en OPS no aparece', how: 'Desde OPS poné el flag buyer.cash-payment en OFF. Como buyer, andá al checkout.', expect: 'La opción "Pagar en efectivo" NO aparece. Solo se ve MercadoPago. Si la había antes, desaparece después del cambio.' },
+                        { c: 1, t: 'Pedidos programados (entregar más tarde)', how: 'Asegurate que el flag de entregas programadas esté en ON en OPS. En el checkout elegí "Entregar más tarde" y seleccioná una franja horaria.', expect: 'El pedido se crea con una etiqueta "Programado" y la hora elegida. NO se asigna un driver inmediatamente — el comercio tiene tiempo de prepararlo.' },
+                        { c: 1, t: 'Cupón válido aplica descuento', how: 'En el checkout, escribí el código de un cupón válido que tengas y dale "Aplicar".', expect: 'El total baja por el monto del descuento. El cupón aparece confirmado con un check verde. El descuento lo absorbe Moovy, no el comercio.' },
+                        { c: 0, t: 'Cupón vencido o mal escrito da error específico', how: 'Probá poner un cupón inventado o uno que sepas que está vencido.', expect: 'Aparece un error claro tipo "Cupón inválido" o "Cupón vencido". NO aplica descuento.' },
+                        { c: 1, t: 'Usar puntos MOOVER para descuento', how: 'Andá al checkout teniendo al menos 500 puntos en tu cuenta. Buscá el widget de "Usar mis puntos" y ponete a usar puntos.', expect: 'Podés usar mínimo 500 puntos, máximo hasta el 20% del subtotal del pedido. El total baja por el equivalente en pesos (1 punto = $1). Si tu pedido es $2.000, podés usar máximo 400 puntos.' },
+                        { c: 1, t: 'No se puede pagar $0', how: 'Aplicá tantos descuentos / puntos que el total llegue a $0 o negativo.', expect: 'NO te deja confirmar el pedido. Aparece un mensaje tipo "El monto mínimo es X" o similar. El sistema debe pedir siempre un pago positivo.' },
+                        { c: 1, t: 'Pedidos fuera de zona de cobertura se bloquean', how: 'Configurá tu dirección de entrega en una zona que está marcada como excluida en OPS. Intentá hacer un pedido.', expect: 'NO te deja confirmar. Aparece un mensaje "No entregamos en esta zona" antes de pagar.' },
+                        { c: 1, t: 'Comercio que pausa la tienda durante tu checkout', how: 'Tené el checkout abierto. Pedile a alguien con acceso al panel del comercio que pause la tienda (o hacelo vos en otra pestaña). Intentá confirmar el pedido.', expect: 'Aparece un mensaje claro "Este comercio cerró temporalmente". NO se confirma el pedido. Te invita a volver más tarde.' },
+                        { c: 1, t: 'Producto sin stock durante el checkout', how: 'Tené el checkout abierto con un producto. Desde el panel del comercio bajá el stock de ese producto a 0. Volvé al checkout e intentá confirmar.', expect: 'El producto sin stock se marca como no disponible. Te deja continuar la compra sin ese producto, no te bloquea el resto.' },
                     ]
                 },
                 {
-                    title: 'Tracking y pedido',
+                    title: 'Seguir el pedido',
                     items: [
-                        { c: 1, t: '/mis-pedidos lista todos los pedidos del usuario' },
-                        { c: 1, t: 'Filtros (activos/finalizados) funcionan' },
-                        { c: 1, t: 'Detalle de pedido /mis-pedidos/[orderId] muestra estado actual' },
-                        { c: 1, t: 'Status del pedido se actualiza en tiempo real (Socket.IO)' },
-                        { c: 1, t: 'Mapa de tracking en vivo se actualiza con la posición del driver' },
-                        { c: 1, t: 'Push notification cuando driver está cerca (nearDestinationNotified)' },
-                        { c: 1, t: 'Chat con comercio funciona mientras el pedido está activo' },
-                        { c: 1, t: 'Chat con driver funciona desde DRIVER_ASSIGNED hasta DELIVERED' },
-                        { c: 1, t: 'Botones de teléfono/chat se ocultan después de DELIVERED' },
-                        { c: 0, t: 'Botón de soporte visible y accesible en todos los estados' },
-                        { c: 1, t: 'Modal de calificación aparece automáticamente al pasar a DELIVERED' },
-                        { c: 1, t: 'Modal NO se cierra accidentalmente (no z-index conflicts con BottomNav)' },
-                        { c: 1, t: 'Modal persiste si el usuario lo cierra → reaparece la próxima vez' },
-                        { c: 1, t: 'Calificar al driver → guarda rating + comentario + el pedido NO vuelve a Pendiente' },
-                        { c: 1, t: 'Calificar al comercio → guarda rating + comentario sin afectar status' },
+                        { c: 1, t: 'Mis pedidos lista todos tus pedidos', how: 'Entrá a /mis-pedidos después de haber hecho varios pedidos.', expect: 'Aparece la lista completa de tus pedidos con los más recientes primero. Cada uno muestra el número, el comercio, el estado actual, la fecha y el total.' },
+                        { c: 1, t: 'Filtros entre pedidos activos y finalizados', how: 'En /mis-pedidos, alterná entre los filtros "Activos" y "Finalizados".', expect: '"Activos" muestra solo los que están en curso (esperando, confirmados, en camino). "Finalizados" muestra los entregados y los cancelados.' },
+                        { c: 1, t: 'Ver detalle del pedido', how: 'En /mis-pedidos, tocá un pedido para abrirlo.', expect: 'Te lleva al detalle con: estado actual, productos, total, dirección de entrega, datos del comercio y (si ya hay) del driver.' },
+                        { c: 1, t: 'El estado del pedido se actualiza en vivo', how: 'Tené abierta la pantalla de detalle del pedido. Pedile a alguien del comercio que confirme el pedido desde su panel.', expect: 'La pantalla se actualiza SOLA en pocos segundos. NO hace falta refrescar manualmente. El estado cambia de "Pendiente" a "Confirmado" automáticamente.' },
+                        { c: 1, t: 'El mapa del tracking se mueve con el repartidor', how: 'Cuando el pedido tiene driver asignado y está en camino, abrí el detalle del pedido en el celular.', expect: 'Aparece un mapa con la posición del driver. Cada 10 segundos aproximadamente se actualiza y ves cómo se va acercando.' },
+                        { c: 1, t: 'Aviso cuando el repartidor está cerca', how: 'Esperá hasta que el driver esté a menos de 500 metros de tu dirección.', expect: 'Te llega una notificación push (si las tenés habilitadas) diciendo que el driver está cerca. También aparece un cartel destacado en la app.' },
+                        { c: 1, t: 'Chat con el comercio mientras el pedido está activo', how: 'En el detalle del pedido (estado entre Pendiente y Listo), buscá el botón de chat con el comercio. Mandá un mensaje.', expect: 'El mensaje aparece en la pantalla del comercio. Sus respuestas vuelven al chat en vivo, sin refrescar.' },
+                        { c: 1, t: 'Chat con el repartidor desde que está asignado hasta la entrega', how: 'Cuando el pedido pasa a "Repartidor asignado", buscá el chat con el driver y mandá un mensaje.', expect: 'El driver lo recibe en su app y puede responderte. El chat queda disponible hasta que el pedido se entrega.' },
+                        { c: 1, t: 'Después de entregado se ocultan los chats y teléfonos', how: 'Una vez que el pedido pasa a "Entregado", abrí su detalle.', expect: 'Los botones de chat y de llamar al comercio o al driver desaparecen. Ya no podés contactarlos directamente desde la app.' },
+                        { c: 0, t: 'Acceso a soporte visible en cualquier momento', how: 'En el detalle de un pedido, busca el botón de soporte en cualquier estado (pendiente, en camino, entregado).', expect: 'Siempre hay un acceso visible a soporte. Te lleva a contactar al equipo de Moovy.' },
+                        { c: 1, t: 'Modal de calificación aparece después de entregado', how: 'Cuando un pedido se marca como "Entregado", abrí la app (o ya estaba abierta).', expect: 'Aparece automáticamente una ventana grande para calificar el pedido, con estrellas para el comercio y para el repartidor.' },
+                        { c: 1, t: 'El modal NO se tapa con la barra de navegación', how: 'Abrí el modal de calificación en un celular. Probá mover el dedo y ver si todos los botones del modal están visibles.', expect: 'Se ven completos los botones "Calificar más tarde" y "Enviar y cerrar". NADA queda tapado por la barra de navegación de abajo.' },
+                        { c: 1, t: 'Si cerrás el modal sin calificar, vuelve a aparecer', how: 'Cuando aparezca el modal de calificación, cerralo con la X o con "Calificar más tarde". Cerrá y reabrí la app, o volvé al detalle del pedido.', expect: 'El modal vuelve a aparecer hasta que califiques. Si nunca calificás, sigue apareciendo en los próximos accesos al pedido entregado.' },
+                        { c: 1, t: 'Calificar al repartidor guarda la calificación correctamente', how: 'En el modal post-entrega, calificá al driver con estrellas y un comentario opcional. Click "Enviar".', expect: 'El modal se cierra con un toast "¡Gracias por tu calificación!". El pedido sigue en estado "Entregado" (no vuelve a Pendiente ni cambia). La calificación queda guardada y el promedio del driver se actualiza.' },
+                        { c: 1, t: 'Calificar al comercio guarda sin afectar el pedido', how: 'En el modal, calificá al comercio con estrellas y comentario. Enviá.', expect: 'Se guarda la calificación. El pedido sigue siendo "Entregado". Si el comentario tiene insultos o palabras prohibidas, queda como "pendiente de moderación" hasta que OPS lo revise.' },
                     ]
                 },
                 {
                     title: 'Puntos MOOVER',
                     items: [
-                        { c: 1, t: 'Botón MOOVER siempre visible en BottomNav (NUNCA detrás de flag)' },
-                        { c: 1, t: '/puntos carga balance, lifetime, redeemableValue' },
-                        { c: 1, t: 'Earn al pasar pedido a DELIVERED (10pts / $1.000 si nivel MOOVER)' },
-                        { c: 1, t: 'Earn es idempotente — pasar a DELIVERED dos veces NO duplica' },
-                        { c: 1, t: 'Burn en checkout — 1pt = $1 ARS, min 500, max 20% subtotal' },
-                        { c: 1, t: 'Niveles dinámicos suben en pedidos 5 (SILVER), 15 (GOLD), 40 (BLACK)' },
-                        { c: 1, t: 'Balance nunca negativo (defensa server-side)' },
-                        { c: 0, t: 'Cancelar pedido revierte EARN, devuelve REDEEM (reverseOrderPoints idempotente)' },
-                        { c: 0, t: 'Expiración 6 meses sin pedidos' },
-                        { c: 0, t: 'Signup bonus se otorga al crear cuenta (1.000 mes 1 / 500 mes 2+)' },
-                        { c: 0, t: 'Referral bonus al completar primer pedido del referido (1.000 + 500)' },
+                        { c: 1, t: 'El botón MOOVER está siempre visible', how: 'Mirá el menú de abajo en cualquier pantalla del comprador (logueado o no).', expect: 'El círculo central rojo con la estrella (MOOVER) está SIEMPRE visible. NO se puede ocultar desde OPS.' },
+                        { c: 1, t: 'Pantalla de puntos muestra tu saldo', how: 'Tocá el orbe MOOVER del menú de abajo, o andá a /puntos.', expect: 'Ves tu saldo actual de puntos, el total ganado en tu historia, y el valor equivalente en pesos.' },
+                        { c: 1, t: 'Ganás puntos cuando el pedido se marca como entregado', how: 'Hacé un pedido por ejemplo de $1.000. Esperá a que se marque como Entregado.', expect: 'Te llegan al saldo 10 puntos por cada $1.000 gastados (puede ser más si tu nivel es más alto). Si gastaste $2.500, tu saldo sube en 25 puntos.' },
+                        { c: 1, t: 'Los puntos no se duplican si el pedido se entrega dos veces', how: 'Pedile a OPS o a alguien técnico que vuelva a disparar el evento de entrega del mismo pedido.', expect: 'Tu saldo NO se duplica. Los puntos se asignan una sola vez por pedido, no importa cuántas veces se procese el evento.' },
+                        { c: 1, t: 'Usar puntos en el checkout (1 punto = $1)', how: 'En el checkout con un pedido de $2.000, usá 400 puntos (que son el máximo del 20%).', expect: 'El total baja $400. Si intentás usar más de 400 puntos (20% del pedido) o menos de 500 puntos (mínimo), te bloquea.' },
+                        { c: 1, t: 'Subir de nivel automáticamente al hacer pedidos', how: 'Completá 5 pedidos en los últimos 90 días para llegar a SILVER. Después llegá a 15 para GOLD, y a 40 para BLACK.', expect: 'Cuando llegás a esos números, tu nivel cambia automáticamente. En la pantalla de puntos se ve tu nivel actual.' },
+                        { c: 1, t: 'El saldo nunca queda negativo', how: 'Intentá usar más puntos de los que tenés en el checkout, o hacé acciones rápidas concurrentes.', expect: 'El sistema NO permite que el saldo baje de 0. Si pasa algo raro, te muestra un error claro.' },
+                        { c: 0, t: 'Cancelar un pedido devuelve los puntos usados y reversa los ganados', how: 'Hacé un pedido usando puntos. Cancelá el pedido (o pedile al comercio que lo rechace).', expect: 'Los puntos que habías usado vuelven a tu saldo. Si ya te habían dado puntos por ese pedido al entregarlo, esos se descuentan.' },
+                        { c: 0, t: 'Los puntos se vencen a los 6 meses sin actividad', how: 'Esto es difícil de testear en menos tiempo, pero podés revisar la lógica con el equipo técnico o probar acelerando el cron.', expect: 'Si pasaste 6 meses sin hacer pedidos, los puntos viejos vencen y se descuentan automáticamente.' },
+                        { c: 0, t: 'Bonus al crear cuenta', how: 'Creá una cuenta nueva.', expect: 'Te llegan automáticamente 1.000 puntos de regalo (durante el primer mes desde el lanzamiento) o 500 puntos (después del mes 1).' },
+                        { c: 0, t: 'Bonus de referidos al completar el primer pedido', how: 'Compartí tu link de referido. Que tu amigo se registre con ese link y haga su primer pedido. Esperá a que se entregue.', expect: 'Cuando ese pedido se marca como entregado, vos recibís 1.000 puntos y tu amigo 500. NO se otorgan al registrarse, solo al completar el primer pedido.' },
                     ]
                 },
                 {
                     title: 'Marketplace',
                     items: [
-                        { c: 1, t: 'Botón Marketplace siempre visible en BottomNav (NUNCA detrás de flag)' },
-                        { c: 1, t: '/marketplace carga listings de vendedores' },
-                        { c: 1, t: 'Filtros por categoría / precio / condición funcionan' },
-                        { c: 1, t: 'Búsqueda dentro del marketplace funciona' },
-                        { c: 1, t: 'Detalle de listing muestra fotos, descripción, vendedor' },
-                        { c: 1, t: 'Agregar listing al carrito → genera SubOrder con sellerId' },
+                        { c: 1, t: 'El botón Marketplace está siempre visible', how: 'Mirá el menú de abajo en cualquier pantalla del comprador.', expect: 'El icono de Marketplace (tienda) está SIEMPRE visible. NO se puede ocultar desde OPS.' },
+                        { c: 1, t: 'La pantalla de Marketplace carga los productos', how: 'Tocá el botón "Marketplace" en el menú.', expect: 'Ves la lista de productos de vendedores particulares (no comercios). Cada uno con su foto, precio y nombre del vendedor.' },
+                        { c: 1, t: 'Filtros del Marketplace funcionan', how: 'En Marketplace, probá filtrar por categoría, rango de precio y condición (nuevo / usado / reacondicionado).', expect: 'La lista se actualiza dejando solo los productos que cumplen los filtros aplicados.' },
+                        { c: 1, t: 'Buscar dentro del Marketplace', how: 'Escribí el nombre de un producto en la barra de búsqueda del Marketplace.', expect: 'Aparecen solo los listings que matchean. La búsqueda funciona en los nombres y descripciones.' },
+                        { c: 1, t: 'Ver detalle de un producto del Marketplace', how: 'Tocá un producto del listado.', expect: 'Te lleva al detalle con todas las fotos, descripción completa, precio y datos del vendedor.' },
+                        { c: 1, t: 'Comprar un producto del Marketplace', how: 'Agregá un listing al carrito y procesá la compra.', expect: 'Se crea un pedido con ese producto. El vendedor recibe la notificación, no el comercio (porque el item es del marketplace).' },
                     ]
                 },
                 {
-                    title: 'Perfil y datos',
+                    title: 'Perfil y datos personales',
                     items: [
-                        { c: 1, t: '/mi-perfil muestra datos del usuario' },
-                        { c: 1, t: 'Editar dirección → guarda + valida con Places API' },
-                        { c: 1, t: 'Cambiar password → flujo completo' },
-                        { c: 0, t: 'Direcciones múltiples → CRUD funciona' },
-                        { c: 1, t: 'Auto-delete (self-delete) anonimiza email + soft-delete + revoke sesión' },
-                        { c: 1, t: 'Notificaciones push funcionan (permisos solicitados al usuario)' },
+                        { c: 1, t: 'Mi perfil muestra los datos correctos', how: 'Andá a /mi-perfil.', expect: 'Aparecen tu nombre, email, teléfono y dirección. Todo coincide con lo que ingresaste al registrarte.' },
+                        { c: 1, t: 'Editar dirección con autocompletado de Google', how: 'En mi perfil, click "Editar dirección". Empezá a escribir tu dirección.', expect: 'Aparecen sugerencias de Google Places mientras escribís. Al elegir una, se completa con la calle y número correctos.' },
+                        { c: 1, t: 'Cambiar contraseña', how: 'En mi perfil, click "Cambiar contraseña". Poné la actual, la nueva 2 veces, dale "Guardar".', expect: 'Te confirma con un mensaje "Contraseña actualizada". En el próximo login tenés que usar la nueva.' },
+                        { c: 0, t: 'Direcciones múltiples (Casa, Trabajo, etc.)', how: 'Si está implementado, agregá una segunda dirección. En el checkout elegí cuál usar.', expect: 'Podés guardar varias direcciones y elegirlas como "Casa", "Trabajo", etc. En el checkout aparece el selector.' },
+                        { c: 1, t: 'Eliminar mi cuenta (auto-delete)', how: 'En mi perfil → Eliminar mi cuenta. Confirmá.', expect: 'Tu cuenta queda eliminada. El email se anonimiza. Te cierra sesión inmediatamente.' },
+                        { c: 1, t: 'Notificaciones push funcionan', how: 'Cuando entrás por primera vez, te pide permisos para enviar notificaciones. Acept.', expect: 'Después, cuando pasa algo importante (driver cerca, pedido confirmado, etc.) recibís notificaciones aunque no tengas la app abierta.' },
                     ]
                 },
             ]
@@ -940,68 +976,67 @@
                 {
                     title: 'Registro y aprobación',
                     items: [
-                        { c: 1, t: 'Registro merchant desde /comercios/registro → crea Merchant con approvalStatus=PENDING' },
-                        { c: 1, t: 'Email recibido confirmando registro + esperar aprobación' },
-                        { c: 1, t: 'Upload de docs (DNI, CUIT, monotributo, etc.) con status PENDING por doc' },
-                        { c: 1, t: 'Validación CUIT con checksum AFIP (src/lib/cuit.ts)' },
-                        { c: 1, t: 'OPS aprueba doc por doc → cuando TODOS los requeridos están APPROVED, auto-activa' },
-                        { c: 1, t: 'OPS aprueba con source PHYSICAL requiere nota mínimo 5 chars (audit AAIP)' },
-                        { c: 1, t: 'OPS rechaza doc → notificación con rejectionReason' },
-                        { c: 1, t: 'Email cuando se aprueba el comercio' },
-                        { c: 1, t: 'Hard-lock server-side de docs aprobados — UI nunca es defensa' },
-                        { c: 0, t: 'Cambio post-aprobación → change-request formal con audit log' },
+                        { c: 1, t: 'Registrarse como comercio', how: 'Andá a /comercios/registro. Completá todos los datos requeridos (nombre, dirección, contacto, CUIT, etc.).', expect: 'Después del registro queda pendiente de aprobación. NO podés operar todavía. Te llega un email confirmando el registro.' },
+                        { c: 1, t: 'Email confirmando que tu solicitud fue recibida', how: 'Después de registrarte, revisá la casilla del email que usaste.', expect: 'En pocos minutos te llega un email "Recibimos tu registro" o similar. Si no aparece, revisá spam.' },
+                        { c: 1, t: 'Subir documentos requeridos', how: 'Ya registrado pero pendiente, andá a la sección "Mis documentos". Subí DNI, CUIT, monotributo y lo que pida la lista.', expect: 'Cada documento se sube por separado y queda con estado "Pendiente". Te confirma con un check cada vez que subís uno.' },
+                        { c: 1, t: 'El CUIT se valida con la regla oficial', how: 'En el registro o al subir el CUIT, escribí un número que NO sea un CUIT válido (ej. 20-12345678-1).', expect: 'El sistema lo rechaza con un mensaje específico tipo "CUIT inválido". Solo acepta CUITs con el dígito verificador correcto.' },
+                        { c: 1, t: 'OPS aprueba documento por documento', how: 'Desde OPS, abrí el comercio pendiente. Aprobá los documentos de a uno. Después de aprobar el último requerido, el comercio se activa automáticamente.', expect: 'Cada documento cambia su estado individual. Cuando TODOS los obligatorios están aprobados, el comercio pasa de "Pendiente" a "Aprobado" SIN un click adicional.' },
+                        { c: 1, t: 'Aprobación con documento físico pide una nota', how: 'En OPS, elegí aprobar un documento con la opción "Aprobado físicamente" (no por documento digital).', expect: 'Te obliga a escribir una nota de al menos 5 caracteres explicando por qué. NO te deja aprobar sin justificación.' },
+                        { c: 1, t: 'Rechazar documento con motivo', how: 'En OPS, rechazá un documento de un comercio escribiendo el motivo (ej. "Foto borrosa").', expect: 'El comercio recibe una notificación con el motivo. El documento queda en estado "Rechazado". El comercio puede volver a subirlo.' },
+                        { c: 1, t: 'Email cuando se aprueba el comercio', how: 'Aprobá todos los documentos requeridos de un comercio. Revisá la casilla del comercio.', expect: 'Le llega un email "¡Tu comercio fue aprobado!" o similar, dándole la bienvenida y explicándole los próximos pasos.' },
+                        { c: 1, t: 'No se pueden editar documentos aprobados', how: 'Como comercio con documentos aprobados, intentá cambiar el CUIT o el DNI subidos.', expect: 'NO te deja editar directamente. Te muestra un mensaje "Para cambiar este documento, contactá soporte" o requiere abrir un pedido de cambio formal.' },
+                        { c: 0, t: 'Pedir cambio en datos aprobados queda registrado', how: 'Como comercio aprobado, pedí un cambio en un documento.', expect: 'Se crea un "pedido de cambio" que queda registrado. OPS lo revisa, lo aprueba o lo rechaza. Todo queda con historial.' },
                     ]
                 },
                 {
-                    title: 'Dashboard y pedidos',
+                    title: 'Panel de pedidos',
                     items: [
-                        { c: 1, t: '/comercios carga el dashboard con métricas' },
-                        { c: 1, t: 'Listado de pedidos con filtros (status, fecha)' },
-                        { c: 1, t: 'Pedido nuevo → notificación sonora + visual + push' },
-                        { c: 1, t: 'Confirmar pedido → status pasa a CONFIRMED + notifica al buyer' },
-                        { c: 1, t: 'Rechazar pedido → status REJECTED + refund automático si pagado MP' },
-                        { c: 1, t: 'Marcar listo → status READY + busca driver' },
-                        { c: 1, t: 'PIN de retiro visible SOLO cuando driver llegó Y comercio READY' },
-                        { c: 1, t: 'Timeout en PENDING → bloquea botón "Aceptar" automáticamente' },
-                        { c: 1, t: 'Pedidos programados aparecen con badge SCHEDULED + tiempo restante' },
-                        { c: 1, t: '"Tu venta" muestra subtotal (no total con delivery fee)' },
-                        { c: 1, t: '"Cobrás $X (-Y%)" muestra el neto post-comisión con tier dinámico' },
-                        { c: 1, t: 'Chat con buyer disponible en pedido activo' },
+                        { c: 1, t: 'Dashboard del comercio', how: 'Logueado como comercio aprobado, andá a /comercios.', expect: 'Ves un resumen con métricas básicas: pedidos del día, ventas, estado de la tienda (abierta/cerrada), etc.' },
+                        { c: 1, t: 'Lista de pedidos con filtros', how: 'En el panel del comercio, andá a "Pedidos". Probá filtrar por estado y por fecha.', expect: 'La lista se actualiza con solo los pedidos del filtro elegido.' },
+                        { c: 1, t: 'Notificación cuando llega un pedido nuevo', how: 'Tené el panel abierto. Pedile a alguien que haga un pedido a tu comercio.', expect: 'Suena una alerta sonora, aparece un cartel visual con los datos del pedido, y (si tenés permitidas las notificaciones push) te llega una al celular.' },
+                        { c: 1, t: 'Confirmar un pedido pendiente', how: 'En un pedido en estado "Pendiente", click "Confirmar".', expect: 'El pedido pasa a "Confirmado / En preparación". El cliente recibe una notificación que su pedido fue aceptado.' },
+                        { c: 1, t: 'Rechazar un pedido cancela y devuelve la plata', how: 'En un pedido pendiente pagado con MercadoPago, click "Rechazar" y elegí un motivo.', expect: 'El pedido pasa a "Rechazado". El cliente recibe una notificación. Si pagó con MP, el reembolso se procesa automáticamente.' },
+                        { c: 1, t: 'Marcar pedido como listo busca repartidor', how: 'En un pedido "En preparación", click "Marcar como listo".', expect: 'El pedido pasa a "Listo". El sistema empieza a buscar un repartidor disponible. En pocos segundos/minutos se asigna uno.' },
+                        { c: 1, t: 'PIN de retiro solo se muestra cuando llega el driver Y el pedido está listo', how: 'Verificá en dos escenarios: (1) driver llegó pero el pedido todavía no está listo, y (2) pedido listo pero driver todavía no llegó.', expect: 'En ambos casos el PIN NO aparece. SOLO aparece cuando se cumplen las dos condiciones: pedido listo + driver físicamente en el comercio.' },
+                        { c: 1, t: 'Timeout en pedidos pendientes', how: 'Recibí un pedido y no lo confirmes ni lo rechaces. Esperá hasta que pase el tiempo límite configurado en OPS.', expect: 'El botón "Aceptar" se bloquea automáticamente. Aparece un cartel indicando que el pedido expiró por timeout. NO podés confirmarlo después.' },
+                        { c: 1, t: 'Pedidos programados con tiempo restante', how: 'Recibí un pedido marcado como "Programado para más tarde".', expect: 'Aparece en la lista con un badge "Programado" y la hora exacta de entrega. Calcula y muestra cuánto falta hasta el slot.' },
+                        { c: 1, t: 'El monto que ve el comercio es "Tu venta" sin envío', how: 'Abrí un pedido y mirá los montos visibles.', expect: 'Ves "Tu venta: $X" (subtotal de tus productos, SIN el envío). Y debajo "Cobrás $Y (-Z% comisión)" con el neto que efectivamente vas a recibir después de la comisión Moovy.' },
+                        { c: 1, t: 'Chat con el cliente desde el pedido', how: 'En un pedido activo (no entregado), buscá el botón de chat.', expect: 'Se abre una conversación con el cliente. Podés mandar mensajes y los recibís en vivo sin refrescar.' },
                     ]
                 },
                 {
-                    title: 'Productos y catálogo',
+                    title: 'Productos del catálogo',
                     items: [
-                        { c: 1, t: 'Crear producto manual → guarda con todos los campos requeridos' },
-                        { c: 1, t: 'Crear producto con tamaño/peso → selector Glovo-style + advanced mode' },
-                        { c: 1, t: 'Editar producto → banner flotante "Tenés cambios sin guardar"' },
-                        { c: 1, t: 'Eliminar producto → confirmación + soft delete' },
-                        { c: 1, t: 'Importar paquete del catálogo MOOVY → carga productos con foto profesional' },
-                        { c: 1, t: 'Stock se descuenta automáticamente con cada venta' },
-                        { c: 1, t: 'Subir foto producto → comprimida a sharp + crop 1:1' },
-                        { c: 0, t: 'Categorías custom del comercio funcionan' },
-                        { c: 0, t: 'Productos destacados / sugeridos' },
+                        { c: 1, t: 'Crear un producto manualmente', how: 'En el panel del comercio → Productos → Nuevo. Completá nombre, descripción, precio, stock, imagen.', expect: 'El producto se guarda. Aparece inmediatamente en la lista de productos y queda visible para los compradores.' },
+                        { c: 1, t: 'Elegir tamaño/peso del producto (selector visual)', how: 'Al crear un producto, en la sección "Tamaño" elegí entre las categorías visuales (Sobre, Pequeño, Mediano, Grande, etc.). Después probá el "modo avanzado" para tipear gramos exactos.', expect: 'Las dos formas funcionan. El tamaño que elegís determina qué vehículo se asigna para entregarlo (bici, moto, auto).' },
+                        { c: 1, t: 'Editar producto muestra el banner flotante', how: 'Entrá a editar un producto existente. Cambiá un campo (ej. el precio).', expect: 'Aparece un banner flotante en la parte inferior con un punto amarillo pulsante y el texto "Tenés cambios sin guardar" más los botones "Descartar" y "Guardar".' },
+                        { c: 1, t: 'Eliminar un producto pide confirmación', how: 'Click en el icono de tacho de un producto.', expect: 'Aparece una confirmación. Si confirmás, el producto desaparece de la lista (pero queda guardado internamente por si después se necesita auditoría).' },
+                        { c: 1, t: 'Importar productos del catálogo Moovy', how: 'En "Productos → Nuevo", andá a la sección de "Catálogo Moovy" si tu comercio compró un paquete. Elegí una categoría y dale "Importar".', expect: 'Los productos del catálogo se agregan a tu lista con fotos profesionales ya cargadas. Podés editarlos después.' },
+                        { c: 1, t: 'El stock baja con cada venta', how: 'Anotá el stock de un producto. Hacé un pedido como buyer comprando 1 unidad. Esperá a que se confirme.', expect: 'El stock del producto bajó en 1. Si tenías 10, ahora tenés 9.' },
+                        { c: 1, t: 'Subir foto de producto se comprime y queda cuadrada', how: 'Subí una foto grande (más de 2MB) en un producto.', expect: 'La foto se comprime automáticamente y se recorta a formato cuadrado (1:1) si era rectangular.' },
+                        { c: 0, t: 'Categorías custom del comercio', how: 'Si está implementado, creá una categoría propia (ej. "Promo del día") y agregale productos.', expect: 'La categoría aparece en la página del comercio en la tienda pública. Los compradores pueden filtrar por ella.' },
+                        { c: 0, t: 'Productos destacados', how: 'Marcá algunos productos como "destacados" si está implementado.', expect: 'Esos productos aparecen primeros o con un badge especial en la tienda del comercio.' },
                     ]
                 },
                 {
                     title: 'Configuración del comercio',
                     items: [
-                        { c: 1, t: 'Editar perfil → banner flotante de cambios sin guardar' },
-                        { c: 1, t: 'Cambiar horarios → guarda + se aplica para mostrar "Abierto/Cerrado" en tienda' },
-                        { c: 1, t: 'Cambiar imagen del comercio → comprime + queda visible en listado' },
-                        { c: 1, t: 'Conectar MercadoPago OAuth → guarda mpAccessToken cifrado' },
-                        { c: 1, t: 'Pausar tienda manualmente → comercio aparece como CERRADO' },
-                        { c: 1, t: 'Loyalty tier (BRONCE/PLATA/ORO/DIAMANTE) refleja comisión correcta' },
-                        { c: 0, t: 'Redes sociales (Instagram, FB, WhatsApp) se muestran en perfil público' },
+                        { c: 1, t: 'Editar perfil del comercio con banner flotante', how: 'En "Mi comercio", cambiá cualquier dato (nombre, descripción, etc.).', expect: 'Aparece el banner flotante "Tenés cambios sin guardar" con botones Descartar y Guardar. Si descartás, se recarga la página con los datos originales.' },
+                        { c: 1, t: 'Cambiar horarios de atención', how: 'En la sección de horarios, cambiá el horario de un día (ej. hacé que el lunes abra de 10 a 14h en vez de 9 a 18h).', expect: 'Se guarda. En la página pública del comercio, durante esas horas aparece como "Abierto" y fuera como "Cerrado".' },
+                        { c: 1, t: 'Cambiar la imagen del comercio', how: 'En "Mi comercio", subí una nueva foto de portada.', expect: 'Se comprime automáticamente. En la tienda pública el comercio aparece con la foto nueva en pocos segundos.' },
+                        { c: 1, t: 'Conectar tu cuenta de MercadoPago', how: 'En la sección de pagos, click "Conectar MercadoPago". Te redirige a MP, te logueás, autorizás Moovy.', expect: 'Volvés al panel y aparece "MercadoPago conectado". Ahora los pagos van directo a tu cuenta MP (con la comisión Moovy descontada automáticamente).' },
+                        { c: 1, t: 'Pausar la tienda temporalmente', how: 'En el dashboard, click "Pausar tienda".', expect: 'La tienda pasa a estado "Cerrado" inmediatamente. En la tienda pública aparece como cerrado, aunque el horario sea normal. Volvés a abrirlo cuando quieras.' },
+                        { c: 1, t: 'El nivel de fidelidad muestra la comisión correcta', how: 'En la sección de tu comercio, andá a "Comisión actual".', expect: 'Aparece tu nivel actual (BRONCE, PLATA, ORO o DIAMANTE) y el porcentaje de comisión que pagás (BRONCE 8% → DIAMANTE 5%).' },
+                        { c: 0, t: 'Redes sociales visibles en tu perfil público', how: 'Llená los campos de Instagram, Facebook y WhatsApp. Guardá. Andá a la tienda pública y buscá tu comercio.', expect: 'En la página de tu comercio aparecen los iconos de Instagram, FB y WhatsApp con los links correctos.' },
                     ]
                 },
                 {
-                    title: 'Pagos al comercio (payouts)',
+                    title: 'Pagos recibidos',
                     items: [
-                        { c: 1, t: 'OPS genera PayoutBatch MERCHANT → CSV correcto' },
-                        { c: 1, t: 'Al marcar PAID → Order.commissionPaid se setea a true en los orders incluidos' },
-                        { c: 1, t: 'Comercio ve el histórico de pagos recibidos en su panel' },
-                        { c: 0, t: 'Comercio puede descargar CSV propio de su histórico' },
+                        { c: 1, t: 'OPS genera el archivo de pagos a comercios', how: 'Desde OPS, en la sección de Payouts, generá un PayoutBatch para "Comercios" del último periodo.', expect: 'Se descarga un archivo CSV con la lista de comercios, cada uno con el monto que se les debe, sus datos bancarios y los pedidos incluidos.' },
+                        { c: 1, t: 'Al marcar el batch como pagado, los pedidos se marcan en la DB', how: 'En OPS, después de hacer la transferencia real por MP o banco, marcá el batch como "Pagado".', expect: 'Los pedidos incluidos quedan marcados como "Comisión pagada" en su detalle. NO se pueden incluir en otro batch.' },
+                        { c: 1, t: 'El comercio ve su historial de pagos recibidos', how: 'Logueado como comercio, entrá a la sección de pagos / payouts en tu panel.', expect: 'Aparece la lista de pagos recibidos con fecha, monto, cantidad de pedidos incluidos. Podés ver el detalle de cada pago.' },
+                        { c: 0, t: 'El comercio puede descargar su CSV de pagos', how: 'En el historial de pagos, click "Descargar CSV".', expect: 'Se descarga un archivo con tus pagos del periodo elegido.' },
                     ]
                 },
             ]
@@ -1012,57 +1047,57 @@
                 {
                     title: 'Registro y aprobación',
                     items: [
-                        { c: 1, t: 'Registro desde /repartidor/registro con todos los datos requeridos' },
-                        { c: 1, t: 'Upload de docs: DNI, licencia, seguro, RTO, cédula verde (status per-doc)' },
-                        { c: 1, t: 'RTO NO es obligatorio pero declaración jurada T&C sí' },
-                        { c: 1, t: 'Validación CBU con checksum BCRA (src/lib/bank-account.ts)' },
-                        { c: 1, t: 'Botón "Cargar mi documentación" después del registro lleva al panel' },
-                        { c: 1, t: 'Confirmación del registro muestra DNI/CUIT cargados (no campos vacíos)' },
-                        { c: 1, t: 'Sin error de consola en aceptación T&C' },
-                        { c: 1, t: 'Cron diario de vencimiento docs avisa 7d/3d/1d antes + auto-suspende al vencer' },
-                        { c: 1, t: 'Aprobación driver dispara email + activa rol DRIVER en JWT (socket roles_updated)' },
+                        { c: 1, t: 'Registro como repartidor', how: 'Andá a /repartidor/registro. Completá nombre, contacto, DNI, datos bancarios (CBU o alias), vehículo.', expect: 'Después del registro quedás pendiente de aprobación. Te llega un email con los próximos pasos (cargar documentos).' },
+                        { c: 1, t: 'Subir documentos: DNI, licencia, seguro, RTO, cédula verde', how: 'En el panel del driver pendiente, sección "Mis documentos". Subí fotos claras de cada documento requerido.', expect: 'Cada documento queda con estado "Pendiente de revisión". OPS los aprueba uno por uno desde su panel.' },
+                        { c: 1, t: 'El RTO no es obligatorio pero la declaración jurada de T&C sí', how: 'Probá registrarte sin subir el RTO pero aceptando todos los términos.', expect: 'Te permite continuar SIN el RTO. Pero NO te permite avanzar sin aceptar los términos y la declaración jurada de responsabilidad.' },
+                        { c: 1, t: 'El CBU se valida con la regla oficial', how: 'Al cargar tus datos bancarios, probá poner un CBU inventado.', expect: 'Te tira error específico tipo "CBU inválido". Solo acepta CBUs con la suma de control correcta (regla del BCRA).' },
+                        { c: 1, t: 'Después del registro hay un botón para cargar documentación', how: 'Completá el registro de driver y mirá la pantalla final.', expect: 'Aparece un botón claro "Cargar mi documentación" que te lleva al panel del driver pendiente. NO te quedás atrapado sin saber dónde ir.' },
+                        { c: 1, t: 'La pantalla de confirmación muestra los datos cargados', how: 'Después del registro, mirá la pantalla de confirmación.', expect: 'Muestra DNI, CUIT, nombre, etc. con los valores que ingresaste. NO aparecen campos vacíos donde debería haber datos.' },
+                        { c: 1, t: 'Sin errores de consola al aceptar términos', how: 'Abrí las herramientas de desarrollador (F12 → Console) antes de aceptar los T&C en el registro. Aceptá y mirá la consola.', expect: 'NO aparecen errores rojos en la consola. Si aparece alguno, anotalo en la observación.' },
+                        { c: 1, t: 'Aviso automático antes de que venza un documento', how: 'Configurá una fecha de vencimiento próxima en un documento (ej. licencia que vence en 3 días). Esperá al cron diario.', expect: '7 días antes te llega un primer aviso. A los 3 días un segundo. A 1 día un tercero. Si llega el vencimiento sin actualizar, tu cuenta se suspende automáticamente.' },
+                        { c: 1, t: 'Al aprobarte como driver, te llega email y se activa el rol', how: 'Desde OPS, aprobá todos los documentos requeridos de un driver pendiente.', expect: 'Le llega un email "¡Tu cuenta fue aprobada!" al driver. La próxima vez que entre, ya puede ir online y recibir pedidos.' },
                     ]
                 },
                 {
-                    title: 'Estado online y asignación',
+                    title: 'Estado online y asignación de pedidos',
                     items: [
-                        { c: 1, t: 'Toggle online/offline funciona' },
-                        { c: 1, t: 'Estado online persiste tras reload' },
-                        { c: 1, t: 'GPS pidiendo permisos al ir online' },
-                        { c: 1, t: 'Driver con GPS denegado NO puede ir online (muestra mensaje claro)' },
-                        { c: 1, t: 'Pedido asignado → notificación sonora + push + UI con detalles' },
-                        { c: 1, t: 'Aceptar → arranca tracking + state PICKED_UP_PENDING' },
-                        { c: 1, t: 'Rechazar → vuelve a PendingAssignment para próximo driver' },
-                        { c: 1, t: 'Timeout sin responder → auto-reasigna' },
-                        { c: 0, t: 'Smart batching <3km funciona (asigna 2 pedidos al mismo driver)' },
-                        { c: 0, t: 'Sin drivers disponibles → status UNASSIGNABLE + refund auto si MP' },
+                        { c: 1, t: 'Toggle online / offline', how: 'Logueado como driver aprobado, busca el toggle de "Online" en el dashboard. Pasalo a ON y después a OFF.', expect: 'Cuando estás en ON, podés recibir pedidos. Cuando estás en OFF, NO. El cambio se aplica al instante.' },
+                        { c: 1, t: 'El estado online persiste si refrescás la pantalla', how: 'Poneté en ON. Refrescá la pantalla.', expect: 'Seguís en estado ON. NO se resetea a OFF cada vez que recargás.' },
+                        { c: 1, t: 'Pide permisos de ubicación al ir online', how: 'Primera vez que activás ONLINE en un browser/dispositivo nuevo.', expect: 'Te aparece el cartel del browser pidiendo permitir acceso a tu ubicación. Si aceptás, podés ir online. Si rechazás, NO te deja.' },
+                        { c: 1, t: 'Sin permiso de ubicación no podés ir online', how: 'En la configuración del browser, denegá el permiso de ubicación a Moovy. Después intentá pasar a ONLINE.', expect: 'Te aparece un mensaje claro "Necesitamos tu ubicación para asignarte pedidos cercanos" + instrucciones para habilitarlo. NO podés ir online sin GPS.' },
+                        { c: 1, t: 'Asignación de pedido suena y se ve', how: 'Estando ONLINE y disponible, pedile a alguien que haga un pedido en tu zona.', expect: 'Suena una alarma fuerte. Aparece un cartel grande con los datos del pedido: comercio, dirección, distancia, ganancia estimada. Y te llega push al celular.' },
+                        { c: 1, t: 'Aceptar un pedido empieza el tracking', how: 'Aceptá una asignación.', expect: 'La pantalla cambia a "En camino al comercio" con el mapa y la ruta. Tu ubicación empieza a enviarse al server cada 10 segundos.' },
+                        { c: 1, t: 'Rechazar libera el pedido para otro driver', how: 'Cuando te asignen un pedido, click "Rechazar" o no respondas hasta el timeout.', expect: 'El pedido vuelve a la cola y otro driver cercano lo recibe en pocos segundos. Vos volvés al estado libre.' },
+                        { c: 1, t: 'Timeout sin responder reasigna automáticamente', how: 'Recibí una asignación y dejá pasar el tiempo sin tocar nada.', expect: 'Después del timeout configurado en OPS, el pedido se reasigna al próximo driver. Vos volvés a estar disponible.' },
+                        { c: 0, t: 'Un solo driver puede llevar 2 pedidos cercanos a la vez', how: 'Hacé 2 pedidos en lugares cercanos (menos de 3 km entre comercio y entrega) que tengan al mismo driver disponible.', expect: 'Al mismo driver le llegan los 2 pedidos en secuencia o agrupados. Los puede hacer en un solo trip si conviene.' },
+                        { c: 0, t: 'Cuando no hay drivers disponibles, el cliente recibe mensaje y reembolso', how: 'Asegurate que no haya drivers ONLINE en la zona. Hacé un pedido.', expect: 'El cliente recibe una notificación "No conseguimos repartidor". El pedido pasa a estado "Sin repartidor" y, si era MP, el reembolso se procesa automáticamente.' },
                     ]
                 },
                 {
-                    title: 'PIN doble y entrega',
+                    title: 'PIN doble (retiro y entrega)',
                     items: [
-                        { c: 1, t: 'Llegar al comercio → state DRIVER_ARRIVED + comercio ve el PIN' },
-                        { c: 1, t: 'Ingresar PIN correcto de retiro → state PICKED_UP' },
-                        { c: 1, t: 'PIN incorrecto → muestra intentos restantes' },
-                        { c: 1, t: 'Máximo intentos PIN retiro → state bloqueado + botones soporte VISIBLES' },
-                        { c: 1, t: 'Geofence: PIN fuera de 100m bloquea con mensaje claro + botones soporte' },
-                        { c: 1, t: 'Ingresar PIN correcto de entrega → state DELIVERED' },
-                        { c: 1, t: 'Máximo intentos PIN entrega → mismo flujo de soporte' },
-                        { c: 1, t: 'Driver con ≥3 incidentes PIN → fraudScore + auto-suspend' },
-                        { c: 1, t: 'Reportar problema desde modal → email a alertEmails + audit log' },
-                        { c: 1, t: 'WhatsApp soporte abre con mensaje pre-armado contextual al error' },
+                        { c: 1, t: 'Llegar al comercio activa el estado "En el comercio"', how: 'Como driver, andá hacia la dirección del comercio.', expect: 'Cuando estás a menos de 100 metros (geofence), el sistema detecta tu llegada. Tu estado pasa a "En el comercio". El comercio recibe la notificación y ve el PIN de retiro en su panel.' },
+                        { c: 1, t: 'Ingresar PIN correcto retira el pedido', how: 'Pedile al comercio que te diga el PIN de retiro (4 dígitos). Ingresalo en tu app.', expect: 'El PIN se valida. El pedido pasa a "Retirado / En camino al cliente". Empieza el tracking de la segunda parte del viaje.' },
+                        { c: 1, t: 'PIN incorrecto muestra cuántos intentos te quedan', how: 'Ingresá un PIN inventado.', expect: 'Aparece un mensaje rojo "PIN incorrecto. Te quedan X intentos". El contador baja con cada intento fallido.' },
+                        { c: 1, t: 'Después del máximo de intentos, aparecen botones de soporte visibles', how: 'Ingresá un PIN equivocado tantas veces como el límite (5 por defecto).', expect: 'El pedido se bloquea. Pero a la altura del mensaje rojo aparecen DOS BOTONES PROMINENTES: uno rojo "Reportar problema y desbloquear" y otro link "o escribí a soporte por WhatsApp".' },
+                        { c: 1, t: 'PIN fuera de geofence (lejos del lugar) se bloquea con soporte', how: 'Como driver, intentá ingresar el PIN cuando estás a más de 100 metros del comercio o del cliente.', expect: 'El sistema te dice "Estás a X metros del destino. Acercate más e intentá de nuevo". Aparecen los mismos botones de soporte para escalar el caso si hay un problema de GPS real.' },
+                        { c: 1, t: 'Ingresar PIN correcto en la entrega', how: 'Llegá al cliente. Pedile el PIN de entrega y poné los 4 dígitos.', expect: 'El PIN se valida. El pedido pasa a "Entregado". Tu estado vuelve a "Disponible" y podés recibir el próximo pedido.' },
+                        { c: 1, t: 'PIN de entrega también se puede bloquear y aparecen botones de soporte', how: 'Igual al caso del PIN de retiro pero en la entrega — ingresá mal el PIN 5 veces.', expect: 'Mismo flujo: el pedido se bloquea pero aparecen botones de soporte (Reportar problema + WhatsApp).' },
+                        { c: 1, t: '3 o más bloqueos suspenden automáticamente al driver', how: 'Escenario adversarial — un driver que tiene varios bloqueos de PIN seguidos.', expect: 'Después de 3 incidentes de PIN bloqueado, el sistema suspende automáticamente al driver hasta que un admin revise. Esto previene fraudes.' },
+                        { c: 1, t: 'Reportar problema desde el modal manda email a soporte', how: 'Cuando se bloquea el PIN, dale al botón "Reportar problema y desbloquear". En el modal, escribí qué pasó. Enviar.', expect: 'El reporte se envía. Llega un email al equipo de Moovy con todo el contexto (orderId, distancia, comentario). Vos ves un cartel "Reporte enviado, vamos a contactarte".' },
+                        { c: 1, t: 'WhatsApp soporte abre con mensaje pre-armado contextual', how: 'En el modal del PIN bloqueado, click en "o escribí a soporte por WhatsApp".', expect: 'Se abre WhatsApp con un mensaje pre-armado distinto según el error: "se bloqueó por intentos" o "problema de GPS", incluyendo el pedido.' },
                     ]
                 },
                 {
                     title: 'Ganancias y pagos',
                     items: [
-                        { c: 1, t: 'EarningsView carga "Mis ganancias" con tabs "Ganancias" y "Pagos recibidos"' },
-                        { c: 1, t: 'Selector de período: Esta semana / Este mes / últimos 12 meses / Todo el tiempo' },
-                        { c: 1, t: 'Tab "Pagos recibidos" muestra historial de PayoutBatch PAID del driver' },
-                        { c: 1, t: 'Total acumulado histórico se calcula correctamente' },
-                        { c: 1, t: 'Propinas declaradas aparecen separadas (no las procesa Moovy)' },
-                        { c: 0, t: 'Driver sin bankAlias ve warning para cargarlo' },
-                        { c: 1, t: 'Tracking GPS se sube al server cada 10s mientras tiene pedido activo' },
+                        { c: 1, t: 'La pantalla de ganancias tiene 2 pestañas: "Ganancias" y "Pagos recibidos"', how: 'Andá a "Mis ganancias" en el panel del driver.', expect: 'Hay dos tabs arriba: "Ganancias" (detalle de cuánto ganaste por entrega) y "Pagos recibidos" (historial de transferencias que te hizo Moovy).' },
+                        { c: 1, t: 'Selector de período: semana, mes, meses pasados, todo el tiempo', how: 'En la pestaña "Ganancias", abrí el dropdown del período.', expect: 'Tenés opciones: "Esta semana", "Este mes", los últimos 12 meses uno por uno, y "Todo el tiempo".' },
+                        { c: 1, t: 'La pestaña "Pagos recibidos" muestra cada transferencia que te hicieron', how: 'Andá a la pestaña "Pagos recibidos".', expect: 'Cada transferencia que Moovy te hizo aparece con la fecha, el monto, la cantidad de pedidos que incluía y la cuenta destino.' },
+                        { c: 1, t: 'El total acumulado de pagos es correcto', how: 'En la pestaña "Pagos recibidos", mirá el total arriba.', expect: 'El número refleja la suma de todos los pagos recibidos. Si te pagaron $10.000 una vez y $7.500 otra, el total es $17.500.' },
+                        { c: 1, t: 'Propinas declaradas aparecen separadas', how: 'Mirá la pantalla de ganancias después de pedidos donde el cliente declaró propina.', expect: 'Las propinas aparecen en una sección aparte (NO sumadas a tus ganancias). El sistema avisa: "Estas propinas no las procesa Moovy, las recibís directo del cliente".' },
+                        { c: 0, t: 'Aviso si no cargaste alias bancario para recibir propinas', how: 'Como driver sin alias cargado, andá a ganancias.', expect: 'Aparece un cartel amarillo recordándote que cargues tu alias en tu perfil para que los compradores puedan dejarte propina por transferencia.' },
+                        { c: 1, t: 'El GPS se sube cada 10 segundos durante un pedido activo', how: 'Tené un pedido activo (en camino al comercio o al cliente). Mirá el log de network en DevTools o pedile al equipo técnico que confirme.', expect: 'Cada ~10 segundos hay una request al backend con la nueva posición GPS del driver. El cliente ve el mapa actualizado en tiempo real.' },
                     ]
                 },
             ]
@@ -1073,231 +1108,231 @@
                 {
                     title: 'Registro y configuración',
                     items: [
-                        { c: 1, t: 'Registro seller desde /vendedor/registro → SellerProfile creado' },
-                        { c: 1, t: 'Email de bienvenida (rama feat/welcome-email-seller)' },
-                        { c: 1, t: 'Validación de docs fiscales + DNI/CUIT' },
-                        { c: 1, t: 'Aprobación admin → activa rol SELLER' },
-                        { c: 0, t: 'Conectar MP OAuth → token cifrado' },
+                        { c: 1, t: 'Registro como vendedor', how: 'Andá a /vendedor/registro. Completá los datos requeridos (personales, fiscales, contacto).', expect: 'Se crea tu perfil de vendedor. Te llega un email de bienvenida explicando los próximos pasos.' },
+                        { c: 1, t: 'Email de bienvenida al registrarse', how: 'Revisá la casilla del email que usaste para registrarte.', expect: 'Llega un email "Bienvenido vendedor a Moovy" con instrucciones.' },
+                        { c: 1, t: 'Validación de documentos fiscales + DNI/CUIT', how: 'Subí tu documentación fiscal (monotributo, AFIP) y el DNI/CUIT.', expect: 'Quedan en estado "Pendiente". OPS los aprueba uno por uno.' },
+                        { c: 1, t: 'Aprobación de admin activa la cuenta', how: 'OPS aprueba todos los documentos.', expect: 'Te activan como vendedor. Ya podés publicar productos en el marketplace.' },
+                        { c: 0, t: 'Conectar MercadoPago para recibir pagos directos', how: 'En la sección de pagos del panel del seller, click "Conectar MP".', expect: 'Te redirige a MP, autorizás, volvés con la cuenta conectada. Los pagos van directos a tu cuenta con la comisión de Moovy descontada.' },
                     ]
                 },
                 {
-                    title: 'Listings y ventas',
+                    title: 'Publicar productos (listings)',
                     items: [
-                        { c: 1, t: 'Crear listing con foto, descripción, precio, categoría peso' },
-                        { c: 1, t: 'Editar listing' },
-                        { c: 1, t: 'Pausar/activar listing' },
-                        { c: 1, t: 'Eliminar listing → soft delete' },
-                        { c: 1, t: 'Variantes (talle, color) funcionan si aplican' },
-                        { c: 1, t: 'Stock se descuenta con cada venta' },
+                        { c: 1, t: 'Crear un listing nuevo', how: 'En el panel del seller, click "Nuevo listing". Subí foto, descripción, precio, elegí categoría y peso del paquete.', expect: 'El listing se guarda y aparece en el Marketplace público. Los compradores ya lo pueden ver.' },
+                        { c: 1, t: 'Editar un listing existente', how: 'Tocá un listing tuyo en la lista, cambiá el precio o la descripción, guardá.', expect: 'Los cambios se reflejan en el Marketplace en pocos segundos.' },
+                        { c: 1, t: 'Pausar/activar un listing', how: 'En el detalle de tu listing, click "Pausar".', expect: 'El listing desaparece del Marketplace público pero queda en tu lista para reactivar después.' },
+                        { c: 1, t: 'Eliminar un listing', how: 'Click en el icono de tacho del listing y confirmá.', expect: 'Desaparece del Marketplace. Internamente queda guardado (por auditoría).' },
+                        { c: 1, t: 'Variantes (talle, color, etc.)', how: 'Si tu producto tiene variantes (ej. ropa con talles S/M/L), creá variantes con sus stocks individuales.', expect: 'Los compradores pueden elegir entre las variantes al comprar. El stock baja de la variante elegida.' },
+                        { c: 1, t: 'El stock baja con cada venta', how: 'Tené un listing con stock 5. Hacé que alguien lo compre.', expect: 'El stock baja a 4 automáticamente. Si llega a 0, el listing se marca como agotado.' },
                     ]
                 },
                 {
-                    title: 'Pedidos y panel',
+                    title: 'Panel de pedidos del seller',
                     items: [
-                        { c: 1, t: '/vendedor/pedidos lista SubOrders del seller' },
-                        { c: 1, t: 'Filtros por estado funcionan' },
-                        { c: 1, t: '"Tu venta" muestra subtotal, "Cobrás" muestra sellerPayout (12% comisión)' },
-                        { c: 1, t: 'Chat con buyer disponible en pedido activo' },
-                        { c: 1, t: 'Chat con driver disponible en multi-vendor' },
-                        { c: 1, t: 'Notificación sonora + visual + push en pedido nuevo' },
+                        { c: 1, t: 'Lista de pedidos al vendedor', how: 'Como seller, andá a /vendedor/pedidos.', expect: 'Aparecen solo los pedidos de tus listings (no los de comercios). Cada uno con el detalle de qué se vendió.' },
+                        { c: 1, t: 'Filtros por estado', how: 'Probá los filtros (Pendientes, En proceso, Entregados, Cancelados).', expect: 'La lista se filtra correctamente. Los pedidos viejos no aparecen si elegiste "Pendientes".' },
+                        { c: 1, t: '"Tu venta" muestra subtotal, "Cobrás" muestra el neto con 12% descontado', how: 'Abrí un pedido tuyo y mirá los montos.', expect: 'Ves "Tu venta: $X" (el precio sin envío) y "Cobrás: $Y" (con la comisión Moovy de 12% descontada automáticamente).' },
+                        { c: 1, t: 'Chat con el comprador del listing', how: 'En un pedido activo, click en chat con el comprador.', expect: 'Se abre la conversación. Podés mandar mensajes que llegan al buyer en vivo.' },
+                        { c: 1, t: 'Chat con el driver para coordinar retiro', how: 'Cuando un driver tiene asignado tu pedido, click en chat con el driver.', expect: 'Podés coordinar el retiro del producto con el repartidor (dónde y cuándo).' },
+                        { c: 1, t: 'Notificación cuando llega un pedido nuevo', how: 'Tené el panel abierto. Que alguien compre uno de tus listings.', expect: 'Suena alerta, aparece cartel visual, llega push.' },
                     ]
                 },
             ]
         },
         {
-            id: 'ops', title: 'OPS (Admin)', icon: '🛠️',
+            id: 'ops', title: 'OPS (Equipo Moovy)', icon: '🛠️',
             subsections: [
                 {
                     title: 'Login y acceso',
                     items: [
-                        { c: 1, t: 'Login OPS desde /ops/login con credenciales admin' },
-                        { c: 1, t: 'Proxy bloquea /ops/* sin rol ADMIN' },
-                        { c: 1, t: 'Logout → limpia sesión + redirect a login' },
-                        { c: 1, t: 'Selector de panel después de login (si tiene múltiples roles)' },
+                        { c: 1, t: 'Login OPS solo para admins', how: 'Entrá a /ops/login con credenciales de admin.', expect: 'Entrás al panel OPS. Si alguien intenta con credenciales de un usuario normal, el sistema lo rechaza.' },
+                        { c: 1, t: 'Bloqueo de rutas OPS sin rol admin', how: 'Logueado como usuario normal (no admin), pegá la URL /ops/usuarios en el browser.', expect: 'El sistema te redirige al login o te bloquea con un mensaje de "Acceso denegado".' },
+                        { c: 1, t: 'Logout limpia la sesión', how: 'En el panel OPS, click "Cerrar sesión".', expect: 'Te lleva al login y borra la sesión. Si pegás /ops/usuarios en la URL, te pide loguear de nuevo.' },
+                        { c: 1, t: 'Selector de panel post-login', how: 'Si tu cuenta tiene varios roles (admin + comercio), después de loguear elegí a qué panel querés ir.', expect: 'Aparece una pantalla con tarjetas para cada rol disponible. Elegís y vas al panel correcto.' },
                     ]
                 },
                 {
                     title: 'Gestión de usuarios',
                     items: [
-                        { c: 1, t: '/ops/usuarios lista todos los usuarios con paginación' },
-                        { c: 1, t: 'Auto-refresh cada 30s (pausa cuando pestaña no visible)' },
-                        { c: 1, t: 'Botón "Actualizar" manual + label "Hace X segundos"' },
-                        { c: 1, t: 'Filtros por rol (Buyer, Merchant, Driver, Seller, Admin)' },
-                        { c: 1, t: 'Tabs con contadores (PENDING, APPROVED, etc.)' },
-                        { c: 1, t: 'Badge de pendientes en menú de OPS' },
-                        { c: 1, t: 'Form de creación admin coincide con registro público (paridad)' },
-                        { c: 1, t: 'Soft-delete user desde OPS funciona (no anonimiza email)' },
+                        { c: 1, t: 'La lista de usuarios aparece con paginación', how: 'Andá a /ops/usuarios.', expect: 'Aparecen los primeros 20-50 usuarios. Al final hay botones de "Siguiente página". Los datos visibles: nombre, email, rol, fecha de registro, estado.' },
+                        { c: 1, t: 'Auto-refresh cada 30 segundos cuando la pestaña está visible', how: 'Dejá /ops/usuarios abierto en una pestaña. Pedile a alguien que se registre. Esperá hasta 30 segundos sin tocar nada.', expect: 'La lista se actualiza sola y aparece el nuevo registro. Cuando cambiás a otra pestaña, el auto-refresh se pausa.' },
+                        { c: 1, t: 'Botón "Actualizar" manual + label "Hace X segundos"', how: 'En /ops/usuarios, mirá el botón "Actualizar" y la fecha que muestra cuándo fue la última actualización.', expect: 'El label dice "Actualizado hace 5 segundos / 1 minuto", etc. y se actualiza solo. El botón te permite forzar refresh manual sin esperar al auto.' },
+                        { c: 1, t: 'Filtros por rol', how: 'Probá los filtros: "Compradores", "Comercios", "Repartidores", "Vendedores", "Admins".', expect: 'La lista se filtra correctamente. Solo aparecen usuarios del rol elegido.' },
+                        { c: 1, t: 'Tabs con contadores por estado', how: 'Mirá las pestañas: "Pendientes", "Aprobados", "Rechazados".', expect: 'Cada pestaña tiene un número que es la cantidad de usuarios en ese estado. Al hacer click se filtra por ese estado.' },
+                        { c: 1, t: 'Badge de pendientes en el menú de OPS', how: 'Tené algunos comercios o drivers pendientes de aprobación. Mirá el menú lateral del panel OPS.', expect: 'Junto a "Usuarios" o "Aprobaciones" hay un badge rojo con el número de pendientes que hay para revisar.' },
+                        { c: 1, t: 'Crear admin desde OPS coincide con registro público', how: 'Desde OPS, andá a "Crear usuario admin". Compará los campos con el registro público.', expect: 'Los campos son los mismos. NO hay diferencias entre lo que pide el formulario público y el de OPS.' },
+                        { c: 1, t: 'Eliminar usuario desde OPS no anonimiza el email', how: 'Desde OPS, eliminá una cuenta de usuario.', expect: 'La cuenta queda eliminada pero el email original se conserva en la DB. El email NO se puede usar para crear otra cuenta nueva.' },
                     ]
                 },
                 {
                     title: 'Pedidos en vivo',
                     items: [
-                        { c: 1, t: '/ops/pedidos/live muestra pedidos activos en tiempo real' },
-                        { c: 1, t: 'Refund manual con confirmación textual "ELIMINAR DEFINITIVAMENTE"' },
-                        { c: 1, t: 'Reasignar driver con audit log' },
-                        { c: 1, t: 'Override geofence con audit log' },
+                        { c: 1, t: 'Vista de pedidos en vivo se actualiza en tiempo real', how: 'Andá a /ops/pedidos/live. Pedile a alguien que haga un pedido o que un driver cambie de estado.', expect: 'La pantalla se actualiza sin refrescar manualmente. Los cambios de estado aparecen al instante.' },
+                        { c: 1, t: 'Reembolso manual con confirmación textual', how: 'Desde OPS, abrí un pedido y dale "Reembolsar".', expect: 'Te pide escribir literalmente "ELIMINAR DEFINITIVAMENTE" (sin comillas) para confirmar. Si lo escribís mal, el botón sigue deshabilitado.' },
+                        { c: 1, t: 'Reasignar driver con audit log', how: 'Cambiá el driver de un pedido activo manualmente desde OPS.', expect: 'El driver original recibe la notificación de que se le quitó el pedido. El nuevo lo recibe. Queda un registro en el audit log con quién hizo el cambio.' },
+                        { c: 1, t: 'Override de geofence con audit log', how: 'Cuando un driver tiene bloqueado el PIN por estar fuera del rango, desde OPS dale "Permitir confirmar igual".', expect: 'El driver puede ingresar el PIN. Queda registrado en audit que se forzó manualmente, quién lo hizo y para qué pedido.' },
                     ]
                 },
                 {
-                    title: 'Aprobaciones de docs',
+                    title: 'Aprobaciones de documentos',
                     items: [
-                        { c: 1, t: 'Per-doc status (PENDING/APPROVED/REJECTED) + bloqueo server-side' },
-                        { c: 1, t: 'Aprobación PHYSICAL pide nota mín 5 chars' },
-                        { c: 1, t: 'Auto-activación cuando TODOS los requeridos en APPROVED' },
-                        { c: 1, t: 'Auto-refresh del JWT del actor afectado (socket roles_updated)' },
-                        { c: 1, t: 'Mutations admin parsean data.error y muestran en toast' },
+                        { c: 1, t: 'Cada documento tiene su propio estado', how: 'Abrí los documentos de un comercio o driver pendiente.', expect: 'Cada documento (DNI, CUIT, licencia, etc.) tiene su botón "Aprobar / Rechazar" individual. NO se aprueban todos juntos.' },
+                        { c: 1, t: 'Aprobación física pide nota mínima', how: 'Elegí aprobar un documento con la opción "Físico" (no por imagen subida).', expect: 'Te pide escribir una nota de al menos 5 caracteres. NO te deja aprobar sin justificación.' },
+                        { c: 1, t: 'Cuando todos los obligatorios están aprobados, el usuario se activa solo', how: 'Aprobá el último documento requerido de un comercio o driver.', expect: 'El usuario pasa de "Pendiente" a "Aprobado" SIN un click adicional. Se le habilita el panel completo automáticamente.' },
+                        { c: 1, t: 'El JWT del usuario se actualiza automáticamente al aprobarse', how: 'Tené al usuario aprobado con la pestaña abierta del panel pendiente. Aprobalo desde OPS.', expect: 'La pestaña del usuario se actualiza sola y le aparece el panel completo. NO tiene que cerrar sesión y volver a loguear.' },
+                        { c: 1, t: 'Errores de OPS se muestran en toasts', how: 'Hacé una operación OPS que falle a propósito (ej. aprobar algo que ya está aprobado).', expect: 'Aparece un toast rojo con el mensaje específico del error, no genérico "Error 500".' },
                     ]
                 },
                 {
-                    title: 'Configuración',
+                    title: 'Configuración del sistema',
                     items: [
-                        { c: 1, t: 'Config Biblia v3 editable (riderCommissionPercent, costo km, etc.)' },
-                        { c: 1, t: 'Zonas de delivery (PostGIS) editable desde /ops/zonas-delivery' },
-                        { c: 1, t: 'Zonas excluidas configurables (no hardcoded)' },
-                        { c: 1, t: 'PointsConfig editable' },
-                        { c: 1, t: 'MerchantLoyaltyConfig (tiers) editable' },
-                        { c: 1, t: 'EmailTemplate editable con preview' },
-                        { c: 1, t: 'PlaybookChecklist editable' },
-                        { c: 1, t: 'Segmentos de usuarios + broadcast campaigns con consent check' },
-                        { c: 1, t: 'Feature flags togglean correctamente con cache 30s + invalidación' },
-                        { c: 1, t: 'Panel /ops/feature-flags NO muestra buyer.marketplace ni buyer.puntos-moover (post-cleanup)' },
+                        { c: 1, t: 'La biblia financiera v3 es editable', how: 'Andá a /ops/config-biblia o donde esté el panel de configuración. Modificá un parámetro (ej. el porcentaje del repartidor).', expect: 'El cambio se guarda. Se aplica a los pedidos NUEVOS (los viejos NO se recalculan retroactivamente).' },
+                        { c: 1, t: 'Editar zonas de delivery dibujando polígonos', how: 'Andá a /ops/zonas-delivery. Dibujá un polígono nuevo en el mapa.', expect: 'La zona queda guardada. Los pedidos nuevos dentro de esa zona tienen el multiplicador configurado.' },
+                        { c: 1, t: 'Zonas excluidas se manejan desde OPS', how: 'En el panel de zonas, agregá una zona como "Excluida".', expect: 'Los compradores en esa zona reciben el mensaje "No entregamos acá". NO podés finalizar la compra desde una dirección en zona excluida.' },
+                        { c: 1, t: 'Configuración de puntos editable', how: 'En el panel de puntos, cambiá un parámetro (ej. cuántos puntos por dólar).', expect: 'El cambio se aplica a pedidos nuevos. Los existentes no se afectan.' },
+                        { c: 1, t: 'Niveles de fidelidad (tiers) editables', how: 'Cambiá el porcentaje de comisión de un tier (ej. BRONCE pasa de 8% a 7%).', expect: 'Los comercios en ese tier tienen la nueva comisión en sus pedidos futuros.' },
+                        { c: 1, t: 'Templates de email editables con preview', how: 'Andá a /ops/emails. Editá el texto del email de bienvenida del comprador. Click "Preview".', expect: 'Ves cómo va a quedar el email con los datos de prueba. Podés guardar el cambio y se usa para todos los emails futuros.' },
+                        { c: 1, t: 'Playbooks (checklists internos) editables', how: 'Editá un playbook desde OPS (ej. el checklist de aprobación de drivers).', expect: 'Los cambios se aplican. Próximos usuarios siguen el playbook actualizado.' },
+                        { c: 1, t: 'Segmentos de usuarios + broadcast campaigns con consentimiento', how: 'Creá un segmento (ej. "Compradores activos últimos 30 días") y armá una campaña de email.', expect: 'La campaña solo se envía a los usuarios que dieron consentimiento de marketing. Los que no, quedan excluidos automáticamente.' },
+                        { c: 1, t: 'Feature flags togglean en tiempo real', how: 'En /ops/feature-flags, cambiá el estado de un flag (ej. buyer.cash-payment). Sin refrescar nada en el sitio, esperá 30 segundos.', expect: 'Después de 30 segundos (cache), el cambio se aplica en toda la app. Los usuarios ven o dejan de ver la feature.' },
+                        { c: 1, t: 'Los flags buyer.marketplace y buyer.puntos-moover NO aparecen en el panel', how: 'Andá a /ops/feature-flags y mirá la lista completa.', expect: 'Esos 2 flags NO están en la lista. Si están, fue porque no corriste el script de cleanup en la DB de prod. Avisame para correrlo.' },
                     ]
                 },
                 {
-                    title: 'Payouts y refunds',
+                    title: 'Pagos a comercios y repartidores',
                     items: [
-                        { c: 1, t: 'Generar PayoutBatch DRIVER con periodo configurable → CSV correcto' },
-                        { c: 1, t: 'Generar PayoutBatch MERCHANT idem' },
-                        { c: 1, t: 'Mark-paid con confirmación textual "CONFIRMAR PAGO" + audit log' },
-                        { c: 1, t: 'Refund manual con confirmación + audit + email al buyer' },
-                        { c: 1, t: 'CSV cuadra: ingreso_moovy = comisión_merchant + comisión_seller + delivery_fee × (1 - riderCommission%)' },
+                        { c: 1, t: 'Generar PayoutBatch para drivers', how: 'En /ops/payouts, elegí "Drivers" + el periodo (ej. semana del 10 al 17). Click "Generar".', expect: 'Se descarga un CSV con todos los drivers a pagar, montos, cuentas bancarias y pedidos incluidos.' },
+                        { c: 1, t: 'Generar PayoutBatch para comercios', how: 'Igual al anterior pero eligiendo "Comercios".', expect: 'Mismo flujo, otro CSV con la lista de comercios.' },
+                        { c: 1, t: 'Marcar como pagado con confirmación', how: 'Después de hacer las transferencias en MercadoPago o banco, vení a OPS y dale "Marcar como pagado" al batch.', expect: 'Te pide escribir "CONFIRMAR PAGO" (sin comillas) para confirmar. Después de eso, el batch queda registrado como pagado y los pedidos incluidos no se pueden volver a incluir en otro batch.' },
+                        { c: 1, t: 'Reembolso manual con confirmación', how: 'Hacé un reembolso manual de un pedido desde OPS.', expect: 'Pide confirmación textual. Después dispara el reembolso por MP, manda email al cliente y queda en audit log.' },
+                        { c: 1, t: 'El CSV cuadra con la fórmula financiera', how: 'Abrí un CSV de payouts. Sumá manualmente los montos de comisión + delivery fee.', expect: 'El total que figura como ingreso Moovy en el CSV coincide con la suma de las partes. NO hay diferencias de centavos ni redondeo raro.' },
                     ]
                 },
             ]
         },
         {
-            id: 'cross', title: 'Cross-cutting', icon: '🔧',
+            id: 'cross', title: 'Cross-cutting (transversal)', icon: '🔧',
             subsections: [
                 {
                     title: 'Seguridad',
                     items: [
-                        { c: 1, t: 'IDOR test: usuario A intenta ver pedido de usuario B → 403' },
-                        { c: 1, t: 'IDOR test: driver A intenta marcar PIN de driver B → 403' },
-                        { c: 1, t: 'IDOR test: merchant A intenta editar producto de merchant B → 403' },
-                        { c: 1, t: 'Rate limit 60 req/min en endpoints públicos' },
-                        { c: 1, t: 'Rate limit en login (5/min para evitar brute force)' },
-                        { c: 1, t: 'Zod schema en TODOS los inputs de API routes' },
-                        { c: 1, t: 'Upload de imágenes valida magic bytes + max 10MB' },
-                        { c: 1, t: 'SQL injection bloqueada (Prisma + $queryRaw revisado)' },
-                        { c: 1, t: 'XSS: dangerouslySetInnerHTML sanitizado donde aplica' },
-                        { c: 1, t: 'CSRF: origin check en endpoints sensibles' },
-                        { c: 1, t: 'Tokens cifrados (mpAccessToken, mpRefreshToken) en DB' },
-                        { c: 1, t: 'CUIT/CBU/DNI cifrados — decrypt<Modelo>Data antes de response' },
-                        { c: 1, t: 'Audit log para refund / delete / reassign / role-change' },
-                        { c: 0, t: 'Headers de seguridad (CSP, X-Frame-Options, etc.) configurados' },
+                        { c: 1, t: 'Test IDOR: un usuario no puede ver pedidos de otro', how: 'Como usuario A, copiá la URL /mis-pedidos/123abc. Después logueate como usuario B y pegá esa misma URL en el browser.', expect: 'Te aparece un error 403 "Acceso denegado". NUNCA podés ver el pedido de otro usuario, incluso si conocés el ID.' },
+                        { c: 1, t: 'Test IDOR: un driver no puede marcar el PIN de otro driver', how: 'Como driver A, intentá hacer la petición de confirmar PIN para un pedido asignado al driver B.', expect: 'El sistema rechaza con 403. NUNCA podés interactuar con pedidos de otro driver.' },
+                        { c: 1, t: 'Test IDOR: un comercio no puede editar productos de otro', how: 'Como comercio A, intentá editar un producto del comercio B (cambiá el ID en la URL).', expect: '403 Acceso denegado. Solo podés editar productos propios.' },
+                        { c: 1, t: 'Rate limit en endpoints públicos', how: 'Hacé más de 60 peticiones por minuto desde la misma IP a un endpoint público (ej. la lista de comercios).', expect: 'Después de las 60, devuelve error 429 "Demasiadas peticiones, esperá un minuto". Esto previene abusos.' },
+                        { c: 1, t: 'Rate limit en login (anti brute force)', how: 'Probá loguear con contraseña incorrecta 5 veces seguidas en menos de un minuto.', expect: 'Después del 5to intento te bloquea con "Demasiados intentos, esperá X minutos". Esto previene ataques de fuerza bruta.' },
+                        { c: 1, t: 'Validación de inputs en todos los formularios', how: 'En cualquier form (registro, checkout, etc.), enviá datos malformados (campos vacíos, tipos incorrectos, valores extremos).', expect: 'El backend rechaza con errores específicos. NO se rompe el server ni se guardan datos inválidos.' },
+                        { c: 1, t: 'Upload de imágenes valida tipo y tamaño', how: 'Probá subir un archivo PDF disfrazado de .jpg, o una imagen de más de 10MB.', expect: 'El sistema rechaza con error claro. Solo acepta archivos que sean realmente imágenes y de menos de 10MB.' },
+                        { c: 1, t: 'SQL injection bloqueada', how: 'En cualquier campo de búsqueda o input, escribí cosas tipo \'; DROP TABLE Users; --', expect: 'El sistema lo trata como texto literal. NO se ejecuta como SQL.' },
+                        { c: 1, t: 'XSS bloqueado en campos visibles', how: 'En un campo de comentario o descripción, escribí <script>alert(\'xss\')<\/script>.', expect: 'El texto se muestra como texto plano. NO se ejecuta el script. NO aparece el alert.' },
+                        { c: 1, t: 'CSRF: requests cross-origin bloqueadas', how: 'Esto es difícil de probar manualmente — pedile al equipo técnico que confirme.', expect: 'Las peticiones desde dominios externos son rechazadas por el sistema. Solo somosmoovy.com puede hacer requests autenticadas.' },
+                        { c: 1, t: 'Tokens de MercadoPago están cifrados en la DB', how: 'Pedile al equipo técnico que mire en la DB el campo mpAccessToken de un comercio conectado.', expect: 'El valor NO es legible. Está cifrado. Solo se descifra cuando el server lo necesita para hacer una petición a MP.' },
+                        { c: 1, t: 'CUIT, CBU, DNI cifrados at-rest', how: 'Pedile al equipo técnico que verifique los campos sensibles en la DB.', expect: 'Valores cifrados. Solo se descifran cuando se devuelven al usuario dueño del dato.' },
+                        { c: 1, t: 'Audit log para acciones críticas', how: 'Hacé un reembolso, una eliminación, una reasignación de driver, o un cambio de rol.', expect: 'Cada una de esas acciones queda registrada en la tabla de audit con: quién, cuándo, qué y por qué. Consultable desde OPS.' },
+                        { c: 0, t: 'Headers de seguridad básicos configurados', how: 'Pedile al equipo técnico que verifique los headers HTTP en la respuesta del server.', expect: 'Headers como CSP, X-Frame-Options, X-Content-Type-Options bien configurados.' },
                     ]
                 },
                 {
-                    title: 'Performance',
+                    title: 'Performance (velocidad)',
                     items: [
-                        { c: 1, t: 'Home / carga en <3s en 3G simulado (DevTools throttling)' },
-                        { c: 1, t: 'Listado de 50+ pedidos en /ops/pedidos paginado correctamente' },
-                        { c: 1, t: 'Mapa con muchos markers no traba el browser' },
-                        { c: 1, t: 'Imágenes optimizadas con sharp + next/image' },
-                        { c: 0, t: 'Lazy loading de dynamic imports donde aplica' },
-                        { c: 0, t: 'Sin N+1 queries (revisar logs de Prisma con ?logging=true)' },
-                        { c: 0, t: 'Caché in-memory de StoreSettings/PointsConfig (30s TTL)' },
+                        { c: 1, t: 'La home carga rápido en 3G simulado', how: 'Abrí DevTools (F12) → Network → Throttling → "Slow 3G". Recargá la home.', expect: 'La página carga en menos de 6-8 segundos. NO se queda en blanco mucho tiempo — al menos aparece un skeleton mientras carga.' },
+                        { c: 1, t: 'Listas de muchos pedidos tienen paginación', how: 'Como admin, andá a /ops/pedidos con más de 50 pedidos en la DB.', expect: 'NO se cargan todos juntos. La página muestra 20-50 con botones de "Siguiente".' },
+                        { c: 1, t: 'Mapas con muchos markers no traban el browser', how: 'En /ops/pedidos/live con varios pedidos activos, mirá el mapa.', expect: 'El mapa se mueve fluido aunque haya 20+ markers. NO se freezea.' },
+                        { c: 1, t: 'Imágenes optimizadas (no pesan kilos)', how: 'En DevTools → Network → filtrar por "Img". Cargá una página con muchas fotos de productos.', expect: 'Cada imagen pesa entre 30-200 KB, no megabytes. Están comprimidas y optimizadas.' },
+                        { c: 0, t: 'Lazy loading donde aplica', how: 'Pedile al equipo técnico que confirme.', expect: 'Componentes pesados (mapas, modales grandes) se cargan solo cuando se necesitan, no de entrada.' },
+                        { c: 0, t: 'No hay N+1 queries en consultas DB', how: 'Equipo técnico revisa los logs de Prisma con ?logging=true.', expect: 'NO hay queries repetidas (ej. una query por cada item de un listado). Se usan includes / joins.' },
+                        { c: 0, t: 'Configuraciones se cachean por 30 segundos', how: 'Después de cambiar una configuración en OPS, esperá hasta 30 segundos para verla aplicada en la app.', expect: 'El cambio se aplica después del ciclo de cache (no es instantáneo, pero es predecible).' },
                     ]
                 },
                 {
                     title: 'Legal y privacidad',
                     items: [
-                        { c: 1, t: '/terminos accesible y actualizado' },
-                        { c: 1, t: '/politica-privacidad accesible y actualizado' },
-                        { c: 1, t: 'ConsentLog se crea al aceptar T&C' },
-                        { c: 1, t: 'Soft delete obligatorio para User / Merchant / Driver' },
-                        { c: 1, t: 'Self-delete anonimiza email del usuario eliminado' },
-                        { c: 1, t: 'Self-delete revoca todas las sesiones activas' },
-                        { c: 1, t: 'Hard delete (Order/SubOrder) requiere confirmación textual literal' },
-                        { c: 1, t: 'Datos sensibles (CUIT/CBU/DNI/tokens) cifrados at-rest' },
-                        { c: 0, t: 'GDPR/AAIP: usuario puede exportar sus datos' },
-                        { c: 0, t: 'Política de retención de logs documentada' },
+                        { c: 1, t: 'Términos y condiciones accesibles', how: 'Andá a /terminos.', expect: 'La página carga el texto actualizado de los T&C. Es legible, está bien formateada.' },
+                        { c: 1, t: 'Política de privacidad accesible', how: 'Andá a /politica-privacidad.', expect: 'La página carga el texto actualizado de la política. Cumple con los requisitos legales argentinos (AAIP).' },
+                        { c: 1, t: 'Aceptación de T&C queda registrada', how: 'Creá una cuenta nueva aceptando los términos. Pedile al equipo técnico que verifique el registro de consentimientos en la DB.', expect: 'Existe una fila con tu userId, el timestamp, el contenido aceptado y la versión de los T&C.' },
+                        { c: 1, t: 'Eliminación de usuarios es soft delete', how: 'Eliminá una cuenta. Pedile al equipo técnico que verifique en la DB.', expect: 'El usuario sigue existiendo en la tabla con un marcador de eliminación. NO se borra físicamente — eso preserva integridad referencial con pedidos viejos.' },
+                        { c: 1, t: 'Auto-delete anonimiza el email del usuario eliminado', how: 'Eliminá tu cuenta desde el perfil. Verificá el email en la DB.', expect: 'El email original se anonimiza (ej. deleted-abc123@moovy.invalid). Eso permite que otro pueda usar ese email después.' },
+                        { c: 1, t: 'Auto-delete cierra todas las sesiones activas', how: 'Loguéate en 2 dispositivos. En uno eliminá tu cuenta. En el otro intentá usar la app.', expect: 'La otra sesión queda inválida y te saca al login. NO podés seguir operando con la cuenta eliminada.' },
+                        { c: 1, t: 'Eliminar pedidos pide confirmación textual', how: 'Como admin, intentá eliminar un pedido definitivamente desde el endpoint correspondiente.', expect: 'Te exige escribir literalmente "ELIMINAR DEFINITIVAMENTE" (sin comillas) para confirmar. NO te deja con un solo click.' },
+                        { c: 1, t: 'Datos sensibles cifrados en la DB', how: 'Verificá en la DB que campos como cuit, cbu, dni, mpAccessToken estén cifrados.', expect: 'Los valores se ven como strings encriptados, no en texto plano. Solo se descifran al servir al dueño.' },
+                        { c: 0, t: 'El usuario puede exportar sus datos', how: 'En el perfil, buscá una opción "Descargar mis datos".', expect: 'Si está implementado, recibís un archivo con todos tus datos. Si no está, marca este item como 🚫 bloqueado por feature pendiente.' },
+                        { c: 0, t: 'Política de retención de logs documentada', how: 'Revisá la documentación interna o pedísela al equipo técnico.', expect: 'Está documentado cuánto tiempo se guardan los logs (audit, GPS tracking, etc.) antes de borrarse.' },
                     ]
                 },
                 {
-                    title: 'Infra y configuración',
+                    title: 'Infraestructura y configuración',
                     items: [
-                        { c: 1, t: 'Variables de entorno completas en .env.production (DATABASE_URL, AUTH_SECRET, MP_*, SMTP_*, VAPID_*, GOOGLE_MAPS_*, SENTRY_*)' },
-                        { c: 1, t: 'PostGIS Docker arriba en puerto 5436 (prod)' },
-                        { c: 1, t: 'MP webhook URL configurada en panel MP apuntando a prod' },
-                        { c: 1, t: 'SMTP funciona — test: enviar BuyerWelcome y recibirlo' },
-                        { c: 1, t: 'Sentry recibe errores client + server + edge' },
-                        { c: 1, t: 'Sentry tunnel route /monitoring funciona' },
-                        { c: 1, t: 'Sentry PII scrubbing aplicado (no leaks de email/CBU/CUIT/tokens)' },
-                        { c: 1, t: 'Socket.IO socket-server arriba' },
-                        { c: 1, t: 'Crons configurados (CRON_SECRET headers): expiración docs, location-cleanup, broadcasts' },
-                        { c: 0, t: 'Redis (opcional) — si no, fallback in-memory activo' },
+                        { c: 1, t: 'Todas las variables de entorno seteadas en producción', how: 'Pedile al equipo técnico que verifique el archivo .env.production o las variables del VPS.', expect: 'Están todas las críticas: DATABASE_URL, MP_*, SMTP_*, SENTRY_*, VAPID_*, GOOGLE_MAPS_*. NO hay nada vacío.' },
+                        { c: 1, t: 'PostgreSQL con PostGIS arriba en producción', how: 'Pedile al equipo técnico que verifique con docker ps o equivalente en el VPS.', expect: 'El container de la DB está corriendo. La extensión PostGIS está habilitada (para geolocalización).' },
+                        { c: 1, t: 'Webhook de MercadoPago apuntando a producción', how: 'En el panel de MP, buscá la configuración de webhooks.', expect: 'La URL del webhook apunta a https://somosmoovy.com/api/webhooks/mp (la URL de prod, no localhost ni staging).' },
+                        { c: 1, t: 'El SMTP envía emails correctamente', how: 'Disparar un email de bienvenida desde producción y revisá la casilla del destinatario.', expect: 'Llega el email en menos de 2-3 minutos. NO rebota. NO va a spam (verificar en la primera prueba).' },
+                        { c: 1, t: 'Sentry recibe errores del cliente, server y edge', how: 'Disparar un error a propósito (ej. visitar una URL que sabés que rompe). Después abrí el dashboard de Sentry.', expect: 'El error aparece en Sentry con el contexto completo: URL, usuario, navegador, stack trace.' },
+                        { c: 1, t: 'Tunnel route de Sentry funciona', how: 'Con un ad-blocker activo, disparar un error en la app.', expect: 'Sentry sigue recibiendo el error porque va por el dominio propio /monitoring, no por Sentry directo. NO lo bloquea el ad-blocker.' },
+                        { c: 1, t: 'Sentry NO captura datos sensibles', how: 'Disparar un error después de loguear y hacer un pago. Revisá el evento en Sentry.', expect: 'NO aparecen emails, CBU, CUIT, tokens, ni ninguna info sensible. El scrubbing funcionó y reemplazó esos valores por [REDACTED].' },
+                        { c: 1, t: 'Servidor de Socket.IO arriba', how: 'Abrí la app y hacé un pedido. Mirá si los cambios de estado llegan en tiempo real.', expect: 'Las actualizaciones aparecen al instante sin refrescar. Significa que el server de sockets está funcionando.' },
+                        { c: 1, t: 'Tareas programadas (cron) corren', how: 'Pedile al equipo técnico que verifique los logs del cron del servidor.', expect: 'Los crons configurados corren a los tiempos programados. La tabla CronRunLog tiene entradas recientes.' },
+                        { c: 0, t: 'Redis está arriba o fallback in-memory funciona', how: 'Equipo técnico verifica.', expect: 'O hay un Redis corriendo o, si no, el fallback in-memory del rate-limit funciona en su lugar.' },
                     ]
                 },
                 {
                     title: 'Monitoreo y observabilidad',
                     items: [
-                        { c: 1, t: 'Logs estructurados con Pino (orderId, userId, action)' },
-                        { c: 1, t: 'Webhooks loguean recepción + procesamiento + resultado' },
-                        { c: 1, t: 'Sentry recibe error capturado al disparar uno intencional' },
-                        { c: 1, t: 'Healthcheck /api/healthcheck responde 200' },
-                        { c: 1, t: 'CronRunLog se popula correctamente' },
-                        { c: 0, t: 'Métricas básicas (req count, error rate, p95 latency) visibles' },
+                        { c: 1, t: 'Logs estructurados con contexto', how: 'Equipo técnico revisa los logs en producción.', expect: 'Cada línea de log incluye: orderId, userId, action, timestamp. Permite buscar fácil por orderId qué pasó con un pedido.' },
+                        { c: 1, t: 'Los webhooks loguean recepción, procesamiento y resultado', how: 'Hacé un pago de prueba con MP. Revisá los logs del webhook.', expect: 'Hay 3 entradas: "Webhook recibido", "Procesando", "Resultado: PAID / FAILED / etc.".' },
+                        { c: 1, t: 'Sentry recibe errores en tiempo real', how: 'Disparar un error intencional y mirá Sentry en una pestaña al lado.', expect: 'En menos de 1 minuto el error aparece en Sentry, con todo el contexto y el stack trace.' },
+                        { c: 1, t: 'Healthcheck endpoint responde', how: 'Pegá https://somosmoovy.com/api/healthcheck en el browser.', expect: 'Responde con 200 OK y un mensaje tipo {"status": "ok"}. Si no responde, el servidor está caído.' },
+                        { c: 1, t: 'El CronRunLog se llena con cada ejecución', how: 'Pedile al equipo técnico que mire la tabla CronRunLog.', expect: 'Hay entradas recientes por cada cron configurado, con timestamps y status (success/failure).' },
+                        { c: 0, t: 'Métricas básicas visibles (request count, error rate, latency)', how: 'Si está implementado, abrir un dashboard de métricas (Grafana, Datadog, etc.).', expect: 'Ves trafico, errores, latencia p95. Si no está implementado, marca este item como 🚫.' },
                     ]
                 },
                 {
                     title: 'Pagos y MercadoPago',
                     items: [
-                        { c: 1, t: 'Webhook MP en producción recibe eventos (test card aprobado)' },
-                        { c: 1, t: 'Webhook valida monto vs total con tolerancia $1' },
-                        { c: 1, t: 'Webhook idempotente — mandar el mismo evento 2 veces NO duplica' },
-                        { c: 1, t: 'Refund automático en webhook RECHAZADO + restore stock' },
-                        { c: 1, t: 'EventId determinístico (no UUID random) en MpWebhookLog' },
-                        { c: 1, t: 'Test cards: APRO (aprobado), CONT (en proceso), CALL (rechazado)' },
-                        { c: 1, t: 'Split payments funcionando si MP OAuth conectado en merchants' },
-                        { c: 1, t: 'Comisiones: comercio MES 1 → 0%' },
-                        { c: 1, t: 'Comisiones: comercio MES 2 BRONCE → 8%' },
-                        { c: 1, t: 'Comisiones: seller marketplace → 12%' },
-                        { c: 1, t: 'Cupón → absorbe Moovy (no comercio)' },
+                        { c: 1, t: 'Webhook de MP recibe eventos reales en producción', how: 'Hacé un pago real (o de prueba) con tarjeta APRO (aprobado).', expect: 'En pocos segundos el webhook se dispara y el pedido pasa a "Confirmado". El cliente recibe la notificación.' },
+                        { c: 1, t: 'El webhook valida que el monto coincide con el total', how: 'Esto es un test adversarial — el equipo técnico puede simular un webhook con monto distinto al total real.', expect: 'Si el monto del webhook NO coincide (con tolerancia de $1) con el total del pedido, el webhook RECHAZA. NO se marca como pagado.' },
+                        { c: 1, t: 'El mismo webhook recibido 2 veces no duplica nada', how: 'El equipo técnico puede mandar el mismo evento dos veces.', expect: 'La segunda vez se detecta por el eventId determinístico y se ignora. El pedido NO se procesa dos veces.' },
+                        { c: 1, t: 'Pago rechazado dispara reembolso y restaura stock', how: 'Usá una tarjeta de rechazo (CALL: 4509 9535 6623 3704 con titular OTHE).', expect: 'El pedido pasa a "Pago rechazado". El stock que se había descontado se vuelve a sumar. El reembolso automático se dispara.' },
+                        { c: 1, t: 'El eventId del webhook NO es aleatorio', how: 'Equipo técnico verifica el código.', expect: 'El eventId es determinístico (basado en orderId + paymentId), NO un UUID random. Eso garantiza idempotencia.' },
+                        { c: 1, t: 'Las tarjetas de prueba funcionan según su comportamiento', how: 'Hacé 3 pagos con las cards: APRO (aprueba), CONT (contingencia), CALL (rechaza).', expect: 'Cada una se comporta como dice — APRO confirma el pedido, CONT lo deja pendiente, CALL lo rechaza.' },
+                        { c: 1, t: 'Split payment funciona cuando el comercio tiene MP conectado', how: 'Tené un comercio con MP conectado vía OAuth. Hacé un pedido pagado con MP.', expect: 'El pago va directo a la cuenta MP del comercio con la comisión Moovy descontada automáticamente. Moovy no toca la plata del comercio.' },
+                        { c: 1, t: 'Comisión mes 1 del comercio es 0%', how: 'Crea un comercio nuevo, aprobalo, hacé pedidos en los primeros 30 días.', expect: 'Cada pedido cobra 0% de comisión a ese comercio durante los primeros 30 días desde su creación.' },
+                        { c: 1, t: 'Comisión mes 2 BRONCE es 8%', how: 'Comercio con más de 30 días que está en nivel BRONCE (los nuevos arrancan ahí).', expect: 'Cada pedido le cobra 8% de comisión. Si vendió $1.000, el ingreso para Moovy es $80.' },
+                        { c: 1, t: 'Comisión seller marketplace es 12% desde el día 1', how: 'Vendedor del marketplace con cualquier antigüedad.', expect: 'Cada pedido le cobra 12% desde el primer día. NO tiene período de gracia.' },
+                        { c: 1, t: 'Cupón aplicado lo absorbe Moovy, no el comercio', how: 'Mirá la fórmula financiera de un pedido con cupón aplicado.', expect: 'El descuento del cupón se descuenta del ingreso Moovy, NO de lo que cobra el comercio.' },
                     ]
                 },
                 {
-                    title: 'Comunicaciones (matrix por evento)',
+                    title: 'Comunicaciones (matriz de notificaciones)',
                     items: [
-                        { c: 1, t: 'Pedido creado → push buyer + email + in-app' },
-                        { c: 1, t: 'Pedido confirmado por comercio → push buyer + email' },
-                        { c: 1, t: 'Pedido listo (READY) → push buyer' },
-                        { c: 1, t: 'Driver asignado → push buyer + socket + chat enabled' },
-                        { c: 1, t: 'Driver en camino al comercio (PICKED_UP) → push buyer' },
-                        { c: 1, t: 'Driver cerca del destino → push (nearDestinationNotified)' },
-                        { c: 1, t: 'Pedido entregado (DELIVERED) → push buyer + modal calificación auto' },
-                        { c: 1, t: 'Pedido cancelado por comercio → push buyer + email + refund' },
-                        { c: 1, t: 'Pedido sin driver (UNASSIGNABLE) → push buyer + email + refund' },
-                        { c: 1, t: 'Welcome email al crear cuenta (per role: buyer/merchant/driver/seller)' },
-                        { c: 1, t: 'Email a OPS cuando comentario en review se marca como PENDING' },
-                        { c: 0, t: 'Push de calificación pendiente 24h después de DELIVERED' },
+                        { c: 1, t: 'Pedido creado → notificación al buyer', how: 'Hacé un pedido como buyer y mirá la app + email + mensajes in-app.', expect: 'Te llega: push notification "Tu pedido fue recibido", email con detalles, y cartel in-app en mis pedidos.' },
+                        { c: 1, t: 'Pedido confirmado por el comercio → notificación al buyer', how: 'El comercio confirma un pedido tuyo.', expect: 'Push "Tu pedido fue confirmado" + email con el comprobante.' },
+                        { c: 1, t: 'Pedido listo (READY) → notificación al buyer', how: 'El comercio marca el pedido como listo.', expect: 'Push "Tu pedido está listo, buscamos repartidor" + actualización en mis pedidos.' },
+                        { c: 1, t: 'Driver asignado → notificación al buyer + activación de chat', how: 'El sistema asigna un driver al pedido.', expect: 'Push "Tu repartidor está en camino: [nombre]" + el chat con el driver queda activo en el detalle del pedido.' },
+                        { c: 1, t: 'Driver en camino al cliente → notificación al buyer', how: 'El driver retira el pedido del comercio (escanea PIN).', expect: 'Push "Tu pedido ya fue retirado, está en camino" + el mapa empieza a mostrar el viaje del driver hacia tu dirección.' },
+                        { c: 1, t: 'Driver cerca del destino → notificación al buyer', how: 'El driver se acerca a menos de 500m del cliente.', expect: 'Push "Tu repartidor está cerca, prepará tus datos" + cartel destacado en mis pedidos.' },
+                        { c: 1, t: 'Pedido entregado → notificación al buyer + modal de calificación', how: 'El driver confirma la entrega con el PIN.', expect: 'Push "¡Pedido entregado!" + cuando abrís la app aparece automáticamente el modal de calificación.' },
+                        { c: 1, t: 'Pedido cancelado por el comercio → notificación al buyer + reembolso', how: 'El comercio rechaza un pedido pagado con MP.', expect: 'Push "Tu pedido fue rechazado" + email con motivo + reembolso automático procesado.' },
+                        { c: 1, t: 'Pedido sin driver → notificación al buyer + reembolso', how: 'Hacé un pedido en zona/horario sin drivers disponibles. Esperá a que el sistema lo declare unassignable.', expect: 'Push "No conseguimos repartidor" + email + reembolso automático.' },
+                        { c: 1, t: 'Welcome email al registrarse (por cada rol)', how: 'Creá una cuenta nueva como buyer, otra como comercio, otra como driver y otra como seller.', expect: 'Cada uno recibe su email de bienvenida específico: BuyerWelcome / MerchantWelcome / DriverWelcome / SellerWelcome.' },
+                        { c: 1, t: 'OPS recibe email cuando un comentario queda en moderación', how: 'Como buyer, dejá una reseña con una palabra prohibida (palabrota, ofensa).', expect: 'El comentario queda en moderación. El equipo Moovy recibe un email avisando para revisar.' },
+                        { c: 0, t: 'Push de recordatorio si no calificaste un pedido entregado', how: 'Esperá 24h después de un pedido entregado sin calificar.', expect: 'Te llega un push amable "¿Qué tal estuvo tu pedido del [fecha]?". Si ya calificaste, no llega.' },
                     ]
                 },
                 {
-                    title: 'Soporte y UX',
+                    title: 'Soporte y UX general',
                     items: [
-                        { c: 1, t: 'WhatsApp soporte funciona desde PinKeypad (OUT_OF_GEOFENCE)' },
-                        { c: 1, t: 'WhatsApp soporte funciona desde PinKeypad (TOO_MANY_ATTEMPTS)' },
-                        { c: 1, t: 'WhatsApp soporte funciona desde botón universal "¿Tenés problemas?"' },
-                        { c: 1, t: 'WhatsApp soporte funciona desde /soporte página pública' },
-                        { c: 1, t: 'Errores user-facing dicen QUÉ HACER (no "Error 500")' },
-                        { c: 1, t: 'Errores en español argentino sin anglicismos' },
-                        { c: 1, t: 'NUNCA "OPS" en strings user-facing → "el equipo de Moovy"' },
-                        { c: 1, t: 'NUNCA mencionar competidores en strings user-facing' },
-                        { c: 1, t: 'Empty states amigables (no en blanco)' },
-                        { c: 1, t: 'Loading states con skeleton (no spinner blanco)' },
-                        { c: 1, t: 'Mobile-first: todos los flujos críticos funcionan en celular' },
-                        { c: 1, t: 'Touch targets ≥44px en mobile' },
+                        { c: 1, t: 'WhatsApp soporte funciona cuando el GPS bloquea al driver', how: 'Bloqueá un PIN por geofence. Click "o escribí a soporte por WhatsApp".', expect: 'Se abre WhatsApp (app o web) con un mensaje pre-armado mencionando el problema de GPS y el pedido.' },
+                        { c: 1, t: 'WhatsApp soporte funciona cuando el PIN se bloquea por intentos', how: 'Errá el PIN 5 veces. Click el link de soporte.', expect: 'Se abre WhatsApp con mensaje pre-armado diferente al GPS: dice "se bloqueó por superar intentos" y menciona el pedido.' },
+                        { c: 1, t: 'Botón universal "¿Tenés problemas?" al final del PIN', how: 'En cualquier momento del modal del PIN, sin haber errado ni geofence, mirá el botón al final.', expect: 'Siempre hay un botón "¿Tenés problemas? Hablá con soporte" abajo del todo. Funciona como fallback genérico.' },
+                        { c: 1, t: 'Página /soporte accesible y funcional', how: 'Andá a https://somosmoovy.com/soporte.', expect: 'La página carga con info de contacto, WhatsApp link, email de soporte, etc. NO está rota ni vacía.' },
+                        { c: 1, t: 'Errores user-facing dicen qué hacer', how: 'Provocá distintos errores (login incorrecto, payment failed, geofence, etc.).', expect: 'Cada mensaje de error dice claramente qué hacer (ej. "Esperá 5 minutos e intentá de nuevo" o "Tu pago fue rechazado, probá con otra tarjeta"). NUNCA dice solo "Error 500".' },
+                        { c: 1, t: 'Mensajes en español argentino, sin anglicismos innecesarios', how: 'Recorré toda la app y prestá atención a los textos.', expect: '"Andá", "Dale", "Listo", "Probá", "Mirá" en lugar de "Vaya", "Vea", etc. NO usa "Login" si puede decir "Iniciar sesión".' },
+                        { c: 1, t: 'NUNCA aparece la palabra "OPS" en textos visibles al usuario', how: 'Recorré la app y buscá la palabra "OPS" en mensajes, errores, emails.', expect: 'NO aparece. En su lugar dice "el equipo de Moovy", "soporte" o similar.' },
+                        { c: 1, t: 'NUNCA se menciona a competidores en textos visibles', how: 'Buscá "PedidosYa", "Rappi", "MercadoLibre" en cualquier texto user-facing.', expect: 'NO aparecen. Moovy es un movimiento, no una comparación.' },
+                        { c: 1, t: 'Pantallas vacías son amigables', how: 'Andá a "Mis pedidos" cuando todavía no hiciste ninguno. Mirá la pantalla.', expect: 'En lugar de un blanco vacío, aparece un mensaje + ícono + CTA tipo "Todavía no hiciste pedidos. Empezá a explorar la tienda".' },
+                        { c: 1, t: 'Cargas muestran skeletons (no spinners en pantalla blanca)', how: 'Refrescá una página con conexión lenta.', expect: 'En lugar de pantalla en blanco con un spinner, ves placeholders grises con la forma del contenido. Mejora la sensación de velocidad.' },
+                        { c: 1, t: 'Todo lo crítico funciona en mobile (mobile-first)', how: 'Hacé todos los flujos importantes desde un celular real (NO desde DevTools simulando).', expect: 'Registro, login, búsqueda, checkout, tracking, calificación — todo es usable en pantalla chica. Botones grandes, texto legible.' },
+                        { c: 1, t: 'Botones se pueden tocar fácil con el dedo (≥44px)', how: 'En mobile, intentá tocar los botones más chicos de la app.', expect: 'Ningún botón es tan chico que se hace difícil tocarlo. El mínimo aproximado es 44px de altura, lo que recomienda Apple/Google.' },
                     ]
                 },
             ]
@@ -1525,10 +1560,25 @@
                         ? `<span class="criticality-badge critical" title="Bloqueante para launch">🔴</span>`
                         : `<span class="criticality-badge optional" title="No bloquea launch">🟡</span>`;
 
+                    const howHtml = item.how ? `
+                        <div class="item-detail">
+                            <span class="item-detail-label how">Cómo probarlo</span>
+                            <span class="item-detail-text">${escapeHtml(item.how)}</span>
+                        </div>` : '';
+                    const expectHtml = item.expect ? `
+                        <div class="item-detail">
+                            <span class="item-detail-label expect">Qué deberías ver</span>
+                            <span class="item-detail-text">${escapeHtml(item.expect)}</span>
+                        </div>` : '';
+
                     itemEl.innerHTML = `
                         <div class="item-header">
                             ${criticalityHtml}
                             <div class="item-text">${escapeHtml(item.t)}</div>
+                        </div>
+                        <div class="item-details">
+                            ${howHtml}
+                            ${expectHtml}
                         </div>
                         <div class="item-actions">
                             <button class="state-btn pass ${itemState.state === 'pass' ? 'active' : ''}" data-state="pass">✅ Pasa</button>
@@ -1661,9 +1711,11 @@
                     const is = getItemState(item.id);
                     const symbol = is.state ? STATE_MAP[is.state].mdSymbol : ' ';
                     const crit = item.c === 1 ? '🔴' : '🟡';
-                    lines.push(`- [${symbol}] ${crit} ${item.t}`);
+                    lines.push(`- [${symbol}] ${crit} **${item.t}**`);
+                    if (item.how) lines.push(`  - **Cómo probarlo**: ${item.how}`);
+                    if (item.expect) lines.push(`  - **Qué deberías ver**: ${item.expect}`);
                     if (is.obs && is.obs.trim()) {
-                        const obsLines = is.obs.split('\n').map(l => `  > ${l}`).join('\n');
+                        const obsLines = is.obs.split('\n').map(l => `  - Obs: ${l}`).join('\n');
                         lines.push(obsLines);
                     }
                 });
