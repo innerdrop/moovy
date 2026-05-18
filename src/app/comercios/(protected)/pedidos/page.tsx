@@ -33,6 +33,10 @@ interface SubOrder {
     merchantId: string | null;
     deliveryStatus: string | null;
     pickupPin: string | null;
+    // Rama feat/comercio-ux-guardar-y-totales: necesitamos el subtotal del subOrder
+    // para mostrar "Tu venta" en multi-vendor (cada merchant ve su parte).
+    subtotal?: number;
+    merchantCommissionRate?: number | null;
 }
 
 interface Order {
@@ -42,6 +46,11 @@ interface Order {
     paymentStatus: string;
     paymentMethod?: string;
     total: number;
+    // Rama feat/comercio-ux-guardar-y-totales: campos financieros que el endpoint
+    // ya devolvía vía include(). Necesarios para mostrar "Tu venta" (subtotal) en
+    // lugar del total (que incluye delivery fee — no es plata del comercio).
+    subtotal?: number;
+    deliveryFee?: number;
     createdAt: string;
     items: Array<{ id: string; name: string; quantity: number; price: number }>;
     address: { street: string; number: string; city: string } | null;
@@ -56,6 +65,47 @@ interface Order {
     deliveryType?: string;
     scheduledSlotStart?: string | null;
     scheduledSlotEnd?: string | null;
+}
+
+/**
+ * Rama feat/comercio-ux-guardar-y-totales.
+ *
+ * Devuelve el monto que efectivamente le corresponde al comercio por este pedido
+ * (lo que llamamos "Tu venta"):
+ *   - Multi-vendor: suma de los subtotales de SUS subOrders (el backend ya filtró).
+ *   - Single-vendor: el subtotal del Order.
+ *   - Fallback legacy: order.total − deliveryFee.
+ *
+ * IMPORTANTE: NO usar order.total — incluye el delivery fee que cobra el repartidor,
+ * no es plata del comercio. Esto evita el bug donde el comercio veía "$5.200" y
+ * pensaba que iba a recibir eso cuando en realidad $1.800 era el envío.
+ */
+function getMerchantSale(order: Order): number {
+    // Multi-vendor: sumar los subOrders del merchant (backend ya filtró)
+    if (order.subOrders && order.subOrders.length > 0) {
+        const sum = order.subOrders.reduce((acc, sub) => acc + (sub.subtotal ?? 0), 0);
+        if (sum > 0) return sum;
+    }
+    // Single-vendor: subtotal del Order
+    if (typeof order.subtotal === "number" && order.subtotal > 0) {
+        return order.subtotal;
+    }
+    // Fallback legacy: total − deliveryFee
+    return Math.max(0, order.total - (order.deliveryFee ?? 0));
+}
+
+/**
+ * Devuelve { payout, commissionPercent } para mostrar el neto post-comisión
+ * que efectivamente cobra el comercio. Toma el `merchantCommissionRate` del primer
+ * subOrder (snapshot inmutable) o cae a fallback 8% si no está persistido.
+ */
+function getMerchantPayoutInfo(order: Order): { payout: number; commissionPercent: number } | null {
+    const sale = getMerchantSale(order);
+    if (sale <= 0) return null;
+    const rate = order.subOrders?.[0]?.merchantCommissionRate;
+    if (typeof rate !== "number") return null;
+    const payout = sale * (1 - rate);
+    return { payout, commissionPercent: Math.round(rate * 1000) / 10 };
 }
 
 /**
@@ -743,8 +793,24 @@ export default function ComercioPedidosPage() {
                                             )}
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-bold text-blue-600">{formatPrice(order.total)}</p>
-                                            <p className="text-xs text-gray-400">
+                                            {/* Rama feat/comercio-ux-guardar-y-totales: el comercio ve "Tu venta"
+                                                (lo que le compraron) y debajo "Cobrás" (neto post-comisión).
+                                                NUNCA mostrar order.total porque incluye el envío del repartidor. */}
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tu venta</p>
+                                            <p className="text-lg font-bold text-blue-600 leading-tight">{formatPrice(getMerchantSale(order))}</p>
+                                            {(() => {
+                                                const info = getMerchantPayoutInfo(order);
+                                                if (!info) return null;
+                                                return (
+                                                    <p className="text-[11px] font-semibold text-emerald-700 leading-tight mt-0.5">
+                                                        Cobrás {formatPrice(info.payout)}
+                                                        <span className="text-gray-400 font-medium ml-1">
+                                                            (-{info.commissionPercent}%)
+                                                        </span>
+                                                    </p>
+                                                );
+                                            })()}
+                                            <p className="text-xs text-gray-400 mt-1">
                                                 {formatTime(order.createdAt)}
                                             </p>
                                         </div>

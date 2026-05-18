@@ -19,6 +19,12 @@ interface SubOrder {
     id: string;
     status: string;
     total: number;
+    // Rama feat/comercio-ux-guardar-y-totales: el endpoint devuelve subtotal vía
+    // include() pero la interfaz no lo reflejaba. Lo necesitamos para mostrar
+    // "Tu venta" (lo que efectivamente vendió el seller) en lugar del Total
+    // que incluye el delivery fee — eso no es plata del vendedor.
+    subtotal?: number;
+    deliveryFee?: number;
     sellerPayout: number | null;
     createdAt: string;
     items: { id: string; name: string; quantity: number; price: number }[];
@@ -351,17 +357,21 @@ export default function VendedorPedidosPage() {
                                     ))}
                                 </div>
 
-                                {/* Totals */}
+                                {/* Totals
+                                    Rama feat/comercio-ux-guardar-y-totales: el seller ve "Tu venta"
+                                    (subtotal de sus productos, no el total que incluye envío) y
+                                    debajo "Cobrás" (subtotal − 12% comisión Moovy). NUNCA mostrar
+                                    order.total acá: contiene el delivery fee y confunde al vendedor. */}
                                 <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                                     <div className="text-sm">
-                                        <span className="text-gray-500">Total: </span>
+                                        <span className="text-gray-500">Tu venta: </span>
                                         <span className="font-bold text-gray-900">
-                                            ${order.total.toLocaleString("es-AR")}
+                                            ${(order.subtotal ?? Math.max(0, order.total - (order.deliveryFee ?? 0))).toLocaleString("es-AR")}
                                         </span>
                                     </div>
                                     {order.sellerPayout !== null && (
                                         <div className="text-sm">
-                                            <span className="text-gray-500">Tu ganancia: </span>
+                                            <span className="text-gray-500">Cobrás: </span>
                                             <span className="font-bold text-emerald-600">
                                                 ${order.sellerPayout.toLocaleString("es-AR")}
                                             </span>

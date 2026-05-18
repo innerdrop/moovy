@@ -10,6 +10,47 @@
 
 ---
 
+## 2026-05-17 (rama `feat/comercio-ux-guardar-y-totales`)
+
+feat(comercio): banner flotante "guardar cambios" + "Tu venta" en lugar de total
+
+Dos mejoras de UX en los portales comercio + vendedor:
+
+1) Banner flotante de cambios sin guardar
+   - EditProductForm: snapshot inicial via useRef + isDirty boolean.
+     Botón "Guardar Cambios" del header reemplazado por banner flotante
+     sobre el BottomNav (bottom-16) con botones Descartar/Guardar.
+     Solo se muestra cuando hay cambios reales.
+   - NewProductForm: misma idea adaptada al flujo "crear":
+     isDirty = "tiene contenido cargado", isSubmittable = "tiene mínimos
+     (nombre+foto+precio)". Botón submit del fondo eliminado, banner
+     flotante con "Listo para publicar" cuando isSubmittable.
+   - MiComercioForm: dirty flag toggleado por onChange del form + handlers
+     custom para imagen/dirección. Discard recarga la página (form usa
+     defaultValue). Inline "Guardar Perfil" reemplazado por banner.
+
+2) "Tu venta" en lugar de total
+   - /comercios/pedidos: helpers getMerchantSale() + getMerchantPayoutInfo().
+     Single-vendor usa order.subtotal, multi-vendor suma subOrders del
+     merchant (backend ya filtra). Display: "Tu venta $X" + "Cobrás $Y (-Z%)"
+     usando merchantCommissionRate snapshot inmutable.
+   - /vendedor/pedidos: "Total" → "Tu venta" usando subtotal, "Tu ganancia"
+     → "Cobrás" usando sellerPayout (ya persistido).
+
+Antes: el comercio veía $5.200 y pensaba que iba a cobrar eso cuando
+$1.800 era el envío del repartidor + 8% iba a comisión Moovy.
+Ahora ve los dos números separados con la realidad de cada uno.
+
+Archivos modificados:
+- src/components/comercios/EditProductForm.tsx
+- src/components/comercios/NewProductForm.tsx
+- src/components/comercios/MiComercioForm.tsx
+- src/app/comercios/(protected)/pedidos/page.tsx
+- src/app/vendedor/(protected)/pedidos/page.tsx
+- ISSUES.md
+
+**Archivos:** ISSUES.md, Propuesta-MOOVY-9410.pdf, src/app/comercios/(protected)/pedidos/page.tsx, src/app/vendedor/(protected)/pedidos/page.tsx, src/components/comercios/EditProductForm.tsx, src/components/comercios/MiComercioForm.tsx, src/components/comercios/NewProductForm.tsx
+
 ## 2026-05-17 (rama `fix/contacto-modal-soporte`)
 
 fix: 3 fixes en mis-pedidos + PinKeypad + modal calificacion

@@ -5,7 +5,7 @@ import { createProduct, importCatalogProducts } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
 import SizeSelector from "@/components/comercios/SizeSelector";
 import { ProductSize, SIZE_METADATA, getSizeFromWeight } from "@/lib/product-weight";
-import { Loader2, Plus, ArrowLeft, Search, Package, Check, Layers, Ban, Sparkles, Edit, Info, Image as ImageIcon, Settings } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Search, Package, Check, Layers, Ban, Sparkles, Edit, Info, Image as ImageIcon, Settings, X, Save } from "lucide-react";
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
@@ -246,6 +246,45 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
 
     const fieldClass = (field: string) =>
         `w-full bg-gray-50 border ${fieldErrors[field] ? "border-red-400 bg-red-50/30 ring-2 ring-red-400/20" : "border-gray-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5"} focus:bg-white p-4 rounded-xl transition-all font-bold text-gray-900 outline-none shadow-sm placeholder:text-gray-300`;
+
+    // Dirty = el comercio empezó a cargar algo (nombre, precio, descripción, stock distinto del default o imagen).
+    // Cuando es dirty, mostramos el banner flotante de "publicar" en lugar del botón estático.
+    const isDirty =
+        formValues.name.trim().length > 0 ||
+        String(formValues.price).length > 0 ||
+        formValues.description.trim().length > 0 ||
+        formValues.categoryId.length > 0 ||
+        imageUrls.length > 0 ||
+        productSize !== null ||
+        String(formValues.stock) !== "10";
+
+    // Submittable = tiene los mínimos requeridos por validateForm
+    const isSubmittable =
+        formValues.name.trim().length >= 3 &&
+        imageUrls.length > 0 &&
+        Number(formValues.price) > 0 &&
+        formValues.stock !== "" &&
+        Number(formValues.stock) >= 0;
+
+    const handleDiscard = () => {
+        if (!confirm("¿Descartar lo que estás cargando? Vas a perder los datos ingresados.")) return;
+        setFormValues({
+            name: "",
+            description: "",
+            price: "",
+            stock: "10",
+            categoryId: "",
+            weightGrams: "",
+            volumeMl: "",
+            packageCategoryId: "",
+        });
+        setImageUrls([]);
+        setProductSize(null);
+        setFieldErrors({});
+        setError("");
+        setSuccessMsg("");
+        setSuggestionInfo("");
+    };
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto pb-20">
@@ -648,16 +687,43 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                         <input type="hidden" name="productSize" value={productSize ?? ""} />
                     </div>
 
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full btn-primary flex items-center justify-center gap-3 px-10 py-4 rounded-xl shadow-lg active:scale-[0.98]"
-                    >
-                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                        <span className="font-bold">Publicar Producto</span>
-                    </button>
+                    {/* Hint sutil para que el comercio sepa que el banner flotante aparece al cargar contenido */}
+                    {!isDirty && (
+                        <p className="text-xs text-gray-400 font-medium text-center pt-2">
+                            Cargá un nombre, una foto y un precio para publicar.
+                        </p>
+                    )}
                 </div>
+
+                {/* Banner flotante: aparece cuando el comercio empezó a cargar contenido. */}
+                {isDirty && (
+                    <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isSubmittable ? "bg-emerald-400 animate-pulse" : "bg-amber-400 animate-pulse"}`} />
+                            <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">
+                                {isSubmittable ? "Listo para publicar" : "Completá nombre, foto y precio"}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={handleDiscard}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
+                                title="Descartar"
+                            >
+                                <X className="w-4 h-4" />
+                                <span className="hidden sm:inline">Descartar</span>
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading || !isSubmittable}
+                                className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                <span>Publicar</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </form>
         </div>
     );

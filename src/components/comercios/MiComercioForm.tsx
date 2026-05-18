@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { updateMerchant, updateMerchantSchedule } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe, Info } from "lucide-react";
+import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe, Info, X } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { confirm } from "@/store/confirm";
 import { toast } from "@/store/toast";
@@ -103,6 +103,24 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
     const [address, setAddress] = useState(merchant.address);
     const [lat, setLat] = useState<number | null>(merchant.latitude ?? null);
     const [lng, setLng] = useState<number | null>(merchant.longitude ?? null);
+    // Dirty flag para el form principal de perfil. Se activa apenas el comercio
+    // toca cualquier campo, imagen o dirección. Se resetea al guardar con éxito.
+    const [perfilDirty, setPerfilDirty] = useState(false);
+    const initialImageUrl = useRef(merchant.image);
+    const initialAddress = useRef(merchant.address);
+
+    // Si cambia la imagen o la dirección, marcar dirty (no se detectan vía onChange del form).
+    const handleImageChange = (url: string) => {
+        setImageUrl(url);
+        if (url !== initialImageUrl.current) setPerfilDirty(true);
+    };
+    const handleAddressChange = (val: string, newLat?: number, newLng?: number, street?: string, num?: string) => {
+        const newAddr = num ? `${street} ${num}` : val;
+        setAddress(newAddr);
+        if (newLat) setLat(newLat);
+        if (newLng) setLng(newLng);
+        if (newAddr !== initialAddress.current) setPerfilDirty(true);
+    };
     const [scheduleEnabled, setScheduleEnabled] = useState(merchant.scheduleEnabled);
     const [schedule, setSchedule] = useState<WeekSchedule>(() => {
         try {
@@ -134,8 +152,25 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
             setError(result.error);
         } else {
             toast.success("Perfil guardado correctamente");
+            // Resetear el banner — snapshot pasa a ser el valor actual
+            initialImageUrl.current = imageUrl;
+            initialAddress.current = address;
+            setPerfilDirty(false);
         }
         setIsLoading(false);
+    };
+
+    const handleDiscardPerfil = async () => {
+        const ok = await confirm({
+            title: "Descartar cambios",
+            message: "¿Querés descartar los cambios sin guardar? La página se va a recargar con los datos actuales.",
+            confirmLabel: "Descartar",
+            cancelLabel: "Cancelar",
+        });
+        if (!ok) return;
+        // El form usa defaultValue en muchos campos — la forma más limpia de
+        // descartar es recargar para volver al estado del server.
+        window.location.reload();
     };
 
     const handleSaveSchedule = async () => {
@@ -213,7 +248,12 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
             )}
 
             {/* Main Profile Form */}
-            <form action={handleSubmit} className="space-y-6">
+            <form
+                action={handleSubmit}
+                className="space-y-6"
+                onChange={() => setPerfilDirty(true)}
+                onInput={() => setPerfilDirty(true)}
+            >
                 {/* Basic Info */}
                 <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -228,7 +268,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                             </label>
                             <ImageUpload
                                 value={imageUrl}
-                                onChange={setImageUrl}
+                                onChange={handleImageChange}
                                 disabled={isLoading}
                                 cropAspect={1}
                                 cropOutputSize={500}
@@ -291,11 +331,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                             </label>
                             <AddressAutocomplete
                                 value={address}
-                                onChange={(val, newLat, newLng, street, num) => {
-                                    setAddress(num ? `${street} ${num}` : val);
-                                    if (newLat) setLat(newLat);
-                                    if (newLng) setLng(newLng);
-                                }}
+                                onChange={handleAddressChange}
                                 placeholder="Calle y número..."
                             />
                             <input type="hidden" name="address" value={address} />
@@ -353,13 +389,35 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                 {/* Hidden deliveryFee for backwards compat */}
                 <input type="hidden" name="deliveryFee" value={merchant.deliveryFee.toString()} />
 
-                {/* Save Button */}
-                <div className="flex justify-end">
-                    <button type="submit" disabled={isLoading} className="btn-primary flex items-center gap-2 px-8">
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Guardar Perfil
-                    </button>
-                </div>
+                {/* Banner flotante: solo aparece cuando hay cambios sin guardar en el perfil */}
+                {perfilDirty && (
+                    <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                            <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
+                            <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">
+                                Tenés cambios sin guardar
+                            </p>
+                            <button
+                                type="button"
+                                onClick={handleDiscardPerfil}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
+                                title="Descartar"
+                            >
+                                <X className="w-4 h-4" />
+                                <span className="hidden sm:inline">Descartar</span>
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] transition disabled:opacity-50 shadow-md"
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                <span>Guardar</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </form>
 
             {/* Schedule Section — Horarios obligatorios */}

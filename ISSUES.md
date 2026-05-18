@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-04-30
+Última actualización: 2026-05-17
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -39,10 +39,11 @@ _(ningún importante abierto al cierre del sprint del 2026-04-30)_
 
 ---
 
-## ✅ Resueltos en este sprint (2026-04-25 → 2026-05-13)
+## ✅ Resueltos en este sprint (2026-04-25 → 2026-05-17)
 
 | Issue | Rama | Resumen |
 |---|---|---|
+| (ux-comercio-totales) | `feat/comercio-ux-guardar-y-totales` | Dos cambios de UX para el portal comercio + vendedor. (1) Banner flotante "Tenés cambios sin guardar" reemplaza el botón estático "Guardar" en `EditProductForm`, `NewProductForm` y `MiComercioForm` — aparece arriba del BottomNav apenas el usuario toca un campo, con botones "Descartar" y "Guardar". El comercio no se olvida más de guardar y no tiene que scrollear hasta abajo. En NewProductForm el botón se habilita solo cuando tiene los mínimos (nombre + foto + precio). En MiComercioForm el discard recarga la página (formulario con defaultValue). (2) En `/comercios/pedidos` y `/vendedor/pedidos` el monto que se le mostraba al comercio/vendedor era `order.total` (incluía el delivery fee, que es plata del repartidor, no del comercio). Cambio: mostrar "Tu venta" (subtotal de los productos del comercio) y debajo "Cobrás $X (-Y% comisión)" con el neto post-comisión usando el snapshot inmutable `merchantCommissionRate`. Para sellers usa `sellerPayout` que ya estaba persistido. Helpers `getMerchantSale()` y `getMerchantPayoutInfo()` en la página de pedidos del comercio cubren single-vendor (order.subtotal) y multi-vendor (suma de subOrders del merchant, ya filtrados por el backend). |
 | (smoke2-2A) | `fix/driver-acceso-panel-post-registro` | BUG CRÍTICO funcional: post-registro el driver no tenía botón al panel y quedaba "esperando aprobación imposible" — sin acceso al perfil no podía cargar la documentación, sin documentación nunca lo aprobaban. Loop muerto que rompía el onboarding. Fix: botón "Cargar mi documentación" en step 4 del registro + en `/repartidor/pendiente-aprobacion`. Lleva a `/repartidor` que redirige a login y de ahí al dashboard. La protección de "no aceptar pedidos sin aprobación" sigue funcionando como antes. |
 | (smoke2-modal-rating) | `fix/modal-calificacion-tapado-por-bottomnav` | BUG CRÍTICO funcional: el modal post-entrega de calificación no mostraba el footer con los botones "Calificar después" / "Enviar y cerrar" porque el BottomNav fijo (z-50) tapaba el footer del modal (que usaba items-end + max-h-92vh en mobile). Sin esos botones la calificación NO se podía guardar — el usuario solo podía cerrar el modal con la X sin persistir nada. Fix en `PostDeliveryRatingModal.tsx`: z-[60]→z-[100], items-end sm:items-center→items-center siempre, max-h-92vh→max-h-85vh, animación fade-in zoom-in-95 en vez de slide-in-from-bottom. |
 | (smoke2-1A) | `feat/ops-usuarios-auto-refresh` | UX OPS: la página `/ops/usuarios` ahora se auto-refresca cada 30s (pausa cuando la pestaña no está visible) + botón manual "Actualizar" con spinner + label "Actualizado hace X segundos / minutos" que tickea cada 10s. Antes el admin tenía que F5 para ver nuevos registros, lo cual era especialmente molesto cuando llegan varios drivers/merchants seguidos. Polling combina `fetchUsers()` + `fetchTabCounts()` para que también se actualicen los contadores de tabs. |

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { updateProduct, deleteProduct } from "@/app/comercios/actions";
 import MultiImageUpload from "@/components/ui/MultiImageUpload";
 import SizeSelector from "@/components/comercios/SizeSelector";
 import { ProductSize, SIZE_METADATA, getSizeFromWeight } from "@/lib/product-weight";
-import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Sparkles, Info, Settings } from "lucide-react";
+import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Sparkles, Info, Settings, X } from "lucide-react";
 import Link from 'next/link';
 
 interface EditProductFormProps {
@@ -50,6 +50,42 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const [advancedMode, setAdvancedMode] = useState(false);
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [suggestionInfo, setSuggestionInfo] = useState<string>("");
+
+    // feat/comercio-ux-guardar-y-totales (2026-05-13): snapshot del estado
+    // inicial del producto al montar. Lo usamos para calcular si el form
+    // esta dirty (hay cambios sin guardar) y mostrar el banner flotante
+    // solo cuando hace falta. La idea es no contaminar la UI con un boton
+    // "Guardar" siempre visible cuando no hay nada que guardar — patron
+    // estandar UX (Notion, Linear, GitHub editar issue).
+    const initialState = useRef({
+        name: product.name,
+        description: product.description,
+        weightGrams: product.weightGrams != null ? String(product.weightGrams) : "",
+        volumeMl: product.volumeMl != null ? String(product.volumeMl) : "",
+        packageCategoryId: product.packageCategoryId || "",
+        imageUrls: JSON.stringify(product.imageUrls),
+    });
+
+    const isDirty =
+        name !== initialState.current.name ||
+        description !== initialState.current.description ||
+        weightGrams !== initialState.current.weightGrams ||
+        volumeMl !== initialState.current.volumeMl ||
+        packageCategoryId !== initialState.current.packageCategoryId ||
+        JSON.stringify(imageUrls) !== initialState.current.imageUrls;
+
+    // Descartar cambios — vuelve todo a los valores iniciales sin guardar.
+    const handleDiscard = () => {
+        setName(initialState.current.name);
+        setDescription(initialState.current.description);
+        setWeightGrams(initialState.current.weightGrams);
+        setVolumeMl(initialState.current.volumeMl);
+        setPackageCategoryId(initialState.current.packageCategoryId);
+        setImageUrls(JSON.parse(initialState.current.imageUrls));
+        // productSize derivado se recalcula automaticamente desde weightGrams
+        // en el siguiente render, no hace falta resetearlo manual.
+        setError("");
+    };
 
     /**
      * Click en una card de SizeSelector. Autocompleta los gramos/volumen
@@ -158,26 +194,21 @@ export default function EditProductForm({ product, categories }: EditProductForm
                         </Link>
                         <h1 className="text-2xl font-bold text-gray-900">Editar Producto</h1>
                     </div>
+                    {/* feat/comercio-ux-guardar-y-totales (2026-05-13): boton
+                        "Guardar Cambios" se movio al banner flotante abajo
+                        que aparece solo cuando isDirty. Solo dejamos el tacho
+                        en el header — accion irreversible que no depende de
+                        cambios pendientes. */}
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => setShowDeleteConfirm(true)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                             disabled={isLoading || isDeleting}
+                            aria-label="Eliminar producto"
+                            title="Eliminar producto"
                         >
                             <Trash2 className="w-5 h-5" />
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="btn-primary flex items-center gap-2 px-6"
-                        >
-                            {isLoading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Save className="w-4 h-4" />
-                            )}
-                            Guardar Cambios
                         </button>
                     </div>
                 </div>
@@ -381,6 +412,45 @@ export default function EditProductForm({ product, categories }: EditProductForm
                         </div>
                     </div>
                 </div>
+
+                {/* feat/comercio-ux-guardar-y-totales (2026-05-13): banner
+                    flotante sticky abajo. Aparece solo cuando isDirty (algun
+                    campo modificado vs estado inicial). Se posiciona arriba
+                    del BottomNav del layout del comercio. pb-safe para iOS
+                    bottom inset. z-30 lo deja arriba del contenido pero abajo
+                    de modales (que son z-50+). */}
+                {isDirty && (
+                    <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                            <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
+                            <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">
+                                Tenés cambios sin guardar
+                            </p>
+                            <button
+                                type="button"
+                                onClick={handleDiscard}
+                                disabled={isLoading}
+                                className="px-3 py-2 text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 transition disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                                title="Descartar cambios"
+                            >
+                                <X className="w-4 h-4" />
+                                <span className="hidden sm:inline">Descartar</span>
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="px-4 py-2 text-xs sm:text-sm font-bold rounded-lg bg-[#e60012] text-white hover:bg-[#cc000f] transition disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Save className="w-4 h-4" />
+                                )}
+                                <span>Guardar</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </form>
 
             {/* Delete Confirmation Modal */}
