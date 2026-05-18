@@ -10,6 +10,49 @@
 
 ---
 
+## 2026-05-17 (rama `fix/orden-vuelve-a-pendiente-tras-calificar`)
+
+fix(orders): pedido vuelve a "Pendiente" después de calificar al repartidor
+
+BUG CRÍTICO: después de que el comprador calificaba al repartidor en
+el modal post-entrega, el pedido aparecía como "Pendiente" en la lista
+de "Mis pedidos" — confundiendo al usuario y rompiendo cualquier
+filtro/contador que dependiera del estado real.
+
+CAUSA: el endpoint POST /api/orders/[id]/rate (introducido en la rama
+feat/propinas-y-ratings-post-entrega) cambiaba el status del Order a
+"COMPLETED" al guardar la calificación. Pero ese estado NO existe en
+`statusConfig` de la UI:
+
+  /mis-pedidos/page.tsx:427
+  const st = statusConfig[order.status] || statusConfig.PENDING;
+
+Como `COMPLETED` no está en el mapa, caía al fallback `PENDING` y se
+renderizaba el chip con label "Pendiente" + ícono amarillo.
+
+FIX: borrar `status: "COMPLETED"` del update. El status del pedido
+queda en DELIVERED (su estado real). El hecho de que ya se calificó
+se sabe por `driverRating != null` y `ratedAt`.
+
+VERIFICACIÓN: busqué `status === "COMPLETED"` en todo el repo. Los
+matches restantes son de otras entidades (PendingAssignment.status,
+PointTransaction.status, Referral.status, BroadcastCampaign.status) —
+ningún lugar del código depende de Order.status === "COMPLETED".
+
+Los otros endpoints de calificación (rate-merchant, rate-seller, tip)
+NO tocan el status, así que están bien.
+
+Archivos modificados:
+- src/app/api/orders/[id]/rate/route.ts (1 línea borrada)
+- ISSUES.md
+
+Nota: los pedidos que ya quedaron en COMPLETED en producción siguen
+mostrándose mal hasta que se ejecute un UPDATE manual en la DB:
+  UPDATE "Order" SET status='DELIVERED'
+  WHERE status='COMPLETED' AND "driverRating" IS NOT NULL;
+
+**Archivos:** ISSUES.md, Proyeccion-MOOVY-9410.pdf, src/app/api/orders/[id]/rate/route.ts
+
 ## 2026-05-17 (rama `feat/comercio-ux-guardar-y-totales`)
 
 feat(comercio): banner flotante "guardar cambios" + "Tu venta" en lugar de total

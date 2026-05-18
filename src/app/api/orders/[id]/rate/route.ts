@@ -77,6 +77,18 @@ export async function POST(
             }
 
             // Update order with rating + moderation status del comment.
+            //
+            // Rama fix/orden-vuelve-a-pendiente-tras-calificar (2026-05-17):
+            // BUG CRÍTICO. Antes esto seteaba status="COMPLETED", pero ese estado
+            // NO existe en `statusConfig` de la UI (/mis-pedidos línea 427 usa
+            // `statusConfig[order.status] || statusConfig.PENDING`), entonces
+            // después de calificar el pedido aparecía como "Pendiente". También
+            // rompía cualquier filtro/contador del frontend que buscara DELIVERED.
+            // El status del pedido se queda en DELIVERED — el hecho de que se
+            // calificó se sabe vía `driverRating != null` y `ratedAt`. Verifiqué
+            // que ningún otro lugar del código depende de status==="COMPLETED"
+            // para Orders (los otros matches son de PendingAssignment, Points,
+            // Referral y BroadcastCampaign — entidades distintas).
             await tx.order.update({
                 where: { id: orderId },
                 data: {
@@ -84,7 +96,6 @@ export async function POST(
                     ratingComment: trimmedComment || null,
                     driverRatingModerationStatus: moderationStatus,
                     ratedAt: new Date(),
-                    status: "COMPLETED"
                 }
             });
 
