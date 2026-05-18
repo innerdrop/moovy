@@ -16,7 +16,15 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const period = searchParams.get("period") || "week"; // "week" or "month"
+        // Rama feat/driver-historial-ganancias-y-pagos (2026-05-17):
+        // Antes period solo aceptaba "week" o "month" — el driver no podía
+        // ver historial más allá del período actual. Ahora además acepta:
+        //   - "all":       todo el histórico del driver desde su primer pedido
+        //   - "YYYY-MM":   mes específico (ej: "2026-04" = abril 2026)
+        // Esto soluciona la queja "después de pagarme me desaparece el
+        // historial" — los pedidos no desaparecían, simplemente la UI
+        // solo permitía ver semana/mes actual.
+        const period = searchParams.get("period") || "week";
 
         // Fetch store settings for rider commission %
         const storeSettings = await prisma.storeSettings.findUnique({
@@ -27,11 +35,28 @@ export async function GET(request: Request) {
         // Calculate date range
         const now = new Date();
         let startDate: Date;
+        let endDate: Date = now;
+        // Match para periodos con formato YYYY-MM (ej: 2026-04)
+        const specificMonthMatch = /^(\d{4})-(\d{2})$/.exec(period);
 
-        if (period === "month") {
+        if (period === "all") {
+            // Histórico completo: desde epoch hasta ahora. La query igual
+            // filtra por driverId, así que solo trae los pedidos del driver.
+            startDate = new Date(0);
+        } else if (specificMonthMatch) {
+            const year = parseInt(specificMonthMatch[1], 10);
+            const monthIdx = parseInt(specificMonthMatch[2], 10) - 1; // JS months: 0-11
+            // Validar para no aceptar "2026-13" o "9999-01" como input random
+            if (monthIdx < 0 || monthIdx > 11 || year < 2024 || year > now.getFullYear() + 1) {
+                return NextResponse.json({ error: "Período inválido" }, { status: 400 });
+            }
+            startDate = new Date(year, monthIdx, 1, 0, 0, 0, 0);
+            // Último ms del mes
+            endDate = new Date(year, monthIdx + 1, 0, 23, 59, 59, 999);
+        } else if (period === "month") {
             startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         } else {
-            // Start of current week (Monday)
+            // Default: week (start of current week, Monday)
             const day = now.getDay();
             const diff = day === 0 ? 6 : day - 1; // Monday = 0
             startDate = new Date(now);
@@ -50,7 +75,7 @@ export async function GET(request: Request) {
                 status: "DELIVERED",
                 deliveredAt: {
                     gte: startDate,
-                    lte: now,
+                    lte: endDate,
                 },
             },
             select: {
@@ -95,35 +120,42 @@ export async function GET(request: Request) {
         const totalTipsCount = dailyBreakdown.reduce((s, d) => s + d.tipsCount, 0);
 
         // Previous period for comparison
-        let prevStartDate: Date;
-        let prevEndDate: Date;
+        // Rama feat/driver-historial-ganancias-y-pagos: el cálculo "vs período
+        // anterior" solo aplica a week/month (períodos relativos). Para
+        // "all" no tiene sentido (es todo) y para mes específico podría
+        // confundir (compararíamos abril vs marzo de oficio).
+        let prevTotal = 0;
+        if (period === "week" || period === "month") {
+            let prevStartDate: Date;
+            let prevEndDate: Date;
 
-        if (period === "month") {
-            prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            prevEndDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-        } else {
-            prevStartDate = new Date(startDate);
-            prevStartDate.setDate(prevStartDate.getDate() - 7);
-            prevEndDate = new Date(startDate);
-            prevEndDate.setMilliseconds(-1);
-        }
+            if (period === "month") {
+                prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                prevEndDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+            } else {
+                prevStartDate = new Date(startDate);
+                prevStartDate.setDate(prevStartDate.getDate() - 7);
+                prevEndDate = new Date(startDate);
+                prevEndDate.setMilliseconds(-1);
+            }
 
-        const prevOrders = await prisma.order.findMany({
-            where: {
-                driverId: driver.id,
-                status: "DELIVERED",
-                deliveredAt: {
-                    gte: prevStartDate,
-                    lte: prevEndDate,
+            const prevOrders = await prisma.order.findMany({
+                where: {
+                    driverId: driver.id,
+                    status: "DELIVERED",
+                    deliveredAt: {
+                        gte: prevStartDate,
+                        lte: prevEndDate,
+                    },
                 },
-            },
-            select: { deliveryFee: true },
-        });
+                select: { deliveryFee: true },
+            });
 
-        const prevTotal = prevOrders.reduce(
-            (s, o) => s + Math.round((o.deliveryFee || 0) * riderPercent / 100),
-            0
-        );
+            prevTotal = prevOrders.reduce(
+                (s, o) => s + Math.round((o.deliveryFee || 0) * riderPercent / 100),
+                0
+            );
+        }
 
         return NextResponse.json({
             period,

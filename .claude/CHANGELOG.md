@@ -10,6 +10,63 @@
 
 ---
 
+## 2026-05-17 (rama `feat/driver-historial-ganancias-y-pagos`)
+
+feat(driver): historial completo de ganancias + tab "Pagos recibidos"
+
+PROBLEMA: el driver veía "desaparecer" su historial después de que
+Moovy le procesara un pago. En realidad la data nunca se borraba — la
+vista "Mis Ganancias" solo permitía ver "Esta semana" o "Este mes" y
+los pedidos de batches viejos quedaban fuera de ese rango.
+
+CAMBIOS:
+
+1. /api/driver/earnings (modificado)
+   - Agrega soporte para period=YYYY-MM (mes específico, ej: "2026-04")
+   - Agrega soporte para period=all (histórico completo)
+   - Mantiene compat con period=week|month
+   - Validación de YYYY-MM (mes 01-12, año 2024 a year+1)
+   - Cálculo "vs período anterior" solo aplica a week/month (los
+     relativos). Para mes específico o all-time no tiene sentido y
+     queda en previousPeriodTotal=0.
+
+2. /api/driver/payouts (nuevo endpoint)
+   - GET sin params. Devuelve PayoutBatch.status=PAID donde el driver
+     tuvo PayoutItem.
+   - Por cada batch: id, paidAt, amount, itemCount, orderIds parseados,
+     periodStart/End, bankAccount denormalizado, batchNotes.
+   - Sin paginación: drivers tienen 1-4 batches/mes. Revisar si llega
+     a 100+ entries.
+   - Filtro doble por seguridad: recipientType=DRIVER AND
+     recipientId=driver.id. Cero riesgo IDOR.
+   - Ordenado por paidAt desc.
+
+3. EarningsView.tsx (rediseño)
+   - Dos tabs en el header rojo: "Ganancias" (existente, mejorado) y
+     "Pagos recibidos" (nuevo).
+   - El selector de "Esta semana / Este mes" pasa a ser un <select>
+     con: Esta semana, Este mes, últimos 12 meses (capitalizados),
+     "Todo el tiempo".
+   - El "vs período anterior" solo se muestra cuando period es week
+     o month.
+   - Tab "Pagos recibidos": carga lazy al click. Muestra total
+     acumulado histórico + lista de pagos con fecha, monto, cantidad
+     de pedidos, cuenta destino y notas del batch.
+   - Empty state amigable: "Todavía no recibiste pagos / Cuando Moovy
+     procese tu primer pago vas a ver acá el detalle."
+   - Wording user-facing: "el equipo de Moovy" (no "OPS").
+
+NO HAY CAMBIOS DE SCHEMA. Toda la data ya existía en PayoutBatch +
+PayoutItem (denormalización ya hecha en feat/payouts-batches).
+
+Archivos:
+- src/app/api/driver/earnings/route.ts (modificado)
+- src/app/api/driver/payouts/route.ts (nuevo)
+- src/components/rider/views/EarningsView.tsx (rediseño)
+- ISSUES.md (entry)
+
+**Archivos:** ISSUES.md, src/app/api/driver/earnings/route.ts, src/app/api/driver/payouts/route.ts, src/components/rider/views/EarningsView.tsx
+
 ## 2026-05-17 (rama `chore/script-fix-orders-completed-to-delivered`)
 
 chore(scripts): cleanup one-off para pedidos COMPLETED → DELIVERED en prod
