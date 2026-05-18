@@ -230,20 +230,38 @@ export default function PinKeypad({
 
     // Abre WhatsApp con un mensaje pre-armado al soporte. Funciona en mobile
     // (abre la app WA) y en desktop (web WA en el browser).
+    //
+    // Rama fix/pin-bloqueado-mostrar-soporte (2026-05-17): el mensaje se
+    // arma contextual al `errorCode`. Antes solo cubría OUT_OF_GEOFENCE
+    // (problema de GPS) — ahora también TOO_MANY_ATTEMPTS (bloqueo por
+    // intentos) y un fallback genérico para cualquier otra cosa.
     const openWhatsAppSupport = useCallback(() => {
-        const distanceStr = typeof distanceMeters === "number"
-            ? `${Math.round(distanceMeters)}m`
-            : "una distancia que no me deja";
         const pinTypeLabel = pinType === "pickup" ? "retiro del pedido" : "entrega al cliente";
         const orderRef = orderId ? ` (pedido ${orderId.slice(-6)})` : "";
-        const text = encodeURIComponent(
-            `Hola Moovy, tengo problemas con el GPS para validar el PIN de ${pinTypeLabel}${orderRef}. El sistema me dice que estoy a ${distanceStr} pero estoy en el lugar correcto. ¿Me ayudan?`
-        );
+
+        let text: string;
+        if (errorCode === "TOO_MANY_ATTEMPTS") {
+            text = encodeURIComponent(
+                `Hola Moovy, se bloqueó el PIN de ${pinTypeLabel}${orderRef} por superar los intentos máximos. ¿Me pueden ayudar a desbloquear el pedido?`
+            );
+        } else if (errorCode === "OUT_OF_GEOFENCE") {
+            const distanceStr = typeof distanceMeters === "number"
+                ? `${Math.round(distanceMeters)}m`
+                : "una distancia que no me deja";
+            text = encodeURIComponent(
+                `Hola Moovy, tengo problemas con el GPS para validar el PIN de ${pinTypeLabel}${orderRef}. El sistema me dice que estoy a ${distanceStr} pero estoy en el lugar correcto. ¿Me ayudan?`
+            );
+        } else {
+            text = encodeURIComponent(
+                `Hola Moovy, necesito ayuda con el PIN de ${pinTypeLabel}${orderRef}.`
+            );
+        }
+
         const url = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${text}`;
         if (typeof window !== "undefined") {
             window.open(url, "_blank", "noopener,noreferrer");
         }
-    }, [distanceMeters, pinType, orderId]);
+    }, [distanceMeters, pinType, orderId, errorCode]);
 
     // Soporte de teclado físico (útil en tablets / teclado Bluetooth)
     useEffect(() => {
@@ -380,6 +398,39 @@ export default function PinKeypad({
                                     <p className="text-xs mt-0.5 opacity-80">
                                         Contactá al soporte de MOOVY para desbloquear el pedido.
                                     </p>
+                                )}
+
+                                {/* Rama fix/pin-bloqueado-mostrar-soporte (2026-05-17):
+                                    cuando el pedido se bloquea por superar el máximo de
+                                    intentos (TOO_MANY_ATTEMPTS), el driver queda atorado
+                                    sin forma de pedir ayuda. Antes el mensaje decía
+                                    "contactá al soporte" sin un CTA al lado. Ahora
+                                    mostramos dos botones prominentes — uno para abrir
+                                    el modal de reporte interno (con orderId y comentario
+                                    pre-armado) y otro para WhatsApp directo.
+                                    Mismo patrón que isOutOfGeofence abajo. */}
+                                {isLocked && orderId && (
+                                    <div className="mt-3 flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setReportComment((cur) => cur || `Se me bloqueó el PIN de ${pinType === "pickup" ? "retiro" : "entrega"} por superar los intentos máximos. No pude recordar el número correcto.`);
+                                                setShowReportModal(true);
+                                            }}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition active:scale-95"
+                                        >
+                                            <HelpCircle className="w-3.5 h-3.5" />
+                                            Reportar problema y desbloquear
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={openWhatsAppSupport}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-700 hover:text-red-900 transition"
+                                        >
+                                            <Phone className="w-3.5 h-3.5" />
+                                            o escribí a soporte por WhatsApp
+                                        </button>
+                                    </div>
                                 )}
 
                                 {/* feat/driver-soporte-gps-bloqueado (2026-05-13):

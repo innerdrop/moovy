@@ -10,6 +10,65 @@
 
 ---
 
+## 2026-05-18 (rama `fix/pin-bloqueado-mostrar-soporte`)
+
+fix(rider): PIN bloqueado por intentos ahora muestra soporte prominente
+
+BUG: cuando el driver superaba el máximo de intentos del PIN (pickup o
+delivery), el sistema mostraba el mensaje rojo "Superaste el máximo de
+intentos. El pedido está bloqueado y fue alertado al equipo. Contactá
+al soporte de MOOVY para desbloquear el pedido." — pero NO había
+ningún botón visible para contactar soporte. El driver quedaba
+atorado, sin salida.
+
+Sí existía un botón universal "¿Tenés problemas? Hablá con soporte"
+al final del modal (rama fix/contacto-y-soporte-en-entrega), pero
+era chico, gris, y podía quedar tapado por el safe-area-inset en
+mobile cuando la URL bar del browser aparece/desaparece. Encima el
+mensaje rojo decía "Contactá al soporte" sin un CTA al lado, lo que
+viola la regla del consejo (rol SOPORTE): "errores dicen QUÉ HACER".
+
+FIX: agregar DENTRO del bloque rojo de error (al lado del mensaje
+"Contactá al soporte...") dos botones prominentes — mismo patrón que
+ya usaba isOutOfGeofence más abajo. Imposible no verlos.
+
+  - 📝 Reportar problema y desbloquear  (rojo sólido)
+       Abre el modal de reporte interno con orderId y comentario
+       pre-armado contextual: "Se me bloqueó el PIN de retiro por
+       superar los intentos máximos. No pude recordar el número
+       correcto."
+
+  - 💬 o escribí a soporte por WhatsApp  (link rojo claro)
+       Abre wa.me con mensaje pre-armado al soporte.
+
+CAMBIOS:
+
+1. src/components/rider/PinKeypad.tsx
+   - Nuevo bloque condicional {isLocked && orderId && (...)} después
+     del párrafo "Contactá al soporte..."
+   - openWhatsAppSupport() ahora arma el texto del mensaje según el
+     errorCode actual:
+       TOO_MANY_ATTEMPTS → "se bloqueó por superar los intentos..."
+       OUT_OF_GEOFENCE   → mensaje GPS original (no cambia)
+       fallback genérico → "necesito ayuda con el PIN..."
+   - Agrega errorCode a las dependencias del useCallback.
+
+SIN CAMBIOS DE SCHEMA NI ENDPOINT.
+
+El endpoint /api/driver/report-pin-issue ya acepta distanceMeters y
+lat/lng como opcional/null, así que el reporte por bloqueo de intentos
+no necesita cambios en el backend — el comment pre-armado es lo que
+le llega al admin con el contexto del caso.
+
+Mantiene el botón universal "¿Tenés problemas?" del final del modal
+intacto — sigue como fallback genérico para los otros estados.
+
+Archivos:
+- src/components/rider/PinKeypad.tsx
+- ISSUES.md
+
+**Archivos:** ISSUES.md, MOOVY-Deck-9410.pdf, src/components/rider/PinKeypad.tsx
+
 ## 2026-05-18 (rama `fix/restaurar-moover-y-marketplace-sin-flags`)
 
 fix(flags): Marketplace y MOOVER siempre visibles, sin feature flag
