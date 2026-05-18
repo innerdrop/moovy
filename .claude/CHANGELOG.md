@@ -10,6 +10,45 @@
 
 ---
 
+## 2026-05-17 (rama `chore/script-fix-orders-completed-to-delivered`)
+
+chore(scripts): cleanup one-off para pedidos COMPLETED → DELIVERED en prod
+
+Script `scripts/fix-orders-completed-to-delivered.ts` para limpiar la
+data corrupta que dejó el bug del rate route (rama anterior
+fix/orden-vuelve-a-pendiente-tras-calificar).
+
+PATRÓN: mismo que clean-db-pre-launch.ts.
+  - DRY RUN por default (solo cuenta + sample)
+  - --execute con confirmación interactiva "SI MIGRAR"
+  - DATABASE_URL safety check
+  - Identifica admin activo para firmar el audit log
+  - Update dentro de $transaction Serializable
+  - AuditLog único con orderIds + orderNumbers afectados
+  - Idempotente (correr 2 veces = nop)
+
+FILTRO ESTRICTO:
+  status = "COMPLETED" AND driverRating != null
+
+Doble filtro para no tocar otros rows que tengan COMPLETED por motivos
+distintos al bug (ej: pruebas manuales sin driverRating).
+
+USO:
+  # Ver cuántos cambiarían + sample de 7:
+  npx tsx scripts/fix-orders-completed-to-delivered.ts
+
+  # Ejecutar (pide "SI MIGRAR" por stdin):
+  npx tsx scripts/fix-orders-completed-to-delivered.ts --execute
+
+CUÁNDO CORRER: una sola vez en producción, después de que devmain.ps1
+deploye el fix del rate route. Apuntando DATABASE_URL a la DB de prod.
+
+Archivos:
+- scripts/fix-orders-completed-to-delivered.ts (nuevo)
+- ISSUES.md (entry del sprint)
+
+**Archivos:** ISSUES.md, scripts/fix-orders-completed-to-delivered.ts
+
 ## 2026-05-17 (rama `fix/orden-vuelve-a-pendiente-tras-calificar`)
 
 fix(orders): pedido vuelve a "Pendiente" después de calificar al repartidor
