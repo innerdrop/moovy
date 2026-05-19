@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Clock, ChevronRight, Store, Star } from "lucide-react";
 import HomeHero from "./HomeHero";
+import HeroValueProposition from "./HeroValueProposition";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +70,9 @@ export default function HomeFeed({
 
     return (
         <>
+            {/* ── VALUE PROP (solo no-logueados) ── */}
+            <HeroValueProposition />
+
             {/* ── HERO ── */}
             <HomeHero
                 categories={categories}
@@ -77,7 +81,7 @@ export default function HomeFeed({
             />
 
             {/* ── ABIERTOS AHORA (filterable) ── */}
-            <section className="py-5 lg:py-8 bg-white">
+            <section id="abiertos-ahora" className="py-5 lg:py-8 bg-white scroll-mt-16">
                 <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
                     {/* Row header */}
                     <div className="flex items-center justify-between mb-3 lg:mb-4">

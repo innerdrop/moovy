@@ -10,6 +10,109 @@
 
 ---
 
+## 2026-05-19 (rama `feat/landing-headline-tienda`)
+
+feat(home): banner de propuesta de valor para visitantes no logueados
+
+Anexa un banner explicativo encima del HomeHero existente, visible solo
+para usuarios con `status === "unauthenticated"`. Los usuarios logueados
+(la mayoría del tráfico post-launch mes 2+) NO ven el banner y mantienen
+exactamente la misma experiencia que antes.
+
+CONTEXTO / DECISIÓN DE PRODUCTO
+
+Cuando un visitante nuevo llega a `somosmoovy.com` por primera vez
+(probablemente desde boca-a-boca + WhatsApp + Instagram orgánico en
+Ushuaia 80k hab), la home pública le muestra directamente la tienda
+contextual ("Buenas tardes / ¿Se te antoja algo?") pero NO explica qué
+es MOOVY en los primeros 200px. Eso está bien para usuarios recurrentes
+(estandar de industria: PedidosYa/Rappi/Glovo/MercadoLibre todos hacen
+tienda directa), pero para un mercado nuevo donde la app es desconocida,
+hacen falta 2-3 líneas de propuesta de valor visibles arriba sin sacar
+al usuario del flujo de compra.
+
+Después de revisar la decisión con los roles PRODUCTO/UX/MARKETING/
+GO-TO-MARKET/QA/PSICOLOGÍA-USHUAIA, se decidió MANTENER tienda directa
+como landing (no cambiar a `/empezar` como landing por default) y
+ANEXAR un banner de propuesta de valor para no-logueados.
+
+ARCHIVOS
+
+- src/components/home/HeroValueProposition.tsx  (nuevo, 92 líneas)
+- src/components/home/HomeFeed.tsx              (import + render + id anchor)
+
+CAMBIOS
+
+1. HeroValueProposition.tsx (nuevo componente client)
+
+   - `useSession()` de NextAuth:
+     * status "unauthenticated" → muestra banner
+     * status "loading"         → null (evita flash)
+     * status "authenticated"   → null (recurrentes ven tienda limpia)
+
+   - Diseño:
+     * Gradient rojo MOOVY (#a3000c → #c2000f → #e60012) para coherencia
+       con HomeHero que viene inmediatamente debajo
+     * Headline "Pedí en Ushuaia." + segunda línea "Tu comercio favorito
+       te lo lleva." en amber-300 para jerarquía
+     * Sub-headline "Repartidores locales, pago seguro, vos elegís cómo
+       y cuándo recibir." en blanco al 85% sobre el rojo
+     * 2 CTAs:
+         - "Crear mi cuenta" (blanco sólido) → Link a /empezar
+         - "Ver comercios →" (outline) → anchor #abiertos-ahora (funciona
+           sin JS, sin redirect, scroll suave nativo)
+     * Trust strip mini con 3 señales abajo: "Solo Ushuaia" · "Pago seguro
+       con MercadoPago" · "El comercio cobra al instante". Responde a la
+       psicología del usuario de Ushuaia donde "¿quién está detrás?" se
+       gana mejor con señales concretas que con texto largo.
+     * Blobs decorativos (white/10 y amber/10) para profundidad sin
+       distraer
+
+   - Accesibilidad:
+     * aria-label en la section
+     * aria-hidden en los íconos decorativos
+     * Contraste WCAG AA sobre el rojo
+
+2. HomeFeed.tsx (modificaciones quirúrgicas)
+
+   - Import del nuevo componente
+   - Render de <HeroValueProposition /> ANTES de <HomeHero />
+   - Agregado id="abiertos-ahora" + class "scroll-mt-16" a la sección de
+     "Abiertos ahora" para que el anchor del CTA funcione y el header
+     sticky no la tape
+
+LO QUE NO SE TOCÓ
+
+- Routing: la home sigue siendo `/`. La página `/empezar` sigue viva
+  como destino de los CTAs "Crear cuenta" y disponible para campañas
+  pagas futuras.
+- HomeHero: queda intacto, sigue mostrando el saludo contextual según
+  la hora ("Buen día / ¡Buen provecho! / Buenas tardes / Buenas noches").
+- Lógica de auth: no se toca NextAuth, no se cambian sesiones, no se
+  modifican layouts protegidos.
+- Visitantes logueados (recurrentes): NO ven el banner, experiencia
+  exactamente como antes.
+
+VERIFICACIÓN
+
+- No requiere migrations ni prisma db push
+- Componente client con un solo hook (useSession) ya disponible via
+  SessionProvider en src/components/Providers.tsx
+- Mobile-first, responsive (text-2xl mobile / text-4xl lg)
+- 2 archivos modificados, ~95 líneas nuevas
+
+VERIFICACIÓN VISUAL POST-DEPLOY
+
+1. En pestaña incógnito, abrir https://somosmoovy.com (con preview key
+   durante maintenance): debe aparecer el banner rojo encima del
+   HomeHero, con el headline en blanco + amber.
+2. Logueado como buyer, abrir la home: el banner NO debe aparecer.
+3. Click en "Ver comercios →": debe hacer scroll suave hasta la sección
+   "Abiertos ahora" sin redirect.
+4. Click en "Crear mi cuenta": debe llevar a /empezar.
+
+**Archivos:** ISSUES.md, src/components/home/HeroValueProposition.tsx, src/components/home/HomeFeed.tsx
+
 ## 2026-05-19 (rama `chore/checklist-por-etapas`)
 
 chore(checklist): rediseño completo por etapas acumulativas
