@@ -2,6 +2,8 @@
 
 > **Uso**: Todos los días durante la fase final. Reemplaza al Prompt 2.
 > **Diferencia clave**: en esta fase, verificar > implementar. Ninguna tarea se cierra sin prueba.
+>
+> **Versión 2 — 2026-05-17**: actualizada después de armar el sistema de checklist QA pre-launch (HTML + MD interactivos en la raíz del repo) y los scripts de cleanup post-deploy. Reemplaza al checklist embebido que tenía la v1 (que quedó obsoleto).
 
 ---
 
@@ -33,7 +35,9 @@ Sos el CEO y CTO de Moovy en la recta final. Las reglas son:
 1. Primer issue crítico 🔴 abierto en ISSUES.md
 2. Si no hay críticos: primer importante 🟡
 3. Si no hay importantes: primera tarea de PROJECT_STATUS.md
-4. Si todo está verde: corrés el checklist de pre-lanzamiento (abajo)
+4. Si todo está verde:
+   - **Si NO deployaste el último batch a prod aún**: corré `.\scripts\devmain.ps1` y después los scripts de cleanup en el VPS (ver sección "Cleanup post-deploy" abajo).
+   - **Si ya está todo en prod**: abrí `prelaunch-checklist.html` en el browser y empezá a marcar items. Si encontrás bugs, vuelven al ciclo normal (rama nueva por cada fix).
 
 ---
 
@@ -45,7 +49,7 @@ Al terminar cualquier cambio de código, cerrar con:
 .\scripts\finish.ps1
 ```
 
-El script ahora:
+El script:
 - Detecta si tocaste código (src/ o prisma/) pero no actualizaste docs
 - Te pide actualizar `ISSUES.md` / `.claude/CHANGELOG.md` / `.claude/CLAUDE.md` antes de seguir
 - Hace commit + push + merge a develop + delete branch
@@ -59,52 +63,55 @@ Pasame solo el texto de descripción cuando esté listo. NO uses comandos git ma
 
 ---
 
-## Checklist de pre-lanzamiento (solo cuando ISSUES.md esté limpio)
+## Cleanup post-deploy (correr UNA sola vez en el VPS después de devmain.ps1)
 
-### Pagos
+Después de bajar el batch acumulado a producción, hay 2 scripts de cleanup que tenés que correr una vez:
 
-- [ ] Pago MP exitoso → webhook recibido → pedido avanza → comercio cobra instantáneamente
-- [ ] Pago MP fallido → usuario ve error claro → pedido NO avanza
-- [ ] Pago en efectivo → flujo completo hasta confirmación del repartidor
-- [ ] Comisión calculada correctamente: pedido de $20.000 (mes 1: comercio recibe $20.000 / mes 2: comercio recibe $18.400)
-- [ ] Puntos MOOVER se otorgan solo cuando el pedido llega a DELIVERED, no antes
-- [ ] Cancelación/refund: puntos ganados se revierten, puntos canjeados vuelven al balance
+```bash
+# SSH al VPS
+ssh root@<tu-vps>
+cd /var/www/moovy
 
-### Sistema PIN doble
+# 1. Limpiar pedidos quedados en status "COMPLETED" por el bug viejo del rate route
+#    Si dry-run dice "0 candidatos", no hace falta correr --execute
+npx tsx scripts/fix-orders-completed-to-delivered.ts             # dry-run
+npx tsx scripts/fix-orders-completed-to-delivered.ts --execute   # ejecutar (pide "SI MIGRAR")
 
-- [ ] PIN de retiro: comercio lo ve claramente en DRIVER_ARRIVED, repartidor lo ingresa, sistema avanza
-- [ ] PIN de entrega: comprador lo ve en la app cuando el driver sale del comercio (PICKED_UP)
-- [ ] Sin PIN del comprador, el botón "entregado" está bloqueado (error 409 PIN_NOT_VERIFIED)
-- [ ] Geofence: si el driver está a >100m del destino, el PIN no valida
-- [ ] Fraud lock: a los 5 intentos fallidos, driver queda bloqueado y alerta aparece en `/ops/fraude`
+# 2. Eliminar flags huérfanos que aparecen en /ops/feature-flags pero el código ya no usa
+#    (buyer.marketplace y buyer.puntos-moover)
+npx tsx scripts/cleanup-deprecated-feature-flags.ts              # dry-run
+npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute    # ejecutar (pide "SI LIMPIAR")
+```
 
-### Flujos críticos
+Ambos scripts son **idempotentes** — correrlos dos veces no rompe nada (la segunda corrida encuentra 0 candidatos y termina limpiamente).
 
-- [ ] Comprador hace pedido completo: registro → búsqueda → pago → tracking con PIN → entregado
-- [ ] Comercio recibe pedido, acepta, prepara, entrega al repartidor con PIN de retiro
-- [ ] Repartidor acepta, retira con PIN, entrega con PIN del comprador, ve sus ganancias
-- [ ] Admin aprueba un comercio nuevo, ve el pedido en tiempo real, ve alertas de fraude
+---
 
-### Seguridad
+## Usar el checklist QA (solo cuando ISSUES.md esté limpio o esté en prod)
 
-- [ ] Un usuario no puede comprar sus propios productos (SELF_PURCHASE bloqueado en backend)
-- [ ] Delivery fee no se puede manipular desde el cliente (fallback seguro)
-- [ ] Endpoint de otro usuario devuelve 403 si cambio el ID
-- [ ] Sin token → todos los endpoints protegidos devuelven 401
-- [ ] No hay secrets en el código (revisá .env, git log)
+El checklist QA pre-launch vive en **dos archivos** en la raíz del repo:
 
-### Ushuaia específico
+- **`PRELAUNCH_CHECKLIST.md`** — fuente de verdad versionable. ~180 items organizados por viaje de usuario (Buyer / Comercio / Repartidor / Vendedor / OPS / Cross-cutting). Cada item con criticidad 🔴 bloqueante o 🟡 no-bloqueante, formato amigable ("Cómo probarlo" + "Qué deberías ver") para que un colaborador no-técnico lo pueda usar.
 
-- [ ] Costa Susana muestra mensaje de "zona sin cobertura" al intentar pedir
-- [ ] Horarios del comercio se respetan: fuera de horario, no se puede hacer pedido
-- [ ] Ops puede desactivar una zona manualmente por clima en menos de 2 minutos
+- **`prelaunch-checklist.html`** — UI interactiva con branding Moovy. Abrí con doble click desde el explorador de archivos.
 
-### Infraestructura
+**Cómo usarlo**:
 
-- [ ] `devmain.ps1` (modo por defecto, sin flags) deploya sin tocar datos de producción
-- [ ] La app levanta limpia después de reiniciar el servidor (`pm2 restart moovy`)
-- [ ] Los logs tienen suficiente info para debuggear un error real en producción
-- [ ] MP en producción: credenciales reales cargadas + webhook URL configurado
+1. Abrí el HTML. Si es la primera vez, el indicador de "guardado automático" arriba debería estar verde.
+2. Marcá cada item con uno de los 4 estados: ✅ pasa / ❌ falla / ⚠️ parcial / 🚫 bloqueado.
+3. Si algo falla o tenés observación, click "+ Agregar observación" y describí qué pasó.
+4. Cada cierto rato click **💾 Guardar progreso** para descargar un JSON de respaldo (por si localStorage se borra).
+5. Cuando termines (o quieras una pausa), click **📥 Exportar MD** y pegame el archivo. Yo armo el plan de acción priorizado.
+6. Si tu progreso se pierde por algún motivo, click **📂 Cargar progreso** y elegí el último JSON que guardaste.
+
+**Cómo te lo proceso yo**:
+
+Cuando me pegues el MD exportado o me digas "leé el checklist", yo:
+1. Cuento % testeado total y por sección
+2. Listo todos los ❌ y ⚠️ ordenados por criticidad (🔴 primero)
+3. Listo los 🚫 con la razón del bloqueo
+4. Propongo plan de acción priorizado para los próximos sprints
+5. Doy veredicto: listo para lanzar / falta X / no recomendable
 
 ---
 

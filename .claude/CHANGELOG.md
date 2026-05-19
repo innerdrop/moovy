@@ -10,6 +10,55 @@
 
 ---
 
+## 2026-05-19 (rama `chore/actualizar-prompt-5-diario`)
+
+chore(prompt): actualizar PROMPT_5_DIARIO_FINAL a v2
+
+Actualiza el prompt de ejecución diaria pre-launch después de la sesión
+2026-05-17 donde armamos el sistema completo de checklist QA y los
+scripts de cleanup post-deploy.
+
+CAMBIOS:
+
+1. Sacar el "Checklist de pre-lanzamiento" embebido al final del prompt
+   (~30 items obsoletos). Quedó redundante porque ahora tenemos:
+     - PRELAUNCH_CHECKLIST.md  (~180 items, fuente de verdad)
+     - prelaunch-checklist.html  (UI interactiva branded)
+
+2. Agregar sección nueva "Usar el checklist QA" con instrucciones de
+   cómo abrirlo, marcarlo, exportarlo (📥 Exportar MD) y guardar
+   progreso por las dudas (💾 Guardar progreso → .json).
+
+3. Agregar sección nueva "Cleanup post-deploy" documentando los 2
+   scripts idempotentes que hay que correr una vez en el VPS después
+   de devmain.ps1:
+     - scripts/fix-orders-completed-to-delivered.ts
+     - scripts/cleanup-deprecated-feature-flags.ts
+
+4. Modificar el punto 4 del "Orden de trabajo" para que bifurque
+   según si el batch acumulado ya está deployado o no. Antes apuntaba
+   directo al checklist embebido (obsoleto).
+
+5. Agregar nota de versionado (v2 - 2026-05-17) en el header para
+   tracking.
+
+QUE NO SE TOCA:
+- Reglas 1 a 5 (siguen funcionando perfecto)
+- Sección "Cierre de rama (obligatorio)" — el flujo de finish.ps1 +
+  ISSUES.md + CHANGELOG.md + CLAUDE.md no cambió.
+- Sección "Al cierre de cada sesión" — sigue igual.
+
+JUSTIFICACIÓN: el checklist embebido era útil cuando no teníamos el
+sistema robusto, pero ahora un colaborador no-técnico puede usar el
+HTML/MD directamente. Mantener dos checklists redundantes era invitar
+a inconsistencia.
+
+Archivos:
+- docs/prompts-cowork/PROMPT_5_DIARIO_FINAL.md
+- ISSUES.md
+
+**Archivos:** ISSUES.md, MOOVY-Deck-9410.pdf, MOOVY-Deck-Polirrubro-San-Juan.pdf, Propuesta-MOOVY-9410.pdf, Proyeccion-MOOVY-9410.pdf, docs/prompts-cowork/PROMPT_5_DIARIO_FINAL.md, docs/referencias/observaciones_prod.md
+
 ## 2026-05-18 (rama `fix/referral-code-formato-forzado`)
 
 fix(registro): forzar formato MOV-XXXX en código de referido

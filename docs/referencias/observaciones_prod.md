@@ -13,3 +13,5 @@
 # 3 - /repartidor/dashboard
 
 3A - Cuando el repartidor quiere deslizar para confirmar que recogió el pedido, el sistema le pide el pin de 4 digitos. Qué pasa si (por un error de localización de GPS), dice que esta fuera de ranga y no puede colocar el pin? No hay una opcion de solucionarlo con soporte o algo?
+
+# 4 - /comercios
