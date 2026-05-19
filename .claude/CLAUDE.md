@@ -118,8 +118,8 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 - Earn: 10pts/$1.000 (MOOVER), 12.5/$1K (SILVER), 15/$1K (GOLD), 20/$1K (BLACK)
 - Solo se otorgan al pasar a **DELIVERED** (idempotente via `Order.pointsEarned`)
 - 1pt = $1 ARS. Min 500 pts. Max 20% del subtotal
-- Signup mes 1: 1.000 pts. Mes 2+: 500 pts
-- Referral: 1.000 referidor + 500 referido (post-DELIVERED del primer pedido)
+- Signup mes 1: 1.000 pts. Mes 2+: 500 pts. **Pending hasta 1ra compra de $5.000+** (`minPurchaseForBonus` en `src/lib/points.ts`)
+- Referral: 1.000 referidor + 500 referido (post-DELIVERED del primer pedido **con subtotal ≥ $8.000**, `minReferralPurchase`)
 - Boost lanzamiento 30d: ×2
 - Niveles por DELIVERED en 90d: MOOVER (0), SILVER (5), GOLD (15), BLACK (40)
 - Expiración: 6 meses sin pedidos
@@ -361,15 +361,15 @@ Cada decisión debe reducir la probabilidad de al menos una.
 
 ### Otros
 
-| Servicio        | Estado      | Uso                             |
-| --------------- | ----------- | ------------------------------- |
-| SMTP Nodemailer | 🟡          | ~60 templates, sin config prod  |
-| Web Push VAPID  | ✅          | Push buyers/merchants/drivers   |
-| Socket.IO v4    | ✅          | Real-time                       |
-| PostGIS v3.4    | ✅ Docker   | Geolocalización                 |
-| Pino v9         | ✅          | Logging                         |
-| Sharp v0.33     | ✅          | Compresión imágenes             |
-| Redis ioredis   | 🟡 Opcional | Rate limit (fallback in-memory) |
+| Servicio        | Estado      | Uso                                                      |
+| --------------- | ----------- | -------------------------------------------------------- |
+| SMTP Nodemailer | 🟡          | ~60 templates, sin config prod                           |
+| Web Push VAPID  | ✅          | Push buyers/merchants/drivers                            |
+| Socket.IO v4    | ✅          | Real-time                                                |
+| PostGIS v3.4    | ✅ Docker   | Geolocalización                                          |
+| Pino v9         | ✅          | Logging                                                  |
+| Sharp v0.33     | ✅          | Compresión imágenes                                      |
+| Redis ioredis   | 🟡 Opcional | Rate limit (fallback in-memory)                          |
 | Sentry          | ✅          | Error tracking client/server/edge con PII scrubbing AAIP |
 
 ### NPM clave

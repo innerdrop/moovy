@@ -10,6 +10,46 @@
 
 ---
 
+## 2026-05-19 (rama `docs/claude-md-points-thresholds`)
+
+docs(claude): documentar thresholds reales de signup y referral en MOOVER
+
+Cierra un hallazgo de la auditoría legal pre-launch realizada en la rama
+`fix/textos-legales-portales-prelaunch`. Durante la revisión de T&C MOOVER
+se descubrió que CLAUDE.md tenía la regla canónica de signup/referral
+INCOMPLETA — no mencionaba los thresholds reales que SÍ existen en el
+código (`src/lib/points.ts`).
+
+Los thresholds reales son:
+
+  - `minPurchaseForBonus: 5000`   // 1ra compra >= $5K para activar signup
+  - `minReferralPurchase: 8000`   // referido >= $8K para que cuente el bono
+
+Si CLAUDE.md no los menciona, futuras auditorías o sesiones de Claude
+(que solo cargan CLAUDE.md automáticamente) van a asumir que el signup es
+incondicional, lo cual es FALSO. Riesgo de inconsistencias en cambios
+futuros de la fórmula de puntos.
+
+ARCHIVOS:
+
+- .claude/CLAUDE.md  (2 líneas en la sección "Puntos MOOVER")
+
+CAMBIO:
+
+- "Signup mes 1: 1.000 pts. Mes 2+: 500 pts" pasa a aclarar el threshold
+  `minPurchaseForBonus` ($5.000 de 1ra compra).
+- "Referral: 1.000 referidor + 500 referido (post-DELIVERED del primer
+  pedido)" pasa a aclarar el threshold `minReferralPurchase` ($8.000 del
+  subtotal del primer pedido del referido).
+
+VERIFICACIÓN:
+
+- Solo docs, no toca código.
+- No requiere tsc-strict (CLAUDE.md no es TS), pero finish.ps1 lo corre igual.
+- El cambio ya está aplicado por Mauro en su working directory.
+
+**Archivos:** .claude/CLAUDE.md
+
 ## 2026-05-19 (rama `fix/textos-legales-portales-prelaunch`)
 
 fix(legal): declarar % comisiones + tier comercio + niveles MOOVER en T&C portales
