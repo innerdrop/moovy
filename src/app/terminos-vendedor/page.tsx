@@ -20,7 +20,7 @@ export default function TerminosVendedorPage() {
                 </Link>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Términos y Condiciones para Vendedores Marketplace</h1>
-                <p className="text-gray-500 mb-8">Última actualización: Marzo 2026</p>
+                <p className="text-gray-500 mb-8">Última actualización: 19 de mayo de 2026</p>
 
                 <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 space-y-8">
                     {/* 1. Introducción */}
@@ -69,7 +69,7 @@ export default function TerminosVendedorPage() {
                             <li>Contar con CUIT o CUIL vigente y estar inscripto ante AFIP en la categoría correspondiente
                                 (Monotributo o Responsable Inscripto) si realiza ventas de manera habitual</li>
                             <li>Proporcionar información veraz, completa y actualizada en su perfil de vendedor</li>
-                            <li>Aceptar la Política de Privacidad de MOOVY</li>
+                            <li>Aceptar la <Link href="/privacidad" className="text-[#e60012] underline">Política de Privacidad</Link> de MOOVY</li>
                             <li>Mantener actualizados sus datos fiscales y de contacto</li>
                         </ul>
                     </section>
@@ -77,14 +77,24 @@ export default function TerminosVendedorPage() {
                     {/* 4. Comisiones */}
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 mb-4">4. Comisiones y Pagos</h2>
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                            <p className="text-gray-800 font-medium">
+                                💰 <strong>Comisión base: 12% sobre el valor de cada venta</strong> realizada
+                                a través del marketplace. Este porcentaje es el aplicable por defecto y
+                                podrá ser modificado para condiciones especiales que MOOVY informará al
+                                Vendedor por escrito antes de la activación.
+                            </p>
+                        </div>
                         <p className="text-gray-600 mb-4">
-                            MOOVY cobra una comisión porcentual sobre cada venta realizada a través de la plataforma.
-                            El porcentaje de comisión es configurable y será informado al Vendedor antes de su aceptación.
+                            Aclaración importante: el período de bonificación &quot;Mes 1 = 0%&quot; aplicable
+                            a comercios gastronómicos y tiendas físicas <strong>NO aplica al marketplace</strong>.
+                            La comisión del 12% rige desde la primera venta del Vendedor.
                         </p>
                         <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
+                            <li>La comisión se calcula sobre el precio de venta (sin incluir el costo de envío)</li>
                             <li>La comisión se descuenta automáticamente del monto de cada venta</li>
                             <li>El Vendedor recibirá el monto neto (precio de venta menos la comisión de MOOVY)</li>
-                            <li>Los pagos se procesan a través de MercadoPago</li>
+                            <li>Los pagos se procesan a través de MercadoPago al CBU/Alias registrado del Vendedor</li>
                             <li>MOOVY podrá modificar las comisiones con aviso previo de 30 días</li>
                             <li>El Vendedor puede consultar el desglose de comisiones en su panel de ganancias</li>
                         </ul>

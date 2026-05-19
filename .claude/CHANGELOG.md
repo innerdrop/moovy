@@ -10,6 +10,129 @@
 
 ---
 
+## 2026-05-19 (rama `fix/textos-legales-portales-prelaunch`)
+
+fix(legal): declarar % comisiones + tier comercio + niveles MOOVER en T&C portales
+
+Segunda parte de la auditoría legal pre-launch. Cubre los 4 portales que no
+estaban en `fix/textos-legales-prelaunch` (T&C MOOVER, Seller, Comercio,
+Driver). Patrón común detectado en los 4: la comisión real definida en
+CLAUDE.md no estaba declarada con número en el T&C ("será informada antes
+de la aceptación"). Riesgo de reclamo por usuarios que firmaron sin saber
+su tasa.
+
+ARCHIVOS MODIFICADOS:
+
+- src/app/terminos-moover/page.tsx     (puntos)
+- src/app/terminos-vendedor/page.tsx   (seller marketplace)
+- src/app/terminos-comercio/page.tsx   (merchant)
+- src/app/terminos-repartidor/page.tsx (driver)
+
+CAMBIOS por documento:
+
+1. T&C MOOVER (puntos)
+   - Email: somosmoovy@gmail.com -> legal@somosmoovy.com (consistencia branding,
+     el Gmail rompía la familia legal del dominio propio)
+   - Fecha: Enero 2026 -> 19 de mayo de 2026
+   - Agregada tabla de niveles MOOVER / SILVER / GOLD / BLACK con sus
+     multiplicadores (10, 12.5, 15, 20 pts/$1k) y umbrales (0, 5, 15, 40
+     DELIVERED en 90 días). Antes solo declaraba la regla base sin niveles.
+   - Expiración: ahora explícita "6 meses sin actividad" (antes vaga: "según
+     política vigente")
+   - Cláusula nueva: si cancelás un pedido pagado con puntos, los puntos se
+     devuelven automáticamente (reverseOrderPoints)
+   - Link a /privacidad + mención de Ley 25.326 en sección "Información
+     Importante"
+
+2. T&C Seller marketplace
+   - Sección 4 reescrita: banner azul declarando "Comisión base: 12% sobre
+     el valor de cada venta", con aclaración de que se aplica desde la
+     primera venta.
+   - Aclaración nueva: el período "Mes 1 = 0%" de comercios NO aplica al
+     marketplace. Evita reclamo "¿por qué a los comercios sí y a mí no?".
+   - Fecha: Marzo 2026 -> 19 de mayo de 2026
+   - Link a /privacidad en sección 3.1 (requisitos)
+
+3. T&C Comercio
+   - Sección 4 reescrita con 2 banners:
+     a) Banner verde "Mes 1 = 0%": declara explícitamente que durante los
+        primeros 30 días corridos desde la activación, MOOVY no retiene
+        comisión. Hasta ahora la bonificación de bienvenida era un gancho
+        de marketing pero no estaba como derecho contractual.
+     b) Banner azul "Comisión base 8% + tabla de tiers": BRONCE 8%, PLATA 7%,
+        ORO 6%, DIAMANTE 5%. Antes el T&C decía "porcentaje configurable"
+        sin números.
+   - Aviso previo extendido de "modificaciones de comisión" a "modificaciones
+     de comisión o tiers", 30 días.
+   - Sección 3 cierra con link a /privacidad + mención Ley 25.326.
+
+4. T&C Driver (Repartidor)
+   - Sección 6 reescrita con banner verde: "El Repartidor recibe el 80% del
+     costo del viaje. MOOVY retiene el 20% + 5% operativo embebido en la
+     tarifa visible al Comprador (que cubre comisiones MP y costos
+     operativos, NO forma parte del costo del viaje sobre el que se calcula
+     el 80%)". Antes el T&C solo decía "MOOVY retiene un porcentaje
+     configurable". Para drivers es el dato MÁS sensible porque es su
+     ingreso real.
+   - Bullets nuevos: tarifa base + km ajustable por zona/clima, bonus de zona,
+     payout completo + bonus en no-show válido (referencia a sección 10.4),
+     medios de pago (MP o transferencia bancaria), aviso previo 15 días para
+     cambios.
+   - Cierre con link a /privacidad + mención Ley 25.326.
+
+HALLAZGO RELEVANTE (no fixeado en esta rama):
+
+Durante la auditoría descubrí que `signupBonus` y `referralBonus` en
+`src/lib/points.ts` SÍ tienen thresholds reales:
+  - `minPurchaseForBonus: 5000`    (1ra compra para activar el bono signup)
+  - `minReferralPurchase: 8000`    (mín del referido para que el referral cuente)
+
+Esos thresholds están correctamente declarados en T&C MOOVER pero
+**faltaban en CLAUDE.md** (sección "Puntos MOOVER", línea ~121).
+CLAUDE.md no es editable desde la sesión de Claude → Mauro actualiza
+manualmente:
+
+  - Signup mes 1: 1.000 pts. Mes 2+: 500 pts. **Pending hasta 1ra compra
+    de $5.000+** (`minPurchaseForBonus` en `src/lib/points.ts`)
+  - Referral: 1.000 referidor + 500 referido (post-DELIVERED del primer
+    pedido **con subtotal ≥ $8.000**, `minReferralPurchase`)
+
+NO TOCADO (intencionalmente):
+
+- Política de Privacidad: ya tenía privacidad@somosmoovy.com correcto
+- Política de Cookies: queda como está (consultas via legal@ es OK)
+- T&C buyer: ya cerrado en `fix/textos-legales-prelaunch`
+- No se tocó schema, logica de negocio, endpoints, ni código transaccional
+
+PENDIENTES NO-BLOQUEANTES (segunda fase, post-launch):
+
+- Privacidad sección 4: listar terceros nominalmente (Sentry, Hostinger,
+  Google Maps/Places, MercadoPago, SMTP) con país de tratamiento
+- Privacidad sección 8: plazos específicos de retención por tipo de dato
+- Privacidad y T&C: dirección postal del responsable
+- T&C Comercio sección 12 vs panel /publicidad: nomenclatura desalineada
+  (Platino/Destacado/Premium vs VISIBLE/DESTACADO/PREMIUM/LANZAMIENTO).
+  Unificar nombres.
+- T&C Driver sección 10.5: cambiar "etc" en fraudScore por lista exhaustiva
+- T&C Driver: protocolo efectivo escalonado (10/30/60/200 entregas) no
+  documentado
+- T&C Driver: baja voluntaria + confidencialidad post-baja
+- T&C Comercio sección 6: embalaje específico para perecederos
+- T&C MOOVER: declarar boost ×2 de lanzamiento si se aplica
+- Cookies sección 3: declarar Sentry y sacar Google Analytics ambiguo
+- Cookies sección 5: plazos específicos por cookie
+
+VERIFICACIÓN:
+
+- 4 archivos de copy modificados, todos JSX puro sin lógica
+- Sin migrations, sin prisma db push, sin schema
+- No se introdujeron tags JSX nuevos complejos, solo banners y bullets
+- Cuando Mauro corra tsc-strict desde finish.ps1, debería pasar limpio
+- Renderizado visible en local: /terminos-moover /terminos-vendedor
+  /terminos-comercio /terminos-repartidor
+
+**Archivos:** ISSUES.md, src/app/terminos-comercio/page.tsx, src/app/terminos-moover/page.tsx, src/app/terminos-repartidor/page.tsx, src/app/terminos-vendedor/page.tsx
+
 ## 2026-05-19 (rama `fix/textos-legales-prelaunch`)
 
 fix(legal): correcciones pre-launch en T&C buyer + unificación email ARCO

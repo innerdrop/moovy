@@ -14,7 +14,7 @@ export default function TerminosMooverPage() {
                     <Shield className="w-7 h-7" />
                     Términos del Programa MOOVER
                 </h1>
-                <p className="text-white/80 mt-2">Última actualización: Enero 2026</p>
+                <p className="text-white/80 mt-2">Última actualización: 19 de mayo de 2026</p>
             </div>
 
             <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -60,8 +60,17 @@ export default function TerminosMooverPage() {
                     </h2>
                     <div className="space-y-4">
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm text-gray-700">Por cada $1,000 de compra</span>
+                            <span className="text-sm text-gray-700">Por cada $1,000 de compra (nivel MOOVER)</span>
                             <span className="font-bold text-[#e60012]">+10 puntos</span>
+                        </div>
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                            <p className="text-xs text-purple-700 font-semibold mb-1">Niveles MOOVER (acumulan más puntos por compra)</p>
+                            <ul className="text-xs text-purple-600 space-y-1">
+                                <li>• <strong>MOOVER</strong> (default): 10 pts / $1.000</li>
+                                <li>• <strong>SILVER</strong> (5 entregas en 90 días): 12,5 pts / $1.000</li>
+                                <li>• <strong>GOLD</strong> (15 entregas en 90 días): 15 pts / $1.000</li>
+                                <li>• <strong>BLACK</strong> (40 entregas en 90 días): 20 pts / $1.000</li>
+                            </ul>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
                             <div>
@@ -144,11 +153,13 @@ export default function TerminosMooverPage() {
                     </h2>
                     <ul className="space-y-2 text-sm text-amber-700">
                         <li>• Los puntos no tienen valor monetario fuera del programa.</li>
-                        <li>• Los puntos se acreditan cuando el pedido es entregado.</li>
+                        <li>• Los puntos se acreditan cuando el pedido es entregado (DELIVERED).</li>
+                        <li>• Si cancelás un pedido pagado con puntos, los puntos se devuelven automáticamente.</li>
                         <li>• El contador de "puntos del mes" por referidos se reinicia el 1° de cada mes.</li>
-                        <li>• Moovy se reserva el derecho de modificar estos términos.</li>
+                        <li>• <strong>Los puntos vencen a los 6 meses sin actividad</strong> en la cuenta (sin nuevos pedidos).</li>
+                        <li>• Moovy se reserva el derecho de modificar estos términos con aviso previo.</li>
                         <li>• El uso fraudulento resultará en la cancelación de la cuenta.</li>
-                        <li>• Los puntos pueden tener fecha de vencimiento según política vigente.</li>
+                        <li>• El tratamiento de tu balance de puntos se rige por nuestra <a href="/privacidad" className="underline font-medium">Política de Privacidad</a> y la Ley 25.326.</li>
                     </ul>
                 </section>
 
@@ -156,8 +167,8 @@ export default function TerminosMooverPage() {
                 <section className="text-center py-6">
                     <p className="text-sm text-gray-500">
                         ¿Tenés dudas? Escribinos a{" "}
-                        <a href="mailto:somosmoovy@gmail.com" className="text-[#e60012] hover:underline">
-                            somosmoovy@gmail.com
+                        <a href="mailto:legal@somosmoovy.com" className="text-[#e60012] hover:underline">
+                            legal@somosmoovy.com
                         </a>
                     </p>
                 </section>

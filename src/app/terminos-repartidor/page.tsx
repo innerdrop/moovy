@@ -157,19 +157,36 @@ export default function TerminosRepartidorPage() {
                     {/* 6. Comisiones (era 5 antes de feat/rto-no-obligatorio-driver) */}
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 mb-4">6. Comisiones y Pagos</h2>
-                        <p className="text-gray-600 mb-4">
-                            MOOVY retiene un porcentaje de cada entrega realizada en concepto de gestión de la plataforma.
-                        </p>
+
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                            <p className="text-gray-800 font-medium mb-2">
+                                💰 <strong>El Repartidor recibe el 80% del costo del viaje</strong> por
+                                cada entrega completada con éxito (validación de PIN doble y geofence
+                                cumplidos).
+                            </p>
+                            <p className="text-gray-700 text-sm">
+                                MOOVY retiene el 20% restante en concepto de gestión de la plataforma.
+                                Adicionalmente, la tarifa visible al Comprador incluye un 5% operativo
+                                embebido (que cubre comisiones de procesamiento de pago y otros costos
+                                operativos), que NO forma parte del costo del viaje sobre el que se
+                                calcula el 80% del Repartidor.
+                            </p>
+                        </div>
+
                         <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
-                            <li>La tarifa de entrega se compone de una tarifa base más un monto por kilómetro recorrido</li>
-                            <li>MOOVY retiene un porcentaje configurable sobre cada tarifa de entrega</li>
-                            <li>El Repartidor recibe el monto neto después de la retención de MOOVY</li>
-                            <li>Los pagos se procesan a través de los medios habilitados por la plataforma</li>
-                            <li>El Repartidor puede consultar el desglose de sus ganancias en el panel de la app</li>
+                            <li>La tarifa de entrega se compone de una tarifa base por vehículo más un monto por kilómetro recorrido, ajustable por zona y clima según la configuración vigente publicada en la app</li>
+                            <li>Las zonas operativas pueden incluir bonus adicionales para el Repartidor según su categoría (información actualizada en el panel del Repartidor)</li>
+                            <li>Las devoluciones por no-show válidas otorgan al Repartidor su payout completo más un bonus compensatorio (ver Sección 10.4)</li>
+                            <li>Los pagos se procesan a través de los medios habilitados por la plataforma (MercadoPago o transferencia bancaria al CBU/Alias registrado)</li>
+                            <li>El Repartidor puede consultar el desglose detallado de cada viaje y sus ganancias acumuladas en el panel de la app</li>
+                            <li>MOOVY podrá modificar las tarifas, comisiones, bonus de zona o el bonus por no-show con aviso previo de 15 días</li>
                         </ul>
                         <p className="text-gray-600">
                             El Repartidor es el único responsable de cumplir con sus obligaciones tributarias y
-                            previsionales derivadas de los ingresos percibidos a través de MOOVY.
+                            previsionales derivadas de los ingresos percibidos a través de MOOVY. El tratamiento
+                            de sus datos personales y de los datos operativos del servicio se rige por la{" "}
+                            <Link href="/privacidad" className="text-[#e60012] underline">Política de Privacidad</Link>
+                            {" "}de MOOVY (Ley 25.326).
                         </p>
                     </section>
 

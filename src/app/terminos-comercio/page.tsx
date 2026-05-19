@@ -83,26 +83,59 @@ export default function TerminosComercioPage() {
                         </ul>
 
                         <h3 className="font-semibold text-gray-800 mt-4 mb-2">3.3 Requisitos Operativos</h3>
-                        <ul className="list-disc list-inside space-y-1 text-gray-600">
+                        <ul className="list-disc list-inside space-y-1 text-gray-600 mb-4">
                             <li>Dispositivo con acceso a internet para gestionar pedidos en tiempo real</li>
                             <li>Capacidad operativa para responder a pedidos dentro del tiempo de confirmación configurado</li>
                             <li>Persona responsable disponible durante el horario de operación declarado</li>
                         </ul>
+                        <p className="text-gray-600 text-sm">
+                            Adicionalmente, el Comercio acepta la{" "}
+                            <Link href="/privacidad" className="text-[#e60012] underline">Política de Privacidad</Link>
+                            {" "}de MOOVY, que regula el tratamiento de los datos personales del titular y del personal
+                            del Comercio conforme a la Ley 25.326.
+                        </p>
                     </section>
 
                     {/* 4. Comisiones */}
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 mb-4">4. Comisiones, Tarifas y Pagos</h2>
-                        <p className="text-gray-600 mb-4">
-                            MOOVY cobra una comisión porcentual sobre cada venta realizada a través de la plataforma.
-                        </p>
+
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                            <p className="text-gray-800 font-medium mb-2">
+                                🎁 <strong>Mes 1 = 0%:</strong> durante los primeros 30 días corridos
+                                desde la activación del Comercio en la plataforma, MOOVY no retiene
+                                comisión alguna. Esta bonificación de bienvenida es por única vez
+                                y no se renueva.
+                            </p>
+                            <p className="text-gray-700 text-sm">
+                                A partir del día 31, aplica la comisión base sobre cada venta.
+                            </p>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                            <p className="text-gray-800 font-medium mb-3">
+                                💰 <strong>Comisión base: 8% sobre el subtotal de cada venta</strong>
+                                {" "}(sin incluir el costo de envío). La tasa puede reducirse según el
+                                nivel de tier alcanzado por el Comercio:
+                            </p>
+                            <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                <li><strong>BRONCE</strong> (default): 8%</li>
+                                <li><strong>PLATA</strong>: 7%</li>
+                                <li><strong>ORO</strong>: 6%</li>
+                                <li><strong>DIAMANTE</strong>: 5%</li>
+                            </ul>
+                            <p className="text-xs text-gray-600 mt-2">
+                                Los criterios para subir de nivel se basan en volumen de ventas
+                                y calificaciones de compradores. El nivel actual del Comercio
+                                es visible en su panel de administración.
+                            </p>
+                        </div>
+
                         <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
-                            <li>El porcentaje de comisión será informado al Comercio antes de su aceptación de estos Términos</li>
-                            <li>La comisión se calcula sobre el precio de venta de los productos (sin incluir el costo de envío)</li>
                             <li>La comisión se descuenta automáticamente al momento de liquidar al Comercio</li>
-                            <li>MOOVY podrá ofrecer planes de publicación y posicionamiento con tarifas adicionales</li>
+                            <li>MOOVY podrá ofrecer planes de publicación y posicionamiento con tarifas adicionales (ver Sección 12)</li>
                             <li>Los pagos se procesan a través de MercadoPago al CBU/Alias registrado del Comercio</li>
-                            <li>MOOVY podrá modificar las comisiones con aviso previo de 30 días</li>
+                            <li>MOOVY podrá modificar las comisiones o tiers con aviso previo de 30 días</li>
                         </ul>
                         <p className="text-gray-600">
                             El Comercio es responsable de cumplir con todas sus obligaciones tributarias y fiscales,
