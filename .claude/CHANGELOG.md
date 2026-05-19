@@ -10,6 +10,114 @@
 
 ---
 
+## 2026-05-19 (rama `chore/checklist-por-etapas`)
+
+chore(checklist): rediseño completo por etapas acumulativas
+
+Cambio de modelo mental del QA pre-launch: en lugar de organizar los
+~283 items por viaje de usuario (Buyer / Comercio / Driver / etc.) los
+organizamos en 13 etapas cronológicas acumulativas. El output de cada
+etapa es el input de la siguiente — no se descarta data hasta el final.
+
+PROBLEMA QUE RESUELVE:
+
+Mauro venía con la queja recurrente de que el checklist viejo lo obligaba
+a recrear estados que ya tenía. Ejemplo concreto: el item 3 era "crear
+una cuenta" y el item 7 era "eliminar la cuenta que creaste" — para
+hacer el item 7 tenía que volver a crear OTRA cuenta (porque la del
+item 3 ya no existía cuando lo intentaba). Lo mismo pasaba en muchos
+flujos cuando se mezclaban happy path con destructivos en la misma
+sección. Resultado: el QA se sentía como retrabajo constante.
+
+CÓMO LO RESUELVE:
+
+13 etapas que se construyen una sobre la otra. Cada etapa declara dos
+cosas:
+
+  - 🎯 Objetivo: qué se prueba en esta etapa
+  - 📋 Estado esperado al terminar: qué queda en la DB después
+    (que es lo que la siguiente etapa va a usar)
+
+Los destructivos (self-delete, hard-delete, suspensión) van TODOS al
+final en la Etapa 13. Mientras tanto los datos están vivos y son
+reutilizables.
+
+LAS 13 ETAPAS:
+
+  1. Preparación + smoke test       (~15-20 min, 15 items)
+  2. Onboarding de los 4 actores    (~60-75 min, 30 items)
+  3. Aprobaciones OPS               (~30-45 min, 20 items)
+  4. Catálogo y stock               (~30-45 min, 32 items)
+  5. Compra happy path E2E          (~60-90 min, 39 items)
+  6. Variaciones del flujo          (~45-60 min, 19 items)
+  7. Edge cases de pago MP          (~45-60 min, 15 items)
+  8. Edge cases PIN y entrega       (~45-60 min, 7 items)
+  9. Disputas y reclamos            (~30-45 min, 1 item)
+  10. Panel OPS completo            (~60-75 min, 29 items)
+  11. Cross-cutting                 (~60-90 min, 50 items)
+  12. Polish UX y soporte           (~60-90 min, 12 items)
+  13. Destructivos finales          (~15-30 min, 6 items)
+
+Total: ~283 items en 46 sub-etapas, 8-12 horas distribuidas en 2-3 días.
+
+ARCHIVOS MODIFICADOS:
+
+- prelaunch-checklist.html (reescrito completo, 1783 líneas)
+
+CAMBIOS:
+
+- Nueva estructura `STAGES[]` con `id`, `icon`, `title`, `time`,
+  `objective`, `expectedState`, `substages[]`. Cada sub-etapa con
+  `id`, `title`, `items[]`. Items con `c/t/how/expect` (mismos campos
+  que antes, wording intacto).
+- Nuevo UI: stage navigation tabs horizontales scrolleables arriba.
+  Stage hero con badges (número etapa / tiempo) + cards (Objetivo en
+  violeta / Estado esperado en verde) + side panel con progreso por
+  etapa + botones "← Etapa N / Etapa N+1 →".
+- Sub-etapas renderizadas como acordeones colapsables con su propio
+  contador y barra de progreso.
+- Toggle "Por etapa" / "Por viaje" arriba de los filtros — la vista
+  "Por viaje" agrupa por etapa+sub-etapa pero muestra TODO al mismo
+  tiempo (útil para audit global).
+- IDs de items nuevos: `s{stageId}-{substageId}-{ii}` en vez de
+  `{sectionId}-{ssi}-{ii}` del v1. Storage key cambió de
+  `moovy-prelaunch-checklist-v1` a `v2`.
+- Persistencia de `currentView`, `activeStageId` y `expandedSubs` en
+  localStorage para que el usuario vuelva donde dejó.
+- Export MD por etapas: genera markdown con la estructura nueva
+  (Etapa / sub-etapa / items con sus estados + observaciones).
+- Load/Save JSON v2 schema con migración al cargar.
+- Mantiene 100% del wording, criticidad 🔴/🟡, y campos how/expect
+  de los items existentes — no se reescribió ningún texto, solo se
+  reorganizaron.
+
+BREAKING CHANGE:
+
+El progreso del checklist viejo (`moovy-prelaunch-checklist-v1` en
+localStorage) NO se importa automáticamente al v2 porque los IDs de
+los items cambiaron. Si tenías progreso valioso, exportá el MD del
+viejo HTML antes de abrir el nuevo (o aceptás empezar de cero).
+
+FUERA DE SCOPE (rama futura):
+
+- Reescribir `PRELAUNCH_CHECKLIST.md` con la nueva estructura por
+  etapas. El MD actual sigue siendo funcional como referencia textual
+  pero no refleja la nueva organización. Queda como tarea para una
+  rama dedicada `docs/prelaunch-md-por-etapas`.
+
+VERIFICACIÓN MANUAL:
+
+- Abrir el HTML con doble-click desde el explorador
+- Verificar: navigation tabs aparecen, stage hero se renderiza, 13
+  etapas presentes, sub-etapas se expanden, items renderizan con sus
+  state buttons, save/load/export funcionan, toggle vista funciona,
+  theme oscuro/claro funciona.
+- Si tenías progreso del viejo: vas a ver el HTML nuevo en estado
+  pristino (cero items marcados). Esperable. Exportar MD del viejo
+  antes de la upgrade es opcional pero recomendado.
+
+**Archivos:** ISSUES.md, prelaunch-checklist.html
+
 ## 2026-05-19 (rama `docs/claude-md-points-thresholds`)
 
 docs(claude): documentar thresholds reales de signup y referral en MOOVER
