@@ -33,13 +33,20 @@ export default function TerminosPage() {
         </div>
       </div>
 
-      {/* Disclaimer Banner */}
-      <div className="bg-amber-50 border-l-4 border-amber-400">
+      {/* Info Banner */}
+      <div className="bg-blue-50 border-l-4 border-blue-400">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-sm text-amber-800">
-            <strong>⚠️ Nota Legal:</strong> Este documento es un borrador.
-            Versión final sujeta a revisión legal por asesor jurídico
-            certificado en Argentina.
+          <p className="text-sm text-blue-800">
+            <strong>ℹ️ Importante:</strong> Al usar MOOVY aceptás estos
+            Términos y Condiciones. Si tenés dudas sobre alguna cláusula,
+            escribinos a{" "}
+            <a
+              href="mailto:legal@somosmoovy.com"
+              className="underline font-medium"
+            >
+              legal@somosmoovy.com
+            </a>{" "}
+            antes de operar en la plataforma.
           </p>
         </div>
       </div>
@@ -238,7 +245,7 @@ export default function TerminosPage() {
                   <ul className="list-circle list-inside ml-4 mt-2 space-y-1">
                     <li>Documentación: DNI vigente, licencia, RTO, seguro</li>
                     <li>Vehículo en buen estado mecánico</li>
-                    <li>Manejo seguro e irresponsabilidad en la ruta</li>
+                    <li>Manejo seguro y responsabilidad en la ruta</li>
                     <li>Póliza de seguro (no obligatoria pero recomendada)</li>
                   </ul>
                 </li>
@@ -285,7 +292,11 @@ export default function TerminosPage() {
                 <li>
                   Repartidores: <strong>20%</strong> del delivery fee
                 </li>
-                <li>Puntos MOOVER: Podés usar hasta 50% de descuento</li>
+                <li>
+                  Puntos MOOVER: podés canjearlos por descuento, hasta un{" "}
+                  <strong>20%</strong> del subtotal del pedido (mínimo de
+                  canje 500 puntos)
+                </li>
               </ul>
 
               <p>
@@ -495,7 +506,8 @@ export default function TerminosPage() {
               <p>
                 <strong>Derechos ARCO:</strong> Tenés derecho a Acceso,
                 Rectificación, Cancelación u Oposición de tus datos. Escribí a{" "}
-                <strong>legal@somosmoovy.com</strong> con tu solicitud.
+                <strong>privacidad@somosmoovy.com</strong> con tu solicitud
+                o ejercé estos derechos desde &quot;Mi Perfil&quot; en la plataforma.
               </p>
 
               <p>
@@ -702,12 +714,21 @@ export default function TerminosPage() {
                   </a>
                 </p>
                 <p>
-                  <strong>Email (Legal/ARCO):</strong>{" "}
+                  <strong>Email (Legal / Contratos):</strong>{" "}
                   <a
                     href="mailto:legal@somosmoovy.com"
                     className="text-red-600 hover:underline"
                   >
                     legal@somosmoovy.com
+                  </a>
+                </p>
+                <p>
+                  <strong>Email (Privacidad / ARCO):</strong>{" "}
+                  <a
+                    href="mailto:privacidad@somosmoovy.com"
+                    className="text-red-600 hover:underline"
+                  >
+                    privacidad@somosmoovy.com
                   </a>
                 </p>
                 <p>
@@ -751,7 +772,7 @@ export default function TerminosPage() {
               Política de Privacidad
             </Link>
             <Link
-              href="/politica-cookies"
+              href="/cookies"
               className="text-red-600 hover:text-red-700 hover:underline"
             >
               Política de Cookies

@@ -10,6 +10,76 @@
 
 ---
 
+## 2026-05-19 (rama `fix/textos-legales-prelaunch`)
+
+fix(legal): correcciones pre-launch en T&C buyer + unificación email ARCO
+
+Pasada de auditoría legal pre-launch sobre los documentos públicos. Resumen
+ejecutivo de Política de Privacidad, T&C buyer y Política de Cookies → T&C
+buyer presentaba 4 bloqueantes 🔴 + 1 inconsistencia con código.
+
+CAMBIOS en src/app/terminos/page.tsx:
+
+1. Banner amarillo "Este documento es un borrador. Versión final sujeta a
+   revisión legal..." → banner azul informativo con CTA a legal@somosmoovy.com.
+   Un T&C autodeclarado como borrador pierde validez ante reclamo.
+
+2. Sección 5 (Compras y Pagos) "Puntos MOOVER: hasta 50% de descuento" →
+   20% del subtotal con mínimo 500 pts explícito. Contradecía la regla
+   canónica de PointsConfig en CLAUDE.md ("max 20%, min 500"). Un cliente
+   reclamando el 50% por escrito habría sido amparable.
+
+3. Sección 4 (Repartidores) typo grave "Manejo seguro e irresponsabilidad
+   en la ruta" → "Manejo seguro y responsabilidad en la ruta". Literalmente
+   Moovy declaraba que el driver tiene irresponsabilidad.
+
+4. Footer link "/politica-cookies" (404) → "/cookies". El archivo real vive
+   en src/app/cookies/page.tsx. Documento legal obligatorio inaccesible es
+   un riesgo de denuncia AAIP.
+
+5. Email ARCO unificado entre T&C y Política de Privacidad:
+   - privacidad@somosmoovy.com → todo Ley 25.326 (ARCO, datos personales)
+   - legal@somosmoovy.com → contratos, T&C, consultas legales generales
+   - reclamos@somosmoovy.com → disputas con pedidos (sin cambios)
+
+   Sección 9 (Datos Personales) ahora apunta a privacidad@. Sección 14
+   (Contacto) muestra los dos emails con etiquetas "Email (Legal / Contratos)"
+   y "Email (Privacidad / ARCO)" para evitar ambigüedad.
+
+NO SE TOCÓ:
+
+- Política de Privacidad: ya tenía privacidad@ correcto
+- Política de Cookies: queda con legal@ para consultas generales (correcto)
+- Schema, lógica, endpoints, componentes interactivos: nada cambió, todo
+  edición de copy + 1 link.
+
+PENDIENTES NO-BLOQUEANTES (para rama dedicada post-launch):
+
+- Privacidad sección 4: listar terceros nominalmente (Sentry, Hostinger,
+  Google Maps/Places, MercadoPago, SMTP) con país de tratamiento para
+  transferencia internacional AAIP
+- Privacidad sección 8: plazos específicos de retención por tipo de dato
+- Privacidad sección 11 + T&C sección 14: agregar dirección postal del
+  responsable (calle, número, CP, CUIT, razón social) para ejercer ARCO
+  por correo certificado
+- T&C sección 5: aclarar Mes 1 = 0% comercios + driver "80% del costo del
+  viaje" (no "20% del delivery fee")
+- T&C sección 6: radio de delivery "5 km" → "según zona PostGIS"
+- T&C sección 8: verificar registro INPI antes de declarar marca
+- T&C sección 4 vs T&C drivers: alinear "seguro no obligatorio" con doc
+  obligatorio del driver
+- Cookies sección 3: declarar Sentry, sacar Google Analytics ambiguo
+- Cookies sección 5: plazos específicos por cookie
+
+VERIFICACIÓN:
+
+- npx tsc --noEmit --skipLibCheck → limpio (confirmado por Mauro)
+- Sin migrations, sin prisma db push
+- 1 archivo de código modificado, ~30 líneas
+- Renderizado /terminos verificable en local
+
+**Archivos:** ISSUES.md, MOOVY-Deck-Generico.pdf, src/app/terminos/page.tsx
+
 ## 2026-05-19 (rama `chore/actualizar-prompt-5-diario`)
 
 chore(prompt): actualizar PROMPT_5_DIARIO_FINAL a v2
