@@ -815,6 +815,19 @@
                         { c: 1, t: 'El botón Marketplace está siempre visible', how: 'Mirá el menú de abajo en cualquier pantalla del comprador.', expect: 'El icono de Marketplace (tienda) está SIEMPRE visible. NO se puede ocultar desde OPS.' },
                     ]
                 },
+                {
+                    id: '4e', title: 'Programa MOOVER (visión general)',
+                    items: [
+                        { c: 1, t: 'La pantalla /puntos muestra los 4 niveles MOOVER/SILVER/GOLD/BLACK', how: 'Como buyer logueado, andá a /puntos o tocá el orbe MOOVER del menú inferior. Buscá una sección que muestre los 4 niveles del programa.', expect: 'Ves los 4 niveles claramente (MOOVER, SILVER, GOLD, BLACK) con sus multiplicadores correspondientes (10, 12.5, 15, 20 pts por cada $1.000) y los requisitos de cada uno (0, 5, 15, 40 pedidos DELIVERED en 90 días).' },
+                        { c: 1, t: 'Tu nivel actual se ve destacado en la pantalla', how: 'En /puntos, buscá cuál es TU nivel actual (debería ser MOOVER si recién creaste cuenta).', expect: 'Tu nivel actual aparece destacado visualmente (badge, color, "TU NIVEL", etc.). NO tenés que adivinar cuál sos.' },
+                        { c: 0, t: 'Card de "próximo nivel" muestra cuántas entregas te faltan', how: 'En /puntos, mirá si hay un widget tipo "Te faltan X entregas para llegar a SILVER".', expect: 'Aparece un cartel motivador con el progreso al próximo nivel y cuántas entregas faltan. Si no está implementado, marca 🚫 bloqueado.' },
+                        { c: 0, t: 'Historial de transacciones de puntos visible', how: 'En /puntos, buscá un botón tipo "Ver historial" o una pestaña con tus movimientos.', expect: 'Ves la lista de tus últimas transacciones de puntos: cuándo ganaste, cuándo gastaste, con qué pedido. Si no está implementado, marca 🚫.' },
+                        { c: 0, t: 'Regalar puntos a otro usuario (sistema de gift)', how: 'En /puntos, buscá una opción "Regalar puntos". Probá enviar 100 pts a otro buyer registrado.', expect: 'Según los T&C MOOVER: mínimo 100 pts por regalo, máximo 50% de tu balance, irreversible. Si no está implementado en la UI todavía, marca 🚫 bloqueado por feature pendiente.' },
+                        { c: 0, t: 'Boost ×2 del mes de lanzamiento (si está aplicado)', how: 'Hacé un pedido de $1.000. Verificá cuántos puntos ganás.', expect: 'Si el boost de lanzamiento está activo: ganás 20 pts (10 base × 2). Si no está activo: ganás 10 pts (sin boost). Cualquiera de las dos es válida — verificá que sea consistente con la decisión de negocio actual.' },
+                        { c: 1, t: 'Cómo se ganan los puntos está explicado en la app', how: 'En /puntos, buscá una sección "¿Cómo gano puntos?" o similar.', expect: 'Aparece explicación clara de los modos de ganar: por pedido entregado (X pts/$1.000), por referido (1.000 pts cuando tu amigo compra $8.000+), por signup (1.000 pts pendientes hasta 1ra compra de $5.000+).' },
+                        { c: 0, t: 'Equivalencia 1pt = $1 visible al usar puntos', how: 'En el checkout cuando vas a usar puntos, mirá si te muestra el equivalente en pesos.', expect: 'Ves claramente "Usás 500 pts = $500 de descuento". El usuario no tiene que calcular mentalmente.' },
+                    ]
+                },
             ]
         },
         {
@@ -898,6 +911,8 @@
                         { c: 1, t: 'El saldo nunca queda negativo', how: 'Intentá usar más puntos de los que tenés en el checkout, o hacé acciones rápidas concurrentes.', expect: 'El sistema NO permite que el saldo baje de 0. Si pasa algo raro, te muestra un error claro.' },
                         { c: 1, t: 'Propinas declaradas aparecen separadas en ganancias driver', how: 'Mirá la pantalla de ganancias del driver después de pedidos donde el cliente declaró propina.', expect: 'Las propinas aparecen en una sección aparte (NO sumadas a tus ganancias). El sistema avisa: "Estas propinas no las procesa Moovy, las recibís directo del cliente".' },
                         { c: 0, t: 'Aviso si no cargaste alias bancario para recibir propinas', how: 'Como driver sin alias cargado, andá a ganancias.', expect: 'Aparece un cartel amarillo recordándote que cargues tu alias en tu perfil para que los compradores puedan dejarte propina por transferencia.' },
+                        { c: 0, t: 'Email de confirmación con los puntos MOOVER ganados', how: 'Después de que un pedido pasa a DELIVERED, esperá unos minutos y revisá tu casilla de email.', expect: 'Llega un email tipo "Ganaste X puntos MOOVER por tu pedido". Si no llega o llega sin la info de puntos, marcá observación.' },
+                        { c: 0, t: 'In-app: cartel que confirma los puntos ganados', how: 'Justo después del DELIVERED y antes/después del modal de calificación, mirá si aparece algún cartel/toast con los puntos ganados.', expect: 'Ves un mensaje tipo "+25 puntos MOOVER agregados a tu cuenta" para que el usuario vea el incentivo inmediato. Si no aparece, es 🟡 — recordatorio visible es importante para retención.' },
                     ]
                 },
                 {
@@ -1180,6 +1195,9 @@
                         { c: 1, t: 'Welcome email al registrarse (por cada rol)', how: 'Creá una cuenta nueva como buyer, otra como comercio, otra como driver y otra como seller.', expect: 'Cada uno recibe su email de bienvenida específico: BuyerWelcome / MerchantWelcome / DriverWelcome / SellerWelcome.' },
                         { c: 1, t: 'OPS recibe email cuando un comentario queda en moderación', how: 'Como buyer, dejá una reseña con una palabra prohibida (palabrota, ofensa).', expect: 'El comentario queda en moderación. El equipo Moovy recibe un email avisando para revisar.' },
                         { c: 0, t: 'Push de recordatorio si no calificaste un pedido entregado', how: 'Esperá 24h después de un pedido entregado sin calificar.', expect: 'Te llega un push amable "¿Qué tal estuvo tu pedido del [fecha]?". Si ya calificaste, no llega.' },
+                        { c: 0, t: 'Push notification cuando ganás puntos MOOVER', how: 'Tras un pedido DELIVERED, mirá si te llega push al celular con info de los puntos ganados.', expect: 'Llega push tipo "¡Sumaste 25 puntos MOOVER!" en pocos minutos post-entrega. Refuerza el comportamiento de compra.' },
+                        { c: 0, t: 'Notificación cuando subiste de nivel MOOVER', how: 'Cuando un buyer completa la entrega N° 5 en 90 días (pasa a SILVER), N° 15 (GOLD) o N° 40 (BLACK), debería llegarle una notificación.', expect: 'Push + email + cartel in-app celebrando el cambio de nivel: "¡Subiste a SILVER! Ahora ganás 12,5 puntos por cada $1.000". Si no llega, es 🟡 — perdemos uno de los momentos más motivadores del programa.' },
+                        { c: 0, t: 'Email mensual con resumen de actividad MOOVER (opcional)', how: 'Si está implementado el digest mensual del programa de puntos, esperá hasta el primer día del mes siguiente.', expect: 'Email con resumen del mes: cuántos puntos ganaste, cuánto descuento usaste, tu nivel actual, próximo nivel. Si no está implementado, 🚫 bloqueado.' },
                     ]
                 },
             ]

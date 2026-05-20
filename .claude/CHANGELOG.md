@@ -10,6 +10,120 @@
 
 ---
 
+## 2026-05-20 (rama `chore/checklist-moover-completo`)
+
+chore(checklist): cobertura completa del programa MOOVER (13 items nuevos)
+
+Mauro reportó durante el QA pre-launch que no encontraba items
+específicos del programa de puntos MOOVER en el checklist. Una
+inspección mostró que SÍ había cobertura — 12 items — pero distribuida
+en 8 sub-etapas distintas, lo que hace imposible hacer una "pasada
+MOOVER" centralizada. Esta rama agrega 13 items nuevos sin tocar
+ninguno de los existentes, preservando 100% del progreso QA actual
+del usuario.
+
+ENFOQUE NO-DESTRUCTIVO
+
+Los IDs de los items en el checklist HTML son de la forma
+`s{stageId}-{substageId}-{ii}`. El progreso se guarda en localStorage
+con esos IDs como llave. Para preservar el progreso de Mauro durante
+el QA, esta rama NO mueve ni renumera ningún item existente — solo
+agrega items nuevos al final de sub-etapas existentes o crea una
+sub-etapa nueva.
+
+ARCHIVOS
+
+- prelaunch-checklist.html (data array + cero cambio de IDs existentes)
+
+CAMBIOS
+
+1. NUEVA SUB-ETAPA 4e: PROGRAMA MOOVER (VISIÓN GENERAL)
+
+Agregada al final de la Etapa 4 (Catálogo y stock), después de 4d.
+Centraliza los tests "estáticos" del programa MOOVER que se pueden
+hacer de una sentada sin necesidad de generar pedidos:
+
+  - Tabla de niveles MOOVER/SILVER/GOLD/BLACK con sus multiplicadores
+    (10, 12.5, 15, 20 pts por cada $1.000)
+  - Tu nivel actual destacado visualmente en la pantalla
+  - Card "próximo nivel" con progreso (cuántas entregas faltan)
+  - Historial de transacciones de puntos visible
+  - Regalar puntos a otro usuario (sistema de gift según T&C MOOVER:
+    mínimo 100 pts, máximo 50% del balance, irreversible)
+  - Boost ×2 del mes de lanzamiento (verificación de aplicación)
+  - Sección "¿Cómo gano puntos?" explicada en la app
+  - Equivalencia 1pt = $1 visible al usar puntos en checkout
+
+Total: 8 items nuevos en 4e.
+
+2. ITEMS ADICIONALES EN 5f (POST-ENTREGA)
+
+Agregados al final de la sub-etapa existente, después de "Aviso si no
+cargaste alias bancario":
+
+  - Email de confirmación con los puntos MOOVER ganados al DELIVERED
+  - Cartel in-app/toast confirmando puntos ganados inmediatamente
+
+Total: 2 items nuevos en 5f.
+
+3. ITEMS ADICIONALES EN 11f (COMUNICACIONES)
+
+Agregados al final de la sub-etapa existente, después de "Push de
+recordatorio si no calificaste":
+
+  - Push notification cuando ganás puntos MOOVER
+  - Notificación cuando subís de nivel MOOVER (push + email + cartel)
+  - Email mensual con resumen de actividad MOOVER (digest opcional)
+
+Total: 3 items nuevos en 11f.
+
+GRAN TOTAL: 13 items nuevos.
+
+LO QUE NO SE TOCÓ
+
+Los 12 items MOOVER existentes mantienen su ubicación y sus IDs
+estables:
+
+  - 2a: "Bonus de signup pending hasta 1ra compra de $5.000+"
+  - 4d: "El botón MOOVER está siempre visible"
+  - 4d: "Pantalla de puntos muestra tu saldo"
+  - 5a: "Usar puntos MOOVER para descuento (máx 20%, mín 500 pts)"
+  - 5f: "Ganás puntos cuando el pedido se marca como entregado"
+  - 5f: "Los puntos no se duplican si se entrega dos veces"
+  - 5f: "Subir de nivel automáticamente al hacer pedidos"
+  - 5f: "El saldo nunca queda negativo"
+  - 6d: "Bonus de referidos al completar el primer pedido (≥ $8.000)"
+  - 9a: "Cancelar un pedido devuelve los puntos usados y reversa los ganados"
+  - 10c: "Configuración de puntos editable"
+  - 11c: "Los puntos se vencen a los 6 meses sin actividad"
+
+Los IDs en localStorage del checklist actual NO cambian. Todo el
+progreso QA marcado por Mauro hasta el momento se preserva al abrir
+el HTML actualizado.
+
+PENDIENTE FUTURO (post-launch)
+
+Consolidar todos los items MOOVER (existentes + nuevos) en una sola
+sub-etapa unificada cuando ya no haya QA activo en curso. Eso
+requeriría cambiar IDs y por lo tanto perder progreso — no es
+aceptable mientras Mauro está en plena pasada de QA. La estructura
+actual tiene 25 items MOOVER total (12 dispersos + 13 nuevos
+agrupados): suficiente para cobertura, no óptimo para organización.
+
+VERIFICACIÓN
+
+- Sin TypeScript modificado (solo HTML estático)
+- Sin schema, sin endpoints, sin lógica de negocio tocada
+- 1 archivo modificado, ~13 líneas data agregadas
+- Cuando Mauro abra el HTML actualizado debería ver: progreso previo
+  intacto + nueva sub-etapa 4e en la lista de tabs de la Etapa 4 +
+  2 items nuevos al final de 5f + 3 items nuevos al final de 11f.
+- Si por algún motivo se pierde progreso (improbable): Mauro tiene
+  el backup JSON que se descargó antes de esta rama, y puede
+  cargarlo con el botón 📂 del checklist.
+
+**Archivos:** ISSUES.md, prelaunch-checklist.html
+
 ## 2026-05-19 (rama `feat/landing-headline-tienda`)
 
 feat(home): banner de propuesta de valor para visitantes no logueados
