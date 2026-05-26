@@ -10,6 +10,113 @@
 
 ---
 
+## 2026-05-26 (rama `feat/home-hero-condicional-sin-trust-strip`)
+
+feat(home): rebalance del primer fold — sin trust strip, greeting condicional
+
+Detectado durante QA pre-launch: el HeroValueProposition que agregamos
+para visitantes no logueados generaba dos problemas concretos:
+
+(1) DOBLE-HERO: HeroValueProposition + HomeHero contextual ("¿Qué
+    desayunamos?") quedaban CONSECUTIVOS en rojo, empujando la
+    sección "Abiertos ahora" al tercer fold.
+
+(2) DOBLE-ROJO percibido: el gradient del banner (#a3000c → #c2000f →
+    #e60012) chocaba con el rojo plano del HomeHero (#e60012) al
+    transicionar, generando sensación de "dos paletas distintas"
+    aunque el color base era el mismo.
+
+El consejo (UX + PRODUCTO + MARKETING + PSICOLOGÍA-USHUAIA + GO-TO-
+MARKET) coincidió por unanimidad: sacar el trust strip y hacer el
+greeting condicional.
+
+ARCHIVOS MODIFICADOS:
+
+- src/components/home/HeroValueProposition.tsx (sacar trust strip)
+- src/components/home/HomeHero.tsx (greeting condicional)
+
+CAMBIOS:
+
+1. HeroValueProposition.tsx
+   - ELIMINADO: bloque de las 3 trust chips:
+     · "Solo Ushuaia"
+     · "Pago seguro con MercadoPago"
+     · "El comercio cobra al instante"
+   - REMOVIDOS de imports: MapPin, ShieldCheck (ya no se usan).
+   - Mantenidos: Headline, Sub-headline, 2 CTAs (Crear cuenta / Ver comercios).
+
+   Justificación del consejo para sacar el trust strip:
+   · MARKETING: en Ushuaia 80k habitantes con boca-a-boca como canal
+     principal, el visitante ya escuchó de Moovy antes de venir;
+     los trust signals son redundantes.
+   · UX: 3 chips ocupaban ~50px verticales y se leían como
+     "marketing publicitario", no como información útil.
+   · PSICOLOGÍA-USHUAIA: la confianza se gana viendo CATÁLOGO REAL
+     (Pizzería X, Burger Y), no leyendo headlines.
+   · PRODUCTO: la información YA está en otros lugares del flujo
+     natural — logo de MP en el checkout, "cobrás al instante" en
+     el panel del comercio, /quienes-somos explica el origen local.
+   · GO-TO-MARKET: los Anfitriones (manual PDF de la sesión anterior)
+     explican esos beneficios cara a cara durante visitas a comercios.
+
+2. HomeHero.tsx
+   - AGREGADO import: useSession de "next-auth/react".
+   - NUEVA variable: const { status } = useSession() +
+     const showGreeting = status === "authenticated".
+   - WRAPPER condicional: el bloque <div> del greeting contextual
+     (Icon + greeting + subtitle) ahora se renderiza solo si
+     showGreeting es true.
+   - PADDING dinámico del search bar: pt-3 cuando hay greeting
+     (apretado), pt-4 cuando NO hay (más aire).
+   - Comentario in-code explicando por qué (referencia a esta rama).
+
+RESULTADO DUAL:
+
+| Tipo de usuario       | Qué ve                                  |
+|-----------------------|-----------------------------------------|
+| No logueado (primero) | HeroValueProposition (sin trust strip)  |
+|                       | + buscador + categorías                 |
+|                       | SIN greeting contextual                 |
+| Logueado (recurrente) | HomeHero con greeting contextual        |
+|                       | + buscador + categorías                 |
+|                       | SIN banner value prop                   |
+
+Cada usuario ve UN solo bloque rojo a la vez → desaparece la
+percepción de "dos rojos distintos" porque ya no hay transición
+visible entre componentes.
+
+BENEFICIOS MEDIBLES:
+
+- Tienda "Abiertos ahora" pasa del 3er fold al 2do fold para
+  visitantes no logueados (~50px ganados por sacar trust strip +
+  ~70px ganados por sacar greeting redundante = 120px de subida).
+- Usuarios recurrentes mantienen experiencia EXACTA como antes
+  (banner value prop oculto + greeting contextual visible).
+- Hero más limpio visualmente, menos "ruido" comercial.
+
+LO QUE NO SE TOCÓ:
+
+- Routing: la home sigue siendo /, /empezar sigue siendo destino
+  del CTA "Crear mi cuenta".
+- Lógica de auth: no se modifica NextAuth, sesiones, ni layouts
+  protegidos.
+- CategoryPills: se siguen renderizando siempre (independiente del
+  auth status).
+- Mobile/desktop: cambios son responsivos, mantienen mobile-first.
+
+VERIFICACIÓN:
+
+- ~10 líneas modificadas en 2 archivos
+- JSX bien balanceado en ambos componentes
+- Sin schema, sin migrations, sin endpoints, sin lógica de negocio
+- TSC strict del finish.ps1 debería pasar limpio
+- Visual: después del deploy, abrir en incógnito → ver hero limpio
+  sin trust strip ni greeting redundante. Abrir logueado → ver
+  greeting contextual sin banner value prop. Comparar contra
+  screenshot anterior para confirmar mejora.
+
+**Archivos:** ISSUES.md, moovy-anuncio-comercios-v2.html, moovy-anuncio-comercios-v2.png, src/components/home/HeroValueProposition.tsx, src/components/home/HomeHero.tsx
+
 ## 2026-05-20 (rama `chore/checklist-moover-completo`)
 
 chore(checklist): cobertura completa del programa MOOVER (13 items nuevos)

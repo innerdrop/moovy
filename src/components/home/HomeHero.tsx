@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { Search, Sunrise, Sun, Sunset, Moon } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -55,6 +56,16 @@ export default function HomeHero({
     const [timeSlot, setTimeSlot] = useState<TimeSlot>(getCurrentTimeSlot);
     const [mounted, setMounted] = useState(false);
     const searchBarRef = useRef<HTMLDivElement>(null);
+    const { status } = useSession();
+    // Rama feat/home-hero-condicional-sin-trust-strip (2026-05-21):
+    // El greeting contextual ("Buen día / ¿Qué desayunamos?") solo tiene
+    // sentido para usuarios recurrentes (logueados). Para visitantes
+    // no logueados ya se muestra el HeroValueProposition con su propio
+    // headline, así que mostrar 2 saludos consecutivos era ruido visual
+    // + empujaba la tienda al tercer fold + generaba percepción de
+    // "doble rojo" por la transición gradient→plano.
+    // status "loading" → NO mostrar (evita flash). Solo mostrar si auth.
+    const showGreeting = status === "authenticated";
 
     useEffect(() => {
         setTimeSlot(getCurrentTimeSlot());
@@ -102,19 +113,22 @@ export default function HomeHero({
             <div className="absolute -left-16 bottom-0 w-48 h-48 rounded-full bg-black/5 blur-3xl pointer-events-none" />
 
             <div className="relative">
-                {/* ── Greeting ── */}
-                <div className="px-5 pt-4 pb-1 lg:pt-6 lg:pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
-                    <p className="text-white/70 text-sm font-medium flex items-center gap-1.5">
-                        <Icon className="w-4 h-4" />
-                        {timeSlot.greeting}
-                    </p>
-                    <h1 className="text-white text-xl lg:text-3xl font-black mt-0.5">
-                        {timeSlot.subtitle}
-                    </h1>
-                </div>
+                {/* ── Greeting ── solo para usuarios autenticados (recurrentes).
+                    Para no-logueados ya se muestra el HeroValueProposition arriba. */}
+                {showGreeting && (
+                    <div className="px-5 pt-4 pb-1 lg:pt-6 lg:pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
+                        <p className="text-white/70 text-sm font-medium flex items-center gap-1.5">
+                            <Icon className="w-4 h-4" />
+                            {timeSlot.greeting}
+                        </p>
+                        <h1 className="text-white text-xl lg:text-3xl font-black mt-0.5">
+                            {timeSlot.subtitle}
+                        </h1>
+                    </div>
+                )}
 
                 {/* ── Search bar (tracked for sticky fallback) ── */}
-                <div ref={searchBarRef} className="px-5 pt-3 pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
+                <div ref={searchBarRef} className={`px-5 ${showGreeting ? "pt-3" : "pt-4"} pb-2 lg:max-w-7xl lg:mx-auto lg:px-8`}>
                     <button
                         type="button"
                         onClick={openSearch}

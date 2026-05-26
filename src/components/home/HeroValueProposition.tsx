@@ -39,7 +39,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Zap, MapPin, ShieldCheck } from "lucide-react";
+import { Zap } from "lucide-react";
 
 export default function HeroValueProposition() {
     const { status } = useSession();
@@ -84,21 +84,6 @@ export default function HeroValueProposition() {
                     </a>
                 </div>
 
-                {/* Trust strip — mini-señales de valor en una sola fila wrapeable */}
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-6 lg:mt-7 text-white/75 text-xs lg:text-sm">
-                    <span className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-                        Solo Ushuaia
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-                        Pago seguro con MercadoPago
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5" aria-hidden="true" />
-                        El comercio cobra al instante
-                    </span>
-                </div>
             </div>
         </section>
     );
