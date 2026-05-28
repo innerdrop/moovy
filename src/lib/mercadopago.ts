@@ -204,18 +204,42 @@ interface OAuthTokenResponse {
 }
 
 /**
+ * Validate MP_CLIENT_SECRET is set in env before any OAuth call.
+ *
+ * Rama fix/mp-client-secret-separate (2026-05-28):
+ * MercadoPago requiere un Client Secret específico de la app para el
+ * OAuth flow (distinto del Access Token). Antes este código enviaba
+ * `MP_ACCESS_TOKEN` como `client_secret`, lo cual hacía que MP respondiera
+ * con 400 invalid_client. El Client Secret se obtiene en el panel MP
+ * en la sección "Credenciales de producción" (es único por app, sirve
+ * para ambos ambientes sandbox y prod).
+ */
+function assertClientSecret(): string {
+    const secret = process.env.MP_CLIENT_SECRET;
+    if (!secret) {
+        throw new Error(
+            "[MP-OAuth] MP_CLIENT_SECRET no está seteado en el entorno. " +
+            "Buscalo en panel MercadoPago → Credenciales de producción → Client Secret " +
+            "y agregalo al .env (es el mismo valor para sandbox y prod)."
+        );
+    }
+    return secret;
+}
+
+/**
  * Exchange an authorization code for vendor tokens.
  */
 export async function exchangeOAuthCode(
     code: string,
     redirectUri: string
 ): Promise<OAuthTokenResponse> {
+    const clientSecret = assertClientSecret();
     const res = await fetch(`${MP_API_BASE}/oauth/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             client_id: process.env.MP_APP_ID,
-            client_secret: process.env.MP_ACCESS_TOKEN,
+            client_secret: clientSecret,
             code,
             redirect_uri: redirectUri,
             grant_type: "authorization_code",
@@ -236,12 +260,13 @@ export async function exchangeOAuthCode(
 export async function refreshOAuthToken(
     refreshToken: string
 ): Promise<OAuthTokenResponse> {
+    const clientSecret = assertClientSecret();
     const res = await fetch(`${MP_API_BASE}/oauth/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             client_id: process.env.MP_APP_ID,
-            client_secret: process.env.MP_ACCESS_TOKEN,
+            client_secret: clientSecret,
             refresh_token: refreshToken,
             grant_type: "refresh_token",
         }),

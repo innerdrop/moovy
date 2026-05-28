@@ -10,6 +10,137 @@
 
 ---
 
+## 2026-05-28 (rama `fix/mp-client-secret-separate`)
+
+fix(mp-oauth): usar MP_CLIENT_SECRET separado de MP_ACCESS_TOKEN
+
+Fix crítico de OAuth de MercadoPago detectado durante QA pre-launch al
+probar el botón "Vincular MercadoPago" en /comercios/configuracion.
+El flow llegaba hasta la pantalla "Autorizar a MOOVY" pero al callback
+volvía con error genérico "Error al procesar vinculación".
+
+DIAGNÓSTICO
+
+Logs del VPS revelaron el error real de MercadoPago:
+
+  MP OAuth token exchange failed: 400
+  {"message":"invalid client_id or client_secret","error":"invalid_client"}
+
+El código enviaba `process.env.MP_ACCESS_TOKEN` como `client_secret` al
+endpoint POST /oauth/token, asumiendo (incorrectamente) que MP aceptaba
+el Access Token como secret.
+
+LA REALIDAD DE MP
+
+MercadoPago efectivamente requiere un Client Secret SEPARADO del
+Access Token para OAuth de Marketplace. Está contraintuitivamente
+escondido en la sección "Credenciales de PRODUCCIÓN" del panel MP
+(aunque el valor sirve para ambos ambientes sandbox y prod, porque el
+secret es a nivel app, no de ambiente).
+
+ARCHIVOS MODIFICADOS
+
+- src/lib/mercadopago.ts  (~30 líneas modificadas)
+
+CAMBIOS
+
+1. NUEVA FUNCIÓN `assertClientSecret()`
+
+   Valida que MP_CLIENT_SECRET esté seteado en el environment antes
+   de cualquier llamada OAuth. Tira error claro con instrucciones de
+   dónde obtener el secret si falta:
+
+     "[MP-OAuth] MP_CLIENT_SECRET no está seteado en el entorno.
+      Buscalo en panel MercadoPago → Credenciales de producción →
+      Client Secret y agregalo al .env (es el mismo valor para
+      sandbox y prod)."
+
+   Mucho mejor que el error genérico "Error al procesar vinculación"
+   que aparecía antes.
+
+2. exchangeOAuthCode() — línea ~218
+
+   Antes: client_secret: process.env.MP_ACCESS_TOKEN
+   Ahora: client_secret: clientSecret (obtenido de assertClientSecret)
+
+3. refreshOAuthToken() — línea ~244
+
+   Mismo cambio que (2). Aplica al refresh flow cuando un access_token
+   de vendor expira y hay que renovarlo.
+
+ENV VAR NUEVA OBLIGATORIA
+
+Para que el botón "Vincular MercadoPago" funcione, hay que agregar
+en TODOS los entornos (local + VPS prod):
+
+  MP_CLIENT_SECRET=<el-valor-de-credenciales-de-prod-en-MP>
+
+Si falta, la app va a tirar error claro en logs apenas alguien intente
+hacer OAuth (no falla silenciosamente).
+
+SETUP OPERATIVO COMPLEMENTARIO
+
+Además del fix de código, durante este debugging fue necesario
+reconfigurar la app MOOVY en panel MP:
+
+- Corregir URL de redirect mal escrita en MP:
+    /api/auth/mp-callback (INCORRECTA) → /api/mp/callback (CORRECTA)
+
+- Cambiar PKCE de "Sí" a "No" en sección Configuración Avanzada
+  (Moovy no implementa el flow PKCE con code_verifier/code_challenge,
+  así que MP lo rechazaba con error)
+
+- Confirmar app correcta: había confusión entre app vieja (id
+  3105412015244126) que estaba en .env del VPS y app activa
+  (5300721333238597) con OAuth ya configurado. Actualizado el .env del
+  VPS con credenciales de la app correcta.
+
+ACLARACIÓN ESTRATÉGICA DEL FOUNDER
+
+Durante el debugging Mauro aclaró que TANTO la Tienda COMO el
+Marketplace usan el MISMO modelo de pago split-payment via OAuth (no
+es Checkout Pro centralizado para Tienda + OAuth para Marketplace
+como yo asumía antes). Por eso este fix beneficia AMBOS verticales: el
+botón "Vincular MercadoPago" funciona igual para tipo `merchant` y
+tipo `seller`.
+
+LO QUE NO SE TOCÓ
+
+- Schema, migrations, prisma → nada
+- Endpoints del callback (/api/mp/callback) → siguen igual, solo
+  cambia internamente el secret que se manda
+- Lógica de auth, NextAuth, JWT → intacto
+- UI/frontend → intacto
+
+VERIFICACIÓN POST-DEPLOY
+
+Después del deploy a prod:
+
+1. Mauro actualiza .env del VPS agregando MP_CLIENT_SECRET=<valor>
+2. pm2 reload moovy --update-env (para que pm2 lea la nueva env var)
+3. Pestaña incógnita → https://somosmoovy.com?preview=moovy2026preview
+4. Logueo como comerciante aprobado
+5. /comercios/configuracion → click "Vincular MercadoPago"
+6. Redirige a auth.mercadopago.com (URL correcta esta vez)
+7. Logueo con cuenta de prueba VENDEDOR
+8. Click "Autorizar"
+9. Vuelve a Moovy → debe mostrar "MercadoPago vinculado ✓"
+10. Verificar pm2 logs moovy --err: NO debe aparecer error "invalid_client"
+
+ACTUALIZACIÓN MANUAL DE CLAUDE.md (pendiente, no editable desde sesión)
+
+En .claude/CLAUDE.md sección "Variables de entorno", agregar
+MP_CLIENT_SECRET a la lista de vars obligatorias:
+
+  MP:        MP_ACCESS_TOKEN, MP_PUBLIC_KEY, MP_WEBHOOK_SECRET,
+             MP_APP_ID, MP_CLIENT_SECRET
+
+Y agregar nota: "MP_CLIENT_SECRET es DISTINTO del MP_ACCESS_TOKEN.
+Se obtiene en panel MP → Credenciales de producción → Client Secret.
+Es el mismo valor para sandbox y prod."
+
+**Archivos:** ISSUES.md, MOOVY-Deck-El-Cruce.pdf, src/lib/mercadopago.ts
+
 ## 2026-05-26 (rama `feat/home-hero-condicional-sin-trust-strip`)
 
 feat(home): rebalance del primer fold — sin trust strip, greeting condicional

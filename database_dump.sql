@@ -2003,6 +2003,8 @@ COPY public."AdPlacement" (id, "merchantId", type, status, "startsAt", "endsAt",
 --
 
 COPY public."Address" (id, "userId", label, street, number, apartment, neighborhood, city, province, "zipCode", latitude, longitude, "isDefault", "createdAt", "updatedAt", "deletedAt") FROM stdin;
+cmpoh2nvm00145izck15fethn	cmnuzx1fg0002zgw8zimoxguz	Entrega	Retiro en local	S/N	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-05-27 19:43:54.465	2026-05-27 19:43:54.465	\N
+cmpohjbna002c5izcsg50ddmu	cmpohhrhn001z5izc9v3rk0e9	Entrega	Retiro en local	S/N	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-05-27 19:56:51.766	2026-05-27 19:56:51.766	\N
 \.
 
 
@@ -2027,6 +2029,17 @@ COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifi
 --
 
 COPY public."AuditLog" (id, action, "entityType", "entityId", "userId", details, "createdAt") FROM stdin;
+cmpogl0si000f5izc9ln7jcpb	MERCHANT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"9410","merchantOwnerId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com"}	2026-05-27 19:30:11.394
+cmpogprxo000k5izchy9s6hfc	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"cuit","documentLabel":"CUIT","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:33:53.196
+cmpogpv0r000n5izcvht6wiz2	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"bankAccount","documentLabel":"CBU/Alias bancario","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:33:57.195
+cmpogpxq1000q5izcrtnw7vts	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"constanciaAfipUrl","documentLabel":"Constancia de Inscripción AFIP","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:34:00.698
+cmpogq1eo000t5izc057r5m7g	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"habilitacionMunicipalUrl","documentLabel":"Habilitación Municipal","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:34:05.473
+cmpogq4ax000w5izcggfr0q1u	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"registroSanitarioUrl","documentLabel":"Registro Sanitario / Habilitación Bromatológica","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:34:09.226
+cmpoh61bg001k5izc7xqoy2sl	USER_DELETED	User	cmpoh5mvw001e5izcyrgkd0ts	cmnuzx1fg0002zgw8zimoxguz	{"email":"buyer1@somosmoovy.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true,"deletedAt":"2026-05-27T19:46:31.849Z"}	2026-05-27 19:46:31.852
+cmpoh84i3001s5izcxroo262d	USER_DELETED	User	cmpoh719b001m5izc10mntdbv	cmnuzx1fg0002zgw8zimoxguz	{"email":"getinnerdrop@gmail.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true,"deletedAt":"2026-05-27T19:48:09.289Z"}	2026-05-27 19:48:09.292
+cmpohg56w001w5izcpsksl42t	ACCOUNT_RESURRECTION_BLOCKED	user	cmpoh719b001m5izc10mntdbv	cmpoh719b001m5izc10mntdbv	{"email":"getinnerdrop@gmail.com","deletedAt":"2026-05-27T19:48:09.059Z","source":"auth/register","timestamp":"2026-05-27T19:54:23.430Z"}	2026-05-27 19:54:23.432
+cmppijkux0008a6dsaarakc2s	USER_DELETED	User	cmpolj36c00305izc7gc617lp	cmnuzx1fg0002zgw8zimoxguz	{"email":"facundotdf@gmail.com","name":"Facu","roles":["USER"],"deletedAt":"2026-05-28T13:12:49.494Z","merchants":[],"driver":null,"seller":null}	2026-05-28 13:12:49.497
+cmppitaol000da6ds1sct3p50	FEATURE_FLAG_TOGGLED	FeatureFlag	cmp9w9vv80006hfbsset0o5kv	cmnuzx1fg0002zgw8zimoxguz	{"key":"buyer.cash-payment","previousState":false,"newState":true,"toggledBy":"maurod@me.com"}	2026-05-28 13:20:22.87
 \.
 
 
@@ -2126,6 +2139,12 @@ cmpd5ojn200013l3vmum8fmnp	cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	STORE_SETTINGS
 --
 
 COPY public."ConsentLog" (id, "userId", "consentType", version, action, "ipAddress", "userAgent", details, "acceptedAt") FROM stdin;
+cmpmpj1zo00045izcb99hqgiu	cmpmpj1yp00025izc1cmefuzm	TERMS	1.2	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-26 14:05:03.828
+cmpmpj20500065izcx5osuge3	cmpmpj1yp00025izc1cmefuzm	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-26 14:05:03.846
+cmpmpj20c00085izc21vnawof	cmpmpj1yp00025izc1cmefuzm	MARKETING	1.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-26 14:05:03.852
+cmpohhrih00235izcob6zu4gf	cmpohhrhn001z5izc9v3rk0e9	TERMS	1.2	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-27 19:55:39.016
+cmpohhrir00255izctj9nmtf1	cmpohhrhn001z5izc9v3rk0e9	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-27 19:55:39.027
+cmpohhriw00275izcdf2tlxa8	cmpohhrhn001z5izc9v3rk0e9	MARKETING	1.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-27 19:55:39.032
 \.
 
 
@@ -2274,10 +2293,10 @@ COPY public."Favorite" (id, "userId", "merchantId", "productId", "listingId", "c
 COPY public."FeatureFlag" (id, key, label, description, scope, "isActive", "createdAt", "updatedAt", "lastToggledByUserId", "lastToggledAt") FROM stdin;
 cmp9w9vu10000hfbsiyk6vgtt	merchant.publicidad	Publicidad	Permite a los comercios pagar por destacar productos o aparecer en banners. Mientras este OFF, el item 'Publicidad' no aparece en el menu del comercio y la pagina /comercios/publicidad redirige al dashboard.	MERCHANT	f	2026-05-17 14:52:52.969	2026-05-17 14:52:52.969	\N	\N
 cmp9w9vui0002hfbs2bnc7hjm	merchant.tracking-en-vivo	Tracking en vivo del driver	Muestra al comercio el mapa con la ubicacion en tiempo real del repartidor que retiro su pedido. Si esta OFF, el comercio solo ve el estado de texto (DRIVER_ASSIGNED, PICKED_UP, etc.) sin mapa.	MERCHANT	f	2026-05-17 14:52:52.986	2026-05-17 14:52:52.986	\N	\N
-cmp9w9vv80006hfbsset0o5kv	buyer.cash-payment	Pago en efectivo	Habilita el pago al driver con efectivo al recibir el pedido. Mientras este OFF, todos los pedidos se pagan online via MercadoPago.	BUYER	f	2026-05-17 14:52:53.013	2026-05-17 14:52:53.013	\N	\N
 cmp9w9vuc0001hfbsbacg4brf	merchant.paquetes	Paquetes B2B	Permite a los comercios adquirir paquetes pre-armados de productos (combos de proveedores). Mientras este OFF, los items 'Adquirir paquetes' e 'Historial de paquetes' no aparecen en el menu y las paginas correspondientes redirigen al dashboard.	MERCHANT	f	2026-05-17 14:52:52.981	2026-05-17 17:51:57.23	cmnuzx1fg0002zgw8zimoxguz	2026-05-17 17:51:57.228
 cmp9w9vun0003hfbsdpo0djx1	seller.paquetes	Paquetes para vendedores	Permite a los vendedores del marketplace adquirir paquetes B2B. Mientras este OFF, los items relacionados no aparecen en el menu del vendedor.	SELLER	f	2026-05-17 14:52:52.992	2026-05-17 21:31:52	cmnuzx1fg0002zgw8zimoxguz	2026-05-17 21:31:51.997
 cmp9w9vuz0005hfbs40dh1828	buyer.scheduled-delivery	Pedidos programados	Habilita la opcion de programar entregas a una franja horaria futura (ej: 'entregar entre 20:00 y 21:00'). Mientras este OFF, todos los pedidos son entrega inmediata.	BUYER	f	2026-05-17 14:52:53.003	2026-05-18 03:34:45.591	cmnuzx1fg0002zgw8zimoxguz	2026-05-18 03:34:45.59
+cmp9w9vv80006hfbsset0o5kv	buyer.cash-payment	Pago en efectivo	Habilita el pago al driver con efectivo al recibir el pedido. Mientras este OFF, todos los pedidos se pagan online via MercadoPago.	BUYER	t	2026-05-17 14:52:53.013	2026-05-28 13:20:22.864	cmnuzx1fg0002zgw8zimoxguz	2026-05-28 13:20:22.86
 \.
 
 
@@ -2318,6 +2337,7 @@ COPY public."ListingImage" (id, "listingId", url, "order") FROM stdin;
 --
 
 COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", "allowPickup", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "loyaltyTier", "loyaltyOrderCount", "loyaltyUpdatedAt", "commissionOverride", "commissionOverrideReason", "isSuspended", "loyaltyTierLocked", "suspendedAt", "suspendedUntil", "suspensionReason", "firstOrderWelcomeSentAt", "bankAccountApprovedAt", "bankAccountRejectionReason", "bankAccountStatus", "constanciaAfipApprovedAt", "constanciaAfipRejectionReason", "constanciaAfipStatus", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "habilitacionMunicipalApprovedAt", "habilitacionMunicipalRejectionReason", "habilitacionMunicipalStatus", "registroSanitarioApprovedAt", "registroSanitarioRejectionReason", "registroSanitarioStatus", "bankAccountApprovalNote", "bankAccountApprovalSource", "constanciaAfipApprovalNote", "constanciaAfipApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "habilitacionMunicipalApprovalNote", "habilitacionMunicipalApprovalSource", "registroSanitarioApprovalNote", "registroSanitarioApprovalSource", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason") FROM stdin;
+cmpogk423000c5izcv6er1c6g	MOOVY	9410	Nuevo comercio Moovy	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910482835-logo.webp	\N	t	t	t	{"1":[{"open":"09:00","close":"21:00"}],"2":[{"open":"09:00","close":"21:00"}],"3":[{"open":"09:00","close":"21:00"}],"4":[{"open":"09:00","close":"21:00"}],"5":[{"open":"09:00","close":"21:00"}],"6":[{"open":"10:00","close":"14:00"}],"7":null}	t	maugrod@gmail.com	+5492901652974	Paseo de la Plaza 2065	-54.82898400000001	-68.3487997	5	30	45	0	0	f	\N	\N	\N	\N	2026-05-27 19:29:28.957	2026-05-27 19:29:28.957	Kiosco	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:29:28.967	2026-05-27 19:43:55.562	\N	\N	\N	MOOVY	8	\N	0	\N	@somosmoovy	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-05-27 19:30:10.971	\N	\N	BRONCE	0	2026-05-27 19:29:28.967	\N	\N	f	f	\N	\N	\N	2026-05-27 19:43:55.559	2026-05-27 19:33:57.11	\N	APPROVED	2026-05-27 19:34:00.678	\N	APPROVED	2026-05-27 19:33:53.161	\N	APPROVED	2026-05-27 19:34:05.444	\N	APPROVED	2026-05-27 19:34:09.175	\N	APPROVED	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	APPROVED	\N	\N	\N	\N
 \.
 
 
@@ -2409,6 +2429,10 @@ COPY public."MpWebhookLog" (id, "eventId", "eventType", "resourceId", processed,
 --
 
 COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt", "driverRatingModerationStatus", "driverRatingReportCount", "driverTipAmount", "driverTipDeclaredAt", "driverTipMethod", "merchantRatingModerationStatus", "merchantRatingReportCount", "sellerRatingModerationStatus", "sellerRatingReportCount") FROM stdin;
+cmpoh2nx800175izcq1rb05s2	MOV-CFU4	cmnuzx1fg0002zgw8zimoxguz	cmpoh2nvm00145izck15fethn	cmpogk423000c5izcv6er1c6g	AWAITING_PAYMENT	\N	AWAITING_PAYMENT	mercadopago	1000	0	0	1000	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-05-27 19:43:54.523	2026-05-27 19:43:55.507	\N	f	\N	1000	0	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	3010611064-49287378-58d4-48e5-bd70-49534c97eb65	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	ASSIGNED	PREPARING	f	\N	\N	\N	AUTO_APPROVED	0	\N	\N	\N	AUTO_APPROVED	0	AUTO_APPROVED	0
+cmpohjboq002f5izctdtzn3i6	MOV-59TV	cmpohhrhn001z5izc9v3rk0e9	cmpohjbna002c5izcsg50ddmu	cmpogk423000c5izcv6er1c6g	CONFIRMED	\N	PAID	mercadopago	1000	0	0	1000	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-05-27 19:56:51.818	2026-05-27 19:58:16.849	\N	f	\N	1000	0	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	3010611064-70b74949-1f1f-4d7c-bb80-a597768eec33	160474983579	\N	approved	2026-05-27 19:58:16.847	f	IMMEDIATE	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	ASSIGNED	PREPARING	f	\N	\N	\N	AUTO_APPROVED	0	\N	\N	\N	AUTO_APPROVED	0	AUTO_APPROVED	0
+cmppizrji000sa6dsy4qp8i38	MOV-N3DT	cmpohhrhn001z5izc9v3rk0e9	cmpohjbna002c5izcsg50ddmu	cmpogk423000c5izcv6er1c6g	CONFIRMED	\N	PAID	mercadopago	1000	0	0	1000	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-05-28 13:25:24.653	2026-05-28 13:26:07.811	\N	f	\N	1000	0	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	3010611064-31f26ec9-11c5-482b-8869-63d58fe4c8d9	160565643183	\N	approved	2026-05-28 13:26:07.809	f	IMMEDIATE	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	ASSIGNED	PREPARING	f	\N	\N	\N	AUTO_APPROVED	0	\N	\N	\N	AUTO_APPROVED	0	AUTO_APPROVED	0
+cmpojlzv3002t5izcu40rjffy	MOV-RGSJ	cmpohhrhn001z5izc9v3rk0e9	cmpohjbna002c5izcsg50ddmu	cmpogk423000c5izcv6er1c6g	CANCELLED	\N	AWAITING_PAYMENT	mercadopago	1000	0	0	1000	t	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-05-27 20:54:55.694	2026-05-28 13:26:26.009	Cancelado por el usuario	f	\N	1000	0	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	3010611064-d2e662e3-d4fe-4b79-879a-f0d3bbefa046	\N	\N	\N	\N	f	IMMEDIATE	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	0	\N	f	\N	ASSIGNED	PREPARING	f	\N	\N	\N	AUTO_APPROVED	0	\N	\N	\N	AUTO_APPROVED	0	AUTO_APPROVED	0
 \.
 
 
@@ -2441,6 +2465,10 @@ COPY public."OrderChatMessage" (id, "chatId", "senderId", content, "isRead", "is
 --
 
 COPY public."OrderItem" (id, "orderId", "productId", "listingId", name, price, quantity, "variantName", subtotal, "subOrderId", "packageCategoryName") FROM stdin;
+cmpoh2nxy00195izc4yemlra5	cmpoh2nx800175izcq1rb05s2	cmpogy8so000y5izcmc18x21a	\N	PRINGLES ORIGINAL	1000	1	\N	1000	cmpoh2nz8001b5izc3plitv7q	\N
+cmpohjbp3002h5izczg0kw3io	cmpohjboq002f5izctdtzn3i6	cmpogy8so000y5izcmc18x21a	\N	PRINGLES ORIGINAL	1000	1	\N	1000	cmpohjbpo002j5izcztd6swdn	\N
+cmpojlzvy002v5izc8koinkzm	cmpojlzv3002t5izcu40rjffy	cmpogy8so000y5izcmc18x21a	\N	PRINGLES ORIGINAL	1000	1	\N	1000	cmpojm0cz002x5izcp2wmjksq	\N
+cmppizrju000ua6dshwf4f6v7	cmppizrji000sa6dsy4qp8i38	cmpogy8so000y5izcmc18x21a	\N	PRINGLES ORIGINAL	1000	1	\N	1000	cmppizrkk000wa6ds0g18x9qu	\N
 \.
 
 
@@ -2482,6 +2510,8 @@ COPY public."PackagePurchase" (id, "merchantId", "purchaseType", "categoryId", "
 --
 
 COPY public."Payment" (id, "orderId", "mpPaymentId", "mpStatus", "mpStatusDetail", amount, currency, "payerEmail", "paymentMethod", "rawPayload", "createdAt", "updatedAt") FROM stdin;
+cmpohl596002l5izcy7k3sd1o	cmpohjboq002f5izctdtzn3i6	160474983579	approved	accredited	1000	ARS	test_user_5504545438324478604@testuser.com	credit_card	{"id": 160474983579, "card": {"id": null, "bin": "45099535", "tags": ["credit"], "country": "ARG", "cardholder": {"name": "APRO", "identification": {"type": "DNI", "number": "12345678"}}, "date_created": "2026-05-27T15:57:47.000-04:00", "expiration_year": 2030, "expiration_month": 11, "first_six_digits": "450995", "last_four_digits": "3704", "date_last_updated": "2026-05-27T15:57:47.000-04:00"}, "tags": null, "order": {"id": "41297241298", "type": "mercadopago"}, "payer": {"id": "3250900209", "type": null, "email": "test_user_5504545438324478604@testuser.com", "phone": {"number": null, "area_code": null, "extension": null}, "last_name": null, "first_name": null, "entity_type": null, "operator_id": null, "identification": {"type": "DNI", "number": "1111111"}}, "pos_id": null, "status": "approved", "refunds": [], "brand_id": null, "captured": true, "metadata": {"order_id": "cmpohjboq002f5izctdtzn3i6", "order_number": "MOV-59TV"}, "store_id": null, "issuer_id": "310", "live_mode": true, "sponsor_id": null, "binary_mode": false, "currency_id": "ARS", "description": "PRINGLES ORIGINAL", "fee_details": [{"type": "mercadopago_fee", "amount": 41, "fee_payer": "collector"}], "platform_id": null, "api_response": {"status": 200, "headers": {"date": ["Wed, 27 May 2026 19:58:16 GMT"], "vary": ["Accept-Encoding, Accept,Accept-Encoding"], "connection": ["keep-alive"], "content-type": ["application/json;charset=UTF-8"], "x-request-id": ["40ffeede-2a41-4d53-9be3-63232bee3f25"], "cache-control": ["max-age=0"], "content-encoding": ["gzip"], "x-xss-protection": ["1; mode=block"], "transfer-encoding": ["chunked"], "timing-allow-origin": ["*"], "x-api-server-segment": ["legacy"], "access-control-max-age": ["86400"], "x-content-type-options": ["nosniff"], "strict-transport-security": ["max-age=16070400; includeSubDomains; preload, max-age=31536000; includeSubDomains"], "access-control-allow-origin": ["*"], "access-control-allow-headers": ["Content-Type"], "access-control-allow-methods": ["PUT, GET, POST, DELETE, OPTIONS"]}}, "collector_id": 3010611064, "date_created": "2026-05-27T15:57:47.000-04:00", "installments": 1, "release_info": null, "taxes_amount": 0, "accounts_info": null, "build_version": "3.158.0-rc-1", "coupon_amount": 0, "date_approved": "2026-05-27T15:57:48.000-04:00", "integrator_id": null, "status_detail": "accredited", "corporation_id": null, "operation_type": "regular_payment", "payment_method": {"id": "visa", "data": {"routing_data": {"merchant_account_id": "1087"}}, "type": "credit_card", "issuer_id": "310"}, "tenant_context": "mp", "additional_info": {"items": [{"id": "cmpohjbp3002h5izczg0kw3io", "title": "PRINGLES ORIGINAL", "quantity": "1", "unit_price": "1000"}], "payer": {"first_name": "Juan Perez"}, "ip_address": "148.227.121.31", "tracking_id": "platform:v1-blacklabel,so:ALL,type:N/A,security:none"}, "charges_details": [{"id": "160474983579-001", "name": "mercadopago_fee", "rate": 4.1, "type": "fee", "amounts": {"original": 41, "refunded": 0}, "accounts": {"to": "mp", "from": "collector"}, "metadata": {"reason": "", "source": "proc-svc-charges", "source_detail": "processing_fee_charge"}, "client_id": 0, "reserve_id": null, "base_amount": 1000, "date_created": "2026-05-27T15:57:47.000-04:00", "last_updated": "2026-05-27T15:57:47.000-04:00", "refund_charges": [], "update_charges": [], "external_charge_id": "01KSNG7F7WXPZRH5MNBYYCRCAF"}], "financing_group": null, "merchant_number": null, "payment_type_id": "credit_card", "processing_mode": "aggregator", "shipping_amount": 0, "counter_currency": null, "deduction_schema": null, "notification_url": null, "date_last_updated": "2026-05-27T15:57:56.000-04:00", "marketplace_owner": null, "payment_method_id": "visa", "authorization_code": "301299", "date_of_expiration": null, "external_reference": "cmpohjboq002f5izctdtzn3i6", "money_release_date": "2026-06-14T15:57:48.000-04:00", "transaction_amount": 1000, "merchant_account_id": null, "transaction_details": {"overpaid_amount": 0, "total_paid_amount": 1000, "acquirer_reference": null, "installment_amount": 1000, "net_received_amount": 959, "external_resource_url": null, "financial_institution": null, "payable_deferral_period": null, "payment_method_reference_id": null}, "money_release_schema": null, "money_release_status": "pending", "point_of_interaction": {"type": "CHECKOUT", "location": {"source": "Collector", "state_id": "NN"}, "business_info": {"unit": "online_payments", "branch": "Merchant Services", "sub_unit": "checkout_pro"}, "application_data": {"name": "checkout-off", "version": "v2", "operating_system": null}, "transaction_data": {"e2e_id": null}}, "statement_descriptor": "Mercadopago*fake", "call_for_authorize_id": null, "charges_execution_info": {"internal_execution": {"date": "2026-05-27T15:57:47.666-04:00", "execution_id": "01KSNG7F70JZYZZC1KG9FFM08N"}}, "acquirer_reconciliation": [], "differential_pricing_id": null, "transaction_amount_refunded": 0}	2026-05-27 19:58:16.786	2026-05-27 19:58:16.786
+cmppj0otj000ya6ds8x7ut6er	cmppizrji000sa6dsy4qp8i38	160565643183	approved	accredited	1000	ARS	test_user_5504545438324478604@testuser.com	account_money	{"id": 160565643183, "card": {}, "tags": null, "order": {"id": "41314640034", "type": "mercadopago"}, "payer": {"id": "3250900209", "type": null, "email": "test_user_5504545438324478604@testuser.com", "phone": {"number": null, "area_code": null, "extension": null}, "last_name": null, "first_name": null, "entity_type": null, "operator_id": null, "identification": {"type": "DNI", "number": "1111111"}}, "pos_id": null, "status": "approved", "refunds": [], "brand_id": null, "captured": true, "metadata": {"order_id": "cmppizrji000sa6dsy4qp8i38", "order_number": "MOV-N3DT"}, "store_id": null, "issuer_id": "2005", "live_mode": true, "sponsor_id": null, "binary_mode": false, "currency_id": "ARS", "description": "PRINGLES ORIGINAL", "fee_details": [{"type": "mercadopago_fee", "amount": 41, "fee_payer": "collector"}], "platform_id": null, "api_response": {"status": 200, "headers": {"date": ["Thu, 28 May 2026 13:26:08 GMT"], "vary": ["Accept-Encoding, Accept,Accept-Encoding"], "connection": ["keep-alive"], "content-type": ["application/json;charset=UTF-8"], "x-request-id": ["2ad04019-95fa-4d73-a853-649eb4c02bd9"], "cache-control": ["max-age=0"], "content-encoding": ["gzip"], "x-xss-protection": ["1; mode=block"], "transfer-encoding": ["chunked"], "timing-allow-origin": ["*"], "x-api-server-segment": ["legacy"], "access-control-max-age": ["86400"], "x-content-type-options": ["nosniff"], "strict-transport-security": ["max-age=16070400; includeSubDomains; preload, max-age=31536000; includeSubDomains"], "access-control-allow-origin": ["*"], "access-control-allow-headers": ["Content-Type"], "access-control-allow-methods": ["PUT, GET, POST, DELETE, OPTIONS"]}}, "collector_id": 3010611064, "date_created": "2026-05-28T09:25:51.000-04:00", "installments": 1, "release_info": null, "taxes_amount": 0, "accounts_info": null, "build_version": "3.158.0-rc-1", "coupon_amount": 0, "date_approved": "2026-05-28T09:25:51.000-04:00", "integrator_id": null, "status_detail": "accredited", "corporation_id": null, "operation_type": "regular_payment", "payment_method": {"id": "account_money", "type": "account_money", "issuer_id": "2005"}, "tenant_context": "mp", "additional_info": {"items": [{"id": "cmppizrju000ua6dshwf4f6v7", "title": "PRINGLES ORIGINAL", "quantity": "1", "unit_price": "1000"}], "payer": {"first_name": "Juan Perez"}, "ip_address": "179.62.169.139", "tracking_id": "platform:v1-blacklabel,so:ALL,type:N/A,security:none"}, "charges_details": [{"id": "160565643183-001", "name": "mercadopago_fee", "rate": 4.1, "type": "fee", "amounts": {"original": 41, "refunded": 0}, "accounts": {"to": "mp", "from": "collector"}, "metadata": {"reason": "", "source": "proc-svc-charges", "source_detail": "processing_fee_charge"}, "client_id": 0, "reserve_id": null, "base_amount": 1000, "date_created": "2026-05-28T09:25:51.000-04:00", "last_updated": "2026-05-28T09:25:51.000-04:00", "refund_charges": [], "update_charges": [], "external_charge_id": "01KSQC6H2VGGZ5NV7CWKMP0FQA"}], "financing_group": null, "merchant_number": null, "payment_type_id": "account_money", "processing_mode": "aggregator", "shipping_amount": 0, "counter_currency": null, "deduction_schema": null, "notification_url": null, "date_last_updated": "2026-05-28T09:25:57.000-04:00", "marketplace_owner": null, "payment_method_id": "account_money", "authorization_code": null, "date_of_expiration": null, "external_reference": "cmppizrji000sa6dsy4qp8i38", "money_release_date": "2026-06-15T09:25:51.000-04:00", "transaction_amount": 1000, "merchant_account_id": null, "transaction_details": {"overpaid_amount": 0, "total_paid_amount": 1000, "acquirer_reference": null, "installment_amount": 0, "net_received_amount": 959, "external_resource_url": null, "financial_institution": null, "payable_deferral_period": null, "payment_method_reference_id": null}, "money_release_schema": null, "money_release_status": "pending", "point_of_interaction": {"type": "CHECKOUT", "location": {"source": "Collector", "state_id": "NN"}, "business_info": {"unit": "online_payments", "branch": "Merchant Services", "sub_unit": "checkout_pro"}, "application_data": {"name": "checkout-off", "version": "v2", "operating_system": null}, "transaction_data": {"e2e_id": null}}, "statement_descriptor": null, "call_for_authorize_id": null, "charges_execution_info": {"internal_execution": {"date": "2026-05-28T09:25:51.340-04:00", "execution_id": "01KSQC6H22WXZPQ2QX0EAG60VV"}}, "acquirer_reconciliation": [], "differential_pricing_id": null, "transaction_amount_refunded": 0}	2026-05-28 13:26:07.783	2026-05-28 13:26:07.783
 \.
 
 
@@ -2573,6 +2603,7 @@ COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balance
 --
 
 COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "createdAt", "updatedAt", "packageCategoryId", "deletedAt", "deletedBy", "deletedReason", "volumeMl", "weightGrams") FROM stdin;
+cmpogy8so000y5izcmc18x21a	PRINGLES ORIGINAL	pringles-original-1779910828289	Papas PRINGLES Sabor original 	cmpogk423000c5izcv6er1c6g	1000	700	10	5	t	f	2026-05-27 19:40:28.294	2026-05-28 13:26:26.02	\N	\N	\N	\N	2500	1500
 \.
 
 
@@ -2581,6 +2612,7 @@ COPY public."Product" (id, name, slug, description, "merchantId", price, "costPr
 --
 
 COPY public."ProductCategory" (id, "productId", "categoryId") FROM stdin;
+cmppixogj000la6ds0ghwwjn2	cmpogy8so000y5izcmc18x21a	cmnw2pz4u000p3ooerlyvtabj
 \.
 
 
@@ -2589,6 +2621,7 @@ COPY public."ProductCategory" (id, "productId", "categoryId") FROM stdin;
 --
 
 COPY public."ProductImage" (id, "productId", url, alt, "order") FROM stdin;
+cmppixog4000ja6dsurgtjg4c	cmpogy8so000y5izcmc18x21a	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910756557-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp	PRINGLES ORIGINAL	0
 \.
 
 
@@ -2766,6 +2799,7 @@ COPY public."RatingReport" (id, "orderId", "reporterUserId", target, reason, "cr
 --
 
 COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoints", "refereePoints", status, "createdAt") FROM stdin;
+cmpohhri000215izcv5cos8sa	cmpmpj1yp00025izc1cmefuzm	cmpohhrhn001z5izc9v3rk0e9	MOV-2WVN	500	250	PENDING	2026-05-27 19:55:38.998
 \.
 
 
@@ -2774,6 +2808,7 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 --
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "updatedAt", "cartValue", "lastRemindedAt", "recoveredAt", "reminderCount") FROM stdin;
+cmpoh0ckk00125izcuqt2htii	cmnuzx1fg0002zgw8zimoxguz	[{"id": "cmpogy8so000y5izcmc18x21a-default-1779910925112", "name": "PRINGLES ORIGINAL", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910756557-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp", "price": 1000, "quantity": 1, "productId": "cmpogy8so000y5izcmc18x21a", "merchantId": "cmpogk423000c5izcv6er1c6g"}]	\N	2026-05-27 19:42:06.498	2026-05-28 13:11:35.814	1000	\N	\N	0
 \.
 
 
@@ -2798,7 +2833,7 @@ COPY public."SellerProfile" (id, "userId", "displayName", bio, avatar, cuit, "ac
 --
 
 COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "operationalCostPercent", "defaultMerchantCommission", "defaultSellerCommission", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit", "supportChatEnabled", "excludedZonesJson") FROM stdin;
-settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pronto a Ushuaia.	1680	0.06	1500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-05-22 13:57:26.43	Ver mas	t	f					t	t	f	6	t	5000	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3}	normal	5	0	12	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	50000	100000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}						f	[]
+settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pronto a Ushuaia.	1680	0.06	1500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-05-28 13:11:51.814	Ver mas	t	f					t	t	f	6	t	5000	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3}	normal	5	0	12	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	50000	100000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}						f	[]
 \.
 
 
@@ -2807,6 +2842,10 @@ settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pront
 --
 
 COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "driverPayoutAmount", "merchantCommissionRate", "merchantCommissionSource", "operationalCost", "tripCost", "zoneCode", "zoneDriverBonus", "zoneMultiplier", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt") FROM stdin;
+cmpoh2nz8001b5izc3plitv7q	cmpoh2nx800175izcq1rb05s2	cmpogk423000c5izcv6er1c6g	\N	PENDING	1000	0	0	1000	\N	0	1000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-05-27 19:43:54.596	2026-05-27 19:43:54.596	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	0	0	FIRST_MONTH	0	0	\N	0	1	ASSIGNED	PREPARING	f	\N	\N	\N
+cmpohjbpo002j5izcztd6swdn	cmpohjboq002f5izctdtzn3i6	cmpogk423000c5izcv6er1c6g	\N	PENDING	1000	0	0	1000	\N	0	1000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-05-27 19:56:51.852	2026-05-27 19:56:51.852	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	0	0	FIRST_MONTH	0	0	\N	0	1	ASSIGNED	PREPARING	f	\N	\N	\N
+cmppizrkk000wa6ds0g18x9qu	cmppizrji000sa6dsy4qp8i38	cmpogk423000c5izcv6er1c6g	\N	PENDING	1000	0	0	1000	\N	0	1000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-05-28 13:25:24.692	2026-05-28 13:25:24.692	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	0	0	FIRST_MONTH	0	0	\N	0	1	ASSIGNED	PREPARING	f	\N	\N	\N
+cmpojm0cz002x5izcp2wmjksq	cmpojlzv3002t5izcu40rjffy	cmpogk423000c5izcv6er1c6g	\N	CANCELLED	1000	0	0	1000	\N	0	1000	PENDING	\N	\N	\N	\N	0	\N	\N	\N	2026-05-27 20:54:56.338	2026-05-28 13:26:26.016	\N	PENDING	\N	\N	0	\N	\N	\N	\N	0	\N	f	0	0	FIRST_MONTH	0	0	\N	0	1	ASSIGNED	PREPARING	f	\N	\N	\N
 \.
 
 
@@ -2815,6 +2854,7 @@ COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtota
 --
 
 COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt") FROM stdin;
+cmpolmvg3003e5izcrpkouqpe	cmpohhrhn001z5izc9v3rk0e9	\N	cmpolj37500345izcyx5jokcd	No me llega el pedido	pedido	closed	normal	5	\N	2026-05-27 21:52:24.662	2026-05-27 21:52:30.89	2026-05-27 21:51:35.858	2026-05-27 21:52:43.832
 \.
 
 
@@ -2823,6 +2863,10 @@ COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, ca
 --
 
 COPY public."SupportMessage" (id, "chatId", "senderId", content, "isFromAdmin", "isSystem", "isRead", "attachmentUrl", "attachmentType", "createdAt") FROM stdin;
+cmpolmvg3003h5izclarw9yl6	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	Facu es tu operador asignado. En un momento te atiende, Juan Perez.	t	t	t	\N	\N	2026-05-27 21:51:35.858
+cmpolmvg3003g5izcnlvvq6of	cmpolmvg3003e5izcrpkouqpe	cmpohhrhn001z5izc9v3rk0e9	No me llega el pedido	f	f	t	\N	\N	2026-05-27 21:51:35.858
+cmpolnp8q003j5izcfcxmwlg1	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	/cierre	t	f	t	\N	\N	2026-05-27 21:52:14.473
+cmpolnx35003l5izcfht3ts9r	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	¡Listo! ¿Hay algo más en lo que pueda ayudarte? Si no, cierro el chat. ¡Que tengas un excelente día!	t	f	t	\N	\N	2026-05-27 21:52:24.641
 \.
 
 
@@ -2831,6 +2875,7 @@ COPY public."SupportMessage" (id, "chatId", "senderId", content, "isFromAdmin", 
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
+cmpolj37500345izcyx5jokcd	cmpolj36c00305izc7gc617lp	Facu	t	t	5	2026-05-27 21:51:05.03	2026-05-27 21:48:39.28	2026-05-27 21:53:46.349
 \.
 
 
@@ -2839,7 +2884,12 @@ COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnlin
 --
 
 COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "resetToken", "resetTokenExpiry", "deletedAt", "archivedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "onboardingCompletedAt", "age18Confirmed", "cookiesConsent", "cookiesConsentAt", "marketingConsent", "marketingConsentAt", "marketingConsentRevokedAt", "privacyConsentVersion", "termsConsentVersion", "pointsExpiryNotifiedAt", "failedLoginAttempts", "loginLockedUntil") FROM stdin;
-cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-05-22 13:40:41.851	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpoh5mvw001e5izcyrgkd0ts	buyer1@somosmoovy.com	$2b$10$jYTBPvs74dqSBpTUNYOiE.0.YKeUutLrRxcy6MmYAJf0IHMvIeEG2	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh5mvw001f5izcakhckvw6	\N	2026-05-27 19:46:13.148	2026-05-27 19:46:31.816	\N	\N	c09eb78dad615bbcbde4b4fc1f25e48dc827686e1a1fc615beccb481c233143a	2026-05-28 19:46:13.016	2026-05-27 19:46:31.814	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpoh719b001m5izc10mntdbv	getinnerdrop@gmail.com	$2b$10$Y/KRt7jaMTT7rvkWqk92Auz3VOcBQ7d5e4Jg2w7XZGm6pTnNFM0cC	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh719b001n5izcol2u7htw	\N	2026-05-27 19:47:18.431	2026-05-27 19:48:09.061	\N	\N	76824853e87089af56d3347441903041c4867fdc5ea806b2e0cd93af16cc65d2	2026-05-28 19:47:18.284	2026-05-27 19:48:09.059	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpohhrhn001z5izc9v3rk0e9	bimsads@gmail.com	$2b$10$DiC1m.tCZs8jl/z7XQuF6ebC7QCIntTAlFsuf7izDZhtQ6oUYIUGy	Juan Perez	Juan	Perez	+54 29011234567	USER	\N	\N	0	1000	f	MOV-Z4RL	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:55:38.986	2026-05-27 20:54:36.48	2026-05-27 19:55:38.984	2026-05-27 19:55:38.984	\N	\N	\N	\N	f	\N	\N	\N	2026-05-27 19:55:42.638	t	\N	\N	t	2026-05-27 19:55:38.984	\N	2.0	1.2	\N	0	\N
+cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-05-27 21:50:10.663	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpolj36c00305izc7gc617lp	facundotdf@gmail.com	$2b$12$PJfSJKI84teea.YzWbh8euyJIStohd70rtdUwHAyOQTcBQvzbGteq	Facu	\N	\N	\N	USER	\N	\N	0	0	f	cmpolj36c00315izciap0wmx1	\N	2026-05-27 21:48:39.251	2026-05-28 13:12:49.452	\N	\N	\N	\N	2026-05-28 13:12:49.411	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpmpj1yp00025izc1cmefuzm	maugrod@gmail.com	$2b$10$hYH2q0XYbGOGz5h5b9s9.eiKK3lzWN5QAtVTkpAXJItsh.fEcO3my	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-2WVN	\N	2026-05-26 14:05:03.788	2026-05-28 13:14:48.706	2026-05-26 14:05:03.779	2026-05-26 14:05:03.779	\N	\N	\N	\N	f	\N	\N	\N	2026-05-26 14:05:10.706	t	\N	\N	t	2026-05-26 14:05:03.779	\N	2.0	1.2	\N	0	\N
 \.
 
 
@@ -2849,6 +2899,19 @@ cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj
 
 COPY public."UserActivityLog" (id, "userId", action, "entityType", "entityId", metadata, "ipAddress", "userAgent", "createdAt") FROM stdin;
 cmpgywbdf000111e8bqolspfw	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-05-22 13:40:41.996
+cmpmpj2al000a5izc4bsynj05	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-26 14:05:04.221
+cmpogmdsc000h5izc6dcdm3o2	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-27 19:31:14.892
+cmpoh61b7001i5izce8cg83a2	cmpoh5mvw001e5izcyrgkd0ts	ADMIN_USER_DELETED	User	cmpoh5mvw001e5izcyrgkd0ts	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"buyer1@somosmoovy.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-27 19:46:31.842
+cmpoh84h8001q5izcmzsjro98	cmpoh719b001m5izc10mntdbv	ADMIN_USER_DELETED	User	cmpoh719b001m5izc10mntdbv	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"getinnerdrop@gmail.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-27 19:48:09.26
+cmpohfaih001u5izchox15x29	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-27 19:53:43.673
+cmpohhrw600295izc6e57kioa	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-05-27 19:55:39.511
+cmpohvmku002o5izcgos0dwxf	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-27 20:06:25.806
+cmpojll2g002q5izcusv9r2db	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-05-27 20:54:36.52
+cmpoljpym00385izci2lfb1sf	cmpolj36c00305izc7gc617lp	LOGIN	User	cmpolj36c00305izc7gc617lp	{"method":"credentials"}	\N	\N	2026-05-27 21:49:08.782
+cmpoll1qc003a5izc3xcq5he2	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-05-27 21:50:10.692
+cmpollvef003c5izceu3gr0s5	cmpolj36c00305izc7gc617lp	LOGIN	User	cmpolj36c00305izc7gc617lp	{"method":"credentials"}	\N	\N	2026-05-27 21:50:49.143
+cmppijkuc0006a6dsc4m891a1	cmpolj36c00305izc7gc617lp	ADMIN_USER_DELETED	User	cmpolj36c00305izc7gc617lp	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"facundotdf@gmail.com","name":"Facu","roles":["USER"]}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-28 13:12:49.476
+cmppim4vm000aa6ds4btj1ked	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-28 13:14:48.754
 \.
 
 
@@ -2858,6 +2921,7 @@ cmpgywbdf000111e8bqolspfw	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8
 
 COPY public."UserRole" (id, "userId", role, "isActive", "activatedAt") FROM stdin;
 cmnw2pyz700013ooek0ybrew9	cmnuzx1fg0002zgw8zimoxguz	ADMIN	t	2026-04-12 18:04:52.434
+cmpolj36c00325izc67y9pzfb	cmpolj36c00305izc7gc617lp	ADMIN	t	2026-05-27 21:48:39.251
 \.
 
 
