@@ -227,6 +227,20 @@ function assertClientSecret(): string {
 }
 
 /**
+ * Rama fix/mp-oauth-test-token (2026-05-30):
+ * Para vincular un VENDEDOR DE PRUEBA por OAuth y obtener un token de SANDBOX,
+ * MercadoPago exige enviar `test_token: true` en la llamada a /oauth/token. Sin
+ * ese flag, MP devuelve un token de PRODUCCIÓN aunque el usuario sea de prueba,
+ * y la preferencia creada con él rechaza las tarjetas de test ("Oh, no, algo
+ * anduvo mal"). Gateado por `MP_OAUTH_TEST_MODE` para que NUNCA se mande en
+ * producción (rompería la vinculación de comercios reales).
+ * Ref: https://www.mercadopago.com.ar/developers/en/docs/split-payments/integration-configuration/create-configuration
+ */
+function isOAuthTestMode(): boolean {
+    return process.env.MP_OAUTH_TEST_MODE === "true";
+}
+
+/**
  * Exchange an authorization code for vendor tokens.
  */
 export async function exchangeOAuthCode(
@@ -243,8 +257,14 @@ export async function exchangeOAuthCode(
             code,
             redirect_uri: redirectUri,
             grant_type: "authorization_code",
+            // Solo en modo prueba: pide a MP un token de sandbox (ver isOAuthTestMode)
+            ...(isOAuthTestMode() ? { test_token: true } : {}),
         }),
     });
+
+    if (isOAuthTestMode()) {
+        console.log("[MP-OAuth] test_token=true enviado (MP_OAUTH_TEST_MODE activo) — token de sandbox");
+    }
 
     if (!res.ok) {
         const err = await res.text();
@@ -269,6 +289,9 @@ export async function refreshOAuthToken(
             client_secret: clientSecret,
             refresh_token: refreshToken,
             grant_type: "refresh_token",
+            // Coherencia de ambiente: si estamos en modo prueba, el refresh
+            // también pide token de sandbox (ver isOAuthTestMode)
+            ...(isOAuthTestMode() ? { test_token: true } : {}),
         }),
     });
 

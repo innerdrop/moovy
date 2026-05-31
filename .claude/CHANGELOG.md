@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-05-30 (rama `fix/mp-oauth-test-token`)
+
+fix(mp-oauth): enviar test_token:true en OAuth cuando MP_OAUTH_TEST_MODE=true, para vincular vendedores de prueba con token de sandbox y poder validar el split de pagos en testing. Gateado por env var (inerte en producción). Sin esto, MP devolvía token de producción y las tarjetas de prueba eran rechazadas.
+
+**Archivos:** HANDOFF-MP-TESTING.md, src/lib/mercadopago.ts
+
 ## 2026-05-28 (rama `fix/mp-client-secret-separate`)
 
 fix(mp-oauth): usar MP_CLIENT_SECRET separado de MP_ACCESS_TOKEN
