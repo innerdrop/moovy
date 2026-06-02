@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-02 (rama `fix/split-fee-incluye-envio`)
+
+fix(mp-split): el marketplace_fee ahora incluye el delivery fee completo (Grupo C). Moovy cobra el envio en el split (marketplace_fee = comision del comercio + envio) y le paga al repartidor por PayoutBatch; el comercio recibe solo su producto menos comision. Alinea el reparto fisico de MP con la contabilidad interna (order-totals.ts) que ya asumia este flujo. Multi-vendor y sin-split no cambian.
+
+**Archivos:** src/app/api/orders/route.ts
+
 ## 2026-06-02 (rama `fix/split-pagos-token-vendedor`)
 
 fix(mp-split): operaciones post-pago usan el token del vendedor + redondeo del marketplace_fee. createRefund y la reconciliacion (order-payment-confirm) resuelven el mpAccessToken del comercio via resolveOrderVendorToken (en split el pago vive en la cuenta del vendedor; con token de plataforma daban 404/no encontraban el pago). marketplace_fee redondeado a centavos y clamp [0,total-1] para evitar 400 de MP. Pedidos sin split y multi-vendor siguen usando el token de plataforma como antes.

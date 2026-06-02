@@ -1166,7 +1166,15 @@ export async function POST(request: Request) {
                 // fix/split-pagos-token-vendedor: redondear a centavos (MP rechaza
                 // montos con >2 decimales con 400) y clamp [0, total-1] para que el
                 // fee nunca sea ≥ al total ni negativo.
-                const rawMarketplaceFee = orderForPref.subOrders.reduce((s, sub) => s + (sub.moovyCommission || 0), 0);
+                // fix/split-fee-incluye-envio (Grupo C): Moovy cobra el envío. El
+                // marketplace_fee = comisión del comercio + delivery fee completo. Así
+                // el comercio recibe solo su producto (menos comisión) y Moovy recibe
+                // la plata del envío para pagarle al repartidor (80% del viaje, vía
+                // PayoutBatch) y quedarse el 20% + operativo. La contabilidad interna
+                // (order-totals.ts) ya asumía este flujo; esto alinea el reparto físico.
+                const rawMarketplaceFee =
+                    orderForPref.subOrders.reduce((s, sub) => s + (sub.moovyCommission || 0), 0)
+                    + (orderForPref.deliveryFee || 0);
                 const marketplaceFee = vendorAccessToken
                     ? Math.max(0, Math.min(Math.round(rawMarketplaceFee * 100) / 100, orderForPref.total - 1))
                     : 0;
