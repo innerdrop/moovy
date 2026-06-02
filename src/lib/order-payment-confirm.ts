@@ -24,7 +24,7 @@
 // un monto distinto al order.total → marca mpStatus="amount_mismatch" y NO confirma.
 
 import { prisma } from "@/lib/prisma";
-import { paymentApi } from "@/lib/mercadopago";
+import { resolveOrderVendorToken } from "@/lib/mercadopago";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { paymentLogger } from "@/lib/logger";
 
@@ -109,9 +109,14 @@ export async function confirmOrderPaymentFromMp(
     let mpPayment: any = options?.mpPaymentRaw ?? null;
 
     if (!mpPayment) {
-        const accessToken = process.env.MP_ACCESS_TOKEN;
+        // Split (fix/split-pagos-token-vendedor): en pedidos con split el pago vive
+        // en la cuenta del comercio, y el /v1/payments/search con el token de la
+        // plataforma NO devuelve pagos de sellers vinculados. Usamos el token del
+        // vendedor. null → token de plataforma (pedidos sin split, igual que antes).
+        const vendorToken = await resolveOrderVendorToken(orderId);
+        const accessToken = vendorToken || process.env.MP_ACCESS_TOKEN;
         if (!accessToken) {
-            paymentLogger.error({ orderId }, "[order-payment-confirm] MP_ACCESS_TOKEN not configured");
+            paymentLogger.error({ orderId }, "[order-payment-confirm] no access token (vendor ni plataforma)");
             return {
                 confirmed: false, alreadyConfirmed: false, notApplicable: false, failed: true,
                 paymentStatus: order.paymentStatus, reason: "mp_access_token_missing",
@@ -145,9 +150,13 @@ export async function confirmOrderPaymentFromMp(
 
             if (lite?.id) {
                 // El search devuelve un payment "lite" pero igualmente trae transaction_amount/status.
-                // Para máxima precisión hacemos GET del payment completo via SDK.
+                // Para máxima precisión hacemos GET del payment completo con el MISMO token
+                // (vendor o plataforma) — vía REST para no acoplarnos al token del SDK.
                 try {
-                    mpPayment = await paymentApi.get({ id: String(lite.id) });
+                    const getRes = await fetch(`https://api.mercadopago.com/v1/payments/${lite.id}`, {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                    });
+                    mpPayment = getRes.ok ? await getRes.json() : lite;
                 } catch {
                     // Si el GET falla, usar el lite del search — tiene los campos críticos
                     mpPayment = lite;

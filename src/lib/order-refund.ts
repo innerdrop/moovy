@@ -18,7 +18,7 @@
 // El helper es para los endpoints NUEVOS o los que NO tenían refund todavía.
 
 import { prisma } from "@/lib/prisma";
-import { createRefund } from "@/lib/mercadopago";
+import { createRefund, resolveOrderVendorToken } from "@/lib/mercadopago";
 import { auditLog } from "@/lib/security";
 
 interface RefundOptions {
@@ -106,8 +106,10 @@ export async function refundOrderIfPaid(
             return { refunded: false, alreadyRefunded: false, notApplicable: true, failed: false, reason: "no_mp_payment_id" };
         }
 
-        // Disparar refund en MP
-        const refundResult = await createRefund(order.mpPaymentId);
+        // Disparar refund en MP — con split, el pago vive en la cuenta del comercio,
+        // así que el refund debe usar el token del vendedor (null = token plataforma).
+        const vendorToken = await resolveOrderVendorToken(order.id);
+        const refundResult = await createRefund(order.mpPaymentId, vendorToken);
 
         if (!refundResult) {
             // Falló el refund — emitir socket alert al admin para resolver manual

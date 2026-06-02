@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-02 (rama `fix/split-pagos-token-vendedor`)
+
+fix(mp-split): operaciones post-pago usan el token del vendedor + redondeo del marketplace_fee. createRefund y la reconciliacion (order-payment-confirm) resuelven el mpAccessToken del comercio via resolveOrderVendorToken (en split el pago vive en la cuenta del vendedor; con token de plataforma daban 404/no encontraban el pago). marketplace_fee redondeado a centavos y clamp [0,total-1] para evitar 400 de MP. Pedidos sin split y multi-vendor siguen usando el token de plataforma como antes.
+
+**Archivos:** src/app/api/cron/retry-assignments/route.ts, src/app/api/merchant/orders/[id]/reject/route.ts, src/app/api/orders/route.ts, src/lib/mercadopago.ts, src/lib/order-payment-confirm.ts, src/lib/order-refund.ts
+
 ## 2026-05-30 (rama `fix/mp-oauth-test-token`)
 
 fix(mp-oauth): enviar test_token:true en OAuth cuando MP_OAUTH_TEST_MODE=true, para vincular vendedores de prueba con token de sandbox y poder validar el split de pagos en testing. Gateado por env var (inerte en producción). Sin esto, MP devolvía token de producción y las tarjetas de prueba eran rechazadas.

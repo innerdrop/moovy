@@ -1,6 +1,7 @@
 // MercadoPago SDK Singleton + Helpers
 import { MercadoPagoConfig, Preference, Payment, MerchantOrder } from "mercadopago";
 import crypto from "crypto";
+import { prisma } from "@/lib/prisma";
 
 const globalForMp = global as unknown as { mpClient: MercadoPagoConfig };
 
@@ -321,16 +322,27 @@ export async function createVendorPreference(
 /**
  * AUDIT FIX 2.3: Create a full refund for a MercadoPago payment.
  * Uses the MP REST API directly since the SDK v2 Refund class may not be available.
+ *
+ * Rama fix/split-pagos-token-vendedor (2026-06-02):
+ * En pedidos con split, el `payment` vive en la cuenta del COMERCIO, no en la de
+ * la plataforma. Reembolsarlo con el token de la plataforma da 404/403. Por eso
+ * `createRefund` ahora acepta el token del vendedor. Si no se pasa (pago simple,
+ * sin split), cae al `MP_ACCESS_TOKEN` de la plataforma como antes.
+ *
+ * @param vendorAccessToken Token del comercio dueño del pago (split). Opcional.
  * @returns The refund response from MP, or null if the refund failed.
  */
-export async function createRefund(mpPaymentId: string): Promise<{
+export async function createRefund(
+    mpPaymentId: string,
+    vendorAccessToken?: string | null
+): Promise<{
     id: number;
     status: string;
     amount: number;
 } | null> {
-    const accessToken = process.env.MP_ACCESS_TOKEN;
+    const accessToken = vendorAccessToken || process.env.MP_ACCESS_TOKEN;
     if (!accessToken) {
-        console.error("[MP Refund] No MP_ACCESS_TOKEN configured");
+        console.error("[MP Refund] No access token available (vendor ni plataforma)");
         return null;
     }
 
@@ -362,6 +374,49 @@ export async function createRefund(mpPaymentId: string): Promise<{
         };
     } catch (err) {
         console.error(`[MP Refund] Error for payment ${mpPaymentId}:`, err);
+        return null;
+    }
+}
+
+// ─── Split: resolver token del vendedor de un pedido ─────────────────────────
+
+/**
+ * Rama fix/split-pagos-token-vendedor (2026-06-02):
+ * Devuelve el `mpAccessToken` del comercio/vendedor dueño del pago de un pedido,
+ * para usarlo en operaciones post-pago (refund, reconciliación). Replica la misma
+ * lógica que la creación de la preferencia en `api/orders/route.ts`:
+ *   - Single-vendor con comercio/seller vinculado → su token (pago con split).
+ *   - Multi-vendor o sin token vinculado → null (cae al token de plataforma, igual
+ *     que hoy: esos pedidos no usan split).
+ * Nunca throwea; ante cualquier duda devuelve null (default seguro = token plataforma).
+ */
+export async function resolveOrderVendorToken(orderId: string): Promise<string | null> {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: { subOrders: { select: { merchantId: true, sellerId: true } } },
+        });
+        // Solo single-vendor usa split. Multi-vendor (>1) o sin subOrders → plataforma.
+        if (!order || order.subOrders.length !== 1) return null;
+
+        const sub = order.subOrders[0];
+        if (sub.merchantId) {
+            const m = await prisma.merchant.findUnique({
+                where: { id: sub.merchantId },
+                select: { mpAccessToken: true },
+            });
+            return m?.mpAccessToken || null;
+        }
+        if (sub.sellerId) {
+            const s = await prisma.sellerProfile.findUnique({
+                where: { id: sub.sellerId },
+                select: { mpAccessToken: true },
+            });
+            return s?.mpAccessToken || null;
+        }
+        return null;
+    } catch (err) {
+        console.error(`[MP] resolveOrderVendorToken error for order ${orderId}:`, err);
         return null;
     }
 }

@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
-import { createRefund } from "@/lib/mercadopago";
+import { createRefund, resolveOrderVendorToken } from "@/lib/mercadopago";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 
 const socketUrl = process.env.SOCKET_INTERNAL_URL || "http://localhost:3001";
@@ -117,7 +117,8 @@ export async function POST(
                 });
 
                 if (payment?.mpPaymentId) {
-                    const refundResult = await createRefund(payment.mpPaymentId);
+                    const vendorToken = await resolveOrderVendorToken(order.id);
+                    const refundResult = await createRefund(payment.mpPaymentId, vendorToken);
                     if (refundResult) {
                         // Update order payment status to reflect refund
                         await prisma.order.update({

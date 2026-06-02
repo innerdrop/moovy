@@ -1163,8 +1163,12 @@ export async function POST(request: Request) {
 
                 // marketplace_fee only valid for split payments (vendor's token)
                 // Passing it with Moovy's own token causes a 400 from the MP API
+                // fix/split-pagos-token-vendedor: redondear a centavos (MP rechaza
+                // montos con >2 decimales con 400) y clamp [0, total-1] para que el
+                // fee nunca sea ≥ al total ni negativo.
+                const rawMarketplaceFee = orderForPref.subOrders.reduce((s, sub) => s + (sub.moovyCommission || 0), 0);
                 const marketplaceFee = vendorAccessToken
-                    ? orderForPref.subOrders.reduce((s, sub) => s + (sub.moovyCommission || 0), 0)
+                    ? Math.max(0, Math.min(Math.round(rawMarketplaceFee * 100) / 100, orderForPref.total - 1))
                     : 0;
                 const prefBody = buildPreferenceBody(orderForPref, baseUrl, marketplaceFee);
 

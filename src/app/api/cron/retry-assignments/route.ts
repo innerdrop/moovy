@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { verifyBearerToken } from "@/lib/env-validation";
 import { cronLogger } from "@/lib/logger";
-import { createRefund } from "@/lib/mercadopago";
+import { createRefund, resolveOrderVendorToken } from "@/lib/mercadopago";
 import { recordPointsTransaction, reverseOrderPoints } from "@/lib/points";
 import { notifyBuyerOrderAutoCancelled } from "@/lib/notifications";
 import { recordCronRun } from "@/lib/cron-health";
@@ -225,7 +225,8 @@ async function autoCancelStuckOrder(
             });
 
             if (payment?.mpPaymentId) {
-                const refundResult = await createRefund(payment.mpPaymentId);
+                const vendorToken = await resolveOrderVendorToken(fullOrder.id);
+                const refundResult = await createRefund(payment.mpPaymentId, vendorToken);
                 if (refundResult) {
                     await prisma.order.update({
                         where: { id: fullOrder.id },
