@@ -6,6 +6,63 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+// Rama fix/asignacion-match-vehiculo: SIZE_METADATA da el peso por defecto de cada
+// ProductSize cuando el comercio elige tamaño pero no carga gramos exactos.
+import { SIZE_METADATA, type ProductSize } from "@/lib/product-weight";
+
+/**
+ * Rama fix/asignacion-match-vehiculo.
+ * Resuelve el snapshot de tamaño que se persiste en el Product a partir del
+ * `productSize` (selector Glovo-style MICRO..XL) que elige el comercio.
+ *
+ * Cierra el bug donde `productSize` se parseaba pero se descartaba: el tamaño
+ * elegido nunca llegaba al Product, así que el motor de asignación trataba
+ * todo como MICRO y mandaba bicis a llevar heladeras.
+ *
+ * Reglas:
+ *  - Solo deriva si el comercio NO eligió un packageCategoryId explícito
+ *    (ese tiene precedencia, es la fuente de verdad más exacta).
+ *  - `packageCategoryId` ← id de la PackageCategory cuyo name === productSize.
+ *  - `weightGrams` ← si no vino del form, usa SIZE_METADATA[size].weightGrams.
+ *  - Defensivo: si la categoría no existe en DB, NO toca packageCategoryId
+ *    (deja el valor original) y solo completa el peso por defecto.
+ */
+async function resolveSizeSnapshot(input: {
+    productSize?: ProductSize | "" | null;
+    packageCategoryId: string | null;
+    weightGrams: number | null;
+}): Promise<{ packageCategoryId: string | null; weightGrams: number | null }> {
+    const size = input.productSize;
+    // Sin tamaño elegido (null/undefined/"") → no derivar. `!size` ya cubre "".
+    if (!size) {
+        return { packageCategoryId: input.packageCategoryId, weightGrams: input.weightGrams };
+    }
+
+    const meta = SIZE_METADATA[size as ProductSize];
+    // weightGrams: respetar el del form si vino; si no, default de la categoría.
+    const resolvedWeight = input.weightGrams ?? meta?.weightGrams ?? null;
+
+    // Si ya hay packageCategoryId explícito, ese gana — solo completamos el peso.
+    if (input.packageCategoryId) {
+        return { packageCategoryId: input.packageCategoryId, weightGrams: resolvedWeight };
+    }
+
+    // Derivar packageCategoryId desde el name === productSize.
+    try {
+        const category = await prisma.packageCategory.findUnique({
+            where: { name: size as string },
+            select: { id: true },
+        });
+        return {
+            packageCategoryId: category?.id ?? null,
+            weightGrams: resolvedWeight,
+        };
+    } catch (err) {
+        // Defensivo: si falla el lookup, no rompemos el alta del producto.
+        console.error("[resolveSizeSnapshot] PackageCategory lookup failed:", err);
+        return { packageCategoryId: input.packageCategoryId, weightGrams: resolvedWeight };
+    }
+}
 
 const productSchema = z.object({
     name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -225,6 +282,14 @@ export async function createProduct(formData: FormData) {
 
         const slug = `${data.name.toLowerCase().replace(/ /g, "-")}-${Date.now()}`;
 
+        // Rama fix/asignacion-match-vehiculo: persistir el tamaño elegido por el
+        // comercio (productSize) en packageCategoryId/weightGrams del Product.
+        const sizeSnapshot = await resolveSizeSnapshot({
+            productSize: data.productSize,
+            packageCategoryId: data.packageCategoryId,
+            weightGrams: data.weightGrams,
+        });
+
         await prisma.product.create({
             data: {
                 name: data.name,
@@ -235,9 +300,11 @@ export async function createProduct(formData: FormData) {
                 stock: data.stock,
                 merchantId: merchant.id,
                 // Rama feat/peso-volumen-productos
-                weightGrams: data.weightGrams,
+                // Rama fix/asignacion-match-vehiculo: weightGrams/packageCategoryId
+                // ahora salen del snapshot que respeta el productSize elegido.
+                weightGrams: sizeSnapshot.weightGrams,
                 volumeMl: data.volumeMl,
-                packageCategoryId: data.packageCategoryId,
+                packageCategoryId: sizeSnapshot.packageCategoryId,
                 images: data.imageUrls && data.imageUrls.length > 0 ? {
                     create: data.imageUrls.map((url: string, index: number) => ({
                         url,
@@ -308,6 +375,13 @@ export async function updateProduct(productId: string, formData: FormData) {
             return { error: "No tienes permiso para editar este producto." };
         }
 
+        // Rama fix/asignacion-match-vehiculo: mismo snapshot de tamaño que en create.
+        const sizeSnapshot = await resolveSizeSnapshot({
+            productSize: data.productSize,
+            packageCategoryId: data.packageCategoryId,
+            weightGrams: data.weightGrams,
+        });
+
         // Update the product
         await prisma.product.update({
             where: { id: productId },
@@ -317,9 +391,10 @@ export async function updateProduct(productId: string, formData: FormData) {
                 price: data.price,
                 stock: data.stock,
                 // Rama feat/peso-volumen-productos
-                weightGrams: data.weightGrams,
+                // Rama fix/asignacion-match-vehiculo: persistir el tamaño elegido.
+                weightGrams: sizeSnapshot.weightGrams,
                 volumeMl: data.volumeMl,
-                packageCategoryId: data.packageCategoryId,
+                packageCategoryId: sizeSnapshot.packageCategoryId,
             },
         });
 

@@ -5,6 +5,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { requireDriverApi } from "@/lib/driver-auth";
+// Rama fix/asignacion-match-vehiculo: antes de permitir el claim, validamos que el
+// vehículo del driver pueda transportar el pedido. calculateOrderCategory deriva los
+// vehículos permitidos (allowedVehicles) a partir de OrderItem.packageCategoryName;
+// vehicleTypeMatches normaliza español/enum para comparar contra el del driver.
+import { calculateOrderCategory } from "@/lib/assignment-engine";
+import { vehicleTypeMatches } from "@/lib/vehicle-type-mapping";
 
 export async function POST(
     request: Request,
@@ -30,6 +36,43 @@ export async function POST(
 
         if (!driver.isActive) {
             return NextResponse.json({ error: "Tu cuenta está desactivada" }, { status: 403 });
+        }
+
+        // ─── Rama fix/asignacion-match-vehiculo ──────────────────────────────────
+        // FILTRO DE VEHÍCULO: un driver no puede autoasignarse un pedido que su
+        // vehículo no puede transportar (antes el claim no chequeaba nada, así que
+        // una bici podía tomar un pedido con un colchón XL). Mismo criterio que usa
+        // findNextEligibleDriver en el assignment-engine: comparamos el vehicleType
+        // del driver contra los allowedVehicles que deriva calculateOrderCategory.
+        //
+        // Solo validamos si el pedido existe, está disponible (READY) y tiene items
+        // con categoría. Si por datos viejos no hay categoría resoluble,
+        // calculateOrderCategory devuelve un set de vehículos (nunca vacío), así que
+        // el chequeo es seguro.
+        const orderItems = await prisma.orderItem.findMany({
+            where: { orderId },
+            select: { packageCategoryName: true, quantity: true, name: true },
+        });
+
+        if (orderItems.length > 0) {
+            const orderCategory = await calculateOrderCategory(
+                orderItems.map((it) => ({
+                    packageCategory: it.packageCategoryName || null,
+                    quantity: it.quantity,
+                    name: it.name || undefined,
+                }))
+            );
+
+            if (!vehicleTypeMatches(driver.vehicleType, orderCategory.allowedVehicles)) {
+                return NextResponse.json(
+                    {
+                        error: "Tu vehículo no puede transportar este pedido por su tamaño o peso.",
+                        allowedVehicles: orderCategory.allowedVehicles,
+                        packageCategory: orderCategory.category,
+                    },
+                    { status: 409 }
+                );
+            }
         }
 
         // Atomic claim using updateMany with condition to prevent race condition

@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-04 (rama `fix/asignacion-match-vehiculo`)
+
+fix(asignacion): conectar tamano producto -> pedido -> motor de asignacion + filtro de vehiculo en claim + costo de envio por tamano real. El comercio persiste el tamano elegido (packageCategoryId + weightGrams); al crear el pedido se setea OrderItem.packageCategoryName desde el producto/listing; el costo de envio usa la categoria real en vez de MEDIUM fijo; y la ruta claim rechaza con 409 si el vehiculo del repartidor no puede transportar el tamano. Cierra el agujero P0 donde todo pedido se trataba como MICRO y cualquier vehiculo (incluida bici) podia recibir un mueble. Sin cambios de schema.
+
+**Archivos:** src/app/api/driver/orders/[id]/claim/route.ts, src/app/api/orders/route.ts, src/app/comercios/actions.ts
+
 ## 2026-06-02 (rama `fix/split-fee-incluye-envio`)
 
 fix(mp-split): el marketplace_fee ahora incluye el delivery fee completo (Grupo C). Moovy cobra el envio en el split (marketplace_fee = comision del comercio + envio) y le paga al repartidor por PayoutBatch; el comercio recibe solo su producto menos comision. Alinea el reparto fisico de MP con la contabilidad interna (order-totals.ts) que ya asumia este flujo. Multi-vendor y sin-split no cambian.

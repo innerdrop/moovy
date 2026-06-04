@@ -19,6 +19,11 @@ import { getEffectiveCommission, getEffectiveCommissionWithSource } from "@/lib/
 import { buildSubOrderFinancialSnapshot } from "@/lib/orders/order-totals";
 import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
+// Rama fix/asignacion-match-vehiculo: el tamaño del producto debe fluir al pedido
+// (OrderItem.packageCategoryName) y al cálculo de envío. calculateOrderCategory
+// deriva la categoría agregada del pedido; getSizeFromWeight es el fallback por peso.
+import { calculateOrderCategory } from "@/lib/assignment-engine";
+import { getSizeFromWeight } from "@/lib/product-weight";
 
 // Read a MoovyConfig value with fallback
 async function getConfigValue(key: string, fallback: string): Promise<string> {
@@ -171,6 +176,68 @@ export async function POST(request: Request) {
         // Load OPS config from Biblia Financiera (StoreSettings) — single DB read for all config
         const opsSettings = await getOpsSettings();
 
+        // ─── Rama fix/asignacion-match-vehiculo ──────────────────────────────────
+        // Mapa productId/listingId → nombre de categoría de paquete (MICRO..XL).
+        //
+        // PROBLEMA QUE RESUELVE: el motor de asignación lee OrderItem.packageCategoryName
+        // pero ese campo NUNCA se completaba al crear el pedido (quedaba null), y el
+        // costo de envío se calculaba con packageCategory:"MEDIUM" hardcodeado. Resultado:
+        // un colchón XL y un alfajor MICRO costaban lo mismo de envío y ambos podían
+        // caer en una bici.
+        //
+        // SIN N+1: cargamos TODOS los productos y listings del carrito en exactamente
+        // DOS queries (una por tabla), con su relación packageCategory{name} + weightGrams.
+        // El mapa se reutiliza tanto para el cálculo de envío (paso 3) como para setear
+        // OrderItem.packageCategoryName dentro de la transacción (paso 2).
+        //
+        // CASCADA de resolución por item:
+        //   Product  → 1. packageCategory?.name (tamaño elegido por el comercio)
+        //              2. getSizeFromWeight(weightGrams) (derivado del peso explícito)
+        //              3. "SMALL" (fallback conservador, NO "MICRO" — evita mandar
+        //                 bicis a paquetes sin data)
+        //   Listing  → 1. getSizeFromWeight(weightKg × 1000) (Listing NO tiene
+        //                 packageCategory ni weightGrams en el schema; usa weightKg)
+        //              2. "SMALL" (mismo fallback conservador)
+        const productIds = items.filter((i) => i.type !== "listing").map((i) => i.productId);
+        const listingIds = items.filter((i) => i.type === "listing").map((i) => i.productId);
+
+        const [productCats, listingCats] = await Promise.all([
+            productIds.length > 0
+                ? prisma.product.findMany({
+                      where: { id: { in: productIds } },
+                      select: {
+                          id: true,
+                          weightGrams: true,
+                          packageCategory: { select: { name: true } },
+                      },
+                  })
+                : Promise.resolve(
+                      [] as Array<{ id: string; weightGrams: number | null; packageCategory: { name: string } | null }>
+                  ),
+            // Listing usa weightKg (Float, kilogramos), no weightGrams ni packageCategory.
+            listingIds.length > 0
+                ? prisma.listing.findMany({
+                      where: { id: { in: listingIds } },
+                      select: { id: true, weightKg: true },
+                  })
+                : Promise.resolve([] as Array<{ id: string; weightKg: number | null }>),
+        ]);
+
+        const packageCategoryNameById = new Map<string, string>();
+        for (const p of productCats) {
+            const name =
+                p.packageCategory?.name ||
+                (p.weightGrams != null ? getSizeFromWeight(p.weightGrams) : "SMALL");
+            packageCategoryNameById.set(p.id, name);
+        }
+        for (const l of listingCats) {
+            const name = l.weightKg != null ? getSizeFromWeight(Math.round(l.weightKg * 1000)) : "SMALL";
+            packageCategoryNameById.set(l.id, name);
+        }
+        // Helper: nombre de categoría para un item (fallback conservador SMALL).
+        const resolveItemCategoryName = (productOrListingId: string): string =>
+            packageCategoryNameById.get(productOrListingId) ?? "SMALL";
+
         // DELIVERY FEE: SIEMPRE recalcular server-side. NUNCA confiar en el frontend.
         let validatedDeliveryFee = 0;
         // Per-group validated delivery fees (multi-vendor).
@@ -197,9 +264,20 @@ export async function POST(request: Request) {
 
                     if (groupDistKm > 0) {
                         try {
+                            // Rama fix/asignacion-match-vehiculo: categoría REAL del grupo
+                            // (antes "MEDIUM" hardcodeado). Reutiliza el mapa armado arriba
+                            // (sin queries extra). Un grupo con un colchón XL ahora cobra
+                            // tarifa XL; uno con un alfajor MICRO cobra MICRO.
+                            const groupCategory = await calculateOrderCategory(
+                                group.items.map((gi: { productId: string; quantity: number; name?: string }) => ({
+                                    packageCategory: resolveItemCategoryName(gi.productId),
+                                    quantity: gi.quantity,
+                                    name: gi.name,
+                                }))
+                            );
                             const serverFee = calculateShippingCost({
                                 distanceKm: groupDistKm,
-                                packageCategory: "MEDIUM",
+                                packageCategory: groupCategory.category,
                                 shipmentTypeCode: "STANDARD",
                                 orderTotal: 0,
                                 freeDeliveryMinimum: null,
@@ -262,9 +340,18 @@ export async function POST(request: Request) {
                 // SIEMPRE calcular server-side si tenemos distancia
                 if (distanceKm && distanceKm > 0) {
                     try {
+                        // Rama fix/asignacion-match-vehiculo: categoría REAL del pedido
+                        // (antes "MEDIUM" hardcodeado). Usa el mapa armado arriba.
+                        const orderCategory = await calculateOrderCategory(
+                            items.map((i) => ({
+                                packageCategory: resolveItemCategoryName(i.productId),
+                                quantity: i.quantity,
+                                name: i.name,
+                            }))
+                        );
                         const serverFee = calculateShippingCost({
                             distanceKm,
-                            packageCategory: "MEDIUM",
+                            packageCategory: orderCategory.category,
                             shipmentTypeCode: "STANDARD",
                             orderTotal: 0,
                             freeDeliveryMinimum: null,
@@ -841,6 +928,12 @@ export async function POST(request: Request) {
                         quantity: item.quantity,
                         variantName: item.variantName || null,
                         subtotal: item.price * item.quantity,
+                        // Rama fix/asignacion-match-vehiculo: persistir la categoría de
+                        // paquete del item (MICRO..XL). Este es el campo que lee el motor
+                        // de asignación (calculateOrderCategory en assignment-engine) para
+                        // decidir qué vehículos pueden llevar el pedido. Antes quedaba null
+                        // y todo se trataba como MICRO. Snapshot inmutable del pedido.
+                        packageCategoryName: resolveItemCategoryName(item.productId),
                     },
                 });
 
