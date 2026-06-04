@@ -1572,6 +1572,11 @@ enum AssignmentOutcomeEnum {
   REJECTED
   TIMEOUT
   SKIPPED
+  // feat/driver-cancelar-pedido (2026-06-04): el driver canceló DESPUÉS de aceptar
+  // (antes de retirar). Distinto de REJECTED (rechazo de la oferta, pre-aceptación).
+  // Loguear con este driverId lo excluye automáticamente de la re-asignación
+  // (findNextEligibleDriver junta excludeDriverIds desde AssignmentLog).
+  CANCELLED_BY_DRIVER
 }
 
 enum PendingAssignmentStatus {
@@ -1737,6 +1742,11 @@ model AssignmentLog {
   respondedAt   DateTime?
   outcome       AssignmentOutcomeEnum @default(ACCEPTED)
   distanceKm    Float?
+  // feat/driver-cancelar-pedido (2026-06-04): motivo cuando el driver cancela un
+  // pedido YA aceptado (outcome=CANCELLED_BY_DRIVER). Nullable porque el resto de
+  // outcomes (ACCEPTED/REJECTED/TIMEOUT/SKIPPED) no llevan motivo. Guarda el enum
+  // del motivo + comentario libre opcional concatenado para audit AAIP.
+  cancelReason  String?
 
   order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)

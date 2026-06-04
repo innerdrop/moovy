@@ -584,6 +584,17 @@ export default function RiderDashboard() {
         returnToMerchantMode?: boolean;
     }>({ open: false, type: "pickup", orderId: null, counterpartName: null });
 
+    // feat/driver-cancelar-pedido (2026-06-04): modal para cancelar un pedido YA
+    // aceptado (antes de retirarlo). Distinto de rechazar la oferta. Pide motivo.
+    const [cancelModal, setCancelModal] = useState<{
+        open: boolean;
+        orderId: string | null;
+    }>({ open: false, orderId: null });
+    const [cancelReason, setCancelReason] = useState<string>("");
+    const [cancelComment, setCancelComment] = useState<string>("");
+    const [cancelling, setCancelling] = useState(false);
+    const [cancelError, setCancelError] = useState<string | null>(null);
+
     // SPA Navigation State
     const [activeView, setActiveView] = useState<string>("dashboard");
 
@@ -737,6 +748,43 @@ export default function RiderDashboard() {
             setAdvancingStatus(false);
         }
     }, [fetchDashboard]);
+
+    // feat/driver-cancelar-pedido (2026-06-04): envía la cancelación del pedido
+    // aceptado al backend, que lo reasigna a otro repartidor. Solo válido pre-retiro.
+    const submitCancelOrder = useCallback(async () => {
+        if (!cancelModal.orderId || !cancelReason) {
+            setCancelError("Elegí un motivo para cancelar.");
+            return;
+        }
+        setCancelling(true);
+        setCancelError(null);
+        try {
+            const res = await fetch(`/api/driver/orders/${cancelModal.orderId}/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    reason: cancelReason,
+                    comment: cancelComment.trim() || undefined,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success(data.message || "Pedido cancelado");
+                haptic.medium();
+                setCancelModal({ open: false, orderId: null });
+                setCancelReason("");
+                setCancelComment("");
+                await fetchDashboard(true);
+            } else {
+                setCancelError(data.error || "No se pudo cancelar el pedido");
+            }
+        } catch (e) {
+            console.error(e);
+            setCancelError("Error de conexión. Intentá de nuevo.");
+        } finally {
+            setCancelling(false);
+        }
+    }, [cancelModal.orderId, cancelReason, cancelComment, fetchDashboard]);
 
     // ISSUE-001: verifica el PIN contra el backend. Se pasa al PinKeypad.
     // Incluye GPS para validación de geofence server-side.
@@ -1508,6 +1556,26 @@ export default function RiderDashboard() {
                                                     }}
                                                 />
                                             )}
+
+                                            {/* feat/driver-cancelar-pedido (2026-06-04):
+                                                Cancelar pedido SOLO en etapa to_merchant
+                                                (aceptado, antes de retirar). Tras retirar
+                                                ya no se puede cancelar — corresponde devolver
+                                                al comercio. */}
+                                            {riderStage === "to_merchant" && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCancelReason("");
+                                                        setCancelComment("");
+                                                        setCancelError(null);
+                                                        setCancelModal({ open: true, orderId: pedidoActivo.id });
+                                                    }}
+                                                    className="mt-3 w-full py-2.5 text-sm font-semibold text-red-500 dark:text-red-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    Cancelar pedido
+                                                </button>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="py-8 text-center">
@@ -1974,6 +2042,96 @@ export default function RiderDashboard() {
                         >
                             Volver al pedido
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+               feat/driver-cancelar-pedido (2026-06-04)
+               MODAL CANCELAR PEDIDO ACEPTADO (pre-retiro)
+               Pide motivo + comentario opcional. Al confirmar llama al
+               endpoint que reasigna el pedido a otro repartidor.
+            ═══════════════════════════════════════════════ */}
+            {cancelModal.open && (
+                <div
+                    className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+                    onClick={() => { if (!cancelling) setCancelModal({ open: false, orderId: null }); }}
+                >
+                    <div
+                        className="w-full sm:max-w-md bg-white dark:bg-[#12141c] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 className="text-lg font-extrabold text-[var(--rider-text)] mb-1">
+                            ¿Por qué cancelás el pedido?
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            Vamos a buscar otro repartidor. Cancelar pedidos seguido puede afectar tu cuenta.
+                        </p>
+
+                        <div className="space-y-2 mb-4">
+                            {[
+                                { value: "ACCEPTED_BY_MISTAKE", label: "Acepté por error" },
+                                { value: "HARD_ACCESS", label: "Dirección de difícil acceso" },
+                                { value: "VEHICLE_NOT_SUITABLE", label: "Mi vehículo no es apto" },
+                                { value: "MECHANICAL_PERSONAL", label: "Problema mecánico o personal" },
+                                { value: "DISTANCE", label: "Distancia mayor a la esperada" },
+                                { value: "OTHER", label: "Otro" },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => { setCancelReason(opt.value); setCancelError(null); }}
+                                    className={`w-full text-left px-4 py-3 rounded-2xl border-2 text-sm font-semibold transition-colors ${
+                                        cancelReason === opt.value
+                                            ? "border-[var(--rider-accent)] bg-[var(--rider-accent)]/10 text-[var(--rider-text)]"
+                                            : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {cancelReason === "OTHER" && (
+                            <textarea
+                                value={cancelComment}
+                                onChange={(e) => setCancelComment(e.target.value)}
+                                maxLength={300}
+                                rows={3}
+                                placeholder="Contanos qué pasó (opcional)"
+                                className="w-full mb-4 px-4 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-transparent text-sm text-[var(--rider-text)] resize-none focus:border-[var(--rider-accent)] outline-none"
+                            />
+                        )}
+
+                        {cancelError && (
+                            <p className="text-sm text-red-500 mb-3 text-center">{cancelError}</p>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                disabled={cancelling}
+                                onClick={() => setCancelModal({ open: false, orderId: null })}
+                                className="flex-1 py-3 rounded-2xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 disabled:opacity-50"
+                            >
+                                Volver
+                            </button>
+                            <button
+                                type="button"
+                                disabled={cancelling || !cancelReason}
+                                onClick={submitCancelOrder}
+                                className="flex-1 py-3 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {cancelling ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Cancelando...
+                                    </>
+                                ) : (
+                                    "Confirmar cancelación"
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -35,6 +35,13 @@ const STATUS_MESSAGES: Record<string, MessageBuilder> = {
                 ? `Pedido confirmado · ${ctx.merchantName} · ${formatMoney(ctx.total)}`
                 : `Tu pedido ${n} fue confirmado ✅`,
     },
+    // feat/driver-cancelar-pedido (2026-06-04): el repartidor asignado canceló antes
+    // de retirar y estamos reasignando. Wording suave — NUNCA decimos "cancelado" al
+    // comprador: para él el pedido sigue en curso.
+    REASSIGNING: {
+        title: '🛵 Buscando tu repartidor',
+        body: (n) => `Estamos asignando otro repartidor para tu pedido ${n}. Seguimos en eso 💪`,
+    },
     PREPARING: {
         title: '👨‍🍳 Preparando tu pedido',
         body: (n, ctx) =>

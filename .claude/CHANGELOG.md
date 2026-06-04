@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-04 (rama `feat/driver-cancelar-pedido`)
+
+feat(driver): cancelacion de pedido aceptado por el repartidor (antes de retirar) con motivo + reasignacion automatica excluyendolo. Endpoint POST /api/driver/orders/[id]/cancel + boton y modal de motivos en la app del repartidor. La cancelacion se registra en AssignmentLog (outcome CANCELLED_BY_DRIVER + cancelReason) SIN penalizar con fraudScore ni auto-suspender (Opcion A): cancelar es un evento operativo normal; el analisis de abuso queda para despues con umbral propio. Schema: AssignmentLog.cancelReason String? + valor CANCELLED_BY_DRIVER en AssignmentOutcomeEnum (requiere prisma db push).
+
+**Archivos:** prisma/schema.prisma, src/app/api/driver/orders/[id]/cancel/route.ts, src/app/repartidor/(protected)/dashboard/page.tsx, src/lib/assignment-engine.ts, src/lib/notifications.ts
+
 ## 2026-06-04 (rama `fix/asignacion-match-vehiculo`)
 
 fix(asignacion): conectar tamano producto -> pedido -> motor de asignacion + filtro de vehiculo en claim + costo de envio por tamano real. El comercio persiste el tamano elegido (packageCategoryId + weightGrams); al crear el pedido se setea OrderItem.packageCategoryName desde el producto/listing; el costo de envio usa la categoria real en vez de MEDIUM fijo; y la ruta claim rechaza con 409 si el vehiculo del repartidor no puede transportar el tamano. Cierra el agujero P0 donde todo pedido se trataba como MICRO y cualquier vehiculo (incluida bici) podia recibir un mueble. Sin cambios de schema.

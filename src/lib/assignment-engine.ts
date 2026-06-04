@@ -16,6 +16,8 @@ import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, type Sh
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
 import { deliveryLogger } from "./logger";
 import { sendDriverAssignedEmail } from "./email-legal-ux";
+// feat/driver-cancelar-pedido (2026-06-04): reusamos el mismo umbral de fraude que
+// el flujo de PIN para auto-suspender drivers que cancelan pedidos ya aceptados.
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -1406,6 +1408,199 @@ export async function driverRejectOrder(
     } catch (error) {
         deliveryLogger.error({ driverId, error }, "Error rejecting order");
         return { success: false, error: "Error al rechazar el pedido" };
+    }
+}
+
+// ─── feat/driver-cancelar-pedido (2026-06-04) ─────────────────────────────────────
+//
+// Cancelación de un pedido YA ACEPTADO por el repartidor, ANTES de retirarlo del
+// comercio. Distinto de driverRejectOrder (que rechaza la OFERTA, pre-aceptación):
+// acá el driver ya quedó asignado (Order.driverId set, deliveryStatus=DRIVER_ASSIGNED,
+// Driver=OCUPADO, PendingAssignment=COMPLETED) y se arrepiente / no puede cumplir.
+//
+// Reglas de negocio:
+//   - SOLO permitido mientras el pedido no fue retirado (deliveryStatus null o
+//     DRIVER_ASSIGNED). Si ya está DRIVER_ARRIVED/PICKED_UP o posterior → bloqueado
+//     (usar "devolver al comercio"). El guard de status vive en el endpoint (409),
+//     acá re-validamos defensivamente dentro de la tx Serializable.
+//   - Libera al driver (DISPONIBLE) y deja el Order reasignable: driverId=null,
+//     status="PREPARING" (el comercio ya está preparando — NO volvemos a PENDING),
+//     deliveryStatus=null (vuelve a "esperando repartidor").
+//   - Loguea AssignmentLog outcome=CANCELLED_BY_DRIVER con el motivo. Esto excluye
+//     automáticamente a este driver de la re-asignación (findNextEligibleDriver junta
+//     excludeDriverIds desde AssignmentLog).
+//   - Opción A: NO penaliza con fraudScore ni auto-suspende. Cancelar tras aceptar es
+//     un evento operativo normal (acceso difícil, clima, error). Solo se registra para
+//     un análisis de abuso de cancelaciones posterior (umbral propio, a definir).
+//   - Resetea PendingAssignment a un estado no-WAITING para que startAssignmentCycle
+//     (que hace upsert) lo reabra limpio en la re-asignación.
+//
+// La re-asignación real se dispara fuera de la tx vía startAssignmentCycle(orderId),
+// fire-and-forget desde el endpoint.
+
+/** Motivos de cancelación de un pedido aceptado (UI repartidor). */
+export type DriverCancelReason =
+    | "ACCEPTED_BY_MISTAKE"
+    | "HARD_ACCESS"
+    | "VEHICLE_NOT_SUITABLE"
+    | "MECHANICAL_PERSONAL"
+    | "DISTANCE"
+    | "OTHER";
+
+export interface DriverCancelResult {
+    success: boolean;
+    error?: string;
+    /** HTTP status sugerido para el endpoint (default 400). */
+    status?: number;
+    /** True si el driver fue auto-suspendido por superar el umbral de fraude. */
+    autoSuspended?: boolean;
+    orderNumber?: string;
+}
+
+export async function driverCancelAcceptedOrder(
+    driverId: string,
+    orderId: string,
+    reason: DriverCancelReason,
+    comment?: string
+): Promise<DriverCancelResult> {
+    try {
+        // Concatenar motivo + comentario libre para audit AAIP (Ley 25.326).
+        const cancelReasonText = comment?.trim()
+            ? `${reason}: ${comment.trim().slice(0, 300)}`
+            : reason;
+
+        const txResult = await prisma.$transaction(
+            async (tx) => {
+                const order = await tx.order.findUnique({
+                    where: { id: orderId },
+                    select: {
+                        id: true,
+                        driverId: true,
+                        orderNumber: true,
+                        userId: true,
+                        merchantId: true,
+                        deliveryStatus: true,
+                    },
+                });
+
+                if (!order) {
+                    return { kind: "error" as const, status: 404, error: "Pedido no encontrado" };
+                }
+                // Guard de propiedad: solo el driver asignado puede cancelar.
+                if (order.driverId !== driverId) {
+                    return { kind: "error" as const, status: 403, error: "Este pedido no está asignado a ti" };
+                }
+                // Guard de estado: bloqueado si ya retiró (o posterior).
+                if (order.deliveryStatus && order.deliveryStatus !== "DRIVER_ASSIGNED") {
+                    return {
+                        kind: "error" as const,
+                        status: 409,
+                        error: "Ya retiraste el pedido. Si no podés entregarlo, usá la opción de devolver al comercio.",
+                    };
+                }
+
+                // Liberar el Order para re-asignación (sin tocar status del comercio).
+                await tx.order.update({
+                    where: { id: orderId },
+                    data: {
+                        driverId: null,
+                        status: "PREPARING",
+                        deliveryStatus: null,
+                        pendingDriverId: null,
+                        assignmentExpiresAt: null,
+                    },
+                });
+
+                // Resetear PendingAssignment para que startAssignmentCycle lo reabra.
+                await tx.pendingAssignment.updateMany({
+                    where: { orderId },
+                    data: { status: "FAILED", currentDriverId: null },
+                });
+
+                // Log de cancelación — excluye a este driver de la re-asignación.
+                await tx.assignmentLog.create({
+                    data: {
+                        orderId,
+                        driverId,
+                        respondedAt: new Date(),
+                        outcome: "CANCELLED_BY_DRIVER",
+                        cancelReason: cancelReasonText,
+                    },
+                });
+
+                // Liberar al driver.
+                await tx.driver.update({
+                    where: { id: driverId },
+                    data: { availabilityStatus: "DISPONIBLE" },
+                });
+
+                // feat/driver-cancelar-pedido (Opción A): la cancelación NO penaliza con
+                // fraudScore ni auto-suspende. Cancelar es un evento operativo normal
+                // (acceso difícil, clima, error). Solo queda REGISTRADA en AssignmentLog
+                // (outcome CANCELLED_BY_DRIVER + motivo). El análisis de abuso de
+                // cancelaciones se hará por separado, con su propio umbral, más adelante.
+                return {
+                    kind: "ok" as const,
+                    order,
+                };
+            },
+            { isolationLevel: "Serializable" }
+        );
+
+        if (txResult.kind === "error") {
+            return { success: false, status: txResult.status, error: txResult.error };
+        }
+
+        const { order } = txResult;
+
+        deliveryLogger.warn(
+            { driverId, orderId, orderNumber: order.orderNumber, reason },
+            "Driver cancelled accepted order — re-assigning"
+        );
+
+        // ── Notificaciones fire-and-forget (fuera de la tx) ──
+        // Al comprador: wording suave, NUNCA "cancelado".
+        if (order.userId) {
+            notifyBuyer(order.userId, "REASSIGNING", order.orderNumber, {
+                orderId: order.id,
+            }).catch((err) => deliveryLogger.error({ error: err }, "Push buyer reassign error"));
+        }
+
+        const emitPromises: Promise<void>[] = [
+            emitSocket("order_status_changed", `order:${order.id}`, {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                message: "Estamos asignando otro repartidor para tu pedido.",
+            }),
+            emitSocket("assignment_reopened", "admin:orders", {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                cancelledByDriverId: driverId,
+                reason,
+            }),
+        ];
+        if (order.merchantId) {
+            emitPromises.push(
+                emitSocket("order_status_changed", `merchant:${order.merchantId}`, {
+                    orderId: order.id,
+                    orderNumber: order.orderNumber,
+                    message: "El repartidor canceló. Estamos buscando otro — tu pedido sigue en curso.",
+                })
+            );
+        }
+        Promise.allSettled(emitPromises).catch((e) =>
+            deliveryLogger.error({ error: e }, "Socket emit error on driver cancel")
+        );
+
+        // ── Re-disparar la asignación excluyendo a este driver (vía AssignmentLog) ──
+        startAssignmentCycle(orderId).catch((err) =>
+            deliveryLogger.error({ error: err, orderId }, "Re-assignment after driver cancel failed")
+        );
+
+        return { success: true, orderNumber: order.orderNumber };
+    } catch (error) {
+        deliveryLogger.error({ driverId, orderId, error }, "Error cancelling accepted order");
+        return { success: false, status: 500, error: "Error al cancelar el pedido" };
     }
 }
 

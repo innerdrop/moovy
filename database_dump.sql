@@ -54,7 +54,8 @@ CREATE TYPE public."AssignmentOutcomeEnum" AS ENUM (
     'ACCEPTED',
     'REJECTED',
     'TIMEOUT',
-    'SKIPPED'
+    'SKIPPED',
+    'CANCELLED_BY_DRIVER'
 );
 
 
@@ -219,7 +220,8 @@ CREATE TABLE public."AssignmentLog" (
     "notifiedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "respondedAt" timestamp(3) without time zone,
     outcome public."AssignmentOutcomeEnum" DEFAULT 'ACCEPTED'::public."AssignmentOutcomeEnum" NOT NULL,
-    "distanceKm" double precision
+    "distanceKm" double precision,
+    "cancelReason" text
 );
 
 
@@ -2020,7 +2022,7 @@ COPY public."AdminNote" (id, "userId", "adminId", content, pinned, "createdAt", 
 -- Data for Name: AssignmentLog; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm") FROM stdin;
+COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm", "cancelReason") FROM stdin;
 \.
 
 
