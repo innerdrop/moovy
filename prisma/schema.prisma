@@ -1183,6 +1183,12 @@ model StoreSettings {
   zoneMultipliersJson      String  @default("{\"ZONA_A\":1.0,\"ZONA_B\":1.15,\"ZONA_C\":1.35}")
   climateMultipliersJson   String  @default("{\"normal\":1.0,\"lluvia_leve\":1.15,\"temporal_fuerte\":1.30}")
   activeClimateCondition   String  @default("normal")
+  // Rama fix/biblia-motor-envio-y-comisiones — SURGE (demanda):
+  // Multiplicador manual por demanda, espejo EXACTO de clima (toggle desde OPS).
+  // Multiplica SOLO el costo del viaje (igual que zona y clima), nunca el operativo.
+  // normal=1.0 / alta=1.20 / pico=1.40 (canónico CLAUDE.md).
+  demandMultipliersJson    String  @default("{\"normal\":1.0,\"alta\":1.20,\"pico\":1.40}")
+  activeDemandCondition    String  @default("normal")
   operationalCostPercent   Float   @default(5)
   // Array de zonas excluidas (sin cobertura). Shape por item:
   // { id, name, lat, lng, radiusKm, reason, active, createdAt, updatedAt }
@@ -1608,6 +1614,17 @@ model DeliveryRate {
   categoryId     String          @unique
   basePriceArs   Float
   pricePerKmArs  Float
+  // Rama fix/biblia-motor-envio-y-comisiones — MODELO B:
+  // Consumo del vehículo asociado a esta categoría (litros equivalentes por km).
+  // El costo_km YA NO es el valor fijo de pricePerKmArs, sino que se DERIVA del
+  // combustible global de la Biblia:
+  //   costo_km = StoreSettings.fuelPricePerLiter × consumptionPerKm × StoreSettings.maintenanceFactor
+  // Así, si sube la nafta, todos los vehículos se reajustan solos. El mínimo por
+  // vehículo sigue siendo basePriceArs. pricePerKmArs queda como valor legacy /
+  // fallback informativo (no se usa para cobrar si consumptionPerKm está presente).
+  // Seedeado con los consumos calcados a los costo_km canónicos de CLAUDE.md para
+  // que al lanzamiento (fuel=1591, maint=1.35) los números den IDÉNTICOS.
+  consumptionPerKm Float?        @default(0.0339875)
   isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

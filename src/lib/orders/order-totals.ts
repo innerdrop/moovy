@@ -32,6 +32,30 @@
 // - Repartidor 80% del costo del viaje SIN operativo (Biblia Financiera v3).
 
 import { getEffectiveCommissionWithSource, type CommissionSource } from "@/lib/merchant-loyalty";
+import { prisma } from "@/lib/prisma";
+
+// Rama fix/biblia-motor-envio-y-comisiones: rider share default ya NO es 80 fijo.
+// Si el caller no lo pasa, se lee de la Biblia (StoreSettings.riderCommissionPercent),
+// con 80 como respaldo conservador. Cache 1 min.
+let _riderShareCache: { value: number; at: number } | null = null;
+const RIDER_SHARE_TTL_MS = 60_000;
+async function getDefaultRiderSharePercent(): Promise<number> {
+    if (_riderShareCache && Date.now() - _riderShareCache.at < RIDER_SHARE_TTL_MS) {
+        return _riderShareCache.value;
+    }
+    try {
+        const settings = await prisma.storeSettings.findUnique({
+            where: { id: "settings" },
+            select: { riderCommissionPercent: true },
+        });
+        const raw = settings?.riderCommissionPercent;
+        const value = typeof raw === "number" && raw >= 0 && raw <= 100 ? raw : 80;
+        _riderShareCache = { value, at: Date.now() };
+        return value;
+    } catch {
+        return 80;
+    }
+}
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -63,9 +87,10 @@ export interface SubOrderFinancialSnapshotInput {
     precomputedMerchantRate?: number;
     precomputedMerchantSource?: CommissionSource;
     /**
-     * Porcentaje del costo del viaje que va al driver. Default 80 (Biblia v3).
-     * Lo dejamos parametrizado para que panel OPS pueda editarlo en el futuro
-     * (regla canónica #10 — todo parámetro editable post-launch).
+     * Porcentaje del costo del viaje que va al driver. Si no se pasa, se lee de
+     * la Biblia (StoreSettings.riderCommissionPercent), con 80 como respaldo
+     * conservador. Rama fix/biblia-motor-envio-y-comisiones: ya NO es 80 hardcodeado.
+     * Editable post-launch desde el panel OPS (regla canónica #10).
      */
     riderSharePercent?: number;
     /**
@@ -118,11 +143,14 @@ export async function buildSubOrderFinancialSnapshot(
         merchantId,
         sellerId,
         sellerCommissionRate = 12,
-        riderSharePercent = 80,
         precomputedMerchantRate,
         precomputedMerchantSource,
         zoneSnapshot,
     } = input;
+
+    // Rama fix/biblia-motor-envio-y-comisiones: si el caller no pasa riderSharePercent,
+    // se lee de la Biblia (no 80 fijo). orders/route.ts ya lo pasa explícito.
+    const riderSharePercent = input.riderSharePercent ?? await getDefaultRiderSharePercent();
 
     // ── Motor Logístico ─────────────────────────────────────────────────────
     // tripCost = lo que paga el cliente del envío MENOS lo operativo (que va a Moovy).

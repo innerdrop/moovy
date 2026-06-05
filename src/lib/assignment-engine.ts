@@ -100,14 +100,18 @@ async function calculateEstimatedEarnings(
     packageCategory: string,
     totalDistanceKm: number
 ): Promise<number> {
-    // Default rates per Biblia v3 (base + per-km, driver gets 80%)
+    // Rama fix/biblia-motor-envio-y-comisiones: valores CANÓNICOS de CLAUDE.md
+    // (costo_km + mínimo por vehículo), alineados con DeliveryRate y seed-delivery.
+    // Solo se usan como FALLBACK si la categoría no tiene DeliveryRate cargado.
+    //   MICRO/SMALL → Bici ($15/km, min $800) · MEDIUM → Moto ($73/km, min $1.500)
+    //   LARGE → Auto chico ($193/km, min $2.200) · XL → Pickup ($269/km, min $3.000)
     const FALLBACK_RATES: Record<string, { base: number; perKm: number }> = {
-        MICRO: { base: 800, perKm: 73 },
-        SMALL: { base: 1200, perKm: 73 },
-        MEDIUM: { base: 2500, perKm: 193 },
-        LARGE: { base: 3500, perKm: 222 },
-        XL: { base: 5000, perKm: 269 },
-        FREIGHT: { base: 8000, perKm: 329 },
+        MICRO: { base: 800, perKm: 15 },
+        SMALL: { base: 800, perKm: 15 },
+        MEDIUM: { base: 1500, perKm: 73 },
+        LARGE: { base: 2200, perKm: 193 },
+        XL: { base: 3000, perKm: 269 },
+        FREIGHT: { base: 3800, perKm: 329 },
     };
 
     try {

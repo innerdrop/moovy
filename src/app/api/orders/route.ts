@@ -11,7 +11,11 @@ import { preferenceApi, buildPreferenceBody, createVendorPreference } from "@/li
 import { applyRateLimit } from "@/lib/rate-limit";
 import { notifyMerchant, notifySeller, notifyMerchantFirstOrderWelcome } from "@/lib/notifications";
 import { orderLogger } from "@/lib/logger";
-import { calculateShippingCost, validateDeliveryFee } from "@/lib/shipping-cost-calculator";
+// Rama fix/biblia-motor-envio-y-comisiones: MOTOR ÚNICO de envío. El cobro usa
+// computeDeliveryFee (delivery.ts, fórmula maestra canónica), el MISMO motor que
+// el preview en /api/delivery/calculate. Reemplaza a calculateShippingCost
+// (shipping-cost-calculator.ts), que se eliminó.
+import { computeDeliveryFee } from "@/lib/delivery";
 import { validateMerchantCanReceiveOrders } from "@/lib/merchant-schedule";
 import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 import { generatePinPair } from "@/lib/pin";
@@ -51,8 +55,21 @@ async function getOpsSettings() {
         zoneMultipliers: (() => { try { return JSON.parse(s?.zoneMultipliersJson ?? "{}"); } catch { return { ZONA_A: 1.0, ZONA_B: 1.15, ZONA_C: 1.35 }; } })(),
         climateMultipliers: (() => { try { return JSON.parse(s?.climateMultipliersJson ?? "{}"); } catch { return { normal: 1.0, lluvia: 1.10, nieve: 1.15, extremo: 1.25 }; } })(),
         activeClimateCondition: s?.activeClimateCondition ?? "normal",
+        // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda (espejo de clima).
+        demandMultipliers: (() => { try { return JSON.parse(s?.demandMultipliersJson ?? "{}"); } catch { return { normal: 1.0, alta: 1.20, pico: 1.40 }; } })(),
+        activeDemandCondition: s?.activeDemandCondition ?? "normal",
         operationalCostPercent: s?.operationalCostPercent ?? 5,
         excludedZonesJson: s?.excludedZonesJson ?? "[]",
+        // Rama fix/biblia-motor-envio-y-comisiones: parámetros que consume el
+        // MOTOR ÚNICO de envío (computeDeliveryFee). Antes vivían hardcodeados
+        // en shipping-cost-calculator; ahora salen de la Biblia.
+        freeDeliveryMinimum: settings?.freeDeliveryMinimum ?? null,
+        maxDeliveryDistance: settings?.maxDeliveryDistance ?? 15,
+        baseDeliveryFee: settings?.baseDeliveryFee ?? 500,
+        // MODELO B (rama fix/biblia-motor-envio-y-comisiones): globales del
+        // combustible para derivar costo_km por vehículo dentro del motor.
+        fuelPricePerLiter: settings?.fuelPricePerLiter ?? 1591,
+        maintenanceFactor: settings?.maintenanceFactor ?? 1.35,
         // Cash protocol
         cashMpOnlyDeliveries: s?.cashMpOnlyDeliveries ?? 10,
         cashLimitL1: s?.cashLimitL1 ?? 15000,
@@ -238,13 +255,51 @@ export async function POST(request: Request) {
         const resolveItemCategoryName = (productOrListingId: string): string =>
             packageCategoryNameById.get(productOrListingId) ?? "SMALL";
 
-        // DELIVERY FEE: SIEMPRE recalcular server-side. NUNCA confiar en el frontend.
+        // Calculate subtotal (necesario antes del fee: el operativo y el envío
+        // gratis se basan en el subtotal del pedido).
+        const subtotal = items.reduce(
+            (sum: number, item: { price: number; quantity: number }) =>
+                sum + item.price * item.quantity,
+            0
+        );
+
+        // ─── DELIVERY FEE — MOTOR ÚNICO (Rama fix/biblia-motor-envio-y-comisiones) ──
+        // SIEMPRE recalcular server-side con computeDeliveryFee (el MISMO motor que
+        // el preview /api/delivery/calculate). NUNCA confiar en el frontend.
+        //
+        // computeDeliveryFee aplica la fórmula maestra completa por grupo/single:
+        //   max(MIN_VEHICULO, costo_km × dist × 2.2) × clima  +  subtotal×operativo%
+        // donde costo_km y MIN salen de DeliveryRate (categoría/vehículo del pedido)
+        // y clima/operativo%/freeDelivery/maxDistance/riderShare de la Biblia.
+        //
+        // El multiplicador de ZONA se aplica MÁS ABAJO (necesita destLat/destLng),
+        // por eso acá pasamos zoneMultiplier=1.0. El operationalCost por grupo se
+        // captura en validatedGroupFees para que buildSubOrderFinancialSnapshot
+        // derive tripCost exacto (deliveryFee − operationalCost).
         let validatedDeliveryFee = 0;
-        // Per-group validated delivery fees (multi-vendor).
-        // Rama refactor/separar-motor-y-finanzas: agregamos operationalCost por grupo
-        // para que buildSubOrderFinancialSnapshot() pueda derivar tripCost exacto
-        // (deliveryFee - operationalCost) y persistir el snapshot en SubOrder.
         const validatedGroupFees: Map<string, { deliveryFee: number; distanceKm: number; operationalCost: number }> = new Map();
+
+        // Clima activo de la Biblia (se aplica DENTRO de computeDeliveryFee).
+        const climateCond = opsSettings.activeClimateCondition || "normal";
+        const climateMultiplier = opsSettings.climateMultipliers[climateCond] ?? 1.0;
+
+        // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda activa de la
+        // Biblia (espejo de clima). Se aplica DENTRO de computeDeliveryFee, sobre
+        // el viaje (no el operativo), igual que zona y clima.
+        const demandCond = opsSettings.activeDemandCondition || "normal";
+        const demandMultiplier = opsSettings.demandMultipliers[demandCond] ?? 1.0;
+
+        // Helper: arma el bloque `biblia` que consume computeDeliveryFee.
+        const bibliaForFee = {
+            freeDeliveryMinimum: opsSettings.freeDeliveryMinimum,
+            maxDeliveryDistance: opsSettings.maxDeliveryDistance,
+            operationalCostPercent: opsSettings.operationalCostPercent,
+            riderSharePercent: opsSettings.riderCommissionPercent,
+            baseDeliveryFee: opsSettings.baseDeliveryFee,
+            // MODELO B: globales del combustible para derivar costo_km por vehículo.
+            fuelPricePerLiter: opsSettings.fuelPricePerLiter,
+            maintenanceFactor: opsSettings.maintenanceFactor,
+        };
 
         if (!isPickup) {
             // Reject negative fees
@@ -261,13 +316,13 @@ export async function POST(request: Request) {
                     const groupKey = group.merchantId || group.sellerId || "unknown";
                     const groupDistKm = group.distanceKm || 0;
                     const groupClientFee = group.deliveryFee || 0;
+                    const groupSubtotal = group.items.reduce(
+                        (sum: number, gi: { price: number; quantity: number }) => sum + gi.price * gi.quantity, 0
+                    );
 
                     if (groupDistKm > 0) {
                         try {
-                            // Rama fix/asignacion-match-vehiculo: categoría REAL del grupo
-                            // (antes "MEDIUM" hardcodeado). Reutiliza el mapa armado arriba
-                            // (sin queries extra). Un grupo con un colchón XL ahora cobra
-                            // tarifa XL; uno con un alfajor MICRO cobra MICRO.
+                            // Categoría REAL del grupo → costo_km + mínimo (vehículo).
                             const groupCategory = await calculateOrderCategory(
                                 group.items.map((gi: { productId: string; quantity: number; name?: string }) => ({
                                     packageCategory: resolveItemCategoryName(gi.productId),
@@ -275,26 +330,37 @@ export async function POST(request: Request) {
                                     name: gi.name,
                                 }))
                             );
-                            const serverFee = calculateShippingCost({
+                            const serverFee = await computeDeliveryFee({
                                 distanceKm: groupDistKm,
                                 packageCategory: groupCategory.category,
-                                shipmentTypeCode: "STANDARD",
-                                orderTotal: 0,
-                                freeDeliveryMinimum: null,
+                                orderSubtotal: groupSubtotal,
+                                isPickup: false,
+                                biblia: bibliaForFee,
+                                zoneMultiplier: 1.0,            // zona se aplica más abajo
+                                climateMultiplier,
+                                demandMultiplier,               // surge (rama fix/biblia-motor-envio-y-comisiones)
                             });
-                            if (serverFee && serverFee.total > 0) {
-                                const groupValidatedFee = serverFee.total;
-
+                            if (serverFee && serverFee.totalCost > 0) {
                                 // Log si el frontend mandó un fee distinto (posible manipulación)
-                                if (groupClientFee > 0 && Math.abs(groupClientFee - serverFee.total) > serverFee.total * 0.25) {
+                                if (groupClientFee > 0 && Math.abs(groupClientFee - serverFee.totalCost) > serverFee.totalCost * 0.25) {
                                     orderLogger.warn(
-                                        { groupKey, clientFee: groupClientFee, serverFee: serverFee.total, distanceKm: groupDistKm },
+                                        { groupKey, clientFee: groupClientFee, serverFee: serverFee.totalCost, distanceKm: groupDistKm },
                                         "FRAUD ALERT: Multi-vendor group delivery fee differs >25% from server calculation"
                                     );
                                 }
 
-                                // operationalCost se completa después en el bloque de surcharge per-group
-                                validatedGroupFees.set(groupKey, { deliveryFee: groupValidatedFee, distanceKm: groupDistKm, operationalCost: 0 });
+                                validatedGroupFees.set(groupKey, {
+                                    deliveryFee: serverFee.totalCost,
+                                    distanceKm: groupDistKm,
+                                    operationalCost: serverFee.operationalCost,
+                                });
+                            } else if (serverFee && serverFee.isFreeDelivery) {
+                                // Envío gratis del comercio: el cliente solo paga el operativo.
+                                validatedGroupFees.set(groupKey, {
+                                    deliveryFee: serverFee.totalCost,
+                                    distanceKm: groupDistKm,
+                                    operationalCost: serverFee.operationalCost,
+                                });
                             } else {
                                 // ISSUE-008: NUNCA usar fee del cliente como fallback — retornar error
                                 orderLogger.error({ groupKey, clientFee: groupClientFee, distanceKm: groupDistKm }, "Server fee calc returned 0 for multi-vendor group");
@@ -333,15 +399,14 @@ export async function POST(request: Request) {
 
                 orderLogger.info(
                     { groupCount: groups.length, totalDeliveryFee: validatedDeliveryFee, perGroup: Object.fromEntries(validatedGroupFees) },
-                    "Multi-vendor delivery fees validated"
+                    "Multi-vendor delivery fees validated (computeDeliveryFee)"
                 );
             } else {
-                // --- Single-vendor: original logic ---
+                // --- Single-vendor ---
                 // SIEMPRE calcular server-side si tenemos distancia
                 if (distanceKm && distanceKm > 0) {
                     try {
-                        // Rama fix/asignacion-match-vehiculo: categoría REAL del pedido
-                        // (antes "MEDIUM" hardcodeado). Usa el mapa armado arriba.
+                        // Categoría REAL del pedido → costo_km + mínimo (vehículo).
                         const orderCategory = await calculateOrderCategory(
                             items.map((i) => ({
                                 packageCategory: resolveItemCategoryName(i.productId),
@@ -349,20 +414,29 @@ export async function POST(request: Request) {
                                 name: i.name,
                             }))
                         );
-                        const serverFee = calculateShippingCost({
+                        const serverFee = await computeDeliveryFee({
                             distanceKm,
                             packageCategory: orderCategory.category,
-                            shipmentTypeCode: "STANDARD",
-                            orderTotal: 0,
-                            freeDeliveryMinimum: null,
+                            orderSubtotal: subtotal,
+                            isPickup: false,
+                            biblia: bibliaForFee,
+                            zoneMultiplier: 1.0,            // zona se aplica más abajo
+                            climateMultiplier,
+                            demandMultiplier,               // surge (rama fix/biblia-motor-envio-y-comisiones)
                         });
-                        if (serverFee && serverFee.total > 0) {
-                            validatedDeliveryFee = serverFee.total;
+                        if (serverFee && (serverFee.totalCost > 0 || serverFee.isFreeDelivery)) {
+                            validatedDeliveryFee = serverFee.totalCost;
+                            // Operativo del pedido (single-vendor también lo registra para el snapshot).
+                            validatedGroupFees.set(merchantId || "single", {
+                                deliveryFee: serverFee.totalCost,
+                                distanceKm,
+                                operationalCost: serverFee.operationalCost,
+                            });
 
                             // Log si el frontend mandó un fee distinto (posible manipulación)
-                            if (deliveryFee && deliveryFee > 0 && Math.abs(deliveryFee - serverFee.total) > serverFee.total * 0.25) {
+                            if (deliveryFee && deliveryFee > 0 && Math.abs(deliveryFee - serverFee.totalCost) > serverFee.totalCost * 0.25) {
                                 orderLogger.warn(
-                                    { clientFee: deliveryFee, serverFee: serverFee.total, distanceKm, diff: Math.abs(deliveryFee - serverFee.total) },
+                                    { clientFee: deliveryFee, serverFee: serverFee.totalCost, distanceKm, diff: Math.abs(deliveryFee - serverFee.totalCost) },
                                     "FRAUD ALERT: Client delivery fee differs >25% from server calculation. Using server fee."
                                 );
                             }
@@ -391,81 +465,9 @@ export async function POST(request: Request) {
                     );
                 }
             }
-
-            // Apply climate multiplier from Biblia Financiera if active condition is not normal
-            const climateCond = opsSettings.activeClimateCondition || "normal";
-            const climateMultiplier = opsSettings.climateMultipliers[climateCond] ?? 1.0;
-            if (climateMultiplier !== 1.0 && validatedDeliveryFee > 0) {
-                const originalFee = validatedDeliveryFee;
-                validatedDeliveryFee = Math.round(validatedDeliveryFee * climateMultiplier);
-
-                // Also apply to per-group fees for multi-vendor
-                if (isMultiVendor) {
-                    for (const [key, val] of validatedGroupFees) {
-                        val.deliveryFee = Math.round(val.deliveryFee * climateMultiplier);
-                    }
-                }
-
-                orderLogger.info(
-                    { originalFee, climateCondition: climateCond, multiplier: climateMultiplier, adjustedFee: validatedDeliveryFee },
-                    "Climate multiplier applied to delivery fee"
-                );
-            }
-
-            // Apply operational cost surcharge (% of subtotal added to delivery fee)
-            // Will be recalculated after subtotal is known — deferred below
-            // Nota: el multiplicador de zona se aplica más abajo (línea ~440), una vez
-            // que tenemos destLat/destLng (rama feat/zonas-delivery-multiplicador).
         } else {
             // For pickup orders, fee must be 0
             validatedDeliveryFee = 0;
-        }
-
-        // Calculate subtotal
-        const subtotal = items.reduce(
-            (sum: number, item: { price: number; quantity: number }) =>
-                sum + item.price * item.quantity,
-            0
-        );
-
-        // Apply operational cost surcharge (% of subtotal added to delivery fee) — Biblia Financiera
-        if (!isPickup && validatedDeliveryFee > 0) {
-            const opCostPct = opsSettings.operationalCostPercent || 0;
-            if (opCostPct > 0) {
-                if (isMultiVendor && groups && groups.length > 1) {
-                    // Multi-vendor: apply per-group based on each group's subtotal
-                    let totalOpSurcharge = 0;
-                    for (const group of groups) {
-                        const groupKey = group.merchantId || group.sellerId || "unknown";
-                        const groupSubtotal = group.items.reduce(
-                            (sum: number, gi: { price: number; quantity: number }) => sum + gi.price * gi.quantity, 0
-                        );
-                        const groupSurcharge = Math.round(groupSubtotal * (opCostPct / 100));
-                        totalOpSurcharge += groupSurcharge;
-
-                        const existing = validatedGroupFees.get(groupKey);
-                        if (existing) {
-                            existing.deliveryFee += groupSurcharge;
-                            // Rama refactor/separar-motor-y-finanzas: capturamos el operationalCost
-                            // del grupo para que el snapshot de SubOrder lo persista. Sin esto,
-                            // payouts.ts no puede derivar tripCost exacto.
-                            existing.operationalCost = groupSurcharge;
-                        }
-                    }
-                    validatedDeliveryFee += totalOpSurcharge;
-                    orderLogger.info(
-                        { opCostPct, subtotal, totalOpSurcharge, newDeliveryFee: validatedDeliveryFee },
-                        "Operational cost surcharge applied per-group (multi-vendor)"
-                    );
-                } else {
-                    const opSurcharge = Math.round(subtotal * (opCostPct / 100));
-                    validatedDeliveryFee += opSurcharge;
-                    orderLogger.info(
-                        { opCostPct, subtotal, opSurcharge, newDeliveryFee: validatedDeliveryFee },
-                        "Operational cost surcharge applied to delivery fee"
-                    );
-                }
-            }
         }
 
         let finalTotal = subtotal + validatedDeliveryFee;
@@ -566,15 +568,23 @@ export async function POST(request: Request) {
                 // 2. Zona de pricing — aplicar multiplicador al delivery fee.
                 // Si la dirección no cae en ninguna zona, snapshot queda con multiplier 1.0
                 // y el fee no se altera. driverBonus se persiste y se SUMA en buildSubOrderFinancialSnapshot.
+                //
+                // Rama fix/biblia-motor-envio-y-comisiones: el multiplicador de zona
+                // se aplica SOLO al costo del VIAJE (no al operativo), respetando la
+                // fórmula maestra `max(MIN, costo_km×dist×2.2) × zona × clima + op`.
+                // Recalculamos por grupo manteniendo tripCost/operationalCost consistentes
+                // (el snapshot deriva tripCost = deliveryFee − operationalCost).
                 zoneSnapshot = await getZoneSnapshotForLocation(destLat, destLng);
                 if (zoneSnapshot.zoneMultiplier !== 1.0 && validatedDeliveryFee > 0) {
                     const originalFee = validatedDeliveryFee;
-                    validatedDeliveryFee = Math.round(validatedDeliveryFee * zoneSnapshot.zoneMultiplier);
-                    if (isMultiVendor) {
-                        for (const [, val] of validatedGroupFees) {
-                            val.deliveryFee = Math.round(val.deliveryFee * zoneSnapshot.zoneMultiplier);
-                        }
+                    let newTotal = 0;
+                    for (const [, val] of validatedGroupFees) {
+                        const groupTrip = Math.max(0, val.deliveryFee - val.operationalCost);
+                        const adjustedTrip = Math.round(groupTrip * zoneSnapshot.zoneMultiplier);
+                        val.deliveryFee = adjustedTrip + val.operationalCost;
+                        newTotal += val.deliveryFee;
                     }
+                    validatedDeliveryFee = newTotal;
                     orderLogger.info(
                         {
                             zoneCode: zoneSnapshot.zoneCode,
@@ -583,7 +593,7 @@ export async function POST(request: Request) {
                             originalFee,
                             adjustedFee: validatedDeliveryFee,
                         },
-                        "Delivery zone multiplier applied"
+                        "Delivery zone multiplier applied (trip-only, computeDeliveryFee)"
                     );
                 }
             }
@@ -1026,6 +1036,10 @@ export async function POST(request: Request) {
                         merchantId: group.merchantId || null,
                         sellerId: group.sellerId || null,
                         sellerCommissionRate: opsSettings.defaultSellerCommission,
+                        // Rama fix/biblia-motor-envio-y-comisiones: riderShare de la Biblia
+                        // (antes el helper usaba 80 fijo por default). El % del viaje que
+                        // cobra el repartidor ahora es 100% config-driven.
+                        riderSharePercent: opsSettings.riderCommissionPercent,
                         precomputedMerchantRate: snapshotRate,
                         precomputedMerchantSource: snapshotSource,
                         // Rama feat/zonas-delivery-multiplicador: snapshot de zona del destino.

@@ -5,6 +5,8 @@ import {
   Truck, DollarSign, Gift, Banknote, Clock, Calendar,
   Shield, ChevronDown, ChevronUp, Save, AlertTriangle,
   Info, Calculator, Snowflake, CloudRain, Sun, Zap, Megaphone,
+  // Rama fix/biblia-motor-envio-y-comisiones: iconos del selector de SURGE/demanda.
+  TrendingUp, Flame, Activity,
 } from "lucide-react";
 import { toast as globalToast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
@@ -198,6 +200,45 @@ function ClimateSelector({ value, onChange }: { value: string; onChange: (v: str
   );
 }
 
+// ─── Demand / Surge Selector ───────────────────────────────────────────────────
+// Rama fix/biblia-motor-envio-y-comisiones: espejo EXACTO del ClimateSelector.
+// Toggle manual del surge (normal=1.0 / alta=1.20 / pico=1.40). Multiplica el
+// costo del viaje (no el operativo), igual que zona y clima.
+
+function DemandSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const options = [
+    { key: "normal", label: "Normal", icon: Activity, color: "text-emerald-500" },
+    { key: "alta", label: "Alta", icon: TrendingUp, color: "text-amber-500" },
+    { key: "pico", label: "Pico", icon: Flame, color: "text-red-500" },
+  ];
+
+  return (
+    <div>
+      <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+        Demanda activa (surge)
+        <InfoTip text="Seleccioná el nivel de demanda actual. Aumenta el delivery fee en horas pico (igual que el clima). Solo afecta el costo del viaje, no el operativo." />
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-xs font-bold ${
+              value === opt.key
+                ? "border-red-500 bg-red-50 text-red-700"
+                : "border-slate-200 hover:border-slate-300 text-slate-500"
+            }`}
+          >
+            <opt.icon className={`w-5 h-5 ${value === opt.key ? "text-red-500" : opt.color}`} />
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Delivery Fee Simulator ────────────────────────────────────────────────────
 
 function DeliverySimulator({ config }: { config: FullOpsConfig["delivery"] }) {
@@ -207,10 +248,12 @@ function DeliverySimulator({ config }: { config: FullOpsConfig["delivery"] }) {
 
   const zoneMult = config.zoneMultipliers[simZone] ?? 1.0;
   const climateMult = config.climateMultipliers[config.activeClimateCondition] ?? 1.0;
+  // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda en el simulador.
+  const demandMult = config.demandMultipliers[config.activeDemandCondition] ?? 1.0;
   const costPerKm = config.fuelPricePerLiter * config.fuelConsumptionPerKm * 2;
   const basePlusDist = config.baseDeliveryFee + (costPerKm * simDist);
   const withMaint = basePlusDist * config.maintenanceFactor;
-  const withMults = withMaint * zoneMult * climateMult;
+  const withMults = withMaint * zoneMult * climateMult * demandMult;
   const opCost = simSubtotal * (config.operationalCostPercent / 100);
   const totalFee = Math.ceil(withMults + opCost);
   const riderEarns = Math.round(totalFee * (config.riderCommissionPercent / 100));
@@ -275,7 +318,7 @@ function DeliverySimulator({ config }: { config: FullOpsConfig["delivery"] }) {
         </div>
       </div>
       <p className="text-[10px] text-slate-400 mt-2 text-center">
-        Base ${Math.round(config.baseDeliveryFee)} + Dist ${Math.round(costPerKm * simDist)} × Mant {config.maintenanceFactor} × Zona {zoneMult} × Clima {climateMult} + Op ${Math.round(opCost)}
+        Base ${Math.round(config.baseDeliveryFee)} + Dist ${Math.round(costPerKm * simDist)} × Mant {config.maintenanceFactor} × Zona {zoneMult} × Clima {climateMult} × Demanda {demandMult} + Op ${Math.round(opCost)}
       </p>
     </div>
   );
@@ -326,7 +369,7 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
   }, [config]);
 
   // Helper to update nested zone/climate multipliers
-  const updateMultiplier = (section: "delivery", mapKey: "zoneMultipliers" | "climateMultipliers", subKey: string, value: number) => {
+  const updateMultiplier = (section: "delivery", mapKey: "zoneMultipliers" | "climateMultipliers" | "demandMultipliers", subKey: string, value: number) => {
     setConfig((prev) => ({
       ...prev,
       delivery: {
@@ -435,6 +478,36 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
                     type="number"
                     value={mult}
                     onChange={(e) => updateMultiplier("delivery", "climateMultipliers", cond, parseFloat(e.target.value) || 1)}
+                    step={0.05}
+                    min={0.5}
+                    max={3}
+                    className="w-full px-2 py-1 text-xs font-bold border border-slate-200 rounded-lg"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Demand / Surge — Rama fix/biblia-motor-envio-y-comisiones */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DemandSelector
+            value={config.delivery.activeDemandCondition}
+            onChange={(v) => updateField("delivery", "activeDemandCondition", v)}
+          />
+          <div>
+            <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              Multiplicadores de demanda
+              <InfoTip text="Recargo por demanda alta / pico (surge). Multiplica el costo del viaje, no el operativo." />
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(config.delivery.demandMultipliers).map(([cond, mult]) => (
+                <div key={cond} className="bg-slate-50 rounded-lg p-2 border border-slate-200">
+                  <label className="text-[10px] font-bold text-slate-500 capitalize block mb-0.5">{cond}</label>
+                  <input
+                    type="number"
+                    value={mult}
+                    onChange={(e) => updateMultiplier("delivery", "demandMultipliers", cond, parseFloat(e.target.value) || 1)}
                     step={0.05}
                     min={0.5}
                     max={3}

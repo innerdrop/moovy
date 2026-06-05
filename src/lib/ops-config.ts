@@ -17,6 +17,9 @@ export interface DeliveryConfig {
   zoneMultipliers: Record<string, number>;  // parsed from JSON
   climateMultipliers: Record<string, number>;  // parsed from JSON
   activeClimateCondition: string;
+  // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda (espejo de clima).
+  demandMultipliers: Record<string, number>;  // parsed from JSON
+  activeDemandCondition: string;
 }
 
 export interface CommissionConfig {
@@ -112,6 +115,8 @@ export interface FullOpsConfig {
 const DEFAULTS = {
   zoneMultipliers: { ZONA_A: 1.0, ZONA_B: 1.15, ZONA_C: 1.35 },
   climateMultipliers: { normal: 1.0, lluvia_leve: 1.15, temporal_fuerte: 1.30 },
+  // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda (canónico CLAUDE.md).
+  demandMultipliers: { normal: 1.0, alta: 1.20, pico: 1.40 },
 };
 
 // Safe JSON parse with fallback
@@ -156,6 +161,12 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
         DEFAULTS.climateMultipliers,
       ),
       activeClimateCondition: (settings as any)?.activeClimateCondition ?? "normal",
+      // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda.
+      demandMultipliers: safeParseJSON(
+        (settings as any)?.demandMultipliersJson,
+        DEFAULTS.demandMultipliers,
+      ),
+      activeDemandCondition: (settings as any)?.activeDemandCondition ?? "normal",
     },
     commissions: {
       defaultMerchantCommission: (settings as any)?.defaultMerchantCommission ?? 8,
@@ -260,6 +271,11 @@ export async function updateDeliveryConfig(
     updateData.climateMultipliersJson = JSON.stringify(data.climateMultipliers);
   if (data.activeClimateCondition !== undefined)
     updateData.activeClimateCondition = data.activeClimateCondition;
+  // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda (espejo de clima).
+  if (data.demandMultipliers !== undefined)
+    updateData.demandMultipliersJson = JSON.stringify(data.demandMultipliers);
+  if (data.activeDemandCondition !== undefined)
+    updateData.activeDemandCondition = data.activeDemandCondition;
 
   await prisma.storeSettings.upsert({
     where: { id: "settings" },
@@ -517,96 +533,9 @@ export async function getConfigAuditLogs(limit: number = 50): Promise<any[]> {
   });
 }
 
-/**
- * Calculate delivery fee with zone and climate multipliers (Biblia Financiera formula)
- * This is the NEW formula that replaces the old fuel-based calculation.
- *
- * fee = max(minimum, base + costPerKm × distance × distanceFactor) × zoneMultiplier × climateMultiplier + (subtotal × operationalCostPercent/100)
- */
-export function calculateDeliveryFeeWithConfig(
-  distanceKm: number,
-  zone: string,
-  subtotal: number,
-  config: DeliveryConfig,
-): {
-  fee: number;
-  breakdown: { concept: string; amount: number }[];
-  riderEarnings: number;
-  moovyEarnings: number;
-} {
-  const zoneKey = zone || "ZONA_A";
-  const zoneMult = config.zoneMultipliers[zoneKey] ?? 1.0;
-  const climateMult =
-    config.climateMultipliers[config.activeClimateCondition] ?? 1.0;
-
-  // Cost per km = fuelPrice × consumption × 2.2 (Biblia v3: Factor 2.2 = ida + vuelta + espera/maniobras)
-  const costPerKm = config.fuelPricePerLiter * config.fuelConsumptionPerKm * 2.2;
-
-  // Base fee + distance cost
-  const basePlusDistance = config.baseDeliveryFee + costPerKm * distanceKm;
-
-  // Apply maintenance factor
-  const withMaintenance = basePlusDistance * config.maintenanceFactor;
-
-  // Apply zone & climate multipliers
-  const withMultipliers = withMaintenance * zoneMult * climateMult;
-
-  // Operational cost (5% of subtotal, embedded in delivery fee)
-  const operationalCost = subtotal * (config.operationalCostPercent / 100);
-
-  // Final fee
-  const fee = Math.ceil(withMultipliers + operationalCost);
-
-  const breakdown = [
-    { concept: "Tarifa base", amount: Math.round(config.baseDeliveryFee) },
-    {
-      concept: `Distancia (${distanceKm.toFixed(1)} km)`,
-      amount: Math.round(costPerKm * distanceKm),
-    },
-    {
-      concept: `Factor mantenimiento (×${config.maintenanceFactor})`,
-      amount: Math.round(
-        basePlusDistance * (config.maintenanceFactor - 1),
-      ),
-    },
-  ];
-
-  if (zoneMult !== 1.0) {
-    breakdown.push({
-      concept: `Zona ${zoneKey.replace("ZONA_", "")} (×${zoneMult})`,
-      amount: Math.round(withMaintenance * (zoneMult - 1)),
-    });
-  }
-
-  if (climateMult !== 1.0) {
-    breakdown.push({
-      concept: `Clima (×${climateMult})`,
-      amount: Math.round(withMaintenance * zoneMult * (climateMult - 1)),
-    });
-  }
-
-  if (operationalCost > 0) {
-    breakdown.push({
-      concept: `Costo operacional (${config.operationalCostPercent}% sobre $${subtotal})`,
-      amount: Math.round(operationalCost),
-    });
-  }
-
-  breakdown.push({
-    concept: "TOTAL tarifa delivery",
-    amount: fee,
-  });
-
-  // Biblia v3: Rider earns 80% of TRIP cost (without operational cost)
-  const tripCost = fee - operationalCost;
-  const riderEarnings = Math.round(tripCost * (config.riderCommissionPercent / 100));
-  // Moovy: remaining trip cost + 100% of operational
-  const moovyEarnings = (tripCost - riderEarnings) + Math.round(operationalCost);
-
-  return {
-    fee,
-    breakdown,
-    riderEarnings,
-    moovyEarnings,
-  };
-}
+// Rama fix/biblia-motor-envio-y-comisiones:
+// `calculateDeliveryFeeWithConfig` se ELIMINÓ. Era una tercera implementación
+// muerta (sin callers) del cálculo de envío que duplicaba la fórmula. El motor
+// ÚNICO de envío es ahora `calculateDeliveryCost` en `src/lib/delivery.ts`,
+// que lee costo_km/mínimo de DeliveryRate y multiplicadores de la Biblia.
+// Usado por igual en el preview (/api/delivery/calculate) y el cobro (/api/orders).

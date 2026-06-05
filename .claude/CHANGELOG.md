@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-04 (rama `fix/biblia-motor-envio-y-comisiones`)
+
+fix(biblia): motor de envio unico config-driven (modelo B: costo_km = combustible x consumo_por_vehiculo x mantenimiento) + surge (multiplicador de demanda manual, espejo del clima) + comisiones (repartidor y merchant default) leidas de la Biblia. Preview = cobro (misma funcion computeDeliveryFee en checkout y creacion de pedido). Borrado el motor por-categoria muerto (calculateShippingCost/DEFAULT_DELIVERY_RATES), validateDeliveryFee y calculateDeliveryFeeWithConfig. Rescata los campos combustible/consumo/mantenimiento de la Biblia que eran fantasmas. Schema: DeliveryRate.consumptionPerKm + StoreSettings.demandMultipliersJson/activeDemandCondition (requiere prisma db push + re-seed de DeliveryRate). Al lanzamiento los numeros dan identicos a los canonicos de CLAUDE.md.
+
+**Archivos:** .tsc_check.txt, .tsconfig.check.json, docs/ESTUDIO_MAESTRO_BIBLIA.md, prisma/schema.prisma, prisma/seed-delivery.ts, src/app/(store)/checkout/page.tsx, src/app/api/delivery/calculate/route.ts, src/app/api/orders/route.ts (+9 mas)
+
 ## 2026-06-04 (rama `feat/driver-cancelar-pedido`)
 
 feat(driver): cancelacion de pedido aceptado por el repartidor (antes de retirar) con motivo + reasignacion automatica excluyendolo. Endpoint POST /api/driver/orders/[id]/cancel + boton y modal de motivos en la app del repartidor. La cancelacion se registra en AssignmentLog (outcome CANCELLED_BY_DRIVER + cancelReason) SIN penalizar con fraudScore ni auto-suspender (Opcion A): cancelar es un evento operativo normal; el analisis de abuso queda para despues con umbral propio. Schema: AssignmentLog.cancelReason String? + valor CANCELLED_BY_DRIVER en AssignmentOutcomeEnum (requiere prisma db push).

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCartStore } from "@/store/cart";
+import { useCartStore, type CartItem } from "@/store/cart";
 import { usePointsCelebration } from "@/store/pointsCelebration";
 import { formatPrice } from "@/lib/delivery";
 import PointsWidget from "@/components/checkout/PointsWidget";
@@ -426,7 +426,20 @@ export default function CheckoutPage() {
     };
 
     // Calculate delivery cost using server-side geocoding
-    const calculateDeliveryForMerchant = async (merchantId: string, orderSubtotal: number): Promise<DeliveryResult> => {
+    const calculateDeliveryForMerchant = async (
+        merchantId: string,
+        orderSubtotal: number,
+        // Rama fix/biblia-motor-envio-y-comisiones: mandamos los items del grupo
+        // para que el preview derive la categoría/vehículo REAL server-side y
+        // coincida al peso con el cobro de POST /api/orders.
+        groupItems?: CartItem[],
+    ): Promise<DeliveryResult> => {
+        const itemsForCalc = (groupItems ?? items).map((it) => ({
+            productId: it.productId,
+            quantity: it.quantity,
+            type: it.type,
+            name: it.name,
+        }));
         const calcResponse = await fetch("/api/delivery/calculate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -440,6 +453,7 @@ export default function CheckoutPage() {
                 },
                 merchantId,
                 orderTotal: orderSubtotal,
+                items: itemsForCalc,
             }),
         });
         const data = await calcResponse.json();
@@ -477,7 +491,7 @@ export default function CheckoutPage() {
                     merchantGroups.map(async (group) => {
                         const merchantId = group.vendorId.replace("merchant_", "");
                         try {
-                            results[group.vendorId] = await calculateDeliveryForMerchant(merchantId, group.subtotal);
+                            results[group.vendorId] = await calculateDeliveryForMerchant(merchantId, group.subtotal, group.items);
                         } catch {
                             results[group.vendorId] = {
                                 distanceKm: 0, totalCost: 0, isWithinRange: false,
@@ -493,7 +507,7 @@ export default function CheckoutPage() {
                 setDeliveryResult(primaryResult || null);
             } else {
                 // Single vendor: original logic
-                const result = await calculateDeliveryForMerchant(primaryMerchantId || "", subtotal);
+                const result = await calculateDeliveryForMerchant(primaryMerchantId || "", subtotal, items);
                 setDeliveryResult(result);
                 setVendorDeliveryResults({});
             }

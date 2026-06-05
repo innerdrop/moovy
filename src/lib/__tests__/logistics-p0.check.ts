@@ -9,7 +9,9 @@
 
 import { normalizeVehicleType, normalizeVehicleTypeOrDefault, vehicleTypeMatches, getVehicleSpeed } from "../vehicle-type-mapping";
 import { getShipmentType, autoDetectShipmentType, getCompatibleVehicles, isVehicleCompatibleWithShipment, SHIPMENT_TYPES, getShipmentSLALabel } from "../shipment-types";
-import { calculateShippingCost, validateDeliveryFee, calculateDriverEarnings } from "../shipping-cost-calculator";
+// Rama fix/biblia-motor-envio-y-comisiones: calculateShippingCost / validateDeliveryFee /
+// calculateDriverEarnings se ELIMINARON (motor único de envío en delivery.ts).
+// Los tests de esos módulos se removieron de este archivo.
 import { calculateOrderPriority, prioritizeOrders, isOrderExceedingSLA } from "../order-priority";
 import { calculateFullETA, calculatePreCheckoutETA } from "../eta-calculator";
 
@@ -141,81 +143,10 @@ assert(getShipmentSLALabel("HOT").includes("45 min"), "HOT label incluye '45 min
 assert(getShipmentSLALabel("STANDARD").includes("día"), "STANDARD label incluye 'día'");
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 3. Shipping Cost Calculator
+// 3. (Shipping Cost Calculator) — ELIMINADO en fix/biblia-motor-envio-y-comisiones.
+//    El motor único de envío es calculateDeliveryCost/computeDeliveryFee
+//    (delivery.ts). Sus tests viven en la simulación financiera de la rama.
 // ═══════════════════════════════════════════════════════════════════════════════
-
-section("Shipping Cost — Cálculo básico");
-
-const costMediumStd = calculateShippingCost({
-  distanceKm: 3.5,
-  packageCategory: "MEDIUM",
-  shipmentTypeCode: "STANDARD",
-  orderTotal: 5000,
-  freeDeliveryMinimum: null,
-});
-assert(costMediumStd.baseCost === 600, "MEDIUM base: $600");
-assert(costMediumStd.distanceCost === 875, "MEDIUM 3.5km: $875");
-assert(costMediumStd.shipmentSurcharge === 0, "STANDARD sin recargo");
-assert(costMediumStd.total === 1475, "MEDIUM STANDARD 3.5km total: $1475");
-
-const costMediumFresh = calculateShippingCost({
-  distanceKm: 3.5,
-  packageCategory: "MEDIUM",
-  shipmentTypeCode: "FRESH",
-  orderTotal: 5000,
-  freeDeliveryMinimum: null,
-});
-assert(costMediumFresh.shipmentSurcharge === 200, "FRESH recargo: $200");
-assert(costMediumFresh.total === 1675, "MEDIUM FRESH 3.5km total: $1675");
-
-section("Shipping Cost — Envío gratis");
-
-const costFree = calculateShippingCost({
-  distanceKm: 3.5,
-  packageCategory: "MEDIUM",
-  shipmentTypeCode: "STANDARD",
-  orderTotal: 10000,
-  freeDeliveryMinimum: 8000,
-});
-assert(costFree.isFreeDelivery === true, "Order $10000 > min $8000 → gratis");
-assert(costFree.total === 0, "Total $0 con envío gratis");
-
-section("Shipping Cost — Retiro en local");
-
-const costPickup = calculateShippingCost({
-  distanceKm: 3.5,
-  packageCategory: "MEDIUM",
-  shipmentTypeCode: "STANDARD",
-  orderTotal: 5000,
-  freeDeliveryMinimum: null,
-  isPickup: true,
-});
-assert(costPickup.total === 0, "Pickup total: $0");
-
-section("Shipping Cost — Validación de fee del frontend");
-
-const serverResult = calculateShippingCost({
-  distanceKm: 3,
-  packageCategory: "SMALL",
-  shipmentTypeCode: "STANDARD",
-  orderTotal: 3000,
-  freeDeliveryMinimum: null,
-});
-
-const v1 = validateDeliveryFee(0, serverResult);
-assert(v1.wasModified === true, "Frontend $0 → corregido");
-assert(v1.correctedFee === serverResult.total, "Corregido al valor server");
-
-const v2 = validateDeliveryFee(serverResult.total, serverResult);
-assert(v2.wasModified === false, "Fee correcto → sin cambio");
-
-const v3 = validateDeliveryFee(99999, serverResult);
-assert(v3.wasModified === true, "Fee exagerado → corregido");
-
-section("Shipping Cost — Earnings del driver");
-
-const earnings = calculateDriverEarnings("MEDIUM", 5);
-assert(earnings === 1850, "MEDIUM 5km earnings: 600 + 250*5 = $1850");
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 4. Order Priority

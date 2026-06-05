@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "skipLibCheck": true, "incremental": false },
+  "include": [
+    "src/lib/delivery.ts",
+    "src/lib/shipping-cost-calculator.ts",
+    "src/lib/merchant-loyalty.ts",
+    "src/lib/ops-config.ts",
+    "src/lib/orders/order-totals.ts",
+    "src/lib/assignment-engine.ts",
+    "src/app/api/orders/route.ts",
+    "src/app/api/delivery/calculate/route.ts",
+    "src/app/(store)/checkout/page.tsx"
+  ]
+}

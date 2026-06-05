@@ -193,6 +193,11 @@ export interface EffectiveCommissionResult {
  * dependen de que el rate aplicado al cerrar quede inmutable.
  */
 export async function getEffectiveCommissionWithSource(merchantId: string): Promise<EffectiveCommissionResult> {
+  // Rama fix/biblia-motor-envio-y-comisiones: el FALLBACK ya NO es 8 hardcodeado.
+  // Lee defaultMerchantCommission de la Biblia (StoreSettings), con 8 como respaldo
+  // conservador solo si la config no existe. Respeta la precedencia canónica:
+  // override > first-month > tier > default Biblia.
+  const fallbackRate = await getDefaultMerchantCommission();
   try {
     const merchant = await prisma.merchant.findUnique({
       where: { id: merchantId },
@@ -200,7 +205,7 @@ export async function getEffectiveCommissionWithSource(merchantId: string): Prom
     });
 
     if (!merchant) {
-      return { rate: 8, source: "FALLBACK", tier: null };
+      return { rate: fallbackRate, source: "FALLBACK", tier: null };
     }
 
     // 1. Override admin (gana sobre todo)
@@ -222,13 +227,38 @@ export async function getEffectiveCommissionWithSource(merchantId: string): Prom
     const tierConfig = await getTierConfig(tier);
 
     if (!tierConfig) {
-      return { rate: 8, source: "FALLBACK", tier: null };
+      return { rate: fallbackRate, source: "FALLBACK", tier: null };
     }
 
     return { rate: tierConfig.commissionRate, source: "TIER", tier };
   } catch (error) {
     loyaltyLogger.error({ error, merchantId }, "Error getting effective commission");
-    return { rate: 8, source: "FALLBACK", tier: null };
+    return { rate: fallbackRate, source: "FALLBACK", tier: null };
+  }
+}
+
+/**
+ * Lee la comisión merchant por default de la Biblia (StoreSettings.defaultMerchantCommission).
+ * Rama fix/biblia-motor-envio-y-comisiones. Respaldo conservador 8% si falta config
+ * (regla #15: defaults conservadores). Cache 1 min para no pegarle a la DB en cada pedido.
+ */
+let _defaultMerchantCommissionCache: { value: number; at: number } | null = null;
+const DEFAULT_COMMISSION_TTL_MS = 60_000;
+export async function getDefaultMerchantCommission(): Promise<number> {
+  if (_defaultMerchantCommissionCache && Date.now() - _defaultMerchantCommissionCache.at < DEFAULT_COMMISSION_TTL_MS) {
+    return _defaultMerchantCommissionCache.value;
+  }
+  try {
+    const settings = await prisma.storeSettings.findUnique({
+      where: { id: "settings" },
+      select: { defaultMerchantCommission: true } as any,
+    });
+    const raw = (settings as any)?.defaultMerchantCommission;
+    const value = typeof raw === "number" && raw >= 0 ? raw : 8;
+    _defaultMerchantCommissionCache = { value, at: Date.now() };
+    return value;
+  } catch {
+    return 8;
   }
 }
 

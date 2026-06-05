@@ -484,7 +484,8 @@ CREATE TABLE public."DeliveryRate" (
     "pricePerKmArs" double precision NOT NULL,
     "isActive" boolean DEFAULT true NOT NULL,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "consumptionPerKm" double precision DEFAULT 0.0339875
 );
 
 
@@ -1761,7 +1762,9 @@ Pizza & Pelis'::text NOT NULL,
     "bankAlias" text DEFAULT ''::text NOT NULL,
     "bankCuit" text DEFAULT ''::text NOT NULL,
     "supportChatEnabled" boolean DEFAULT true NOT NULL,
-    "excludedZonesJson" text DEFAULT '[]'::text NOT NULL
+    "excludedZonesJson" text DEFAULT '[]'::text NOT NULL,
+    "activeDemandCondition" text DEFAULT 'normal'::text NOT NULL,
+    "demandMultipliersJson" text DEFAULT '{"normal":1.0,"alta":1.20,"pico":1.40}'::text NOT NULL
 );
 
 
@@ -2186,13 +2189,13 @@ COPY public."DeliveryAttempt" (id, "orderId", "subOrderId", "driverId", reason, 
 -- Data for Name: DeliveryRate; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."DeliveryRate" (id, "categoryId", "basePriceArs", "pricePerKmArs", "isActive", "createdAt", "updatedAt") FROM stdin;
-cmnw2pz89001c3ooex4r4zxb5	cmnw2pz7c00163ooeim6ijao4	300	80	t	2026-04-12 18:04:52.762	2026-04-12 18:04:52.762
-cmnw2pz8o001e3ooe9elkxxcs	cmnw2pz7m00173ooelfp0vilx	400	100	t	2026-04-12 18:04:52.776	2026-04-12 18:04:52.776
-cmnw2pz8w001g3ooep1fxaxag	cmnw2pz7r00183ooe6a3uhqx2	600	130	t	2026-04-12 18:04:52.785	2026-04-12 18:04:52.785
-cmnw2pz93001i3ooev0k4453m	cmnw2pz7y00193ooe51d5kek8	900	180	t	2026-04-12 18:04:52.791	2026-04-12 18:04:52.791
-cmnw2pz99001k3ooear8pbd54	cmnw2pz83001a3ooeozrxhvfw	1500	250	t	2026-04-12 18:04:52.798	2026-04-12 18:04:52.798
-cmoqaeda90002a2f0wz26u3g1	cmoqaed9h0000a2f0xygyvz4p	8000	329	t	2026-05-03 21:32:53.313	2026-05-03 21:32:53.313
+COPY public."DeliveryRate" (id, "categoryId", "basePriceArs", "pricePerKmArs", "isActive", "createdAt", "updatedAt", "consumptionPerKm") FROM stdin;
+cmoqaeda90002a2f0wz26u3g1	cmoqaed9h0000a2f0xygyvz4p	1500	350	t	2026-05-03 21:32:53.313	2026-06-04 23:44:26.491	0.1531764
+cmnw2pz89001c3ooex4r4zxb5	cmnw2pz7c00163ooeim6ijao4	800	15	t	2026-04-12 18:04:52.762	2026-06-04 23:44:26.509	0.0069837
+cmnw2pz8o001e3ooe9elkxxcs	cmnw2pz7m00173ooelfp0vilx	800	15	t	2026-04-12 18:04:52.776	2026-06-04 23:44:26.515	0.0069837
+cmnw2pz8w001g3ooep1fxaxag	cmnw2pz7r00183ooe6a3uhqx2	1500	73	t	2026-04-12 18:04:52.785	2026-06-04 23:44:26.521	0.0339875
+cmnw2pz93001i3ooev0k4453m	cmnw2pz7y00193ooe51d5kek8	2200	193	t	2026-04-12 18:04:52.791	2026-06-04 23:44:26.526	0.0898573
+cmnw2pz99001k3ooear8pbd54	cmnw2pz83001a3ooeozrxhvfw	3000	269	t	2026-04-12 18:04:52.798	2026-06-04 23:44:26.53	0.1252415
 \.
 
 
@@ -2386,7 +2389,6 @@ cmnw2pz6z00153ooeehit12au	DIAMANTE	50	5	Comercio Elite	purple	["Comision minima 
 COPY public."MoovyConfig" (id, key, value, description, "updatedAt") FROM stdin;
 cmnw2pz0n00023ooeot4m38v2	default_merchant_commission_pct	8	Comisión MOOVY a comercios (%)	2026-04-12 18:04:52.487
 cmnw2pz0y00033ooeineogqsl	default_seller_commission_pct	12	Comisión MOOVY a vendedores marketplace (%)	2026-04-12 18:04:52.498
-cmnw2pz1o00063ooena45c54c	max_assignment_attempts	5	Máximo intentos de asignación de driver	2026-04-12 18:04:52.525
 cmnw2pz1v00073ooeg4ma9ph3	points_per_dollar	1	Puntos por peso gastado	2026-04-12 18:04:52.531
 cmnw2pz2500083ooexl552lcf	signup_bonus	100	Puntos bonus por registro	2026-04-12 18:04:52.541
 cmnw2pz2d00093ooeop7ps99n	referral_bonus	200	Puntos bonus por referir	2026-04-12 18:04:52.549
@@ -2397,15 +2399,10 @@ cmnw2pz31000d3ooet00y8eva	cart_recovery_first_reminder_hours	2	Horas hasta 1er r
 cmnw2pz36000e3ooelgqtd83s	cart_recovery_second_reminder_hours	24	Horas hasta 2do recordatorio de carrito	2026-04-12 18:04:52.579
 cmnw2pz3b000f3ooevwgrltfn	cart_recovery_max_reminders	2	Máximo de recordatorios por carrito	2026-04-12 18:04:52.584
 cmnw2pz3g000g3ooe3t9sic9i	cart_recovery_min_cart_value	5000	Valor mínimo del carrito para enviar recordatorio (ARS)	2026-04-12 18:04:52.588
-cmo4zf9yr0000a4dun3xxpm64	assignment_rating_radius_meters	3000	Radio (metros) dentro del cual se priorizan repartidores por rating en el assignment engine	2026-04-18 23:42:30.195
-cmo4zf9zs0001a4durybs3xkn	max_delivery_distance_km	15	Distancia máxima en km entre comercio y cliente para aceptar delivery	2026-04-18 23:42:30.233
-cmo4zfa0b0002a4duf1n1d2t0	min_order_amount_ars	1000	Monto mínimo del carrito para poder hacer delivery	2026-04-18 23:42:30.252
-cmo4zfa0o0003a4duqov1p6u9	scheduled_notify_before_minutes	30	Minutos antes de la hora programada para notificar al repartidor	2026-04-18 23:42:30.264
-cmo4zfa150004a4duszp4pudf	scheduled_cancel_if_no_confirm_minutes	30	Minutos sin confirmación del comercio antes de cancelar pedido programado	2026-04-18 23:42:30.282
-cmnw2pz1900043ooen0k9livo	merchant_confirm_timeout_seconds	300	Timeout para que el comercio confirme un pedido (5 min)	2026-05-04 12:29:15.428
-cmnw2pz1i00053ooeltp8eb0a	driver_response_timeout_seconds	60	Timeout para que el repartidor acepte un pedido (1 min)	2026-05-04 12:29:15.439
-cmoqaec2e0006guxlioyoia9e	seller_commission_pct	12	Comision marketplace sellers (12%)	2026-05-04 12:29:15.443
-cmoqaec2l0007guxlb715oswl	driver_commission_pct	20	Porcentaje Moovy del viaje (100% - 80% rider = 20%)	2026-05-04 12:29:15.447
+cmo4zfa0o0003a4duqov1p6u9	scheduled_notify_before_minutes	30	Minutos antes de un pedido programado para notificar al comercio	2026-06-04 23:44:26.654
+cmo4zfa150004a4duszp4pudf	scheduled_cancel_if_no_confirm_minutes	10	Minutos para cancelar automáticamente si no hay confirmación de pedido programado	2026-06-04 23:44:26.671
+cmnw2pz1i00053ooeltp8eb0a	driver_response_timeout_seconds	60	Segundos que un repartidor tiene para aceptar/rechazar una oferta	2026-06-04 23:48:33.189
+cmnw2pz1900043ooen0k9livo	merchant_confirm_timeout_seconds	300	Segundos que un comercio tiene para confirmar un pedido nuevo	2026-06-04 23:48:33.204
 cmoqaec2t0008guxlvj7isz20	merchant_commission_pct	0	Comision merchants (0% mes 1 lanzamiento)	2026-05-04 12:29:15.452
 cmoqaec2w0009guxlwp2n6ygp	fuel_price_reference	1658	Precio nafta super YPF Ushuaia - referencia para delivery fee	2026-05-04 12:29:15.455
 cmoqaec30000aguxl3ukd8h95	usd_ars_reference	1400	Cotizacion dolar oficial referencia (cierre abril 2026)	2026-05-04 12:29:15.459
@@ -2415,6 +2412,12 @@ cmoqaec3b000dguxlnnatlugu	launch_boost_active	true	Boost lanzamiento: puntos x2 
 cmoqaec3e000eguxludoqsrn0	launch_boost_start_date	2026-05-04	Fecha inicio del boost de lanzamiento	2026-05-04 12:29:15.469
 cmoqaec3i000fguxlcdct43xa	merchant_free_month_active	true	Mes gratis para merchants (0% comision)	2026-05-04 12:29:15.472
 cmoqaec3l000gguxl46t1qemg	merchant_free_month_start_date	2026-05-04	Fecha inicio del mes gratis merchants	2026-05-04 12:29:15.474
+cmo4zf9zs0001a4durybs3xkn	max_delivery_distance_km	50	Distancia máxima de entrega en kilómetros	2026-06-04 23:44:26.551
+cmo4zfa0b0002a4duf1n1d2t0	min_order_amount_ars	500	Monto mínimo de pedido en pesos argentinos	2026-06-04 23:44:26.555
+cmoqaec2e0006guxlioyoia9e	seller_commission_pct	10	Porcentaje de comisión predeterminado para vendedores	2026-06-04 23:44:26.561
+cmoqaec2l0007guxlb715oswl	driver_commission_pct	15	Porcentaje de comisión predeterminado para repartidores	2026-06-04 23:44:26.57
+cmnw2pz1o00063ooena45c54c	max_assignment_attempts	5	Intentos máximos para asignar un repartidor antes de escalar a ops	2026-06-04 23:44:26.574
+cmo4zf9yr0000a4dun3xxpm64	assignment_rating_radius_meters	300	Radio en metros para priorizar repartidores por rating	2026-06-04 23:44:26.594
 \.
 
 
@@ -2479,12 +2482,12 @@ cmppizrju000ua6dshwf4f6v7	cmppizrji000sa6dsy4qp8i38	cmpogy8so000y5izcmc18x21a	\N
 --
 
 COPY public."PackageCategory" (id, name, "maxWeightGrams", "maxLengthCm", "maxWidthCm", "maxHeightCm", "volumeScore", "allowedVehicles", "isActive", "displayOrder", "createdAt", "updatedAt") FROM stdin;
-cmnw2pz7c00163ooeim6ijao4	MICRO	500	20	15	10	1	{BIKE,MOTO,CAR,TRUCK}	t	1	2026-04-12 18:04:52.728	2026-04-12 18:04:52.728
-cmnw2pz7m00173ooelfp0vilx	SMALL	2000	35	25	20	3	{BIKE,MOTO,CAR,TRUCK}	t	2	2026-04-12 18:04:52.739	2026-04-12 18:04:52.739
-cmnw2pz7r00183ooe6a3uhqx2	MEDIUM	5000	50	40	30	6	{MOTO,CAR,TRUCK}	t	3	2026-04-12 18:04:52.744	2026-04-12 18:04:52.744
-cmnw2pz7y00193ooe51d5kek8	LARGE	15000	80	60	50	10	{CAR,TRUCK}	t	4	2026-04-12 18:04:52.751	2026-04-12 18:04:52.751
-cmnw2pz83001a3ooeozrxhvfw	XL	50000	120	80	80	20	{TRUCK}	t	5	2026-04-12 18:04:52.755	2026-04-12 18:04:52.755
 cmoqaed9h0000a2f0xygyvz4p	FLETE	200000	250	150	150	50	{TRUCK}	t	6	2026-05-03 21:32:53.285	2026-05-03 21:32:53.285
+cmnw2pz7c00163ooeim6ijao4	MICRO	500	20	15	10	1	{BIKE,MOTO,CAR,TRUCK}	t	1	2026-04-12 18:04:52.728	2026-06-04 23:44:26.438
+cmnw2pz7m00173ooelfp0vilx	SMALL	2000	35	25	20	3	{BIKE,MOTO,CAR,TRUCK}	t	2	2026-04-12 18:04:52.739	2026-06-04 23:44:26.461
+cmnw2pz7r00183ooe6a3uhqx2	MEDIUM	5000	50	40	30	6	{MOTO,CAR,TRUCK}	t	3	2026-04-12 18:04:52.744	2026-06-04 23:44:26.467
+cmnw2pz7y00193ooe51d5kek8	LARGE	15000	80	60	50	10	{CAR,TRUCK}	t	4	2026-04-12 18:04:52.751	2026-06-04 23:44:26.472
+cmnw2pz83001a3ooeozrxhvfw	XL	50000	150	100	100	20	{TRUCK}	t	5	2026-04-12 18:04:52.755	2026-06-04 23:44:26.478
 \.
 
 
@@ -2834,8 +2837,8 @@ COPY public."SellerProfile" (id, "userId", "displayName", bio, avatar, cuit, "ac
 -- Data for Name: StoreSettings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "operationalCostPercent", "defaultMerchantCommission", "defaultSellerCommission", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit", "supportChatEnabled", "excludedZonesJson") FROM stdin;
-settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pronto a Ushuaia.	1680	0.06	1500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-05-28 13:11:51.814	Ver mas	t	f					t	t	f	6	t	5000	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3}	normal	5	0	12	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	50000	100000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}						f	[]
+COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "operationalCostPercent", "defaultMerchantCommission", "defaultSellerCommission", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit", "supportChatEnabled", "excludedZonesJson", "activeDemandCondition", "demandMultipliersJson") FROM stdin;
+settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pronto a Ushuaia.	1680	0.06	1500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-05-28 13:11:51.814	Ver mas	t	f					t	t	f	6	t	5000	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3}	normal	5	0	12	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	50000	100000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}						f	[]	normal	{"normal":1.0,"alta":1.20,"pico":1.40}
 \.
 
 

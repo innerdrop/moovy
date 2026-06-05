@@ -2,8 +2,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { calculateDistance } from "@/lib/delivery";
-import { calculateShippingCost } from "@/lib/shipping-cost-calculator";
+import { calculateDistance, computeDeliveryFee } from "@/lib/delivery";
+import { calculateOrderCategory } from "@/lib/assignment-engine";
+import { getSizeFromWeight } from "@/lib/product-weight";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
 import { deliveryLogger } from "@/lib/logger";
@@ -20,6 +21,17 @@ const DeliveryCalcSchema = z.object({
     }).optional(),
     merchantId: z.string().min(1, "merchantId requerido"),
     orderTotal: z.number().min(0).optional(),
+    // Rama fix/biblia-motor-envio-y-comisiones: items del carrito para derivar la
+    // categoría REAL del pedido (vehículo → costo_km + mínimo). El preview resuelve
+    // la categoría server-side desde los productId/listingId (MISMA cascada que el
+    // cobro en POST /api/orders), garantizando preview == cobro. Si no se mandan
+    // items, cae a "MEDIUM" (default histórico).
+    items: z.array(z.object({
+        productId: z.string().min(1),
+        quantity: z.number().int().min(1),
+        type: z.enum(["product", "listing"]).optional(),
+        name: z.string().optional(),
+    })).optional(),
 });
 
 export async function POST(request: Request) {
@@ -35,7 +47,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const { destinationLat, destinationLng, address, merchantId, orderTotal = 0 } = validation.data;
+        const { destinationLat, destinationLng, address, merchantId, orderTotal = 0, items } = validation.data;
 
         // Extract lat/lng from root or nested address object
         let lat = destinationLat || address?.latitude;
@@ -246,6 +258,17 @@ export async function POST(request: Request) {
         const activeClimate: string = (settings as any).activeClimateCondition ?? "normal";
         const operationalCostPercent: number = (settings as any).operationalCostPercent ?? 5;
 
+        // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda (espejo de clima).
+        // El preview DEBE leer el surge de la Biblia igual que el cobro → preview == cobro.
+        let demandMultipliers: Record<string, number> = { normal: 1.0, alta: 1.20, pico: 1.40 };
+        try {
+            if ((settings as any).demandMultipliersJson) {
+                demandMultipliers = JSON.parse((settings as any).demandMultipliersJson);
+            }
+        } catch { /* use defaults */ }
+        const activeDemand: string = (settings as any).activeDemandCondition ?? "normal";
+        const demandMultiplier = demandMultipliers[activeDemand] ?? 1.0;
+
         // Rama feat/zonas-delivery-multiplicador: detectar zona REAL con PostGIS
         // (point-in-polygon contra DeliveryZone polygons). Si el destino no cae
         // en ninguna zona configurada, default { zoneCode: null, multiplier: 1.0 }.
@@ -257,64 +280,95 @@ export async function POST(request: Request) {
         const zoneMultiplier = zoneSnapshot.zoneMultiplier;
         const climateMultiplier = climateMultipliers[activeClimate] ?? 1.0;
 
-        // ─── Rama fix/delivery-fee-preview-vs-cobro ────────────────────────────
-        // ANTES: este endpoint usaba calculateDeliveryCost (delivery.ts, fórmula
-        // maestra) mientras que POST /api/orders usaba calculateShippingCost
-        // (shipping-cost-calculator.ts). Producían resultados muy distintos →
-        // el cliente veía $2.763 en checkout pero al pagar se cobraba $1.315.
-        // Disparaba "FRAUD ALERT: Client delivery fee differs >25%".
+        // ─── Rama fix/biblia-motor-envio-y-comisiones ─────────────────────────
+        // MOTOR ÚNICO: el preview usa computeDeliveryFee (delivery.ts, fórmula
+        // maestra canónica), EXACTAMENTE el mismo motor que el cobro en
+        // POST /api/orders. costo_km y mínimo salen de DeliveryRate por categoría;
+        // zona/clima/operativo%/riderShare/freeDelivery/maxDistance de la Biblia.
         //
-        // AHORA: replicamos EXACTAMENTE el flujo de POST /api/orders:
-        //   1. calculateShippingCost con MEDIUM/STANDARD/orderTotal=0 → base + km
-        //   2. Si orderTotal > 0, sumar operational cost surcharge (5% subtotal)
-        //   3. Aplicar climate multiplier
-        //   4. Aplicar zone multiplier
-        //
-        // Resultado: el preview coincide al peso con el cobro real. Sin mismatch.
+        // PREVIEW == COBRO: derivamos la categoría REAL del pedido con
+        // calculateOrderCategory (igual que orders/route.ts). Si el frontend no
+        // manda items, caemos a "MEDIUM" (mismo default histórico).
+        const riderSharePercent: number = settings.riderCommissionPercent ?? 80;
 
-        const merchantPackageCategory = "MEDIUM";   // default que usa orders/route.ts
-        const merchantShipmentType = "STANDARD";    // default que usa orders/route.ts
-        const isWithinRange = settings.maxDeliveryDistance > 0
-            ? distanceKm <= settings.maxDeliveryDistance
-            : true;
+        let packageCategory = "MEDIUM";
+        if (items && items.length > 0) {
+            try {
+                // Resolver categoría por item desde DB, MISMA cascada que orders/route.ts:
+                //   Product → packageCategory.name | getSizeFromWeight(weightGrams) | "SMALL"
+                //   Listing → getSizeFromWeight(weightKg×1000) | "SMALL"
+                const previewProductIds = items.filter((i) => i.type !== "listing").map((i) => i.productId);
+                const previewListingIds = items.filter((i) => i.type === "listing").map((i) => i.productId);
+                const [pProducts, pListings] = await Promise.all([
+                    previewProductIds.length > 0
+                        ? prisma.product.findMany({
+                              where: { id: { in: previewProductIds } },
+                              select: { id: true, weightGrams: true, packageCategory: { select: { name: true } } },
+                          })
+                        : Promise.resolve([] as Array<{ id: string; weightGrams: number | null; packageCategory: { name: string } | null }>),
+                    previewListingIds.length > 0
+                        ? prisma.listing.findMany({
+                              where: { id: { in: previewListingIds } },
+                              select: { id: true, weightKg: true },
+                          })
+                        : Promise.resolve([] as Array<{ id: string; weightKg: number | null }>),
+                ]);
+                const catById = new Map<string, string>();
+                for (const p of pProducts) {
+                    catById.set(p.id, p.packageCategory?.name || (p.weightGrams != null ? getSizeFromWeight(p.weightGrams) : "SMALL"));
+                }
+                for (const l of pListings) {
+                    catById.set(l.id, l.weightKg != null ? getSizeFromWeight(Math.round(l.weightKg * 1000)) : "SMALL");
+                }
+                const oc = await calculateOrderCategory(
+                    items.map((i) => ({
+                        packageCategory: catById.get(i.productId) ?? "SMALL",
+                        quantity: i.quantity,
+                        name: i.name,
+                    }))
+                );
+                packageCategory = oc.category;
+            } catch {
+                // Defensivo: ante error usar MEDIUM (no romper el preview).
+            }
+        }
 
-        const baseShippingResult = calculateShippingCost({
+        const feeResult = await computeDeliveryFee({
             distanceKm,
-            packageCategory: merchantPackageCategory,
-            shipmentTypeCode: merchantShipmentType,
-            orderTotal: 0,                              // mismo default que orders/route.ts
-            freeDeliveryMinimum: settings.freeDeliveryMinimum,
+            packageCategory,
+            orderSubtotal: orderTotal,
+            isPickup: false,
+            biblia: {
+                freeDeliveryMinimum: settings.freeDeliveryMinimum,
+                maxDeliveryDistance: settings.maxDeliveryDistance,
+                operationalCostPercent,
+                riderSharePercent,
+                baseDeliveryFee: settings.baseDeliveryFee,
+                // MODELO B (rama fix/biblia-motor-envio-y-comisiones): globales del
+                // combustible para derivar costo_km por vehículo (mismo motor que el cobro).
+                fuelPricePerLiter: (settings as any).fuelPricePerLiter ?? 1591,
+                maintenanceFactor: (settings as any).maintenanceFactor ?? 1.35,
+            },
+            zoneMultiplier,
+            climateMultiplier,
+            demandMultiplier,               // surge (rama fix/biblia-motor-envio-y-comisiones)
         });
 
-        // 2. Operational cost surcharge sobre el orderTotal real (igual que orders/route.ts)
-        const opSurcharge = orderTotal > 0
-            ? Math.round(orderTotal * (operationalCostPercent / 100))
-            : 0;
-
-        // 3 + 4. Aplicar climate y zone multipliers
-        let finalTotal = baseShippingResult.total + opSurcharge;
-        if (climateMultiplier !== 1.0) {
-            finalTotal = Math.round(finalTotal * climateMultiplier);
-        }
-        if (zoneMultiplier !== 1.0) {
-            finalTotal = Math.round(finalTotal * zoneMultiplier);
-        }
-
-        // Free delivery: si el comercio definió freeDeliveryMinimum y el orderTotal lo cumple,
-        // el cliente NO paga el viaje pero sí el operacional + extras de zona/clima
-        // (Moovy NO regala el costo MP). Mismo criterio que calculateShippingCost.
-        const isFreeDelivery = baseShippingResult.isFreeDelivery;
+        const finalTotal = feeResult.totalCost;
+        const isWithinRange = feeResult.isWithinRange;
+        const isFreeDelivery = feeResult.isFreeDelivery;
 
         deliveryLogger.info(
             {
                 distanceKm: parseFloat(distanceKm.toFixed(2)),
-                baseShipping: baseShippingResult.total,
-                opSurcharge,
+                packageCategory,
+                tripCost: feeResult.tripCost,
+                operationalCost: feeResult.operationalCost,
                 climateMultiplier,
                 zoneMultiplier,
                 finalTotal,
                 isFreeDelivery,
-                source: "calculateShippingCost-unified",
+                source: "computeDeliveryFee-unified",
             },
             "Delivery fee preview calculated (matches POST /api/orders)"
         );
@@ -322,10 +376,11 @@ export async function POST(request: Request) {
         return NextResponse.json({
             distanceKm,
             // Desglose del shipping (compatibilidad con consumidores que muestran detalles)
-            baseCost: baseShippingResult.baseCost,
-            distanceCost: baseShippingResult.distanceCost,
-            shipmentSurcharge: baseShippingResult.shipmentSurcharge,
-            operationalCost: opSurcharge,
+            baseCost: feeResult.baseCost,
+            distanceCost: feeResult.distanceComponent,
+            shipmentSurcharge: 0,
+            operationalCost: feeResult.operationalCost,
+            packageCategory,
             // Total final que paga el cliente — matchea el cobro de POST /api/orders
             totalCost: finalTotal,
             isWithinRange,
